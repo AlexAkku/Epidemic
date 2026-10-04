@@ -124,9 +124,14 @@ template <typename IO, typename T> void TransferSnapshot(IO& io, T& value)
     }
     else if constexpr (std::is_floating_point_v<T>)
     {
+        if constexpr (requires { io.SemanticFloat(value); })
+        { io.SemanticFloat(value); }
+        else
+        {
         using U = std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>;
         U bits = std::bit_cast<U>(value); TransferSnapshot(io, bits);
         if constexpr (IO::reading) value = std::bit_cast<T>(bits);
+        }
     }
     else if constexpr (std::is_same_v<T, std::string> || IsVector<T>::value)
     {

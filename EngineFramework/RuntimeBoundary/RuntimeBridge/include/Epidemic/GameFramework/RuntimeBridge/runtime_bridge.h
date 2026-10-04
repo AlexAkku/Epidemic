@@ -89,6 +89,9 @@ enum class RuntimeProjectionPriority
 };
 struct RuntimeBindingGeneration
 {
+    // Opaque process-local capability; never serialized semantic revision.
+    // Successful rebinding/forget-and-recreate must not reuse an old value.
+    // Numeric adjacency is not an API contract. Cross-process sources rebind.
     std::uint32_t value = 0;
     [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
     [[nodiscard]] constexpr bool operator==(const RuntimeBindingGeneration&) const noexcept = default;

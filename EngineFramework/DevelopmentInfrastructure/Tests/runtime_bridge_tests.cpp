@@ -362,7 +362,7 @@ int main()
     CHECK(bridge.Enqueue(materialize));
     CHECK(bridge.Process().materialized == 1);
     const auto rematerialized = bridge.GetBinding(object);
-    CHECK(rematerialized && rematerialized->generation.value == generation.value + 1);
+    CHECK(rematerialized && rematerialized->generation.value > generation.value);
     CHECK(!bridge.ForgetObjectIdentity(object));
     DematerializeRequest second_dematerialize{object, rematerialized->generation};
     CHECK(bridge.Enqueue(second_dematerialize));
@@ -372,7 +372,9 @@ int main()
     CHECK(bridge.Enqueue(materialize));
     CHECK(bridge.Process().materialized == 1);
     const auto after_forget = bridge.GetBinding(object);
-    CHECK(after_forget && after_forget->generation.value == 1);
+    CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);
+    CHECK(!bridge.AttachPhysicsBody(object, generation, RuntimePhysicsBodyHandle{99}));
+    CHECK(bridge.GetBinding(object) && bridge.GetBinding(object)->generation == after_forget->generation);
 
     // D1-H01: transient backend failure stays retryable and does not block neighboring commands.
     Backend retry_backend;

@@ -328,9 +328,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -636,9 +636,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -860,9 +860,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -944,9 +944,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -972,9 +972,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -1140,9 +1140,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -1616,9 +1616,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -1756,9 +1756,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:414::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:416::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:414::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:416::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -2064,9 +2064,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -2078,9 +2078,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -2442,9 +2442,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:396::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:398::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:396::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:398::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -2596,9 +2596,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:442::CHECK(dead_bridge.Process().failed == 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.Process().failed == 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:442::CHECK(dead_bridge.Process().failed == 0);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.Process().failed == 0);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -2638,9 +2638,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -2652,9 +2652,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -3352,9 +3352,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -3394,9 +3394,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -3408,9 +3408,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -3814,9 +3814,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -3870,9 +3870,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -4066,9 +4066,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -4542,9 +4542,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"

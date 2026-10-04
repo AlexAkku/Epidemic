@@ -5,6 +5,7 @@
 #include <array>
 #include <limits>
 #include <mutex>
+#include <new>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -12,8 +13,28 @@
 
 namespace epidemic::gameplay::integration
 {
+namespace detail
+{
+thread_local std::string_view save_generation_fault_point;
+void SetSaveGenerationFaultPointForTesting(std::string_view point) noexcept { save_generation_fault_point = point; }
+void ClearSaveGenerationFaultPointForTesting() noexcept { save_generation_fault_point = {}; }
+}
 namespace
 {
+void GenerationFaultPoint(std::string_view point)
+{
+    if (detail::save_generation_fault_point == point)
+    {
+        detail::save_generation_fault_point = {};
+        throw std::bad_alloc{};
+    }
+}
+
+template <typename F> struct ScopeExit
+{
+    F action;
+    ~ScopeExit() noexcept { action(); }
+};
 constexpr std::array<std::byte, 8> kGenerationMagic{
     std::byte{'E'}, std::byte{'P'}, std::byte{'I'}, std::byte{'G'},
     std::byte{'E'}, std::byte{'N'}, std::byte{'0'}, std::byte{'1'}};
@@ -430,6 +451,7 @@ struct SaveGenerationBarrier::State
     std::thread::id owner_thread{};
     SaveGenerationId generation{};
     std::size_t nested_capture_leases = 0;
+    std::size_t restore_leases = 0;
     std::unique_ptr<savegame::ISaveBarrierLease> capture_quiescence;
     std::unique_ptr<savegame::ISaveBarrierLease> restore_quiescence;
 };
@@ -442,7 +464,7 @@ SaveGenerationBarrier::SaveGenerationBarrier(SaveGenerationBarrierCallbacks call
 SaveGenerationBarrier::~SaveGenerationBarrier() = default;
 
 foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationBarrier::AcquireGenerationLease(
-    SaveGenerationId generation)
+    SaveGenerationId generation) try
 {
     if (!generation.IsValid())
         return BarrierFailure("gameplay.save_generation.invalid_id", "outer capture requires a valid save generation");
@@ -456,6 +478,10 @@ foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationB
             return BarrierFailure("gameplay.save_generation.barrier_unconfigured", "capture quiescence/preflight callbacks are required");
         state->acquiring = true;
     }
+    ScopeExit acquisition_cleanup{[state]() noexcept {
+        std::lock_guard lock(state->mutex);
+        state->acquiring = false;
+    }};
 
     foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> quiescence =
         BarrierFailure("gameplay.save_generation.barrier_callback", "capture quiescence callback did not run");
@@ -505,16 +531,6 @@ foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationB
         return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Failure(preflight.GetError());
     }
 
-    {
-        std::lock_guard lock(state->mutex);
-        state->capture_quiescence = std::move(quiescence.Value());
-        state->generation = generation;
-        state->owner_thread = std::this_thread::get_id();
-        state->outer_alive = true;
-        state->capture_active = true;
-        state->acquiring = false;
-    }
-
     auto release = [state]() noexcept {
         std::unique_ptr<savegame::ISaveBarrierLease> quiescence_to_release;
         {
@@ -532,22 +548,25 @@ foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationB
         }
         quiescence_to_release.reset();
     };
-    return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(
-        std::make_unique<CallbackBarrierLease>(std::move(release)));
-}
-
-foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationBarrier::AcquireCaptureLease()
-{
-    const auto state = state_;
+    GenerationFaultPoint("lease.outer");
+    auto lease = std::make_unique<CallbackBarrierLease>(std::move(release));
     {
         std::lock_guard lock(state->mutex);
-        if (!state->capture_active || !state->outer_alive)
-            return BarrierFailure("gameplay.save_generation.outer_lease_required", "Framework capture requires an active outer save generation lease");
-        if (state->owner_thread != std::this_thread::get_id())
-            return BarrierFailure("gameplay.save_generation.wrong_thread", "nested Framework capture must run on the outer generation thread");
-        ++state->nested_capture_leases;
+        state->capture_quiescence = std::move(quiescence.Value());
+        state->generation = generation;
+        state->owner_thread = std::this_thread::get_id();
+        state->outer_alive = true;
+        state->capture_active = true;
+        state->acquiring = false;
     }
+    return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(std::move(lease));
+}
+catch (const std::exception& error) { return BarrierFailure("gameplay.save_generation.lease_preparation", error.what()); }
+catch (...) { return BarrierFailure("gameplay.save_generation.lease_preparation", "generation lease preparation failed"); }
 
+foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationBarrier::AcquireCaptureLease()
+try {
+    const auto state = state_;
     auto release = [state]() noexcept {
         std::unique_ptr<savegame::ISaveBarrierLease> quiescence_to_release;
         {
@@ -564,21 +583,58 @@ foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationB
         }
         quiescence_to_release.reset();
     };
-    return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(
-        std::make_unique<CallbackBarrierLease>(std::move(release)));
+    std::lock_guard lock(state->mutex);
+    if (!state->capture_active || !state->outer_alive)
+        return BarrierFailure("gameplay.save_generation.outer_lease_required", "Framework capture requires an active outer save generation lease");
+    if (state->owner_thread != std::this_thread::get_id())
+        return BarrierFailure("gameplay.save_generation.wrong_thread", "nested Framework capture must run on the outer generation thread");
+    GenerationFaultPoint("lease.nested");
+    auto lease = std::make_unique<CallbackBarrierLease>(std::move(release));
+    ++state->nested_capture_leases;
+    return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(std::move(lease));
 }
+catch (const std::exception& error) { return BarrierFailure("gameplay.save_generation.lease_preparation", error.what()); }
+catch (...) { return BarrierFailure("gameplay.save_generation.lease_preparation", "nested lease preparation failed"); }
 
 foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationBarrier::AcquireRestoreLease()
-{
+try {
     const auto state = state_;
+    auto release = [state]() noexcept {
+        std::unique_ptr<savegame::ISaveBarrierLease> quiescence_to_release;
+        {
+            std::lock_guard lock(state->mutex);
+            if (state->restore_leases == 0) return;
+            --state->restore_leases;
+            if (state->restore_leases == 0)
+            {
+                state->restore_active = false;
+                state->owner_thread = {};
+                quiescence_to_release = std::move(state->restore_quiescence);
+            }
+        }
+        quiescence_to_release.reset();
+    };
     {
         std::lock_guard lock(state->mutex);
-        if (state->acquiring || state->capture_active || state->restore_active)
+        if (state->restore_active)
+        {
+            if (state->owner_thread != std::this_thread::get_id())
+                return BarrierFailure("gameplay.save_generation.wrong_thread", "nested restore requires the outer restore thread");
+            GenerationFaultPoint("lease.restore_nested");
+            auto lease = std::make_unique<CallbackBarrierLease>(release);
+            ++state->restore_leases;
+            return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(std::move(lease));
+        }
+        if (state->acquiring || state->capture_active)
             return BarrierFailure("gameplay.save_generation.barrier_busy", "save generation barrier is already active");
         if (!state->callbacks.acquire_restore_quiescence)
             return BarrierFailure("gameplay.save_generation.restore_barrier_unconfigured", "restore quiescence callback is required");
         state->acquiring = true;
     }
+    ScopeExit acquisition_cleanup{[state]() noexcept {
+        std::lock_guard lock(state->mutex);
+        state->acquiring = false;
+    }};
 
     foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> quiescence =
         BarrierFailure("gameplay.save_generation.barrier_callback", "restore quiescence callback did not run");
@@ -605,26 +661,20 @@ foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> SaveGenerationB
         return quiescence ? BarrierFailure("gameplay.save_generation.barrier_invalid", "restore quiescence returned an empty lease")
                           : foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Failure(quiescence.GetError());
     }
+    GenerationFaultPoint("lease.restore");
+    auto lease = std::make_unique<CallbackBarrierLease>(std::move(release));
     {
         std::lock_guard lock(state->mutex);
         state->restore_quiescence = std::move(quiescence.Value());
         state->restore_active = true;
+        state->owner_thread = std::this_thread::get_id();
+        state->restore_leases = 1;
         state->acquiring = false;
     }
-    auto release = [state]() noexcept {
-        std::unique_ptr<savegame::ISaveBarrierLease> quiescence_to_release;
-        {
-            std::lock_guard lock(state->mutex);
-            if (!state->restore_active)
-                return;
-            state->restore_active = false;
-            quiescence_to_release = std::move(state->restore_quiescence);
-        }
-        quiescence_to_release.reset();
-    };
-    return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(
-        std::make_unique<CallbackBarrierLease>(std::move(release)));
+    return foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>::Success(std::move(lease));
 }
+catch (const std::exception& error) { return BarrierFailure("gameplay.save_generation.lease_preparation", error.what()); }
+catch (...) { return BarrierFailure("gameplay.save_generation.lease_preparation", "restore lease preparation failed"); }
 
 SaveGenerationId SaveGenerationBarrier::ActiveGeneration() const noexcept
 {
@@ -653,7 +703,7 @@ SaveGenerationCoordinator::SaveGenerationCoordinator(
 }
 
 foundation::Result<SaveGenerationId> SaveGenerationCoordinator::CaptureAndCommit(
-    const savegame::SaveContext& context)
+    const savegame::SaveContext& context) try
 {
     if (!LimitsValid(limits_))
         return foundation::Result<SaveGenerationId>::Failure(
@@ -680,6 +730,15 @@ foundation::Result<SaveGenerationId> SaveGenerationCoordinator::CaptureAndCommit
     if (!outer_lease)
         return foundation::Result<SaveGenerationId>::Failure(outer_lease.GetError());
 
+    // Another coordinator may have published while this caller was acquiring
+    // its safe point. Never reuse a generation computed from stale lineage.
+    auto stable_current = store_.LoadCurrent();
+    if (!stable_current)
+        return foundation::Result<SaveGenerationId>::Failure(stable_current.GetError());
+    if (stable_current.Value() != current.Value())
+        return foundation::Result<SaveGenerationId>::Failure(
+            GenerationError("gameplay.save_generation.stale_lineage", "save lineage changed before safe-point acquisition; retry required"));
+
     auto runtime_capture = runtime_.Capture(generation);
     if (!runtime_capture)
         return foundation::Result<SaveGenerationId>::Failure(runtime_capture.GetError());
@@ -697,6 +756,7 @@ foundation::Result<SaveGenerationId> SaveGenerationCoordinator::CaptureAndCommit
     package.framework_savegame = std::move(framework_package.Value());
     package.runtime_time = std::move(runtime_capture.Value().time_package);
     package.runtime_persistence = std::move(runtime_capture.Value().persistence_package);
+    GenerationFaultPoint("package.encode");
     auto encoded = EncodeSaveGenerationPackage(package, limits_);
     if (!encoded)
         return foundation::Result<SaveGenerationId>::Failure(encoded.GetError());
@@ -704,6 +764,16 @@ foundation::Result<SaveGenerationId> SaveGenerationCoordinator::CaptureAndCommit
     if (!committed)
         return foundation::Result<SaveGenerationId>::Failure(committed.GetError());
     return foundation::Result<SaveGenerationId>::Success(generation);
+}
+catch (const std::exception& error)
+{
+    return foundation::Result<SaveGenerationId>::Failure(
+        GenerationError("gameplay.save_generation.capture_exception", "save generation preparation failed", error.what()));
+}
+catch (...)
+{
+    return foundation::Result<SaveGenerationId>::Failure(
+        GenerationError("gameplay.save_generation.capture_exception", "save generation preparation failed"));
 }
 } // namespace epidemic::gameplay::integration
 

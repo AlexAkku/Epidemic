@@ -5061,6 +5061,8 @@
         "class FactsQueryAdapter",
         "class FileSaveGenerationStorefinal : public ISaveGenerationStore",
         "class FileSavePackageStorefinal : public savegame::ISavePackageStore",
+        "class IRuntimeGenerationRestorePort",
+        "class IRuntimeGenerationRestoreStage",
         "class IRuntimeSaveGenerationPort",
         "class ISaveGenerationStore",
         "class RuntimeTimeAdapter",
@@ -5070,6 +5072,7 @@
         "class ScheduledTriggerDispatcherSaveParticipant",
         "class ScheduledTriggerDispatcherSaveParticipantfinal : public savegame::ISaveParticipant",
         "class TimeFactsAdapter",
+        "class WholeEngineRestoreCoordinator",
         "struct FindFactsQuery",
         "struct FindHistoryQuery",
         "struct RegisteredHandler",
@@ -5082,7 +5085,9 @@
         "struct ScheduledTriggerDispatcherPolicy",
         "struct ScheduledTriggerDispatcherSnapshot",
         "struct ScheduledTriggerPumpReport",
-        "struct State"
+        "struct State",
+        "struct ThreadIdentity",
+        "struct WholeRestoreCallbacks"
       ],
       "constants": [
         "operator"
@@ -5093,14 +5098,23 @@
         "ScheduledTriggerActionDeliveryMode::RequiresActionHandler",
         "ScheduledTriggerDisposition::Ack",
         "ScheduledTriggerDisposition::DiscardTerminal",
-        "ScheduledTriggerDisposition::Retry"
+        "ScheduledTriggerDisposition::Retry",
+        "WholeRestorePhase::AwaitLoad",
+        "WholeRestorePhase::CommittedSemantic",
+        "WholeRestorePhase::MaterializeRuntime",
+        "WholeRestorePhase::Precommit",
+        "WholeRestorePhase::ReadyToResume",
+        "WholeRestorePhase::RebuildTransient",
+        "WholeRestorePhase::ReconcileExternal",
+        "WholeRestorePhase::ReconciliationRequired"
       ],
       "enums": [
         "ScheduledTriggerActionDeliveryMode",
-        "ScheduledTriggerDisposition"
+        "ScheduledTriggerDisposition",
+        "WholeRestorePhase"
       ],
       "module": "EngineFramework/IntegrationLayer/Integration",
-      "normalized_sha256": "d030442598601893bd7626c58c3c99986d7c411027b7ba3eadeac1abe936ef51",
+      "normalized_sha256": "5bd5a4215e350c8d841b39514c4dd3992cf08c7c2606ba390e481abcfbcd83a1",
       "public_fields": [
         "RuntimeSaveGenerationCapture::persistence_package",
         "RuntimeSaveGenerationCapture::time_package",

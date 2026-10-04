@@ -893,7 +893,7 @@ foundation::Result<void> SaveGameOrchestrator::Restore(SaveGameImage image, cons
             Error("gameplay.save.validation_failed", "save participant validation failed"));
         try
         {
-            valid = registration.participant->ValidateSnapshot(migrated.Value(), context);
+            SaveGamePublicationFaultPointForInternalTest("restore.validate"); valid = registration.participant->ValidateSnapshot(migrated.Value(), context);
         }
         catch (const std::exception &exception)
         {
@@ -964,7 +964,7 @@ foundation::Result<void> SaveGameOrchestrator::Restore(SaveGameImage image, cons
                 Error("gameplay.save.stage_failed", "save participant staging failed"));
         try
         {
-            staged = registration.participant->StageRestore(migrated_sections.at(id), context);
+            SaveGamePublicationFaultPointForInternalTest("restore.stage"); staged = registration.participant->StageRestore(migrated_sections.at(id), context);
         }
         catch (const std::exception &exception)
         {

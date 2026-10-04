@@ -68,7 +68,6 @@ class EngineRuntimeBridgeBackend final : public IRuntimeBridgeBackend
     std::shared_ptr<runtime::IEnvironmentRuntime> environment_;
     runtime::navigation::NavigationServices navigation_;
 
-    std::uint64_t next_persistent_ = 1, next_object_ = 1, next_body_ = 1, next_region_ = 1, next_path_ = 1;
     std::unordered_map<RuntimePersistentObjectHandle, runtime::PersistentObjectId> persistent_objects_;
     std::unordered_map<RuntimeObjectHandle, runtime::RuntimeObjectId> runtime_objects_;
     std::unordered_map<runtime::RuntimeObjectId, RuntimeObjectHandle, RuntimeHash<runtime::RuntimeObjectId>> runtime_object_reverse_;

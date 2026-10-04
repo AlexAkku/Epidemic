@@ -170,6 +170,24 @@
           "timeout": 300.0
         },
         {
+          "labels": [
+            "determinism",
+            "goal5-regression",
+            "truth"
+          ],
+          "name": "EpidemicDeterminismProcessTruthTests",
+          "timeout": 900.0
+        },
+        {
+          "labels": [
+            "determinism",
+            "goal5-regression",
+            "truth"
+          ],
+          "name": "EpidemicDeterminismTruthTests",
+          "timeout": 240.0
+        },
+        {
           "labels": [],
           "name": "EpidemicDiagnosticsUnitTests",
           "timeout": 300.0
@@ -427,6 +445,15 @@
         {
           "labels": [],
           "name": "EpidemicGameFrameworkResourcesProductionTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-local",
+            "unit"
+          ],
+          "name": "EpidemicGameFrameworkRestoreCoordinationTests",
           "timeout": 300.0
         },
         {
@@ -742,6 +769,25 @@
           "labels": [],
           "name": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
           "timeout": 300.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-storage",
+            "persistence-whole-engine",
+            "truth"
+          ],
+          "name": "EpidemicWholeEngineRestoreProcessTruthTests",
+          "timeout": 360.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-whole-engine",
+            "truth"
+          ],
+          "name": "EpidemicWholeEngineRestoreTruthTests",
+          "timeout": 180.0
         },
         {
           "labels": [],
@@ -771,6 +817,24 @@
           "timeout": 300.0
         },
         {
+          "labels": [
+            "determinism",
+            "goal5-regression",
+            "truth"
+          ],
+          "name": "EpidemicDeterminismProcessTruthTests",
+          "timeout": 900.0
+        },
+        {
+          "labels": [
+            "determinism",
+            "goal5-regression",
+            "truth"
+          ],
+          "name": "EpidemicDeterminismTruthTests",
+          "timeout": 240.0
+        },
+        {
           "labels": [],
           "name": "EpidemicDiagnosticsUnitTests",
           "timeout": 300.0
@@ -1028,6 +1092,15 @@
         {
           "labels": [],
           "name": "EpidemicGameFrameworkResourcesProductionTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-local",
+            "unit"
+          ],
+          "name": "EpidemicGameFrameworkRestoreCoordinationTests",
           "timeout": 300.0
         },
         {
@@ -1343,6 +1416,25 @@
           "labels": [],
           "name": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
           "timeout": 300.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-storage",
+            "persistence-whole-engine",
+            "truth"
+          ],
+          "name": "EpidemicWholeEngineRestoreProcessTruthTests",
+          "timeout": 360.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-whole-engine",
+            "truth"
+          ],
+          "name": "EpidemicWholeEngineRestoreTruthTests",
+          "timeout": 180.0
         },
         {
           "labels": [],

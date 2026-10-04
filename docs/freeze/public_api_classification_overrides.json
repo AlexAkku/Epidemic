@@ -350,6 +350,11 @@
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
       "reviewed": true
     },
+    "36043e103825bdfb": {
+      "classification": "MUTATOR",
+      "rationale": "Retry advances a retained postcommit phase cursor without repeating semantic publication; guarded and owner-thread-only.",
+      "reviewed": true
+    },
     "366f9356b0ca3bc5": {
       "classification": "MUTATOR",
       "rationale": "Reviewed state-changing command or stateful sequence operation.",

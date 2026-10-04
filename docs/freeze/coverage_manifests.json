@@ -369,6 +369,20 @@
       "scope": "epidemic::gameplay::queries::detail::FunctionQueryProvider",
       "signature": "FunctionQueryProvider(QueryTypeId type,QueryProviderCapabilities capabilities,CurrentHandler current_handler,SnapshotCapture snapshot_capture={},SnapshotHandler snapshot_handler={})"
     },
+    "01d6ad002ec4c504": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] foundation::Result<SaveGenerationId> LoadAndRestore(const savegame::RestoreContext&context);"
+    },
     "01d6e6ca9d5b09d2": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -4667,6 +4681,20 @@
       "scope": "epidemic::gameplay::loot::IRewardHandler",
       "signature": "[[nodiscard]] virtual foundation::Result<RewardDeliveryStage> Prepare(const RewardOperation&operation)=0;"
     },
+    "1a8ed521ea7ce2aa": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestorePort",
+      "signature": "[[nodiscard]] virtual foundation::Result<std::unique_ptr<IRuntimeGenerationRestoreStage>> Prepare(const SaveGenerationPackage&package)=0;"
+    },
     "1ab66bfde205d271": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -6356,6 +6384,20 @@
       "scope": "epidemic::gameplay::savegame",
       "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService&owner,SaveRestoreWorkspace&workspace);"
     },
+    "234f0caecec0d4fc": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestoreStage",
+      "signature": "virtual void Commit()noexcept=0;"
+    },
     "234fe162ca5a5b30": {
       "classification": "DESTRUCTOR",
       "classification_status": "REVIEWED",
@@ -6483,6 +6525,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::crime::CrimeService",
       "signature": "[[nodiscard]] std::vector<EvidenceRecord> FindEvidence(CrimeRecordId crime)const;"
+    },
+    "247cb1497531427a": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] bool CanResume()const noexcept"
     },
     "24897f3b3bad46e1": {
       "classification": "MUTATOR",
@@ -6858,6 +6909,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::progression::UnlockDefinitionId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
+    },
+    "262fcd1e7349a380": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "~WholeEngineRestoreCoordinator();"
     },
     "264a74b839daad80": {
       "classification": "CONSTRUCTOR",
@@ -9480,6 +9540,20 @@
       "scope": "epidemic::memory::IMemoryTracker",
       "signature": "virtual void SetTrackingEnabled(bool tracking_enabled)noexcept=0;"
     },
+    "36043e103825bdfb": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] foundation::Result<void> RetryReconciliation();"
+    },
     "361b9f31349f8126": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -9914,6 +9988,20 @@
       "obligations": {},
       "scope": "epidemic::runtime::IAssetCatalogWriter",
       "signature": "virtual ~IAssetCatalogWriter()=default;"
+    },
+    "37eba61cf2ceda31": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "WholeEngineRestoreCoordinator&operator=(const WholeEngineRestoreCoordinator&)=delete;"
     },
     "37fceac2a3ba4aba": {
       "classification": "QUERY",
@@ -17367,6 +17455,15 @@
       "scope": "epidemic::gameplay::traversal::TraversalCapabilityGrantId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const TraversalCapabilityGrantId&)const noexcept=default;"
     },
+    "608cd71567b9e890": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestorePort",
+      "signature": "virtual ~IRuntimeGenerationRestorePort()=default;"
+    },
     "60931cfafb5f9497": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -17847,6 +17944,15 @@
       "scope": "epidemic::gameplay::construction::ConstructionService",
       "signature": "[[nodiscard]] foundation::Result<ConstructionSocketReservationId> ReserveSocket(PlacementSocketId id,GameplayObjectRef owner,GameplayContext context={});"
     },
+    "635a1b921893c526": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] WholeRestorePhase Phase()const noexcept"
+    },
     "635a7a44bc945339": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -17869,6 +17975,15 @@
       "obligations": {},
       "scope": "epidemic::runtime::IWorldQuery",
       "signature": "virtual ~IWorldQuery()=default;"
+    },
+    "636e99b2f4570966": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] SaveGenerationId RestoredGeneration()const noexcept"
     },
     "6380a5d3e5b38873": {
       "classification": "QUERY",
@@ -29189,6 +29304,15 @@
       "scope": "epidemic::gameplay::narrative::NarrativeService",
       "signature": "[[nodiscard]] foundation::Result<void> FreezeDefinitions();"
     },
+    "a33f44faf4158c0d": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "WholeEngineRestoreCoordinator(const WholeEngineRestoreCoordinator&)=delete;"
+    },
     "a34946afce4bfdd9": {
       "classification": "LIFECYCLE",
       "classification_status": "REVIEWED",
@@ -29367,6 +29491,15 @@
       },
       "scope": "epidemic::gameplay::combat::CombatService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterCombatant(GameplayObjectRef subject,std::vector<CombatResourceState> resources,GameplayContext context={});"
+    },
+    "a3dc32b8bd2a4236": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "WholeEngineRestoreCoordinator(savegame::SaveGameOrchestrator&framework,IRuntimeGenerationRestorePort&runtime,SaveGenerationBarrier&barrier,ISaveGenerationStore&store,WholeRestoreCallbacks callbacks,SaveGenerationLimits limits={},savegame::SaveWireLimits framework_limits={});"
     },
     "a3e01e8d0cfc57ed": {
       "classification": "QUERY",
@@ -41090,6 +41223,15 @@
       "scope": "epidemic::gameplay::population_simulation::PopulationEncounterAdapter",
       "signature": "[[nodiscard]] foundation::Result<void> RestoreSnapshot(PopulationEncounterAdapterSnapshot snapshot,const population::PopulationService&population_service,const encounters::EncountersService&encounter_service);"
     },
+    "e285f5d1f80e10b8": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestoreStage",
+      "signature": "virtual ~IRuntimeGenerationRestoreStage()=default;"
+    },
     "e2862f25f8ca4d35": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -47478,6 +47620,11 @@
       "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
+    "486dd02d95c862e1": {
+      "callable_id": "a3dc32b8bd2a4236",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "4b4cb79e3d5dcf7f": {
       "callable_id": "8a415d0c9f8943bd",
       "module": "EngineRuntime/Physics",
@@ -47586,6 +47733,11 @@
     "8dbae7aef8bdb475": {
       "callable_id": "1cfdbaf09309c547",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
+      "status": "REVIEWED"
+    },
+    "951b1453aa9285cb": {
+      "callable_id": "608cd71567b9e890",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "95cebb2bc6bc0d5f": {
@@ -49186,6 +49338,11 @@
     "2a44a5087476b17e": {
       "callable_id": "4ab840c7abe5b46d",
       "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "status": "REVIEWED"
+    },
+    "2a50dfe53c500b63": {
+      "callable_id": "36043e103825bdfb",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "2a6383dc6ded92dc": {
@@ -52763,6 +52920,11 @@
       "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
       "status": "REVIEWED"
     },
+    "c59ec072a49bac98": {
+      "callable_id": "234f0caecec0d4fc",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "c657bb6e327dcaef": {
       "callable_id": "49d2d01d409d5050",
       "module": "EngineRuntime/Renderer",
@@ -53076,6 +53238,11 @@
     "d3a0141736ae8a9d": {
       "callable_id": "0c810f6837035df9",
       "module": "EngineFramework/GameplayWorldStateOwners/Progression",
+      "status": "REVIEWED"
+    },
+    "d3ba9f887fd45251": {
+      "callable_id": "01d6ad002ec4c504",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "d3bf6d78ba981623": {

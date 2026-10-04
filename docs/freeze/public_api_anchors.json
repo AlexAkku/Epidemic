@@ -480,6 +480,20 @@
         "target": "EpidemicGameplayQueriesTests"
       }
     },
+    "01d6ad002ec4c504": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "01d6e6ca9d5b09d2": {
       "contract": {
         "anchor": "docs/EngineFramework/StateIntegration.md:44::- G4-API-01d6e6ca9d5b09d2: `epidemic::gameplay::state_integration::GetConditionsQuery` \u2014 `[[nodiscard]] static constexpr",
@@ -3872,9 +3886,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -6160,6 +6174,20 @@
         "target": "EpidemicGameFrameworkLootTests"
       }
     },
+    "1a8ed521ea7ce2aa": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "1ab66bfde205d271": {
       "contract": {
         "anchor": "docs/EngineFramework/Economy.md:74::`1ab66bfde205d271`",
@@ -6782,9 +6810,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -7286,9 +7314,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -8376,15 +8404,29 @@
         "target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
       }
     },
+    "234f0caecec0d4fc": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "234fe162ca5a5b30": {
       "contract": {
         "anchor": "docs/EngineFramework/goal5_save_generation.md:8::`234fe162ca5a5b30`",
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -8530,6 +8572,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCrimeTests"
+      }
+    },
+    "247cb1497531427a": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
       }
     },
     "24897f3b3bad46e1": {
@@ -9000,6 +9056,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkProgressionTests"
+      }
+    },
+    "262fcd1e7349a380": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
       }
     },
     "264a74b839daad80": {
@@ -10242,9 +10312,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -10410,9 +10480,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -11085,9 +11155,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -11554,9 +11624,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:389::CHECK(retry_bridge.Enqueue(retry_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:391::CHECK(retry_bridge.Enqueue(retry_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -11884,9 +11954,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -12600,6 +12670,20 @@
         "target": "EpidemicMemoryUnitTests"
       }
     },
+    "36043e103825bdfb": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "361b9f31349f8126": {
       "contract": {
         "anchor": "docs/EngineFramework/Effects.md:87::`361b9f31349f8126`",
@@ -13206,6 +13290,20 @@
         "target": "EpidemicRuntimeAssetsTests"
       }
     },
+    "37eba61cf2ceda31": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "37fceac2a3ba4aba": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/narrative.md:68::- G4-API-37fceac2a3ba4aba: `epidemic::gameplay::narrative::NarrativeService` \u2014 `[[nodiscard]] static constexpr GameplayD",
@@ -13692,9 +13790,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -14793,9 +14891,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -20332,9 +20430,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -20794,9 +20892,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -22550,9 +22648,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:414::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:416::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:414::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:416::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -22802,9 +22900,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -22992,6 +23090,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkTraversalTests"
+      }
+    },
+    "608cd71567b9e890": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
       }
     },
     "60931cfafb5f9497": {
@@ -23582,6 +23694,20 @@
         "target": "EpidemicGameFrameworkConstructionTests"
       }
     },
+    "635a1b921893c526": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "635a7a44bc945339": {
       "contract": {
         "anchor": "docs/EngineFramework/Encounters.md:84::- `635a7a44bc945339` | `MUTATOR` | `epidemic::gameplay::encounters::EncountersService` | `[[nodiscard]] foundation::Result<void> BindSpawnedEntity(SpawnedEntityRecordId record,GameplayObjectRef entity,GameplayContext context={});`",
@@ -23608,6 +23734,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeWorldTests"
+      }
+    },
+    "636e99b2f4570966": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
       }
     },
     "6380a5d3e5b38873": {
@@ -24166,9 +24306,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -25227,9 +25367,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -25409,9 +25549,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -25926,9 +26066,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -28412,9 +28552,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -30820,9 +30960,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -31272,9 +31412,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:396::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:398::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:396::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:398::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -32932,9 +33072,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:442::CHECK(dead_bridge.Process().failed == 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.Process().failed == 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:442::CHECK(dead_bridge.Process().failed == 0);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.Process().failed == 0);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -33727,9 +33867,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -33965,9 +34105,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -33979,9 +34119,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -34065,9 +34205,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -34331,9 +34471,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -36165,9 +36305,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -36347,9 +36487,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -38740,6 +38880,20 @@
         "target": "EpidemicGameFrameworkNarrativeTests"
       }
     },
+    "a33f44faf4158c0d": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "a34946afce4bfdd9": {
       "contract": {
         "anchor": "docs/EngineFramework/AI.md:122::- `a34946afce4bfdd9` | `LIFECYCLE` | `epidemic::gameplay::ai::AIService` | `[[nodiscard]] foundation::Result<void> ResumeAgent(GameplayObjectRef subject,GameplayTimePoint when,GameplayContext context={});`",
@@ -38990,6 +39144,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCombatTests"
+      }
+    },
+    "a3dc32b8bd2a4236": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
       }
     },
     "a3f20d0f65edfa78": {
@@ -39674,9 +39842,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -40554,9 +40722,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -43432,9 +43600,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -44480,9 +44648,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -45542,9 +45710,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -45682,9 +45850,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -50701,9 +50869,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -51644,9 +51812,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -52239,9 +52407,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -52992,9 +53160,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -53126,9 +53294,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -54433,6 +54601,20 @@
         "target": "EpidemicGameFrameworkPopulationSimulationIntegrationTests"
       }
     },
+    "e285f5d1f80e10b8": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
     "e2862f25f8ca4d35": {
       "contract": {
         "anchor": "docs/EngineFramework/Traversal.md:145::- `e2862f25f8ca4d35` | `MUTATOR` | `epidemic::gameplay::traversal::TraversalService` | `void SetMaterializationProvider(const ITraversalMaterializationProvider*provider)noexcept`",
@@ -55546,9 +55728,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -56111,9 +56293,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -56335,9 +56517,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -56741,9 +56923,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -56999,9 +57181,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -57013,9 +57195,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGenerationTests"
@@ -60657,9 +60839,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+          "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"

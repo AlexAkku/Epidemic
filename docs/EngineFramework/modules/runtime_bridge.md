@@ -16,7 +16,7 @@ Failure and atomicity: accepted external work is not reported as semantic succes
 
 Numeric boundary: Runtime observations must be finite and representable by semantic types. Visibility geometry computes deltas and norm in `double`, rejects a true distance outside `RaycastQuery::max_distance` representability, and only then narrows a normalized direction and distance. It never clamps an out-of-range ray because clamping can produce a false visibility result.
 
-Limits and threading: local handle counters are exhaustion-checked; queues are bounded by explicit processing budgets/policies. The bridge is synchronous/caller-serialized and owns no hidden worker thread.
+Limits and threading: opaque Runtime handles and binding generations are issued by exhaustion-checked process-local capability counters and never reused by fresh instances or forget/recreate. Numeric adjacency is not a semantic contract; these values are not persisted or included in deterministic digests. Cross-process external sources must disconnect/rebind. Queues are bounded by explicit processing budgets/policies. The bridge is synchronous/caller-serialized and owns no hidden worker thread.
 
 Local invariants and tests: `runtime_bridge_tests.cpp` covers binding/retry/stale-generation behavior, duplicate/projection handling, backend failures, reconciliation and visibility geometry including `FLT_MAX`, opposite-sign large coordinates and near-zero distance.
 

@@ -12,6 +12,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "docs/freeze"))
 from goal5_participant_bindings import bindings, DURABLE_MEMBERS, ADAPTER_ACCESS
+from goal5_persistence_inventory import matching_brace
 
 
 INTEGRATION_PUBLICATION_MUTATIONS = {
@@ -228,7 +229,79 @@ def generate_composition_test():
               '    }', '}', 'int main(int argc, char** argv) {',
               '    if (argc == 3 && std::string_view(argv[1]) == "--record-participant-fixtures") TestFrameworkSaveComposition(argv[2]);',
               '    else TestFrameworkSaveComposition();', '    return 0;', '}', '']
-    return {ROOT / 'EngineFramework/DevelopmentInfrastructure/Tests/framework_save_composition_tests.cpp': '\n'.join(lines)}
+    # Reuse the exact production owners, bootstrap and registry construction in
+    # whole-engine scenarios. The hook adds immutable scenario contracts before
+    # the existing owner freeze; no independent restore ordering is introduced.
+    signature = lines.index('void TestFrameworkSaveComposition(const std::filesystem::path& recording = {})')
+    body_start = signature + 2
+    body_end = lines.index('    };', lines.index('    const std::vector<savegame::SaveParticipantManifest> expected{')) + 1
+    body = lines[body_start:body_end]
+    body.insert(0, '    savegame::SaveGameOrchestrator orchestrator;')
+    view_fields = [f"    {b['namespace']}::{b['owner']}& {aliases[b['id']]};" for b in specs]
+    view_fields += ['    state_integration::StateFactsAdapter& state_facts;',
+                    '    state_integration::StateLifecycleAdapter& state_lifecycle;',
+                    '    state_integration::ConditionEffectsAdapter& state_delivery;',
+                    '    state_integration::StateTimeAdapter& state_time;']
+    view_fields += ['    savegame::SaveGameOrchestrator& orchestrator;',
+                    '    epidemic::gameplay::ClockId clock;', '    epidemic::gameplay::ActionTypeId action;']
+    view_args = ', '.join(aliases[b['id']] for b in specs) + ', state_facts, state_lifecycle, state_delivery, state_time, orchestrator, clock.Value(), action.Value()'
+    freeze_start = next(i for i, line in enumerate(body) if 'participant_tests::FreezeOwner(' in line)
+    body[freeze_start:freeze_start] = [f'    FrameworkCompositionView view{{{view_args}}};', '    bootstrap(view);']
+    digest_lines = [f'inline constexpr std::size_t kFrameworkSemanticOwnerCount = {len(specs)};',
+                    'template <typename Digest>', 'void AddFrameworkSemanticContributions(FrameworkCompositionView& view, Digest& digest)', '{']
+    for b in specs:
+        expression = f"view.{aliases[b['id']]}.{b['capture']}()"
+        if b['id'] == 'framework.facts':
+            digest_lines += ['    { auto snapshot = ' + expression + ';',
+                '      participant_tests::Check(bool(snapshot), "Facts semantic digest capture");',
+                f'      digest.AddSnapshot("{b["id"]}", snapshot.Value()); }}']
+        else:
+            digest_lines.append(f'    digest.AddSnapshot("{b["id"]}", {expression});')
+    digest_lines += ['}']
+    utility = ['// Generated from the same reviewed production composition as framework_save_composition_tests.cpp.',
+               '#pragma once'] + lines[1:signature-1] + ['namespace goal5_test_utility {',
+               'using namespace epidemic::gameplay;', 'struct FrameworkCompositionView {'] + view_fields + [
+               '};'] + digest_lines + ['template <typename Bootstrap, typename Use>',
+               'decltype(auto) WithFrameworkComposition(Bootstrap&& bootstrap, Use&& use)', '{'] + body + [
+               '    participant_tests::Check(bool(orchestrator.RegisterComposition(participants, {}, expected)), "whole-engine exact production participant registry");',
+               '    return use(view);', '}', '} // namespace goal5_test_utility', '']
+    codecs = ['// Generated exact private value codecs; source remains the production participant implementation.',
+              '#pragma once', '#include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"',
+              'namespace epidemic::gameplay::savegame::detail {']
+    for relative, symbol in [
+        ('EngineFramework/IntegrationLayer/NarrativeIntegration/src/save_participants.cpp', 'narrative::NarrativeValue'),
+        ('EngineFramework/IntegrationLayer/StateIntegration/src/save_participants.cpp', 'materials::SubstanceAmount')]:
+        source = (ROOT / relative).read_text(encoding='utf-8')
+        start = source.index('template <> struct SnapshotValueCodec<' + symbol + '>')
+        opening = source.index('{', start)
+        closing = matching_brace(source, opening)
+        if closing is None: raise ValueError('unbalanced reviewed value codec: ' + relative)
+        codecs.append(source[start:closing + 2])
+    # MSVC exceeds its dependency-context limit reflecting this 21-field DTO
+    # under the additional qualification writer. Derive the field order from
+    # its actual declaration, instead of changing v1 production serialization.
+    knowledge = (ROOT / 'EngineFramework/GameplayWorldStateOwners/Knowledge/include/Epidemic/GameFramework/Knowledge/knowledge.h').read_text(encoding='utf-8')
+    start = knowledge.index('struct KnowledgeRecord\n')
+    opening = knowledge.index('{', start)
+    closing = matching_brace(knowledge, opening)
+    if closing is None: raise ValueError('unbalanced KnowledgeRecord')
+    fields = []
+    for declaration in knowledge[opening + 1:closing].split(';'):
+        if not declaration.strip(): continue
+        declaration = declaration.split('=')[0].split('{')[0].strip()
+        match = re.search(r'\b([A-Za-z_]\w*)$', declaration)
+        if not match: raise ValueError('unsupported KnowledgeRecord field declaration')
+        fields.append(match.group(1))
+    reviewed_fields = 'id owner type topic assertion epistemic_state confidence subject source_kind source derived_from original_source_kind original_source transmission_depth learned_at last_confirmed_at last_decay_at decay_rule persistence payload revision'.split()
+    if fields != reviewed_fields: raise ValueError('KnowledgeRecord schema changed; explicit qualification codec review required')
+    codecs += ['template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord>', '{',
+               '    template <typename IO> static void Transfer(IO& io, knowledge::KnowledgeRecord& value)', '    {']
+    codecs += ['        TransferSnapshot(io, value.' + field + ');' for field in fields]
+    codecs += ['    }', '};', '}', '']
+    return {
+        ROOT / 'EngineFramework/DevelopmentInfrastructure/Tests/framework_save_composition_tests.cpp': '\n'.join(lines),
+        ROOT / 'EngineFramework/DevelopmentInfrastructure/Tests/goal5_framework_composition.h': '\n'.join(utility),
+        ROOT / 'Tests/Truth/goal5_digest_value_codecs.h': '\n'.join(codecs)}
 
 
 def generate_bindings():

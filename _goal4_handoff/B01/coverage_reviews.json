@@ -445,7 +445,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:405::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:407::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<RuntimeEnvironmentSample> SampleEnvironment(RuntimeRegionHandle region)const"
@@ -904,7 +904,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:447::RuntimeBridgeService limited(limited_backend, RuntimeBridgeQueuePolicy{1, 1});",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:449::RuntimeBridgeService limited(limited_backend, RuntimeBridgeQueuePolicy{1, 1});",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "explicit RuntimeBridgeService(IRuntimeBridgeBackend&backend,RuntimeBridgeQueuePolicy queue_policy={})"
@@ -1204,7 +1204,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:384::RuntimeBridgeService retry_bridge(retry_backend, retry_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:386::RuntimeBridgeService retry_bridge(retry_backend, retry_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<bool> Visible(GameplayObjectRef observer,GameplayObjectRef target)const;"
@@ -1270,7 +1270,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:405::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:407::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<RuntimeNavigationPath> GetPathResult(RuntimeNavigationQueryHandle handle)const"
@@ -1323,7 +1323,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:384::RuntimeBridgeService retry_bridge(retry_backend, retry_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:386::RuntimeBridgeService retry_bridge(retry_backend, retry_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<RuntimeNavigationQueryHandle> RequestPath(const RuntimeNavigationPathQuery&query)"
@@ -1548,7 +1548,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<void> DiscardReconciliation(std::uint64_t sequence);"
@@ -2201,7 +2201,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:405::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:407::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<void> ForgetWorldAlterationProjection(GameplayObjectId alteration);"
@@ -2378,7 +2378,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:414::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:416::CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<void> ForgetEnvironmentProjection(RuntimeRegionHandle region);"
@@ -2713,7 +2713,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:447::RuntimeBridgeService limited(limited_backend, RuntimeBridgeQueuePolicy{1, 1});",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:449::RuntimeBridgeService limited(limited_backend, RuntimeBridgeQueuePolicy{1, 1});",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<std::vector<SemanticRayHit>> Raycast(const RuntimeRayQuery&query)const;"
@@ -2724,7 +2724,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:446::CHECK(dead_bridge.DiscardReconciliation(dead_bridge.ReconciliationRequests().front().sequence));",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] std::vector<RuntimeProjectionReconciliationRecord> ReconciliationRequests()const;"
@@ -3227,7 +3227,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:396::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:398::CHECK(retry_bridge.GetDiagnostics().projection_backlog == 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "std::hash",
       "signature": "std::size_t operator()(epidemic::gameplay::runtime_bridge::RuntimePersistentObjectHandle value)const noexcept"
@@ -3384,7 +3384,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:442::CHECK(dead_bridge.Process().failed == 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:444::CHECK(dead_bridge.Process().failed == 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeObjectHandle",
       "signature": "[[nodiscard]] constexpr bool operator==(const RuntimeObjectHandle&)const noexcept=default;"
@@ -3448,7 +3448,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeVector3",
       "signature": "[[nodiscard]] constexpr bool operator==(const RuntimeVector3&)const noexcept=default;"
@@ -3459,7 +3459,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:460::CHECK(limited_diag.contact_backlog == 1);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:462::CHECK(limited_diag.contact_backlog == 1);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "std::hash",
       "signature": "std::size_t operator()(epidemic::gameplay::runtime_bridge::RuntimeRegionHandle value)const noexcept"
@@ -4536,7 +4536,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:447::RuntimeBridgeService limited(limited_backend, RuntimeBridgeQueuePolicy{1, 1});",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:449::RuntimeBridgeService limited(limited_backend, RuntimeBridgeQueuePolicy{1, 1});",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<std::vector<GameplayObjectRef>> ReconcileBindings();"
@@ -4600,7 +4600,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:405::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:407::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] std::vector<SemanticImpactObservation> CollectImpactObservations(GameplayTickId tick,RuntimeBridgeBudget budget={});"
@@ -4611,7 +4611,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeWorldPosition",
       "signature": "[[nodiscard]] constexpr bool operator==(const RuntimeWorldPosition&)const noexcept=default;"
@@ -5162,7 +5162,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeQuaternion",
       "signature": "[[nodiscard]] constexpr bool operator==(const RuntimeQuaternion&)const noexcept=default;"
@@ -5237,7 +5237,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeNavigationQueryHandle",
       "signature": "[[nodiscard]] constexpr bool operator==(const RuntimeNavigationQueryHandle&)const noexcept=default;"
@@ -5484,7 +5484,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<void> RetryReconciliation(std::uint64_t sequence);"
@@ -6075,7 +6075,7 @@
       "header": "EngineFramework/RuntimeBoundary/RuntimeBridge/include/Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h",
       "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:405::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:407::RuntimeBridgeService dead_bridge(dead_backend, dead_policy);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::runtime_bridge::RuntimeBridgeService",
       "signature": "[[nodiscard]] foundation::Result<RuntimeTransformObservation> ObserveTransform(GameplayObjectRef object)const;"

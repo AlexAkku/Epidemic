@@ -35257,9 +35257,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -35443,9 +35443,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);"
+                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -35479,9 +35479,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:423::CHECK(dead_bridge.RetryReconciliation(stale_sequence));"
+                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:425::CHECK(dead_bridge.RetryReconciliation(stale_sequence));"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -35607,9 +35607,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:410::CHECK(dead_bridge.Process().failed == 1);"
+                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:412::CHECK(dead_bridge.Process().failed == 1);"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -35639,9 +35639,9 @@
         "TEST-BOUNDARY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:409::CHECK(dead_bridge.Enqueue(dead_environment));"
+                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:411::CHECK(dead_bridge.Enqueue(dead_environment));"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkRuntimeBridgeTests"
@@ -35741,9 +35741,9 @@
         "TEST-STALE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value == 1);"
+                "EngineFramework/DevelopmentInfrastructure/Tests/runtime_bridge_tests.cpp:375::CHECK(after_forget && after_forget->generation.value > rematerialized->generation.value);"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkRuntimeBridgeTests"

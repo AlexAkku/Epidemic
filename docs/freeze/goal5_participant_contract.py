@@ -209,11 +209,30 @@ def source_fingerprints():
     files.add(ROOT / '_goal5_handoff/delta2_persistence_review.json')
     files.update(ROOT / name for name in (
         'tools/record_goal5_save_generation_admission.py',
+        'tools/refresh_goal5_save_generation_anchors.py',
         'docs/freeze/goal5_save_generation_contract.py',
         'docs/freeze/goal5_save_generation_contract.json',
         '_goal5_handoff/save_generation_contract_review.json',
+        '_goal5_handoff/save_generation_failure_review.json',
         '_goal5_handoff/save_generation_persistence_review.json',
-        '_goal5_handoff/save_generation_public_surface_delta.json'))
+        '_goal5_handoff/save_generation_public_surface_delta.json',
+        'docs/freeze/goal5_restore_contract.py',
+        'docs/freeze/goal5_restore_contract.json',
+        'tools/record_goal5_restore_review.py',
+        '_goal5_handoff/restore_contract_review.json',
+        '_goal5_handoff/restore_public_surface_delta.json',
+        '_goal5_handoff/restore_persistence_review.json',
+        '_goal5_handoff/whole_engine_restore_review.json',
+        '_goal5_handoff/whole_engine_restore_failure_review.json',
+        'tools/refresh_goal5_runtime_restore_anchors.py',
+        'tools/record_goal5_digest_policy.py',
+        '_goal5_handoff/digest_domain_review.json',
+        'docs/freeze/goal5_determinism_contract.py',
+        'docs/freeze/goal5_determinism_contract.json',
+        'docs/freeze/goal5_scenario_contract.py',
+        '_goal5_handoff/scenario_runner_review.json',
+        'docs/freeze/goal5_evidence_quality.py',
+        '_goal5_handoff/deterministic_scenarios_review.json'))
     files.add(REVIEW)
     files.add(CONTRACT)
     files.add(ROOT / 'docs/freeze/goal5_admission.py')

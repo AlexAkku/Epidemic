@@ -6,7 +6,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.scheduled_trigger_dispatcher:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24,6 +24,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp",
           "test_symbol": "const auto staged_leg",
           "test_target": "EpidemicGameFrameworkCoreIntegrationTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -50,7 +57,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.conditions:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -84,6 +91,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestConditionServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -163,7 +177,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.loot:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -205,6 +219,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestLootServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -344,7 +365,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.traversal:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -394,6 +415,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestTraversalServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -415,7 +443,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.economy:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -457,6 +485,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestEconomyServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -614,7 +649,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.abilities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -656,6 +691,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -682,7 +724,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.needs_life:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -724,6 +766,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestNeedsLifeServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -745,7 +794,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -771,6 +820,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1121,7 +1177,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.narrative.external_consequence_delivery:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -1139,6 +1195,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp",
           "test_symbol": "auto repeated_stage",
           "test_target": "EpidemicGameFrameworkNarrativeIntegrationTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1160,7 +1223,7 @@
       "capture_contract": "InMemoryPersistenceStore::CreateSnapshot / IPersistenceBackend::CommitSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_PERSISTENCE_EPIRPER1:v1",
       "durable_storage": "Runtime Support CreateFilePersistenceBackend::CommitSnapshot/Load -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -1210,6 +1273,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1295,7 +1365,7 @@
       "capture_contract": "InMemoryPersistenceStore::CreateSnapshot / IPersistenceBackend::CommitSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_PERSISTENCE_EPIRPER1:v1",
       "durable_storage": "Runtime Support CreateFilePersistenceBackend::CommitSnapshot/Load -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -1345,6 +1415,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1366,7 +1443,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.entities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -1400,6 +1477,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestEntityServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1485,7 +1569,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.ownership:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -1535,6 +1619,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestOwnershipServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1616,7 +1707,7 @@
         "participant:framework.ownership"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.trade:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -1634,6 +1725,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestTradeCoordinatorSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -1771,7 +1869,7 @@
         "participant:framework.progression"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.condition_progression:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -1789,6 +1887,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestConditionProgressionAdapterSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -2185,7 +2290,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.ownership:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -2235,6 +2340,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestOwnershipServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -2437,7 +2549,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.combat:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -2471,6 +2583,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestCombatServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -2504,7 +2623,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -2522,6 +2641,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -2606,7 +2732,7 @@
       "capture_contract": "CapturePersistenceSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.facts:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -2656,6 +2782,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp",
           "test_symbol": "TestGameplayFactsServiceSaveParticipant",
           "test_target": "EpidemicIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -2794,7 +2927,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.resources:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -2844,6 +2977,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestResourcesProductionServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -3509,7 +3649,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.progression:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -3559,6 +3699,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestProgressionServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -3708,7 +3855,7 @@
         "participant:framework.effects"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.ability_effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -3726,6 +3873,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityEffectsDispatcherSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -3747,7 +3901,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.time:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -3781,6 +3935,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp",
           "test_symbol": "TestGameplayTimeServiceSaveParticipant",
           "test_target": "EpidemicIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -3851,7 +4012,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.construction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -3877,6 +4038,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestConstructionServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4201,7 +4369,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -4219,6 +4387,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4243,7 +4418,7 @@
         "participant:framework.effects"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.interaction_effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -4261,6 +4436,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp",
           "test_symbol": "TestInteractionEffectExecutorSaveParticipant",
           "test_target": "EpidemicInteractionEffectsIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4691,7 +4873,7 @@
         "participant:framework.needs_life"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.population_lifecycle:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -4709,6 +4891,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationLifecycleAdapterSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4783,7 +4972,7 @@
         "participant:framework.ownership"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.trade:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -4801,6 +4990,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestTradeCoordinatorSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4853,7 +5049,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -4879,6 +5075,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4900,7 +5103,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.abilities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -4942,6 +5145,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -4963,7 +5173,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.world:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5005,6 +5215,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestWorldServiceSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5175,7 +5392,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.ai:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5217,6 +5434,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestAIServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5351,7 +5575,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.construction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5377,6 +5601,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestConstructionServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5430,7 +5661,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.simulation:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5472,6 +5703,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestSimulationServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5498,7 +5736,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.simulation:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5540,6 +5778,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestSimulationServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5561,7 +5806,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.resources:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5611,6 +5856,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestResourcesProductionServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5809,7 +6061,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.resources:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -5859,6 +6111,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestResourcesProductionServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -5967,7 +6226,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.population:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6001,6 +6260,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6053,7 +6319,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.equipment:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6095,6 +6361,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestEquipmentServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6156,7 +6429,7 @@
         "participant:framework.ownership"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.trade:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6174,6 +6447,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestTradeCoordinatorSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6226,7 +6506,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.processes:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6244,6 +6524,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestProcessesServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6265,7 +6552,7 @@
       "capture_contract": "ITimeRuntime::CaptureCheckpoint",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_TIME_EPIRTIM1:v1",
       "durable_storage": "Runtime Support CommitRuntimeTimeCheckpoint/LoadRuntimeTimeCheckpoint -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -6307,6 +6594,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6333,7 +6627,7 @@
         "participant:framework.facts"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.world_facts:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6359,6 +6653,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestWorldFactsAdapterSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6721,7 +7022,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.abilities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6763,6 +7064,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6788,7 +7096,7 @@
         "participant:framework.needs_life"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.population_lifecycle:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6806,6 +7114,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationLifecycleAdapterSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -6957,7 +7272,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.combat:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -6991,6 +7306,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestCombatServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -7012,7 +7334,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.conditions:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -7046,6 +7368,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestConditionServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -7205,7 +7534,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -7231,6 +7560,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -7769,7 +8105,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.navigation_semantics:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -7803,6 +8139,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestNavigationSemanticsServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -7882,7 +8225,7 @@
       "capture_contract": "InMemoryPersistenceStore::CreateSnapshot / IPersistenceBackend::CommitSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_PERSISTENCE_EPIRPER1:v1",
       "durable_storage": "Runtime Support CreateFilePersistenceBackend::CommitSnapshot/Load -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -7932,6 +8275,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -7953,7 +8303,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.combat:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -7987,6 +8337,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestCombatServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8008,7 +8365,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.combat:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8042,6 +8399,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestCombatServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8320,7 +8684,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.society:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8370,6 +8734,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestSocietyServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8391,7 +8762,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.construction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8417,6 +8788,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestConstructionServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8442,7 +8820,7 @@
         "participant:framework.needs_life"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.population_lifecycle:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8460,6 +8838,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationLifecycleAdapterSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8545,7 +8930,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.society:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8595,6 +8980,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestSocietyServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8665,7 +9057,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.simulation:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8707,6 +9099,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestSimulationServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -8835,7 +9234,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.knowledge:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -8877,6 +9276,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestKnowledgeServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -9113,7 +9519,7 @@
         "participant:framework.encounters"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.population_encounter:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -9131,6 +9537,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationEncounterAdapterSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -9831,7 +10244,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.crime:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -9881,6 +10294,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestCrimeServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10028,7 +10448,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.traversal:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10078,6 +10498,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestTraversalServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10202,7 +10629,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.construction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10228,6 +10655,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestConstructionServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10254,7 +10688,7 @@
       "capture_contract": "CapturePersistenceSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.facts:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10304,6 +10738,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp",
           "test_symbol": "TestGameplayFactsServiceSaveParticipant",
           "test_target": "EpidemicIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10325,7 +10766,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.dialogue:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10343,6 +10784,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestDialogueServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10508,7 +10956,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.abilities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10550,6 +10998,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10855,7 +11310,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10881,6 +11336,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestEffectServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -10911,7 +11373,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.roles_jobs:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -10961,6 +11423,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestRolesJobsServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11147,7 +11616,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.world:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11189,6 +11658,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestWorldServiceSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11245,7 +11721,7 @@
         "participant:framework.effects"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.interaction_effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11263,6 +11739,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp",
           "test_symbol": "TestInteractionEffectExecutorSaveParticipant",
           "test_target": "EpidemicInteractionEffectsIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11315,7 +11798,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.dialogue:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11333,6 +11816,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestDialogueServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11451,7 +11941,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.navigation_semantics:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11485,6 +11975,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestNavigationSemanticsServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11514,7 +12011,7 @@
         "participant:framework.effects"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.interaction_effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11532,6 +12029,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp",
           "test_symbol": "TestInteractionEffectExecutorSaveParticipant",
           "test_target": "EpidemicInteractionEffectsIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11667,7 +12171,7 @@
         "participant:framework.loot"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.death_reward:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11685,6 +12189,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestDeathRewardAdapterSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11883,7 +12394,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.environment:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -11933,6 +12444,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestEnvironmentServiceSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -11954,7 +12472,7 @@
       "capture_contract": "ITimeRuntime::CaptureCheckpoint",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_TIME_EPIRTIM1:v1",
       "durable_storage": "Runtime Support CommitRuntimeTimeCheckpoint/LoadRuntimeTimeCheckpoint -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -11996,6 +12514,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -12074,7 +12599,7 @@
         "participant:framework.encounters"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.population_encounter:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -12092,6 +12617,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationEncounterAdapterSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -12787,7 +13319,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -12805,6 +13337,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -13000,7 +13539,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -13018,6 +13557,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -13039,7 +13585,7 @@
       "capture_contract": "CapturePersistenceSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.facts:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -13089,6 +13635,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp",
           "test_symbol": "TestGameplayFactsServiceSaveParticipant",
           "test_target": "EpidemicIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -13162,7 +13715,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.progression:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -13212,6 +13765,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestProgressionServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -13410,7 +13970,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.progression:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -13460,6 +14020,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestProgressionServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -13481,7 +14048,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.encounters:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -13515,6 +14082,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestEncountersServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -13936,7 +14510,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.materials:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -13986,6 +14560,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestMaterialServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -14103,7 +14684,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.loot:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -14145,6 +14726,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestLootServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -14368,7 +14956,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -14386,6 +14974,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -14456,7 +15051,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -14482,6 +15077,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -14503,7 +15105,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.needs_life:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -14545,6 +15147,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestNeedsLifeServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -14566,7 +15175,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.perception:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -14600,6 +15209,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestPerceptionServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -14878,7 +15494,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.processes:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -14896,6 +15512,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestProcessesServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -15019,7 +15642,7 @@
         "participant:framework.loot"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.death_reward:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -15037,6 +15660,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestDeathRewardAdapterSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -15058,7 +15688,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.narrative.external_consequence_delivery:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -15076,6 +15706,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp",
           "test_symbol": "auto repeated_stage",
           "test_target": "EpidemicGameFrameworkNarrativeIntegrationTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -15369,7 +16006,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.simulation:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -15411,6 +16048,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestSimulationServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -15486,7 +16130,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.ai:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -15528,6 +16172,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestAIServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -15747,7 +16398,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.society:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -15797,6 +16448,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestSocietyServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -15938,7 +16596,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.interaction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -15980,6 +16638,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestInteractionServiceSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -16050,7 +16715,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -16076,6 +16741,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestEffectServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -16154,7 +16826,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.ability_time:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -16172,6 +16844,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityTimeAdapterSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -16306,7 +16985,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.combat:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -16340,6 +17019,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestCombatServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -16545,7 +17231,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.equipment:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -16587,6 +17273,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestEquipmentServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -16787,7 +17480,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.entities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -16821,6 +17514,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestEntityServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -16948,7 +17648,7 @@
         "participant:framework.progression"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.condition_progression:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -16966,6 +17666,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestConditionProgressionAdapterSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17041,7 +17748,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.environment:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17091,6 +17798,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestEnvironmentServiceSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17176,7 +17890,7 @@
         "participant:framework.effects"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.ability_effects:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17194,6 +17908,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityEffectsDispatcherSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17215,7 +17936,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.traversal:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17265,6 +17986,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestTraversalServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17291,7 +18019,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.items:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17341,6 +18069,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestItemsInventoryServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17362,7 +18097,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.materials:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17412,6 +18147,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestMaterialServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17538,13 +18280,43 @@
       "save_plane": "NONE",
       "transient_rebuild": "N/A: durable role is restored rather than rebuilt"
     },
+    "G5P-b9955c6d5f6018dc": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-b9955c6d5f6018dc",
+      "capture_contract": "N/A: process-local one-cycle coordinator, never a gameplay owner",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A: process-local coordination only",
+      "durable_storage": "N/A: owning state lives in the three generation payloads",
+      "evidence": [
+        {
+          "contract_assertion": "postcommit failure owns reconciliation and blocks simulation resume",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp",
+          "test_symbol": "PostcommitFailureRetainsSemanticsAndRetriesOnlyUnfinishedPhases",
+          "test_target": "EpidemicGameFrameworkRestoreCoordinationTests"
+        }
+      ],
+      "migration_policy": "N/A: not serialized",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "persistence_role": "NON_PERSISTENT_OWNER",
+      "qualified_symbol": "epidemic::gameplay::integration::WholeRestorePhase",
+      "rationale": "Phase/cursor/lease describe this process restore lifecycle; persistent owners remain exclusively assigned to their existing participants/Runtime planes.",
+      "reconciliation": "Retain the recovery lease after semantic commit; retry only unfinished phases before CanResume",
+      "restore_contract": "LoadAndRestore stages real owners; RetryReconciliation retains private process-local cursor",
+      "review_status": "REVIEWED",
+      "risk_review": {},
+      "save_plane": "NONE",
+      "transient_rebuild": "Create a fresh coordinator against the fresh composition and store"
+    },
     "G5P-b9dec906ba1c7cda": {
       "authoritative_owner": "epidemic::gameplay::narrative::NarrativeService",
       "candidate_id": "G5P-b9dec906ba1c7cda",
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17570,6 +18342,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17591,7 +18370,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.resources:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17641,6 +18420,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestResourcesProductionServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17780,7 +18566,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.ai:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17822,6 +18608,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestAIServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -17959,7 +18752,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.dialogue:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -17977,6 +18770,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestDialogueServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -18001,7 +18801,7 @@
         "participant:framework.society"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.social_legal:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -18027,6 +18827,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestCrimeSocietyAdapterSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -18055,7 +18862,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -18073,6 +18880,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -18458,7 +19272,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.narrative.external_consequence_delivery:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -18476,6 +19290,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp",
           "test_symbol": "auto repeated_stage",
           "test_target": "EpidemicGameFrameworkNarrativeIntegrationTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -18551,7 +19372,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.progression:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -18601,6 +19422,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestProgressionServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -18884,7 +19712,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.roles_jobs:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -18934,6 +19762,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestRolesJobsServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -18987,7 +19822,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.economy:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -19029,6 +19864,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestEconomyServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -19195,7 +20037,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.perception:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -19229,6 +20071,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestPerceptionServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -19552,7 +20401,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.encounters:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -19586,6 +20435,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestEncountersServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -19749,7 +20605,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -19767,6 +20623,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -19961,7 +20824,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.navigation_semantics:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -19995,6 +20858,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestNavigationSemanticsServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -20142,7 +21012,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.economy:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -20184,6 +21054,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestEconomyServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -20539,7 +21416,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.interaction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -20581,6 +21458,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestInteractionServiceSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -20683,7 +21567,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.conditions:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -20717,6 +21601,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestConditionServiceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -20833,7 +21724,7 @@
       "capture_contract": "InMemoryPersistenceStore::CreateSnapshot / IPersistenceBackend::CommitSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_PERSISTENCE_EPIRPER1:v1",
       "durable_storage": "Runtime Support CreateFilePersistenceBackend::CommitSnapshot/Load -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -20883,6 +21774,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -20904,7 +21802,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.knowledge:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -20946,6 +21844,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp",
           "test_symbol": "TestKnowledgeServiceSaveParticipant",
           "test_target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -20972,7 +21877,7 @@
         "participant:framework.facts"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.world_facts:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -20998,6 +21903,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp",
           "test_symbol": "TestWorldFactsAdapterSaveParticipant",
           "test_target": "EpidemicWorldIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21131,7 +22043,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.loot:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21173,6 +22085,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestLootServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21403,7 +22322,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.processes:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21421,6 +22340,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestProcessesServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21506,7 +22432,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.crime:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21556,6 +22482,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestCrimeServiceSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21584,7 +22517,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21602,6 +22535,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21630,7 +22570,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21648,6 +22588,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21736,7 +22683,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.ability_time:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21754,6 +22701,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityTimeAdapterSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -21936,7 +22890,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.loot:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -21978,6 +22932,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestLootServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22133,7 +23094,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.items:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22183,6 +23144,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestItemsInventoryServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22268,7 +23236,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22294,6 +23262,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22364,7 +23339,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.processes:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22382,6 +23357,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestProcessesServiceSaveParticipant",
           "test_target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22503,7 +23485,7 @@
         "participant:framework.society"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.social_legal:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22529,6 +23511,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp",
           "test_symbol": "TestCrimeSocietyAdapterSaveParticipant",
           "test_target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22606,7 +23595,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.abilities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22648,6 +23637,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22835,7 +23831,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22853,6 +23849,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -22874,7 +23877,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.scheduled_trigger_dispatcher:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -22892,6 +23895,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp",
           "test_symbol": "const auto staged_leg",
           "test_target": "EpidemicGameFrameworkCoreIntegrationTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -23104,7 +24114,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.abilities:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -23146,6 +24156,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestAbilityServiceSaveParticipant",
           "test_target": "EpidemicGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -23398,7 +24415,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.construction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -23424,6 +24441,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestConstructionServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -23755,7 +24779,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.items:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -23805,6 +24829,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestItemsInventoryServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24015,7 +25046,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24033,6 +25064,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24103,7 +25141,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.population:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24137,6 +25175,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp",
           "test_symbol": "TestPopulationServiceSaveParticipant",
           "test_target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24222,7 +25267,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.narrative:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24248,6 +25293,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp",
           "test_symbol": "TestNarrativeServiceSaveParticipant",
           "test_target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24276,7 +25328,7 @@
         "participant:framework.time"
       ],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "integration.state:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24294,6 +25346,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp",
           "test_symbol": "TestStateIntegrationPersistenceSaveParticipant",
           "test_target": "EpidemicStateIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24400,7 +25459,7 @@
       "capture_contract": "InMemoryPersistenceStore::CreateSnapshot / IPersistenceBackend::CommitSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_PERSISTENCE_EPIRPER1:v1",
       "durable_storage": "Runtime Support CreateFilePersistenceBackend::CommitSnapshot/Load -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -24450,6 +25509,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24502,7 +25568,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.construction:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24528,6 +25594,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp",
           "test_symbol": "TestConstructionServiceSaveParticipant",
           "test_target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24549,7 +25622,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.time:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24583,6 +25656,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp",
           "test_symbol": "TestGameplayTimeServiceSaveParticipant",
           "test_target": "EpidemicIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24604,7 +25684,7 @@
       "capture_contract": "InMemoryPersistenceStore::CreateSnapshot / IPersistenceBackend::CommitSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "RUNTIME_PERSISTENCE_EPIRPER1:v1",
       "durable_storage": "Runtime Support CreateFilePersistenceBackend::CommitSnapshot/Load -> bounded v1 package -> Base Platform atomic replacement; independent save plane, unified causal generation stays M5.3",
       "evidence": [
@@ -24654,6 +25734,13 @@
           "source_path": "EngineRuntime/Support/tests/runtime_package_tests.cpp",
           "test_symbol": "TestRuntimeDurablePackages",
           "test_target": "EpidemicRuntimeSupportTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24834,7 +25921,7 @@
       "capture_contract": "CaptureSnapshot",
       "dependencies": [],
       "deterministic_relevance": "YES",
-      "digest_policy": "DEFER_TO_5_5",
+      "digest_policy": "INCLUDE",
       "durable_schema": "framework.economy:v1",
       "durable_storage": "SaveGameImage wire v1 -> ISavePackageStore -> Integration FileSavePackageStore -> Base Platform atomic package replacement",
       "evidence": [
@@ -24876,6 +25963,13 @@
           "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp",
           "test_symbol": "TestEconomyServiceSaveParticipant",
           "test_target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+        },
+        {
+          "contract_assertion": "engine.SemanticState().Digest() == continued_semantic_digest",
+          "kind": "executable",
+          "source_path": "Tests/Truth/whole_engine_restore_tests.cpp",
+          "test_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+          "test_target": "EpidemicWholeEngineRestoreTruthTests"
         }
       ],
       "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
@@ -24944,6 +26038,41 @@
       "risk_review": {},
       "save_plane": "NONE",
       "transient_rebuild": "Fresh composition recreates the object; semantic IDs rebuild projections and runtime handles."
+    },
+    "G5P-fe96cc7c2f37d2a7": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-fe96cc7c2f37d2a7",
+      "capture_contract": "N/A: process-local one-cycle coordinator, never a gameplay owner",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A: process-local coordination only",
+      "durable_storage": "N/A: owning state lives in the three generation payloads",
+      "evidence": [
+        {
+          "contract_assertion": "postcommit failure owns reconciliation and blocks simulation resume",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp",
+          "test_symbol": "PostcommitFailureRetainsSemanticsAndRetriesOnlyUnfinishedPhases",
+          "test_target": "EpidemicGameFrameworkRestoreCoordinationTests"
+        }
+      ],
+      "migration_policy": "N/A: not serialized",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "persistence_role": "NON_PERSISTENT_OWNER",
+      "qualified_symbol": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "rationale": "Phase/cursor/lease describe this process restore lifecycle; persistent owners remain exclusively assigned to their existing participants/Runtime planes.",
+      "reconciliation": "Retain the recovery lease after semantic commit; retry only unfinished phases before CanResume",
+      "restore_contract": "LoadAndRestore stages real owners; RetryReconciliation retains private process-local cursor",
+      "review_status": "REVIEWED",
+      "risk_review": {
+        "PROCESS_LOCAL_CALLBACK": {
+          "decision": "EXCLUDED_FROM_DURABLE_REPRESENTATION",
+          "rationale": "Injected callbacks are fresh composition wiring; never captured as semantic state."
+        }
+      },
+      "save_plane": "NONE",
+      "transient_rebuild": "Create a fresh coordinator against the fresh composition and store"
     },
     "G5P-ff54634d077bafd1": {
       "authoritative_owner": "N/A",
@@ -25728,10 +26857,12 @@
         "G5P-39326a65eb5c9084",
         "G5P-623979e0630ae0b4",
         "G5P-81fa1a448019c222",
+        "G5P-b9955c6d5f6018dc",
         "G5P-bd9ffedc756a7b66",
         "G5P-c8efe96f2ca895ad",
         "G5P-ca588bf7a35541f6",
-        "G5P-eef4ce42f4a42d6b"
+        "G5P-eef4ce42f4a42d6b",
+        "G5P-fe96cc7c2f37d2a7"
       ],
       "module": "EngineFramework/IntegrationLayer/Integration",
       "reason": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review."

@@ -234,9 +234,12 @@ if supplemental.get('api'):
 # Goal 5.3.B adds a reviewed cross-plane save-generation surface in Framework
 # Integration plus in-memory Runtime Support package helpers. Keep this as raw
 # Goal 5 handoff evidence; canonical coverage/anchors remain generator-owned.
-save_generation_path = ROOT / '_goal5_handoff/save_generation_public_surface_delta.json'
-save_generation = load(save_generation_path) if save_generation_path.is_file() else {'api':{},'anchors':{}}
-if save_generation.get('api'):
+goal5_surface_anchors = {}
+for delta_name in ('save_generation_public_surface_delta.json', 'restore_public_surface_delta.json'):
+    save_generation_path = ROOT / '_goal5_handoff' / delta_name
+    save_generation = load(save_generation_path) if save_generation_path.is_file() else {'api':{},'anchors':{}}
+    if not save_generation.get('api'):
+        continue
     if save_generation.get('schema_version') != 1 or save_generation.get('reviewed') is not True:
         raise RuntimeError('unreviewed Goal5 save-generation surface delta')
     if set(save_generation['api']) != set(save_generation['anchors']):
@@ -254,6 +257,7 @@ if save_generation.get('api'):
             raise RuntimeError('invalid Goal5 save-generation evidence: ' + str(errors))
     for kind in ('api','lifecycle','stale_identity','external_boundary'):
         coverage[kind].update(save_generation.get(kind,{}))
+    goal5_surface_anchors.update(save_generation['anchors'])
 
 # B06 carries reviewed obligation metadata inline, while the canonical manifest
 # stores only each obligation's status; the evidence itself is in API anchors.
@@ -306,7 +310,7 @@ anchors["anchors"] = {
 }
 anchors["anchors"].update(handoff_anchors)
 anchors["anchors"].update(supplemental.get('anchors',{}))
-anchors["anchors"].update(save_generation.get('anchors',{}))
+anchors["anchors"].update(goal5_surface_anchors)
 save(anchors_path, anchors)
 
 dossiers_path = FREEZE / "module_dossier_reviews.json"

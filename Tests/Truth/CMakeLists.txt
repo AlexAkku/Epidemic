@@ -80,3 +80,40 @@ add_test(NAME EpidemicPersistenceWireTruthTests COMMAND "${Python3_EXECUTABLE}" 
 set_tests_properties(EpidemicPersistenceWireTruthTests PROPERTIES LABELS "truth;persistence-wire;persistence-storage" TIMEOUT 120)
 add_test(NAME EpidemicPersistenceProcessTruthTests COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/ci/test_save_process.py" "$<TARGET_FILE:EpidemicPersistenceWireTruthTests>" --runtime-executable "$<TARGET_FILE:EpidemicRuntimeSupportTests>")
 set_tests_properties(EpidemicPersistenceProcessTruthTests PROPERTIES LABELS "truth;persistence-wire;persistence-storage" TIMEOUT 240)
+
+epidemic_add_truth_test(EpidemicWholeEngineRestoreTruthTests whole_engine_restore_tests.cpp)
+target_include_directories(EpidemicWholeEngineRestoreTruthTests PRIVATE
+    "${PROJECT_SOURCE_DIR}/EngineFramework/DevelopmentInfrastructure/Tests"
+    "${PROJECT_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal"
+    "${PROJECT_SOURCE_DIR}/EngineFramework/RuntimeBoundary/RuntimeBridge/src")
+target_link_libraries(EpidemicWholeEngineRestoreTruthTests PRIVATE
+    EpidemicEngineBaseSupport EpidemicRuntimeSupport
+    EpidemicGameFrameworkRuntimeBridge
+    EpidemicGameFrameworkCoreIntegration EpidemicGameFrameworkStateIntegration
+    EpidemicGameFrameworkGameplayIntegration EpidemicGameFrameworkExtendedGameplayIntegration
+    EpidemicGameFrameworkWorldIntegration EpidemicGameFrameworkTraversalNavigationConstructionIntegration
+    EpidemicGameFrameworkPerceptionKnowledgeAIIntegration EpidemicGameFrameworkPopulationSimulationIntegration
+    EpidemicGameFrameworkProcessResourceSimulationIntegration EpidemicGameFrameworkSocialLegalIntegration
+    EpidemicGameFrameworkNarrativeIntegration EpidemicGameFrameworkInteractionEffectsIntegration)
+if(MSVC)
+    target_compile_options(EpidemicWholeEngineRestoreTruthTests PRIVATE /bigobj)
+endif()
+set_tests_properties(EpidemicWholeEngineRestoreTruthTests PROPERTIES LABELS "truth;persistence-whole-engine;goal5-regression" TIMEOUT 180)
+add_test(NAME EpidemicWholeEngineRestoreProcessTruthTests COMMAND "${Python3_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/tools/ci/test_whole_restore_process.py" "$<TARGET_FILE:EpidemicWholeEngineRestoreTruthTests>")
+set_tests_properties(EpidemicWholeEngineRestoreProcessTruthTests PROPERTIES LABELS "truth;persistence-whole-engine;persistence-storage;goal5-regression" TIMEOUT 360)
+
+epidemic_add_truth_test(EpidemicDeterminismTruthTests determinism_tests.cpp)
+target_include_directories(EpidemicDeterminismTruthTests PRIVATE
+    "${PROJECT_SOURCE_DIR}/EngineFramework/DevelopmentInfrastructure/Tests"
+    "${PROJECT_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal"
+    "${PROJECT_SOURCE_DIR}/EngineFramework/RuntimeBoundary/RuntimeBridge/src")
+get_target_property(goal5_whole_libraries EpidemicWholeEngineRestoreTruthTests LINK_LIBRARIES)
+target_link_libraries(EpidemicDeterminismTruthTests PRIVATE ${goal5_whole_libraries})
+if(MSVC)
+    target_compile_options(EpidemicDeterminismTruthTests PRIVATE /bigobj)
+endif()
+set_tests_properties(EpidemicDeterminismTruthTests PROPERTIES LABELS "truth;determinism;goal5-regression" TIMEOUT 240)
+add_test(NAME EpidemicDeterminismProcessTruthTests COMMAND "${Python3_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/tools/ci/test_determinism_process.py" "$<TARGET_FILE:EpidemicDeterminismTruthTests>")
+set_tests_properties(EpidemicDeterminismProcessTruthTests PROPERTIES LABELS "truth;determinism;goal5-regression" TIMEOUT 900)

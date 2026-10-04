@@ -431,3 +431,83 @@ class SaveGenerationCoordinator
 };
 } // namespace epidemic::gameplay::integration
 // END GOAL5 SAVE GENERATION COORDINATION
+
+namespace epidemic::gameplay::integration
+{
+// Preparation owns all Runtime allocation/validation. Commit only publishes
+// prepared semantic state; external/transient work belongs to reconciliation.
+class IRuntimeGenerationRestoreStage
+{
+  public:
+    virtual ~IRuntimeGenerationRestoreStage() = default;
+    virtual void Commit() noexcept = 0;
+};
+
+class IRuntimeGenerationRestorePort
+{
+  public:
+    virtual ~IRuntimeGenerationRestorePort() = default;
+    [[nodiscard]] virtual foundation::Result<std::unique_ptr<IRuntimeGenerationRestoreStage>> Prepare(
+        const SaveGenerationPackage& package) = 0;
+};
+
+enum class WholeRestorePhase
+{
+    AwaitLoad,
+    Precommit,
+    CommittedSemantic,
+    RebuildTransient,
+    ReconcileExternal,
+    MaterializeRuntime,
+    ReconciliationRequired,
+    ReadyToResume,
+};
+
+struct WholeRestoreCallbacks
+{
+    // Each step must retain its own accepted-work cursor on partial failure.
+    // Successful steps are not replayed by the coordinator on retry.
+    std::function<foundation::Result<void>()> rebuild_transient;
+    std::function<foundation::Result<void>()> reconcile_external;
+    std::function<foundation::Result<void>()> materialize_runtime;
+};
+
+// Owner-thread only, one fresh-composition restore cycle. Framework dependency
+// order/staging/no-fail publication remain owned by SaveGameOrchestrator.
+// Callers must gate simulation and Time advance on CanResume().
+class WholeEngineRestoreCoordinator
+{
+  public:
+    WholeEngineRestoreCoordinator(savegame::SaveGameOrchestrator& framework,
+        IRuntimeGenerationRestorePort& runtime, SaveGenerationBarrier& barrier,
+        ISaveGenerationStore& store, WholeRestoreCallbacks callbacks,
+        SaveGenerationLimits limits = {}, savegame::SaveWireLimits framework_limits = {});
+    ~WholeEngineRestoreCoordinator();
+    WholeEngineRestoreCoordinator(const WholeEngineRestoreCoordinator&) = delete;
+    WholeEngineRestoreCoordinator& operator=(const WholeEngineRestoreCoordinator&) = delete;
+
+    [[nodiscard]] foundation::Result<SaveGenerationId> LoadAndRestore(const savegame::RestoreContext& context);
+    [[nodiscard]] foundation::Result<void> RetryReconciliation();
+    [[nodiscard]] bool CanResume() const noexcept { return phase_ == WholeRestorePhase::ReadyToResume && !lease_; }
+    [[nodiscard]] WholeRestorePhase Phase() const noexcept { return phase_; }
+    [[nodiscard]] SaveGenerationId RestoredGeneration() const noexcept { return restored_generation_; }
+
+  private:
+    [[nodiscard]] foundation::Result<void> ContinueReconciliation();
+    [[nodiscard]] bool OnOwnerThread() const noexcept;
+    savegame::SaveGameOrchestrator& framework_;
+    IRuntimeGenerationRestorePort& runtime_;
+    SaveGenerationBarrier& barrier_;
+    ISaveGenerationStore& store_;
+    WholeRestoreCallbacks callbacks_;
+    SaveGenerationLimits limits_;
+    savegame::SaveWireLimits framework_limits_;
+    std::unique_ptr<savegame::ISaveBarrierLease> lease_;
+    WholeRestorePhase phase_ = WholeRestorePhase::AwaitLoad;
+    SaveGenerationId restored_generation_{};
+    std::size_t completed_steps_ = 0;
+    bool operation_active_ = false;
+    struct ThreadIdentity;
+    std::unique_ptr<ThreadIdentity> owner_thread_;
+};
+} // namespace epidemic::gameplay::integration
