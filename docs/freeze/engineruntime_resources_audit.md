@@ -70,7 +70,7 @@ Public headers state that mutation occurs on the runtime thread and concurrent r
 
 The six generated stale-identity candidates are not all equivalent. `Release(ResourceLease)`, `Evict(ResourceId)` and `EvictUnreferenced()` have real stale-generation/acquisition obligations and are covered by `TestResourceLeasePreventsCrossConsumerDoubleRelease`, `TestUnknownAndStaleHandles`, `TestGenerationExhaustionPreventsAba` and `TestEvictingRetryKeepsCompletedPrefix`. `RegisterLoader`, `Freeze` and `SetMemoryBudgetBytes` do not consume or recycle a reusable identity; their stale-identity records are scanner false positives. `Freeze()` is, however, a real lifecycle candidate and is covered by `TestLoaderRegistryFreezeAndEmptyQueueBoundaries`.
 
-The 36 generated mutator obligation records are applicable review work and can be moved to `REVIEWED` after serial integration using the exact per-callable rationale in `block_c_resources_assets_evidence.md`. No shared generated JSON is edited by Block C.
+The 36 generated mutator obligation records are applicable review work and can be moved to `REVIEWED` after serial integration using the exact per-callable rationale in [the archived Block C evidence](../archive/milestones-3-4/block_c_resources_assets_evidence.md). No shared generated JSON is edited by Block C.
 
 ## Verification
 
