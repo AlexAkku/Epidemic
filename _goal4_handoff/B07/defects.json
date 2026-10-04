@@ -9,7 +9,7 @@
       "regressions": {
         "EpidemicGameFrameworkNarrativeIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:102::TestNarrativeOutboxPublicationAtomicity",
         "EpidemicGameFrameworkNarrativeTests": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:362::Check(!static_cast<bool>(failed_restore)",
-        "EpidemicGameFrameworkSaveGameTests": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:409::SetSaveGameFaultPointForTesting(\"restore.pre_commit\")",
+        "EpidemicGameFrameworkSaveGameTests": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:527::SetSaveGameFaultPointForTesting(\"restore.pre_commit\")",
         "EpidemicGameFrameworkWorldTests": "EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:232::CHECK(!restored.AddDynamicFeature(fault_feature));"
       },
       "root_cause": "The owned tests injected failures through process-global operator-new interception instead of deterministic module-private publication boundaries, so evidence could fail at unrelated allocations and was not narrow enough for Goal 4.",

@@ -223,6 +223,59 @@ foundation::Result<void> SaveGameOrchestrator::RegisterMigration(const ISaveMigr
     return foundation::Result<void>::Success();
 }
 
+foundation::Result<void> SaveGameOrchestrator::RegisterComposition(
+    std::span<ISaveParticipant* const> participants,
+    std::span<const ISaveMigration* const> migrations,
+    std::span<const SaveParticipantManifest> expected)
+{
+    if (registry_frozen_ || !participants_.empty() || !migrations_.empty())
+        return foundation::Result<void>::Failure(Error("gameplay.save.composition_not_empty", "composition requires an empty unfrozen registry"));
+    try
+    {
+        if (expected.empty() || expected.size() != participants.size())
+            return foundation::Result<void>::Failure(Error("gameplay.save.composition_set", "participant set differs from reviewed contract"));
+        SaveGameOrchestrator candidate(format_, limits_);
+        for (auto* participant : participants)
+        {
+            if (participant == nullptr)
+                return foundation::Result<void>::Failure(Error("gameplay.save.composition_null", "null participant"));
+            auto result = candidate.RegisterParticipant(*participant);
+            if (!result) return result;
+        }
+        std::unordered_set<SaveParticipantId, IdHash> identities;
+        for (const auto& entry : expected)
+        {
+            const auto found = candidate.participants_.find(entry.id);
+            if (!identities.insert(entry.id).second || found == candidate.participants_.end() ||
+                entry.schema_version != found->second.schema_version || entry.requirement != found->second.requirement ||
+                SortedUniqueCopy(entry.dependencies).size() != entry.dependencies.size() ||
+                SortedUniqueCopy(entry.dependencies) != SortedUniqueCopy(found->second.dependencies))
+                return foundation::Result<void>::Failure(Error("gameplay.save.composition_contract", "participant metadata differs from reviewed contract"));
+        }
+        for (const auto* migration : migrations)
+        {
+            if (migration == nullptr)
+                return foundation::Result<void>::Failure(Error("gameplay.save.composition_null", "null migration"));
+            auto result = candidate.RegisterMigration(*migration);
+            if (!result) return result;
+        }
+        auto frozen = candidate.FreezeRegistry();
+        if (!frozen) return frozen;
+        participants_.swap(candidate.participants_);
+        migrations_.swap(candidate.migrations_);
+        registry_frozen_ = true;
+        return foundation::Result<void>::Success();
+    }
+    catch (const std::exception& exception)
+    {
+        return foundation::Result<void>::Failure(CallbackError("composition registration", &exception));
+    }
+    catch (...)
+    {
+        return foundation::Result<void>::Failure(CallbackError("composition registration"));
+    }
+}
+
 foundation::Result<void> SaveGameOrchestrator::FreezeRegistry()
 {
     if (registry_frozen_)

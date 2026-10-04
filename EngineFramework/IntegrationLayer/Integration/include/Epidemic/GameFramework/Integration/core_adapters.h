@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Epidemic/Foundation/result.h"
+#include "Epidemic/Foundation/path.h"
 #include "Epidemic/GameFramework/Facts/gameplay_facts.h"
 #include "Epidemic/GameFramework/Queries/gameplay_queries.h"
 #include "Epidemic/GameFramework/SaveGame/save_game.h"
@@ -10,12 +11,28 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <filesystem>
 #include <optional>
 #include <unordered_map>
 #include <vector>
 
 namespace epidemic::gameplay::integration
 {
+// Windows production package store. Externally synchronized, one writer per
+// path. Temporary files share the destination directory. File data is flushed
+// before write-through replacement; no hardware/power-loss guarantee is implied.
+class FileSavePackageStore final : public savegame::ISavePackageStore
+{
+  public:
+    explicit FileSavePackageStore(std::filesystem::path path, savegame::SaveWireLimits limits = {})
+        : path_(foundation::Path(std::move(path)).Native()), limits_(limits) {}
+    [[nodiscard]] foundation::Result<std::vector<std::byte>> Load() override;
+    [[nodiscard]] foundation::Result<void> Commit(std::span<const std::byte> package) override;
+  private:
+    std::filesystem::path path_;
+    savegame::SaveWireLimits limits_;
+};
+
 struct FindFactsQuery
 {
     using ResultType = std::vector<facts::FactRecord>;
@@ -249,3 +266,14 @@ class TimeFactsAdapter
     bool dispatcher_registered_ = false;
 };
 } // namespace epidemic::gameplay::integration
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Facts/gameplay_facts.h"
+#include "Epidemic/GameFramework/Time/gameplay_time.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateGameplayFactsServiceSaveParticipant(epidemic::gameplay::facts::GameplayFactsService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateGameplayTimeServiceSaveParticipant(epidemic::gameplay::time::GameplayTimeService& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

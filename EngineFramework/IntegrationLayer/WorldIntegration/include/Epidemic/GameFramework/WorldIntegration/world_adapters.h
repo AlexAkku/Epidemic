@@ -97,6 +97,8 @@ class WorldQueryAdapter
 
 class WorldFactsAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<WorldFactsAdapter>;
+
   public:
     WorldFactsAdapter(world::WorldService &w, environment::EnvironmentService &e, interaction::InteractionService &i,
                       facts::GameplayFactsService &f)
@@ -134,3 +136,17 @@ class EntityInteractionStateProvider final : public interaction::IInteractionSta
 };
 
 } // namespace epidemic::gameplay::world_integration
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Environment/environment.h"
+#include "Epidemic/GameFramework/Interaction/interaction.h"
+#include "Epidemic/GameFramework/World/world.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEnvironmentServiceSaveParticipant(epidemic::gameplay::environment::EnvironmentService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateInteractionServiceSaveParticipant(epidemic::gameplay::interaction::InteractionService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateWorldServiceSaveParticipant(epidemic::gameplay::world::WorldService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateWorldFactsAdapterSaveParticipant(epidemic::gameplay::world_integration::WorldFactsAdapter& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

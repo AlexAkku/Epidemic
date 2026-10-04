@@ -526,6 +526,8 @@ class IProcessQualityProvider
 
 class ProcessesService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ProcessesService>;
+
   public:
     ProcessesService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

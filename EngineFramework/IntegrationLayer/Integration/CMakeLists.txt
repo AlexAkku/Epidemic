@@ -1,5 +1,6 @@
 add_library(EpidemicGameFrameworkCoreIntegration STATIC
     src/core_adapters.cpp
+    src/save_package_store.cpp
 )
 
 target_include_directories(EpidemicGameFrameworkCoreIntegration PUBLIC
@@ -17,3 +18,9 @@ target_link_libraries(EpidemicGameFrameworkCoreIntegration
 )
 
 epidemic_configure_target(EpidemicGameFrameworkCoreIntegration)
+
+# M5.2 ownership-local save bindings; SaveGame never links back to owners.
+target_sources(EpidemicGameFrameworkCoreIntegration PRIVATE src/save_participants.cpp)
+target_link_libraries(EpidemicGameFrameworkCoreIntegration PRIVATE EpidemicPlatform)
+target_link_libraries(EpidemicGameFrameworkCoreIntegration PUBLIC EpidemicGameFrameworkSaveGame)
+target_include_directories(EpidemicGameFrameworkCoreIntegration PRIVATE "${CMAKE_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")

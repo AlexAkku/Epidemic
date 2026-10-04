@@ -930,6 +930,8 @@ struct NarrativeProcessBudget
 
 class NarrativeService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<NarrativeService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

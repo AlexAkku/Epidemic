@@ -8,6 +8,9 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <stdexcept>
+#include <typeindex>
+#include <type_traits>
 
 namespace epidemic::gameplay::savegame
 {
@@ -131,6 +134,30 @@ struct SaveResourceLimits
     std::size_t max_total_payload_bytes = 512ull * 1024ull * 1024ull;
     std::size_t max_dependencies_per_participant = 256;
 };
+// Wire version 1 is an explicit field-wise representation, not native object memory.
+// Checksum detects accidental corruption; it is not authentication for untrusted saves.
+struct SaveWireLimits
+{
+    SaveResourceLimits resources{};
+    std::size_t max_wire_bytes = 600ull * 1024ull * 1024ull;
+};
+[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeSaveGameImage(
+    const SaveGameImage& image, SaveWireLimits limits = {});
+[[nodiscard]] foundation::Result<SaveGameImage> DecodeSaveGameImage(
+    std::span<const std::byte> bytes, SaveWireLimits limits = {});
+// Semantic package operations: successful Commit atomically replaces the old
+// package. Implementations own I/O, synchronization and durability policy.
+class ISavePackageStore
+{
+  public:
+    virtual ~ISavePackageStore() = default;
+    [[nodiscard]] virtual foundation::Result<std::vector<std::byte>> Load() = 0;
+    [[nodiscard]] virtual foundation::Result<void> Commit(std::span<const std::byte> package) = 0;
+};
+[[nodiscard]] foundation::Result<void> CommitSaveGameImage(
+    ISavePackageStore& store, const SaveGameImage& image, SaveWireLimits limits = {});
+[[nodiscard]] foundation::Result<SaveGameImage> LoadSaveGameImage(
+    ISavePackageStore& store, SaveWireLimits limits = {});
 class ISaveBarrierLease
 {
   public:
@@ -199,6 +226,12 @@ class SaveGameOrchestrator
     [[nodiscard]] foundation::Result<void> SetBarrier(ISaveBarrier &barrier) noexcept;
     [[nodiscard]] foundation::Result<void> RegisterParticipant(ISaveParticipant &participant);
     [[nodiscard]] foundation::Result<void> RegisterMigration(const ISaveMigration &migration);
+    // All-or-nothing bootstrap: exact reviewed metadata, migrations, graph validation,
+    // then Freeze. Pointers must outlive this orchestrator. Requires an empty registry.
+    [[nodiscard]] foundation::Result<void> RegisterComposition(
+        std::span<ISaveParticipant* const> participants,
+        std::span<const ISaveMigration* const> migrations,
+        std::span<const SaveParticipantManifest> expected);
     [[nodiscard]] foundation::Result<void> FreezeRegistry();
     [[nodiscard]] bool RegistryFrozen() const noexcept
     {
@@ -253,4 +286,58 @@ class SaveGameOrchestrator
     bool registry_frozen_ = false;
     SaveGameDiagnostics diagnostics_{};
 };
+} // namespace epidemic::gameplay::savegame
+
+
+namespace epidemic::gameplay::savegame
+{
+namespace detail
+{
+template <typename Owner> class SnapshotParticipant;
+struct WorkspaceTestAccess;
+}
+
+// Per-restore transaction workspace. Gameplay clients may own one workspace for
+// the participant set, but authoritative bindings and staged candidates are
+// intentionally private restore mechanics.
+class SaveRestoreWorkspace
+{
+  public:
+    SaveRestoreWorkspace() = default;
+
+  private:
+    SaveRestoreWorkspace(const SaveRestoreWorkspace&) = delete;
+    SaveRestoreWorkspace& operator=(const SaveRestoreWorkspace&) = delete;
+    SaveRestoreWorkspace(SaveRestoreWorkspace&&) = delete;
+    SaveRestoreWorkspace& operator=(SaveRestoreWorkspace&&) = delete;
+    template <typename Owner> void Bind(Owner& live)
+    {
+        auto [entry, inserted] = live_.emplace(typeid(Owner), &live);
+        if (!inserted && entry->second != &live)
+            throw std::invalid_argument("duplicate authoritative owner binding");
+    }
+    template <typename Owner> Owner& Require() const
+    {
+        if (const auto staged = staged_.find(typeid(Owner)); staged != staged_.end())
+            return *static_cast<Owner*>(staged->second);
+        const auto found = live_.find(typeid(Owner));
+        if (found == live_.end())
+            throw std::runtime_error("missing restore owner binding");
+        return *static_cast<Owner*>(found->second);
+    }
+    // A dependency's validated candidate is visible to later restore stages,
+    // never to gameplay readers. The live owner is the standalone fallback.
+    template <typename Owner> Owner& Resolve(Owner& live) const noexcept
+    {
+        const auto found = staged_.find(typeid(std::remove_const_t<Owner>));
+        return found == staged_.end() ? live : *static_cast<Owner*>(found->second);
+    }
+
+    std::unordered_map<std::type_index, void*> live_;
+    std::unordered_map<std::type_index, void*> staged_;
+    template <typename Owner> friend class detail::SnapshotParticipant;
+    friend struct detail::WorkspaceTestAccess;
+    template <typename Owner> friend struct ::epidemic::gameplay::SnapshotRestoreAccess;
+};
+
 } // namespace epidemic::gameplay::savegame

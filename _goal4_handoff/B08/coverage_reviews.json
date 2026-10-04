@@ -120,6 +120,17 @@
       "signature": "[[nodiscard]] foundation::Result<processes::PreparedProcessOutput> Prepare(const processes::ProcessOutputDefinition&output,const processes::ProcessInstance&instance,GameplayContext context)override;",
       "status": "REVIEWED"
     },
+    "089ee8fd6cc6a8e8": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/SocialLegalIntegration/include/Epidemic/GameFramework/SocialLegalIntegration/social_legal_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/SocialLegalIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:14::auto participant = savegame::CreateCrimeServiceSaveParticipant(",
+      "review_rationale": "Construct framework.crime with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains CrimeService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCrimeServiceSaveParticipant(epidemic::gameplay::crime::CrimeService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "09a4ddf882968def": {
       "classification": "LIFECYCLE",
       "classification_status": "REVIEWED",
@@ -189,6 +200,17 @@
       "scope": "epidemic::gameplay::integration::TradeExecutionId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const TradeExecutionId&)const noexcept=default;",
       "status": "REVIEWED"
+    },
+    "0bf22cb55d159adb": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration/include/Epidemic/GameFramework/ExtendedGameplayIntegration/extended_gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:78::auto participant = savegame::CreateItemsInventoryServiceSaveParticipant(",
+      "review_rationale": "Construct framework.items with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains ItemsInventoryService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateItemsInventoryServiceSaveParticipant(epidemic::gameplay::items::ItemsInventoryService&owner,SaveRestoreWorkspace&workspace);"
     },
     "0bf9b5c3f9ebe5de": {
       "classification": "QUERY",
@@ -275,6 +297,28 @@
       "signature": "InteractionEffectExecutor(effects::EffectService&effects,interaction::InteractionTypeId interaction_type)",
       "status": "REVIEWED"
     },
+    "11e593b9fd957eb8": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:15::auto participant = savegame::CreateAbilityServiceSaveParticipant(",
+      "review_rationale": "Construct framework.abilities with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains AbilityService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityServiceSaveParticipant(epidemic::gameplay::abilities::AbilityService&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "1213accdf78fbd99": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration/include/Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:125::auto participant = savegame::CreatePopulationLifecycleAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.population_lifecycle with schema 1, Required semantics and exact semantic dependencies ['framework.population', 'framework.roles_jobs', 'framework.needs_life']; authoritative state remains PopulationLifecycleAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePopulationLifecycleAdapterSaveParticipant(epidemic::gameplay::population_simulation::PopulationLifecycleAdapter&owner,SaveRestoreWorkspace&workspace);"
+    },
     "12c49041dc131eac": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -289,6 +333,17 @@
       "scope": "epidemic::gameplay::state_integration::ConditionEffectsAdapter",
       "signature": "[[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>> ProcessPending(effects::EffectExecutionBudget budget={});",
       "status": "REVIEWED"
+    },
+    "13033d51725da526": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/InteractionEffectsIntegration/include/Epidemic/GameFramework/InteractionEffectsIntegration/interaction_effects_adapter.h",
+      "module": "EngineFramework/IntegrationLayer/InteractionEffectsIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp:31::auto participant = savegame::CreateInteractionEffectExecutorSaveParticipant(",
+      "review_rationale": "Construct integration.interaction_effects with schema 1, Required semantics and exact semantic dependencies ['framework.interaction', 'framework.effects']; authoritative state remains InteractionEffectExecutor.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateInteractionEffectExecutorSaveParticipant(epidemic::gameplay::interaction_effects_integration::InteractionEffectExecutor&owner,SaveRestoreWorkspace&workspace);"
     },
     "13616c05384731b2": {
       "classification": "MUTATOR",
@@ -349,6 +404,17 @@
       "scope": "epidemic::gameplay::traversal_navigation_construction::ConstructionTraversalAdapter",
       "signature": "[[nodiscard]] foundation::Result<void> CancelTraversalSessions(traversal::TraversalService&traversal,std::span<const traversal::TraversalSessionId> sessions,GameplayContext context={})const;",
       "status": "REVIEWED"
+    },
+    "166c8a87f706f662": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:37::auto participant = savegame::CreateCombatServiceSaveParticipant(",
+      "review_rationale": "Construct framework.combat with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains CombatService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCombatServiceSaveParticipant(epidemic::gameplay::combat::CombatService&owner,SaveRestoreWorkspace&workspace);"
     },
     "16a9fe776716980f": {
       "classification": "MUTATOR",
@@ -415,6 +481,28 @@
       "signature": "[[nodiscard]] bool MappingsFrozen()const noexcept",
       "status": "REVIEWED"
     },
+    "1994c177136bb880": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/StateIntegration/include/Epidemic/GameFramework/StateIntegration/state_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/StateIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:77::auto participant = savegame::CreateMaterialServiceSaveParticipant(",
+      "review_rationale": "Construct framework.materials with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains MaterialService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateMaterialServiceSaveParticipant(epidemic::gameplay::materials::MaterialService&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "19b4672f4a59ab5b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/StateIntegration/include/Epidemic/GameFramework/StateIntegration/state_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/StateIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:15::auto participant = savegame::CreateConditionServiceSaveParticipant(",
+      "review_rationale": "Construct framework.conditions with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains ConditionService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConditionServiceSaveParticipant(epidemic::gameplay::conditions::ConditionService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "1a6f430e0f436614": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -454,6 +542,17 @@
       "scope": "epidemic::gameplay::integration::ItemProcessInputProvider",
       "signature": "[[nodiscard]] static constexpr TypeId ReservationPayloadType()noexcept",
       "status": "REVIEWED"
+    },
+    "1c3b38592ccc2eb9": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:109::\"embedded NUL path rejected before filesystem access\"",
+      "review_rationale": "Store validated native path/resource policy; no I/O until Load/Commit; embedded NUL is rejected.",
+      "scope": "epidemic::gameplay::integration::FileSavePackageStore",
+      "signature": "explicit FileSavePackageStore(std::filesystem::path path,savegame::SaveWireLimits limits={})"
     },
     "1c733d870d9b24ed": {
       "classification": "MUTATOR",
@@ -554,6 +653,17 @@
       "scope": "epidemic::gameplay::state_integration::ConditionEffectsAdapter",
       "signature": "ConditionEffectsAdapter(conditions::ConditionService&conditions,effects::EffectService&effects)",
       "status": "REVIEWED"
+    },
+    "2343c8291ddca14b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/include/Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp:13::auto participant = savegame::CreateProcessesServiceSaveParticipant(",
+      "review_rationale": "Construct framework.processes with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains ProcessesService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService&owner,SaveRestoreWorkspace&workspace);"
     },
     "23fa1848831901c6": {
       "classification": "QUERY",
@@ -795,6 +905,17 @@
       "signature": "explicit ProgressionRewardHandler(progression::ProgressionService&progression)",
       "status": "REVIEWED"
     },
+    "3310cb694f801eb0": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration/include/Epidemic/GameFramework/ExtendedGameplayIntegration/extended_gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:58::auto participant = savegame::CreateEquipmentServiceSaveParticipant(",
+      "review_rationale": "Construct framework.equipment with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains EquipmentService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEquipmentServiceSaveParticipant(epidemic::gameplay::equipment::EquipmentService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "339998b57fa1f9b9": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -1015,6 +1136,17 @@
       "signature": "[[nodiscard]] foundation::Result<void> ReserveForEquipment(equipment::EquipmentItemId item,GameplayObjectRef subject,GameplayContext context)override;",
       "status": "REVIEWED"
     },
+    "40c36e63f26db2de": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/include/Epidemic/GameFramework/PerceptionKnowledgeAIIntegration/perception_knowledge_ai_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp:19::auto participant = savegame::CreateAIServiceSaveParticipant(",
+      "review_rationale": "Construct framework.ai with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains AIService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAIServiceSaveParticipant(epidemic::gameplay::ai::AIService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "4276bc77431f4763": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -1089,6 +1221,17 @@
       "scope": "epidemic::gameplay::interaction_effects_integration::InteractionEffectExecutor",
       "signature": "[[nodiscard]] foundation::Result<void> RestoreSnapshot(InteractionEffectsSnapshot snapshot);",
       "status": "REVIEWED"
+    },
+    "48dedbced79a476e": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration/include/Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:53::auto participant = savegame::CreatePopulationServiceSaveParticipant(",
+      "review_rationale": "Construct framework.population with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains PopulationService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePopulationServiceSaveParticipant(epidemic::gameplay::population::PopulationService&owner,SaveRestoreWorkspace&workspace);"
     },
     "48f84eefaca4767d": {
       "classification": "QUERY",
@@ -1174,6 +1317,17 @@
       "scope": "epidemic::gameplay::integration::AIIntentExecutionRecorder",
       "signature": "[[nodiscard]] const std::vector<ai::AIIntent>&AcceptedIntents()const noexcept",
       "status": "REVIEWED"
+    },
+    "506434a11b38826b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/include/Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp:52::auto participant = savegame::CreateSimulationServiceSaveParticipant(",
+      "review_rationale": "Construct framework.simulation with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains SimulationService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateSimulationServiceSaveParticipant(epidemic::gameplay::simulation::SimulationService&owner,SaveRestoreWorkspace&workspace);"
     },
     "556e49e91dc55d3d": {
       "classification": "QUERY",
@@ -1349,6 +1503,17 @@
       "scope": "epidemic::gameplay::integration::PerceptionKnowledgeAdapter",
       "signature": "[[nodiscard]] foundation::Result<ObservationKnowledgeResult> LearnFromObservation(const perception::PerceptionObservation&observation);",
       "status": "REVIEWED"
+    },
+    "6429d688ab593411": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/include/Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp:33::auto participant = savegame::CreateResourcesProductionServiceSaveParticipant(",
+      "review_rationale": "Construct framework.resources with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains ResourcesProductionService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateResourcesProductionServiceSaveParticipant(epidemic::gameplay::resources::ResourcesProductionService&owner,SaveRestoreWorkspace&workspace);"
     },
     "64e7f3374cbc06e2": {
       "classification": "MUTATOR",
@@ -1545,6 +1710,17 @@
       "signature": "[[nodiscard]] foundation::Result<void> Succeed(ai::AIIntentId intent,ai::AIService&ai_service);",
       "status": "REVIEWED"
     },
+    "73dd977ee463a146": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/include/Epidemic/GameFramework/PerceptionKnowledgeAIIntegration/perception_knowledge_ai_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp:59::auto participant = savegame::CreatePerceptionServiceSaveParticipant(",
+      "review_rationale": "Construct framework.perception with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains PerceptionService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePerceptionServiceSaveParticipant(epidemic::gameplay::perception::PerceptionService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "74390fe53c87c206": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -1595,6 +1771,17 @@
       "signature": "[[nodiscard]] foundation::Result<std::uint64_t> SynchronizeDeferredEffects(GameplayContext context={});",
       "status": "REVIEWED"
     },
+    "75eacf72886c1d2c": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:156::auto participant = savegame::CreateConditionProgressionAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.condition_progression with schema 1, Required semantics and exact semantic dependencies ['framework.conditions', 'framework.progression']; authoritative state remains ConditionProgressionAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConditionProgressionAdapterSaveParticipant(epidemic::gameplay::integration::ConditionProgressionAdapter&owner,SaveRestoreWorkspace&workspace);"
+    },
     "75eeadfff82079e9": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -1624,6 +1811,17 @@
       "scope": "epidemic::gameplay::social_legal_integration::SocialLegalMappings",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterPropertyCrimeMapping(PropertyCrimeMapping mapping);",
       "status": "REVIEWED"
+    },
+    "76df57f5fde021da": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration/include/Epidemic/GameFramework/TraversalNavigationConstructionIntegration/traversal_navigation_construction_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:55::auto participant = savegame::CreateTraversalServiceSaveParticipant(",
+      "review_rationale": "Construct framework.traversal with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains TraversalService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateTraversalServiceSaveParticipant(epidemic::gameplay::traversal::TraversalService&owner,SaveRestoreWorkspace&workspace);"
     },
     "770a5426d71ab9ec": {
       "classification": "QUERY",
@@ -1835,6 +2033,17 @@
       "signature": "[[nodiscard]] foundation::Result<TheftResolution> TryCreateCrimeFromDeniedRight(GameplayObjectRef actor,GameplayObjectRef property,SocialLegalMappingId mapping,GameplayObjectRef area,GameplayContext context={});",
       "status": "REVIEWED"
     },
+    "809d0239b3384aef": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration/include/Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:107::auto participant = savegame::CreatePopulationEncounterAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.population_encounter with schema 1, Required semantics and exact semantic dependencies ['framework.population', 'framework.encounters']; authoritative state remains PopulationEncounterAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePopulationEncounterAdapterSaveParticipant(epidemic::gameplay::population_simulation::PopulationEncounterAdapter&owner,SaveRestoreWorkspace&workspace);"
+    },
     "811fff9abfc5a36a": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -1915,6 +2124,17 @@
       "signature": "[[nodiscard]] foundation::Result<void> Consume(const processes::ReservedProcessInput&,GameplayContext)override;",
       "status": "REVIEWED"
     },
+    "85a46f09458100da": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:35::auto participant = savegame::CreateGameplayTimeServiceSaveParticipant(",
+      "review_rationale": "Construct framework.time with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains GameplayTimeService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateGameplayTimeServiceSaveParticipant(epidemic::gameplay::time::GameplayTimeService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "85b026de46d751a2": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -1980,6 +2200,17 @@
       "signature": "explicit AbilityEffectsDispatcher(effects::EffectService&effects)",
       "status": "REVIEWED"
     },
+    "8815895782437a94": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration/include/Epidemic/GameFramework/ExtendedGameplayIntegration/extended_gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:39::auto participant = savegame::CreateEconomyServiceSaveParticipant(",
+      "review_rationale": "Construct framework.economy with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains EconomyService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEconomyServiceSaveParticipant(epidemic::gameplay::economy::EconomyService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "89e18bb9ac7de05a": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -1989,6 +2220,28 @@
       "scope": "epidemic::gameplay::integration::ItemProcessOutputHandler",
       "signature": "[[nodiscard]] static constexpr TypeId OutputPayloadType()noexcept",
       "status": "REVIEWED"
+    },
+    "8a146a6eb72d1f5f": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/StateIntegration/include/Epidemic/GameFramework/StateIntegration/state_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/StateIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:57::auto participant = savegame::CreateEntityServiceSaveParticipant(",
+      "review_rationale": "Construct framework.entities with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains EntityService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEntityServiceSaveParticipant(epidemic::gameplay::entities::EntityService&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "8b8577c677254868": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/StateIntegration/include/Epidemic/GameFramework/StateIntegration/state_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/StateIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:108::auto participant = savegame::CreateStateIntegrationPersistenceSaveParticipant(",
+      "review_rationale": "Construct integration.state with schema 1, Required semantics and exact semantic dependencies ['framework.entities', 'framework.materials', 'framework.conditions', 'framework.effects', 'framework.facts', 'framework.time']; authoritative state remains StateIntegrationPersistence.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateStateIntegrationPersistenceSaveParticipant(epidemic::gameplay::state_integration::StateIntegrationPersistence&owner,SaveRestoreWorkspace&workspace);"
     },
     "8cefecbc9e7413e9": {
       "classification": "MUTATOR",
@@ -2125,6 +2378,22 @@
       "signature": "[[nodiscard]] foundation::Result<effects::EffectCommitResult> Commit(const effects::EffectOperation&operation,const effects::RegisteredEffectPayload&token)noexcept override;",
       "status": "REVIEWED"
     },
+    "95ce7f9e63df1f73": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:120::\"filesystem next generation replaces old\"",
+      "review_rationale": "Validate complete wire bytes before Base Platform atomic byte commit. Single writer per path, file flush/write-through, no hardware power-loss guarantee.",
+      "scope": "epidemic::gameplay::integration::FileSavePackageStore",
+      "signature": "[[nodiscard]] foundation::Result<void> Commit(std::span<const std::byte> package)override;"
+    },
     "95e192b4e80b9cfe": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -2174,6 +2443,17 @@
       "scope": "epidemic::gameplay::integration::ScheduledTriggerDispatcherSaveParticipant",
       "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::IRestoreStage>> StageRestore(const savegame::SaveSection&section,const savegame::RestoreContext&context)override;",
       "status": "REVIEWED"
+    },
+    "9a0e8462e28cd468": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration/include/Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:13::auto participant = savegame::CreateEncountersServiceSaveParticipant(",
+      "review_rationale": "Construct framework.encounters with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains EncountersService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEncountersServiceSaveParticipant(epidemic::gameplay::encounters::EncountersService&owner,SaveRestoreWorkspace&workspace);"
     },
     "9bf5b689dea97aba": {
       "classification": "QUERY",
@@ -2334,6 +2614,39 @@
       "scope": "epidemic::gameplay::interaction_effects_integration::InteractionEffectExecutor",
       "signature": "[[nodiscard]] foundation::Result<void> Freeze(const interaction::InteractionService&interactions);",
       "status": "REVIEWED"
+    },
+    "a4c142a9ffc1356a": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:173::auto participant = savegame::CreateDeathRewardAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.death_reward with schema 1, Required semantics and exact semantic dependencies ['framework.combat', 'framework.loot']; authoritative state remains DeathRewardAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateDeathRewardAdapterSaveParticipant(epidemic::gameplay::integration::DeathRewardAdapter&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "a5043caf16ea0f46": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:14::auto participant = savegame::CreateGameplayFactsServiceSaveParticipant(",
+      "review_rationale": "Construct framework.facts with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains GameplayFactsService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateGameplayFactsServiceSaveParticipant(epidemic::gameplay::facts::GameplayFactsService&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "a590ced07961cf7b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:111::auto participant = savegame::CreateAbilityEffectsDispatcherSaveParticipant(",
+      "review_rationale": "Construct integration.ability_effects with schema 1, Required semantics and exact semantic dependencies ['framework.abilities', 'framework.effects']; authoritative state remains AbilityEffectsDispatcher.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityEffectsDispatcherSaveParticipant(epidemic::gameplay::integration::AbilityEffectsDispatcher&owner,SaveRestoreWorkspace&workspace);"
     },
     "a644736f0bead40c": {
       "classification": "QUERY",
@@ -2710,6 +3023,17 @@
       "signature": "[[nodiscard]] static constexpr TypeId PayloadType()noexcept",
       "status": "REVIEWED"
     },
+    "c1878f8212d68a28": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration/include/Epidemic/GameFramework/ExtendedGameplayIntegration/extended_gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:98::auto participant = savegame::CreateTradeCoordinatorSaveParticipant(",
+      "review_rationale": "Construct integration.trade with schema 1, Required semantics and exact semantic dependencies ['framework.economy', 'framework.items', 'framework.ownership']; authoritative state remains TradeCoordinator.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateTradeCoordinatorSaveParticipant(epidemic::gameplay::integration::TradeCoordinator&owner,SaveRestoreWorkspace&workspace);"
+    },
     "c2452b5731701e5b": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -2734,6 +3058,17 @@
       "scope": "epidemic::gameplay::integration::AbilityOutputDeliveryCoordinator",
       "signature": "[[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>> DeliverPendingOutputs(ScheduleId trigger);",
       "status": "REVIEWED"
+    },
+    "c48f05e768a79f6b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/SocialLegalIntegration/include/Epidemic/GameFramework/SocialLegalIntegration/social_legal_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/SocialLegalIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:84::auto participant = savegame::CreateCrimeSocietyAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.social_legal with schema 1, Required semantics and exact semantic dependencies ['framework.crime', 'framework.society']; authoritative state remains CrimeSocietyAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCrimeSocietyAdapterSaveParticipant(epidemic::gameplay::social_legal_integration::CrimeSocietyAdapter&owner,SaveRestoreWorkspace&workspace);"
     },
     "c57221a56a46b7bb": {
       "classification": "MUTATOR",
@@ -2960,6 +3295,17 @@
       "signature": "[[nodiscard]] std::size_t operator()(SocialLegalMappingId id)const noexcept",
       "status": "REVIEWED"
     },
+    "cf6fde9746b1adf4": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration/include/Epidemic/GameFramework/TraversalNavigationConstructionIntegration/traversal_navigation_construction_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:35::auto participant = savegame::CreateNavigationSemanticsServiceSaveParticipant(",
+      "review_rationale": "Construct framework.navigation_semantics with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains NavigationSemanticsService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNavigationSemanticsServiceSaveParticipant(epidemic::gameplay::navigation_semantics::NavigationSemanticsService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "cfb20231d682de9e": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -2969,6 +3315,17 @@
       "scope": "epidemic::gameplay::integration::DeathRewardAdapter",
       "signature": "[[nodiscard]] DeathRewardCheckpoint CaptureCheckpoint()const;",
       "status": "REVIEWED"
+    },
+    "cfe0ce073e55fb0b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:91::auto participant = savegame::CreateProgressionServiceSaveParticipant(",
+      "review_rationale": "Construct framework.progression with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains ProgressionService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProgressionServiceSaveParticipant(epidemic::gameplay::progression::ProgressionService&owner,SaveRestoreWorkspace&workspace);"
     },
     "d0ad53ca4f7f3f15": {
       "classification": "QUERY",
@@ -3095,6 +3452,17 @@
       "signature": "[[nodiscard]] effects::EffectTargetState Resolve(GameplayObjectRef target)const override;",
       "status": "REVIEWED"
     },
+    "d35f1e9183fee3ed": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:69::auto participant = savegame::CreateLootServiceSaveParticipant(",
+      "review_rationale": "Construct framework.loot with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains LootService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateLootServiceSaveParticipant(epidemic::gameplay::loot::LootService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "d42a80f4f533e38c": {
       "classification": "LIFECYCLE",
       "classification_status": "REVIEWED",
@@ -3144,6 +3512,17 @@
       "scope": "epidemic::gameplay::integration::DialogueKnowledgeConsequenceHandler",
       "signature": "[[nodiscard]] static constexpr dialogue::DialogueConsequenceTypeId ShareType()noexcept",
       "status": "REVIEWED"
+    },
+    "d7d3af34a15eea5f": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/SocialLegalIntegration/include/Epidemic/GameFramework/SocialLegalIntegration/social_legal_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/SocialLegalIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:53::auto participant = savegame::CreateSocietyServiceSaveParticipant(",
+      "review_rationale": "Construct framework.society with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains SocietyService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateSocietyServiceSaveParticipant(epidemic::gameplay::society::SocietyService&owner,SaveRestoreWorkspace&workspace);"
     },
     "d9a7cc0fe40717df": {
       "classification": "MUTATOR",
@@ -3210,6 +3589,28 @@
       "signature": "StateTimeAdapter(conditions::ConditionService&conditions,effects::EffectService&effects,time::GameplayTimeService&time)",
       "status": "REVIEWED"
     },
+    "de19ac30cc4f4cf8": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration/include/Epidemic/GameFramework/TraversalNavigationConstructionIntegration/traversal_navigation_construction_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:15::auto participant = savegame::CreateConstructionServiceSaveParticipant(",
+      "review_rationale": "Construct framework.construction with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains ConstructionService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConstructionServiceSaveParticipant(epidemic::gameplay::construction::ConstructionService&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "debd8a9ddfaeec43": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration/include/Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:72::auto participant = savegame::CreateRolesJobsServiceSaveParticipant(",
+      "review_rationale": "Construct framework.roles_jobs with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains RolesJobsService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateRolesJobsServiceSaveParticipant(epidemic::gameplay::roles_jobs::RolesJobsService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "dece04b2fbada448": {
       "classification": "CONSTRUCTOR",
       "classification_status": "REVIEWED",
@@ -3219,6 +3620,17 @@
       "scope": "epidemic::gameplay::integration::RuntimeTimeAdapter",
       "signature": "RuntimeTimeAdapter(runtime::IGameClock&runtime_clock,time::GameplayTimeService&gameplay_time,ClockId clock)",
       "status": "REVIEWED"
+    },
+    "e001b34bee0ecbe8": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/SocialLegalIntegration/include/Epidemic/GameFramework/SocialLegalIntegration/social_legal_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/SocialLegalIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:33::auto participant = savegame::CreateOwnershipServiceSaveParticipant(",
+      "review_rationale": "Construct framework.ownership with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains OwnershipService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateOwnershipServiceSaveParticipant(epidemic::gameplay::ownership::OwnershipService&owner,SaveRestoreWorkspace&workspace);"
     },
     "e01d8e6429cad67a": {
       "classification": "CONSTRUCTOR",
@@ -3300,6 +3712,17 @@
       "signature": "[[nodiscard]] foundation::Result<void> Commit(const processes::PreparedProcessOutput&,const processes::ProcessInstance&,GameplayContext)override;",
       "status": "REVIEWED"
     },
+    "e3f23e329c15dc53": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration/include/Epidemic/GameFramework/ExtendedGameplayIntegration/extended_gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:17::auto participant = savegame::CreateDialogueServiceSaveParticipant(",
+      "review_rationale": "Construct framework.dialogue with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains DialogueService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateDialogueServiceSaveParticipant(epidemic::gameplay::dialogue::DialogueService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "e4a1924fa81622d6": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -3329,6 +3752,17 @@
       "scope": "epidemic::gameplay::integration::ResourceProcessOutputHandler",
       "signature": "[[nodiscard]] bool Supports(processes::ProcessOutputTypeId type)const noexcept override",
       "status": "REVIEWED"
+    },
+    "e84935bc9426c69b": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/GameplayIntegration/include/Epidemic/GameFramework/GameplayIntegration/gameplay_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:135::auto participant = savegame::CreateAbilityTimeAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.ability_time with schema 1, Required semantics and exact semantic dependencies ['framework.abilities', 'framework.time']; authoritative state remains AbilityTimeAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityTimeAdapterSaveParticipant(epidemic::gameplay::integration::AbilityTimeAdapter&owner,SaveRestoreWorkspace&workspace);"
     },
     "e8aaf82aa003c508": {
       "classification": "QUERY",
@@ -3410,6 +3844,17 @@
       "signature": "[[nodiscard]] savegame::SaveSchemaVersion SchemaVersion()const noexcept override",
       "status": "REVIEWED"
     },
+    "ed5b74a7fe738351": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration/include/Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:33::auto participant = savegame::CreateNeedsLifeServiceSaveParticipant(",
+      "review_rationale": "Construct framework.needs_life with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains NeedsLifeService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNeedsLifeServiceSaveParticipant(epidemic::gameplay::needs_life::NeedsLifeService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "eff418ab55aa4ec6": {
       "classification": "CONSTRUCTOR",
       "classification_status": "REVIEWED",
@@ -3475,6 +3920,17 @@
       "signature": "explicit DialogueKnowledgeConsequenceHandler(knowledge::KnowledgeService&knowledge)",
       "status": "REVIEWED"
     },
+    "f3c69dccdda50f58": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:98::\"filesystem encode and commit\"",
+      "review_rationale": "Read via bounded Base Platform byte port, no Windows include in Integration and no live semantic state mutation.",
+      "scope": "epidemic::gameplay::integration::FileSavePackageStore",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> Load()override;"
+    },
     "f42dc1299d3df18f": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -3489,6 +3945,17 @@
       "scope": "epidemic::gameplay::integration::ScheduledTriggerDispatcher",
       "signature": "[[nodiscard]] foundation::Result<std::uint64_t> CollectDue(ClockId clock,GameplayContext context,time::SchedulerBudget budget={});",
       "status": "REVIEWED"
+    },
+    "f5b30af87ed67390": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/include/Epidemic/GameFramework/PerceptionKnowledgeAIIntegration/perception_knowledge_ai_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp:39::auto participant = savegame::CreateKnowledgeServiceSaveParticipant(",
+      "review_rationale": "Construct framework.knowledge with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains KnowledgeService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateKnowledgeServiceSaveParticipant(epidemic::gameplay::knowledge::KnowledgeService&owner,SaveRestoreWorkspace&workspace);"
     },
     "f61cb3bf4d53684b": {
       "classification": "QUERY",
@@ -3600,6 +4067,17 @@
       "signature": "[[nodiscard]] foundation::Result<processes::ReservedProcessInput> Reserve(const processes::ProcessInputDefinition&input,const processes::StartProcessRequest&request,processes::ProcessInstanceId instance)override;",
       "status": "REVIEWED"
     },
+    "fdd82224bca6c823": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/StateIntegration/include/Epidemic/GameFramework/StateIntegration/state_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/StateIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:37::auto participant = savegame::CreateEffectServiceSaveParticipant(",
+      "review_rationale": "Construct framework.effects with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains EffectService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEffectServiceSaveParticipant(epidemic::gameplay::effects::EffectService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "fe5c85fe541900ff": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -3672,7 +4150,7 @@
       "fix": "DispatchPending computes the missing completion set and reserves completion storage before invoking any handler. Failure at the narrow preflight seam leaves the delivery pending and performs zero handler calls.",
       "logical_id": "B08-INT-001",
       "module": "EngineFramework/IntegrationLayer/Integration",
-      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:690::FailNextTriggerCompletionPublicationForTest",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:710::FailNextTriggerCompletionPublicationForTest",
       "status": "REVIEWED",
       "target": "EpidemicGameFrameworkCoreIntegrationTests",
       "targets": [
@@ -3720,9 +4198,9 @@
       "fix": "B08 owned tests have zero direct users of the shared allocator/sweep helpers. New allocation/publication regressions use narrow one-shot test seams scoped to Integration, ExtendedGameplayIntegration and ProcessResourceSimulationIntegration; shared helpers are untouched.",
       "logical_id": "G4-INFRA-001",
       "module": "B08",
-      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:690::FailNextTriggerCompletionPublicationForTest",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:710::FailNextTriggerCompletionPublicationForTest",
       "regressions": {
-        "EpidemicGameFrameworkCoreIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:690::FailNextTriggerCompletionPublicationForTest",
+        "EpidemicGameFrameworkCoreIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:710::FailNextTriggerCompletionPublicationForTest",
         "EpidemicGameFrameworkExtendedGameplayIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/extended_gameplay_integration_tests.cpp:376::FailNextTradePublicationForTest",
         "EpidemicGameFrameworkProcessResourceSimulationIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/process_resource_simulation_integration_tests.cpp:106::FailNextResourceReservationTokenPublicationForTest"
       },
@@ -3839,6 +4317,13 @@
     "19e043e1f5b4a0ba": {
       "callable_id": "a3713bf4c9c8b7c6",
       "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "1a4501402dc46208": {
+      "callable_id": "95ce7f9e63df1f73",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:120::\"filesystem next generation replaces old\"",
+      "review_rationale": "Validate complete wire bytes before Base Platform atomic byte commit. Single writer per path, file flush/write-through, no hardware power-loss guarantee.",
       "status": "REVIEWED"
     },
     "1a4d1e951aab7121": {

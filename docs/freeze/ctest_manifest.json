@@ -192,6 +192,11 @@
         },
         {
           "labels": [],
+          "name": "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicFoundationUnitTests",
           "timeout": 300.0
         },
@@ -214,6 +219,14 @@
             "truth"
           ],
           "name": "EpidemicFrameworkPublicApiTruthTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "persistence-schema",
+            "unit"
+          ],
+          "name": "EpidemicFrameworkSaveCompositionTests",
           "timeout": 300.0
         },
         {
@@ -427,7 +440,11 @@
           "timeout": 300.0
         },
         {
-          "labels": [],
+          "labels": [
+            "persistence-schema",
+            "persistence-wire",
+            "unit"
+          ],
           "name": "EpidemicGameFrameworkSaveGameTests",
           "timeout": 300.0
         },
@@ -483,6 +500,11 @@
         },
         {
           "labels": [],
+          "name": "EpidemicGameplayIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicGameplayQueriesTests",
           "timeout": 300.0
         },
@@ -503,12 +525,60 @@
         },
         {
           "labels": [],
+          "name": "EpidemicIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicInteractionEffectsIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicMemoryUnitTests",
           "timeout": 300.0
         },
         {
           "labels": [],
+          "name": "EpidemicNarrativeIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "persistence-storage",
+            "persistence-wire",
+            "truth"
+          ],
+          "name": "EpidemicPersistenceProcessTruthTests",
+          "timeout": 240.0
+        },
+        {
+          "labels": [
+            "persistence-storage",
+            "persistence-wire",
+            "truth"
+          ],
+          "name": "EpidemicPersistenceWireTruthTests",
+          "timeout": 120.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicPlatformInputIntegrationTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests",
           "timeout": 300.0
         },
         {
@@ -617,7 +687,11 @@
           "timeout": 300.0
         },
         {
-          "labels": [],
+          "labels": [
+            "persistence-schema",
+            "persistence-storage",
+            "persistence-wire"
+          ],
           "name": "EpidemicRuntimeSupportTests",
           "timeout": 300.0
         },
@@ -633,13 +707,33 @@
         },
         {
           "labels": [],
+          "name": "EpidemicSocialLegalIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicStateIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicSupportIntegrationTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
           "timeout": 300.0
         },
         {
           "labels": [],
           "name": "EpidemicWindowSmokeApp",
           "timeout": 30.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicWorldIntegrationSaveParticipantTests",
+          "timeout": 300.0
         }
       ]
     },
@@ -681,6 +775,11 @@
         },
         {
           "labels": [],
+          "name": "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicFoundationUnitTests",
           "timeout": 300.0
         },
@@ -703,6 +802,14 @@
             "truth"
           ],
           "name": "EpidemicFrameworkPublicApiTruthTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "persistence-schema",
+            "unit"
+          ],
+          "name": "EpidemicFrameworkSaveCompositionTests",
           "timeout": 300.0
         },
         {
@@ -916,7 +1023,11 @@
           "timeout": 300.0
         },
         {
-          "labels": [],
+          "labels": [
+            "persistence-schema",
+            "persistence-wire",
+            "unit"
+          ],
           "name": "EpidemicGameFrameworkSaveGameTests",
           "timeout": 300.0
         },
@@ -972,6 +1083,11 @@
         },
         {
           "labels": [],
+          "name": "EpidemicGameplayIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicGameplayQueriesTests",
           "timeout": 300.0
         },
@@ -992,12 +1108,60 @@
         },
         {
           "labels": [],
+          "name": "EpidemicIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicInteractionEffectsIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicMemoryUnitTests",
           "timeout": 300.0
         },
         {
           "labels": [],
+          "name": "EpidemicNarrativeIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "persistence-storage",
+            "persistence-wire",
+            "truth"
+          ],
+          "name": "EpidemicPersistenceProcessTruthTests",
+          "timeout": 240.0
+        },
+        {
+          "labels": [
+            "persistence-storage",
+            "persistence-wire",
+            "truth"
+          ],
+          "name": "EpidemicPersistenceWireTruthTests",
+          "timeout": 120.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicPlatformInputIntegrationTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests",
           "timeout": 300.0
         },
         {
@@ -1106,7 +1270,11 @@
           "timeout": 300.0
         },
         {
-          "labels": [],
+          "labels": [
+            "persistence-schema",
+            "persistence-storage",
+            "persistence-wire"
+          ],
           "name": "EpidemicRuntimeSupportTests",
           "timeout": 300.0
         },
@@ -1122,13 +1290,33 @@
         },
         {
           "labels": [],
+          "name": "EpidemicSocialLegalIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicStateIntegrationSaveParticipantTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
           "name": "EpidemicSupportIntegrationTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
           "timeout": 300.0
         },
         {
           "labels": [],
           "name": "EpidemicWindowSmokeApp",
           "timeout": 30.0
+        },
+        {
+          "labels": [],
+          "name": "EpidemicWorldIntegrationSaveParticipantTests",
+          "timeout": 300.0
         }
       ]
     },
@@ -1283,7 +1471,11 @@
           "timeout": 300.0
         },
         {
-          "labels": [],
+          "labels": [
+            "persistence-schema",
+            "persistence-storage",
+            "persistence-wire"
+          ],
           "name": "EpidemicRuntimeSupportTests",
           "timeout": 300.0
         },
@@ -1460,7 +1652,11 @@
           "timeout": 300.0
         },
         {
-          "labels": [],
+          "labels": [
+            "persistence-schema",
+            "persistence-storage",
+            "persistence-wire"
+          ],
           "name": "EpidemicRuntimeSupportTests",
           "timeout": 300.0
         },

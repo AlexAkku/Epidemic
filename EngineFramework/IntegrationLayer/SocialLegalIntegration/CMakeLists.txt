@@ -15,3 +15,8 @@ target_link_libraries(EpidemicGameFrameworkSocialLegalIntegration
 )
 
 epidemic_configure_target(EpidemicGameFrameworkSocialLegalIntegration)
+
+# M5.2 ownership-local save bindings; SaveGame never links back to owners.
+target_sources(EpidemicGameFrameworkSocialLegalIntegration PRIVATE src/save_participants.cpp)
+target_link_libraries(EpidemicGameFrameworkSocialLegalIntegration PUBLIC EpidemicGameFrameworkSaveGame)
+target_include_directories(EpidemicGameFrameworkSocialLegalIntegration PRIVATE "${CMAKE_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")

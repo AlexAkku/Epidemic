@@ -1,0 +1,199 @@
+{
+  "anchors": {
+    "054aaa31d72890f4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:73::`054aaa31d72890f4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:144::\"Runtime missing backend file requires explicit initialization\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:144::\"Runtime missing backend file requires explicit initialization\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
+      }
+    },
+    "13bc9b0c6b02298b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:11::`13bc9b0c6b02298b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:102::\"Base bounded byte read returns exact package\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:102::\"Base bounded byte read returns exact package\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
+      }
+    },
+    "27b5bca91fd5124f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:72::`27b5bca91fd5124f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:67::\"Runtime Time persisted fractional remainder\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:67::\"Runtime Time persisted fractional remainder\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
+      }
+    },
+    "6ca08615bdf019df": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:70::`6ca08615bdf019df`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:106::\"Runtime duplicate snapshot rejected\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:106::\"Runtime duplicate snapshot rejected\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
+      }
+    },
+    "8a357fc227f38aa5": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:12::`8a357fc227f38aa5`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:105::\"Base identical byte package commit preserves exact content\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:105::\"Base identical byte package commit preserves exact content\"",
+          "Tests/Truth/persistence_wire_tests.cpp:115::\"filesystem failure preserves old save and informative error\"",
+          "Tests/Truth/persistence_wire_tests.cpp:118::\"handled failure cleans only its own temporary file\"",
+          "Tests/Truth/persistence_wire_tests.cpp:104::\"Base oversized commit preserves old file\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
+      }
+    },
+    "9d6573c100ad9474": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:71::`9d6573c100ad9474`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:157::\"Runtime invalid clock commit preserves old generation\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:157::\"Runtime invalid clock commit preserves old generation\"",
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:141::\"Runtime native commit failure reported\"",
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:142::\"Runtime storage failure preserves both old independent packages\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
+      }
+    }
+  },
+  "api": {
+    "054aaa31d72890f4": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_package_tests.cpp:144::\"Runtime missing backend file requires explicit initialization\"",
+      "review_rationale": "Create a path-only IPersistenceBackend adapter with no second authoritative state cache. Explicit initialization, semantic and wire validation, canonical all-record encoding, strongest atomic file durability and fresh store reopen.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<std::shared_ptr<IPersistenceBackend>> CreateFilePersistenceBackend(const foundation::Path&path);"
+    },
+    "13bc9b0c6b02298b": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineBase/Platform/include/Epidemic/Platform/iplatform_runtime.h",
+      "module": "EngineBase/Platform",
+      "obligations": {},
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:102::\"Base bounded byte read returns exact package\"",
+      "review_rationale": "Bounded neutral byte read; reject missing/oversized/changed file before exposing incomplete bytes; no gameplay dependency.",
+      "scope": "epidemic::platform",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> ReadFilePackage(const foundation::Path&path,std::size_t max_bytes);"
+    },
+    "27b5bca91fd5124f": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_package_tests.cpp:67::\"Runtime Time persisted fractional remainder\"",
+      "review_rationale": "Bounded v1 decode/checksum/configuration validation returns a value checkpoint, without mutating any live clock; immutable golden and fresh-clock restore regressions.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<TimeCheckpoint> LoadRuntimeTimeCheckpoint(const foundation::Path&path);"
+    },
+    "6ca08615bdf019df": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Persistence/include/Epidemic/Runtime/Persistence/persistence_backend.h",
+      "module": "EngineRuntime/Persistence",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_package_tests.cpp:106::\"Runtime duplicate snapshot rejected\"",
+      "review_rationale": "Expose the existing semantic validation used by service composition to durable backend adapters; rejects invalid identity/revision/enum/zone relationships before atomic I/O.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot&snapshot);"
+    },
+    "8a357fc227f38aa5": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineBase/Platform/include/Epidemic/Platform/iplatform_runtime.h",
+      "module": "EngineBase/Platform",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:105::\"Base identical byte package commit preserves exact content\"",
+      "review_rationale": "Externally synchronized byte commit, same-directory CREATE_NEW temp, full write/flush/close then atomic replacement; handled failure preserves old file and cleans only owned temp.",
+      "scope": "epidemic::platform",
+      "signature": "[[nodiscard]] foundation::Result<void> CommitFilePackage(const foundation::Path&path,std::span<const std::byte> bytes,std::size_t max_bytes);"
+    },
+    "9d6573c100ad9474": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineRuntime/Support/tests/runtime_package_tests.cpp:157::\"Runtime invalid clock commit preserves old generation\"",
+      "review_rationale": "Validate the complete Runtime continuation including fractional remainder/configuration, encode explicit bounded v1 fields, then Base atomic byte replacement. Independent plane only; causal generation is M5.3.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<void> CommitRuntimeTimeCheckpoint(const foundation::Path&path,const TimeCheckpoint&checkpoint);"
+    }
+  },
+  "external_boundary": {
+    "cc79118febf30ac0": {
+      "callable_id": "054aaa31d72890f4",
+      "module": "EngineRuntime/Support",
+      "review_evidence": "EngineRuntime/Support/tests/runtime_package_tests.cpp:144::\"Runtime missing backend file requires explicit initialization\"",
+      "review_rationale": "Create a path-only IPersistenceBackend adapter with no second authoritative state cache. Explicit initialization, semantic and wire validation, canonical all-record encoding, strongest atomic file durability and fresh store reopen. Failure returns Result; adapters invoke only bounded Base byte operations after validation.",
+      "status": "REVIEWED"
+    }
+  },
+  "lifecycle": {},
+  "reviewed": true,
+  "schema_version": 1,
+  "stale_identity": {
+    "b2567d4bec001389": {
+      "callable_id": "8a357fc227f38aa5",
+      "module": "EngineBase/Platform",
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:105::\"Base identical byte package commit preserves exact content\"",
+      "review_rationale": "Externally synchronized byte commit, same-directory CREATE_NEW temp, full write/flush/close then atomic replacement; handled failure preserves old file and cleans only owned temp.",
+      "status": "REVIEWED"
+    },
+    "f3e01ef739828110": {
+      "callable_id": "9d6573c100ad9474",
+      "module": "EngineRuntime/Support",
+      "review_evidence": "EngineRuntime/Support/tests/runtime_package_tests.cpp:157::\"Runtime invalid clock commit preserves old generation\"",
+      "review_rationale": "Validate the complete Runtime continuation including fractional remainder/configuration, encode explicit bounded v1 fields, then Base atomic byte replacement. Independent plane only; causal generation is M5.3.",
+      "status": "REVIEWED"
+    }
+  }
+}

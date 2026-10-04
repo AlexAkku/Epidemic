@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Epidemic/Foundation/result.h"
+#include "Epidemic/Foundation/path.h"
 #include "Epidemic/Runtime/Animation/animation_runtime.h"
 #include "Epidemic/Runtime/Assets/asset_services.h"
 #include "Epidemic/Runtime/Audio/audio_runtime.h"
@@ -29,6 +30,15 @@
 
 namespace epidemic::runtime
 {
+// Independent version-1 Runtime durable boundaries. Externally synchronized,
+// single writer per path. Missing files are errors: initialize a backend explicitly
+// with CommitSnapshot(empty, SaveAndFlushRequired) before composing a new store.
+// These operations do not establish a cross-plane consistent save point (M5.3).
+[[nodiscard]] foundation::Result<void> CommitRuntimeTimeCheckpoint(
+    const foundation::Path& path, const TimeCheckpoint& checkpoint);
+[[nodiscard]] foundation::Result<TimeCheckpoint> LoadRuntimeTimeCheckpoint(const foundation::Path& path);
+[[nodiscard]] foundation::Result<std::shared_ptr<IPersistenceBackend>> CreateFilePersistenceBackend(const foundation::Path& path);
+
 struct RuntimeFoundationRegistration
 {
     std::string name = "RuntimeFoundation";

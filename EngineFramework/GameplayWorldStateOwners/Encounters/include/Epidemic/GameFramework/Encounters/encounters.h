@@ -378,6 +378,8 @@ struct EncounterDiagnostics
 
 class EncountersService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<EncountersService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

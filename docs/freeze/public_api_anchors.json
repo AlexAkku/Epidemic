@@ -240,7 +240,7 @@
     },
     "0134ab68f91e7eb1": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:222::[[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:232::[[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;",
         "reviewed": true
       },
       "test": {
@@ -826,9 +826,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1168,6 +1168,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkNarrativeTests"
+      }
+    },
+    "054aaa31d72890f4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:73::`054aaa31d72890f4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:144::\"Runtime missing backend file requires explicit initialization\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:144::\"Runtime missing backend file requires explicit initialization\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
       }
     },
     "054ba73dc706153e": {
@@ -1527,7 +1541,7 @@
     },
     "06c1d6278cb49e80": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:392::[[nodiscard]] foundation::Result<void> RegisterAssets(core::Application& app, const AssetsOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:402::[[nodiscard]] foundation::Result<void> RegisterAssets(core::Application& app, const AssetsOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -1676,9 +1690,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -2006,6 +2020,24 @@
         "target": "EpidemicGameplayFactsTests"
       }
     },
+    "089ee8fd6cc6a8e8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:54::`089ee8fd6cc6a8e8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:14::auto participant = savegame::CreateCrimeServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+      }
+    },
     "089fefbd854e19bc": {
       "contract": {
         "anchor": "docs/EngineRuntime/modules/time.md:7::## \u041a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u044b",
@@ -2244,15 +2276,29 @@
         "target": "EpidemicGameFrameworkGameplayIntegrationTests"
       }
     },
+    "09cec577d25610b8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:16::`09cec577d25610b8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:86::\"stored truncation rejected\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:86::\"stored truncation rejected\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
+      }
+    },
     "09e96984d4dae743": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/save_game.md:28::- G4-API-09e96984d4dae743: `epidemic::gameplay::savegame::ISaveParticipant` \u2014 `[[nodiscard]] virtual foundation::Result<",
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:132::epidemic::foundation::Result<void> ValidateSnapshot(const SaveSection &section,",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:133::epidemic::foundation::Result<void> ValidateSnapshot(const SaveSection &section,",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:135::if (throw_validate)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:136::if (throw_validate)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -2732,6 +2778,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicFoundationUnitTests"
+      }
+    },
+    "0bf22cb55d159adb": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:25::`0bf22cb55d159adb`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:78::auto participant = savegame::CreateItemsInventoryServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
       }
     },
     "0bf6beadf65352fb": {
@@ -3257,9 +3321,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -3653,7 +3717,7 @@
     },
     "0fb2f318786071b9": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:423::[[nodiscard]] std::vector<RuntimeShutdownStep> GetRuntimeShutdownOrder();",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:433::[[nodiscard]] std::vector<RuntimeShutdownStep> GetRuntimeShutdownOrder();",
         "reviewed": true
       },
       "test": {
@@ -4088,9 +4152,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:144::epidemic::foundation::Result<std::unique_ptr<IRestoreStage>> StageRestore(const SaveSection &section,",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:145::epidemic::foundation::Result<std::unique_ptr<IRestoreStage>> StageRestore(const SaveSection &section,",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:147::if (fail_stage)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:148::if (fail_stage)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -4136,6 +4200,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
+      }
+    },
+    "11e593b9fd957eb8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:27::`11e593b9fd957eb8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:15::auto participant = savegame::CreateAbilityServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
     "11ea732d14d62253": {
@@ -4192,6 +4274,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSocietyTests"
+      }
+    },
+    "1213accdf78fbd99": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:50::`1213accdf78fbd99`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:125::auto participant = savegame::CreatePopulationLifecycleAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
       }
     },
     "1224c5a442d7c530": {
@@ -4362,6 +4462,24 @@
         "target": "EpidemicRuntimeStreamingTests"
       }
     },
+    "13033d51725da526": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:40::`13033d51725da526`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp:31::auto participant = savegame::CreateInteractionEffectExecutorSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicInteractionEffectsIntegrationSaveParticipantTests"
+      }
+    },
     "134d5b82878230b9": {
       "contract": {
         "anchor": "docs/EngineRuntime/modules/persistence.md:7::## \u041c\u043e\u0434\u0435\u043b\u044c",
@@ -4416,6 +4534,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSocialLegalIntegrationTests"
+      }
+    },
+    "13bc9b0c6b02298b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:11::`13bc9b0c6b02298b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:102::\"Base bounded byte read returns exact package\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:102::\"Base bounded byte read returns exact package\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "13beb247ec58a43a": {
@@ -4500,6 +4632,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkFoundationTests"
+      }
+    },
+    "1453b43fc95e1434": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:14::`1453b43fc95e1434`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp:140::\"historical wire golden decodes and canonically re-encodes\"",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp:140::\"historical wire golden decodes and canonically re-encodes\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
       }
     },
     "145bc8b4723505fc": {
@@ -5033,6 +5179,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeRendererTests"
+      }
+    },
+    "166c8a87f706f662": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:28::`166c8a87f706f662`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:37::auto participant = savegame::CreateCombatServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
     "16a9fe776716980f": {
@@ -5693,6 +5857,24 @@
         "target": "EpidemicRuntimePhysicsTests"
       }
     },
+    "1994c177136bb880": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:61::`1994c177136bb880`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:77::auto participant = savegame::CreateMaterialServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicStateIntegrationSaveParticipantTests"
+      }
+    },
     "1995247a1118b8e2": {
       "contract": {
         "anchor": "docs/EngineFramework/ResourcesProduction.md:73::`1995247a1118b8e2`",
@@ -5733,6 +5915,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkRuntimeBridgeTests"
+      }
+    },
+    "19b4672f4a59ab5b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:58::`19b4672f4a59ab5b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:15::auto participant = savegame::CreateConditionServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicStateIntegrationSaveParticipantTests"
       }
     },
     "19bc3d431c8447e3": {
@@ -6088,7 +6288,7 @@
     },
     "1b500bab1a319ae4": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:187::[[nodiscard]] virtual foundation::Result<std::shared_ptr<const animation::PoseBuffer>>",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:197::[[nodiscard]] virtual foundation::Result<std::shared_ptr<const animation::PoseBuffer>>",
         "reviewed": true
       },
       "test": {
@@ -6105,7 +6305,7 @@
     },
     "1b6fe70216cd3057": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:352::virtual ~IEngineRuntimeCoordinator() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:362::virtual ~IEngineRuntimeCoordinator() = default;",
         "reviewed": true
       },
       "test": {
@@ -6322,6 +6522,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkNarrativeIntegrationTests"
+      }
+    },
+    "1c3b38592ccc2eb9": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:35::`1c3b38592ccc2eb9`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:109::\"embedded NUL path rejected before filesystem access\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:109::\"embedded NUL path rejected before filesystem access\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "1c55c01ea10de0dc": {
@@ -8130,6 +8344,24 @@
         "target": "EpidemicGameFrameworkStateIntegrationTests"
       }
     },
+    "2343c8291ddca14b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:51::`2343c8291ddca14b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp:13::auto participant = savegame::CreateProcessesServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+      }
+    },
     "235e8a53d2cbec4c": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/facts.md:35::`235e8a53d2cbec4c`",
@@ -8748,9 +8980,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -8776,9 +9008,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:89::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:90::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:89::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:90::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -8968,7 +9200,7 @@
     },
     "2754570b3dcc48eb": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:229::[[nodiscard]] virtual std::span<const simulation::SimulationProposalBatch> CommittedBatches() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:239::[[nodiscard]] virtual std::span<const simulation::SimulationProposalBatch> CommittedBatches() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -9017,6 +9249,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEnvironmentTests"
+      }
+    },
+    "27b5bca91fd5124f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:72::`27b5bca91fd5124f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:67::\"Runtime Time persisted fractional remainder\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:67::\"Runtime Time persisted fractional remainder\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
       }
     },
     "27baadf340e75b05": {
@@ -9305,9 +9551,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:224::if (!runtime_adapter.Synchronize())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:225::if (!runtime_adapter.Synchronize())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:224::if (!runtime_adapter.Synchronize())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:225::if (!runtime_adapter.Synchronize())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -9525,7 +9771,7 @@
     },
     "2a49cc19d233f465": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:141::[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSkeleton(animation::SkeletonId id) const = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:151::[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSkeleton(animation::SkeletonId id) const = 0;",
         "reviewed": true
       },
       "test": {
@@ -9684,9 +9930,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -9736,7 +9982,7 @@
     },
     "2b5348b5afb48449": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:116::[[nodiscard]] virtual foundation::Result<ChunkStreamingManifest> GetManifest(ChunkId chunk) const = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:126::[[nodiscard]] virtual foundation::Result<ChunkStreamingManifest> GetManifest(ChunkId chunk) const = 0;",
         "reviewed": true
       },
       "test": {
@@ -10174,7 +10420,7 @@
     },
     "2cfc8a66f35acc57": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:156::[[nodiscard]] virtual const animation::AnimationClipDesc& GetClip() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:166::[[nodiscard]] virtual const animation::AnimationClipDesc& GetClip() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -10642,7 +10888,7 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:461::auto bounded_stage = bounded_restored_participant.StageRestore(bounded_section.Value(), {});",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:468::auto bounded_stage = bounded_restored_participant.StageRestore(bounded_section.Value(), {});",
         "assertions": [
           "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:77::if (!SameDelivery(a.deliveries[i], b.deliveries[i]))"
         ],
@@ -10698,9 +10944,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:74::return epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>>::Success(",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:75::return epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>>::Success(",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -11055,6 +11301,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkResourcesProductionTests"
+      }
+    },
+    "30ff11eb4f6f57b7": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:15::`30ff11eb4f6f57b7`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:131::\"virtual store destruction never removes committed save\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:131::\"virtual store destruction never removes committed save\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "311370fe6e9ff256": {
@@ -11562,6 +11822,24 @@
         "target": "EpidemicGameFrameworkEquipmentTests"
       }
     },
+    "3310cb694f801eb0": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:24::`3310cb694f801eb0`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:58::auto participant = savegame::CreateEquipmentServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+      }
+    },
     "331decdb61f3bb27": {
       "contract": {
         "anchor": "docs/EngineFramework/Entities.md:89::`331decdb61f3bb27`",
@@ -11778,9 +12056,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:146::if (!dispatcher.Freeze())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:147::if (!dispatcher.Freeze())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:146::if (!dispatcher.Freeze())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:147::if (!dispatcher.Freeze())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -12062,9 +12340,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -12174,9 +12452,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -12473,7 +12751,7 @@
     },
     "36f01cba7c3052bc": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:404::[[nodiscard]] foundation::Result<void> RegisterPhysics(core::Application& app);",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:414::[[nodiscard]] foundation::Result<void> RegisterPhysics(core::Application& app);",
         "reviewed": true
       },
       "test": {
@@ -12636,7 +12914,7 @@
     },
     "3767431a277b2bd9": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:399::[[nodiscard]] foundation::Result<void> RegisterWorld(core::Application& app, const WorldOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:409::[[nodiscard]] foundation::Result<void> RegisterWorld(core::Application& app, const WorldOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -12741,7 +13019,7 @@
     },
     "37b0f01c0c466d14": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:400::[[nodiscard]] foundation::Result<void> RegisterStreaming(core::Application& app);",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:410::[[nodiscard]] foundation::Result<void> RegisterStreaming(core::Application& app);",
         "reviewed": true
       },
       "test": {
@@ -13148,9 +13426,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:150::if (dispatcher.RegisterObserver(",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:151::if (dispatcher.RegisterObserver(",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:150::if (dispatcher.RegisterObserver("
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:151::if (dispatcher.RegisterObserver("
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -13930,6 +14208,24 @@
         "target": "EpidemicRuntimeSimulationTests"
       }
     },
+    "3c27a62f2fedeb5e": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:68::`3c27a62f2fedeb5e`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:55::auto participant = savegame::CreateWorldServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicWorldIntegrationSaveParticipantTests"
+      }
+    },
     "3c38007ac3bc0a34": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/runtime_bridge.md:45::`3c38007ac3bc0a34`",
@@ -14006,7 +14302,7 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:464::bounded_restored_participant.CommitRestore(*bounded_restore_stage);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:471::bounded_restored_participant.CommitRestore(*bounded_restore_stage);",
         "assertions": [
           "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:77::if (!SameDelivery(a.deliveries[i], b.deliveries[i]))"
         ],
@@ -14836,6 +15132,24 @@
         "target": "EpidemicGameFrameworkDialogueTests"
       }
     },
+    "40c36e63f26db2de": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:42::`40c36e63f26db2de`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp:19::auto participant = savegame::CreateAIServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+      }
+    },
     "40c43018f17476c6": {
       "contract": {
         "anchor": "docs/EngineFramework/Perception.md:78::- `40c43018f17476c6` | `MUTATOR` | `epidemic::gameplay::perception::PerceptionService` | `[[nodiscard]] foundation::Result<void> RestoreSnapshot(PerceptionSnapshot snapshot);`",
@@ -14870,9 +15184,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:182::SaveSchemaVersion FromVersion() const noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:183::SaveSchemaVersion FromVersion() const noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -15706,7 +16020,7 @@
     },
     "4427e33a78519b77": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:394::[[nodiscard]] foundation::Result<void> RegisterResources(core::Application& app, const ResourceOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:404::[[nodiscard]] foundation::Result<void> RegisterResources(core::Application& app, const ResourceOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -15853,7 +16167,7 @@
     },
     "44bb691f3f3e6f68": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:422::[[nodiscard]] std::vector<RuntimeUpdateStep> GetRuntimeUpdateOrder();",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:432::[[nodiscard]] std::vector<RuntimeUpdateStep> GetRuntimeUpdateOrder();",
         "reviewed": true
       },
       "test": {
@@ -15966,9 +16280,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -16403,9 +16717,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -16801,6 +17115,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkWorldTests"
+      }
+    },
+    "48dedbced79a476e": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:47::`48dedbced79a476e`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:53::auto participant = savegame::CreatePopulationServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
       }
     },
     "48f84eefaca4767d": {
@@ -17244,9 +17576,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -17483,9 +17815,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -17649,7 +17981,7 @@
     },
     "4c24985bd7f295a4": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:139::virtual ~IAnimationResourceMapper() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:149::virtual ~IAnimationResourceMapper() = default;",
         "reviewed": true
       },
       "test": {
@@ -18002,9 +18334,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:156::void CommitRestore(IRestoreStage &stage) noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:157::void CommitRestore(IRestoreStage &stage) noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:158::if (barrier_active != nullptr && !*barrier_active)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:159::if (barrier_active != nullptr && !*barrier_active)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -18451,7 +18783,7 @@
     },
     "4ed18c9f6828f3b0": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:355::[[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:365::[[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;",
         "reviewed": true
       },
       "test": {
@@ -18869,6 +19201,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkAITests"
+      }
+    },
+    "506434a11b38826b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:53::`506434a11b38826b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp:52::auto participant = savegame::CreateSimulationServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
       }
     },
     "506c9893da8c08f5": {
@@ -19344,7 +19694,7 @@
     },
     "52692e1a7f79e3e6": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:406::[[nodiscard]] foundation::Result<void> RegisterRenderer(core::Application& app, const renderer::RendererOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:416::[[nodiscard]] foundation::Result<void> RegisterRenderer(core::Application& app, const renderer::RendererOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -19429,7 +19779,7 @@
     },
     "52a1466cb4ec32c5": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:405::[[nodiscard]] foundation::Result<void> RegisterAudio(core::Application& app, audio::AudioOptions options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:415::[[nodiscard]] foundation::Result<void> RegisterAudio(core::Application& app, audio::AudioOptions options = {});",
         "reviewed": true
       },
       "test": {
@@ -20591,9 +20941,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -20801,9 +21151,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -21310,7 +21660,7 @@
     },
     "5b32535b0e941680": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:354::[[nodiscard]] virtual foundation::Result<RuntimeTickResult> Tick(const RuntimeFrameInput& input) = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:364::[[nodiscard]] virtual foundation::Result<RuntimeTickResult> Tick(const RuntimeFrameInput& input) = 0;",
         "reviewed": true
       },
       "test": {
@@ -21490,9 +21840,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:163::if (commit_order != nullptr)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:164::if (commit_order != nullptr)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:163::if (commit_order != nullptr)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:164::if (commit_order != nullptr)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -21668,9 +22018,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:54::epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireCaptureLease() override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:55::epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireCaptureLease() override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:57::if (fail_capture)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:58::if (fail_capture)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -21724,9 +22074,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:345::optional.id = SaveParticipantId::FromString(\"optional\");",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:463::optional.id = SaveParticipantId::FromString(\"optional\");",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -21808,9 +22158,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:96::const auto due_event_again = time_facts.RegisterContracts();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::const auto due_event_again = time_facts.RegisterContracts();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -22060,9 +22410,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:391::c.deps = {SaveParticipantId::FromString(\"d\")};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:509::c.deps = {SaveParticipantId::FromString(\"d\")};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -22186,9 +22536,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -22490,7 +22840,7 @@
     },
     "6066fd435d716e54": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:189::[[nodiscard]] virtual std::size_t PoseCount() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:199::[[nodiscard]] virtual std::size_t PoseCount() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -23372,6 +23722,24 @@
         "target": "EpidemicRuntimeWorldTests"
       }
     },
+    "6429d688ab593411": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:52::`6429d688ab593411`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/processresourcesimulationintegration_save_participant_tests.cpp:33::auto participant = savegame::CreateResourcesProductionServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+      }
+    },
     "6431652035b858c3": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/foundation.md:65::`6431652035b858c3`",
@@ -23826,9 +24194,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -24102,7 +24470,7 @@
     },
     "67747360d1cf839a": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:421::[[nodiscard]] std::vector<RuntimeAdapterKind> GetAllowedRuntimeAdapters();",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:431::[[nodiscard]] std::vector<RuntimeAdapterKind> GetAllowedRuntimeAdapters();",
         "reviewed": true
       },
       "test": {
@@ -24761,9 +25129,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -24901,9 +25269,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:89::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:90::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:89::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:90::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -24925,7 +25293,7 @@
     },
     "6a4f1539db7fc574": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:130::virtual ~IStreamingPreparedChunkDataQuery() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:140::virtual ~IStreamingPreparedChunkDataQuery() = default;",
         "reviewed": true
       },
       "test": {
@@ -25123,7 +25491,7 @@
     },
     "6b5840f4c5ffe0c2": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:114::virtual ~IChunkStreamingManifestSource() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:124::virtual ~IChunkStreamingManifestSource() = default;",
         "reviewed": true
       },
       "test": {
@@ -25180,9 +25548,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:391::c.deps = {SaveParticipantId::FromString(\"d\")};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:509::c.deps = {SaveParticipantId::FromString(\"d\")};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -25410,6 +25778,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSocietyTests"
+      }
+    },
+    "6ca08615bdf019df": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:70::`6ca08615bdf019df`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:106::\"Runtime duplicate snapshot rejected\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:106::\"Runtime duplicate snapshot rejected\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
       }
     },
     "6ca7e1ea3d929716": {
@@ -26388,7 +26770,7 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:513::auto reference = KnowledgeNarrativeAdapter::DecodeReference(clue->payload);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:520::auto reference = KnowledgeNarrativeAdapter::DecodeReference(clue->payload);",
         "assertions": [
           "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:77::if (!SameDelivery(a.deliveries[i], b.deliveries[i]))"
         ],
@@ -26827,7 +27209,7 @@
     },
     "7260b1f7ae9647d0": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:185::virtual ~IRuntimePoseCache() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:195::virtual ~IRuntimePoseCache() = default;",
         "reviewed": true
       },
       "test": {
@@ -26873,9 +27255,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -27148,6 +27530,24 @@
         "target": "EpidemicGameFrameworkMaterialsTests"
       }
     },
+    "73dd977ee463a146": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:44::`73dd977ee463a146`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp:59::auto participant = savegame::CreatePerceptionServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
+      }
+    },
     "73eff8b1329a01f5": {
       "contract": {
         "anchor": "docs/EngineFramework/Combat.md:94::- `73eff8b1329a01f5` | `MUTATOR` | `epidemic::gameplay::combat::CombatService` | `void ReleaseResourceReservation(CombatResourceReservationId reservation,GameplayContext context={})noexcept;`",
@@ -27318,7 +27718,7 @@
     },
     "747fa1c7bd59ac6d": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:142::[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveClip(animation::AnimationClipId id) const = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:152::[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveClip(animation::AnimationClipId id) const = 0;",
         "reviewed": true
       },
       "test": {
@@ -27426,6 +27826,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkPerceptionTests"
+      }
+    },
+    "74fdc5ed555b34fd": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:13::`74fdc5ed555b34fd`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp:79::\"canonical re-encoding is byte-stable\"",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp:79::\"canonical re-encoding is byte-stable\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
       }
     },
     "7531712b451465c3": {
@@ -27594,6 +28008,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkAbilitiesTests"
+      }
+    },
+    "75eacf72886c1d2c": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:33::`75eacf72886c1d2c`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:156::auto participant = savegame::CreateConditionProgressionAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
     "75eeadfff82079e9": {
@@ -27846,6 +28278,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCrimeTests"
+      }
+    },
+    "76df57f5fde021da": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:65::`76df57f5fde021da`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:55::auto participant = savegame::CreateTraversalServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
       }
     },
     "76f4b299b72fc605": {
@@ -28681,9 +29131,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:349::if (retry_dispatcher.PendingCount() != 0)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:350::if (retry_dispatcher.PendingCount() != 0)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:349::if (retry_dispatcher.PendingCount() != 0)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:350::if (retry_dispatcher.PendingCount() != 0)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28862,6 +29312,22 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkFoundationTests"
+      }
+    },
+    "7ada27792bdc91d9": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:20::`7ada27792bdc91d9`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:276::Check(bool(orchestrator.RegisterComposition(participants, migrations, expected))",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:276::Check(bool(orchestrator.RegisterComposition(participants, migrations, expected))",
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:275::\"failed composition leaves registry empty and unfrozen\"",
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:278::\"late registration rejected\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
       }
     },
     "7ada5e4c3ebc48f8": {
@@ -29122,9 +29588,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:178::SaveParticipantId Participant() const noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:179::SaveParticipantId Participant() const noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:163::if (commit_order != nullptr)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:164::if (commit_order != nullptr)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -29828,7 +30294,7 @@
     },
     "7eddf8229f9429ca": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:397::[[nodiscard]] foundation::Result<void> RegisterEnvironment(core::Application& app, const EnvironmentOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:407::[[nodiscard]] foundation::Result<void> RegisterEnvironment(core::Application& app, const EnvironmentOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -30240,6 +30706,24 @@
         "target": "EpidemicRuntimeRendererTests"
       }
     },
+    "809d0239b3384aef": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:49::`809d0239b3384aef`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:107::auto participant = savegame::CreatePopulationEncounterAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+      }
+    },
     "80b1b14eb25780b2": {
       "contract": {
         "anchor": "docs/EngineFramework/Construction.md:131::- `80b1b14eb25780b2` | `MUTATOR` | `epidemic::gameplay::construction::ConstructionService` | `[[nodiscard]] foundation::Result<void> CompleteConstructionSite(ConstructionSiteId id,GameplayContext context={});`",
@@ -30372,9 +30856,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -30566,7 +31050,7 @@
     },
     "8259739c579e04e6": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:175::virtual ~ISceneProjectionQueue() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:185::virtual ~ISceneProjectionQueue() = default;",
         "reviewed": true
       },
       "test": {
@@ -31198,9 +31682,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -31232,6 +31716,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkNarrativeTests"
+      }
+    },
+    "85a46f09458100da": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:39::`85a46f09458100da`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:35::auto participant = savegame::CreateGameplayTimeServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicIntegrationSaveParticipantTests"
       }
     },
     "85ae5f3a6dc5d19a": {
@@ -31576,9 +32078,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:178::SaveParticipantId Participant() const noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:179::SaveParticipantId Participant() const noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:163::if (commit_order != nullptr)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:164::if (commit_order != nullptr)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -31750,6 +32252,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkAbilitiesTests"
+      }
+    },
+    "8815895782437a94": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:23::`8815895782437a94`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:39::auto participant = savegame::CreateEconomyServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
       }
     },
     "882076cf3231ba5c": {
@@ -31978,7 +32498,7 @@
     },
     "8984ddafa612fa0f": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:215::[[nodiscard]] virtual foundation::Result<void> Publish(const RuntimeFrameEvents& events) = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:225::[[nodiscard]] virtual foundation::Result<void> Publish(const RuntimeFrameEvents& events) = 0;",
         "reviewed": true
       },
       "test": {
@@ -32105,6 +32625,24 @@
         "target": "EpidemicGameFrameworkFoundationTests"
       }
     },
+    "8a146a6eb72d1f5f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:60::`8a146a6eb72d1f5f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:57::auto participant = savegame::CreateEntityServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicStateIntegrationSaveParticipantTests"
+      }
+    },
     "8a1e41a78105d7f1": {
       "contract": {
         "anchor": "docs/EngineFramework/ItemsInventory.md:116::`8a1e41a78105d7f1`",
@@ -32131,6 +32669,23 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEffectsTests"
+      }
+    },
+    "8a357fc227f38aa5": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:12::`8a357fc227f38aa5`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:105::\"Base identical byte package commit preserves exact content\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:105::\"Base identical byte package commit preserves exact content\"",
+          "Tests/Truth/persistence_wire_tests.cpp:115::\"filesystem failure preserves old save and informative error\"",
+          "Tests/Truth/persistence_wire_tests.cpp:118::\"handled failure cleans only its own temporary file\"",
+          "Tests/Truth/persistence_wire_tests.cpp:104::\"Base oversized commit preserves old file\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "8a3dd7db69528aee": {
@@ -32359,7 +32914,7 @@
     },
     "8b7653e1a2cc3c69": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:416::[[nodiscard]] foundation::Result<EngineRuntimeServices> RegisterDefaultEngineRuntime(",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:426::[[nodiscard]] foundation::Result<EngineRuntimeServices> RegisterDefaultEngineRuntime(",
         "reviewed": true
       },
       "test": {
@@ -32407,6 +32962,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkPopulationTests"
+      }
+    },
+    "8b8577c677254868": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:62::`8b8577c677254868`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:108::auto participant = savegame::CreateStateIntegrationPersistenceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicStateIntegrationSaveParticipantTests"
       }
     },
     "8bcb1061354b7927": {
@@ -32579,7 +33152,7 @@
     },
     "8c560a0e919f7a23": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:148::virtual ~IAnimationSkeletonResourcePayload() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:158::virtual ~IAnimationSkeletonResourcePayload() = default;",
         "reviewed": true
       },
       "test": {
@@ -32762,7 +33335,7 @@
     },
     "8d18b5e0ad6f96c8": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:403::[[nodiscard]] foundation::Result<void> RegisterAnimation(core::Application& app, animation::AnimationOptions options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:413::[[nodiscard]] foundation::Result<void> RegisterAnimation(core::Application& app, animation::AnimationOptions options = {});",
         "reviewed": true
       },
       "test": {
@@ -33028,9 +33601,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:345::if (retry_dispatcher.RestoreSnapshot(std::move(corrupt)))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:346::if (retry_dispatcher.RestoreSnapshot(std::move(corrupt)))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:345::if (retry_dispatcher.RestoreSnapshot(std::move(corrupt)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:346::if (retry_dispatcher.RestoreSnapshot(std::move(corrupt)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -33352,9 +33925,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:244::const auto pending_snapshot = dispatcher.CaptureSnapshot();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:245::const auto pending_snapshot = dispatcher.CaptureSnapshot();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:245::if (pending_snapshot.pending.size() != 1 || pending_snapshot.pending.front().completed_handlers.size() != 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:246::if (pending_snapshot.pending.size() != 1 || pending_snapshot.pending.front().completed_handlers.size() != 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -33408,9 +33981,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:175::SaveSchemaVersion to = 2;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:176::SaveSchemaVersion to = 2;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:163::if (commit_order != nullptr)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:164::if (commit_order != nullptr)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -33492,9 +34065,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:391::c.deps = {SaveParticipantId::FromString(\"d\")};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:509::c.deps = {SaveParticipantId::FromString(\"d\")};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -33600,7 +34173,7 @@
     },
     "90f6c7a1c9d69ce7": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:132::[[nodiscard]] virtual foundation::Result<PreparedChunkDataSnapshot>",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:142::[[nodiscard]] virtual foundation::Result<PreparedChunkDataSnapshot>",
         "reviewed": true
       },
       "test": {
@@ -33705,7 +34278,7 @@
     },
     "91751f871275bd78": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:178::[[nodiscard]] virtual std::size_t PendingCount() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:188::[[nodiscard]] virtual std::size_t PendingCount() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -34107,6 +34680,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkPopulationTests"
+      }
+    },
+    "933512eceb3d3007": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:19::`933512eceb3d3007`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:87::\"stored corruption rejected\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:87::\"stored corruption rejected\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "933df5a7a097ffa2": {
@@ -34738,9 +35325,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:74::return epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>>::Success(",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:75::return epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>>::Success(",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -34776,7 +35363,7 @@
     },
     "95b117ed90bc02e0": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:412::[[nodiscard]] foundation::Result<EngineRuntimeServices> CommitPreparedRuntime(",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:422::[[nodiscard]] foundation::Result<EngineRuntimeServices> CommitPreparedRuntime(",
         "reviewed": true
       },
       "test": {
@@ -34833,6 +35420,23 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeSerializationTests"
+      }
+    },
+    "95ce7f9e63df1f73": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:37::`95ce7f9e63df1f73`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:120::\"filesystem next generation replaces old\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:120::\"filesystem next generation replaces old\"",
+          "Tests/Truth/persistence_wire_tests.cpp:115::\"filesystem failure preserves old save and informative error\"",
+          "Tests/Truth/persistence_wire_tests.cpp:118::\"handled failure cleans only its own temporary file\"",
+          "Tests/Truth/persistence_wire_tests.cpp:104::\"Base oversized commit preserves old file\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "95d15c17fb6d6857": {
@@ -35016,9 +35620,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:114::epidemic::foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:115::epidemic::foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:116::if (throw_capture)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:117::if (throw_capture)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -35379,9 +35983,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:613::if (restored_leg_participant.StageRestore(corrupt_handler_section, RestoreContext{}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:631::if (restored_leg_participant.StageRestore(corrupt_handler_section, RestoreContext{}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:613::if (restored_leg_participant.StageRestore(corrupt_handler_section, RestoreContext{}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:631::if (restored_leg_participant.StageRestore(corrupt_handler_section, RestoreContext{}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -35758,9 +36362,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -35778,6 +36382,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeSceneTests"
+      }
+    },
+    "9a0e8462e28cd468": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:45::`9a0e8462e28cd468`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:13::auto participant = savegame::CreateEncountersServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
       }
     },
     "9a0f58c90bd9fe8d": {
@@ -35828,9 +36450,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:66::epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireRestoreLease() override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:67::epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireRestoreLease() override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -36213,9 +36835,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:106::SaveParticipantRequirement Requirement() const noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:107::SaveParticipantRequirement Requirement() const noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:116::if (throw_capture)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:117::if (throw_capture)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -36431,6 +37053,24 @@
         "target": "EpidemicGameFrameworkNarrativeTests"
       }
     },
+    "9d02e2b48212212c": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:67::`9d02e2b48212212c`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:35::auto participant = savegame::CreateInteractionServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicWorldIntegrationSaveParticipantTests"
+      }
+    },
     "9d0ef8f3b09a00c9": {
       "contract": {
         "anchor": "docs/EngineFramework/Abilities.md:101::- `9d0ef8f3b09a00c9` | `MUTATOR` | `epidemic::gameplay::abilities::AbilityService` | `[[nodiscard]] std::uint64_t RevokeBySource(GameplayObjectRef owner,GameplayObjectRef source,GameplayContext context={});`",
@@ -36527,6 +37167,22 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEncountersTests"
+      }
+    },
+    "9d6573c100ad9474": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:71::`9d6573c100ad9474`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_package_tests.cpp:157::\"Runtime invalid clock commit preserves old generation\"",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:157::\"Runtime invalid clock commit preserves old generation\"",
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:141::\"Runtime native commit failure reported\"",
+          "EngineRuntime/Support/tests/runtime_package_tests.cpp:142::\"Runtime storage failure preserves both old independent packages\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSupportTests"
       }
     },
     "9d81aa3eb143b86b": {
@@ -37256,6 +37912,24 @@
         "target": "EpidemicGameFrameworkInteractionEffectsIntegrationTests"
       }
     },
+    "a05d2950ae20f2ef": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:41::`a05d2950ae20f2ef`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp:13::auto participant = savegame::CreateNarrativeServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicNarrativeIntegrationSaveParticipantTests"
+      }
+    },
     "a07149598bae1f98": {
       "contract": {
         "anchor": "docs/freeze/enginebase_diagnostics_audit.md:27::## Public contract: profiling",
@@ -37932,9 +38606,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:89::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:90::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:89::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:90::if (!facts_query.RegisterProviders() || !facts_query.RegisterProviders() || !facts_query.IsRegistered())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -38206,6 +38880,24 @@
         "target": "EpidemicRuntimeNavigationTests"
       }
     },
+    "a4c142a9ffc1356a": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:34::`a4c142a9ffc1356a`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:173::auto participant = savegame::CreateDeathRewardAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
+      }
+    },
     "a4c2874af38a5d51": {
       "contract": {
         "anchor": "docs/EngineFramework/Conditions.md:107::`a4c2874af38a5d51`",
@@ -38260,6 +38952,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeAssetsTests"
+      }
+    },
+    "a5043caf16ea0f46": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:38::`a5043caf16ea0f46`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:14::auto participant = savegame::CreateGameplayFactsServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicIntegrationSaveParticipantTests"
       }
     },
     "a508aaf12adadae5": {
@@ -38373,6 +39083,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkDialogueTests"
+      }
+    },
+    "a590ced07961cf7b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:31::`a590ced07961cf7b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:111::auto participant = savegame::CreateAbilityEffectsDispatcherSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
     "a5c8d637299b0c87": {
@@ -38601,6 +39329,23 @@
         "target": "EpidemicGameFrameworkDialogueTests"
       }
     },
+    "a6c8f150faa44ce7": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:17::`a6c8f150faa44ce7`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:85::\"controlled memory failure preserves old generation\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:85::\"controlled memory failure preserves old generation\"",
+          "Tests/Truth/persistence_wire_tests.cpp:115::\"filesystem failure preserves old save and informative error\"",
+          "Tests/Truth/persistence_wire_tests.cpp:118::\"handled failure cleans only its own temporary file\"",
+          "Tests/Truth/persistence_wire_tests.cpp:104::\"Base oversized commit preserves old file\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
+      }
+    },
     "a6d7f4ca651b01b9": {
       "contract": {
         "anchor": "EngineRuntime/Simulation/docs/Goal3_Block_C_Evidence_2026-09-21.md:77::`a6d7f4ca651b01b9`",
@@ -38617,7 +39362,7 @@
     },
     "a6efde0e133fb75c": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:149::[[nodiscard]] virtual const animation::SkeletonDesc& GetSkeleton() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:159::[[nodiscard]] virtual const animation::SkeletonDesc& GetSkeleton() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -38705,9 +39450,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:165::context.tick = GameplayTickId{1};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:166::context.tick = GameplayTickId{1};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:169::if (!facts.Commit(std::move(tx), context))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:170::if (!facts.Commit(std::move(tx), context))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -39118,7 +39863,7 @@
     },
     "a8c63aea82c29f38": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:209::virtual ~IRuntimeEventSink() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:219::virtual ~IRuntimeEventSink() = default;",
         "reviewed": true
       },
       "test": {
@@ -39203,7 +39948,7 @@
     },
     "a8f6f2272561bf01": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:396::[[nodiscard]] foundation::Result<void> RegisterTime(core::Application& app, const TimeOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:406::[[nodiscard]] foundation::Result<void> RegisterTime(core::Application& app, const TimeOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -39529,9 +40274,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:114::epidemic::foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:115::epidemic::foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:116::if (throw_capture)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:117::if (throw_capture)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -40607,9 +41352,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:156::void CommitRestore(IRestoreStage &stage) noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:157::void CommitRestore(IRestoreStage &stage) noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:158::if (barrier_active != nullptr && !*barrier_active)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:159::if (barrier_active != nullptr && !*barrier_active)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -41421,7 +42166,7 @@
     },
     "b347dc31d54a6a33": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:402::[[nodiscard]] foundation::Result<void> RegisterNavigation(core::Application& app, navigation::NavigationOptions options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:412::[[nodiscard]] foundation::Result<void> RegisterNavigation(core::Application& app, navigation::NavigationOptions options = {});",
         "reviewed": true
       },
       "test": {
@@ -41774,6 +42519,23 @@
         ],
         "reviewed": true,
         "target": "EpidemicDiagnosticsUnitTests"
+      }
+    },
+    "b5208ef69fb96007": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:18::`b5208ef69fb96007`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:93::\"invalid image never reaches store commit\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:93::\"invalid image never reaches store commit\"",
+          "Tests/Truth/persistence_wire_tests.cpp:115::\"filesystem failure preserves old save and informative error\"",
+          "Tests/Truth/persistence_wire_tests.cpp:118::\"handled failure cleans only its own temporary file\"",
+          "Tests/Truth/persistence_wire_tests.cpp:104::\"Base oversized commit preserves old file\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
       }
     },
     "b52b80e44dad825e": {
@@ -42158,7 +42920,7 @@
     },
     "b6f40ab0f4c8f422": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:391::[[nodiscard]] foundation::Result<void> RegisterRuntimeFoundation(core::Application& app);",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:401::[[nodiscard]] foundation::Result<void> RegisterRuntimeFoundation(core::Application& app);",
         "reviewed": true
       },
       "test": {
@@ -42708,7 +43470,7 @@
     },
     "b8e33480e99de1d4": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:393::[[nodiscard]] foundation::Result<void> RegisterSerialization(core::Application& app, const SerializationOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:403::[[nodiscard]] foundation::Result<void> RegisterSerialization(core::Application& app, const SerializationOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -43718,9 +44480,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -43910,7 +44672,7 @@
     },
     "bdf9b845b720dcd4": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:356::[[nodiscard]] virtual bool IsShutdownStarted() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:366::[[nodiscard]] virtual bool IsShutdownStarted() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -44026,6 +44788,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkLootTests"
+      }
+    },
+    "be3edd569ab80055": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:69::`be3edd569ab80055`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:83::auto participant = savegame::CreateWorldFactsAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicWorldIntegrationSaveParticipantTests"
       }
     },
     "be4a5fed3912e976": {
@@ -44692,9 +45472,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -44814,7 +45594,7 @@
     },
     "c145d82da854391e": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:163::[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSound(audio::SoundId id) const = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:173::[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSound(audio::SoundId id) const = 0;",
         "reviewed": true
       },
       "test": {
@@ -44868,6 +45648,24 @@
         "target": "EpidemicGameFrameworkRolesJobsTests"
       }
     },
+    "c1878f8212d68a28": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:26::`c1878f8212d68a28`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:98::auto participant = savegame::CreateTradeCoordinatorSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+      }
+    },
     "c187ccd62a3672d2": {
       "contract": {
         "anchor": "docs/EngineFramework/Population.md:113::- `c187ccd62a3672d2` | `MUTATOR` | `epidemic::gameplay::population::PopulationService` | `[[nodiscard]] foundation::Result<PopulationGroupId> CreateGroup(PopulationGroup group);`",
@@ -44912,7 +45710,7 @@
     },
     "c1a89dd2d8605024": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:398::[[nodiscard]] foundation::Result<void> RegisterScene(core::Application& app, const SceneOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:408::[[nodiscard]] foundation::Result<void> RegisterScene(core::Application& app, const SceneOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -45271,6 +46069,20 @@
         "target": "EpidemicGameFrameworkGameplayIntegrationTests"
       }
     },
+    "c2e1a755cf4c0159": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:21::`c2e1a755cf4c0159`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:49::Check(missing_rejected && &savegame::detail::WorkspaceTestAccess::Resolve(missing, live)",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:49::Check(missing_rejected && &savegame::detail::WorkspaceTestAccess::Resolve(missing, live)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
+      }
+    },
     "c2ec558c1eb5b658": {
       "contract": {
         "anchor": "docs/EngineFramework/Knowledge.md:92::- `c2ec558c1eb5b658` | `QUERY` | `epidemic::gameplay::knowledge::MemoryTypeId` | `TypeId value{};static constexpr MemoryTypeId FromString(std::string_view s)noexcept`",
@@ -45591,6 +46403,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEquipmentTests"
+      }
+    },
+    "c48f05e768a79f6b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:57::`c48f05e768a79f6b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:84::auto participant = savegame::CreateCrimeSocietyAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
       }
     },
     "c49c526b702f3175": {
@@ -46642,9 +47472,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -46670,9 +47500,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -47024,6 +47854,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkProcessesTests"
+      }
+    },
+    "cac7d8f352ccae9c": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:66::`cac7d8f352ccae9c`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:14::auto participant = savegame::CreateEnvironmentServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicWorldIntegrationSaveParticipantTests"
       }
     },
     "cae0b9d8f622ea66": {
@@ -47503,9 +48351,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:135::if (!dispatcher.RegisterActionHandler(",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:136::if (!dispatcher.RegisterActionHandler(",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:135::if (!dispatcher.RegisterActionHandler("
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:136::if (!dispatcher.RegisterActionHandler("
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -47574,9 +48422,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -47602,9 +48450,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -47640,7 +48488,7 @@
     },
     "cd4202a31e5dd9dc": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:395::[[nodiscard]] foundation::Result<void> RegisterPersistence(core::Application& app, const PersistenceOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:405::[[nodiscard]] foundation::Result<void> RegisterPersistence(core::Application& app, const PersistenceOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -47693,9 +48541,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -48057,9 +48905,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:110::std::vector<SaveParticipantId> Dependencies() const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:111::std::vector<SaveParticipantId> Dependencies() const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:116::if (throw_capture)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:117::if (throw_capture)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -48247,6 +49095,24 @@
         "target": "EpidemicRuntimeSceneTests"
       }
     },
+    "cf6fde9746b1adf4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:64::`cf6fde9746b1adf4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:35::auto participant = savegame::CreateNavigationSemanticsServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+      }
+    },
     "cf730fc4afcfd12c": {
       "contract": {
         "anchor": "docs/EngineFramework/ResourcesProduction.md:137::`cf730fc4afcfd12c`",
@@ -48343,6 +49209,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeTimeTests"
+      }
+    },
+    "cfe0ce073e55fb0b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:30::`cfe0ce073e55fb0b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:91::auto participant = savegame::CreateProgressionServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
     "cff0cb27dce1af64": {
@@ -49471,6 +50355,24 @@
         "target": "EpidemicRuntimeFoundationTests"
       }
     },
+    "d35f1e9183fee3ed": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:29::`d35f1e9183fee3ed`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:69::auto participant = savegame::CreateLootServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
+      }
+    },
     "d38b3abaedee851a": {
       "contract": {
         "anchor": "docs/EngineFramework/Ownership.md:124::`d38b3abaedee851a`",
@@ -49717,7 +50619,7 @@
     },
     "d47b3d5654e621cd": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:228::virtual ~IReferenceSimulationCommitLog() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:238::virtual ~IReferenceSimulationCommitLog() = default;",
         "reviewed": true
       },
       "test": {
@@ -50416,7 +51318,7 @@
     },
     "d79f0ddf5e6b698c": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:179::[[nodiscard]] virtual foundation::Result<void> DiscardPending() = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:189::[[nodiscard]] virtual foundation::Result<void> DiscardPending() = 0;",
         "reviewed": true
       },
       "test": {
@@ -50476,6 +51378,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicRhiUnitTests"
+      }
+    },
+    "d7d3af34a15eea5f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:56::`d7d3af34a15eea5f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:53::auto participant = savegame::CreateSocietyServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
       }
     },
     "d7d5c27d80833b86": {
@@ -50717,7 +51637,7 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:526::auto rumor = knowledge_adapter.CreateRumorFromKnowledge(service, knowledge_service, shared.Value(), listener,",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:533::auto rumor = knowledge_adapter.CreateRumorFromKnowledge(service, knowledge_service, shared.Value(), listener,",
         "assertions": [
           "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:77::if (!SameDelivery(a.deliveries[i], b.deliveries[i]))"
         ],
@@ -50843,9 +51763,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -51800,6 +52720,24 @@
         "target": "EpidemicGameFrameworkStateIntegrationTests"
       }
     },
+    "de19ac30cc4f4cf8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:63::`de19ac30cc4f4cf8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:15::auto participant = savegame::CreateConstructionServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests"
+      }
+    },
     "de1b6d8f198cc6f2": {
       "contract": {
         "anchor": "EngineRuntime/Audio/include/Epidemic/Runtime/Audio/audio_types.h:66::[[nodiscard]] constexpr bool operator==(const AudioEmitterHandle&) const noexcept = default;",
@@ -51999,15 +52937,33 @@
         "target": "EpidemicGameFrameworkFoundationTests"
       }
     },
+    "debd8a9ddfaeec43": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:48::`debd8a9ddfaeec43`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:72::auto participant = savegame::CreateRolesJobsServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
+      }
+    },
     "dece04b2fbada448": {
       "contract": {
         "anchor": "docs/EngineFramework/Integration.md:72::- G4-API-dece04b2fbada448: `epidemic::gameplay::integration::RuntimeTimeAdapter` \u2014 `RuntimeTimeAdapter(runtime::IGameClo",
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:210::if (!runtime_adapter.Synchronize())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:211::if (!runtime_adapter.Synchronize())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:210::if (!runtime_adapter.Synchronize())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:211::if (!runtime_adapter.Synchronize())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -52181,6 +53137,24 @@
         "target": "EpidemicGameFrameworkConstructionTests"
       }
     },
+    "e001b34bee0ecbe8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:55::`e001b34bee0ecbe8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/sociallegalintegration_save_participant_tests.cpp:33::auto participant = savegame::CreateOwnershipServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicSocialLegalIntegrationSaveParticipantTests"
+      }
+    },
     "e004e150ca6389d1": {
       "contract": {
         "anchor": "docs/EngineRuntime/modules/animation.md:7::## \u041a\u043e\u043d\u0442\u0440\u0430\u043a\u0442\u044b",
@@ -52243,7 +53217,7 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:513::auto reference = KnowledgeNarrativeAdapter::DecodeReference(clue->payload);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:520::auto reference = KnowledgeNarrativeAdapter::DecodeReference(clue->payload);",
         "assertions": [
           "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:77::if (!SameDelivery(a.deliveries[i], b.deliveries[i]))"
         ],
@@ -53405,6 +54379,24 @@
         "target": "EpidemicGameFrameworkEncountersTests"
       }
     },
+    "e3f23e329c15dc53": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:22::`e3f23e329c15dc53`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/extendedgameplayintegration_save_participant_tests.cpp:17::auto participant = savegame::CreateDialogueServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicExtendedGameplayIntegrationSaveParticipantTests"
+      }
+    },
     "e3f95ca83214279a": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/world.md:90::- G4-API-e3f95ca83214279a: `epidemic::gameplay::world::LocationId` \u2014 `static constexpr LocationId FromString(std::string",
@@ -53600,9 +54592,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:186::SaveSchemaVersion ToVersion() const noexcept override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:187::SaveSchemaVersion ToVersion() const noexcept override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"
@@ -53720,7 +54712,7 @@
     },
     "e591575dffc12010": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:221::virtual ~IRuntimeAdapterLifecycle() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:231::virtual ~IRuntimeAdapterLifecycle() = default;",
         "reviewed": true
       },
       "test": {
@@ -54056,7 +55048,7 @@
     },
     "e744db09d49dce5c": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:401::[[nodiscard]] foundation::Result<void> RegisterSimulation(core::Application& app, const simulation::SimulationOptions& options = {});",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:411::[[nodiscard]] foundation::Result<void> RegisterSimulation(core::Application& app, const simulation::SimulationOptions& options = {});",
         "reviewed": true
       },
       "test": {
@@ -54119,7 +55111,7 @@
     },
     "e775c1995499b44c": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:357::[[nodiscard]] virtual bool IsShutdownComplete() const noexcept = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:367::[[nodiscard]] virtual bool IsShutdownComplete() const noexcept = 0;",
         "reviewed": true
       },
       "test": {
@@ -54336,6 +55328,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkFoundationTests"
+      }
+    },
+    "e84935bc9426c69b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:32::`e84935bc9426c69b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:135::auto participant = savegame::CreateAbilityTimeAdapterSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
     "e85285bec74d24bb": {
@@ -55073,9 +56083,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:496::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:497::if (!load_orchestrator.SetBarrier(save_barrier) || !load_orchestrator.RegisterParticipant(loaded_participant) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -55515,6 +56525,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkMaterialsTests"
+      }
+    },
+    "ed5b74a7fe738351": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:46::`ed5b74a7fe738351`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:33::auto participant = savegame::CreateNeedsLifeServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPopulationSimulationIntegrationSaveParticipantTests"
       }
     },
     "ed687eabe09c92b7": {
@@ -56667,7 +57695,7 @@
     },
     "f30a458a3baeae7c": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:408::[[nodiscard]] foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:418::[[nodiscard]] foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(",
         "reviewed": true
       },
       "test": {
@@ -56885,6 +57913,20 @@
         "target": "EpidemicRuntimeFoundationTests"
       }
     },
+    "f3c69dccdda50f58": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:36::`f3c69dccdda50f58`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "Tests/Truth/persistence_wire_tests.cpp:98::\"filesystem encode and commit\"",
+        "assertions": [
+          "Tests/Truth/persistence_wire_tests.cpp:98::\"filesystem encode and commit\""
+        ],
+        "reviewed": true,
+        "target": "EpidemicPersistenceWireTruthTests"
+      }
+    },
     "f418f64ea405ce41": {
       "contract": {
         "anchor": "docs/EngineFramework/Materials.md:138::`f418f64ea405ce41`",
@@ -56933,9 +57975,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:113::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:114::if (!time_facts.RegisterWithDispatcher(dispatcher) || !time_facts.RegisterWithDispatcher(dispatcher))"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -57177,6 +58219,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkFoundationTests"
+      }
+    },
+    "f5b30af87ed67390": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:43::`f5b30af87ed67390`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/perceptionknowledgeaiintegration_save_participant_tests.cpp:39::auto participant = savegame::CreateKnowledgeServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests"
       }
     },
     "f5c2d1777b4d98a3": {
@@ -57683,7 +58743,7 @@
     },
     "f73909491d333ba3": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:155::virtual ~IAnimationClipResourcePayload() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:165::virtual ~IAnimationClipResourcePayload() = default;",
         "reviewed": true
       },
       "test": {
@@ -57897,9 +58957,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:367::if (!missing_handler_dispatcher.DeclareRequiresActionHandler(missing_handler_action.Value()) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:368::if (!missing_handler_dispatcher.DeclareRequiresActionHandler(missing_handler_action.Value()) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:367::if (!missing_handler_dispatcher.DeclareRequiresActionHandler(missing_handler_action.Value()) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:368::if (!missing_handler_dispatcher.DeclareRequiresActionHandler(missing_handler_action.Value()) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -58838,9 +59898,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:97::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:98::if (!due_event || !due_event_again || due_event.Value() != due_event_again.Value())"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -58897,7 +59957,7 @@
     },
     "fcf8de52d19e7f2e": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:177::[[nodiscard]] virtual foundation::Result<std::size_t> Flush() = 0;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:187::[[nodiscard]] virtual foundation::Result<std::size_t> Flush() = 0;",
         "reviewed": true
       },
       "test": {
@@ -59067,6 +60127,24 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameplayQueriesTests"
+      }
+    },
+    "fdd82224bca6c823": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_participants.md:59::`fdd82224bca6c823`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:37::auto participant = savegame::CreateEffectServiceSaveParticipant(",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:52::Check(!participant.ValidateSnapshot(corrupt, {}), \"wrong participant",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:60::Check(bool(live) && live.Value().payload == section.payload, \"allocation failure",
+          "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:73::Check(bool(repeated) && repeated.Value().payload == published.Value().payload"
+        ],
+        "reviewed": true,
+        "target": "EpidemicStateIntegrationSaveParticipantTests"
       }
     },
     "fdf2ca09390ab3ed": {
@@ -59351,7 +60429,7 @@
     },
     "ff322fb5676c1831": {
       "contract": {
-        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:162::virtual ~IAudioResourceMapper() = default;",
+        "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:172::virtual ~IAudioResourceMapper() = default;",
         "reviewed": true
       },
       "test": {
@@ -59495,9 +60573,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:190::epidemic::foundation::Result<SaveSection> Migrate(const SaveSection &source) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:191::epidemic::foundation::Result<SaveSection> Migrate(const SaveSection &source) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkSaveGameTests"

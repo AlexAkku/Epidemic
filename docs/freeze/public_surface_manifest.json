@@ -831,7 +831,7 @@
       "enum_values": [],
       "enums": [],
       "module": "EngineBase/Platform",
-      "normalized_sha256": "be0384f00be79275168ffff824c1c84e5a681dbba2632a387cd70e7226494634",
+      "normalized_sha256": "48070fd0e8facd5991aa1d21d789c032f271be44cdd548cbc38c8a93253d28d3",
       "public_fields": [
         "ProcessInfo::arguments",
         "ProcessInfo::executable_path",
@@ -1125,7 +1125,8 @@
         "struct PendingEvent",
         "struct PersistentEventRecord",
         "struct PersistentFactRecord",
-        "struct Subscriber"
+        "struct Subscriber",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<GameplayFactsService>"
       ],
       "constants": [
         "kFactChangedEventName",
@@ -1157,7 +1158,7 @@
         "MutationKind"
       ],
       "module": "EngineFramework/BaseInfrastructure/Facts",
-      "normalized_sha256": "9b4fd2627c6867be54757db20ab77db0d4631887469ea26ce8c37fb613c125b9",
+      "normalized_sha256": "f9beeaa403b76283fbf78d15b90fd639ae69b4513a1dd7738b78c55699511e9d",
       "public_fields": [
         "EventDispatchLimits::max_events",
         "EventDispatchLimits::max_waves",
@@ -1216,15 +1217,19 @@
     },
     "EngineFramework/BaseInfrastructure/Foundation/include/Epidemic/GameFramework/Foundation/gameplay_foundation.h": {
       "aliases": [],
-      "classes_and_inheritance": [],
+      "classes_and_inheritance": [
+        "struct SnapshotRestoreAccess"
+      ],
       "constants": [],
       "constraints": [],
       "enum_values": [],
       "enums": [],
       "module": "EngineFramework/BaseInfrastructure/Foundation",
-      "normalized_sha256": "d2ca33c8176cebba13bc49df47dbf48fe83b03a467f746dbde0c437bff9eb23f",
+      "normalized_sha256": "546307f8e3df4eb1c64496064afaeb63fe9bc3e2a3f9bf7904956a9d3668f660",
       "public_fields": [],
-      "templates": []
+      "templates": [
+        "template <typename Owner>"
+      ]
     },
     "EngineFramework/BaseInfrastructure/Foundation/include/Epidemic/GameFramework/Foundation/id_generator.h": {
       "aliases": [],
@@ -1503,7 +1508,8 @@
         "struct ScheduleEntry",
         "struct ScheduleKey",
         "struct ScheduledTrigger",
-        "struct SchedulerBudget"
+        "struct SchedulerBudget",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<GameplayTimeService>"
       ],
       "constants": [
         "operator"
@@ -1526,7 +1532,7 @@
         "SchedulePersistence"
       ],
       "module": "EngineFramework/BaseInfrastructure/Time",
-      "normalized_sha256": "9b714ce05ed4539bdacce60c19be9668640027b74ef26b16f48e2c3774a7c8eb",
+      "normalized_sha256": "473b3b00e9e1f6be736743270e1651a4052e86c64e4677128c120e47e5888d3b",
       "public_fields": [
         "CalendarDate::day",
         "CalendarDate::hour",
@@ -1591,7 +1597,8 @@
         "struct BlackboardKeyId",
         "struct DueKey",
         "struct IdHash",
-        "struct RefHash"
+        "struct RefHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<AIService>"
       ],
       "constants": [
         "kFixedOne",
@@ -1685,7 +1692,7 @@
         "BlackboardPersistencePolicy"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/AI",
-      "normalized_sha256": "4ad96de132cd602565a5ef473ba31df30697d21ff350fb5d7466bd051a8eeefd",
+      "normalized_sha256": "e3497a0936309b46e7d85e1e1677cb6664b371f4e93088d3dd34172fc21fc95d",
       "public_fields": [
         "AIBudget::max_agents_thinking_per_tick",
         "AIBudget::max_goals_evaluated",
@@ -1741,7 +1748,8 @@
         "struct AbilityTimingDefinition",
         "struct CooldownGroupId",
         "struct IdHash",
-        "struct RegisteredAbilityPayload"
+        "struct RegisteredAbilityPayload",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<AbilityService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -1801,7 +1809,7 @@
         "AbilityTimingKind"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Abilities",
-      "normalized_sha256": "b31f939f71d41dd8f20653ed2da76f534e7108ed311397fdc5da5063c8d5c109",
+      "normalized_sha256": "f3731bc2f0e62a76ee0ba58d683b7413e14fedc575e6c0ad1d7db734cdc2692a",
       "public_fields": [
         "AbilitiesDiagnostics::outputs",
         "IAbilityRequirementProvider::const"
@@ -1836,7 +1844,8 @@
         "struct DamageProfileId",
         "struct DamageRequest",
         "struct DamageTypeId",
-        "struct IdHash"
+        "struct IdHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<CombatService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -1889,7 +1898,7 @@
         "CombatResourceDepletionEffect"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Combat",
-      "normalized_sha256": "4d2f49cd090b1e873fbd8200a8d67ba011bd8f1559de87004674827007082734",
+      "normalized_sha256": "b7f04f9f70b1afa7fd3a7a0101ae118104053ce2ef5393f547bfd1cfdf151ace",
       "public_fields": [
         "CombatDiagnostics::blocks",
         "CombatDiagnostics::combatants",
@@ -1924,7 +1933,8 @@
         "struct ConditionsDiagnostics",
         "struct ConditionsSnapshot",
         "struct DefinitionEntry",
-        "struct RegisteredConditionPayload"
+        "struct RegisteredConditionPayload",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ConditionService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -1990,7 +2000,7 @@
         "PeriodicCatchUpPolicy"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Conditions",
-      "normalized_sha256": "fd804b7296a22684c2462e9eab53465f60f1a82facfb8adb3ee3d1b353ee08c7",
+      "normalized_sha256": "ca6d8ac55276fcecfc622743b4fe47d9c03d76cb32ec79685b452bc7a52ffb4d",
       "public_fields": [
         "ConditionsDiagnostics::active_conditions",
         "ConditionsDiagnostics::applied",
@@ -2056,7 +2066,8 @@
         "struct PlacementValidationResult",
         "struct RefHash",
         "struct WorldPosition",
-        "struct WorldVolumeRef"
+        "struct WorldVolumeRef",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ConstructionService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -2137,7 +2148,7 @@
         "SocketState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Construction",
-      "normalized_sha256": "8c51d13966494d51bf80c13a9c3c2dba741536f2a13ee95081485035d2551f31",
+      "normalized_sha256": "643769c4df8bbaceb8df82ba3277f57d1b1a8428cdf7fb7d62aa4e19a5d25bd2",
       "public_fields": [
         "ConstructionDiagnostics::dead_lettered_outputs",
         "IConstructionCostProvider::const",
@@ -2185,6 +2196,7 @@
         "struct WitnessRecord",
         "struct WitnessRecordId",
         "struct WitnessTypeId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<CrimeService>",
         "struct hash<epidemic::gameplay::crime::AuthorityId>",
         "struct hash<epidemic::gameplay::crime::BountyRecordId>",
         "struct hash<epidemic::gameplay::crime::CrimeRecordId>",
@@ -2248,7 +2260,7 @@
         "CrimeProofState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Crime",
-      "normalized_sha256": "6d579161b01f32aca7608e76786486c09ba8779649390258261d516ab0407471",
+      "normalized_sha256": "ca57b2e2283e5a23e194bad7f00cd0b9b72002f96ff49330691f29387b0c4acb",
       "public_fields": [
         "CrimeDiagnostics::expired_crimes"
       ],
@@ -2287,6 +2299,7 @@
         "struct DialogueSnapshot",
         "struct DialogueTextRef",
         "struct IdHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<DialogueService>",
         "struct name\\"
       ],
       "constants": [
@@ -2332,7 +2345,7 @@
         "DialogueOptionRepeatPolicy"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Dialogue",
-      "normalized_sha256": "695988834b80d1ead40978cb4a9d1247ce9be8f8a2070d8ca1b8f76234968eb9",
+      "normalized_sha256": "91137aa32689cda2d7917b1e7858f8f8807b62364807e416b18099747d13cbe9",
       "public_fields": [
         "DialogueConditionResult::state",
         "DialogueDiagnostics::active_sessions",
@@ -2379,6 +2392,7 @@
         "struct PriceQuoteRequest",
         "struct TradePlan",
         "struct TradeTransaction",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<EconomyService>",
         "struct name\\"
       ],
       "constants": [
@@ -2441,7 +2455,7 @@
         "TradeTransactionState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Economy",
-      "normalized_sha256": "a4577c220b5bda726da2e833ccec26ea009f7837159dd13185d5b2e0a4066a6b",
+      "normalized_sha256": "6de7d9dfaa1811d92368d3a31611849181db7f1afe7dc5c8da93fb4e1d19a635",
       "public_fields": [
         "EconomyDiagnostics::accounts",
         "EconomyDiagnostics::active_reservations",
@@ -2487,7 +2501,8 @@
         "struct EffectsSnapshot",
         "struct HandlerEntry",
         "struct PreparedOperation",
-        "struct RegisteredEffectPayload"
+        "struct RegisteredEffectPayload",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<EffectService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -2542,7 +2557,7 @@
         "EffectTargetSelector"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Effects",
-      "normalized_sha256": "1a6092d45519c751f09f2141400a8cce4e665ac6cae6e25fad160d6929a273ca",
+      "normalized_sha256": "b1d54662b2df8e694473d60f4f7ae108729d5dab1a372806534078449076ada3",
       "public_fields": [
         "EffectCommitResult::derived_effects",
         "EffectCommitResult::disposition",
@@ -2607,7 +2622,8 @@
         "struct SpawnTable",
         "struct SpawnTableId",
         "struct SpawnedEntityRecord",
-        "struct SpawnedEntityRecordId"
+        "struct SpawnedEntityRecordId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<EncountersService>"
       ],
       "constants": [
         "operator"
@@ -2662,7 +2678,7 @@
         "SpawnRollPolicy"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Encounters",
-      "normalized_sha256": "40ed9f1b1e8419e6c51be404d276afaa9da673214a35e01d4e2036d518c1fa01",
+      "normalized_sha256": "cc941859820f2954fff34950c3c85e343c1391d4486d2e17cf32bdc481feab4f",
       "public_fields": [
         "EncounterBudgets::change_journal_capacity",
         "EncounterBudgets::max_active_global",
@@ -2699,6 +2715,7 @@
         "struct EntitySnapshot",
         "struct PendingEntityDestruction",
         "struct Slot",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<EntityService>",
         "struct hash<epidemic::gameplay::entities::EntityArchetypeId>",
         "struct hash<epidemic::gameplay::entities::EntityId>",
         "struct hash<epidemic::gameplay::entities::EntityPartId>"
@@ -2750,7 +2767,7 @@
         "EntityPersistencePolicy"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
-      "normalized_sha256": "cf7534e0258dd2e7b8f4ff63a6dcf18cf5761b9ceac778e9f9d0196903195476",
+      "normalized_sha256": "6ddcc7b701b58e83b7a83d475bde47c43efe3ce5d543ea2b0f460cff95f5cef8",
       "public_fields": [
         "EntitiesDiagnostics::abstract_entities",
         "EntitiesDiagnostics::creates",
@@ -2796,7 +2813,8 @@
         "struct EnvironmentValues",
         "struct HazardHash",
         "struct IdHash",
-        "struct TypeHash"
+        "struct TypeHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<EnvironmentService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -2836,7 +2854,7 @@
         "EnvironmentValueField"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Environment",
-      "normalized_sha256": "4700f52bce85d5d08b5883e56b1c7dc7b7ebbaf16901cad7682fdeb4c9294fc6",
+      "normalized_sha256": "9e76d6e342b66af572c649f9955771d39c71ecefe6cb2e44239682af78558864",
       "public_fields": [
         "CellKey::x",
         "EnvironmentDiagnostics::blend_failures",
@@ -2877,6 +2895,7 @@
         "struct EquipmentSlotDefinition",
         "struct EquipmentSnapshot",
         "struct IdHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<EquipmentService>",
         "struct name\\"
       ],
       "constants": [
@@ -2902,7 +2921,7 @@
         "EquipmentReconciliationState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Equipment",
-      "normalized_sha256": "e59e7d2c0b9ab3912a4cf7ac329e629667012f86e1d5420337de22000db1a925",
+      "normalized_sha256": "034180525c7350e0825aa19c8c60f0205d3fc705560209bfda4931de7a994d2e",
       "public_fields": [
         "EquipmentDiagnostics::bindings",
         "EquipmentDiagnostics::equip_operations",
@@ -2938,7 +2957,8 @@
         "struct InteractionSnapshot",
         "struct InteractionTypeId",
         "struct ProviderHash",
-        "struct TypeHash"
+        "struct TypeHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<InteractionService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -2979,7 +2999,7 @@
         "InteractionSessionState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Interaction",
-      "normalized_sha256": "a6e90b9048838390c8aa08bb8ff37cf50297f94b05963ffab9745b3e3f9d2242",
+      "normalized_sha256": "a3b8bb4bacbb0b8eef3344207f69b44b2df70f9a86d971ca9b458be8d3497b22",
       "public_fields": [
         "IInteractionExecutor::noexcept",
         "InteractionDiagnostics::callback_failures",
@@ -3016,6 +3036,7 @@
         "struct ItemsDiagnostics",
         "struct ItemsSnapshot",
         "struct RegisteredPayload",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ItemsInventoryService>",
         "struct name\\"
       ],
       "constants": [
@@ -3070,7 +3091,7 @@
         "ReservationState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/ItemsInventory",
-      "normalized_sha256": "1c51499a643455796134a6f3bf401ca7d2451e48176203963103857f31c2935e",
+      "normalized_sha256": "e8279e6734a82b0ad657495717c0069509420ea7a6ecb824cd8a4be1ff72f79a",
       "public_fields": [
         "ContainerUsage::slots",
         "ContainerUsage::volume",
@@ -3112,7 +3133,8 @@
         "struct MemoryRecordId",
         "struct MemoryTypeId",
         "struct RefHash",
-        "struct ShareKnowledgeRequest"
+        "struct ShareKnowledgeRequest",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<KnowledgeService>"
       ],
       "constants": [
         "operator"
@@ -3168,7 +3190,7 @@
         "MemoryPersistencePolicy"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Knowledge",
-      "normalized_sha256": "ccec0da0331b7c88b88e846e2d76e9c9700f3c1c00bcdb286e4c5d1ddc65041c",
+      "normalized_sha256": "b04d5e04be9bfa7ec37e99ed92b41dfb38029d38c5de312d1c97049633f20ffc",
       "public_fields": [
         "KnowledgeDiagnostics::profiles"
       ],
@@ -3204,7 +3226,8 @@
         "struct RewardDeliveryStage",
         "struct RewardExecutionId",
         "struct RewardOperation",
-        "struct RewardTypeId"
+        "struct RewardTypeId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<LootService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -3246,7 +3269,7 @@
         "RewardDeliveryDisposition"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Loot",
-      "normalized_sha256": "a885843ee11313ef54f80d54566e681061f89d9d720aa04ac51ad9606af74d67",
+      "normalized_sha256": "0ce9c40d0008d3208b3db065975752072151a2013c438683f3ea7ac2ccecd4c2",
       "public_fields": [
         "LootDiagnostics::max_nested_depth",
         "RewardDeliveryStage::disposition",
@@ -3287,7 +3310,8 @@
         "struct SubstanceExposure",
         "struct SubstanceId",
         "struct SubstanceQuantity",
-        "struct TypeHash"
+        "struct TypeHash",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<MaterialService>"
       ],
       "constants": [
         "kCompositionOnePpm",
@@ -3327,7 +3351,7 @@
         "SubstancePhase"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Materials",
-      "normalized_sha256": "3118eecccfe388e0bdde5e3791c251b0d68d555068c197305d8bb8e8d3743ed6",
+      "normalized_sha256": "9427c1a49b9ee134aeeaa4538bdbfb19f2b09a01aeb8c9667b90102267a03b77",
       "public_fields": [
         "DynamicMaterialState::contents",
         "DynamicMaterialState::corrosion_ppm",
@@ -3426,7 +3450,8 @@
         "struct RumorTemplate",
         "struct StoryletDefinition",
         "struct StoryletId",
-        "struct StoryletRuntimeState"
+        "struct StoryletRuntimeState",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<NarrativeService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -3535,7 +3560,7 @@
         "RumorState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Narrative",
-      "normalized_sha256": "7ee504ad0c24c61ea9650e2518de5f2137f586fae159c5ab593ad62e636090a4",
+      "normalized_sha256": "13433406ebd76dc29f59925ca3c65a0df637b75fcc9f189dbf4cc7dd6d9ad58c",
       "public_fields": [
         "INarrativeConditionResolver::const",
         "INarrativeConsequenceHandler::const",
@@ -3582,7 +3607,8 @@
         "struct NavigationSemanticProfile",
         "struct NavigationSnapshot",
         "struct RefHash",
-        "struct TraversalModeSemanticId"
+        "struct TraversalModeSemanticId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<NavigationSemanticsService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -3629,7 +3655,7 @@
         "NavigationLayerLifetime"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/NavigationSemantics",
-      "normalized_sha256": "23ec67848ba5d2fc8a83af2a81e151bcb65d34e90d9b9ba8af5312312e56ea06",
+      "normalized_sha256": "c73dc16fe1fad429d4b8015694e5ac05c8f3cd804f3340b215dbf93f03dfc7fd",
       "public_fields": [
         "NavigationDiagnostics::cost_modified_queries",
         "NavigationSemanticCost::additive_cost_micro",
@@ -3669,7 +3695,8 @@
         "struct NeedsLifeDiagnostics",
         "struct NeedsLifeSnapshot",
         "struct RoutineEntry",
-        "struct SatisfyNeedRequest"
+        "struct SatisfyNeedRequest",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<NeedsLifeService>"
       ],
       "constants": [
         "operator"
@@ -3707,7 +3734,7 @@
         "NeedsLifeChangeKind"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/NeedsLife",
-      "normalized_sha256": "fb044cd623acacb89d9fff76597548ddb488b85a5d8009fcfe4f9b8b61d5d317",
+      "normalized_sha256": "b79262a5b0db26bfbe79aa4eb01f752c4a9bc85a6d34a5c470a6f85cd430158a",
       "public_fields": [
         "NeedsLifeDiagnostics::expired_pressures"
       ],
@@ -3742,6 +3769,7 @@
         "struct PropertyRightId",
         "struct RefHash",
         "struct TransferOwnershipRequest",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<OwnershipService>",
         "struct hash<epidemic::gameplay::ownership::AccessRuleId>",
         "struct hash<epidemic::gameplay::ownership::OwnershipRecordId>",
         "struct hash<epidemic::gameplay::ownership::PermissionGrantId>",
@@ -3812,7 +3840,7 @@
         "TransferReason"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Ownership",
-      "normalized_sha256": "ae580f6e4f127b9589960aca919288da5de33fe4278b93ea1bd4476d3e5c4d97",
+      "normalized_sha256": "8b9915f7474b528eb7f22d803ec912e12026a0540b2b2ac505fa10b970a77514",
       "public_fields": [
         "IOwnershipRoleProvider::noexcept",
         "OwnershipDiagnostics::journal_dropped_changes"
@@ -3865,7 +3893,8 @@
         "struct SenseTypeId",
         "struct VisibilityResult",
         "struct WorldDirection",
-        "struct WorldPosition"
+        "struct WorldPosition",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<PerceptionService>"
       ],
       "constants": [
         "operator"
@@ -3919,7 +3948,7 @@
         "SenseEvaluationModel"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Perception",
-      "normalized_sha256": "51615075d41cff74adaacb03f87649b19d5ccb1197d4fe19f46983342cba67e3",
+      "normalized_sha256": "a7667f659e6e1ae3ab05755136f462c79049a37f666e90c30dcd4646b4df1496",
       "public_fields": [
         "PerceptionBudget::max_detection_tests_per_tick",
         "PerceptionBudget::max_perceivers_per_stimulus",
@@ -3980,7 +4009,8 @@
         "struct PopulationTemplate",
         "struct PopulationTemplateId",
         "struct PopulationUnit",
-        "struct PopulationUnitId"
+        "struct PopulationUnitId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<PopulationService>"
       ],
       "constants": [
         "operator"
@@ -4036,7 +4066,7 @@
         "ResidenceState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Population",
-      "normalized_sha256": "8680b18c798af12fd91436c3b4c665740d2bd52e4fffbf2b851e4477fca949ed",
+      "normalized_sha256": "030af6f616c5db677dfcd7ee2b5410ae05a52045904a5e063dd46fdd2dc323c2",
       "public_fields": [
         "PopulationCounts::latent",
         "PopulationDiagnostics::dematerialization_requests"
@@ -4087,7 +4117,8 @@
         "struct ProcessesSnapshot",
         "struct RegisteredPayload",
         "struct ReservedProcessInput",
-        "struct StartProcessRequest"
+        "struct StartProcessRequest",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ProcessesService>"
       ],
       "constants": [
         "operator"
@@ -4155,7 +4186,7 @@
         "StationState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Processes",
-      "normalized_sha256": "aecb2ff88eeb48ca7afbf10d1e3ff36d5c347c8c47ced901231258b8623391b0",
+      "normalized_sha256": "6ab72869197c87a0c19735da1f3d09a2bf7d8e809b6893b3ea4610e557243799",
       "public_fields": [
         "IProcessQualityProvider::const",
         "ProcessesDiagnostics::active_processes",
@@ -4201,7 +4232,8 @@
         "struct UnlockDefinition",
         "struct UnlockDefinitionId",
         "struct UnlockRecord",
-        "struct UnlockTypeId"
+        "struct UnlockTypeId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ProgressionService>"
       ],
       "constants": [
         "kChangeJournalCapacity"
@@ -4238,7 +4270,7 @@
         "ProgressionPrerequisiteKind"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Progression",
-      "normalized_sha256": "17a4453d8577ad61e174091d588af7679dd2689ee7523fe51e1fb1ffbcb3c6fa",
+      "normalized_sha256": "0fcb8607d4d7ed01a6a3db5effabaaeffae31a00bfab265250de2b1a7a585a8a",
       "public_fields": [
         "PrerequisiteEvaluation::satisfied",
         "PrerequisiteEvaluation::unmet_indices",
@@ -4291,7 +4323,8 @@
         "struct ResourceTypeId",
         "struct ResourceUnitId",
         "struct ResourcesDiagnostics",
-        "struct ResourcesSnapshot"
+        "struct ResourcesSnapshot",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ResourcesProductionService>"
       ],
       "constants": [
         "operator"
@@ -4360,7 +4393,7 @@
         "StockpileState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/ResourcesProduction",
-      "normalized_sha256": "73698b651b282cd4d1fff7e572fb11859ea9fe5690db61b04136a418c1868d41",
+      "normalized_sha256": "f347ff82465d41761cfe7cca908312510289662813da1c609194afe0633b308b",
       "public_fields": [
         "ResourcesDiagnostics::active_reservations",
         "ResourcesDiagnostics::nodes",
@@ -4401,7 +4434,8 @@
         "struct WorkShift",
         "struct WorkShiftId",
         "struct Workplace",
-        "struct WorkplaceId"
+        "struct WorkplaceId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<RolesJobsService>"
       ],
       "constants": [
         "operator"
@@ -4450,7 +4484,7 @@
         "WorkplaceState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/RolesJobs",
-      "normalized_sha256": "004cd485b4b5c32e565eaec06f8ae2ac0c8c6b46fa862498d34e7ca246293d95",
+      "normalized_sha256": "ac118782af3c713ef349d19d01ee94da98bfadc548f44fb83548b32230446b6c",
       "public_fields": [
         "RolesJobsDiagnostics::retained_terminal_duties"
       ],
@@ -4469,8 +4503,12 @@
         "class ISaveBarrier",
         "class ISaveBarrierLease",
         "class ISaveMigration",
+        "class ISavePackageStore",
         "class ISaveParticipant",
         "class SaveGameOrchestrator",
+        "class SaveRestoreWorkspace",
+        "class SnapshotParticipant",
+        "class detail::SnapshotParticipant",
         "struct IdHash",
         "struct MigrationKey",
         "struct MigrationKeyHash",
@@ -4484,7 +4522,10 @@
         "struct SaveParticipantId",
         "struct SaveParticipantManifest",
         "struct SaveResourceLimits",
-        "struct SaveSection"
+        "struct SaveSection",
+        "struct SaveWireLimits",
+        "struct WorkspaceTestAccess",
+        "struct detail::WorkspaceTestAccess"
       ],
       "constants": [
         "operator"
@@ -4513,7 +4554,7 @@
         "SavePhase"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
-      "normalized_sha256": "8b55ad5b0a72e1c7c30b633378bedf464a51d5ebdfbf180d295bf4318145293a",
+      "normalized_sha256": "7d420ecd63ddcfd578948ee5b029fd3ba47535e82d2173adfecd68ac4c0660f8",
       "public_fields": [
         "ParticipantRegistration::dependencies",
         "ParticipantRegistration::participant",
@@ -4535,7 +4576,9 @@
         "SaveResourceLimits::max_section_bytes",
         "SaveResourceLimits::max_total_payload_bytes"
       ],
-      "templates": []
+      "templates": [
+        "template <typename Owner>"
+      ]
     },
     "EngineFramework/GameplayWorldStateOwners/Simulation/include/Epidemic/GameFramework/Simulation/simulation.h": {
       "aliases": [
@@ -4564,7 +4607,8 @@
         "struct SimulationSummary",
         "struct SimulationSummaryId",
         "struct SimulationTask",
-        "struct SimulationTaskId"
+        "struct SimulationTaskId",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<SimulationService>"
       ],
       "constants": [
         "operator"
@@ -4606,7 +4650,7 @@
         "SimulationTaskState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Simulation",
-      "normalized_sha256": "df7ac01aacafed4301537cf8b9b25872c1e66227b40597c872381d56c9d03d6d",
+      "normalized_sha256": "a3de1a840023b6c652b83385a73985550d960926394c49607d3f0b287c8c693f",
       "public_fields": [
         "SimulationBudget::max_interval_ticks",
         "SimulationBudget::max_layer_commits",
@@ -4662,6 +4706,7 @@
         "struct SocietyChangeBatch",
         "struct SocietyDiagnostics",
         "struct SocietySnapshot",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<SocietyService>",
         "struct hash<epidemic::gameplay::society::MembershipId>",
         "struct hash<epidemic::gameplay::society::RelationshipId>"
       ],
@@ -4700,7 +4745,7 @@
         "SocietyChangeKind"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Society",
-      "normalized_sha256": "95b1f6986497637767660e1591ca6bf9cd96df1cce9e2a84e74bcbc0eb51d19c",
+      "normalized_sha256": "13508d2f7e93a5afe9ed33b756c16a8455f7498420cea7c39102fcc74480be79",
       "public_fields": [
         "RelationshipStateThreshold::minimum_value_micro",
         "RelationshipStateThreshold::state",
@@ -4753,7 +4798,8 @@
         "struct TraversalSessionId",
         "struct TraversalSnapshot",
         "struct TraversalState",
-        "struct WorldPosition"
+        "struct WorldPosition",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<TraversalService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -4800,7 +4846,7 @@
         "TraversalSessionState"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/Traversal",
-      "normalized_sha256": "64b40252c722f72b150e7d91c2dd85855605e4a5cca6058e6edc545986921121",
+      "normalized_sha256": "e2a9d92eeddf9050dd238e05087c39385b2363d165276ce5421adb1b1d647f84",
       "public_fields": [
         "TraversalDiagnostics::rejected_mode_changes",
         "WorldPosition::x_mm"
@@ -4839,7 +4885,8 @@
         "struct WorldPosition",
         "struct WorldRegionDefinition",
         "struct WorldRegionId",
-        "struct WorldSnapshot"
+        "struct WorldSnapshot",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<WorldService>"
       ],
       "constants": [
         "kChangeJournalCapacity",
@@ -4877,7 +4924,7 @@
         "WorldChangeKind"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/World",
-      "normalized_sha256": "aadc22263c65e7938802add178a357d57fe0f9eac6910e3d81921f2d042b7df3",
+      "normalized_sha256": "499603163145f680cfee75b439c594d3a98fa0a0a0f0ccf85e03ad4839520957",
       "public_fields": [
         "CellKey::x",
         "WorldDiagnostics::persistent_alterations",
@@ -4907,7 +4954,8 @@
         "struct TradeCoordinatorSnapshot",
         "struct TradeExecutionId",
         "struct TradeExecutionIdHash",
-        "struct TradeGoodsLine"
+        "struct TradeGoodsLine",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<TradeCoordinator>"
       ],
       "constants": [
         "operator"
@@ -4937,7 +4985,7 @@
         "TradeMoneyLegState"
       ],
       "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
-      "normalized_sha256": "4ce60d1cae431d262cbef64cf6d15e9dcafcee88707ea2632cda20002b5985f4",
+      "normalized_sha256": "84ce8402da35dedb5e4be0ebeeb83d6b9a1816706952d28d7e0767a9c965fe38",
       "public_fields": [
         "CoordinatedTradePlan::goods",
         "CoordinatedTradePlan::money"
@@ -4971,7 +5019,11 @@
         "struct ProgressionCombatMapping",
         "struct ProgressionRewardPayload",
         "struct ReservationToken",
-        "struct StagePayload"
+        "struct StagePayload",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<AbilityEffectsDispatcher>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<AbilityTimeAdapter>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ConditionProgressionAdapter>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<DeathRewardAdapter>"
       ],
       "constants": [
         "kDeliveryCapacity",
@@ -4989,7 +5041,7 @@
         "ProgressionCombatRole"
       ],
       "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
-      "normalized_sha256": "1fcfa8a05607041b58c16e22a881e6d582b2f9ccc6be5be1271c497a6f1f0efd",
+      "normalized_sha256": "b4a077c3d5453c320c889fd81584c42141d315abf0fd0eb37cc252e6f2d0f0dc",
       "public_fields": [
         "AbilityEffectsCheckpoint::delivered",
         "AbilityEffectsCheckpoint::mapping_revision"
@@ -5004,6 +5056,7 @@
       ],
       "classes_and_inheritance": [
         "class FactsQueryAdapter",
+        "class FileSavePackageStorefinal : public savegame::ISavePackageStore",
         "class RuntimeTimeAdapter",
         "class ScheduledTriggerDispatcher",
         "class ScheduledTriggerDispatcherSaveParticipant",
@@ -5031,7 +5084,7 @@
         "ScheduledTriggerDisposition"
       ],
       "module": "EngineFramework/IntegrationLayer/Integration",
-      "normalized_sha256": "a4b9597a0676716ce5b5c9ba9d8fe5e8745f512a3c56d78984badbb57f415c0a",
+      "normalized_sha256": "a1148463483f6e38643b2c663a4251bd40c64a6d76840487a205c8d413ba0409",
       "public_fields": [
         "ScheduledTriggerDispatcherPolicy::max_delivery_attempts_per_pump",
         "ScheduledTriggerDispatcherPolicy::max_pending_deliveries",
@@ -5055,7 +5108,8 @@
         "struct DeliveryKeyHash",
         "struct InteractionEffectDeliveryRecord",
         "struct InteractionEffectReconciliationRequest",
-        "struct InteractionEffectsSnapshot"
+        "struct InteractionEffectsSnapshot",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<InteractionEffectExecutor>"
       ],
       "constants": [],
       "constraints": [],
@@ -5077,7 +5131,7 @@
         "InteractionEffectReconciliationStatus"
       ],
       "module": "EngineFramework/IntegrationLayer/InteractionEffectsIntegration",
-      "normalized_sha256": "bf8ebd9f734fa779621d5523c0f8bd94de95075362376667750457918606b92e",
+      "normalized_sha256": "e39c798e0e45aa301980f7f010651d6642a341a0165c10d640a075fcc8660eae",
       "public_fields": [
         "InteractionEffectsSnapshot::deliveries"
       ],
@@ -5129,7 +5183,7 @@
         "ExternalConsequenceDeliveryState"
       ],
       "module": "EngineFramework/IntegrationLayer/NarrativeIntegration",
-      "normalized_sha256": "32fd5f7e6c6813536b2c9f3d44139db43ebd50006c7cab6bdd69f5a2237eda3d",
+      "normalized_sha256": "5ee98bc98a41cf8190e559c75b1a9981115cac7d0209cfd9722d1a79bbc78e48",
       "public_fields": [
         "KnowledgeNarrativeAdapter::const"
       ],
@@ -5154,7 +5208,7 @@
       "enum_values": [],
       "enums": [],
       "module": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration",
-      "normalized_sha256": "ad5b50f1c305bc22d47b222fb3c22127fddb4512bab108d0ea4db3cf49d3d1c8",
+      "normalized_sha256": "0208c230df4ef5fe1911e9317a237a0219221675fdb6496eeab50cc4cba4971b",
       "public_fields": [
         "AIExecutionAvailability::materialized",
         "AIExecutionAvailability::runtime_projection_available"
@@ -5174,7 +5228,9 @@
         "struct PopulationBackedSpawnResult",
         "struct PopulationEncounterAdapterSnapshot",
         "struct PopulationLifecycleAdapterSnapshot",
-        "struct PopulationLifecycleReconciliation"
+        "struct PopulationLifecycleReconciliation",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<PopulationEncounterAdapter>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<PopulationLifecycleAdapter>"
       ],
       "constants": [],
       "constraints": [],
@@ -5188,7 +5244,7 @@
         "PopulationEncounterPlanState"
       ],
       "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
-      "normalized_sha256": "57087633041dc5e8f24affc63e2a91e19cfc8aad094d0c7679f6daa3a9357a29",
+      "normalized_sha256": "45b0d06a9d988ce69c5203aa5bd7de3c2ce6f7e49b5d1d9a79d57a4f899eac24",
       "public_fields": [
         "CityLifeAdapter::const",
         "CityMorningResult::activated_duties",
@@ -5217,7 +5273,7 @@
       "enum_values": [],
       "enums": [],
       "module": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration",
-      "normalized_sha256": "54f80b9e55b2ff64042e040e57c8832bb2afa15bdc593950b907e1bc798a9e3d",
+      "normalized_sha256": "f024ff493ee02de4de354d4f52a5e69dfbef036a422980f57f4fed7a370c2686",
       "public_fields": [],
       "templates": []
     },
@@ -5236,6 +5292,7 @@
         "struct SocialLegalCheckpoint",
         "struct SocialLegalMappingId",
         "struct TheftResolution",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<CrimeSocietyAdapter>",
         "struct hash<epidemic::gameplay::social_legal_integration::SocialLegalMappingId>"
       ],
       "constants": [
@@ -5256,7 +5313,7 @@
         "PropertyCrimeVictimPolicy"
       ],
       "module": "EngineFramework/IntegrationLayer/SocialLegalIntegration",
-      "normalized_sha256": "448e092a581a2d765856ba9944bbae8771667cae6c53b65a89309de8c5fc2c26",
+      "normalized_sha256": "f1f9274ba69b0bfbeb507c9a0c6fc1a89f272af07f190e1aae767425bffc925a",
       "public_fields": [
         "TheftResolution::crime",
         "TheftResolution::disposition",
@@ -5302,7 +5359,12 @@
         "struct StateLifecycleCheckpoint",
         "struct StateTimeCheckpoint",
         "struct StateTimeProcessResult",
-        "struct SubstanceExposureEffectPayload"
+        "struct SubstanceExposureEffectPayload",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<ConditionEffectsAdapter>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<StateFactsAdapter>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<StateIntegrationPersistence>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<StateLifecycleAdapter>",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<StateTimeAdapter>"
       ],
       "constants": [
         "kDeferredReconciliationCapacity",
@@ -5324,7 +5386,7 @@
         "ConditionEffectReconciliationResolution"
       ],
       "module": "EngineFramework/IntegrationLayer/StateIntegration",
-      "normalized_sha256": "85173621c3435ac0119888c4c5fed6ddae95422da182df5fa2b34b76485f7e1e",
+      "normalized_sha256": "699529a6d150335f3b8d52dd31b2dfa5ec3a87e14d3c102e20c0e33dbd45ed74",
       "public_fields": [
         "MaterialResponseEffectRouter::const",
         "StateIntegrationCheckpoint::condition_effects",
@@ -5359,7 +5421,7 @@
         "ConstructionNavigationOperation"
       ],
       "module": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration",
-      "normalized_sha256": "a0a8351d4b1216bb92669d3cd5d49f828741a70df1610d5238242a3eab5bec7f",
+      "normalized_sha256": "7119bac869b6f8c884ad03f3ac9f09c1b8c229dbc160c5e1e77107d25ee96fcb",
       "public_fields": [
         "TraversalNavigationAdapter::const"
       ],
@@ -5377,7 +5439,8 @@
         "struct AlterationsInAreaQuery",
         "struct AreasAtPositionQuery",
         "struct EnvironmentSampleQuery",
-        "struct WorldFactsCheckpoint"
+        "struct WorldFactsCheckpoint",
+        "struct epidemic::gameplay::SnapshotRestoreAccess<WorldFactsAdapter>"
       ],
       "constants": [
         "kSchemaVersion"
@@ -5386,7 +5449,7 @@
       "enum_values": [],
       "enums": [],
       "module": "EngineFramework/IntegrationLayer/WorldIntegration",
-      "normalized_sha256": "c859e18e9e11d1abb1692f9359cc88bbe24c0f6f8102a95563b32335a88a95f4",
+      "normalized_sha256": "422af973255778467172a223944568b0f3e0963a290d4eefbb6bb3bbc536b634",
       "public_fields": [],
       "templates": []
     },
@@ -6268,7 +6331,7 @@
         "PersistenceDurability"
       ],
       "module": "EngineRuntime/Persistence",
-      "normalized_sha256": "659770108819cabfec9be8427ac4f3fb4db3fecb419b1733537780c4bd866c03",
+      "normalized_sha256": "a67f0d712c65073c616aab24fa156f0a46b8ad6c919fd22d7b58c0c41a3de2fe",
       "public_fields": [
         "PersistenceSnapshot::current_revision",
         "PersistenceSnapshot::lazy_rules",
@@ -7983,7 +8046,7 @@
         "ShutdownProposalPolicy"
       ],
       "module": "EngineRuntime/Support",
-      "normalized_sha256": "ac15b86bfd5e35cddcbc31da991b1d14ebbb514f2b5b73bc8de36ea719a843b4",
+      "normalized_sha256": "718ef383ee2b6eb66fe267e2899d32d6c394c7c941278179974ec2e87ebfcba2",
       "public_fields": [
         "EngineRuntimeServices::animation",
         "EngineRuntimeServices::assets",

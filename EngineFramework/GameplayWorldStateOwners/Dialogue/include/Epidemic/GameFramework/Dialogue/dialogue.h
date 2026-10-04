@@ -261,6 +261,8 @@ class IDialogueConsequenceHandler
 
 class DialogueService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<DialogueService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

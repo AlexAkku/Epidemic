@@ -1,0 +1,40 @@
+{
+  "fixtures": {
+    "persistence.bin": {
+      "magic": "EPIRPER1",
+      "schema_version": 1,
+      "sha256": "b68ff0ddff22b3f99c75127be70ee8e83f72cf3d303da8d684f71e43112741c8",
+      "size_bytes": 378
+    },
+    "time.bin": {
+      "magic": "EPIRTIM1",
+      "schema_version": 1,
+      "sha256": "8bdee8a2b049a6632a1d0abd1dfd958ef78f096f8a573add9697f4c8b0328d56",
+      "size_bytes": 125
+    }
+  },
+  "policy": {
+    "atomic_store": "Base Platform CommitFilePackage",
+    "checksum": "FNV1A64_CORRUPTION_NOT_AUTHENTICATION",
+    "cross_plane_consistent_cut": "NOT_QUALIFIED_UNTIL_5_3",
+    "current_version": 1,
+    "future_version": "REJECT",
+    "hardware_power_loss_guarantee": false,
+    "integer_encoding": "FIXED_WIDTH_LITTLE_ENDIAN",
+    "max_aggregate_zone_records": 10000,
+    "max_package_bytes": 67108864,
+    "max_payload_bytes": 1048576,
+    "max_records": 10000,
+    "migration_edges": [],
+    "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+    "minimum_supported_version": 1,
+    "missing_file": "ERROR_INITIALIZE_EXPLICITLY",
+    "retry": "NEW_CALL_AFTER_FAILURE_OLD_FILE_UNCHANGED",
+    "single_writer": "EXTERNALLY_SYNCHRONIZED",
+    "supported_versions": [
+      1
+    ]
+  },
+  "reviewed": true,
+  "schema_version": 1
+}

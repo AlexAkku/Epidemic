@@ -309,6 +309,8 @@ class WorldTransaction
 
 class WorldService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<WorldService>;
+
   public:
     WorldService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

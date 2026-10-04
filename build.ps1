@@ -37,6 +37,12 @@ $script:Stages = @()
 $script:Issues = @()
 $script:Metrics = @{ test_counts = @{ total = 0; passed = 0; failed = 0; skipped = 0 } }
 $script:Failed = $false
+$script:Goal5SourceHashes = $null
+if ($Mode -eq 'Matrix') {
+    $identity = & python docs/freeze/goal5_participant_contract.py --source-fingerprints
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot snapshot Goal 5 qualification sources before Matrix' }
+    $script:Goal5SourceHashes = $identity | ConvertFrom-Json
+}
 
 function Add-Stage {
     param([string]$Name, [string]$Status, [string]$Note, [int]$DurationMs = 0,
@@ -110,7 +116,7 @@ function Write-TrustedStamp {
 function Assert-ProcessSuccess {
     param($Result, [string]$Tool)
     if ($Result.ExitCode -ne 0) {
-        Add-Issue -Tool $Tool -Rule (if ($Result.TimedOut) { 'timeout' } else { 'exit_code' }) `
+        Add-Issue -Tool $Tool -Rule $(if ($Result.TimedOut) { 'timeout' } else { 'exit_code' }) `
             -Message "$($Result.Label) failed with exit code $($Result.ExitCode)" -LogPath $Result.LogPath
         throw "$($Result.Label) failed. Full log: $($Result.LogPath)"
     }
@@ -118,6 +124,27 @@ function Assert-ProcessSuccess {
 
 function Invoke-Validators {
     $commands = @(
+        @('python', @('docs/freeze/goal5_admission.py','--check'), 'goal5-admission'),
+        @('python', @('docs/freeze/goal5_admission.py','--self-test'), 'goal5-admission-self-test'),
+        @('powershell', @('-NoProfile','-File','tools/ci/test_failure_reporting.ps1'), 'runner-failure-reporting'),
+        @('python', @('docs/freeze/goal5_persistence_inventory.py','--check'), 'goal5-persistence-inventory'),
+        @('python', @('docs/freeze/goal5_persistence_inventory.py','--self-test'), 'goal5-persistence-inventory-self-test'),
+        @('python', @('docs/freeze/goal5_persistence_contract.py','--check'), 'goal5-persistence-contract'),
+        @('python', @('docs/freeze/goal5_persistence_contract.py','--self-test'), 'goal5-persistence-contract-self-test'),
+        @('python', @('docs/freeze/goal5_participant_contract.py','--check','--implementation'), 'goal5-participant-contract'),
+        @('python', @('docs/freeze/goal5_participant_bindings.py','--check'), 'goal5-participant-bindings'),
+        @('python', @('docs/freeze/goal5_participant_bindings.py','--self-test'), 'goal5-participant-bindings-self-test'),
+        @('python', @('tools/check_goal5_private_surface.py','--check'), 'goal5-private-surface'),
+        @('python', @('tools/check_goal5_private_surface.py','--self-test'), 'goal5-private-surface-self-test'),
+        @('python', @('docs/freeze/goal5_participant_contract.py','--self-test'), 'goal5-participant-contract-self-test'),
+        @('python', @('docs/freeze/goal5_schema_contract.py','--check'), 'goal5-schema-contract'),
+        @('python', @('docs/freeze/goal5_schema_contract.py','--self-test'), 'goal5-schema-contract-self-test'),
+        @('python', @('docs/freeze/goal5_stage52_contract.py','--check'), 'goal5-stage52-contract'),
+        @('python', @('docs/freeze/goal5_runtime_durable_contract.py','--check'), 'goal5-runtime-durable-contract'),
+        @('python', @('docs/freeze/goal5_runtime_durable_contract.py','--self-test'), 'goal5-runtime-durable-self-test'),
+        @('python', @('docs/freeze/goal5_stage52_contract.py','--self-test'), 'goal5-stage52-contract-self-test'),
+        @('python', @('tools/generate_goal5_participants.py','--check'), 'goal5-participant-generation'),
+        @('python', @('tools/audit_goal5_restore_members.py','--check'), 'goal5-restore-footprint'),
         @('python', @('docs/freeze/goal4_evidence_quality.py','--check'), 'goal4-quality-check'),
         @('python', @('docs/freeze/goal4_evidence_quality.py','--self-test'), 'goal4-quality-self-test'),
         @('python', @('docs/freeze/module_dossiers.py','--check'), 'dossiers-check'),
@@ -158,6 +185,7 @@ function Write-Reports {
         duration_ms=[int]($finished-$script:StartedAt).TotalMilliseconds
         status=$status
         mode=$Mode
+        goal5_source_sha256=$script:Goal5SourceHashes
         stages=$script:Stages
         issues=$script:Issues
         metrics=$script:Metrics
@@ -267,10 +295,10 @@ try {
                 $tests = Invoke-EpidemicTests -Profile $profile -Root $Root -BuildDir $buildDir -LogDir $LogDir `
                     -HeartbeatSec $HeartbeatSec -TimeoutSec $TimeoutSec -Regex $regex `
                     -RepeatUntilFail $RepeatUntilFail -VerboseOutput:($Mode -eq 'Debug')
-                Assert-ProcessSuccess $tests 'ctest'
                 $script:Metrics.test_counts.total += $tests.TestTotal
                 $script:Metrics.test_counts.passed += $tests.TestPassed
                 $script:Metrics.test_counts.failed += $tests.TestFailed
+                Assert-ProcessSuccess $tests 'ctest'
                 [pscustomobject]@{ Note="$($tests.TestPassed)/$($tests.TestTotal) tests passed";
                     Details=@{ profile=$profile.Name; regex=$regex; log=$tests.LogPath } }
             } | Out-Null

@@ -75,3 +75,16 @@ private:
     processes::ProcessesService& processes_;
 };
 }
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Processes/processes.h"
+#include "Epidemic/GameFramework/ResourcesProduction/resources_production.h"
+#include "Epidemic/GameFramework/Simulation/simulation.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateResourcesProductionServiceSaveParticipant(epidemic::gameplay::resources::ResourcesProductionService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateSimulationServiceSaveParticipant(epidemic::gameplay::simulation::SimulationService& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

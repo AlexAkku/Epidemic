@@ -350,6 +350,8 @@ class IPriceProvider
 };
 class EconomyService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<EconomyService>;
+
   public:
     EconomyService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

@@ -48,7 +48,7 @@ The generator enforces exactly 78 responsibility declarations, unique non-empty 
 - **Responsibility:** Abstracts windows, native events, clocks, exit requests and dynamic libraries behind neutral contracts.
 - **Authoritative owner:** `engine:platform-window-and-message-state`. Reviewed semantic ownership domain; module-private state stays within its declared responsibility.
 - **Observed cross-module includes:** `EngineBase/Foundation`. Every observed edge is a direct CMake dependency.
-- **External boundary:** Win32 is confined to the Platform Windows implementation; callers use Platform contracts. Implementations: src/Windows/windows_platform_runtime.cpp -> <Windows.h>. Approved CMake links: `shell32`, `user32`.
+- **External boundary:** Win32 is confined to the Platform Windows implementation; callers use Platform contracts. Implementations: src/Windows/windows_file_package.cpp -> <Windows.h>; src/Windows/windows_platform_runtime.cpp -> <Windows.h>. Approved CMake links: `shell32`, `user32`.
 
 ### EngineBase/RHI
 
@@ -175,7 +175,7 @@ The generator enforces exactly 78 responsibility declarations, unique non-empty 
 
 - **Responsibility:** Composes the Runtime majors into a service bundle and controls their startup, tick and shutdown order.
 - **Authoritative owner:** `none`. Runtime composition lifetime only.
-- **Observed cross-module includes:** `EngineBase/Core`, `EngineBase/Foundation`, `EngineRuntime/Animation`, `EngineRuntime/Assets`, `EngineRuntime/Audio`, `EngineRuntime/Environment`, `EngineRuntime/Navigation`, `EngineRuntime/Persistence`, `EngineRuntime/Physics`, `EngineRuntime/Renderer`, `EngineRuntime/Resources`, `EngineRuntime/RuntimeFoundation`, `EngineRuntime/Scene`, `EngineRuntime/Serialization`, `EngineRuntime/Simulation`, `EngineRuntime/Streaming`, `EngineRuntime/Time`, `EngineRuntime/World`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Core`, `EngineBase/Foundation`, `EngineBase/Platform`, `EngineRuntime/Animation`, `EngineRuntime/Assets`, `EngineRuntime/Audio`, `EngineRuntime/Environment`, `EngineRuntime/Navigation`, `EngineRuntime/Persistence`, `EngineRuntime/Physics`, `EngineRuntime/Renderer`, `EngineRuntime/Resources`, `EngineRuntime/RuntimeFoundation`, `EngineRuntime/Scene`, `EngineRuntime/Serialization`, `EngineRuntime/Simulation`, `EngineRuntime/Streaming`, `EngineRuntime/Time`, `EngineRuntime/World`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `IAnimationClipResourcePayload`, `IAnimationResourceMapper`, `IAnimationSkeletonResourcePayload`, `IAudioResourceMapper`, `IChunkStreamingManifestSource`, `IEngineRuntimeCoordinator`, `IReferenceSimulationCommitLog`, `IRuntimeAdapterLifecycle`, `IRuntimeEventSink`, `IRuntimePoseCache`, `ISceneProjectionQueue`, `IStreamingPreparedChunkDataQuery`.
 
 ### EngineRuntime/Time
@@ -430,7 +430,7 @@ The generator enforces exactly 78 responsibility declarations, unique non-empty 
 - **Responsibility:** Owns save participants, ordered capture/restore and save-game transaction state.
 - **Authoritative owner:** `gameplay:save-slots-and-checkpoints`. Reviewed semantic ownership domain; module-private state stays within its declared responsibility.
 - **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/Foundation`. Every observed edge is a direct CMake dependency.
-- **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `IRestoreStage`, `ISaveBarrier`, `ISaveBarrierLease`, `ISaveMigration`, `ISaveParticipant`, `SaveParticipantId`, `SaveParticipantManifest`, `SaveParticipantRequirement`.
+- **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `IRestoreStage`, `ISaveBarrier`, `ISaveBarrierLease`, `ISaveMigration`, `ISavePackageStore`, `ISaveParticipant`, `SaveParticipantId`, `SaveParticipantManifest`, `SaveParticipantRequirement`, `SnapshotParticipant`.
 
 ### EngineFramework/GameplayWorldStateOwners/Simulation
 
@@ -464,28 +464,28 @@ The generator enforces exactly 78 responsibility declarations, unique non-empty 
 
 - **Responsibility:** Coordinates extended item, equipment, economy and related gameplay workflows.
 - **Authoritative owner:** `none`. Cross-domain coordination only; linked services retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Dialogue`, `EngineFramework/GameplayWorldStateOwners/Economy`, `EngineFramework/GameplayWorldStateOwners/Equipment`, `EngineFramework/GameplayWorldStateOwners/ItemsInventory`, `EngineFramework/GameplayWorldStateOwners/Knowledge`, `EngineFramework/GameplayWorldStateOwners/Ownership`, `EngineFramework/GameplayWorldStateOwners/Processes`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Dialogue`, `EngineFramework/GameplayWorldStateOwners/Economy`, `EngineFramework/GameplayWorldStateOwners/Equipment`, `EngineFramework/GameplayWorldStateOwners/ItemsInventory`, `EngineFramework/GameplayWorldStateOwners/Knowledge`, `EngineFramework/GameplayWorldStateOwners/Ownership`, `EngineFramework/GameplayWorldStateOwners/Processes`, `EngineFramework/GameplayWorldStateOwners/SaveGame`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `ItemProcessInputProvider`.
 
 ### EngineFramework/IntegrationLayer/GameplayIntegration
 
 - **Responsibility:** Coordinates core gameplay owners into multi-owner gameplay operations.
 - **Authoritative owner:** `none`. Cross-domain coordination only; linked services retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/SupportRandom`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/Abilities`, `EngineFramework/GameplayWorldStateOwners/Combat`, `EngineFramework/GameplayWorldStateOwners/Conditions`, `EngineFramework/GameplayWorldStateOwners/Effects`, `EngineFramework/GameplayWorldStateOwners/Loot`, `EngineFramework/GameplayWorldStateOwners/Progression`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/SupportRandom`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/Abilities`, `EngineFramework/GameplayWorldStateOwners/Combat`, `EngineFramework/GameplayWorldStateOwners/Conditions`, `EngineFramework/GameplayWorldStateOwners/Effects`, `EngineFramework/GameplayWorldStateOwners/Loot`, `EngineFramework/GameplayWorldStateOwners/Progression`, `EngineFramework/GameplayWorldStateOwners/SaveGame`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `CombatAbilityResourceProvider`, `ProgressionCombatModifierProvider`.
 
 ### EngineFramework/IntegrationLayer/Integration
 
 - **Responsibility:** Adapts gameplay queries/facts/time/save contracts and the approved RuntimeTime boundary.
 - **Authoritative owner:** `none`. Core adapter composition only; linked services retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineRuntime/Time`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineBase/Platform`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineRuntime/Time`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `ScheduledTriggerDispatcherSaveParticipant`.
 
 ### EngineFramework/IntegrationLayer/InteractionEffectsIntegration
 
 - **Responsibility:** Coordinates interaction completion with effect execution.
 - **Authoritative owner:** `none`. Interaction/effect delivery coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineFramework/GameplayWorldStateOwners/Effects`, `EngineFramework/GameplayWorldStateOwners/Interaction`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineFramework/GameplayWorldStateOwners/Effects`, `EngineFramework/GameplayWorldStateOwners/Interaction`, `EngineFramework/GameplayWorldStateOwners/SaveGame`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `InteractionEffectExecutor`.
 
 ### EngineFramework/IntegrationLayer/InteractionTimeIntegration
@@ -506,49 +506,49 @@ The generator enforces exactly 78 responsibility declarations, unique non-empty 
 
 - **Responsibility:** Coordinates the perception-to-knowledge-to-AI causal chain.
 - **Authoritative owner:** `none`. Perception/knowledge/AI coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/AI`, `EngineFramework/GameplayWorldStateOwners/Knowledge`, `EngineFramework/GameplayWorldStateOwners/Perception`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/AI`, `EngineFramework/GameplayWorldStateOwners/Knowledge`, `EngineFramework/GameplayWorldStateOwners/Perception`, `EngineFramework/GameplayWorldStateOwners/SaveGame`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: no named port type.
 
 ### EngineFramework/IntegrationLayer/PopulationSimulationIntegration
 
 - **Responsibility:** Coordinates population/needs state with gameplay simulation ticks.
 - **Authoritative owner:** `none`. Population/simulation coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Encounters`, `EngineFramework/GameplayWorldStateOwners/NeedsLife`, `EngineFramework/GameplayWorldStateOwners/Population`, `EngineFramework/GameplayWorldStateOwners/RolesJobs`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Encounters`, `EngineFramework/GameplayWorldStateOwners/NeedsLife`, `EngineFramework/GameplayWorldStateOwners/Population`, `EngineFramework/GameplayWorldStateOwners/RolesJobs`, `EngineFramework/GameplayWorldStateOwners/SaveGame`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: no named port type.
 
 ### EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration
 
 - **Responsibility:** Coordinates processes and resource production with simulation progression.
 - **Authoritative owner:** `none`. Process/resource coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Processes`, `EngineFramework/GameplayWorldStateOwners/ResourcesProduction`, `EngineFramework/GameplayWorldStateOwners/Simulation`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Processes`, `EngineFramework/GameplayWorldStateOwners/ResourcesProduction`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineFramework/GameplayWorldStateOwners/Simulation`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `ResourceProcessInputProvider`.
 
 ### EngineFramework/IntegrationLayer/SocialLegalIntegration
 
 - **Responsibility:** Coordinates ownership, society and crime/legal workflows.
 - **Authoritative owner:** `none`. Social/legal coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Crime`, `EngineFramework/GameplayWorldStateOwners/Ownership`, `EngineFramework/GameplayWorldStateOwners/Society`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Crime`, `EngineFramework/GameplayWorldStateOwners/Ownership`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineFramework/GameplayWorldStateOwners/Society`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `AuthorityResponseMapping`.
 
 ### EngineFramework/IntegrationLayer/StateIntegration
 
 - **Responsibility:** Coordinates entity/material/condition/effect state propagation.
 - **Authoritative owner:** `none`. State projection coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/Conditions`, `EngineFramework/GameplayWorldStateOwners/Effects`, `EngineFramework/GameplayWorldStateOwners/Entities`, `EngineFramework/GameplayWorldStateOwners/Materials`, `EngineFramework/IntegrationLayer/Integration`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/Conditions`, `EngineFramework/GameplayWorldStateOwners/Effects`, `EngineFramework/GameplayWorldStateOwners/Entities`, `EngineFramework/GameplayWorldStateOwners/Materials`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineFramework/IntegrationLayer/Integration`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `EntityTargetStateProvider`.
 
 ### EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration
 
 - **Responsibility:** Coordinates traversal, semantic navigation and construction workflows.
 - **Authoritative owner:** `none`. Traversal/navigation/construction coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Construction`, `EngineFramework/GameplayWorldStateOwners/NavigationSemantics`, `EngineFramework/GameplayWorldStateOwners/Traversal`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/GameplayWorldStateOwners/Construction`, `EngineFramework/GameplayWorldStateOwners/NavigationSemantics`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineFramework/GameplayWorldStateOwners/Traversal`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `TraversalNavigationCapabilityProvider`.
 
 ### EngineFramework/IntegrationLayer/WorldIntegration
 
 - **Responsibility:** Coordinates semantic gameplay world/environment state with RuntimeBridge materialization.
 - **Authoritative owner:** `none`. World/runtime projection coordination only; owners retain authority.
-- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/GameplayWorldStateOwners/Entities`, `EngineFramework/GameplayWorldStateOwners/Environment`, `EngineFramework/GameplayWorldStateOwners/Interaction`, `EngineFramework/GameplayWorldStateOwners/World`. Every observed edge is a direct CMake dependency.
+- **Observed cross-module includes:** `EngineBase/Foundation`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/GameplayWorldStateOwners/Entities`, `EngineFramework/GameplayWorldStateOwners/Environment`, `EngineFramework/GameplayWorldStateOwners/Interaction`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineFramework/GameplayWorldStateOwners/World`. Every observed edge is a direct CMake dependency.
 - **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `EntityInteractionStateProvider`.
 
 ### EngineFramework/RuntimeBoundary/RuntimeBridge

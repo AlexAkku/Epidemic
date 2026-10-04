@@ -192,6 +192,8 @@ struct EntitiesDiagnostics
 
 class EntityService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<EntityService>;
+
   public:
     EntityService();
 

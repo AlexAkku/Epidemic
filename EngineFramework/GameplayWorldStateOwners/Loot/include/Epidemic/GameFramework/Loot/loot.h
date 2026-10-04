@@ -298,6 +298,8 @@ struct LootDiagnostics
 
 class LootService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<LootService>;
+
   public:
     LootService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

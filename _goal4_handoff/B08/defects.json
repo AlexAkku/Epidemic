@@ -5,7 +5,7 @@
       "fix": "DispatchPending computes the missing completion set and reserves completion storage before invoking any handler. Failure at the narrow preflight seam leaves the delivery pending and performs zero handler calls.",
       "logical_id": "B08-INT-001",
       "module": "EngineFramework/IntegrationLayer/Integration",
-      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:690::FailNextTriggerCompletionPublicationForTest",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:710::FailNextTriggerCompletionPublicationForTest",
       "status": "REVIEWED",
       "target": "EpidemicGameFrameworkCoreIntegrationTests",
       "targets": [
@@ -53,9 +53,9 @@
       "fix": "B08 owned tests have zero direct users of the shared allocator/sweep helpers. New allocation/publication regressions use narrow one-shot test seams scoped to Integration, ExtendedGameplayIntegration and ProcessResourceSimulationIntegration; shared helpers are untouched.",
       "logical_id": "G4-INFRA-001",
       "module": "B08",
-      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:690::FailNextTriggerCompletionPublicationForTest",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:710::FailNextTriggerCompletionPublicationForTest",
       "regressions": {
-        "EpidemicGameFrameworkCoreIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:690::FailNextTriggerCompletionPublicationForTest",
+        "EpidemicGameFrameworkCoreIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:710::FailNextTriggerCompletionPublicationForTest",
         "EpidemicGameFrameworkExtendedGameplayIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/extended_gameplay_integration_tests.cpp:376::FailNextTradePublicationForTest",
         "EpidemicGameFrameworkProcessResourceSimulationIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/process_resource_simulation_integration_tests.cpp:106::FailNextResourceReservationTokenPublicationForTest"
       },

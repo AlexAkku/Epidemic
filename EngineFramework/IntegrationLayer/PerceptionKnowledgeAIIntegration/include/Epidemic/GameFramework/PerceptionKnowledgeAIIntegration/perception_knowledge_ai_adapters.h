@@ -105,3 +105,16 @@ class AIIntentExecutionRecorder
 // This object is diagnostic only; AIService remains the authoritative intent state owner.
 using AIIntentExecutionLog = AIIntentExecutionRecorder;
 } // namespace epidemic::gameplay::integration
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/AI/ai.h"
+#include "Epidemic/GameFramework/Knowledge/knowledge.h"
+#include "Epidemic/GameFramework/Perception/perception.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAIServiceSaveParticipant(epidemic::gameplay::ai::AIService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateKnowledgeServiceSaveParticipant(epidemic::gameplay::knowledge::KnowledgeService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePerceptionServiceSaveParticipant(epidemic::gameplay::perception::PerceptionService& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

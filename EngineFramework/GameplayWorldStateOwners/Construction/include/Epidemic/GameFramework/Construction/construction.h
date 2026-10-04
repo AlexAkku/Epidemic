@@ -503,6 +503,8 @@ struct ConstructionDiagnostics
 
 class ConstructionService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ConstructionService>;
+
   public:
     ConstructionService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

@@ -33,6 +33,7 @@ cmake --build build --config Debug
 
 ```powershell
 ctest --test-dir build -C Debug --output-on-failure
+```
 
 ### Единый локальный CI и отладка
 
@@ -53,7 +54,60 @@ ctest --test-dir build -C Debug --output-on-failure
 Краткий итог последнего прогона находится в `.enforcer/Enforcer_last_check.md`,
 структурированный отчёт — в `.ci_cache/report.json`, полные выводы команд — в
 `.ci_cache/logs/`.
+
+`-NoCache` отключает доверенные stamps проверок, но не заставляет перекомпилировать
+готовые объектные файлы; `-Clean` очищает CI cache, а не build-каталоги.
+Измеренный холодный прогон Matrix и повторный Full описаны в
+`docs/freeze/goal5_delta2_execution.md` (Ryzen 5 2600, 32 ГБ RAM, шесть build jobs).
+
+Goal 5 persistence stages (M5.1 / M5.2.A-E):
+
+```powershell
+./run.ps1 -Mode Module -TestRegex 'SaveParticipantTests|FrameworkSaveComposition|GameFrameworkSaveGameTests|RuntimeSupportTests|Persistence.*Truth' -NoCache
+python docs/freeze/goal5_participant_contract.py --check --implementation
+python docs/freeze/goal5_participant_contract.py --check --qualification
+python docs/freeze/goal5_participant_contract.py --self-test
+python tools/generate_goal5_participants.py --check
+python docs/freeze/goal5_schema_contract.py --check
+python docs/freeze/goal5_runtime_durable_contract.py --check
+python docs/freeze/goal5_stage52_contract.py --check
 ```
+
+Состав — 47 границ сохранения: 34 Framework owners и 13 integration checkpoints;
+45 новых bindings размещены в 12 существующих IntegrationLayer modules.
+Контракт и генератор не используют milestone/work-plan Markdown как вход.
+`--implementation` проверяет девять typed executable obligations каждой границы,
+включая непустой durable round-trip.
+`--qualification` дополнительно требует всю шестипрофильную Matrix и точные
+fingerprints source/graph; stale receipt не считается PASS. Matrix не присваивает
+semantic IMPLEMENTED. После успешной Matrix receipt записывается командой
+`python tools/record_goal5_participant_qualification.py --record`.
+Добавление границы начинается с явного semantic review 5.1 и mapping в
+`docs/freeze/goal5_participant_bindings.py`, fixture и теста, затем owning generators
+обновляют review/contract и typed bindings. Маппинг 5.2 не изменяет решения 5.1;
+несовпадение блокирует генерацию. Reviewed evidence отдельно записывается через
+`tools/record_goal5_participant_evidence.py --record`. Restore mechanics и fault seam
+доступны только через PRIVATE include; consumer compile fixtures проверяются при
+Framework configure. Канонический freeze обновляется из
+raw handoff своим merge, а не ручным редактированием JSON.
+
+В Full теперь 109 CTest targets; Base/Runtime остаются 14/34. API композиции
+`SaveGameOrchestrator::RegisterComposition` атомарно проверяет exact set, регистрирует
+миграции и закрывает реестр. Schema policy: v1-only, `NO_PRIOR_SUPPORTED_VERSION`,
+без фиктивной v0; fixtures в `Tests/Fixtures/SaveGame` неизменяемы и не
+перегенерируются CI. Whole-image codec — canonical field-wise LE с bounds и
+checksum; `ISavePackageStore` отделяет SaveGame от I/O. FileSavePackageStore
+использует узкий Base Platform port: same-directory temp, flush, atomic replacement.
+В failure log сохраняются phase/path/OS error. Все 5.1/5.2 validators включены
+в общий runner. Labels: `persistence-schema`, `persistence-wire`, `persistence-storage`.
+Runtime Support предоставляет независимые bounded v1 пакеты Runtime Time
+(`CommitRuntimeTimeCheckpoint`/`LoadRuntimeTimeCheckpoint`) и полный файловый
+`IPersistenceBackend` (`CreateFilePersistenceBackend`). Они сохраняют fractional
+clock remainder и все Persistence records; fresh-process smoke восстанавливает
+новые clock/store services. Runtime fixtures также immutable:
+`Tests/Fixtures/RuntimePersistence`; MemoryOnly default не считается durable backend.
+Unified cross-plane consistent cut и
+whole-engine restore/reconciliation остаются 5.3/5.4; determinism — 5.5/5.6.
 
 Только Runtime:
 
@@ -87,7 +141,7 @@ ctest --test-dir build -C Debug -R EpidemicRuntime --output-on-failure
   - [x] Цель 1. Проверяемый baseline и единый freeze contract
   - [x] Цель 2. Полный локальный freeze-аудит EngineBase
   - [x] Цель 3. Полный локальный freeze-аудит EngineRuntime
-  - [ ] Цель 4. Полный локальный freeze-аудит EngineFramework
+  - [x] Цель 4. Полный локальный freeze-аудит EngineFramework
   - [ ] Цель 5. Доказать persistence и determinism всего движка
   - [ ] Цель 6. Доказать memory/lifetime и concurrency/async safety
   - [ ] Цель 7. Второй круг: проверить смысловые кластеры и причинные цепочки

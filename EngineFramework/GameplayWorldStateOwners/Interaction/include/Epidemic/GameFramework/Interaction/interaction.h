@@ -228,6 +228,8 @@ class IInteractionStateProvider
 
 class InteractionService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<InteractionService>;
+
   public:
     InteractionService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

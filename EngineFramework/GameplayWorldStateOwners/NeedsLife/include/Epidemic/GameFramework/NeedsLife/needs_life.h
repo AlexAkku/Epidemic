@@ -267,6 +267,8 @@ struct NeedsLifeDiagnostics
 
 class NeedsLifeService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<NeedsLifeService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

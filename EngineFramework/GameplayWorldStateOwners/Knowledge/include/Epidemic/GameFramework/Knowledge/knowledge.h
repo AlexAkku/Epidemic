@@ -109,6 +109,8 @@ struct KnowledgeDiagnostics
 
 class KnowledgeService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<KnowledgeService>;
+
 public:
     explicit KnowledgeService(std::size_t change_capacity=4096);
     [[nodiscard]] static constexpr GameplayDomainId Domain()noexcept{return GameplayDomainId::FromString("framework.knowledge");}

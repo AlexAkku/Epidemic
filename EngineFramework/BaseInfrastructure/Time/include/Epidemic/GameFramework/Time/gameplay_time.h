@@ -138,6 +138,8 @@ struct GameplayTimeSnapshot
 
 class GameplayTimeService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<GameplayTimeService>;
+
   public:
     GameplayTimeService() = default;
 

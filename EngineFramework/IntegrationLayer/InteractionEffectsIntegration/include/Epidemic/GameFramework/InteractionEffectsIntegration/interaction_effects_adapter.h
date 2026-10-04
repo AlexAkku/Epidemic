@@ -63,6 +63,8 @@ struct InteractionEffectsSnapshot
 // an Interaction execution can be retried across restore.
 class InteractionEffectExecutor final : public interaction::IInteractionExecutor
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<InteractionEffectExecutor>;
+
   public:
     InteractionEffectExecutor(effects::EffectService& effects, interaction::InteractionTypeId interaction_type)
         : effects_(effects), interaction_type_(interaction_type)
@@ -118,3 +120,11 @@ class InteractionEffectExecutor final : public interaction::IInteractionExecutor
     bool frozen_ = false;
 };
 } // namespace epidemic::gameplay::interaction_effects_integration
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateInteractionEffectExecutorSaveParticipant(epidemic::gameplay::interaction_effects_integration::InteractionEffectExecutor& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

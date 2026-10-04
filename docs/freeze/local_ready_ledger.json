@@ -24349,9 +24349,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24367,9 +24367,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:25::if (!value)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:26::if (!value)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:25::if (!value)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:26::if (!value)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24395,9 +24395,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:25::if (!value)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:26::if (!value)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:25::if (!value)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:26::if (!value)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24413,9 +24413,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24483,9 +24483,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24505,9 +24505,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24531,9 +24531,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24553,9 +24553,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24571,9 +24571,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24589,9 +24589,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24611,9 +24611,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24638,9 +24638,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24660,9 +24660,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24686,9 +24686,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24708,9 +24708,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24730,9 +24730,9 @@
               "kind": "persistence"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24748,9 +24748,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24775,9 +24775,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24793,9 +24793,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24811,9 +24811,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24825,9 +24825,9 @@
         "TEST-BOUNDARY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24843,9 +24843,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:69::if (fail_restore)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24857,9 +24857,9 @@
         "TEST-DUPLICATE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24871,9 +24871,9 @@
         "TEST-EMPTY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24885,9 +24885,9 @@
         "TEST-HAPPY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24899,9 +24899,9 @@
         "TEST-INVALID": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24913,9 +24913,9 @@
         "TEST-REGRESSION": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24927,9 +24927,9 @@
         "TEST-STALE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -24941,9 +24941,9 @@
         "TEST-WRONG-LIFECYCLE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:226::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:227::section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:194::if (corrupt_identity)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:195::if (corrupt_identity)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkSaveGameTests"
@@ -28707,9 +28707,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28725,9 +28725,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28753,9 +28753,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28771,9 +28771,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28841,9 +28841,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28863,9 +28863,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28889,9 +28889,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28911,9 +28911,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28929,9 +28929,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28947,9 +28947,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28969,9 +28969,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -28987,9 +28987,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29009,9 +29009,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29031,9 +29031,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29057,9 +29057,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29079,9 +29079,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29101,9 +29101,9 @@
               "kind": "persistence"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29119,9 +29119,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29137,9 +29137,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:186::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:187::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:186::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:187::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29159,9 +29159,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29177,9 +29177,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29195,9 +29195,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29209,9 +29209,9 @@
         "TEST-BOUNDARY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29227,9 +29227,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29241,9 +29241,9 @@
         "TEST-DUPLICATE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29255,9 +29255,9 @@
         "TEST-EMPTY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29269,9 +29269,9 @@
         "TEST-HAPPY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29283,9 +29283,9 @@
         "TEST-INVALID": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29297,9 +29297,9 @@
         "TEST-REGRESSION": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29311,9 +29311,9 @@
         "TEST-STALE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -29325,9 +29325,9 @@
         "TEST-WRONG-LIFECYCLE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"

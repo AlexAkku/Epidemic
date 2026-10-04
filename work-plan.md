@@ -275,12 +275,12 @@ Goal 4 присваивает только `LOCAL_READY`. Whole-engine persisten
 
 ## 4.4. Финальный выход Goal 4
 
-[ ] Выполнить финальный exact-tree Windows/MSVC Base Debug/Release, Runtime Debug/Release и Full Debug/Release с `/W4 /WX`, exact CTest manifests и public-header self-containment после последнего metadata merge. Предыдущие block-local/pre-closure Windows runs зелёные; требуется только serial confirmation текущего дерева.
+[x] Выполнить финальный exact-tree Windows/MSVC Base Debug/Release, Runtime Debug/Release и Full Debug/Release с `/W4 /WX`, exact CTest manifests и public-header self-containment после последнего metadata merge. Предыдущие block-local/pre-closure Windows runs зелёные; требуется только serial confirmation текущего дерева.
 [x] Disabled/skipped tests без explicit freeze exception = 0 по canonical manifest.
 [x] Architecture/freeze validators и validator self-tests green после serial merge.
 [x] Process-global allocator override как Goal 4 fault mechanism = 0.
 [x] `EngineBase = 9/9 LOCAL_READY`, `EngineRuntime = 17/17 LOCAL_READY`, `EngineFramework = 52/52 LOCAL_READY`.
-[ ] Remote Architecture Freeze CI на recorded SHA green, включая ClangCL public-surface.
+[x] Remote Architecture Freeze CI на recorded SHA green, включая ClangCL public-surface.
 
 Критерий выхода: Goal 4 = `COMPLETE`, все 52 Framework production-модуля локально закрыты без module-local code/evidence debt. `SYSTEM_READY/FROZEN` не присваивается до Goals 5–9.
 
@@ -292,175 +292,55 @@ Canonical result после serial merge: Framework 52/52 `LOCAL_READY`, 3054/30
 
 ---
 
-# Цель 5. Доказать persistence и determinism всего движка
-
-Цель 5 начинается после того, как соответствующие state owners имеют `LOCAL_READY`.
-
-## 5.1. Полная карта persistent state
-
-Для Base, Runtime и Framework составить одну таблицу:
-
-[ ] Что сохраняется.
-
-[ ] Кто authoritative owner.
-
-[ ] Что является transient и должно быть пересоздано.
-
-[ ] Snapshot type/version.
-
-[ ] Dependencies при restore.
-
-[ ] Migration policy.
-
-[ ] Reconciliation после restore.
-
-[ ] Deterministic state, влияющий на будущее поведение.
-
-Ни один persistent owner не должен существовать только "по факту наличия CaptureSnapshot". Он должен присутствовать в карте.
-
-## 5.2. Локальный persistence gate каждого state owner
-
-Для каждого snapshot owner:
-
-[ ] Non-empty realistic roundtrip.
-
-[ ] Empty-state roundtrip.
-
-[ ] Snapshot после нескольких create/update/remove cycles.
-
-[ ] ID generator state сохраняется.
-
-[ ] Generation сохраняется.
-
-[ ] Revision сохраняется.
-
-[ ] Journal epoch/sequence/cursor сохраняются по контракту.
-
-[ ] Pending queues/reservations/reconciliation records сохраняются, если они persistent.
-
-[ ] Transient runtime handles не сериализуются как reusable identity.
-
-[ ] Corrupted enum rejected.
-
-[ ] Corrupted reference rejected.
-
-[ ] Duplicate ID rejected.
-
-[ ] Missing required data rejected.
-
-[ ] Optional missing data обрабатывается по version contract.
-
-[ ] Old supported version мигрирует.
-
-[ ] Unsupported version отклоняется.
-
-[ ] Allocation failure during restore оставляет live state неизменным.
-
-[ ] Provider/backend failure во время post-restore reconciliation имеет controlled outcome.
-
-## 5.3. Ordered whole-engine restore
-
-Создать отдельный whole-engine restore harness.
-
-Он обязан проверять:
-
-[ ] Создание state сразу в Framework, Runtime и boundary mappings.
-
-[ ] Save всех persistent participants.
-
-[ ] Полное уничтожение runtime/framework instances.
-
-[ ] Boot нового Base/Runtime composition.
-
-[ ] Restore в dependency order.
-
-[ ] Rebuild derived indexes.
-
-[ ] Rebuild RuntimeBridge mappings.
-
-[ ] Re-materialization Runtime objects только после semantic state.
-
-[ ] Resume Time/Simulation после завершения restore.
-
-[ ] Продолжение исходного causal scenario.
-
-[ ] Один participant намеренно падает на validation.
-
-[ ] Один participant падает во время staging.
-
-[ ] Один participant падает на post-restore reconciliation.
-
-[ ] После каждого failure выполняется заранее определенная rollback/recovery policy.
-
-Нельзя считать whole-engine restore проверенным через сохранение только Entities и Progression.
-
-## 5.4. Deterministic scenario runner
-
-Добавить test utility со входом:
-
-`seed + initial snapshot + ordered input stream + tick count`
-
-Выход:
-
-`semantic final-state hash + ordered externally observable event trace`
-
-Runner не должен hash-ить pointer addresses, allocator addresses или unordered serialization artifacts.
-
-## 5.5. Determinism matrix
-
-Проверить:
-
-[ ] Unordered map/set iteration не определяет observable order.
-
-[ ] Tie-breaking всегда explicit.
-
-[ ] Stable IDs не зависят от pointer/address.
-
-[ ] Randomness идет через explicit streams.
-
-[ ] Random streams входят в snapshot, если влияют на future state.
-
-[ ] Runtime/gameplay clock не использует wall clock для deterministic state.
-
-[ ] Event queues имеют однозначный order.
-
-[ ] Same timestamp schedules имеют stable order.
-
-[ ] Task completion не определяет deterministic commit order там, где completion может меняться.
-
-[ ] Serialization output имеет stable semantic ordering там, где это требуется для hash/replay.
-
-[ ] Floating-point sensitive paths имеют documented tolerance либо deterministic representation.
-
-## 5.6. Обязательные deterministic tests
-
-[ ] Один и тот же scenario запускается 10 раз в одном executable/process model.
-
-[ ] Hash и event trace идентичны.
-
-[ ] Повторить с save/load в середине.
-
-[ ] Повторить с stream-out/stream-in региона.
-
-[ ] Повторить с deferred work/budget exhaustion.
-
-[ ] Повторить минимум один combat/effects scenario.
-
-[ ] Повторить минимум один AI/perception scenario.
-
-[ ] Повторить минимум один economy/process scenario.
-
-## 5.7. Exit criteria цели 5
-
-[ ] 100% persistent owners присутствуют в persistence map.
-
-[ ] 100% snapshot owners имеют roundtrip, corruption и failed-restore tests.
-
-[ ] Whole-engine restore suite проходит.
-
-[ ] Whole-engine deterministic runner проходит повторные runs.
-
-[ ] Save/load не меняет deterministic continuation.
+# Цель 5. Системно доказать persistence и determinism
+Milestone 5 объединяет закрытые локальные контракты в один whole-engine contract. Выполнение строго последовательное: 5.1 -> 5.7; CI опирается на machine-readable contracts.
+
+## 5.1. Persistence ownership map
+[x] Автоматически обнаружить и классифицировать весь persistence-related state Base, Runtime и Framework: 78 production modules, 497 reviewed candidates.
+[x] Для каждого state зафиксировать owner, роль, save plane, restore dependencies, transient rebuild, reconciliation и determinism relevance; перепроверены Runtime interfaces/transactions/prepare copies и clock continuation.
+[x] `UNCLASSIFIED = 0`, `UNKNOWN = 0`; новые неизвестные candidates fail-closed ломают validator.
+[x] Сформировать canonical gap list для следующих этапов: 291 explicit debts (139 reconciliation/runtime identity в 5.4, 152 determinism в 5.5).
+
+## 5.2. Durable representation и storage
+[x] 144 Framework durable candidates сведены к 47 boundaries; IDs, schema/dependencies и graph invariants проверяются автоматически.
+[x] Реализованы 45 typed participants, staging/commit contracts, per-boundary tests и exact-set composition regression.
+[x] Каждый persistent owner/checkpoint имеет реальный durable path: Framework SaveGame, Runtime Time checkpoint package или Runtime Persistence file backend; default MemoryOnly не считается durable storage.
+[x] Зафиксировать schema/version/migration policy и production restore profiles: explicit v1-only, `NO_PRIOR_SUPPORTED_VERSION`, пять profile tests, 51 immutable binary fixture (47 participant + 2 whole-image + 2 Runtime).
+[x] Реализовать versioned whole-save wire format без raw C++ layout/runtime identity; Runtime Time/Persistence имеют независимые bounded v1 packages в существующем Runtime Support.
+[x] Квалифицировать durable storage: atomic replacement, corruption/truncation, interruption, reopen и failure semantics, включая fresh-process Framework/Runtime restore и Runtime durable transaction cycles.
+
+5.1 и 5.2 полностью перепроверены и закрыты 2026-10-04, включая обе параллельные дельты. Итоговое дерево прошло холодную `Matrix -NoCache` (314/314, шесть профилей, 36:18), затем повторный `Full -NoCache` (218/218, 109 Debug + 109 Release, 9:17). Холодная сборка и тестовые стадии двух Full-профилей заняли 22:39 без общих Validators; замер выполнен с шестью build jobs. Свежая exact-tree qualification — PASS; source/graph fingerprints (745 файлов) и CI receipts сохранены в `_goal5_handoff`. Semantic IMPLEMENTED подтверждается девятью отдельными typed obligations, а не автоматически зелёной Matrix; все 34 owners имеют непустые domain-record publication regressions. Подробности — `docs/freeze/goal5_stage52_execution.md`, `docs/freeze/goal5_delta_merge_execution.md` и `docs/freeze/goal5_delta2_execution.md`. Production inventory/public-header count остались 78/232, public API delta reviewed (4374 callables), 78/78 LOCAL_READY. Независимые durable paths не заменяют consistent-cut/coordinator 5.3 и whole-engine restore/determinism 5.4–5.6.
+
+## 5.3. Единый logical save point
+[ ] Framework SaveGame и Runtime Persistence фиксируют одну согласованную generation.
+[ ] Реализовать production save barrier/coordinator без нарушения frozen layering.
+[ ] Проверить concurrent mutation, capture failure и cross-plane failure без torn save.
+[ ] Successful save всегда представляет один causal state.
+
+## 5.4. Whole-engine restore
+[ ] Восстанавливать save в fresh Base/Runtime/Framework composition без reuse старых runtime handles.
+[ ] Restore идёт по dependency order, затем rebuild transient indexes/mappings и reconciliation.
+[ ] Simulation/time возобновляются только после полного restore.
+[ ] Проверить validation, staging и reconciliation failures с определённой recovery policy.
+[ ] Продолжение causal scenario после restore эквивалентно control run.
+
+## 5.5. Deterministic scenario runner
+[ ] Runner: `seed + initial state + ordered inputs + ticks -> semantic digest + observable trace`.
+[ ] Digest включает только canonical semantic state и исключает pointers/runtime identity/container noise.
+[ ] Зафиксировать random-stream ownership, ordering/tie-breaking и deterministic clock policy.
+
+## 5.6. Determinism qualification
+[ ] Повторные identical runs дают одинаковые digest и trace.
+[ ] Save/load в середине не меняет deterministic continuation.
+[ ] Проверить streaming, budget exhaustion/deferred work и representative gameplay scenarios.
+[ ] Machine-speed-dependent progress не меняет semantic result в пределах freeze contract.
+
+## 5.7. Final qualification
+[ ] Все Goal 5 contracts, validators, adversarial self-tests и generators зелёные и idempotent.
+[ ] Whole-engine persistence, fresh restore и determinism suites проходят Debug/Release.
+[ ] `UNCLASSIFIED/BLOCKED/unresolved Goal 5 debt = 0`; каждый defect имеет reproducer и regression.
+[ ] Goal 5 ledger зафиксирован на exact tree; save/load доказан как versioned durable deterministic continuation.
+[ ] Milestone 5 не присваивает движку `FROZEN`; следующие системные gates остаются Goals 6–9.
 
 # Цель 6. Доказать memory/lifetime и concurrency/async safety
 

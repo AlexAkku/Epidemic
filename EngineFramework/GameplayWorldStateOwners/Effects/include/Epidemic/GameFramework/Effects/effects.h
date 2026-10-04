@@ -330,6 +330,8 @@ struct EffectsDiagnostics
 
 class EffectService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<EffectService>;
+
   public:
     using PayloadValidator = std::function<bool(std::span<const std::byte>)>;
 

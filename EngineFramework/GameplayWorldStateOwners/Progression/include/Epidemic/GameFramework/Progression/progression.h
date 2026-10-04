@@ -277,6 +277,8 @@ struct ProgressionDiagnostics
 
 class ProgressionService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ProgressionService>;
+
   public:
     ProgressionService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept { return GameplayDomainId::FromString("framework.progression"); }

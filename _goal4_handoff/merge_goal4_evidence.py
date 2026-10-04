@@ -209,6 +209,28 @@ for kind in ("api", "external_boundary", "lifecycle", "stale_identity"):
     }
     coverage[kind].update(handoff_coverage[kind])
 
+# Later reviewed Base byte-port additions have their own raw source. Keep the
+# historical eight Framework blocks unchanged and accept only actual reviewed Base/Runtime
+# callable identities, paired exact source contracts and executable assertions.
+supplemental_path = ROOT / '_goal5_handoff/base_public_surface_delta.json'
+supplemental = load(supplemental_path) if supplemental_path.is_file() else {'api':{},'anchors':{}}
+if supplemental.get('api'):
+    if supplemental.get('schema_version') != 1 or supplemental.get('reviewed') is not True:
+        raise RuntimeError('unreviewed supplemental Base surface delta')
+    if set(supplemental['api']) != set(supplemental['anchors']):
+        raise RuntimeError('supplemental Base API/anchor identities differ')
+    validate_worker_api_anchors('Goal5-Base',supplemental['anchors'])
+    actual_api = generate_coverage_manifest()['api']
+    targets = registered_test_targets(ROOT)
+    for identity,record in supplemental['api'].items():
+        if identity not in actual_api or record.get('module') not in {'EngineBase/Platform','EngineRuntime/Support','EngineRuntime/Persistence'} or actual_api[identity]['module'] != record['module']:
+            raise RuntimeError('supplemental source references unknown/non-reviewed Base/Runtime callable')
+        proof = supplemental['anchors'][identity]
+        errors = validate_path_anchor(ROOT,proof['contract'].get('anchor')) + validate_test_evidence(ROOT,proof['test'],targets)
+        if errors: raise RuntimeError('invalid supplemental evidence: '+str(errors))
+    for kind in ('api','lifecycle','stale_identity','external_boundary'):
+        coverage[kind].update(supplemental.get(kind,{}))
+
 # B06 carries reviewed obligation metadata inline, while the canonical manifest
 # stores only each obligation's status; the evidence itself is in API anchors.
 for record in coverage["api"].values():
@@ -259,6 +281,7 @@ anchors["anchors"] = {
     item_id: record for item_id, record in anchors["anchors"].items() if item_id not in old_framework_api_ids
 }
 anchors["anchors"].update(handoff_anchors)
+anchors["anchors"].update(supplemental.get('anchors',{}))
 save(anchors_path, anchors)
 
 dossiers_path = FREEZE / "module_dossier_reviews.json"

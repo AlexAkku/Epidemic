@@ -278,6 +278,8 @@ class IOwnershipRoleProvider
 
 class OwnershipService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<OwnershipService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

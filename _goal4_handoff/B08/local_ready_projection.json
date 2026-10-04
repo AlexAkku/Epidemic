@@ -1277,9 +1277,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1295,9 +1295,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1323,9 +1323,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1341,9 +1341,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1411,9 +1411,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1433,9 +1433,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1459,9 +1459,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1481,9 +1481,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1499,9 +1499,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1517,9 +1517,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1539,9 +1539,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1557,9 +1557,9 @@
               "kind": "lifecycle"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1579,9 +1579,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1601,9 +1601,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1627,9 +1627,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1649,9 +1649,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1671,9 +1671,9 @@
               "kind": "persistence"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1689,9 +1689,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1707,9 +1707,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:186::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:187::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:186::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:187::if (!queried || !queried.Value().value || queried.Value().value->size() != 1 || std::any_cast<int>(queried.Value().value->front().value) != 77)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1729,9 +1729,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1747,9 +1747,9 @@
               "kind": "contract"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1765,9 +1765,9 @@
               "kind": "state"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1779,9 +1779,9 @@
         "TEST-BOUNDARY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1797,9 +1797,9 @@
               "kind": "fault"
             },
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1811,9 +1811,9 @@
         "TEST-DUPLICATE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1825,9 +1825,9 @@
         "TEST-EMPTY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1839,9 +1839,9 @@
         "TEST-HAPPY": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1853,9 +1853,9 @@
         "TEST-INVALID": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1867,9 +1867,9 @@
         "TEST-REGRESSION": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1881,9 +1881,9 @@
         "TEST-STALE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"
@@ -1895,9 +1895,9 @@
         "TEST-WRONG-LIFECYCLE": {
           "evidence": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:73::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:77::if (!fact_type || !clock || !action || !second_action)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
               ],
               "kind": "test",
               "target": "EpidemicGameFrameworkCoreIntegrationTests"

@@ -355,6 +355,13 @@ function(epidemic_add_public_header_self_containment_target)
         add_library("${_consumer}" OBJECT ${_units})
         target_link_libraries("${_consumer}" PRIVATE "${_target}")
         epidemic_configure_target("${_consumer}")
+        if(MSVC)
+            # Compile-only probes need no shared compiler PDB service. Embedded
+            # symbols retain debug information without cold-build C1090 failures.
+            # Production libraries and executable debug formats remain unchanged.
+            set_property(TARGET "${_consumer}" PROPERTY MSVC_DEBUG_INFORMATION_FORMAT
+                "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+        endif()
         set_target_properties("${_consumer}" PROPERTIES FOLDER "Architecture/HeaderConsumers")
         add_dependencies(EpidemicPublicHeaderSelfContainment "${_consumer}")
     endforeach()

@@ -60,6 +60,11 @@
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
       "reviewed": true
     },
+    "09cec577d25610b8": {
+      "classification": "QUERY",
+      "rationale": "Semantic package read protocol, implemented by deterministic fault backend and production filesystem adapter.",
+      "reviewed": true
+    },
     "0bf9b5c3f9ebe5de": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
@@ -138,6 +143,11 @@
     "134d5b82878230b9": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
+      "reviewed": true
+    },
+    "1453b43fc95e1434": {
+      "classification": "QUERY",
+      "rationale": "Fail-closed field-wise decode validates magic/version/counts/lengths/IDs/schema/dependencies/checksums/order/trailing bytes before exposing a complete image.",
       "reviewed": true
     },
     "156449081aa986f1": {
@@ -248,6 +258,11 @@
     "265826bdd32aa35e": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
+      "reviewed": true
+    },
+    "27b5bca91fd5124f": {
+      "classification": "QUERY",
+      "rationale": "Bounded v1 decode/checksum/configuration validation returns a value checkpoint, without mutating any live clock; immutable golden and fresh-clock restore regressions.",
       "reviewed": true
     },
     "28deb4818e8b3c2c": {
@@ -735,6 +750,11 @@
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
       "reviewed": true
     },
+    "74fdc5ed555b34fd": {
+      "classification": "QUERY",
+      "rationale": "Canonical field-wise LE v1 encoding, bounded validated manifest/sections and whole checksum; never native object layout.",
+      "reviewed": true
+    },
     "770123acb7b8ba50": {
       "classification": "MUTATOR",
       "rationale": "Reviewed state-changing command or stateful sequence operation.",
@@ -903,6 +923,11 @@
     "9214f55c568c3fb4": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
+      "reviewed": true
+    },
+    "933512eceb3d3007": {
+      "classification": "QUERY",
+      "rationale": "Load bounded complete bytes and decode before any caller restore; storage/structural failure never publishes gameplay state.",
       "reviewed": true
     },
     "9352c73a0473d3c1": {
@@ -1378,6 +1403,11 @@
     "f2af4acbd0a3bff9": {
       "classification": "MUTATOR",
       "rationale": "Reviewed state-changing command or stateful sequence operation.",
+      "reviewed": true
+    },
+    "f3c69dccdda50f58": {
+      "classification": "QUERY",
+      "rationale": "Read via bounded Base Platform byte port, no Windows include in Integration and no live semantic state mutation.",
       "reviewed": true
     },
     "f42dc1299d3df18f": {

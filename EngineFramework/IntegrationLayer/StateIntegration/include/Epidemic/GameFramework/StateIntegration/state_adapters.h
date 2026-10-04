@@ -96,6 +96,8 @@ struct StateFactsCheckpoint
 
 class StateFactsAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<StateFactsAdapter>;
+
   public:
     StateFactsAdapter(
         entities::EntityService& entities,
@@ -265,6 +267,8 @@ struct StateLifecycleCheckpoint
 
 class StateLifecycleAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<StateLifecycleAdapter>;
+
   public:
     StateLifecycleAdapter(
         entities::EntityService& entities,
@@ -337,6 +341,8 @@ struct ConditionEffectsCheckpoint
 
 class ConditionEffectsAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ConditionEffectsAdapter>;
+
   public:
     ConditionEffectsAdapter(conditions::ConditionService& conditions, effects::EffectService& effects)
         : conditions_(conditions), effects_(effects)
@@ -398,6 +404,8 @@ struct StateTimeCheckpoint
 
 class StateTimeAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<StateTimeAdapter>;
+
   public:
     StateTimeAdapter(
         conditions::ConditionService& conditions,
@@ -481,6 +489,8 @@ struct StateIntegrationCheckpoint
 
 class StateIntegrationPersistence
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<StateIntegrationPersistence>;
+
   public:
     StateIntegrationPersistence(
         StateFactsAdapter& facts,
@@ -501,3 +511,19 @@ class StateIntegrationPersistence
     StateTimeAdapter& time_;
 };
 } // namespace epidemic::gameplay::state_integration
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Conditions/conditions.h"
+#include "Epidemic/GameFramework/Effects/effects.h"
+#include "Epidemic/GameFramework/Entities/entities.h"
+#include "Epidemic/GameFramework/Materials/materials.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConditionServiceSaveParticipant(epidemic::gameplay::conditions::ConditionService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEffectServiceSaveParticipant(epidemic::gameplay::effects::EffectService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEntityServiceSaveParticipant(epidemic::gameplay::entities::EntityService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateMaterialServiceSaveParticipant(epidemic::gameplay::materials::MaterialService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateStateIntegrationPersistenceSaveParticipant(epidemic::gameplay::state_integration::StateIntegrationPersistence& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

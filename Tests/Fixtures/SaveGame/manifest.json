@@ -1,0 +1,396 @@
+{
+  "fixtures": [
+    {
+      "fixture_id": "framework.abilities:v1",
+      "participant_id": "framework.abilities",
+      "path": "participant/framework.abilities/v1.bin",
+      "sha256": "3456d60c75c2f0726a4217908e73330199e4108640eeee1e915ab30c31b390bc",
+      "size": 84,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.ai:v1",
+      "participant_id": "framework.ai",
+      "path": "participant/framework.ai/v1.bin",
+      "sha256": "2605e3dafd0c885af8bc108eee8ae4da53e7d91ec08931ae79033bbc742b9a5d",
+      "size": 52,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.combat:v1",
+      "participant_id": "framework.combat",
+      "path": "participant/framework.combat/v1.bin",
+      "sha256": "1c13a7951cdf232db676edbfcecdb9dd0354a828c7352603627047de1a8e3c98",
+      "size": 76,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.conditions:v1",
+      "participant_id": "framework.conditions",
+      "path": "participant/framework.conditions/v1.bin",
+      "sha256": "6725a2c2f316a2c23d545ea0451aa7f614ca0f30ea348004cf67d1e07f9b917d",
+      "size": 60,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.construction:v1",
+      "participant_id": "framework.construction",
+      "path": "participant/framework.construction/v1.bin",
+      "sha256": "595bc48936e22e4fcbf5ffe871e650b6a642e082b10dfe532bc3fbae18be9332",
+      "size": 188,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.crime:v1",
+      "participant_id": "framework.crime",
+      "path": "participant/framework.crime/v1.bin",
+      "sha256": "dc9376b87a4ff7c32fa22d7ea5319e7584bd60df79e4efe6c06f7f96fbafc66f",
+      "size": 189,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.dialogue:v1",
+      "participant_id": "framework.dialogue",
+      "path": "participant/framework.dialogue/v1.bin",
+      "sha256": "1acd28b31a40fe64866048415a4b987e03698830fe3cc98322ade30525028d9c",
+      "size": 68,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.economy:v1",
+      "participant_id": "framework.economy",
+      "path": "participant/framework.economy/v1.bin",
+      "sha256": "3711a9b82dda1ce83bb88951be795d2362036fd9ff38ea3ea5f2df0b9890f3a5",
+      "size": 196,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.effects:v1",
+      "participant_id": "framework.effects",
+      "path": "participant/framework.effects/v1.bin",
+      "sha256": "b0bc4b9f850bd45a0586785a3096f5d823d236ca41bfef7f9e6e262398160c78",
+      "size": 52,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.encounters:v1",
+      "participant_id": "framework.encounters",
+      "path": "participant/framework.encounters/v1.bin",
+      "sha256": "f3ab0dafaf3fc0ba629c4660f8bc771bc680682b8dae1aa85fabf41c8c218eb8",
+      "size": 156,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.entities:v1",
+      "participant_id": "framework.entities",
+      "path": "participant/framework.entities/v1.bin",
+      "sha256": "5b9a5daa6722e4a7e0ec4e64a2c5a6768ff1fcc0140e748f863e498484947c4c",
+      "size": 52,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.environment:v1",
+      "participant_id": "framework.environment",
+      "path": "participant/framework.environment/v1.bin",
+      "sha256": "18d517e622179c06b1e4e349fc3d66cd675f804f5856d3908e7f9d5b31f664d0",
+      "size": 44,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.equipment:v1",
+      "participant_id": "framework.equipment",
+      "path": "participant/framework.equipment/v1.bin",
+      "sha256": "801affbbdd39238d6d5c61f50b0ded70e349c21d3e3d18925796a7d987d967fa",
+      "size": 124,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.facts:v1",
+      "participant_id": "framework.facts",
+      "path": "participant/framework.facts/v1.bin",
+      "sha256": "178d735a5841ea6851171d65eca7969011cea882513f15de89ec7e712702e925",
+      "size": 68,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.interaction:v1",
+      "participant_id": "framework.interaction",
+      "path": "participant/framework.interaction/v1.bin",
+      "sha256": "5b95c3135a5f5020f8d2d3e2fca635ce314a0adf144085f29ded67747bf46cb4",
+      "size": 44,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.items:v1",
+      "participant_id": "framework.items",
+      "path": "participant/framework.items/v1.bin",
+      "sha256": "edbb20369281574d1e7cd42820d88e80d3ecedaa9ee7a5a7671e94757499a94f",
+      "size": 108,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.knowledge:v1",
+      "participant_id": "framework.knowledge",
+      "path": "participant/framework.knowledge/v1.bin",
+      "sha256": "329494bac240bd3f013ee7f74b1e5fcb828d4d22e47888c40356236b0f623b2d",
+      "size": 84,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.loot:v1",
+      "participant_id": "framework.loot",
+      "path": "participant/framework.loot/v1.bin",
+      "sha256": "9f2774b07558ed6231f00a3abf12049bc8e550e107d0cdb0ad97eaf3f4c11d83",
+      "size": 76,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.materials:v1",
+      "participant_id": "framework.materials",
+      "path": "participant/framework.materials/v1.bin",
+      "sha256": "fb22a0ff0863fec4b063117c1f61ae4f4e2a96dc23b0ac19655085dc980ac810",
+      "size": 28,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.narrative:v1",
+      "participant_id": "framework.narrative",
+      "path": "participant/framework.narrative/v1.bin",
+      "sha256": "7d52fe14ff76390cfc747bb8f6e9a748683c2c306c30859af3d692b538312bd8",
+      "size": 205,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.navigation_semantics:v1",
+      "participant_id": "framework.navigation_semantics",
+      "path": "participant/framework.navigation_semantics/v1.bin",
+      "sha256": "9314a8ad4761e8b1877126a7dc225f37553595c38582a048a90972da53d40d1e",
+      "size": 76,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.needs_life:v1",
+      "participant_id": "framework.needs_life",
+      "path": "participant/framework.needs_life/v1.bin",
+      "sha256": "009c138e661ed143a9c046ad3d7867b4fa299fde129a1627bdaed2ab21294fba",
+      "size": 124,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.ownership:v1",
+      "participant_id": "framework.ownership",
+      "path": "participant/framework.ownership/v1.bin",
+      "sha256": "72401d7d700a93498c300cdacf2952a56c4e857b5e448900626987cba0ebad82",
+      "size": 116,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.perception:v1",
+      "participant_id": "framework.perception",
+      "path": "participant/framework.perception/v1.bin",
+      "sha256": "3412f405ba9e3986e1cca3b2d0bd41fcd70116f5981c05b07d9e5fd15397c6fc",
+      "size": 100,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.population:v1",
+      "participant_id": "framework.population",
+      "path": "participant/framework.population/v1.bin",
+      "sha256": "d8352ca64304fe522f3be34f0f4fcdac99d9d8496aac9069026d21cbeb6f2490",
+      "size": 156,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.processes:v1",
+      "participant_id": "framework.processes",
+      "path": "participant/framework.processes/v1.bin",
+      "sha256": "27853d4b19208d41be98d80dfb920d779f2d1e4ac60d90f7316e53bda5c4c151",
+      "size": 92,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.progression:v1",
+      "participant_id": "framework.progression",
+      "path": "participant/framework.progression/v1.bin",
+      "sha256": "63269f4beb22f2a71b4055aefdb1e90b0b95e7fe486f1e11c0d150d8bebb982b",
+      "size": 76,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.resources:v1",
+      "participant_id": "framework.resources",
+      "path": "participant/framework.resources/v1.bin",
+      "sha256": "0b8e2688d7049ad327f8a00a80cf4415d8e3a976e5a806740a0ed2a023ee9313",
+      "size": 196,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.roles_jobs:v1",
+      "participant_id": "framework.roles_jobs",
+      "path": "participant/framework.roles_jobs/v1.bin",
+      "sha256": "c3283a22f09880e297e68de1d332c5d63091f33dc3051835a51fb6c886aa3214",
+      "size": 140,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.simulation:v1",
+      "participant_id": "framework.simulation",
+      "path": "participant/framework.simulation/v1.bin",
+      "sha256": "49d628336bf00616fd3b48a7e5aef1f916e1ae855ff90bc157f37309e18021ca",
+      "size": 84,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.society:v1",
+      "participant_id": "framework.society",
+      "path": "participant/framework.society/v1.bin",
+      "sha256": "73cc57827182829841b080e4b12972478ca6f40849cb25cc02e1ba03e34b3ae8",
+      "size": 117,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.time:v1",
+      "participant_id": "framework.time",
+      "path": "participant/framework.time/v1.bin",
+      "sha256": "7d44910044967ef2aa17e3d52021b7d8d0cfe070569bf4283b126ec8de235902",
+      "size": 85,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.traversal:v1",
+      "participant_id": "framework.traversal",
+      "path": "participant/framework.traversal/v1.bin",
+      "sha256": "098a6ef8dc7738f497c06afb93d828099ed1425b0cc67a15a8b754734945d3ad",
+      "size": 124,
+      "version": 1
+    },
+    {
+      "fixture_id": "framework.world:v1",
+      "participant_id": "framework.world",
+      "path": "participant/framework.world/v1.bin",
+      "sha256": "61815bc29b02bd8d3e7a11c1c26fe66fb067024279dbcb5ec026a868c67697c2",
+      "size": 60,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.ability_effects:v1",
+      "participant_id": "integration.ability_effects",
+      "path": "participant/integration.ability_effects/v1.bin",
+      "sha256": "930aaa23984aa46171242c646f0ab011cd1cf267c1c91236e57059e5ebd478b3",
+      "size": 20,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.ability_time:v1",
+      "participant_id": "integration.ability_time",
+      "path": "participant/integration.ability_time/v1.bin",
+      "sha256": "1e5c9744a0e5e70e89b3b222007430e530305b0683caf82cc86dbe4dd0eef0e9",
+      "size": 28,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.condition_progression:v1",
+      "participant_id": "integration.condition_progression",
+      "path": "participant/integration.condition_progression/v1.bin",
+      "sha256": "c5c6e0f45f3c76d277189a467140b1488e67d9939388a03a6408e1172a130f77",
+      "size": 28,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.death_reward:v1",
+      "participant_id": "integration.death_reward",
+      "path": "participant/integration.death_reward/v1.bin",
+      "sha256": "99ad499f57608927c752a0dfc67c517e1b7459c843af1b69b80d682042bd0660",
+      "size": 36,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.interaction_effects:v1",
+      "participant_id": "integration.interaction_effects",
+      "path": "participant/integration.interaction_effects/v1.bin",
+      "sha256": "25ce4e9933dda4ab39b9317e5e8621ec06d84b455c7876a10122ee9de1c0d9a6",
+      "size": 12,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.narrative.external_consequence_delivery:v1",
+      "participant_id": "integration.narrative.external_consequence_delivery",
+      "path": "participant/integration.narrative.external_consequence_delivery/v1.bin",
+      "sha256": "467727fea9fd68f4b244a7ad7ae926ab3a3cdcdc813893089a12f6914cc35154",
+      "size": 20,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.population_encounter:v1",
+      "participant_id": "integration.population_encounter",
+      "path": "participant/integration.population_encounter/v1.bin",
+      "sha256": "25ce4e9933dda4ab39b9317e5e8621ec06d84b455c7876a10122ee9de1c0d9a6",
+      "size": 12,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.population_lifecycle:v1",
+      "participant_id": "integration.population_lifecycle",
+      "path": "participant/integration.population_lifecycle/v1.bin",
+      "sha256": "25ce4e9933dda4ab39b9317e5e8621ec06d84b455c7876a10122ee9de1c0d9a6",
+      "size": 12,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.scheduled_trigger_dispatcher:v1",
+      "participant_id": "integration.scheduled_trigger_dispatcher",
+      "path": "participant/integration.scheduled_trigger_dispatcher/v1.bin",
+      "sha256": "be8ea79a6934a4d958a566e1f28314dd911f5c37aa57cae6a4376273837918aa",
+      "size": 16,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.social_legal:v1",
+      "participant_id": "integration.social_legal",
+      "path": "participant/integration.social_legal/v1.bin",
+      "sha256": "8b2feb0d9891a20a5971555db251f683b577db2246059127c5ca49dc5c8f2047",
+      "size": 36,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.state:v1",
+      "participant_id": "integration.state",
+      "path": "participant/integration.state/v1.bin",
+      "sha256": "e819c96e95e071312cb8f3c55af3da06cfef8492feacff21d3d79787db404e53",
+      "size": 312,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.trade:v1",
+      "participant_id": "integration.trade",
+      "path": "participant/integration.trade/v1.bin",
+      "sha256": "2d3305811cf63306a8c3b9bc6840cb5851777595d4bbaaa21e1c37ee9b7a3f43",
+      "size": 28,
+      "version": 1
+    },
+    {
+      "fixture_id": "integration.world_facts:v1",
+      "participant_id": "integration.world_facts",
+      "path": "participant/integration.world_facts/v1.bin",
+      "sha256": "78af04feef9bfdfcc90870ff0b57212aac740315e40f05a76712a01366d73ed3",
+      "size": 80,
+      "version": 1
+    },
+    {
+      "fixture_id": "whole:1:empty",
+      "path": "whole/1/empty.bin",
+      "sha256": "b381aa7ef104997be34cdbfeee872749db3c1b851f684f381ee190b9f71ab545",
+      "size": 80,
+      "wire_version": 1
+    },
+    {
+      "fixture_id": "whole:1:multi",
+      "path": "whole/1/multi.bin",
+      "sha256": "2c91a84110323b1a7aa1ebb739b6ab1911cd937cf9f5863c735f7005e8a1486c",
+      "size": 198,
+      "wire_version": 1
+    }
+  ],
+  "policy": "IMMUTABLE_HISTORICAL_FIXTURES_NO_CI_REGENERATION",
+  "schema_version": 1
+}

@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "reviewed": true,
+  "scope": "M5.2.C-E: first supported durable release, no invented version zero",
+  "participant_ids": [
+    "framework.abilities", "framework.ai", "framework.combat", "framework.conditions",
+    "framework.construction", "framework.crime", "framework.dialogue", "framework.economy",
+    "framework.effects", "framework.encounters", "framework.entities", "framework.environment",
+    "framework.equipment", "framework.facts", "framework.interaction", "framework.items",
+    "framework.knowledge", "framework.loot", "framework.materials", "framework.narrative",
+    "framework.navigation_semantics", "framework.needs_life", "framework.ownership",
+    "framework.perception", "framework.population", "framework.processes", "framework.progression",
+    "framework.resources", "framework.roles_jobs", "framework.simulation", "framework.society",
+    "framework.time", "framework.traversal", "framework.world",
+    "integration.ability_effects", "integration.ability_time", "integration.condition_progression",
+    "integration.death_reward", "integration.interaction_effects",
+    "integration.narrative.external_consequence_delivery", "integration.population_encounter",
+    "integration.population_lifecycle", "integration.scheduled_trigger_dispatcher",
+    "integration.social_legal", "integration.state", "integration.trade", "integration.world_facts"
+  ],
+  "initial_participant_policy": {
+    "current_version": 1,
+    "minimum_supported_version": 1,
+    "supported_versions": [1],
+    "migration_edges": [],
+    "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+    "compatibility_profiles": {
+      "ExactRequired": {"strict": true, "future_version": "REJECT"},
+      "CompatibleVersion": {"strict": true, "future_version": "REJECT"},
+      "MigrationRequired": {"strict": true, "future_version": "REJECT"},
+      "BestEffort": {"strict": false, "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL"},
+      "DeveloperMode": {"strict": false, "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL"}
+    }
+  },
+  "wire_format": {
+    "magic": "EPISAVE1",
+    "wire_version": 1,
+    "save_format_version": 1,
+    "integer_encoding": "FIXED_WIDTH_LITTLE_ENDIAN",
+    "id_encoding": "TYPE_ID_RAW_U64",
+    "time_encoding": "SIGNED_I64_TWOS_COMPLEMENT_GAMEPLAY_SECONDS",
+    "requirement_encoding": {"Required": 1, "Optional": 2},
+    "lengths": "U32_COUNTS_U64_BYTE_LENGTHS_CHECKED_BEFORE_ALLOCATION",
+    "header": "magic8,wire_u32,save_u32,total_u64,content_u64,content_hash_u64,engine_u64,framework_u64,time_i64,manifest_count_u32,section_count_u32",
+    "manifest_entry": "id_u64,schema_u32,requirement_u8,dependency_count_u32,payload_hash_u64,dependency_ids_u64",
+    "section": "id_u64,schema_u32,length_u64,payload_hash_u64,payload_bytes",
+    "checksum": "FNV1A64_SECTION_AND_WHOLE_PACKAGE_CORRUPTION_DETECTION_NOT_AUTHENTICATION",
+    "ordering": "ASCENDING_PARTICIPANT_ID_AND_DEPENDENCY_ID",
+    "trailing_bytes": "REJECT",
+    "invalid_structure": "REJECT_DUPLICATES_UNKNOWN_DEPENDENCIES_CYCLES_ENUMS_HASH_MISMATCH_AND_NONCANONICAL_ORDER",
+    "limits": {"max_participants": 1024, "max_dependencies_per_participant": 256, "max_section_bytes": 67108864, "max_total_payload_bytes": 536870912, "max_wire_bytes": 629145600},
+    "representation": "FIELD_WISE_VALUES_NO_NATIVE_LAYOUT_POINTER_CALLBACK_RUNTIME_HANDLE_OR_STL_LAYOUT"
+  },
+  "storage": {
+    "interface": "ISavePackageStore.Load/Commit",
+    "placement": "EngineFramework/IntegrationLayer/Integration",
+    "native_byte_port": "EngineBase/Platform: ReadFilePackage/CommitFilePackage; Win32 remains confined to src/Windows",
+    "threading": "EXTERNALLY_SYNCHRONIZED_SINGLE_WRITER_PER_PATH",
+    "atomic_policy": "SAME_DIRECTORY_CREATE_NEW_TEMP_FLUSH_CLOSE_MOVEFILEEX_REPLACE_EXISTING_WRITE_THROUGH",
+    "failure_policy": "BEFORE_REPLACE_OLD_SAVE_PRESERVED_TEMP_CLEANED_ON_HANDLED_FAILURE",
+    "interruption_policy": "PROCESS_EXIT_BEFORE_REPLACE_PRESERVES_OLD_SAVE_ORPHAN_TEMP_NEVER_USED_AS_SAVE",
+    "durability_scope": "FILE_DATA_FLUSH_AND_WINDOWS_WRITE_THROUGH_REPLACEMENT_NO_HARDWARE_OR_POWER_LOSS_GUARANTEE",
+    "read_policy": "BOUNDED_OPEN_HANDLE_READ_SIZE_AND_CHECKSUM_VALIDATION_NO_LIVE_RESTORE_ON_DECODE_FAILURE"
+  }
+}

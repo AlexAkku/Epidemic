@@ -49,6 +49,26 @@ jobs:
           python docs/freeze/public_api_inventory.py --self-test
           python docs/freeze/public_surface_manifest.py --check
           python docs/freeze/public_surface_manifest.py --self-test
+          python docs/freeze/goal5_persistence_inventory.py --check
+          python docs/freeze/goal5_admission.py --check
+          python docs/freeze/goal5_admission.py --self-test
+          python docs/freeze/goal5_persistence_inventory.py --self-test
+          python docs/freeze/goal5_persistence_contract.py --check
+          python docs/freeze/goal5_persistence_contract.py --self-test
+          python docs/freeze/goal5_participant_bindings.py --check
+          python docs/freeze/goal5_participant_bindings.py --self-test
+          python docs/freeze/goal5_participant_contract.py --check --implementation
+          python docs/freeze/goal5_participant_contract.py --self-test
+          python docs/freeze/goal5_schema_contract.py --check
+          python docs/freeze/goal5_schema_contract.py --self-test
+          python docs/freeze/goal5_stage52_contract.py --check
+          python docs/freeze/goal5_stage52_contract.py --self-test
+          python docs/freeze/goal5_runtime_durable_contract.py --check
+          python docs/freeze/goal5_runtime_durable_contract.py --self-test
+          python tools/generate_goal5_participants.py --check
+          python tools/audit_goal5_restore_members.py --check
+          python tools/check_goal5_private_surface.py --check
+          python tools/check_goal5_private_surface.py --self-test
 
   layer-matrix:
     needs: freeze-contract

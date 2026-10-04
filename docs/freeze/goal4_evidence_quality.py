@@ -21,6 +21,17 @@ HANDOFF = ROOT / "_goal4_handoff"
 FRAMEWORK = "EngineFramework/"
 ANCHOR_RE = re.compile(r"^[^\s:]+:\d+(?:-\d+)?::\S.+$")
 
+# Keep the traceability baseline in executable form.  The validator must not
+# depend on planning Markdown being present in a source or release checkout.
+ORIGINAL_GOAL4_FINDINGS = {
+    "G4-COMBAT-001", "G4-DOC-001", "G4-EXTINT-001", "G4-EXTINT-002",
+    "G4-INFRA-001", "G4-NARRINT-001", "G4-NARRINT-002", "G4-PER-001",
+    "G4-PER-002", "G4-PER-003", "G4-PROC-001", "G4-PROG-001",
+    "G4-PROG-002", "G4-PROG-003", "G4-RB-001", "G4-RESPROD-001",
+    "G4-RESPROD-002", "G4-SIM-001", "G4-SIM-002", "G4-SOC-001",
+    "G4-SOC-002", "G4-TRAV-001", "G4-TRAV-002",
+}
+
 # Findings admitted by the Bxx audits after the original milestone list.
 POST_ADMISSION_GOAL4_FINDINGS = {
     "G4-B02-COND-001", "G4-B02-EFF-001", "G4-B02-EFF-002",
@@ -241,9 +252,7 @@ def audit_raw_handoffs(counts: Counter, samples: list[str], targets: set[str]) -
 
 
 def official_defect_ids() -> set[str]:
-    milestone = (ROOT / "Milestone 4.md").read_text(encoding="utf-8")
-    original = set(re.findall(r"^### (G4-[A-Z]+-\d+)", milestone, re.MULTILINE))
-    return original | POST_ADMISSION_GOAL4_FINDINGS
+    return ORIGINAL_GOAL4_FINDINGS | POST_ADMISSION_GOAL4_FINDINGS
 
 
 def audit() -> tuple[Counter, list[str]]:

@@ -71,3 +71,12 @@ target_link_libraries(EpidemicEngineSmokeTruthTests PRIVATE
     EpidemicGameFrameworkProgression
 )
 set_tests_properties(EpidemicEngineSmokeTruthTests PROPERTIES LABELS "truth;smoke" TIMEOUT 120)
+
+add_executable(EpidemicPersistenceWireTruthTests persistence_wire_tests.cpp)
+target_link_libraries(EpidemicPersistenceWireTruthTests PRIVATE EpidemicGameFrameworkCoreIntegration EpidemicPlatform)
+epidemic_configure_target(EpidemicPersistenceWireTruthTests)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME EpidemicPersistenceWireTruthTests COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/ci/test_save_process.py" "$<TARGET_FILE:EpidemicPersistenceWireTruthTests>" --local)
+set_tests_properties(EpidemicPersistenceWireTruthTests PROPERTIES LABELS "truth;persistence-wire;persistence-storage" TIMEOUT 120)
+add_test(NAME EpidemicPersistenceProcessTruthTests COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/ci/test_save_process.py" "$<TARGET_FILE:EpidemicPersistenceWireTruthTests>" --runtime-executable "$<TARGET_FILE:EpidemicRuntimeSupportTests>")
+set_tests_properties(EpidemicPersistenceProcessTruthTests PROPERTIES LABELS "truth;persistence-wire;persistence-storage" TIMEOUT 240)

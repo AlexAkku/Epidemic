@@ -133,7 +133,7 @@ EXTERNAL_BOUNDARIES = {
 
 def production_files(module: Module) -> list[Path]:
     files: list[Path] = []
-    for directory in (module.root / "include", module.root / "src"):
+    for directory in (module.root / "include", module.root / "internal", module.root / "src"):
         if directory.exists():
             files.extend(path for path in directory.rglob("*") if path.is_file() and path.suffix in SOURCE_SUFFIXES)
     return sorted(set(files))
@@ -145,15 +145,24 @@ def public_include_name(path: Path) -> str:
     return Path(*parts[index + 1 :]).as_posix()
 
 
-def include_owners(modules: list[Module]) -> dict[str, Module]:
+def include_owners(modules: list[Module]) -> tuple[dict[str, Module], set[str]]:
     owners: dict[str, Module] = {}
+    internal_names: set[str] = set()
     for module in modules:
         for header in module.headers:
             name = public_include_name(header)
             if name in owners:
-                raise ValueError(f"public include {name} is owned by both {owners[name].key} and {module.key}")
+                raise ValueError(f"project include {name} is owned by both {owners[name].key} and {module.key}")
             owners[name] = module
-    return owners
+        internal_root = module.root / "internal"
+        if internal_root.exists():
+            for header in sorted(path for path in internal_root.rglob("*") if path.is_file() and path.suffix in SOURCE_SUFFIXES):
+                name = header.relative_to(internal_root).as_posix()
+                if name in owners:
+                    raise ValueError(f"project include {name} is owned by both {owners[name].key} and {module.key}")
+                owners[name] = module
+                internal_names.add(name)
+    return owners, internal_names
 
 
 def module_includes(module: Module) -> list[tuple[Path, str, bool]]:
@@ -210,7 +219,7 @@ def inspect(modules: list[Module]) -> tuple[dict[str, dict[str, object]], list[s
     if ownership_keys != module_keys or set(NON_DOMAIN_OWNERS) & set(AUTHORITY_DOMAINS):
         return {}, ["reviewed ownership registry and discovered production modules differ or overlap"]
     try:
-        owners = include_owners(modules)
+        owners, internal_names = include_owners(modules)
     except ValueError as error:
         return {}, [str(error)]
     target_to_module = {module.target: module for module in modules}
@@ -237,12 +246,16 @@ def inspect(modules: list[Module]) -> tuple[dict[str, dict[str, object]], list[s
             if not angled and (name.startswith("../") or "/../" in name or "/src/" in name.lower()):
                 errors.append(f"{module.key}: private/relative cross-boundary include {name} in {relative}")
             owner = owners.get(name)
+            if name in internal_names and "include" in path.relative_to(module.root).parts:
+                errors.append(f"{module.key}: public header includes private internal header {name}")
             if name.startswith("Epidemic/") and owner is None:
                 errors.append(f"{module.key}: project include {name} has no production-module owner")
             if owner and owner.key != module.key:
                 used_targets.add(owner.key)
                 if owner.key not in allowed_targets:
                     errors.append(f"{module.key}: includes {name} from {owner.key} without a direct CMake dependency")
+                elif name in internal_names and "include" in path.relative_to(module.root).parts:
+                    errors.append(f"{module.key}: public header includes private internal header {name} from {owner.key}")
                 elif "include" in path.relative_to(module.root).parts and link_visibility.get(owner.target) == "PRIVATE":
                     errors.append(f"{module.key}: public header includes {name} but {owner.target} is a PRIVATE dependency")
             if EXTERNAL_RE.match(name):

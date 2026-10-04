@@ -1,0 +1,1711 @@
+{
+  "evidence": {
+    "reopen": {
+      "source": "tools/ci/test_save_process.py",
+      "symbol": "fresh process",
+      "target": "EpidemicPersistenceProcessTruthTests"
+    },
+    "schema_profiles": {
+      "source": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp",
+      "symbol": "TestCompatibilityProfileMatrix",
+      "target": "EpidemicGameFrameworkSaveGameTests"
+    },
+    "storage": {
+      "source": "Tests/Truth/persistence_wire_tests.cpp",
+      "symbol": "TestDurableStorage",
+      "target": "EpidemicPersistenceWireTruthTests"
+    },
+    "wire": {
+      "source": "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp",
+      "symbol": "TestSaveWireCodec",
+      "target": "EpidemicGameFrameworkSaveGameTests"
+    }
+  },
+  "participants": [
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.abilities:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.abilities",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.ai:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.ai",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.combat:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.combat",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.conditions:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.conditions",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.construction:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.construction",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.crime:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.crime",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.dialogue:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.dialogue",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.economy:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.economy",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.effects:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.effects",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.encounters:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.encounters",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.entities:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.entities",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.environment:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.environment",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.equipment:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.equipment",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.facts:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.facts",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.interaction:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.interaction",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.items:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.items",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.knowledge:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.knowledge",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.loot:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.loot",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.materials:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.materials",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.narrative:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.narrative",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.navigation_semantics:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.navigation_semantics",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.needs_life:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.needs_life",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.ownership:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.ownership",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.perception:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.perception",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.population:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.population",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.processes:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.processes",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.progression:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.progression",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.resources:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.resources",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.roles_jobs:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.roles_jobs",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.simulation:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.simulation",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.society:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.society",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.time:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.time",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.traversal:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.traversal",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "framework.world:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "framework.world",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.ability_effects:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.ability_effects",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.ability_time:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.ability_time",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.condition_progression:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.condition_progression",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.death_reward:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.death_reward",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.interaction_effects:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.interaction_effects",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.narrative.external_consequence_delivery:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.narrative.external_consequence_delivery",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.population_encounter:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.population_encounter",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.population_lifecycle:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.population_lifecycle",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.scheduled_trigger_dispatcher:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.scheduled_trigger_dispatcher",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.social_legal:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.social_legal",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.state:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.state",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.trade:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.trade",
+      "supported_versions": [
+        1
+      ]
+    },
+    {
+      "compatibility_profiles": {
+        "BestEffort": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "CompatibleVersion": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "DeveloperMode": {
+          "future_version": "REJECT_REQUIRED_SKIP_OPTIONAL",
+          "strict": false
+        },
+        "ExactRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        },
+        "MigrationRequired": {
+          "future_version": "REJECT",
+          "strict": true
+        }
+      },
+      "current_version": 1,
+      "fixture_ids": [
+        "integration.world_facts:v1"
+      ],
+      "migration_edges": [],
+      "migration_policy": "NO_PRIOR_SUPPORTED_VERSION",
+      "minimum_supported_version": 1,
+      "participant_id": "integration.world_facts",
+      "supported_versions": [
+        1
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "storage": {
+    "atomic_policy": "SAME_DIRECTORY_CREATE_NEW_TEMP_FLUSH_CLOSE_MOVEFILEEX_REPLACE_EXISTING_WRITE_THROUGH",
+    "durability_scope": "FILE_DATA_FLUSH_AND_WINDOWS_WRITE_THROUGH_REPLACEMENT_NO_HARDWARE_OR_POWER_LOSS_GUARANTEE",
+    "failure_policy": "BEFORE_REPLACE_OLD_SAVE_PRESERVED_TEMP_CLEANED_ON_HANDLED_FAILURE",
+    "interface": "ISavePackageStore.Load/Commit",
+    "interruption_policy": "PROCESS_EXIT_BEFORE_REPLACE_PRESERVES_OLD_SAVE_ORPHAN_TEMP_NEVER_USED_AS_SAVE",
+    "native_byte_port": "EngineBase/Platform: ReadFilePackage/CommitFilePackage; Win32 remains confined to src/Windows",
+    "placement": "EngineFramework/IntegrationLayer/Integration",
+    "read_policy": "BOUNDED_OPEN_HANDLE_READ_SIZE_AND_CHECKSUM_VALIDATION_NO_LIVE_RESTORE_ON_DECODE_FAILURE",
+    "threading": "EXTERNALLY_SYNCHRONIZED_SINGLE_WRITER_PER_PATH"
+  },
+  "wire_format": {
+    "checksum": "FNV1A64_SECTION_AND_WHOLE_PACKAGE_CORRUPTION_DETECTION_NOT_AUTHENTICATION",
+    "header": "magic8,wire_u32,save_u32,total_u64,content_u64,content_hash_u64,engine_u64,framework_u64,time_i64,manifest_count_u32,section_count_u32",
+    "id_encoding": "TYPE_ID_RAW_U64",
+    "integer_encoding": "FIXED_WIDTH_LITTLE_ENDIAN",
+    "invalid_structure": "REJECT_DUPLICATES_UNKNOWN_DEPENDENCIES_CYCLES_ENUMS_HASH_MISMATCH_AND_NONCANONICAL_ORDER",
+    "lengths": "U32_COUNTS_U64_BYTE_LENGTHS_CHECKED_BEFORE_ALLOCATION",
+    "limits": {
+      "max_dependencies_per_participant": 256,
+      "max_participants": 1024,
+      "max_section_bytes": 67108864,
+      "max_total_payload_bytes": 536870912,
+      "max_wire_bytes": 629145600
+    },
+    "magic": "EPISAVE1",
+    "manifest_entry": "id_u64,schema_u32,requirement_u8,dependency_count_u32,payload_hash_u64,dependency_ids_u64",
+    "ordering": "ASCENDING_PARTICIPANT_ID_AND_DEPENDENCY_ID",
+    "representation": "FIELD_WISE_VALUES_NO_NATIVE_LAYOUT_POINTER_CALLBACK_RUNTIME_HANDLE_OR_STL_LAYOUT",
+    "requirement_encoding": {
+      "Optional": 2,
+      "Required": 1
+    },
+    "save_format_version": 1,
+    "section": "id_u64,schema_u32,length_u64,payload_hash_u64,payload_bytes",
+    "time_encoding": "SIGNED_I64_TWOS_COMPLEMENT_GAMEPLAY_SECONDS",
+    "trailing_bytes": "REJECT",
+    "wire_version": 1
+  }
+}

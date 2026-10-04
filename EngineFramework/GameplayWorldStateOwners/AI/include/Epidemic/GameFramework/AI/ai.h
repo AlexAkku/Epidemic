@@ -426,6 +426,8 @@ class IAIConsiderationEvaluator
 
 class AIService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<AIService>;
+
   public:
     AIService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

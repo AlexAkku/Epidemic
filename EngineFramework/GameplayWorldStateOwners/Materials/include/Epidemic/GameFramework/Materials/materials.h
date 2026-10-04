@@ -324,6 +324,8 @@ struct MaterialsDiagnostics
 
 class MaterialService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<MaterialService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

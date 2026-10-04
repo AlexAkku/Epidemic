@@ -227,6 +227,17 @@
       "scope": "epidemic::gameplay::narrative::NarrativeGateId",
       "signature": "static constexpr NarrativeGateId FromString(std::string_view s)noexcept"
     },
+    "09cec577d25610b8": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {},
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:86::\"stored truncation rejected\"",
+      "review_rationale": "Semantic package read protocol, implemented by deterministic fault backend and production filesystem adapter.",
+      "scope": "epidemic::gameplay::savegame::ISavePackageStore",
+      "signature": "[[nodiscard]] virtual foundation::Result<std::vector<std::byte>> Load()=0;"
+    },
     "09e96984d4dae743": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -495,6 +506,17 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::narrative::NarrativeConsequenceId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
+    },
+    "1453b43fc95e1434": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp:140::\"historical wire golden decodes and canonically re-encodes\"",
+      "review_rationale": "Fail-closed field-wise decode validates magic/version/counts/lengths/IDs/schema/dependencies/checksums/order/trailing bytes before exposing a complete image.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] foundation::Result<SaveGameImage> DecodeSaveGameImage(std::span<const std::byte> bytes,SaveWireLimits limits={});"
     },
     "14d3796e348ecd26": {
       "classification": "QUERY",
@@ -1279,6 +1301,17 @@
       "scope": "epidemic::gameplay::narrative::NarrativeConsequenceExecutionId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
     },
+    "30ff11eb4f6f57b7": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {},
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:131::\"virtual store destruction never removes committed save\"",
+      "review_rationale": "Virtual noexcept destruction of owned backend; durable committed bytes are not deleted by object destruction.",
+      "scope": "epidemic::gameplay::savegame::ISavePackageStore",
+      "signature": "virtual ~ISavePackageStore()=default;"
+    },
     "32372bed670ea1ef": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -1788,6 +1821,17 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::dialogue::DialogueConditionTypeId",
       "signature": "[[nodiscard]] constexpr bool operator==(const DialogueConditionTypeId&)const noexcept=default;"
+    },
+    "3c27a62f2fedeb5e": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/WorldIntegration/include/Epidemic/GameFramework/WorldIntegration/world_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/WorldIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:55::auto participant = savegame::CreateWorldServiceSaveParticipant(",
+      "review_rationale": "Construct framework.world with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains WorldService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateWorldServiceSaveParticipant(epidemic::gameplay::world::WorldService&owner,SaveRestoreWorkspace&workspace);"
     },
     "3c66f23149eb28c6": {
       "classification": "MUTATOR",
@@ -3382,6 +3426,17 @@
       "scope": "epidemic::gameplay::narrative::RumorId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const RumorId&)const noexcept=default;"
     },
+    "74fdc5ed555b34fd": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_wire_tests.cpp:79::\"canonical re-encoding is byte-stable\"",
+      "review_rationale": "Canonical field-wise LE v1 encoding, bounded validated manifest/sections and whole checksum; never native object layout.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeSaveGameImage(const SaveGameImage&image,SaveWireLimits limits={});"
+    },
     "75c04f37b62af7e7": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -3522,6 +3577,22 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::world::WorldService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterAlterationType(WorldAlterationTypeId id,std::string canonical_name);"
+    },
+    "7ada27792bdc91d9": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:276::Check(bool(orchestrator.RegisterComposition(participants, migrations, expected))",
+      "review_rationale": "epidemic::gameplay::savegame::SaveGameOrchestrator::RegisterComposition: neutral typed participant mechanics; tested value encoding, metadata closure, private staging and one-use publication, with no gameplay dependency.",
+      "scope": "epidemic::gameplay::savegame::SaveGameOrchestrator",
+      "signature": "[[nodiscard]] foundation::Result<void> RegisterComposition(std::span<ISaveParticipant*const> participants,std::span<const ISaveMigration*const> migrations,std::span<const SaveParticipantManifest> expected);"
     },
     "7afe2370294bd63f": {
       "classification": "MUTATOR",
@@ -4129,6 +4200,17 @@
       "scope": "epidemic::gameplay::narrative_integration::NarrativeExternalConsequenceSaveParticipant",
       "signature": "explicit NarrativeExternalConsequenceSaveParticipant(NarrativeExternalConsequenceOutbox&outbox)noexcept"
     },
+    "933512eceb3d3007": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {},
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:87::\"stored corruption rejected\"",
+      "review_rationale": "Load bounded complete bytes and decode before any caller restore; storage/structural failure never publishes gameplay state.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] foundation::Result<SaveGameImage> LoadSaveGameImage(ISavePackageStore&store,SaveWireLimits limits={});"
+    },
     "93d4d36832f718a5": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -4533,6 +4615,17 @@
       "scope": "epidemic::gameplay::narrative::NarrativeBeatId",
       "signature": "static constexpr NarrativeBeatId FromString(std::string_view s)noexcept"
     },
+    "9d02e2b48212212c": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/WorldIntegration/include/Epidemic/GameFramework/WorldIntegration/world_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/WorldIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:35::auto participant = savegame::CreateInteractionServiceSaveParticipant(",
+      "review_rationale": "Construct framework.interaction with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains InteractionService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateInteractionServiceSaveParticipant(epidemic::gameplay::interaction::InteractionService&owner,SaveRestoreWorkspace&workspace);"
+    },
     "9d18aeaea9493824": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -4565,6 +4658,17 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::world::WorldService",
       "signature": "[[nodiscard]] std::vector<LocationDefinition> FindChildLocations(LocationId parent)const;"
+    },
+    "a05d2950ae20f2ef": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/NarrativeIntegration/include/Epidemic/GameFramework/NarrativeIntegration/narrative_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/NarrativeIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp:13::auto participant = savegame::CreateNarrativeServiceSaveParticipant(",
+      "review_rationale": "Construct framework.narrative with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains NarrativeService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNarrativeServiceSaveParticipant(epidemic::gameplay::narrative::NarrativeService&owner,SaveRestoreWorkspace&workspace);"
     },
     "a1d16fc003ef4910": {
       "classification": "QUERY",
@@ -4788,6 +4892,22 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::dialogue::DialogueService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterConditionResolver(DialogueConditionTypeId type,const IDialogueConditionResolver&resolver);"
+    },
+    "a6c8f150faa44ce7": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:85::\"controlled memory failure preserves old generation\"",
+      "review_rationale": "Complete atomic package replacement protocol: failure leaves old package authoritative; no OS types in SaveGame.",
+      "scope": "epidemic::gameplay::savegame::ISavePackageStore",
+      "signature": "[[nodiscard]] virtual foundation::Result<void> Commit(std::span<const std::byte> package)=0;"
     },
     "a7210cabc23a0c1e": {
       "classification": "QUERY",
@@ -5121,6 +5241,22 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::world::WorldService",
       "signature": "[[nodiscard]] foundation::Result<void> RestoreSnapshot(WorldSnapshot snapshot);"
+    },
+    "b5208ef69fb96007": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:93::\"invalid image never reaches store commit\"",
+      "review_rationale": "Encode and validate before atomic store Commit; preserve old package on encode/backend failure, convert backend exceptions.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] foundation::Result<void> CommitSaveGameImage(ISavePackageStore&store,const SaveGameImage&image,SaveWireLimits limits={});"
     },
     "b55954b882619e5c": {
       "classification": "QUERY",
@@ -5495,6 +5631,17 @@
       "scope": "epidemic::gameplay::narrative::JournalEntryId",
       "signature": "[[nodiscard]] constexpr bool operator==(const JournalEntryId&)const noexcept=default;"
     },
+    "be3edd569ab80055": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/WorldIntegration/include/Epidemic/GameFramework/WorldIntegration/world_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/WorldIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:83::auto participant = savegame::CreateWorldFactsAdapterSaveParticipant(",
+      "review_rationale": "Construct integration.world_facts with schema 1, Required semantics and exact semantic dependencies ['framework.world', 'framework.environment', 'framework.interaction', 'framework.facts']; authoritative state remains WorldFactsAdapter.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateWorldFactsAdapterSaveParticipant(epidemic::gameplay::world_integration::WorldFactsAdapter&owner,SaveRestoreWorkspace&workspace);"
+    },
     "be7a423e7ae4a3fc": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -5646,6 +5793,17 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::world::WorldFeatureId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
+    },
+    "c2e1a755cf4c0159": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:49::Check(missing_rejected && &savegame::detail::WorkspaceTestAccess::Resolve(missing, live)",
+      "review_rationale": "epidemic::gameplay::savegame::SaveRestoreWorkspace::SaveRestoreWorkspace: neutral typed participant mechanics; tested value encoding, metadata closure, private staging and one-use publication, with no gameplay dependency.",
+      "scope": "epidemic::gameplay::savegame::SaveRestoreWorkspace",
+      "signature": "SaveRestoreWorkspace()=default;"
     },
     "c35dd5bd7d1b2fa3": {
       "classification": "QUERY",
@@ -5955,6 +6113,17 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::narrative_integration::NarrativeExternalConsequenceOutbox",
       "signature": "[[nodiscard]] foundation::Result<void> ValidateSnapshot(const NarrativeExternalConsequenceSnapshot&snapshot)const;"
+    },
+    "cac7d8f352ccae9c": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/WorldIntegration/include/Epidemic/GameFramework/WorldIntegration/world_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/WorldIntegration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:14::auto participant = savegame::CreateEnvironmentServiceSaveParticipant(",
+      "review_rationale": "Construct framework.environment with schema 1, Required semantics and exact semantic dependencies []; authoritative state remains EnvironmentService.",
+      "scope": "epidemic::gameplay::savegame",
+      "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEnvironmentServiceSaveParticipant(epidemic::gameplay::environment::EnvironmentService&owner,SaveRestoreWorkspace&workspace);"
     },
     "cb176854c9138452": {
       "classification": "MUTATOR",
@@ -7535,7 +7704,7 @@
       "regressions": {
         "EpidemicGameFrameworkNarrativeIntegrationTests": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_integration_tests.cpp:102::TestNarrativeOutboxPublicationAtomicity",
         "EpidemicGameFrameworkNarrativeTests": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:362::Check(!static_cast<bool>(failed_restore)",
-        "EpidemicGameFrameworkSaveGameTests": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:409::SetSaveGameFaultPointForTesting(\"restore.pre_commit\")",
+        "EpidemicGameFrameworkSaveGameTests": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:527::SetSaveGameFaultPointForTesting(\"restore.pre_commit\")",
         "EpidemicGameFrameworkWorldTests": "EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:232::CHECK(!restored.AddDynamicFeature(fault_feature));"
       },
       "root_cause": "The owned tests injected failures through process-global operator-new interception instead of deterministic module-private publication boundaries, so evidence could fail at unrelated allocations and was not narrow enough for Goal 4.",
@@ -7806,6 +7975,13 @@
       "rationale": "The callable consumes or returns module-owned identities, references or cursors whose stale/unknown behavior is part of the reviewed local contract.",
       "status": "REVIEWED"
     },
+    "2150445809138e97": {
+      "callable_id": "a6c8f150faa44ce7",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:85::\"controlled memory failure preserves old generation\"",
+      "review_rationale": "Complete atomic package replacement protocol: failure leaves old package authoritative; no OS types in SaveGame.",
+      "status": "REVIEWED"
+    },
     "2483c401ca87a9ad": {
       "callable": "epidemic::gameplay::world::WorldService::[[nodiscard]] foundation::Result<void> SweepExpired(GameplayTimePoint now,GameplayContext context={});",
       "callable_id": "b1447d617c18802a",
@@ -7867,6 +8043,13 @@
       "evidence": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:121",
       "module": "EngineFramework/GameplayWorldStateOwners/Narrative",
       "rationale": "The callable consumes or returns module-owned identities, references or cursors whose stale/unknown behavior is part of the reviewed local contract.",
+      "status": "REVIEWED"
+    },
+    "32deb0daf7135d3a": {
+      "callable_id": "7ada27792bdc91d9",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:276::Check(bool(orchestrator.RegisterComposition(participants, migrations, expected))",
+      "review_rationale": "epidemic::gameplay::savegame::SaveGameOrchestrator::RegisterComposition: neutral typed participant mechanics; tested value encoding, metadata closure, private staging and one-use publication, with no gameplay dependency.",
       "status": "REVIEWED"
     },
     "3c2f06f8a5e4a23e": {
@@ -8011,6 +8194,13 @@
       "evidence": "EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:64",
       "module": "EngineFramework/GameplayWorldStateOwners/Narrative",
       "rationale": "The callable consumes or returns module-owned identities, references or cursors whose stale/unknown behavior is part of the reviewed local contract.",
+      "status": "REVIEWED"
+    },
+    "5cd8fc92fee62b93": {
+      "callable_id": "b5208ef69fb96007",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "review_evidence": "Tests/Truth/persistence_wire_tests.cpp:93::\"invalid image never reaches store commit\"",
+      "review_rationale": "Encode and validate before atomic store Commit; preserve old package on encode/backend failure, convert backend exceptions.",
       "status": "REVIEWED"
     },
     "623a7bf6adfcefac": {

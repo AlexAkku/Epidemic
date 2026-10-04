@@ -1,5 +1,6 @@
 add_library(EpidemicRuntimeSupport STATIC
     src/runtime_support.cpp
+    src/runtime_packages.cpp
 )
 
 target_include_directories(EpidemicRuntimeSupport PUBLIC
@@ -8,6 +9,7 @@ target_include_directories(EpidemicRuntimeSupport PUBLIC
 
 target_link_libraries(EpidemicRuntimeSupport
     PUBLIC EpidemicCore
+    PRIVATE EpidemicPlatform
     PUBLIC EpidemicRuntimeFoundation
     PUBLIC EpidemicRuntimeAssets
     PUBLIC EpidemicRuntimeSerialization

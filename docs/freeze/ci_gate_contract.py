@@ -21,6 +21,26 @@ EXPECTED_PROFILES = {
     "full-release": ("ON", "ON", "Release"),
 }
 FREEZE_COMMANDS = (
+    "python docs/freeze/goal5_admission.py --check",
+    "python docs/freeze/goal5_admission.py --self-test",
+    "python docs/freeze/goal5_persistence_inventory.py --check",
+    "python docs/freeze/goal5_persistence_inventory.py --self-test",
+    "python docs/freeze/goal5_persistence_contract.py --check",
+    "python docs/freeze/goal5_persistence_contract.py --self-test",
+    "python docs/freeze/goal5_participant_bindings.py --check",
+    "python docs/freeze/goal5_participant_bindings.py --self-test",
+    "python docs/freeze/goal5_participant_contract.py --check --implementation",
+    "python docs/freeze/goal5_participant_contract.py --self-test",
+    "python docs/freeze/goal5_schema_contract.py --check",
+    "python docs/freeze/goal5_schema_contract.py --self-test",
+    "python docs/freeze/goal5_stage52_contract.py --check",
+    "python docs/freeze/goal5_stage52_contract.py --self-test",
+    "python docs/freeze/goal5_runtime_durable_contract.py --check",
+    "python docs/freeze/goal5_runtime_durable_contract.py --self-test",
+    "python tools/generate_goal5_participants.py --check",
+    "python tools/audit_goal5_restore_members.py --check",
+    "python tools/check_goal5_private_surface.py --check",
+    "python tools/check_goal5_private_surface.py --self-test",
     "python docs/freeze/ci_gate_contract.py --check",
     "python docs/freeze/ci_gate_contract.py --self-test",
     "cmake -P cmake/ArchitectureFreezeSelfTest.cmake",
@@ -240,6 +260,9 @@ def self_test(text: str) -> list[str]:
     for name, mutant in mutants.items():
         if not validate_workflow(mutant):
             failures.append(f"negative workflow case was accepted: {name}")
+    for command in FREEZE_COMMANDS:
+        if 'goal5' in command and not validate_workflow(text.replace(command, '', 1)):
+            failures.append('removed Goal 5 workflow gate was accepted: ' + command)
     return failures
 
 
@@ -253,6 +276,14 @@ def main() -> int:
         return 1
     text = WORKFLOW.read_text(encoding="utf-8")
     errors = self_test(text) if args.self_test else validate_workflow(text)
+    import re
+    local = (ROOT / 'build.ps1').read_text(encoding='utf-8')
+    for command in FREEZE_COMMANDS:
+        if 'goal5' not in command: continue
+        parts = command.split()
+        expected = "@('python', @(" + ','.join("'" + p + "'" for p in parts[1:]) + ')'
+        executable = '\n'.join(line.strip() for line in local.splitlines() if re.match(r"\s*@\('python',", line))
+        if executable.count(expected) != 1: errors.append('local Validators Goal 5 gate missing/duplicated: ' + command)
     if errors:
         print("\n".join(f"ERROR: {error}" for error in errors), file=sys.stderr)
         return 1
