@@ -2,7 +2,7 @@
   "candidate_counts": {
     "by_layer": {
       "EngineBase": 5,
-      "EngineFramework": 377,
+      "EngineFramework": 381,
       "EngineRuntime": 115
     },
     "by_module": {
@@ -50,7 +50,7 @@
       "EngineFramework/GameplayWorldStateOwners/World": 5,
       "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration": 13,
       "EngineFramework/IntegrationLayer/GameplayIntegration": 22,
-      "EngineFramework/IntegrationLayer/Integration": 8,
+      "EngineFramework/IntegrationLayer/Integration": 12,
       "EngineFramework/IntegrationLayer/InteractionEffectsIntegration": 8,
       "EngineFramework/IntegrationLayer/InteractionTimeIntegration": 3,
       "EngineFramework/IntegrationLayer/NarrativeIntegration": 6,
@@ -79,7 +79,7 @@
       "EngineRuntime/Time": 5,
       "EngineRuntime/World": 5
     },
-    "total": 497
+    "total": 501
   },
   "candidates": [
     {
@@ -38191,6 +38191,394 @@
       "visibility": "PUBLIC"
     },
     {
+      "candidate_id": "G5P-623979e0630ae0b4",
+      "candidate_kinds": [
+        "DURABLE_LOOKING_STATE"
+      ],
+      "dossier_persistence_review": {
+        "correction": "Reviewed local checkpoint/snapshot/token state versus transient owner references; whole-engine persistence remains Goal 5.",
+        "status": "REVIEWED"
+      },
+      "durable_fields": [
+        "[[nodiscard]] foundation::Result<RuntimeSaveGenerationCapture> Capture( SaveGenerationId generation) override;"
+      ],
+      "goal4_evidence": [
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:105::- G4-CRITERION-PERSIST-CANDIDATE: `PERSIST-CANDIDATE` was reviewed for this module against its authoritative state, life"
+          ],
+          "criterion": "PERSIST-CANDIDATE",
+          "rationale": "B08 reviewed PERSIST-CANDIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:107::- G4-CRITERION-PERSIST-CONTINUITY: `PERSIST-CONTINUITY` was reviewed for this module against its authoritative state, li"
+          ],
+          "criterion": "PERSIST-CONTINUITY",
+          "rationale": "B08 reviewed PERSIST-CONTINUITY for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:106::- G4-CRITERION-PERSIST-FAILURE: `PERSIST-FAILURE` was reviewed for this module against its authoritative state, lifecycl"
+          ],
+          "criterion": "PERSIST-FAILURE",
+          "rationale": "B08 reviewed PERSIST-FAILURE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:103::- G4-CRITERION-PERSIST-SNAPSHOT: `PERSIST-SNAPSHOT` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-SNAPSHOT",
+          "rationale": "B08 reviewed PERSIST-SNAPSHOT for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:104::- G4-CRITERION-PERSIST-VALIDATE: `PERSIST-VALIDATE` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-VALIDATE",
+          "rationale": "B08 reviewed PERSIST-VALIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        }
+      ],
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "qualified_symbol": "epidemic::gameplay::integration::CallbackRuntimeSaveGenerationPort",
+      "related_methods": [],
+      "risk_flags": [
+        "PROCESS_LOCAL_CALLBACK"
+      ],
+      "source_line": 322,
+      "source_path": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "state_type": "CallbackRuntimeSaveGenerationPort",
+      "visibility": "PUBLIC"
+    },
+    {
+      "candidate_id": "G5P-3025cbbddca523da",
+      "candidate_kinds": [
+        "DURABLE_LOOKING_STATE"
+      ],
+      "dossier_persistence_review": {
+        "correction": "Reviewed local checkpoint/snapshot/token state versus transient owner references; whole-engine persistence remains Goal 5.",
+        "status": "REVIEWED"
+      },
+      "durable_fields": [
+        "[[nodiscard]] virtual foundation::Result<RuntimeSaveGenerationCapture> Capture( SaveGenerationId generation) = 0;"
+      ],
+      "goal4_evidence": [
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:105::- G4-CRITERION-PERSIST-CANDIDATE: `PERSIST-CANDIDATE` was reviewed for this module against its authoritative state, life"
+          ],
+          "criterion": "PERSIST-CANDIDATE",
+          "rationale": "B08 reviewed PERSIST-CANDIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:107::- G4-CRITERION-PERSIST-CONTINUITY: `PERSIST-CONTINUITY` was reviewed for this module against its authoritative state, li"
+          ],
+          "criterion": "PERSIST-CONTINUITY",
+          "rationale": "B08 reviewed PERSIST-CONTINUITY for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:106::- G4-CRITERION-PERSIST-FAILURE: `PERSIST-FAILURE` was reviewed for this module against its authoritative state, lifecycl"
+          ],
+          "criterion": "PERSIST-FAILURE",
+          "rationale": "B08 reviewed PERSIST-FAILURE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:103::- G4-CRITERION-PERSIST-SNAPSHOT: `PERSIST-SNAPSHOT` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-SNAPSHOT",
+          "rationale": "B08 reviewed PERSIST-SNAPSHOT for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:104::- G4-CRITERION-PERSIST-VALIDATE: `PERSIST-VALIDATE` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-VALIDATE",
+          "rationale": "B08 reviewed PERSIST-VALIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        }
+      ],
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "qualified_symbol": "epidemic::gameplay::integration::IRuntimeSaveGenerationPort",
+      "related_methods": [],
+      "risk_flags": [],
+      "source_line": 311,
+      "source_path": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "state_type": "IRuntimeSaveGenerationPort",
+      "visibility": "PUBLIC"
+    },
+    {
+      "candidate_id": "G5P-bd9ffedc756a7b66",
+      "candidate_kinds": [
+        "DURABLE_LOOKING_STATE"
+      ],
+      "dossier_persistence_review": {
+        "correction": "Reviewed local checkpoint/snapshot/token state versus transient owner references; whole-engine persistence remains Goal 5.",
+        "status": "REVIEWED"
+      },
+      "durable_fields": [
+        "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireGenerationLease( SaveGenerationId generation);"
+      ],
+      "goal4_evidence": [
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:105::- G4-CRITERION-PERSIST-CANDIDATE: `PERSIST-CANDIDATE` was reviewed for this module against its authoritative state, life"
+          ],
+          "criterion": "PERSIST-CANDIDATE",
+          "rationale": "B08 reviewed PERSIST-CANDIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:107::- G4-CRITERION-PERSIST-CONTINUITY: `PERSIST-CONTINUITY` was reviewed for this module against its authoritative state, li"
+          ],
+          "criterion": "PERSIST-CONTINUITY",
+          "rationale": "B08 reviewed PERSIST-CONTINUITY for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:106::- G4-CRITERION-PERSIST-FAILURE: `PERSIST-FAILURE` was reviewed for this module against its authoritative state, lifecycl"
+          ],
+          "criterion": "PERSIST-FAILURE",
+          "rationale": "B08 reviewed PERSIST-FAILURE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:103::- G4-CRITERION-PERSIST-SNAPSHOT: `PERSIST-SNAPSHOT` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-SNAPSHOT",
+          "rationale": "B08 reviewed PERSIST-SNAPSHOT for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:104::- G4-CRITERION-PERSIST-VALIDATE: `PERSIST-VALIDATE` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-VALIDATE",
+          "rationale": "B08 reviewed PERSIST-VALIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        }
+      ],
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "qualified_symbol": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "related_methods": [],
+      "risk_flags": [
+        "PROCESS_LOCAL_CALLBACK"
+      ],
+      "source_line": 390,
+      "source_path": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "state_type": "SaveGenerationBarrier",
+      "visibility": "PUBLIC"
+    },
+    {
       "candidate_id": "G5P-c8efe96f2ca895ad",
       "candidate_kinds": [
         "DURABLE_LOOKING_STATE"
@@ -38317,6 +38705,135 @@
       "source_path": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
       "state_type": "ScheduledTriggerPumpReport",
       "visibility": "PUBLIC"
+    },
+    {
+      "candidate_id": "G5P-2d46725e003682f3",
+      "candidate_kinds": [
+        "DURABLE_LOOKING_STATE"
+      ],
+      "dossier_persistence_review": {
+        "correction": "Reviewed local checkpoint/snapshot/token state versus transient owner references; whole-engine persistence remains Goal 5.",
+        "status": "REVIEWED"
+      },
+      "durable_fields": [
+        "if (bytes_.size() >= maximum_) throw std::length_error(\"save generation package size limit exceeded\");",
+        "if (count > maximum_ - bytes_.size()) throw std::length_error(\"save generation package size limit exceeded\");"
+      ],
+      "goal4_evidence": [
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:105::- G4-CRITERION-PERSIST-CANDIDATE: `PERSIST-CANDIDATE` was reviewed for this module against its authoritative state, life"
+          ],
+          "criterion": "PERSIST-CANDIDATE",
+          "rationale": "B08 reviewed PERSIST-CANDIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:107::- G4-CRITERION-PERSIST-CONTINUITY: `PERSIST-CONTINUITY` was reviewed for this module against its authoritative state, li"
+          ],
+          "criterion": "PERSIST-CONTINUITY",
+          "rationale": "B08 reviewed PERSIST-CONTINUITY for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:106::- G4-CRITERION-PERSIST-FAILURE: `PERSIST-FAILURE` was reviewed for this module against its authoritative state, lifecycl"
+          ],
+          "criterion": "PERSIST-FAILURE",
+          "rationale": "B08 reviewed PERSIST-FAILURE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:103::- G4-CRITERION-PERSIST-SNAPSHOT: `PERSIST-SNAPSHOT` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-SNAPSHOT",
+          "rationale": "B08 reviewed PERSIST-SNAPSHOT for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+            "docs/EngineFramework/Integration.md:104::- G4-CRITERION-PERSIST-VALIDATE: `PERSIST-VALIDATE` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-VALIDATE",
+          "rationale": "B08 reviewed PERSIST-VALIDATE for Integration against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkCoreIntegrationTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:74::const auto fact_type = facts.RegisterFactType<int>(\"framework.test.value\", test_domain);",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/core_integration_tests.cpp:78::if (!fact_type || !clock || !action || !second_action)"
+              ],
+              "target": "EpidemicGameFrameworkCoreIntegrationTests"
+            }
+          ]
+        }
+      ],
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "qualified_symbol": "epidemic::gameplay::integration::WireWriter",
+      "related_methods": [],
+      "risk_flags": [],
+      "source_line": 41,
+      "source_path": "EngineFramework/IntegrationLayer/Integration/src/save_generation.cpp",
+      "state_type": "WireWriter",
+      "visibility": "PRIVATE"
     },
     {
       "candidate_id": "G5P-27adcea36b7e4a92",

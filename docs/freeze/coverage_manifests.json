@@ -5511,6 +5511,15 @@
       "scope": "epidemic::runtime",
       "signature": "template <typename TObject> [[nodiscard]] foundation::Result<SerializedDocument> SerializeToDocument(const ISerializer&serializer,const TObject&object,IArchiveFactory&archives);"
     },
+    "1ed86eb8fefcfa6f": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] constexpr bool operator==(const SaveGenerationId&)const noexcept=default;"
+    },
     "1ef387f9538b48d1": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -6346,6 +6355,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::savegame",
       "signature": "[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService&owner,SaveRestoreWorkspace&workspace);"
+    },
+    "234fe162ca5a5b30": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::IRuntimeSaveGenerationPort",
+      "signature": "virtual ~IRuntimeSaveGenerationPort()=default;"
     },
     "235e8a53d2cbec4c": {
       "classification": "MUTATOR",
@@ -7861,6 +7879,15 @@
       "scope": "epidemic::gameplay::abilities::AbilityService",
       "signature": "[[nodiscard]] foundation::Result<void> NotifyScheduleDue(ScheduleId schedule,GameplayTimePoint now,std::vector<AbilityOutput>&outputs);"
     },
+    "2cc0b22f41ff9d46": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "~SaveGenerationBarrier()override;"
+    },
     "2cd9c62bdcd7df6a": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -8767,6 +8794,15 @@
       "scope": "epidemic::gameplay::ai::AIService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterAgent(GameplayObjectRef subject,AIProfileId profile,GameplayTimePoint next_think={});"
     },
+    "32654f67cbe3cbc8": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(std::span<const std::byte> package);"
+    },
     "3276c8786df6c30b": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -8893,6 +8929,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::equipment::EquipmentProfileDefinitionId",
       "signature": "static constexpr EquipmentProfileDefinitionId FromString(std::string_view s)noexcept"
+    },
+    "3307e1f6a02a8d84": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration",
+      "signature": "[[nodiscard]] foundation::Result<SaveGenerationPackage> DecodeSaveGenerationPackage(std::span<const std::byte> bytes,SaveGenerationLimits limits={});"
     },
     "3310cb694f801eb0": {
       "classification": "FACTORY",
@@ -11009,6 +11054,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::world_integration::WorldFactsAdapter",
       "signature": "WorldFactsAdapter(world::WorldService&w,environment::EnvironmentService&e,interaction::InteractionService&i,facts::GameplayFactsService&f)"
+    },
+    "3e9245980d098d65": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::FileSaveGenerationStore",
+      "signature": "explicit FileSaveGenerationStore(std::filesystem::path path,SaveGenerationLimits limits={})"
     },
     "3eb08f59034bdb46": {
       "classification": "QUERY",
@@ -15676,6 +15730,15 @@
       "scope": "epidemic::core::tasks::ITaskScheduler",
       "signature": "[[nodiscard]] virtual TaskHandle Schedule(Task task,std::string debug_name={})=0;"
     },
+    "57205007beb750ef": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "explicit SaveGenerationBarrier(SaveGenerationBarrierCallbacks callbacks);"
+    },
     "57214928ac4f1127": {
       "classification": "CONSTRUCTOR",
       "classification_status": "REVIEWED",
@@ -17168,6 +17231,15 @@
       "scope": "epidemic::gameplay::economy::EconomyService",
       "signature": "[[nodiscard]] std::optional<PriceQuote> GetPriceQuote(const PriceQuoteRequest&request)const;"
     },
+    "5febee624f2c3050": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] static constexpr SaveGenerationId FromRaw(std::uint64_t raw)noexcept"
+    },
     "5fee27872d06e075": {
       "classification": "FACTORY",
       "classification_status": "REVIEWED",
@@ -18231,6 +18303,20 @@
       "obligations": {},
       "scope": "epidemic::gameplay::effects::EffectExecutionId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const EffectExecutionId&)const noexcept=default;"
+    },
+    "650b6cad17968dee": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::CallbackRuntimeSaveGenerationPort",
+      "signature": "[[nodiscard]] foundation::Result<RuntimeSaveGenerationCapture> Capture(SaveGenerationId generation)override;"
     },
     "65191863c8b9d834": {
       "classification": "QUERY",
@@ -19493,6 +19579,15 @@
       "scope": "epidemic::runtime",
       "signature": "[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot&snapshot);"
     },
+    "6ca5ce09d825fd1d": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeSaveGenerationPackage(const SaveGenerationPackage&package,SaveGenerationLimits limits={});"
+    },
     "6ca7e1ea3d929716": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -20682,6 +20777,15 @@
       "scope": "epidemic::runtime",
       "signature": "template <typename TObject> [[nodiscard]] foundation::Result<void> DeserializeObject(const ISerializer&serializer,IArchiveReader&reader,TObject&object)"
     },
+    "7354119ae09a1805": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimePersistencePackage(const PersistenceSnapshot&snapshot);"
+    },
     "7354645bf758a939": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -21325,6 +21429,20 @@
       },
       "scope": "epidemic::gameplay::environment::EnvironmentService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterHazardType(EnvironmentHazardTypeId id,std::string canonical_name);"
+    },
+    "76c9e7a9e7f8c7fd": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "SaveGenerationBarrier&operator=(const SaveGenerationBarrier&)=delete;"
     },
     "76d6eb6ebe2ea1f7": {
       "classification": "QUERY",
@@ -23098,6 +23216,20 @@
       "obligations": {},
       "scope": "epidemic::gameplay::loot::LootService",
       "signature": "[[nodiscard]] ChangeCursor LatestChangeCursor()const noexcept"
+    },
+    "8022c7bfa80894fb": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireGenerationLease(SaveGenerationId generation);"
     },
     "8040d65751f2b97b": {
       "classification": "MUTATOR",
@@ -25495,6 +25627,20 @@
       "scope": "epidemic::gameplay::narrative::JournalEntryId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const JournalEntryId&)const noexcept=default;"
     },
+    "8ecf8fc1449286d2": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireRestoreLease()override;"
+    },
     "8ed2b93f46f201fe": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -25558,6 +25704,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::time::GameplayTimeService",
       "signature": "[[nodiscard]] foundation::Result<void> ValidateCalendarDate(ClockId clock,const CalendarDate&date)const;"
+    },
+    "8f2ab556f9f5637f": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] constexpr std::uint64_t Raw()const noexcept"
     },
     "8f3d50e3dfd366ec": {
       "classification": "QUERY",
@@ -25763,6 +25918,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::integration::PerceptionKnowledgeAdapter",
       "signature": "explicit PerceptionKnowledgeAdapter(knowledge::KnowledgeService&knowledge_service,PerceptionKnowledgeMapping mapping={});"
+    },
+    "90b829927cd967c7": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationCoordinator",
+      "signature": "SaveGenerationCoordinator(savegame::SaveGameOrchestrator&framework,IRuntimeSaveGenerationPort&runtime,SaveGenerationBarrier&barrier,ISaveGenerationStore&store,SaveGenerationLimits limits={},savegame::SaveWireLimits framework_limits={})noexcept;"
     },
     "90b9c72d1e0b5d21": {
       "classification": "QUERY",
@@ -27165,6 +27329,20 @@
       "scope": "epidemic::runtime::IObjectMaterializer",
       "signature": "[[nodiscard]] virtual foundation::Result<void> Demote(const DemotionRequest&request)=0;"
     },
+    "97614defdd33b629": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireCaptureLease()override;"
+    },
     "97656191970fe42e": {
       "classification": "DESTRUCTOR",
       "classification_status": "REVIEWED",
@@ -27311,6 +27489,15 @@
       "obligations": {},
       "scope": "std::hash",
       "signature": "[[nodiscard]] size_t operator()(epidemic::runtime::ChunkId value)const noexcept"
+    },
+    "9815fab0d40eb5a5": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
     },
     "98362837c92ff691": {
       "classification": "QUERY",
@@ -28229,6 +28416,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::resources::ResourceUnitId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const ResourceUnitId&)const noexcept=default;"
+    },
+    "9e926c1e16a81252": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimeTimeCheckpointPackage(const TimeCheckpoint&checkpoint);"
     },
     "9e9e8709e227027a": {
       "classification": "QUERY",
@@ -29697,6 +29893,20 @@
       "scope": "epidemic::runtime",
       "signature": "template <typename TObject> [[nodiscard]] foundation::Result<void> SerializeObject(const ISerializer&serializer,const TObject&object,IArchiveWriter&writer)"
     },
+    "a704e590beca5ea3": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::SaveGenerationCoordinator",
+      "signature": "[[nodiscard]] foundation::Result<SaveGenerationId> CaptureAndCommit(const savegame::SaveContext&context);"
+    },
     "a717980db3cc5758": {
       "classification": "CONSTRUCTOR",
       "classification_status": "REVIEWED",
@@ -30330,6 +30540,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::crime::LawResponseTypeId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const LawResponseTypeId&)const noexcept=default;"
+    },
+    "aa9dd7c7cbfe94e0": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::CallbackRuntimeSaveGenerationPort",
+      "signature": "CallbackRuntimeSaveGenerationPort(PlaneCapture time_capture,PlaneCapture persistence_capture)"
     },
     "aa9f29cf5ce32831": {
       "classification": "QUERY",
@@ -31762,6 +31981,20 @@
       "scope": "epidemic::foundation::detail::BasicId",
       "signature": "[[nodiscard]] static constexpr BasicId FromString(std::string_view source)noexcept"
     },
+    "b3476c1fb0feb3e4": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(const IPersistenceQuery&query);"
+    },
     "b347dc31d54a6a33": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -32506,6 +32739,20 @@
       "obligations": {},
       "scope": "epidemic::runtime::simulation::ISimulationRuntime",
       "signature": "~ISimulationRuntime()override=default;"
+    },
+    "b7e0900eef78e7ac": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::ISaveGenerationStore",
+      "signature": "[[nodiscard]] virtual foundation::Result<void> CommitCurrent(std::span<const std::byte> package)=0;"
     },
     "b7e413228320da7b": {
       "classification": "QUERY",
@@ -38032,6 +38279,15 @@
       "scope": "epidemic::core::ServiceContainer",
       "signature": "[[nodiscard]] bool IsSealed()const noexcept"
     },
+    "d36afc4d71a9f0be": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] bool IsCaptureActive()const noexcept;"
+    },
     "d38b3abaedee851a": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -39152,6 +39408,15 @@
       "scope": "epidemic::gameplay::economy::CurrencyId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const CurrencyId&)const noexcept=default;"
     },
+    "da44daf5197ad7e7": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "SaveGenerationBarrier(const SaveGenerationBarrier&)=delete;"
+    },
     "da4550ba728e99c8": {
       "classification": "QUERY",
       "classification_status": "REVIEWED",
@@ -39820,6 +40085,15 @@
       "obligations": {},
       "scope": "epidemic::core::tasks::ITaskScheduler",
       "signature": "[[nodiscard]] virtual std::vector<std::string> WorkerThreadNames()const=0;"
+    },
+    "de317d1e602df8a4": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::ISaveGenerationStore",
+      "signature": "virtual ~ISaveGenerationStore()=default;"
     },
     "de7030761c598078": {
       "classification": "MUTATOR",
@@ -42067,6 +42341,20 @@
       "scope": "epidemic::gameplay::materials::MaterialReactionId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
     },
+    "e9f715cc146df7d4": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::FileSaveGenerationStore",
+      "signature": "[[nodiscard]] foundation::Result<void> CommitCurrent(std::span<const std::byte> package)override;"
+    },
     "e9f8153848da7e1c": {
       "classification": "DESTRUCTOR",
       "classification_status": "REVIEWED",
@@ -42217,6 +42505,20 @@
       "obligations": {},
       "scope": "epidemic::gameplay::ownership::AccessRuleId",
       "signature": "[[nodiscard]] constexpr bool operator==(const AccessRuleId&)const noexcept=default;"
+    },
+    "ea96acac975ccc18": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::FileSaveGenerationStore",
+      "signature": "[[nodiscard]] foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent()override;"
     },
     "ea98cc20b207b09e": {
       "classification": "MUTATOR",
@@ -42482,6 +42784,15 @@
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "template <typename TPayload> void Publish(EventTypeId type,GameplayContext context,GameplayObjectRef scope,GameplayObjectRef subject,TPayload payload)"
     },
+    "ec16873a63a3f33b": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] SaveGenerationId ActiveGeneration()const noexcept;"
+    },
     "ec21526d5f3a59d2": {
       "classification": "DESTRUCTOR",
       "classification_status": "REVIEWED",
@@ -42654,6 +42965,34 @@
       "obligations": {},
       "scope": "epidemic::gameplay::knowledge::KnowledgeService",
       "signature": "[[nodiscard]] KnowledgeChangeBatch ReadChangesSince(ChangeCursor cursor)const"
+    },
+    "ed95f62048697195": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::IRuntimeSaveGenerationPort",
+      "signature": "[[nodiscard]] virtual foundation::Result<RuntimeSaveGenerationCapture> Capture(SaveGenerationId generation)=0;"
+    },
+    "ed9dced04fa14ef8": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::integration::ISaveGenerationStore",
+      "signature": "[[nodiscard]] virtual foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent()=0;"
     },
     "edbb9ae038127c05": {
       "classification": "QUERY",
@@ -43317,6 +43656,15 @@
       "obligations": {},
       "scope": "epidemic::gameplay::world::WorldAlterationId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
+    },
+    "f20bdc193585c8e8": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<PersistenceSnapshot> DecodeRuntimePersistencePackage(std::span<const std::byte> package);"
     },
     "f23aa43c450db5c1": {
       "classification": "MUTATOR",
@@ -47125,6 +47473,11 @@
       "module": "EngineRuntime/Support",
       "status": "REVIEWED"
     },
+    "3c5f488923eaf6ee": {
+      "callable_id": "234fe162ca5a5b30",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "4b4cb79e3d5dcf7f": {
       "callable_id": "8a415d0c9f8943bd",
       "module": "EngineRuntime/Physics",
@@ -47215,6 +47568,11 @@
       "module": "EngineRuntime/Audio",
       "status": "REVIEWED"
     },
+    "8919c3cd442b427d": {
+      "callable_id": "90b829927cd967c7",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "8a7ae96c175c5392": {
       "callable_id": "f2782c62444df964",
       "module": "EngineRuntime/Audio",
@@ -47275,6 +47633,11 @@
       "module": "EngineRuntime/Audio",
       "status": "REVIEWED"
     },
+    "c178281f850e4500": {
+      "callable_id": "aa9dd7c7cbfe94e0",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "c1ffbb3064af6192": {
       "callable_id": "1facdd0130f0d73a",
       "module": "EngineFramework/GameplayWorldStateOwners/Processes",
@@ -47328,6 +47691,11 @@
     "d5a000e9b4db2095": {
       "callable_id": "8e274197fe4ded5a",
       "module": "EngineRuntime/Audio",
+      "status": "REVIEWED"
+    },
+    "e04d0054ff2ac1aa": {
+      "callable_id": "57205007beb750ef",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "eaaee759b6d3be60": {
@@ -48230,6 +48598,11 @@
       "module": "EngineFramework/GameplayWorldStateOwners/Population",
       "status": "REVIEWED"
     },
+    "0d2a874a6f278598": {
+      "callable_id": "97614defdd33b629",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "0d69e8b55b6a158a": {
       "callable_id": "aff498c0d53df373",
       "module": "EngineFramework/GameplayWorldStateOwners/Abilities",
@@ -48383,6 +48756,11 @@
     "18515de72fed0762": {
       "callable_id": "95d15c17fb6d6857",
       "module": "EngineRuntime/Persistence",
+      "status": "REVIEWED"
+    },
+    "1856ebe8a983f765": {
+      "callable_id": "8022c7bfa80894fb",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "18b2993ee272096a": {
@@ -48885,6 +49263,11 @@
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "status": "REVIEWED"
     },
+    "2ec71ec45341f815": {
+      "callable_id": "b7e0900eef78e7ac",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "2ed14f8f05775358": {
       "callable_id": "2165b097b0e24e2a",
       "module": "EngineRuntime/Simulation",
@@ -49258,6 +49641,11 @@
     "3f2d3e88588d6d3c": {
       "callable_id": "a5cf82054c4a1d48",
       "module": "EngineRuntime/Scene",
+      "status": "REVIEWED"
+    },
+    "3f92b1067a37844a": {
+      "callable_id": "ed95f62048697195",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "4021f1166b73bb71": {
@@ -50935,6 +51323,11 @@
       "module": "EngineFramework/GameplayWorldStateOwners/Progression",
       "status": "REVIEWED"
     },
+    "87093f0ef7944331": {
+      "callable_id": "8ecf8fc1449286d2",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "87334e9fce8a88f1": {
       "callable_id": "5c2811bc7cd4a4ff",
       "module": "EngineFramework/GameplayWorldStateOwners/Environment",
@@ -52050,6 +52443,11 @@
       "module": "EngineRuntime/Serialization",
       "status": "REVIEWED"
     },
+    "b5e57e4a06eb4073": {
+      "callable_id": "a704e590beca5ea3",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "b5f6f5eb8e19fd25": {
       "callable_id": "e2204be01db50e04",
       "module": "EngineRuntime/Physics",
@@ -52173,6 +52571,11 @@
     "bc4f45c310c44916": {
       "callable_id": "7ffe3b02cb60569f",
       "module": "EngineRuntime/Renderer",
+      "status": "REVIEWED"
+    },
+    "bc564137dda331dd": {
+      "callable_id": "650b6cad17968dee",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "bc81266dce26ca87": {
@@ -53145,6 +53548,11 @@
       "module": "EngineRuntime/Serialization",
       "status": "REVIEWED"
     },
+    "e82d60452ca99d4a": {
+      "callable_id": "ea96acac975ccc18",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
     "e85b7c4f9341f659": {
       "callable_id": "504f441ac7bab568",
       "module": "EngineFramework/GameplayWorldStateOwners/Abilities",
@@ -53373,6 +53781,11 @@
     "f385a0e295e5e284": {
       "callable_id": "8cd87c58936952a0",
       "module": "EngineFramework/GameplayWorldStateOwners/NeedsLife",
+      "status": "REVIEWED"
+    },
+    "f3b4134627ddb234": {
+      "callable_id": "e9f715cc146df7d4",
+      "module": "EngineFramework/IntegrationLayer/Integration",
       "status": "REVIEWED"
     },
     "f3e01ef739828110": {

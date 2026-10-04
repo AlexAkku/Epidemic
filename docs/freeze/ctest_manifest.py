@@ -13,10 +13,10 @@ MANIFEST = ROOT / "docs" / "freeze" / "ctest_manifest.json"
 EXPECTED_PROFILES = {
     "base-debug": {"runtime": False, "framework": False, "configuration": "Debug", "count": 14},
     "base-release": {"runtime": False, "framework": False, "configuration": "Release", "count": 14},
-    "runtime-debug": {"runtime": True, "framework": False, "configuration": "Debug", "count": 34},
-    "runtime-release": {"runtime": True, "framework": False, "configuration": "Release", "count": 34},
-    "full-debug": {"runtime": True, "framework": True, "configuration": "Debug", "count": 109},
-    "full-release": {"runtime": True, "framework": True, "configuration": "Release", "count": 109},
+    "runtime-debug": {"runtime": True, "framework": False, "configuration": "Debug", "count": 35},
+    "runtime-release": {"runtime": True, "framework": False, "configuration": "Release", "count": 35},
+    "full-debug": {"runtime": True, "framework": True, "configuration": "Debug", "count": 111},
+    "full-release": {"runtime": True, "framework": True, "configuration": "Release", "count": 111},
 }
 
 

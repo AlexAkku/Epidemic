@@ -7280,6 +7280,20 @@
         "target": "EpidemicRuntimeSerializationTests"
       }
     },
+    "1ed86eb8fefcfa6f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:7::`1ed86eb8fefcfa6f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "1ef387f9538b48d1": {
       "contract": {
         "anchor": "docs/EngineFramework/GameplayIntegration.md:56::- G4-API-1ef387f9538b48d1: `epidemic::gameplay::integration::ProgressionCombatModifierProvider` \u2014 `[[nodiscard]] std::ui",
@@ -8360,6 +8374,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests"
+      }
+    },
+    "234fe162ca5a5b30": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:8::`234fe162ca5a5b30`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "235e8a53d2cbec4c": {
@@ -10376,6 +10404,20 @@
         "target": "EpidemicGameFrameworkAbilitiesTests"
       }
     },
+    "2cc0b22f41ff9d46": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:9::`2cc0b22f41ff9d46`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "2cd9c62bdcd7df6a": {
       "contract": {
         "anchor": "docs/EngineFramework/InteractionEffectsIntegration.md:43::- G4-API-2cd9c62bdcd7df6a: `epidemic::gameplay::interaction_effects_integration::InteractionEffectExecutor` \u2014 `[[nodisca",
@@ -11638,6 +11680,20 @@
         "target": "EpidemicGameFrameworkAITests"
       }
     },
+    "32654f67cbe3cbc8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:10::`32654f67cbe3cbc8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:29::bool(decoded_time)",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:29::bool(decoded_time)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
     "3276c8786df6c30b": {
       "contract": {
         "anchor": "docs/EngineFramework/Combat.md:78::- `3276c8786df6c30b` | `MUTATOR` | `epidemic::gameplay::combat::CombatService` | `[[nodiscard]] foundation::Result<CombatResult> CommitDamage(const CombatPlan&plan,GameplayTimePoint now);`",
@@ -11820,6 +11876,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEquipmentTests"
+      }
+    },
+    "3307e1f6a02a8d84": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:11::`3307e1f6a02a8d84`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "3310cb694f801eb0": {
@@ -14715,6 +14785,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkWorldIntegrationTests"
+      }
+    },
+    "3e9245980d098d65": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:12::`3e9245980d098d65`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "3eb08f59034bdb46": {
@@ -20704,6 +20788,20 @@
         "target": "EpidemicSupportIntegrationTests"
       }
     },
+    "57205007beb750ef": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:13::`57205007beb750ef`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "57214928ac4f1127": {
       "contract": {
         "anchor": "docs/EngineFramework/ProcessResourceSimulationIntegration.md:48::- G4-API-57214928ac4f1127: `epidemic::gameplay::integration::ResourceProcessOutputHandler` \u2014 `explicit ResourceProcessOu",
@@ -22698,6 +22796,20 @@
         "target": "EpidemicGameFrameworkEconomyTests"
       }
     },
+    "5febee624f2c3050": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:14::`5febee624f2c3050`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "5fee27872d06e075": {
       "contract": {
         "anchor": "docs/EngineFramework/Progression.md:101::- `5fee27872d06e075` | `FACTORY` | `epidemic::gameplay::progression::MilestoneId` | `[[nodiscard]] static constexpr MilestoneId FromString(std::string_view name)noexcept`",
@@ -24046,6 +24158,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEffectsTests"
+      }
+    },
+    "650b6cad17968dee": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:15::`650b6cad17968dee`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "65191863c8b9d834": {
@@ -25794,6 +25920,20 @@
         "target": "EpidemicRuntimeSupportTests"
       }
     },
+    "6ca5ce09d825fd1d": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:16::`6ca5ce09d825fd1d`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:146::outer package generation roundtrip"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "6ca7e1ea3d929716": {
       "contract": {
         "anchor": "docs/EngineRuntime/modules/serialization.md:11::## \u0418\u043d\u0432\u0430\u0440\u0438\u0430\u043d\u0442\u044b",
@@ -27432,6 +27572,20 @@
         "target": "EpidemicRuntimeSerializationTests"
       }
     },
+    "7354119ae09a1805": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:17::`7354119ae09a1805`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:53::in-memory Persistence v1 encode",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:53::in-memory Persistence v1 encode"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
     "7354645bf758a939": {
       "contract": {
         "anchor": "docs/EngineFramework/Entities.md:108::`7354645bf758a939`",
@@ -28250,6 +28404,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEnvironmentTests"
+      }
+    },
+    "76c9e7a9e7f8c7fd": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:18::`76c9e7a9e7f8c7fd`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "76d6eb6ebe2ea1f7": {
@@ -30644,6 +30812,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkLootTests"
+      }
+    },
+    "8022c7bfa80894fb": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:19::`8022c7bfa80894fb`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "806e8068acae1945": {
@@ -33777,6 +33959,20 @@
         "target": "EpidemicGameFrameworkNarrativeTests"
       }
     },
+    "8ecf8fc1449286d2": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:20::`8ecf8fc1449286d2`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "8ed2b93f46f201fe": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/runtime_bridge.md:71::`8ed2b93f46f201fe`",
@@ -33861,6 +34057,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameplayTimeTests"
+      }
+    },
+    "8f2ab556f9f5637f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:21::`8f2ab556f9f5637f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "8f3d50e3dfd366ec": {
@@ -34113,6 +34323,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkPerceptionKnowledgeAIIntegrationTests"
+      }
+    },
+    "90b829927cd967c7": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:22::`90b829927cd967c7`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "90b9c72d1e0b5d21": {
@@ -35935,6 +36159,20 @@
         "target": "EpidemicRuntimeWorldTests"
       }
     },
+    "97614defdd33b629": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:23::`97614defdd33b629`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "97656191970fe42e": {
       "contract": {
         "anchor": "EngineRuntime/Physics/docs/Goal3_Block_C_Evidence_2026-09-21.md:37::`97656191970fe42e`",
@@ -36101,6 +36339,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeFoundationTests"
+      }
+    },
+    "9815fab0d40eb5a5": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:24::`9815fab0d40eb5a5`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:137::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "98362837c92ff691": {
@@ -37408,6 +37660,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkResourcesProductionTests"
+      }
+    },
+    "9e926c1e16a81252": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:25::`9e926c1e16a81252`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:27::in-memory Time v1 encode",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:27::in-memory Time v1 encode"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
       }
     },
     "9e9e8709e227027a": {
@@ -39402,6 +39668,20 @@
         "target": "EpidemicRuntimeSerializationTests"
       }
     },
+    "a704e590beca5ea3": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:26::`a704e590beca5ea3`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:159::generation increments from current authoritative package"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "a717980db3cc5758": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/foundation.md:93::`a717980db3cc5758`",
@@ -40266,6 +40546,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkCrimeTests"
+      }
+    },
+    "aa9dd7c7cbfe94e0": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:27::`aa9dd7c7cbfe94e0`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "aa9f29cf5ce32831": {
@@ -42164,6 +42458,20 @@
         "target": "EpidemicFoundationUnitTests"
       }
     },
+    "b3476c1fb0feb3e4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:28::`b3476c1fb0feb3e4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:50::bool(snapshot)",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:50::bool(snapshot)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
     "b347dc31d54a6a33": {
       "contract": {
         "anchor": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h:412::[[nodiscard]] foundation::Result<void> RegisterNavigation(core::Application& app, navigation::NavigationOptions options = {});",
@@ -43116,6 +43424,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeSimulationTests"
+      }
+    },
+    "b7e0900eef78e7ac": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:29::`b7e0900eef78e7ac`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "b7e413228320da7b": {
@@ -50373,6 +50695,20 @@
         "target": "EpidemicGameplayIntegrationSaveParticipantTests"
       }
     },
+    "d36afc4d71a9f0be": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:30::`d36afc4d71a9f0be`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "d38b3abaedee851a": {
       "contract": {
         "anchor": "docs/EngineFramework/Ownership.md:124::`d38b3abaedee851a`",
@@ -51897,6 +52233,20 @@
         "target": "EpidemicGameFrameworkEconomyTests"
       }
     },
+    "da44daf5197ad7e7": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:31::`da44daf5197ad7e7`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "da4550ba728e99c8": {
       "contract": {
         "anchor": "docs/EngineFramework/ItemsInventory.md:141::`da4550ba728e99c8`",
@@ -52768,6 +53118,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicRuntimeAudioTests"
+      }
+    },
+    "de317d1e602df8a4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:32::`de317d1e602df8a4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "de7030761c598078": {
@@ -55741,6 +56105,20 @@
         "target": "EpidemicGameFrameworkMaterialsTests"
       }
     },
+    "e9f715cc146df7d4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:33::`e9f715cc146df7d4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "e9f8153848da7e1c": {
       "contract": {
         "anchor": "EngineRuntime/Audio/include/Epidemic/Runtime/Audio/audio_runtime.h:119::virtual ~IAudioEventQueue() = default;",
@@ -55949,6 +56327,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkOwnershipTests"
+      }
+    },
+    "ea96acac975ccc18": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:34::`ea96acac975ccc18`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "ea98cc20b207b09e": {
@@ -56343,6 +56735,20 @@
         "target": "EpidemicGameplayFactsTests"
       }
     },
+    "ec16873a63a3f33b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:35::`ec16873a63a3f33b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:139::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
     "ec21526d5f3a59d2": {
       "contract": {
         "anchor": "docs/freeze/engineruntime_resources_audit.md:33::## External loader boundary and accepted-once semantics",
@@ -56585,6 +56991,34 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkKnowledgeTests"
+      }
+    },
+    "ed95f62048697195": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:36::`ed95f62048697195`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:140::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "ed9dced04fa14ef8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:37::`ed9dced04fa14ef8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:167::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
       }
     },
     "edbb9ae038127c05": {
@@ -57425,6 +57859,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkWorldTests"
+      }
+    },
+    "f20bdc193585c8e8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:38::`f20bdc193585c8e8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:55::bool(decoded_persistence)",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:55::bool(decoded_persistence)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
       }
     },
     "f23aa43c450db5c1": {

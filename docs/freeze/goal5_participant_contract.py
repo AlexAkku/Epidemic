@@ -207,6 +207,13 @@ def source_fingerprints():
     files.add(ROOT / 'tools/record_goal5_participant_evidence.py')
     files.add(ROOT / 'tools/record_goal5_delta2_review.py')
     files.add(ROOT / '_goal5_handoff/delta2_persistence_review.json')
+    files.update(ROOT / name for name in (
+        'tools/record_goal5_save_generation_admission.py',
+        'docs/freeze/goal5_save_generation_contract.py',
+        'docs/freeze/goal5_save_generation_contract.json',
+        '_goal5_handoff/save_generation_contract_review.json',
+        '_goal5_handoff/save_generation_persistence_review.json',
+        '_goal5_handoff/save_generation_public_surface_delta.json'))
     files.add(REVIEW)
     files.add(CONTRACT)
     files.add(ROOT / 'docs/freeze/goal5_admission.py')

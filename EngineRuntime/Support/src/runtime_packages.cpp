@@ -159,8 +159,7 @@ class FilePersistenceBackend final:public IPersistenceBackend
     {
         auto bytes=platform::ReadFilePackage(path_,kPackageLimit);
         if (!bytes) return foundation::Result<PersistenceSnapshot>::Failure(bytes.GetError());
-        try { return foundation::Result<PersistenceSnapshot>::Success(Decode<PersistenceSnapshot>(bytes.Value(),"EPIRPER1")); }
-        catch (const std::exception& error) { return foundation::Result<PersistenceSnapshot>::Failure(PackageError("persistence.load",error)); }
+        return DecodeRuntimePersistencePackage(bytes.Value());
     }
     foundation::Result<void> CommitSnapshot(const PersistenceSnapshot& snapshot,PersistenceDurability durability) override
     {
@@ -168,7 +167,9 @@ class FilePersistenceBackend final:public IPersistenceBackend
         {
             Need(durability==PersistenceDurability::MemoryOnly || durability==PersistenceDurability::SaveRequired || durability==PersistenceDurability::SaveAndFlushRequired,"invalid durability");
             // This file backend always meets the strongest level, including for weaker requests.
-            auto bytes=Encode(snapshot,"EPIRPER1"); return platform::CommitFilePackage(path_,bytes,kPackageLimit);
+            auto bytes=EncodeRuntimePersistencePackage(snapshot);
+            if (!bytes) return foundation::Result<void>::Failure(bytes.GetError());
+            return platform::CommitFilePackage(path_,bytes.Value(),kPackageLimit);
         }
         catch (const std::exception& error) { return foundation::Result<void>::Failure(PackageError("persistence.commit",error)); }
     }
@@ -176,17 +177,62 @@ class FilePersistenceBackend final:public IPersistenceBackend
     foundation::Path path_;
 };
 }
+foundation::Result<std::vector<std::byte>> EncodeRuntimeTimeCheckpointPackage(const TimeCheckpoint& checkpoint)
+{
+    try { return foundation::Result<std::vector<std::byte>>::Success(Encode(checkpoint,"EPIRTIM1")); }
+    catch (const std::exception& error) { return foundation::Result<std::vector<std::byte>>::Failure(PackageError("time.encode",error)); }
+}
+foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(std::span<const std::byte> package)
+{
+    try { return foundation::Result<TimeCheckpoint>::Success(Decode<TimeCheckpoint>(package,"EPIRTIM1")); }
+    catch (const std::exception& error) { return foundation::Result<TimeCheckpoint>::Failure(PackageError("time.decode",error)); }
+}
+foundation::Result<std::vector<std::byte>> EncodeRuntimePersistencePackage(const PersistenceSnapshot& snapshot)
+{
+    try { return foundation::Result<std::vector<std::byte>>::Success(Encode(snapshot,"EPIRPER1")); }
+    catch (const std::exception& error) { return foundation::Result<std::vector<std::byte>>::Failure(PackageError("persistence.encode",error)); }
+}
+foundation::Result<PersistenceSnapshot> DecodeRuntimePersistencePackage(std::span<const std::byte> package)
+{
+    try { return foundation::Result<PersistenceSnapshot>::Success(Decode<PersistenceSnapshot>(package,"EPIRPER1")); }
+    catch (const std::exception& error) { return foundation::Result<PersistenceSnapshot>::Failure(PackageError("persistence.decode",error)); }
+}
+foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(const IPersistenceQuery& query)
+{
+    try
+    {
+        const auto before=query.GetRevision();
+        PersistenceSnapshot snapshot{};
+        snapshot.objects=query.ListObjects();
+        snapshot.tombstones=query.ListTombstones();
+        snapshot.lazy_rules=query.ListLazyRules();
+        snapshot.zone_overrides=query.ListZoneOverrides();
+        const auto after=query.GetRevision();
+        if (before!=after)
+            return foundation::Result<PersistenceSnapshot>::Failure(foundation::Error::Create(
+                "runtime.package.persistence_changed","Runtime Persistence changed during quiesced snapshot capture"));
+        snapshot.current_revision=after;
+        auto valid=ValidatePersistenceSnapshot(snapshot);
+        if (!valid) return foundation::Result<PersistenceSnapshot>::Failure(valid.GetError());
+        return foundation::Result<PersistenceSnapshot>::Success(std::move(snapshot));
+    }
+    catch (const std::exception& error)
+    { return foundation::Result<PersistenceSnapshot>::Failure(PackageError("persistence.capture",error)); }
+    catch (...)
+    { return foundation::Result<PersistenceSnapshot>::Failure(foundation::Error::Create(
+        "runtime.package.persistence_capture_exception","Runtime Persistence query threw during snapshot capture")); }
+}
 foundation::Result<void> CommitRuntimeTimeCheckpoint(const foundation::Path& path,const TimeCheckpoint& checkpoint)
 {
-    try { auto bytes=Encode(checkpoint,"EPIRTIM1"); return platform::CommitFilePackage(path,bytes,kPackageLimit); }
-    catch (const std::exception& error) { return foundation::Result<void>::Failure(PackageError("time.commit",error)); }
+    auto bytes=EncodeRuntimeTimeCheckpointPackage(checkpoint);
+    if (!bytes) return foundation::Result<void>::Failure(bytes.GetError());
+    return platform::CommitFilePackage(path,bytes.Value(),kPackageLimit);
 }
 foundation::Result<TimeCheckpoint> LoadRuntimeTimeCheckpoint(const foundation::Path& path)
 {
     auto bytes=platform::ReadFilePackage(path,kPackageLimit);
     if (!bytes) return foundation::Result<TimeCheckpoint>::Failure(bytes.GetError());
-    try { return foundation::Result<TimeCheckpoint>::Success(Decode<TimeCheckpoint>(bytes.Value(),"EPIRTIM1")); }
-    catch (const std::exception& error) { return foundation::Result<TimeCheckpoint>::Failure(PackageError("time.load",error)); }
+    return DecodeRuntimeTimeCheckpointPackage(bytes.Value());
 }
 foundation::Result<std::shared_ptr<IPersistenceBackend>> CreateFilePersistenceBackend(const foundation::Path& path)
 {

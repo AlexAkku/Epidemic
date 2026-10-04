@@ -449,6 +449,15 @@
           "timeout": 300.0
         },
         {
+          "labels": [
+            "goal5-regression",
+            "persistence-generation",
+            "unit"
+          ],
+          "name": "EpidemicGameFrameworkSaveGenerationTests",
+          "timeout": 300.0
+        },
+        {
           "labels": [],
           "name": "EpidemicGameFrameworkSimulationTests",
           "timeout": 300.0
@@ -664,6 +673,15 @@
         {
           "labels": [],
           "name": "EpidemicRuntimeResourcesTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-generation",
+            "unit"
+          ],
+          "name": "EpidemicRuntimeSaveGenerationPackageTests",
           "timeout": 300.0
         },
         {
@@ -1032,6 +1050,15 @@
           "timeout": 300.0
         },
         {
+          "labels": [
+            "goal5-regression",
+            "persistence-generation",
+            "unit"
+          ],
+          "name": "EpidemicGameFrameworkSaveGenerationTests",
+          "timeout": 300.0
+        },
+        {
           "labels": [],
           "name": "EpidemicGameFrameworkSimulationTests",
           "timeout": 300.0
@@ -1250,6 +1277,15 @@
           "timeout": 300.0
         },
         {
+          "labels": [
+            "goal5-regression",
+            "persistence-generation",
+            "unit"
+          ],
+          "name": "EpidemicRuntimeSaveGenerationPackageTests",
+          "timeout": 300.0
+        },
+        {
           "labels": [],
           "name": "EpidemicRuntimeSceneTests",
           "timeout": 300.0
@@ -1451,6 +1487,15 @@
           "timeout": 300.0
         },
         {
+          "labels": [
+            "goal5-regression",
+            "persistence-generation",
+            "unit"
+          ],
+          "name": "EpidemicRuntimeSaveGenerationPackageTests",
+          "timeout": 300.0
+        },
+        {
           "labels": [],
           "name": "EpidemicRuntimeSceneTests",
           "timeout": 300.0
@@ -1629,6 +1674,15 @@
         {
           "labels": [],
           "name": "EpidemicRuntimeResourcesTests",
+          "timeout": 300.0
+        },
+        {
+          "labels": [
+            "goal5-regression",
+            "persistence-generation",
+            "unit"
+          ],
+          "name": "EpidemicRuntimeSaveGenerationPackageTests",
           "timeout": 300.0
         },
         {

@@ -432,3 +432,24 @@ struct PreparedEngineRuntime
 [[nodiscard]] std::vector<RuntimeUpdateStep> GetRuntimeUpdateOrder();
 [[nodiscard]] std::vector<RuntimeShutdownStep> GetRuntimeShutdownOrder();
 } // namespace epidemic::runtime
+
+// BEGIN GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES
+namespace epidemic::runtime
+{
+// These functions use exactly the same reviewed v1 wire representation as the
+// file-backed helpers. They let an upper-layer composition embed Runtime planes
+// in one outer atomic save generation without intermediate authoritative files.
+[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimeTimeCheckpointPackage(
+    const TimeCheckpoint& checkpoint);
+[[nodiscard]] foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(
+    std::span<const std::byte> package);
+[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimePersistencePackage(
+    const PersistenceSnapshot& snapshot);
+[[nodiscard]] foundation::Result<PersistenceSnapshot> DecodeRuntimePersistencePackage(
+    std::span<const std::byte> package);
+// Externally synchronized capture. The caller must hold the same Runtime
+// quiescence used by the surrounding whole-engine generation.
+[[nodiscard]] foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(
+    const IPersistenceQuery& query);
+} // namespace epidemic::runtime
+// END GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES

@@ -1,20 +1,73 @@
-build/
-logs/
-.agents/
-.codex/
-dev-log/
+# Production repository allowlist. Files stay on disk; tracked files are not
+# removed from the Git index by ignore rules.
+/*
+!/.gitignore
+!/LICENSE
+!/README.md
+!/CMakeLists.txt
+!/CMakePresets.json
+!/EngineBase/
+!/EngineRuntime/
+!/EngineFramework/
+!/cmake/
+
+# Only CMake modules needed by the existing production build.
+/cmake/*
+!/cmake/ArchitectureFreeze.cmake
+!/cmake/ProductionSourceExtensions.cmake
+!/cmake/SaveGamePrivateSurface.cmake
+
+# FrameworkArchitecture.cmake is included even with BUILD_TESTING=OFF.
+/EngineFramework/DevelopmentInfrastructure/*
+!/EngineFramework/DevelopmentInfrastructure/cmake/
+/EngineFramework/DevelopmentInfrastructure/cmake/*
+!/EngineFramework/DevelopmentInfrastructure/cmake/FrameworkArchitecture.cmake
+
+# EngineBase/Apps is currently added unconditionally by EngineBase/CMakeLists.txt.
+# Keep its build inputs until examples are made optional in a separate change.
+
+# Development-only trees inside otherwise allowed engine directories.
+**/Tests/
+**/tests/
+**/docs/
+**/Docs/
+**/benchmarks/
+**/Benchmarks/
+**/tools/
+**/.git/
+**/.idea/
+**/.vs/
+**/.vscode/
+**/node_modules/
+**/__pycache__/
+
+# Build outputs, caches and binary artifacts at any engine depth.
+**/build*/
+**/cmake-build*/
+**/out/
+**/dist/
+**/logs/
+**/.cache/
+*.obj
+*.o
+*.pdb
+*.lib
+*.a
+*.dll
+*.so
+*.dylib
+*.exe
+*.pch
+*.ipch
+*.ilk
+*.exp
 *.zip
-cmake-build-debug/
-.idea/
-build-codex-runtime-freeze/
-build-codex-runtime-freeze-no-tests/
-build-codex-runtime-freeze-asan/
-build-codex-runtime-freeze-release-notests/
-build-codex-runtime-freeze-werror/
-EngineFramework-zips/
-done/
-Deltas/
-__pycache__/
-.ci_cache/
-.enforcer/
-.ae2-reference/
+
+# Documentation/planning is local, apart from the root project overview.
+*.md
+!/README.md
+
+# Explicit local-tool exclusions (also covered by the root allowlist).
+/.tools/
+/build-clangd/
+/compile_commands.json

@@ -34,6 +34,8 @@ FREEZE_COMMANDS = (
     "python docs/freeze/goal5_schema_contract.py --check",
     "python docs/freeze/goal5_schema_contract.py --self-test",
     "python docs/freeze/goal5_stage52_contract.py --check",
+    "python docs/freeze/goal5_save_generation_contract.py --check",
+    "python docs/freeze/goal5_save_generation_contract.py --self-test",
     "python docs/freeze/goal5_stage52_contract.py --self-test",
     "python docs/freeze/goal5_runtime_durable_contract.py --check",
     "python docs/freeze/goal5_runtime_durable_contract.py --self-test",

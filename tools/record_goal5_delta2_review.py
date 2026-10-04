@@ -13,11 +13,13 @@ from goal5_persistence_contract import load_json, encoded, validate_contract, ct
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--record', action='store_true', required=True)
-    parser.parse_args()
+    parser.add_argument('--review', type=Path,
+                        default=ROOT / '_goal5_handoff/delta2_persistence_review.json')
+    args = parser.parse_args()
     path = ROOT / 'docs/freeze/goal5_persistence_contract.json'
     contract = load_json(path)
     inventory = load_json(ROOT / 'docs/freeze/goal5_persistence_candidates.json')
-    review = load_json(ROOT / '_goal5_handoff/delta2_persistence_review.json')
+    review = load_json(args.review)
     if review.get('schema_version') != 1:
         raise ValueError('unsupported finite review handoff')
     discovered = {c['candidate_id']: c for c in inventory['candidates']}
@@ -33,7 +35,7 @@ def main():
     if errors:
         raise ValueError('\n'.join(errors))
     path.write_text(encoded(contract), encoding='utf-8', newline='\n')
-    print(f"PASS: {len(review['candidates'])} explicit delta-2 source reviews admitted; {len(contract['candidates'])} candidates validated.")
+    print(f"PASS: {len(review['candidates'])} explicit source reviews admitted from {args.review.name}; {len(contract['candidates'])} candidates validated.")
 
 
 if __name__ == '__main__':

@@ -231,6 +231,30 @@ if supplemental.get('api'):
     for kind in ('api','lifecycle','stale_identity','external_boundary'):
         coverage[kind].update(supplemental.get(kind,{}))
 
+# Goal 5.3.B adds a reviewed cross-plane save-generation surface in Framework
+# Integration plus in-memory Runtime Support package helpers. Keep this as raw
+# Goal 5 handoff evidence; canonical coverage/anchors remain generator-owned.
+save_generation_path = ROOT / '_goal5_handoff/save_generation_public_surface_delta.json'
+save_generation = load(save_generation_path) if save_generation_path.is_file() else {'api':{},'anchors':{}}
+if save_generation.get('api'):
+    if save_generation.get('schema_version') != 1 or save_generation.get('reviewed') is not True:
+        raise RuntimeError('unreviewed Goal5 save-generation surface delta')
+    if set(save_generation['api']) != set(save_generation['anchors']):
+        raise RuntimeError('Goal5 save-generation API/anchor identities differ')
+    validate_worker_api_anchors('Goal5-SaveGeneration', save_generation['anchors'])
+    actual_api = generate_coverage_manifest()['api']
+    targets = registered_test_targets(ROOT)
+    allowed_modules = {'EngineFramework/IntegrationLayer/Integration', 'EngineRuntime/Support'}
+    for identity, record in save_generation['api'].items():
+        if identity not in actual_api or record.get('module') not in allowed_modules or actual_api[identity]['module'] != record['module']:
+            raise RuntimeError('Goal5 save-generation source references unknown/non-reviewed callable')
+        proof = save_generation['anchors'][identity]
+        errors = validate_path_anchor(ROOT, proof['contract'].get('anchor')) + validate_test_evidence(ROOT, proof['test'], targets)
+        if errors:
+            raise RuntimeError('invalid Goal5 save-generation evidence: ' + str(errors))
+    for kind in ('api','lifecycle','stale_identity','external_boundary'):
+        coverage[kind].update(save_generation.get(kind,{}))
+
 # B06 carries reviewed obligation metadata inline, while the canonical manifest
 # stores only each obligation's status; the evidence itself is in API anchors.
 for record in coverage["api"].values():
@@ -282,6 +306,7 @@ anchors["anchors"] = {
 }
 anchors["anchors"].update(handoff_anchors)
 anchors["anchors"].update(supplemental.get('anchors',{}))
+anchors["anchors"].update(save_generation.get('anchors',{}))
 save(anchors_path, anchors)
 
 dossiers_path = FREEZE / "module_dossier_reviews.json"

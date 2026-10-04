@@ -479,7 +479,7 @@ The generator enforces exactly 78 responsibility declarations, unique non-empty 
 - **Responsibility:** Adapts gameplay queries/facts/time/save contracts and the approved RuntimeTime boundary.
 - **Authoritative owner:** `none`. Core adapter composition only; linked services retain authority.
 - **Observed cross-module includes:** `EngineBase/Foundation`, `EngineBase/Platform`, `EngineFramework/BaseInfrastructure/Facts`, `EngineFramework/BaseInfrastructure/Queries`, `EngineFramework/BaseInfrastructure/Time`, `EngineFramework/GameplayWorldStateOwners/SaveGame`, `EngineRuntime/Time`. Every observed edge is a direct CMake dependency.
-- **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `ScheduledTriggerDispatcherSaveParticipant`.
+- **External boundary:** No direct Win32/D3D SDK access. External collaboration is limited to public contracts: `CallbackRuntimeSaveGenerationPort`, `IRuntimeSaveGenerationPort`, `ISaveGenerationStore`, `LeaseFactory`, `ScheduledTriggerDispatcherSaveParticipant`.
 
 ### EngineFramework/IntegrationLayer/InteractionEffectsIntegration
 

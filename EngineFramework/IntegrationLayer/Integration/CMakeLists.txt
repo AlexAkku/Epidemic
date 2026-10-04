@@ -1,6 +1,7 @@
 add_library(EpidemicGameFrameworkCoreIntegration STATIC
     src/core_adapters.cpp
     src/save_package_store.cpp
+    src/save_generation.cpp
 )
 
 target_include_directories(EpidemicGameFrameworkCoreIntegration PUBLIC

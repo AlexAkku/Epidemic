@@ -140,6 +140,8 @@ function Invoke-Validators {
         @('python', @('docs/freeze/goal5_schema_contract.py','--check'), 'goal5-schema-contract'),
         @('python', @('docs/freeze/goal5_schema_contract.py','--self-test'), 'goal5-schema-contract-self-test'),
         @('python', @('docs/freeze/goal5_stage52_contract.py','--check'), 'goal5-stage52-contract'),
+        @('python', @('docs/freeze/goal5_save_generation_contract.py','--check'), 'goal5-save-generation-contract'),
+        @('python', @('docs/freeze/goal5_save_generation_contract.py','--self-test'), 'goal5-save-generation-self-test'),
         @('python', @('docs/freeze/goal5_runtime_durable_contract.py','--check'), 'goal5-runtime-durable-contract'),
         @('python', @('docs/freeze/goal5_runtime_durable_contract.py','--self-test'), 'goal5-runtime-durable-self-test'),
         @('python', @('docs/freeze/goal5_stage52_contract.py','--self-test'), 'goal5-stage52-contract-self-test'),

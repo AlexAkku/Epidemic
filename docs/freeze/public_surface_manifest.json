@@ -5051,13 +5051,21 @@
     "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h": {
       "aliases": [
         "using Handler",
+        "using LeaseFactory",
+        "using PlaneCapture",
         "using ResultType",
         "using ScheduledTriggerHandlerId"
       ],
       "classes_and_inheritance": [
+        "class CallbackRuntimeSaveGenerationPortfinal : public IRuntimeSaveGenerationPort",
         "class FactsQueryAdapter",
+        "class FileSaveGenerationStorefinal : public ISaveGenerationStore",
         "class FileSavePackageStorefinal : public savegame::ISavePackageStore",
+        "class IRuntimeSaveGenerationPort",
+        "class ISaveGenerationStore",
         "class RuntimeTimeAdapter",
+        "class SaveGenerationBarrierfinal : public savegame::ISaveBarrier",
+        "class SaveGenerationCoordinator",
         "class ScheduledTriggerDispatcher",
         "class ScheduledTriggerDispatcherSaveParticipant",
         "class ScheduledTriggerDispatcherSaveParticipantfinal : public savegame::ISaveParticipant",
@@ -5065,12 +5073,20 @@
         "struct FindFactsQuery",
         "struct FindHistoryQuery",
         "struct RegisteredHandler",
+        "struct RuntimeSaveGenerationCapture",
+        "struct SaveGenerationBarrierCallbacks",
+        "struct SaveGenerationId",
+        "struct SaveGenerationLimits",
+        "struct SaveGenerationPackage",
         "struct ScheduledTriggerDeliveryRecord",
         "struct ScheduledTriggerDispatcherPolicy",
         "struct ScheduledTriggerDispatcherSnapshot",
-        "struct ScheduledTriggerPumpReport"
+        "struct ScheduledTriggerPumpReport",
+        "struct State"
       ],
-      "constants": [],
+      "constants": [
+        "operator"
+      ],
       "constraints": [],
       "enum_values": [
         "ScheduledTriggerActionDeliveryMode::ObserverOnly",
@@ -5084,8 +5100,16 @@
         "ScheduledTriggerDisposition"
       ],
       "module": "EngineFramework/IntegrationLayer/Integration",
-      "normalized_sha256": "a1148463483f6e38643b2c663a4251bd40c64a6d76840487a205c8d413ba0409",
+      "normalized_sha256": "d030442598601893bd7626c58c3c99986d7c411027b7ba3eadeac1abe936ef51",
       "public_fields": [
+        "RuntimeSaveGenerationCapture::persistence_package",
+        "RuntimeSaveGenerationCapture::time_package",
+        "SaveGenerationBarrierCallbacks::acquire_capture_quiescence",
+        "SaveGenerationBarrierCallbacks::acquire_restore_quiescence",
+        "SaveGenerationLimits::max_framework_savegame_bytes",
+        "SaveGenerationLimits::max_runtime_persistence_bytes",
+        "SaveGenerationLimits::max_runtime_time_bytes",
+        "SaveGenerationLimits::max_wire_bytes",
         "ScheduledTriggerDispatcherPolicy::max_delivery_attempts_per_pump",
         "ScheduledTriggerDispatcherPolicy::max_pending_deliveries",
         "ScheduledTriggerDispatcherSnapshot::observer_handlers",
@@ -8046,7 +8070,7 @@
         "ShutdownProposalPolicy"
       ],
       "module": "EngineRuntime/Support",
-      "normalized_sha256": "718ef383ee2b6eb66fe267e2899d32d6c394c7c941278179974ec2e87ebfcba2",
+      "normalized_sha256": "7c8410862f304cc89ab564e1f80bf6653c4c938e4c2b7792a3ef40fd4e78377e",
       "public_fields": [
         "EngineRuntimeServices::animation",
         "EngineRuntimeServices::assets",

@@ -300,6 +300,16 @@
       "rationale": "Reviewed state-changing command or stateful sequence operation.",
       "reviewed": true
     },
+    "32654f67cbe3cbc8": {
+      "classification": "QUERY",
+      "rationale": "Goal 5.3 reviewed pure canonical package encoding/decoding transformation; no authoritative live state is mutated.",
+      "reviewed": true
+    },
+    "3307e1f6a02a8d84": {
+      "classification": "QUERY",
+      "rationale": "Goal 5.3 reviewed pure canonical package encoding/decoding transformation; no authoritative live state is mutated.",
+      "reviewed": true
+    },
     "3360527488c5517d": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
@@ -710,6 +720,11 @@
       "rationale": "Reviewed state-changing command or stateful sequence operation.",
       "reviewed": true
     },
+    "6ca5ce09d825fd1d": {
+      "classification": "QUERY",
+      "rationale": "Goal 5.3 reviewed pure canonical package encoding/decoding transformation; no authoritative live state is mutated.",
+      "reviewed": true
+    },
     "6cd17b4812a5b4ef": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
@@ -743,6 +758,11 @@
     "730fa661882071de": {
       "classification": "QUERY",
       "rationale": "Reviewed observer, identifier accessor, conversion, arithmetic, encoding, or pure value transformation.",
+      "reviewed": true
+    },
+    "7354119ae09a1805": {
+      "classification": "QUERY",
+      "rationale": "Goal 5.3 reviewed pure canonical package encoding/decoding transformation; no authoritative live state is mutated.",
       "reviewed": true
     },
     "73f85ea963b81618": {
@@ -968,6 +988,11 @@
     "9d0ef8f3b09a00c9": {
       "classification": "MUTATOR",
       "rationale": "Reviewed state-changing command or stateful sequence operation.",
+      "reviewed": true
+    },
+    "9e926c1e16a81252": {
+      "classification": "QUERY",
+      "rationale": "Goal 5.3 reviewed pure canonical package encoding/decoding transformation; no authoritative live state is mutated.",
       "reviewed": true
     },
     "9f2b5269bafc1f13": {
@@ -1398,6 +1423,11 @@
     "f10f9c800110c478": {
       "classification": "MUTATOR",
       "rationale": "Reviewed state-changing command or stateful sequence operation.",
+      "reviewed": true
+    },
+    "f20bdc193585c8e8": {
+      "classification": "QUERY",
+      "rationale": "Goal 5.3 reviewed pure canonical package encoding/decoding transformation; no authoritative live state is mutated.",
       "reviewed": true
     },
     "f2af4acbd0a3bff9": {
