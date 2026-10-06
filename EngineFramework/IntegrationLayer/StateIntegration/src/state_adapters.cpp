@@ -692,7 +692,7 @@ foundation::Result<std::uint64_t> StateFactsAdapter::RebuildActiveConditionFacts
 foundation::Result<std::uint64_t> StateFactsAdapter::PublishPendingChanges(GameplayContext context)
 {
     std::uint64_t published = 0;
-    const auto producer = ProducerId::FromString("framework.state_integration");
+    // Independent journal sequences require distinct stable producers in Facts.
 
     const auto entity_batch = entities_.ReadChangesSince(entity_cursor_);
     if (entity_batch.snapshot_required)
@@ -701,7 +701,7 @@ foundation::Result<std::uint64_t> StateFactsAdapter::PublishPendingChanges(Gamep
     }
     if (!entity_batch.changes.empty())
     {
-        auto batch = facts_.CreateBatch(producer, entity_cursor_.sequence + 1);
+        auto batch = facts_.CreateBatch(ProducerId::FromString("framework.state_integration.entities"), entity_cursor_.sequence + 1);
         for (const auto& change : entity_batch.changes)
         {
             auto event_context = change.context.tick.IsValid() ? change.context : context;
@@ -723,7 +723,7 @@ foundation::Result<std::uint64_t> StateFactsAdapter::PublishPendingChanges(Gamep
     }
     if (!material_batch.changes.empty())
     {
-        auto batch = facts_.CreateBatch(producer, material_cursor_.sequence + 1);
+        auto batch = facts_.CreateBatch(ProducerId::FromString("framework.state_integration.materials"), material_cursor_.sequence + 1);
         for (const auto& change : material_batch.changes)
         {
             auto event_context = change.context.tick.IsValid() ? change.context : context;
@@ -816,7 +816,7 @@ foundation::Result<std::uint64_t> StateFactsAdapter::PublishPendingChanges(Gamep
             }
         }
 
-        auto batch = facts_.CreateBatch(producer, condition_cursor_.sequence + 1);
+        auto batch = facts_.CreateBatch(ProducerId::FromString("framework.state_integration.conditions"), condition_cursor_.sequence + 1);
         for (const auto& change : condition_batch.changes)
         {
             auto event_context = change.context.tick.IsValid() ? change.context : context;
@@ -838,7 +838,7 @@ foundation::Result<std::uint64_t> StateFactsAdapter::PublishPendingChanges(Gamep
     }
     if (!effect_batch.changes.empty())
     {
-        auto batch = facts_.CreateBatch(producer, effect_cursor_.sequence + 1);
+        auto batch = facts_.CreateBatch(ProducerId::FromString("framework.state_integration.effects"), effect_cursor_.sequence + 1);
         for (const auto& change : effect_batch.changes)
         {
             auto event_context = change.context.tick.IsValid() ? change.context : context;

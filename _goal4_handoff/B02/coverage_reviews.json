@@ -6,7 +6,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr bool operator==(const EntityPartId&)const noexcept=default;` in `epidemic::gameplay::entities::EntityPartId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityPartId",
       "signature": "[[nodiscard]] constexpr bool operator==(const EntityPartId&)const noexcept=default;"
@@ -158,7 +158,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr GameplayDomainId Domain()noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] static constexpr GameplayDomainId Domain()noexcept"
@@ -180,7 +180,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:63::if (snapshot.records.size() != 1) return 9;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:75::if (snapshot.records.size() != 1) return 9;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::size_t operator()(EntityArchetypeId id)const noexcept` in `epidemic::gameplay::entities::EntityArchetypeIdHash` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityArchetypeIdHash",
       "signature": "[[nodiscard]] std::size_t operator()(EntityArchetypeId id)const noexcept"
@@ -363,7 +363,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] EntitySnapshot CaptureSnapshot()const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] EntitySnapshot CaptureSnapshot()const;"
@@ -418,7 +418,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (restore_after.records.size() != restore_before.records.size() ||",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:185::if (restore_after.records.size() != restore_before.records.size() ||",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr explicit operator bool()const noexcept` in `epidemic::gameplay::entities::EntityArchetypeId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityArchetypeId",
       "signature": "[[nodiscard]] constexpr explicit operator bool()const noexcept"
@@ -473,7 +473,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:49::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:61::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr auto operator<=>(const EntityPartRef&)const noexcept=default;` in `epidemic::gameplay::entities::EntityPartRef` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityPartRef",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const EntityPartRef&)const noexcept=default;"
@@ -678,7 +678,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:111::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:123::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr auto operator<=>(const EntityId&)const noexcept=default;` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const EntityId&)const noexcept=default;"
@@ -704,25 +704,25 @@
           "contract": "docs/EngineFramework/Entities.md:81::`1b9aa9115a9c3214`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:81::`1b9aa9115a9c3214`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:81::`1b9aa9115a9c3214`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:81::`1b9aa9115a9c3214`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -731,7 +731,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> Deactivate(EntityId id,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> Deactivate(EntityId id,GameplayContext context={});"
@@ -810,25 +810,25 @@
           "contract": "docs/EngineFramework/Entities.md:82::`1e9c8951df466210`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:82::`1e9c8951df466210`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:82::`1e9c8951df466210`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:82::`1e9c8951df466210`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -837,7 +837,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `void Freeze()noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "void Freeze()noexcept"
@@ -912,7 +912,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] bool Exists(EntityId id)const noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] bool Exists(EntityId id)const noexcept"
@@ -1060,7 +1060,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] bool IsFrozen()const noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] bool IsFrozen()const noexcept"
@@ -1214,25 +1214,25 @@
           "contract": "docs/EngineFramework/Entities.md:85::`28cf52ef2b472599`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:85::`28cf52ef2b472599`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:85::`28cf52ef2b472599`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:85::`28cf52ef2b472599`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;"
         }
       },
       "obligations": {
@@ -1241,7 +1241,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> RestoreSnapshot(EntitySnapshot snapshot);` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> RestoreSnapshot(EntitySnapshot snapshot);"
@@ -1424,7 +1424,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:97::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:109::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr explicit operator bool()const noexcept` in `epidemic::gameplay::entities::EntityHandle` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityHandle",
       "signature": "[[nodiscard]] constexpr explicit operator bool()const noexcept"
@@ -1446,7 +1446,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityPartRef> GetParts(EntityId entity)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityPartRef> GetParts(EntityId entity)const;"
@@ -1501,7 +1501,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] Revision CurrentRevision()const noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] Revision CurrentRevision()const noexcept"
@@ -1587,7 +1587,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityArchetypeId id)const noexcept` in `std::hash` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "std::hash",
       "signature": "[[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityArchetypeId id)const noexcept"
@@ -1834,7 +1834,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityRecord> AllEntities()const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityRecord> AllEntities()const;"
@@ -1856,7 +1856,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr bool operator==(const EntityArchetypeId&)const noexcept=default;` in `epidemic::gameplay::entities::EntityArchetypeId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityArchetypeId",
       "signature": "[[nodiscard]] constexpr bool operator==(const EntityArchetypeId&)const noexcept=default;"
@@ -1882,25 +1882,25 @@
           "contract": "docs/EngineFramework/Entities.md:92::`3e5c90af21ae55b1`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:92::`3e5c90af21ae55b1`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:92::`3e5c90af21ae55b1`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:92::`3e5c90af21ae55b1`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -1909,7 +1909,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> RemoveTag(EntityId id,TagId tag,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> RemoveTag(EntityId id,TagId tag,GameplayContext context={});"
@@ -2220,7 +2220,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityPartId id)const noexcept` in `std::hash` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "std::hash",
       "signature": "[[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityPartId id)const noexcept"
@@ -2286,7 +2286,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr bool operator==(const EntityHandle&)const noexcept=default;` in `epidemic::gameplay::entities::EntityHandle` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityHandle",
       "signature": "[[nodiscard]] constexpr bool operator==(const EntityHandle&)const noexcept=default;"
@@ -2350,7 +2350,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr auto operator<=>(const EntityArchetypeId&)const noexcept=default;` in `epidemic::gameplay::entities::EntityArchetypeId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityArchetypeId",
       "signature": "[[nodiscard]] constexpr auto operator<=>(const EntityArchetypeId&)const noexcept=default;"
@@ -2361,7 +2361,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityRecord> FindByTag(TagId tag,const GameplayTagRegistry&registry)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityRecord> FindByTag(TagId tag,const GameplayTagRegistry&registry)const;"
@@ -2542,7 +2542,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:57::if (!service.Convert(first_id, object_id.Value())) return 7;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!service.Convert(first_id, object_id.Value())) return 7;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> Convert(EntityId id,EntityArchetypeId new_archetype,EntityConversionPolicy policy={},GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> Convert(EntityId id,EntityArchetypeId new_archetype,EntityConversionPolicy policy={},GameplayContext context={});"
@@ -2692,7 +2692,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityRecord> FindByArchetype(EntityArchetypeId archetype)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityRecord> FindByArchetype(EntityArchetypeId archetype)const;"
@@ -2778,7 +2778,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] const EntityArchetypeDefinition*FindArchetype(EntityArchetypeId id)const noexcept;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] const EntityArchetypeDefinition*FindArchetype(EntityArchetypeId id)const noexcept;"
@@ -2800,7 +2800,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::optional<EntityRecord> Find(EntityId id)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::optional<EntityRecord> Find(EntityId id)const;"
@@ -2886,7 +2886,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr GameplayObjectRef ToGameplayObjectRef(EntityId id)noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] static constexpr GameplayObjectRef ToGameplayObjectRef(EntityId id)noexcept"
@@ -3157,7 +3157,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] EntitiesDiagnostics GetDiagnostics()const noexcept;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] EntitiesDiagnostics GetDiagnostics()const noexcept;"
@@ -3168,7 +3168,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:132::const auto entity_scope = GameplayObjectId::FromString(\"framework.entities.instances\").High();",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:144::const auto entity_scope = GameplayObjectId::FromString(\"framework.entities.instances\").High();",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr EntityId FromString(std::string_view value)noexcept` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] static constexpr EntityId FromString(std::string_view value)noexcept"
@@ -3183,25 +3183,25 @@
           "contract": "docs/EngineFramework/Entities.md:105::`67d8b14c8baf6acc`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:105::`67d8b14c8baf6acc`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:105::`67d8b14c8baf6acc`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:105::`67d8b14c8baf6acc`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
         }
       },
       "obligations": {
@@ -3210,7 +3210,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> RequestDestroy(EntityId id,EntityDestroyReason reason,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> RequestDestroy(EntityId id,EntityDestroyReason reason,GameplayContext context={});"
@@ -3322,25 +3322,25 @@
           "contract": "docs/EngineFramework/Entities.md:107::`707f3ce02151c5be`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:107::`707f3ce02151c5be`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:107::`707f3ce02151c5be`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:107::`707f3ce02151c5be`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;"
         }
       },
       "obligations": {
@@ -3349,7 +3349,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<CreateEntityResult> Create(CreateEntityRequest request);` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<CreateEntityResult> Create(CreateEntityRequest request);"
@@ -3397,25 +3397,25 @@
           "contract": "docs/EngineFramework/Entities.md:108::`7354645bf758a939`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:108::`7354645bf758a939`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:108::`7354645bf758a939`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:108::`7354645bf758a939`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -3424,7 +3424,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `void PruneChangesBefore(std::uint64_t sequence);` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "void PruneChangesBefore(std::uint64_t sequence);"
@@ -3481,25 +3481,25 @@
           "contract": "docs/EngineFramework/Entities.md:109::`73bc8ee81884c499`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:109::`73bc8ee81884c499`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:109::`73bc8ee81884c499`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:109::`73bc8ee81884c499`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -3508,7 +3508,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> SetMaterializationState(EntityId id,EntityMaterializationState state,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> SetMaterializationState(EntityId id,EntityMaterializationState state,GameplayContext context={});"
@@ -3667,7 +3667,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr EntityId FromGameplayObjectRef(GameplayObjectRef ref)noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] static constexpr EntityId FromGameplayObjectRef(GameplayObjectRef ref)noexcept"
@@ -3711,7 +3711,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] const EntityPartDefinition*FindPartDefinition(EntityArchetypeId archetype,EntityPartId part)const noexcept;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] const EntityPartDefinition*FindPartDefinition(EntityArchetypeId archetype,EntityPartId part)const noexcept;"
@@ -3903,7 +3903,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr GameplayObjectPartRef ToGameplayObjectPartRef(EntityPartRef ref)noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] static constexpr GameplayObjectPartRef ToGameplayObjectPartRef(EntityPartRef ref)noexcept"
@@ -4106,7 +4106,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:146::requested_behind.requested_id = EntityId::FromRaw(entity_scope, 42);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:158::requested_behind.requested_id = EntityId::FromRaw(entity_scope, 42);",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr EntityId FromRaw(std::uint64_t high,std::uint64_t low)noexcept` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] static constexpr EntityId FromRaw(std::uint64_t high,std::uint64_t low)noexcept"
@@ -4128,7 +4128,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `EntityService();` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "EntityService();"
@@ -4139,7 +4139,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::size_t operator()(const EntityId&id)const noexcept` in `epidemic::gameplay::entities::EntityIdHash` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityIdHash",
       "signature": "[[nodiscard]] std::size_t operator()(const EntityId&id)const noexcept"
@@ -4322,7 +4322,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:163::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:175::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::optional<EntityRecord> Resolve(EntityHandle handle)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::optional<EntityRecord> Resolve(EntityHandle handle)const;"
@@ -4333,7 +4333,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityRecord> FindByLifecycle(EntityLifecycleState lifecycle)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityRecord> FindByLifecycle(EntityLifecycleState lifecycle)const;"
@@ -4377,7 +4377,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:49::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:61::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr explicit operator bool()const noexcept` in `epidemic::gameplay::entities::EntityPartRef` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityPartRef",
       "signature": "[[nodiscard]] constexpr explicit operator bool()const noexcept"
@@ -4553,25 +4553,25 @@
           "contract": "docs/EngineFramework/Entities.md:121::`a5c8d637299b0c87`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:121::`a5c8d637299b0c87`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:121::`a5c8d637299b0c87`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:121::`a5c8d637299b0c87`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
         }
       },
       "obligations": {
@@ -4580,7 +4580,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> Remove(EntityId id,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> Remove(EntityId id,GameplayContext context={});"
@@ -4602,7 +4602,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::size_t operator()(EntityPartId id)const noexcept` in `epidemic::gameplay::entities::EntityPartIdHash` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityPartIdHash",
       "signature": "[[nodiscard]] std::size_t operator()(EntityPartId id)const noexcept"
@@ -4763,7 +4763,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::optional<EntityMaterializationPolicy> MaterializationPolicyOf(EntityId id)const noexcept;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::optional<EntityMaterializationPolicy> MaterializationPolicyOf(EntityId id)const noexcept;"
@@ -4849,7 +4849,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:81::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] size_t operator()(const epidemic::gameplay::entities::EntityId&id)const noexcept` in `std::hash` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "std::hash",
       "signature": "[[nodiscard]] size_t operator()(const epidemic::gameplay::entities::EntityId&id)const noexcept"
@@ -5182,7 +5182,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] static constexpr EntityPartRef FromGameplayObjectPartRef(GameplayObjectPartRef ref)noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] static constexpr EntityPartRef FromGameplayObjectPartRef(GameplayObjectPartRef ref)noexcept"
@@ -5363,7 +5363,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] EntityHandle HandleOf(EntityId id)const noexcept;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] EntityHandle HandleOf(EntityId id)const noexcept;"
@@ -5621,7 +5621,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] ChangeCursor LatestChangeCursor()const noexcept` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] ChangeCursor LatestChangeCursor()const noexcept"
@@ -5636,25 +5636,25 @@
           "contract": "docs/EngineFramework/Entities.md:129::`d54d605e611c4f8b`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:129::`d54d605e611c4f8b`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:129::`d54d605e611c4f8b`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:129::`d54d605e611c4f8b`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         }
       },
       "obligations": {
@@ -5663,7 +5663,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> Activate(EntityId id,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> Activate(EntityId id,GameplayContext context={});"
@@ -5674,7 +5674,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr bool operator==(const EntityId&)const noexcept=default;` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] constexpr bool operator==(const EntityId&)const noexcept=default;"
@@ -5813,7 +5813,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::optional<EntityPartRef> GetPart(EntityId entity,EntityPartId part)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::optional<EntityPartRef> GetPart(EntityId entity,EntityPartId part)const;"
@@ -5888,7 +5888,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr bool operator==(const EntityPartRef&)const noexcept=default;` in `epidemic::gameplay::entities::EntityPartRef` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityPartRef",
       "signature": "[[nodiscard]] constexpr bool operator==(const EntityPartRef&)const noexcept=default;"
@@ -5899,7 +5899,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr std::uint64_t Low()const noexcept` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] constexpr std::uint64_t Low()const noexcept"
@@ -5965,7 +5965,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:87::if (service.CurrentRevision() != before_invalid_revision) return 133;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:99::if (service.CurrentRevision() != before_invalid_revision) return 133;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr std::uint64_t Raw()const noexcept` in `epidemic::gameplay::entities::EntityArchetypeId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityArchetypeId",
       "signature": "[[nodiscard]] constexpr std::uint64_t Raw()const noexcept"
@@ -6051,7 +6051,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] EntityChangeBatch ReadChangesSince(ChangeCursor cursor)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] EntityChangeBatch ReadChangesSince(ChangeCursor cursor)const;"
@@ -6130,25 +6130,25 @@
           "contract": "docs/EngineFramework/Entities.md:137::`e2971501fcc23efb`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:137::`e2971501fcc23efb`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:137::`e2971501fcc23efb`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:137::`e2971501fcc23efb`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -6157,7 +6157,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<std::vector<EntityRecord>> CommitPendingDestruction();` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<std::vector<EntityRecord>> CommitPendingDestruction();"
@@ -6201,7 +6201,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] bool RequiresMaterialization(EntityId id)const noexcept;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] bool RequiresMaterialization(EntityId id)const noexcept;"
@@ -6223,7 +6223,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr std::uint64_t High()const noexcept` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] constexpr std::uint64_t High()const noexcept"
@@ -6468,7 +6468,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityRecord> FindByMaterialization(EntityMaterializationState state)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityRecord> FindByMaterialization(EntityMaterializationState state)const;"
@@ -6748,7 +6748,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr bool IsValid()const noexcept` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
@@ -6812,7 +6812,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:111::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:123::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] constexpr explicit operator bool()const noexcept` in `epidemic::gameplay::entities::EntityId` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityId",
       "signature": "[[nodiscard]] constexpr explicit operator bool()const noexcept"
@@ -7008,25 +7008,25 @@
           "contract": "docs/EngineFramework/Entities.md:144::`f86bea83d7f5693e`",
           "rationale": "failure semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "noop": {
           "contract": "docs/EngineFramework/Entities.md:144::`f86bea83d7f5693e`",
           "rationale": "noop semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/Entities.md:144::`f86bea83d7f5693e`",
           "rationale": "preconditions semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         },
         "success": {
           "contract": "docs/EngineFramework/Entities.md:144::`f86bea83d7f5693e`",
           "rationale": "success semantics were checked for this exact mutator, including revision/journal and state publication behavior where applicable; module-local fault evidence is cited by the module audit when an allocation/publication failure path exists.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         }
       },
       "obligations": {
@@ -7035,7 +7035,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] foundation::Result<void> AddTag(EntityId id,TagId tag,GameplayContext context={});` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] foundation::Result<void> AddTag(EntityId id,TagId tag,GameplayContext context={});"
@@ -7046,7 +7046,7 @@
       "header": "EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h",
       "module": "EngineFramework/GameplayWorldStateOwners/Entities",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
       "review_rationale": "B02 reviewed exact callable `[[nodiscard]] std::vector<EntityPartRef> GetPartAncestors(EntityPartRef part)const;` in `epidemic::gameplay::entities::EntityService` against the public header, the module audit contract and `EpidemicGameFrameworkEntitiesTests`. Query/factory/lifecycle rows with no unique direct invocation use the module test entry point as the invariant witness rather than inventing a synthetic test.",
       "scope": "epidemic::gameplay::entities::EntityService",
       "signature": "[[nodiscard]] std::vector<EntityPartRef> GetPartAncestors(EntityPartRef part)const;"

@@ -6,9 +6,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -160,9 +160,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -188,9 +188,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:63::if (snapshot.records.size() != 1) return 9;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:75::if (snapshot.records.size() != 1) return 9;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:63::if (snapshot.records.size() != 1) return 9;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:75::if (snapshot.records.size() != 1) return 9;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -342,9 +342,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -412,9 +412,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (restore_after.records.size() != restore_before.records.size() ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:185::if (restore_after.records.size() != restore_before.records.size() ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (restore_after.records.size() != restore_before.records.size() ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:185::if (restore_after.records.size() != restore_before.records.size() ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -482,9 +482,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:49::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:61::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:50::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:62::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -664,9 +664,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:111::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:123::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:112::if (!service.Create(requested) || service.Create(requested)) return 18;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:124::if (!service.Create(requested) || service.Create(requested)) return 18;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -692,9 +692,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -748,9 +748,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -804,9 +804,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -874,9 +874,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -986,9 +986,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1140,9 +1140,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:97::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:109::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:97::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:109::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1168,9 +1168,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1238,9 +1238,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1308,9 +1308,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1504,9 +1504,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1532,9 +1532,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1560,9 +1560,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1798,9 +1798,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1882,9 +1882,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1924,9 +1924,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1938,9 +1938,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2050,9 +2050,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:57::if (!service.Convert(first_id, object_id.Value())) return 7;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!service.Convert(first_id, object_id.Value())) return 7;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:57::if (!service.Convert(first_id, object_id.Value())) return 7;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!service.Convert(first_id, object_id.Value())) return 7;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2162,9 +2162,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2232,9 +2232,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2260,9 +2260,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2330,9 +2330,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2596,9 +2596,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2610,9 +2610,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:132::const auto entity_scope = GameplayObjectId::FromString(\"framework.entities.instances\").High();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:144::const auto entity_scope = GameplayObjectId::FromString(\"framework.entities.instances\").High();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:127::if (!service.RestoreSnapshot(snapshot)) return 186;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:139::if (!service.RestoreSnapshot(snapshot)) return 186;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2624,9 +2624,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2722,9 +2722,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2778,9 +2778,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2806,9 +2806,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2890,9 +2890,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2946,9 +2946,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3072,9 +3072,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3212,9 +3212,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:146::requested_behind.requested_id = EntityId::FromRaw(entity_scope, 42);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:158::requested_behind.requested_id = EntityId::FromRaw(entity_scope, 42);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:149::if (!own_scope_behind || !generated_after_behind || generated_after_behind.Value().id.Low() <= generated_after.Value().id.Low()) return 190;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!own_scope_behind || !generated_after_behind || generated_after_behind.Value().id.Low() <= generated_after.Value().id.Low()) return 190;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3240,9 +3240,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3254,9 +3254,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3408,9 +3408,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:163::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:175::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:163::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:175::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3422,9 +3422,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3478,9 +3478,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:49::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:61::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:50::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:62::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3618,9 +3618,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3646,9 +3646,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3772,9 +3772,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3842,9 +3842,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:81::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:81::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4108,9 +4108,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4220,9 +4220,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4430,9 +4430,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4444,9 +4444,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4458,9 +4458,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4556,9 +4556,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4612,9 +4612,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4626,9 +4626,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4710,9 +4710,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:87::if (service.CurrentRevision() != before_invalid_revision) return 133;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:99::if (service.CurrentRevision() != before_invalid_revision) return 133;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:87::if (service.CurrentRevision() != before_invalid_revision) return 133;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:99::if (service.CurrentRevision() != before_invalid_revision) return 133;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4780,9 +4780,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4836,9 +4836,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4892,9 +4892,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4920,9 +4920,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -5074,9 +5074,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -5312,9 +5312,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -5354,9 +5354,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:111::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:123::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:112::if (!service.Create(requested) || service.Create(requested)) return 18;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:124::if (!service.Create(requested) || service.Create(requested)) return 18;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -5480,9 +5480,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -5494,9 +5494,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "started_at_utc": "2026-10-05T16:21:35.1658059Z",
+  "finished_at_utc": "2026-10-05T16:31:35.5105356Z",
+  "duration_ms": 600345,
+  "status": "ok",
+  "mode": "Full",
+  "goal5_source_sha256": null,
+  "stages": [
+    {
+      "name": "self-check",
+      "status": "ok",
+      "note": "Runner, orchestrator, config and required tools are valid",
+      "duration_ms": 85,
+      "details": {}
+    },
+    {
+      "name": "fmt",
+      "status": "skip",
+      "note": "No repository-wide C++ formatter policy is adopted yet; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "line-limits",
+      "status": "skip",
+      "note": "No enforceable baseline has been approved; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "lint:freeze-validators",
+      "status": "ok",
+      "note": "All freeze/evidence validators and negative fixtures passed",
+      "duration_ms": 123534,
+      "details": {}
+    },
+    {
+      "name": "build:full-debug",
+      "status": "ok",
+      "note": "/W4 /WX build and public-header self-containment passed",
+      "duration_ms": 255437,
+      "details": {}
+    },
+    {
+      "name": "test:full-debug",
+      "status": "ok",
+      "note": "116/116 tests passed",
+      "duration_ms": 220088,
+      "details": {
+        "log": "E:\\Epidemic engine v1.0\\.ci_cache\\logs\\test-full-debug.log",
+        "regex": null,
+        "profile": "full-debug"
+      }
+    },
+    {
+      "name": "coverage",
+      "status": "skip",
+      "note": "No Windows C++ coverage collector is configured; stage retained and enablement tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "security",
+      "status": "skip",
+      "note": "No package manifest/SAST baseline is present; Architecture Freeze remains enforced",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "archive",
+      "status": "skip",
+      "note": "Testing entry point does not create release archives",
+      "duration_ms": 0,
+      "details": {}
+    }
+  ],
+  "issues": [],
+  "metrics": {
+    "test_counts": {
+      "total": 116,
+      "skipped": 0,
+      "passed": 116,
+      "failed": 0
+    }
+  }
+}

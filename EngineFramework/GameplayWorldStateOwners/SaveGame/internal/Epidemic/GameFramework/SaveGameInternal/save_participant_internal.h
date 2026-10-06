@@ -6,6 +6,7 @@
 #include "Epidemic/GameFramework/SaveGame/save_game.h"
 
 #include <bit>
+#include <exception>
 #include <optional>
 #include <stdexcept>
 #include <tuple>
@@ -52,7 +53,9 @@ inline thread_local bool fail_snapshot_prepare_for_test = false;
 
 struct AggregateArgument
 {
-    template <typename T> constexpr operator T() const noexcept; // unevaluated only
+    // Used only by requires-expressions. MSVC optional may instantiate the body
+    // while Clang checks aggregate viability; define it without constructing T.
+    template <typename T> operator T() const noexcept { std::terminate(); }
 };
 template <typename T, std::size_t... I>
 consteval bool AggregateAccepts(std::index_sequence<I...>)
@@ -206,6 +209,15 @@ template <typename Owner> class SnapshotParticipant final : public ISaveParticip
     SaveParticipantId Id() const noexcept override { return id_; }
     SaveSchemaVersion SchemaVersion() const noexcept override { return 1; }
     std::vector<SaveParticipantId> Dependencies() const override { return dependencies_; }
+    void BeginRestoreValidation() noexcept override
+    {
+        if (workspace_.validation_users_++ == 0) workspace_.validated_.clear();
+    }
+    void EndRestoreValidation() noexcept override
+    {
+        if (workspace_.validation_users_ != 0 && --workspace_.validation_users_ == 0)
+            workspace_.validated_.clear();
+    }
     foundation::Result<SaveSection> CaptureSnapshot(const SaveContext&) const override
     {
         try
@@ -233,7 +245,16 @@ template <typename Owner> class SnapshotParticipant final : public ISaveParticip
         {
             auto snapshot = DecodeParticipantSnapshot<Snapshot>(section, id_);
             auto candidate = Access::Clone(owner_, workspace_);
-            return Access::Restore(*candidate, std::move(snapshot), workspace_);
+            auto valid = Access::Restore(*candidate, std::move(snapshot), workspace_);
+            if (!valid) return valid;
+            if (workspace_.validation_users_ != 0)
+            {
+                auto* view = &Access::View(*candidate);
+                auto [entry, inserted] = workspace_.validated_.emplace(typeid(Owner),
+                    SaveRestoreWorkspace::ValidationRecord{std::shared_ptr<void>(std::move(candidate)), view});
+                if (!inserted) throw std::runtime_error("owner already has a validated restore candidate");
+            }
+            return foundation::Result<void>::Success();
         }
         catch (const std::exception& e) { return foundation::Result<void>::Failure(Failure(e)); }
     }

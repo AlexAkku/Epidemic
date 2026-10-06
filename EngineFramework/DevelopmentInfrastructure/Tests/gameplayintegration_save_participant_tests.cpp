@@ -168,13 +168,15 @@ void TestDeathRewardAdapterSaveParticipant()
     integration::DeathRewardAdapter owner(combat, loot);
     (void)owner.FreezeMappings();
     owner.RestoreCursor(combat.LatestChangeCursor());
+    const GameplayObjectRef fixture_combatant{combat::CombatService::Domain(), GameplayObjectId::FromString("participant.death.combatant")};
+    participant_tests::Check(bool(combat.RegisterCombatant(fixture_combatant, {})), "death reward fixture journal");
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] integration.death_reward: contract\n";
     auto participant = savegame::CreateDeathRewardAdapterSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "integration.death_reward", {savegame::SaveParticipantId::FromString("framework.combat"), savegame::SaveParticipantId::FromString("framework.loot")});
     participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
         auto checkpoint = owner.CaptureCheckpoint();
-                checkpoint.cursor = combat.LatestChangeCursor().AtSequence(checkpoint.cursor.sequence + 1);
+                checkpoint.cursor = combat.LatestChangeCursor();
                 return owner.RestoreCheckpoint(std::move(checkpoint));
     });
 }

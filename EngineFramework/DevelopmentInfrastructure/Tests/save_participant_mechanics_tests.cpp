@@ -59,6 +59,26 @@ void TestSnapshotParticipantMechanics()
           decoded.tags == live.state.tags && decoded.signed_value == -19 && decoded.amount == 3.25 && decoded.enabled,
           "field codec roundtrips actual values without object layout");
     live.state.revision = 99; live.state.records.clear();
+    participant.BeginRestoreValidation();
+    participant.BeginRestoreValidation();
+    Check(bool(participant.ValidateSnapshot(captured.Value(), {})), "restore validation prepares dependency view");
+    Check(live.state.revision == 99 && live.state.records.empty() &&
+          savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace).state.revision == 27 &&
+          savegame::detail::WorkspaceTestAccess::Resolve(workspace, live).state.records.size() == 2,
+          "validated dependencies remain private and retain durable values");
+    participant.EndRestoreValidation();
+    Check(&savegame::detail::WorkspaceTestAccess::Resolve(workspace, live) != &live,
+          "shared validation view survives until the last participant exits");
+    participant.EndRestoreValidation();
+    Check(&savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace) == &live &&
+          &savegame::detail::WorkspaceTestAccess::Resolve(workspace, live) == &live,
+          "last validation exit discards private candidates and restores live fallback");
+    participant.BeginRestoreValidation();
+    auto invalid_validation = captured.Value(); invalid_validation.payload_hash ^= 1;
+    Check(!participant.ValidateSnapshot(invalid_validation, {}), "invalid validation never seeds a dependency view");
+    participant.EndRestoreValidation();
+    Check(&savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace) == &live && live.state.revision == 99,
+          "validation failure preserves live state and leaves no retained candidate");
     auto stage = participant.StageRestore(captured.Value(), {});
     Check(bool(stage) && live.state.revision == 99 && live.state.records.empty(), "prepared state remains separate from live owner");
     Check(savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace).state.revision == 27 && savegame::detail::WorkspaceTestAccess::Resolve(workspace, live).state.records.size() == 2,

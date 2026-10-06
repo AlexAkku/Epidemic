@@ -1,0 +1,388 @@
+{
+  "anchors": {
+    "01d6ad002ec4c504": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "1a8ed521ea7ce2aa": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "234f0caecec0d4fc": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "247cb1497531427a": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "262fcd1e7349a380": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "36043e103825bdfb": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "37eba61cf2ceda31": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "608cd71567b9e890": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "635a1b921893c526": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "636e99b2f4570966": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "a33f44faf4158c0d": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "a3dc32b8bd2a4236": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    },
+    "e285f5d1f80e10b8": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+      }
+    }
+  },
+  "api": {
+    "01d6ad002ec4c504": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] foundation::Result<SaveGenerationId> LoadAndRestore(const savegame::RestoreContext&context);"
+    },
+    "1a8ed521ea7ce2aa": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:195::validation, staging and commit preparation failure preserve both live planes",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestorePort",
+      "signature": "[[nodiscard]] virtual foundation::Result<std::unique_ptr<IRuntimeGenerationRestoreStage>> Prepare(const SaveGenerationPackage&package)=0;"
+    },
+    "234f0caecec0d4fc": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:202::precommit retry publishes both staged planes exactly once",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestoreStage",
+      "signature": "virtual void Commit()noexcept=0;"
+    },
+    "247cb1497531427a": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] bool CanResume()const noexcept"
+    },
+    "262fcd1e7349a380": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:267::coordinator destruction releases owned restore resources without replaying semantic publication",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "~WholeEngineRestoreCoordinator();"
+    },
+    "36043e103825bdfb": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:245::accepted external effect and semantic commit are not duplicated by retry",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] foundation::Result<void> RetryReconciliation();"
+    },
+    "37eba61cf2ceda31": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:28::!std::is_copy_assignable_v<WholeEngineRestoreCoordinator>",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "WholeEngineRestoreCoordinator&operator=(const WholeEngineRestoreCoordinator&)=delete;"
+    },
+    "608cd71567b9e890": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:30::std::has_virtual_destructor_v<IRuntimeGenerationRestorePort>",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestorePort",
+      "signature": "virtual ~IRuntimeGenerationRestorePort()=default;"
+    },
+    "635a1b921893c526": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:237::postcommit failure owns reconciliation and blocks simulation resume",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] WholeRestorePhase Phase()const noexcept"
+    },
+    "636e99b2f4570966": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "[[nodiscard]] SaveGenerationId RestoredGeneration()const noexcept"
+    },
+    "a33f44faf4158c0d": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:27::!std::is_copy_constructible_v<WholeEngineRestoreCoordinator>",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "WholeEngineRestoreCoordinator(const WholeEngineRestoreCoordinator&)=delete;"
+    },
+    "a3dc32b8bd2a4236": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:188::fresh restore starts with simulation disabled",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "signature": "WholeEngineRestoreCoordinator(savegame::SaveGameOrchestrator&framework,IRuntimeGenerationRestorePort&runtime,SaveGenerationBarrier&barrier,ISaveGenerationStore&store,WholeRestoreCallbacks callbacks,SaveGenerationLimits limits={},savegame::SaveWireLimits framework_limits={});"
+    },
+    "e285f5d1f80e10b8": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp:198::unpublished Runtime prepared state is released on precommit failure",
+      "review_rationale": "Explicit 5.4.A coordination-core contract: private precommit stages, no-throw publication, retained postcommit recovery lease, owner-thread-only guarded resume. Whole-engine qualification is not claimed.",
+      "scope": "epidemic::gameplay::integration::IRuntimeGenerationRestoreStage",
+      "signature": "virtual ~IRuntimeGenerationRestoreStage()=default;"
+    }
+  },
+  "external_boundary": {
+    "486dd02d95c862e1": {
+      "callable_id": "a3dc32b8bd2a4236",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "951b1453aa9285cb": {
+      "callable_id": "608cd71567b9e890",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    }
+  },
+  "lifecycle": {},
+  "reviewed": true,
+  "schema_version": 1,
+  "stale_identity": {
+    "2a50dfe53c500b63": {
+      "callable_id": "36043e103825bdfb",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "c59ec072a49bac98": {
+      "callable_id": "234f0caecec0d4fc",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "d3ba9f887fd45251": {
+      "callable_id": "01d6ad002ec4c504",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    }
+  }
+}

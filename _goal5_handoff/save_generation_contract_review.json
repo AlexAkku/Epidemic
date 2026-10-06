@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "status": "IMPLEMENTED",
+  "stage": "5.3.B",
+  "sources": {
+    "persistence_contract": "docs/freeze/goal5_persistence_contract.json",
+    "participant_contract": "docs/freeze/goal5_participant_contract.json",
+    "schema_contract": "docs/freeze/goal5_schema_contract.json",
+    "architecture_contract": "cmake/ArchitectureFreeze.cmake",
+    "integration_target": "EngineFramework/IntegrationLayer/Integration/CMakeLists.txt"
+  },
+  "consistent_cut": {
+    "mechanism": "HYBRID_QUIESCENCE_DURABLE_PENDING",
+    "capture_point": "The cut is established only after the authoritative composition reaches a save safe point, all save-sensitive mutation domains are quiesced, all blockers report safe, and a nonzero SaveGenerationId is allocated. Plane capture begins only after that point.",
+    "mutation_rule": "While the outer generation lease is held, authoritative semantic mutation and save-sensitive runtime publication are prohibited. Diagnostics and explicitly non-semantic observation may continue. No new external semantic work may be accepted into the captured generation after the cut.",
+    "accepted_work_rule": "External work accepted before the cut must already be represented by an authoritative durable pending/checkpoint record. If an accepted side effect exists only in transient Runtime state, capture is rejected until it is durably classified or resolved.",
+    "runtime_time_rule": "Runtime TimeCheckpoint is captured after the cut and before release of the same outer generation lease. Fractional remainder and immutable clock configuration identity are part of the Runtime plane payload.",
+    "framework_time_rule": "GameplayTimeService is captured by its reviewed Framework participant while the same outer generation lease is held. RuntimeTimeAdapter synchronization is not allowed to advance either clock during capture.",
+    "runtime_persistence_rule": "Only the committed Runtime Persistence snapshot/revision belongs to the generation. Transaction commit and other persistence mutation are quiesced for capture. Uncommitted transaction-local staging is outside the generation.",
+    "framework_participant_rule": "All 47 reviewed Framework participants are captured through SaveGameOrchestrator while the same outer generation lease is held. Generation identity belongs to the whole-generation envelope, not to each participant payload, unless future participant semantics prove a per-participant generation field necessary.",
+    "release_rule": "The lease is released after capture/encoding/publication succeeds or after failure cleanup has established that no new generation became authoritative."
+  },
+  "generation_identity": {
+    "name": "SaveGenerationId",
+    "existing_identity_sufficient": false,
+    "representation": "uint64",
+    "invalid_value": 0,
+    "scope": "single save lineage",
+    "allocation_rule": "First generation is 1. A subsequent generation is checked(active_generation + 1). Overflow is a hard save failure. If an existing lineage cannot be read/validated, generation allocation does not reset silently.",
+    "stable_compare": true,
+    "pointer_derived": false,
+    "wall_clock_derived": false,
+    "authoritative_owner": "EngineFramework/IntegrationLayer/Integration save-generation coordinator",
+    "source_of_truth": "whole-generation envelope manifest",
+    "serialized_in": "whole-generation package manifest",
+    "restore_validation": "Reject zero, malformed, or internally inconsistent generation identity. Every plane descriptor in one envelope is bound to the envelope generation and validated before restore.",
+    "save_context_extension_required": false,
+    "implementation_stage": "5.3.B"
+  },
+  "publication": {
+    "strategy": "SINGLE_ATOMIC_GENERATION_PACKAGE",
+    "rationale": "Publishing Framework, Runtime Time, and Runtime Persistence as independently replaced files can expose a half-generation after interruption. The whole-engine save therefore publishes one outer package containing the already-qualified plane payloads and one generation identity.",
+    "plane_payloads": [
+      "FRAMEWORK_SAVEGAME",
+      "RUNTIME_TIME",
+      "RUNTIME_PERSISTENCE"
+    ],
+    "framework_payload": "Canonical SaveGameImage wire produced by existing SaveGame codec.",
+    "runtime_time_payload": "Opaque, bounded Runtime Time v1 package bytes produced by Runtime-side composition through an injected coordination port.",
+    "runtime_persistence_payload": "Opaque, bounded Runtime Persistence v1 package bytes produced by Runtime-side composition through an injected coordination port.",
+    "commit_boundary": "Integration-owned generation store delegates one bounded byte package to the existing Base Platform atomic file replacement primitive.",
+    "failed_publish_rule": "A failed capture, encode, or atomic replacement never changes the previously authoritative generation.",
+    "standalone_runtime_packages": "The M5.2 Runtime Time and Runtime Persistence file packages remain qualified standalone durable boundaries. Whole-engine save embeds their canonical payload representation rather than publishing three independent current-generation files."
+  },
+  "planes": [
+    {
+      "plane": "FRAMEWORK_SAVEGAME",
+      "source": "SaveGameOrchestrator",
+      "candidate_selector": "save_plane=FRAMEWORK_SAVEGAME and durable role",
+      "current_candidate_count": 144,
+      "owner_count": 47,
+      "checkpoint_count": 97,
+      "generation_binding": "outer envelope descriptor",
+      "capture_policy": "QUIESCE"
+    },
+    {
+      "plane": "RUNTIME_TIME",
+      "source": "EngineRuntime/Time TimeCheckpoint",
+      "candidate_ids": [
+        "G5P-41bbe64ab1c758fc",
+        "G5P-7be5b06b1da9d666"
+      ],
+      "generation_binding": "outer envelope descriptor",
+      "capture_policy": "QUIESCE"
+    },
+    {
+      "plane": "RUNTIME_PERSISTENCE",
+      "source": "EngineRuntime/Persistence PersistenceSnapshot",
+      "candidate_ids": [
+        "G5P-0b4eb2230ffc1c11",
+        "G5P-0c485cc9ff880067",
+        "G5P-52d6f94b36d49bc3",
+        "G5P-d8ebf98c9b09c9e6",
+        "G5P-fc2b046ea44a6e9d",
+        "G5P-fce10afc28059413"
+      ],
+      "generation_binding": "outer envelope descriptor",
+      "capture_policy": "QUIESCE"
+    }
+  ],
+  "activities": [
+    {
+      "activity": "AUTHORITATIVE_MUTATIONS",
+      "policy": "QUIESCE",
+      "scope": "All state classified as PERSISTENT_OWNER/PERSISTENT_CHECKPOINT plus mutations that can change their next semantic result.",
+      "cut_rule": "No authoritative mutation may execute while the outer generation lease is held.",
+      "resume_rule": "Resume only after publication/failure cleanup releases the lease."
+    },
+    {
+      "activity": "ACCEPTED_EXTERNAL_WORK",
+      "policy": "DURABLE_PENDING",
+      "scope": "External/provider/backend work whose acceptance can outlive the initiating call.",
+      "cut_rule": "Acceptance before the cut must already have a durable checkpoint/outbox/reservation/reconciliation record. Transient-only accepted work is a save blocker.",
+      "resume_rule": "After restore, 5.4 reconciliation owns exactly-once continuation."
+    },
+    {
+      "activity": "PENDING_QUEUES",
+      "policy": "DURABLE_PENDING",
+      "scope": "Semantic pending delivery/outbox/checkpoint queues covered by reviewed Framework participants.",
+      "cut_rule": "Pending semantic work is captured as data, not drained merely to permit save. Runtime-only operational queues are handled by their specific Streaming/RuntimeBridge blocker rules.",
+      "resume_rule": "Restore preserves durable queue identity/order according to owner contracts."
+    },
+    {
+      "activity": "DEFERRED_WORK",
+      "policy": "DURABLE_PENDING",
+      "scope": "Deferred semantic work such as deferred-effect reconciliation and accepted integration work.",
+      "cut_rule": "Semantic deferred work must have a durable record before the cut. Pure budget progress with no accepted semantic side effect is outside persistence and is rebuilt/re-run.",
+      "resume_rule": "Durable deferred work retries from its checkpoint; non-semantic budget work restarts."
+    },
+    {
+      "activity": "RUNTIME_PERSISTENCE_TRANSACTION",
+      "policy": "QUIESCE",
+      "scope": "InMemoryPersistenceStore committed state and transaction commit boundary.",
+      "cut_rule": "Capture reads one committed revision. Transaction commit/mutation cannot race the snapshot. Uncommitted transaction-local staging is excluded from the generation.",
+      "resume_rule": "New transactions start from the restored committed revision."
+    },
+    {
+      "activity": "RUNTIME_TIME_STATE",
+      "policy": "QUIESCE",
+      "scope": "Runtime TimeRuntime/TimeCheckpoint.",
+      "cut_rule": "Advance/Pause/Resume/SetTimeScale/Skip cannot race CaptureCheckpoint.",
+      "resume_rule": "Restore uses the complete TimeCheckpoint including fractional remainder."
+    },
+    {
+      "activity": "FRAMEWORK_TIME_STATE",
+      "policy": "QUIESCE",
+      "scope": "GameplayTimeService clocks, schedules, trigger state and synchronization revision.",
+      "cut_rule": "Gameplay clock/scheduler mutation and RuntimeTimeAdapter synchronization cannot run during capture.",
+      "resume_rule": "Framework Time participant restores before post-restore synchronization/resume."
+    },
+    {
+      "activity": "STREAMING_TRANSITIONS",
+      "policy": "BLOCK_SAVE",
+      "scope": "Runtime Streaming transient request execution, especially accepted external step/commit suffix state that is not durable.",
+      "cut_rule": "The safe-point preflight must reject capture when Streaming owns accepted-but-not-durably-represented work or is inside a transition. When safe, Streaming is quiesced and no Streaming state is serialized.",
+      "resume_rule": "Streaming operational state is reconstructed from authoritative state after restore."
+    },
+    {
+      "activity": "RUNTIMEBRIDGE_MATERIALIZATION",
+      "policy": "BLOCK_SAVE",
+      "scope": "RuntimeBridge materialize/dematerialize/destroy/impulse/projection processing and transient reconciliation queues.",
+      "cut_rule": "The safe-point preflight rejects capture while a non-reconstructible transient projection side effect is in flight or pending. Settled bindings/handles are not serialized.",
+      "resume_rule": "5.4 creates fresh Runtime representations from semantic IDs; old handles/generations are never durable identity."
+    },
+    {
+      "activity": "INTEGRATION_RECONCILIATION",
+      "policy": "DURABLE_PENDING",
+      "scope": "Reviewed Integration-layer delivery, outbox, reservation, cursor and reconciliation checkpoints.",
+      "cut_rule": "A reconciliation obligation that can affect future semantic behavior must be inside its owner participant before the cut can include the corresponding accepted work.",
+      "resume_rule": "5.4 restores the checkpoint then reconciles/retries before simulation resume."
+    }
+  ],
+  "architecture": {
+    "coordinator_module": "EngineFramework/IntegrationLayer/Integration",
+    "coordinator_target": "EpidemicGameFrameworkCoreIntegration",
+    "existing_allowed_runtime_dependency": "EpidemicRuntimeTime",
+    "direct_runtime_persistence_dependency_allowed": false,
+    "direct_runtime_support_dependency_allowed": false,
+    "runtime_dependency_expansion_required": false,
+    "narrow_injected_port_required": true,
+    "planned_port": "IRuntimeSaveGenerationPort",
+    "port_contract": "Semantic whole-generation capture operations returning validated opaque Runtime Time and Runtime Persistence payloads/metadata. No filesystem primitives and no Framework types are required on the Runtime implementation side.",
+    "port_implementation_placement": "Top-level composition that already owns both Framework Integration and Runtime services. The Integration module remains independent of Runtime Persistence/Support headers.",
+    "new_production_module_required": false,
+    "architecture_allowlist_change_required": false
+  },
+  "stage_b_handoff": {
+    "required_before_coding": [
+      "Keep current architecture allowlist unchanged",
+      "Keep production module inventory unchanged",
+      "Use one outer generation lease for all planes",
+      "Use one atomic authoritative generation package",
+      "Do not add generation to SaveContext unless participant semantics demonstrably require it"
+    ],
+    "implementation_obligations": [
+      "Introduce SaveGenerationId and whole-generation envelope types in Integration",
+      "Implement production save-generation coordinator and production ISaveBarrier semantics",
+      "Add safe-point/blocker preflight supplied by composition",
+      "Add IRuntimeSaveGenerationPort with opaque Runtime plane payloads",
+      "Capture Framework SaveGame under the same outer lease",
+      "Encode and atomically publish one generation package",
+      "Extend goal5_save_generation_contract.py from design checks to production/evidence checks",
+      "Add module-level coordination tests before 5.3.C fault matrix"
+    ],
+    "status": "COMPLETE",
+    "completed_obligations": [
+      "Introduce SaveGenerationId and whole-generation envelope types in Integration",
+      "Implement production save-generation coordinator and production ISaveBarrier semantics",
+      "Add safe-point/blocker preflight supplied by composition",
+      "Add IRuntimeSaveGenerationPort with opaque Runtime plane payloads",
+      "Capture Framework SaveGame under the same outer lease",
+      "Encode and atomically publish one generation package",
+      "Extend goal5_save_generation_contract.py from design checks to production/evidence checks",
+      "Add module-level coordination tests before 5.3.C fault matrix"
+    ]
+  },
+  "implementation": {
+    "generation_header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+    "generation_source": "EngineFramework/IntegrationLayer/Integration/src/save_generation.cpp",
+    "runtime_wire_header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+    "runtime_wire_source": "EngineRuntime/Support/src/runtime_packages.cpp",
+    "coordinator": "SaveGenerationCoordinator::CaptureAndCommit",
+    "barrier": "SaveGenerationBarrier",
+    "runtime_port": "IRuntimeSaveGenerationPort",
+    "runtime_port_adapter": "CallbackRuntimeSaveGenerationPort",
+    "generation_store": "ISaveGenerationStore",
+    "production_file_store": "FileSaveGenerationStore",
+    "outer_encoder": "EncodeSaveGenerationPackage",
+    "outer_decoder": "DecodeSaveGenerationPackage",
+    "runtime_time_encoder": "EncodeRuntimeTimeCheckpointPackage",
+    "runtime_persistence_encoder": "EncodeRuntimePersistencePackage",
+    "runtime_persistence_capture": "CaptureRuntimePersistenceSnapshot",
+    "test_target": "EpidemicGameFrameworkSaveGenerationTests",
+    "test_source": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+    "test_symbol": "RunSaveGenerationTests",
+    "public_save_context_changed": false,
+    "architecture_allowlist_changed": false,
+    "production_module_count_changed": false
+  },
+  "stage_c_handoff": {
+    "status": "READY",
+    "remaining_scope": [
+      "Add controlled fault seams for barrier acquire, Framework capture, Runtime plane capture, Time checkpoint, outer encode, storage commit, and fallible barrier-release bookkeeping where applicable",
+      "Expand save coordination failure matrix and accepted-work exactly-once qualification",
+      "Add adversarial prohibited-mutation-during-capture test",
+      "Run final 5.3 gate and affected Windows matrix"
+    ]
+  }
+}

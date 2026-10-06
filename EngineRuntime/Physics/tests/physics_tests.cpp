@@ -468,6 +468,34 @@ bool TestRaycastRespectsDirectionAndMaxDistance()
            miss_distance && !miss_distance.Value().hit;
 }
 
+bool TestEqualDistanceRaycastUsesStableBodyOrder()
+{
+    PhysicsRuntime runtime;
+    const CollisionShapeId shape{404};
+    if (!RegisterDefaultShape(runtime, shape, 2.0f)) return false;
+    runtime.SetAllocatorStateForTesting(1001, 1, 9001);
+    const auto first = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+    runtime.SetAllocatorStateForTesting(1, 2, 9002);
+    const auto second = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+    if (!first || !second) return false;
+    const RaycastQuery ray{Vec3{-5.0f, 1.0f, 1.0f}, Vec3{1.0f, 0.0f, 0.0f}, 10.0f};
+    const auto verify = [&] {
+        const auto native = runtime.Raycast(ray);
+        const auto backend = runtime.RaycastBackend(ray);
+        return native && backend && native.Value().hit && backend.Value().hit &&
+               native.Value().body == second.Value() &&
+               backend.Value().body == BackendBodyHandle{9002};
+    };
+    if (!verify()) return false;
+    for (std::uint64_t i = 0; i != 128; ++i)
+    {
+        auto desc = MakeBodyDesc(shape, PhysicsBodyType::Static);
+        if (!runtime.CreateBody(desc)) return false;
+        if (!verify()) return false;
+    }
+    return verify();
+}
+
 bool TestExternalBackendLifecycleAndSynchronization()
 {
     auto backend = std::make_shared<JournalBackend>();
@@ -1278,6 +1306,7 @@ int main()
     if (!TestTransformSourceAndSinkSynchronization()) return 5;
     if (!TestContactBufferStoresExplicitBeginPersistEnd()) return 6;
     if (!TestRaycastRespectsDirectionAndMaxDistance()) return 7;
+    if (!TestEqualDistanceRaycastUsesStableBodyOrder()) return 67;
     if (!TestExternalBackendLifecycleAndSynchronization()) return 8;
     if (!TestExternalBackendContactsArePublished()) return 15;
     if (!TestExternalBackendInvalidContactIsDroppedAtomically()) return 16;

@@ -73,6 +73,14 @@ jobs:
           python tools/audit_goal5_restore_members.py --check
           python tools/check_goal5_private_surface.py --check
           python tools/check_goal5_private_surface.py --self-test
+          python docs/freeze/goal5_determinism_inventory.py --check
+          python docs/freeze/goal5_determinism_inventory.py --self-test
+          python docs/freeze/goal5_determinism_contract.py --check
+          python docs/freeze/goal5_determinism_contract.py --self-test
+          python docs/freeze/goal5_evidence_quality.py --check
+          python docs/freeze/goal5_evidence_quality.py --self-test
+          python docs/freeze/goal5_contract.py --check
+          python docs/freeze/goal5_contract.py --self-test
 
   layer-matrix:
     needs: freeze-contract

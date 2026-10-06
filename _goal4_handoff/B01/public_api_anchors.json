@@ -118,9 +118,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -174,9 +174,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -188,9 +188,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:612::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:612::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -230,9 +230,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:389::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:465::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:389::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:465::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -272,9 +272,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -286,9 +286,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -384,9 +384,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -496,9 +496,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:159::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:235::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -566,9 +566,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -664,9 +664,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -734,9 +734,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:115::denied.Set<int>(fact_type.Value(), subject, {}, 5, FactPersistence::Persistent);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:191::denied.Set<int>(fact_type.Value(), subject, {}, 5, FactPersistence::Persistent);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -818,9 +818,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:82::if (event.value == 1)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:158::if (event.value == 1)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:82::if (event.value == 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:158::if (event.value == 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -888,9 +888,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -958,9 +958,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1000,9 +1000,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1294,9 +1294,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::remove.Remove(key);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:220::remove.Remove(key);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:145::if (!service.Commit(std::move(remove), context))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:221::if (!service.Commit(std::move(remove), context))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1490,9 +1490,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1532,9 +1532,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1644,9 +1644,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!bad_schema.facts.empty())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:379::if (!bad_schema.facts.empty())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!bad_schema.facts.empty())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:379::if (!bad_schema.facts.empty())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1658,9 +1658,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:232::if (!service.FindFact(timed_key))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:308::if (!service.FindFact(timed_key))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:232::if (!service.FindFact(timed_key))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:308::if (!service.FindFact(timed_key))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1854,9 +1854,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1910,9 +1910,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:449::if (!fault_fact)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:525::if (!fault_fact)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:449::if (!fault_fact)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:525::if (!fault_fact)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2036,9 +2036,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2162,9 +2162,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2274,9 +2274,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2316,9 +2316,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:109::if (service.HistoryCount() != 2)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:185::if (service.HistoryCount() != 2)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:109::if (service.HistoryCount() != 2)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:185::if (service.HistoryCount() != 2)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2526,9 +2526,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:159::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:235::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2666,9 +2666,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2820,9 +2820,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2876,9 +2876,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2918,9 +2918,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:154::if (!value || *value != 42 || service.HistoryCount() != 2)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:230::if (!value || *value != 42 || service.HistoryCount() != 2)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:154::if (!value || *value != 42 || service.HistoryCount() != 2)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:230::if (!value || *value != 42 || service.HistoryCount() != 2)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2932,9 +2932,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2946,9 +2946,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3044,9 +3044,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:137::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:213::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:137::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:213::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3226,9 +3226,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:114::auto denied = service.BeginTransaction(other);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:190::auto denied = service.BeginTransaction(other);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3254,9 +3254,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:330::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord> records) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:406::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord> records) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:332::if (records.empty())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:408::if (records.empty())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3268,9 +3268,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:485::const auto before_diag = fault_service.GetDiagnostics();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:561::const auto before_diag = fault_service.GetDiagnostics();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3324,9 +3324,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3380,9 +3380,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3590,9 +3590,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3702,9 +3702,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3758,9 +3758,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3912,9 +3912,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3940,9 +3940,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -4024,9 +4024,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -4178,9 +4178,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -4290,9 +4290,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:332::if (records.empty())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:408::if (records.empty())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:332::if (records.empty())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:408::if (records.empty())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -4416,9 +4416,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -4458,9 +4458,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:456::const auto before = fault_service.CaptureSnapshot();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:532::const auto before = fault_service.CaptureSnapshot();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:457::if (!before)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:533::if (!before)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"

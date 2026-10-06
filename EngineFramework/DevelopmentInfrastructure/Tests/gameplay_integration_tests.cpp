@@ -457,8 +457,18 @@ int main()
 
     // H61: replay before cursor acknowledgement reuses the same tracked reward execution.
     auto death_checkpoint = death_rewards.CaptureCheckpoint();
+    // A durable cursor must follow its restored journal's new observation epoch.
+    const auto combat_checkpoint = combat.CaptureSnapshot();
+    if (!combat.RestoreSnapshot(combat_checkpoint) ||
+        combat.LatestChangeCursor().epoch == death_checkpoint.cursor.epoch) return 171;
     death_checkpoint.cursor.sequence = 0;
     if (!death_rewards.RestoreCheckpoint(death_checkpoint)) return 68;
+    const auto rebound_death_checkpoint = death_rewards.CaptureCheckpoint();
+    if (rebound_death_checkpoint.cursor.epoch != combat.LatestChangeCursor().epoch) return 172;
+    auto invalid_death_checkpoint = rebound_death_checkpoint;
+    invalid_death_checkpoint.cursor.sequence = combat.LatestChangeCursor().sequence + 1;
+    if (death_rewards.RestoreCheckpoint(invalid_death_checkpoint) ||
+        death_rewards.CaptureCheckpoint().cursor != rebound_death_checkpoint.cursor) return 173;
     auto replayed = death_rewards.ProcessChanges();
     if (!replayed || replayed.Value().size() != 1 || replayed.Value().front() != reward_execution ||
         loot.GetDiagnostics().bundles != loot_bundles_after_first) return 69;

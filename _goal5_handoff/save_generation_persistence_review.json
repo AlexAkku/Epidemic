@@ -1,0 +1,139 @@
+{
+  "candidates": {
+    "G5P-623979e0630ae0b4": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-623979e0630ae0b4",
+      "capture_contract": "N/A: coordination/helper state has no independent durable capture contract",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A",
+      "durable_storage": "N/A",
+      "evidence": [
+        {
+          "contract_assertion": "Callback-backed Runtime port stores only process-local capture functions. Those callbacks must never enter durable representation.",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+          "test_symbol": "RunSaveGenerationTests",
+          "test_target": "EpidemicGameFrameworkSaveGenerationTests"
+        }
+      ],
+      "migration_policy": "N/A",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "participant_id": "N/A",
+      "persistence_role": "RECONSTRUCTED_TRANSIENT",
+      "qualified_symbol": "epidemic::gameplay::integration::CallbackRuntimeSaveGenerationPort",
+      "rationale": "Callback-backed Runtime port stores only process-local capture functions. Those callbacks must never enter durable representation.",
+      "reconciliation": "N/A",
+      "restore_contract": "N/A: rebuilt by fresh composition rather than restored from durable bytes",
+      "review_status": "REVIEWED",
+      "risk_review": {
+        "PROCESS_LOCAL_CALLBACK": {
+          "decision": "EXCLUDED_FROM_DURABLE_REPRESENTATION",
+          "rationale": "std::function capture callbacks are process-local composition state and are recreated after process start."
+        }
+      },
+      "save_plane": "NONE",
+      "transient_rebuild": "Fresh composition recreates callbacks from the current Runtime service instances."
+    },
+    "G5P-2d46725e003682f3": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-2d46725e003682f3",
+      "capture_contract": "N/A: coordination/helper state has no independent durable capture contract",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A",
+      "durable_storage": "N/A",
+      "evidence": [
+        {
+          "contract_assertion": "Private outer-generation encoder scratch state is temporary serialization machinery. It has no independent durable identity or ownership.",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+          "test_symbol": "RunSaveGenerationTests",
+          "test_target": "EpidemicGameFrameworkSaveGenerationTests"
+        }
+      ],
+      "migration_policy": "N/A",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "participant_id": "N/A",
+      "persistence_role": "RECONSTRUCTED_TRANSIENT",
+      "qualified_symbol": "epidemic::gameplay::integration::WireWriter",
+      "rationale": "Private outer-generation encoder scratch state is temporary serialization machinery. It has no independent durable identity or ownership.",
+      "reconciliation": "N/A",
+      "restore_contract": "N/A: rebuilt by fresh composition rather than restored from durable bytes",
+      "review_status": "REVIEWED",
+      "risk_review": {},
+      "save_plane": "NONE",
+      "transient_rebuild": "Fresh capture constructs a new encoder from canonical package values."
+    },
+    "G5P-3025cbbddca523da": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-3025cbbddca523da",
+      "capture_contract": "N/A: coordination/helper state has no independent durable capture contract",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A",
+      "durable_storage": "N/A",
+      "evidence": [
+        {
+          "contract_assertion": "Injected Runtime capture protocol is a composition boundary, not durable state. The authoritative Runtime Time/Persistence state remains in the Runtime planes.",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+          "test_symbol": "RunSaveGenerationTests",
+          "test_target": "EpidemicGameFrameworkSaveGenerationTests"
+        }
+      ],
+      "migration_policy": "N/A",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "participant_id": "N/A",
+      "persistence_role": "RECONSTRUCTED_TRANSIENT",
+      "qualified_symbol": "epidemic::gameplay::integration::IRuntimeSaveGenerationPort",
+      "rationale": "Injected Runtime capture protocol is a composition boundary, not durable state. The authoritative Runtime Time/Persistence state remains in the Runtime planes.",
+      "reconciliation": "N/A",
+      "restore_contract": "N/A: rebuilt by fresh composition rather than restored from durable bytes",
+      "review_status": "REVIEWED",
+      "risk_review": {},
+      "save_plane": "NONE",
+      "transient_rebuild": "Fresh composition binds a new Runtime port implementation to current Runtime services."
+    },
+    "G5P-bd9ffedc756a7b66": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-bd9ffedc756a7b66",
+      "capture_contract": "N/A: coordination/helper state has no independent durable capture contract",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A",
+      "durable_storage": "N/A",
+      "evidence": [
+        {
+          "contract_assertion": "SaveGenerationBarrier owns only transient quiescence leases, thread identity, callbacks and the currently active capture generation. No barrier state survives save/load.",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+          "test_symbol": "RunSaveGenerationTests",
+          "test_target": "EpidemicGameFrameworkSaveGenerationTests"
+        }
+      ],
+      "migration_policy": "N/A",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "participant_id": "N/A",
+      "persistence_role": "RECONSTRUCTED_TRANSIENT",
+      "qualified_symbol": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "rationale": "SaveGenerationBarrier owns only transient quiescence leases, thread identity, callbacks and the currently active capture generation. No barrier state survives save/load.",
+      "reconciliation": "N/A",
+      "restore_contract": "N/A: rebuilt by fresh composition rather than restored from durable bytes",
+      "review_status": "REVIEWED",
+      "risk_review": {
+        "PROCESS_LOCAL_CALLBACK": {
+          "decision": "EXCLUDED_FROM_DURABLE_REPRESENTATION",
+          "rationale": "Quiescence/preflight callbacks and active leases are process-local coordination state and are never serialized."
+        }
+      },
+      "save_plane": "NONE",
+      "transient_rebuild": "Fresh composition creates an inactive barrier and binds new quiescence/preflight callbacks; no old lease or thread identity is reused."
+    }
+  },
+  "schema_version": 1
+}

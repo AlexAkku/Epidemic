@@ -2,7 +2,7 @@
   "candidate_counts": {
     "by_layer": {
       "EngineBase": 5,
-      "EngineFramework": 383,
+      "EngineFramework": 384,
       "EngineRuntime": 115
     },
     "by_module": {
@@ -43,7 +43,7 @@
       "EngineFramework/GameplayWorldStateOwners/Progression": 8,
       "EngineFramework/GameplayWorldStateOwners/ResourcesProduction": 9,
       "EngineFramework/GameplayWorldStateOwners/RolesJobs": 4,
-      "EngineFramework/GameplayWorldStateOwners/SaveGame": 20,
+      "EngineFramework/GameplayWorldStateOwners/SaveGame": 21,
       "EngineFramework/GameplayWorldStateOwners/Simulation": 7,
       "EngineFramework/GameplayWorldStateOwners/Society": 6,
       "EngineFramework/GameplayWorldStateOwners/Traversal": 5,
@@ -79,7 +79,7 @@
       "EngineRuntime/Time": 5,
       "EngineRuntime/World": 5
     },
-    "total": 503
+    "total": 504
   },
   "candidates": [
     {
@@ -441,7 +441,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -453,9 +453,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -463,7 +463,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -475,9 +475,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -485,7 +485,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -498,9 +498,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -508,7 +508,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -520,9 +520,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -530,7 +530,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -542,9 +542,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -576,7 +576,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -588,9 +588,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -598,7 +598,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -610,9 +610,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -620,7 +620,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -633,9 +633,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -643,7 +643,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -655,9 +655,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -665,7 +665,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -677,9 +677,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -709,7 +709,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -721,9 +721,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -731,7 +731,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -743,9 +743,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -753,7 +753,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -766,9 +766,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -776,7 +776,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -788,9 +788,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -798,7 +798,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -810,9 +810,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -823,7 +823,7 @@
       "qualified_symbol": "epidemic::gameplay::facts::FlattenedEvent",
       "related_methods": [],
       "risk_flags": [],
-      "source_line": 121,
+      "source_line": 140,
       "source_path": "EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp",
       "state_type": "FlattenedEvent",
       "visibility": "PRIVATE"
@@ -846,7 +846,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -858,9 +858,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -868,7 +868,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -880,9 +880,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -890,7 +890,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -903,9 +903,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -913,7 +913,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -925,9 +925,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -935,7 +935,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -947,9 +947,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -981,7 +981,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -993,9 +993,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1003,7 +1003,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1015,9 +1015,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1025,7 +1025,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -1038,9 +1038,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1048,7 +1048,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1060,9 +1060,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1070,7 +1070,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -1082,9 +1082,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1120,7 +1120,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1132,9 +1132,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1142,7 +1142,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1154,9 +1154,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1164,7 +1164,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -1177,9 +1177,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1187,7 +1187,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1199,9 +1199,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1209,7 +1209,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -1221,9 +1221,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1252,7 +1252,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1264,9 +1264,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1274,7 +1274,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1286,9 +1286,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1296,7 +1296,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
@@ -1309,9 +1309,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1319,7 +1319,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore.",
             "docs/EngineFramework/modules/facts.md:7::Authoritative state: current fact records, registered fact/event types, pending submitted batches, sequence/generator state and retained history. Derived state consists of lookup/i"
           ],
@@ -1331,9 +1331,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -1341,7 +1341,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
             "docs/EngineFramework/modules/facts.md:15::Failure and atomicity: failed transaction staging/commit does not publish half-state. Subscriber failure follows the documented isolation policy and must not corrupt authoritative",
             "docs/EngineFramework/modules/facts.md:5::Responsibility: typed fact state, typed gameplay events, transactions/batches, subscriber dispatch, retained history/journal cursors, type registration/freeze and snapshot/restore."
           ],
@@ -1353,9 +1353,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
               ],
               "target": "EpidemicGameplayFactsTests"
             }
@@ -12173,7 +12173,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12185,9 +12185,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12195,7 +12195,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12207,9 +12207,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12217,7 +12217,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -12230,9 +12230,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12240,7 +12240,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12252,9 +12252,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12262,7 +12262,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -12274,9 +12274,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12319,7 +12319,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12331,9 +12331,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12341,7 +12341,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12353,9 +12353,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12363,7 +12363,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -12376,9 +12376,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12386,7 +12386,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12398,9 +12398,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12408,7 +12408,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -12420,9 +12420,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12460,7 +12460,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12472,9 +12472,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12482,7 +12482,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12494,9 +12494,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12504,7 +12504,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -12517,9 +12517,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12527,7 +12527,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12539,9 +12539,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12549,7 +12549,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -12561,9 +12561,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12594,7 +12594,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12606,9 +12606,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12616,7 +12616,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12628,9 +12628,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12638,7 +12638,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -12651,9 +12651,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12661,7 +12661,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12673,9 +12673,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12683,7 +12683,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -12695,9 +12695,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12729,7 +12729,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12741,9 +12741,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12751,7 +12751,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12763,9 +12763,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12773,7 +12773,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -12786,9 +12786,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12796,7 +12796,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12808,9 +12808,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12818,7 +12818,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -12830,9 +12830,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12865,7 +12865,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12877,9 +12877,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12887,7 +12887,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12899,9 +12899,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12909,7 +12909,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -12922,9 +12922,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12932,7 +12932,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -12944,9 +12944,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -12954,7 +12954,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -12966,9 +12966,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -13001,7 +13001,7 @@
       "goal4_evidence": [
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -13013,9 +13013,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -13023,7 +13023,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -13035,9 +13035,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -13045,7 +13045,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
@@ -13058,9 +13058,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -13068,7 +13068,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
             "docs/EngineFramework/Entities.md:21::## Authoritative state",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state"
           ],
@@ -13080,9 +13080,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -13090,7 +13090,7 @@
         },
         {
           "anchors": [
-            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+            "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
             "docs/EngineFramework/Entities.md:37::## Persistent and transient state",
             "docs/EngineFramework/Entities.md:43::EntitySnapshot persists records, pending destruction provenance, ID generator, revision and journal continuity. Restore validates IDs, archetypes, parts, revisions, pending referen"
           ],
@@ -13102,9 +13102,9 @@
           ],
           "tests": [
             {
-              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
               "assertions": [
-                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+                "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
               ],
               "target": "EpidemicGameFrameworkEntitiesTests"
             }
@@ -28109,7 +28109,7 @@
       "qualified_symbol": "epidemic::gameplay::savegame::ISaveMigration",
       "related_methods": [],
       "risk_flags": [],
-      "source_line": 198,
+      "source_line": 202,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
       "state_type": "ISaveMigration",
       "visibility": "PUBLIC"
@@ -28359,7 +28359,7 @@
       "qualified_symbol": "epidemic::gameplay::savegame::MigrationKey",
       "related_methods": [],
       "risk_flags": [],
-      "source_line": 257,
+      "source_line": 261,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
       "state_type": "MigrationKey",
       "visibility": "PUBLIC"
@@ -28486,7 +28486,7 @@
       "risk_flags": [
         "RAW_POINTER"
       ],
-      "source_line": 250,
+      "source_line": 254,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
       "state_type": "ParticipantRegistration",
       "visibility": "PUBLIC"
@@ -28611,7 +28611,7 @@
       "qualified_symbol": "epidemic::gameplay::savegame::SaveGameDiagnostics",
       "related_methods": [],
       "risk_flags": [],
-      "source_line": 207,
+      "source_line": 211,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
       "state_type": "SaveGameDiagnostics",
       "visibility": "PUBLIC"
@@ -28863,7 +28863,7 @@
       "risk_flags": [
         "RAW_POINTER"
       ],
-      "source_line": 219,
+      "source_line": 223,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
       "state_type": "SaveGameOrchestrator",
       "visibility": "PUBLIC"
@@ -29490,9 +29490,134 @@
       "risk_flags": [
         "RAW_POINTER"
       ],
-      "source_line": 925,
+      "source_line": 939,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp",
       "state_type": "StageRecord",
+      "visibility": "PRIVATE"
+    },
+    {
+      "candidate_id": "G5P-a37ea83d6843958c",
+      "candidate_kinds": [
+        "SAVE_PARTICIPANT"
+      ],
+      "dossier_persistence_review": {
+        "status": "REVIEWED"
+      },
+      "durable_fields": [],
+      "goal4_evidence": [
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+            "docs/EngineFramework/modules/save_game.md:90::- G4-CRITERION-PERSIST-CANDIDATE: `PERSIST-CANDIDATE` was reviewed for this module against its authoritative state, life"
+          ],
+          "criterion": "PERSIST-CANDIDATE",
+          "rationale": "B07 reviewed PERSIST-CANDIDATE for SaveGame against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkSaveGameTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
+              ],
+              "target": "EpidemicGameFrameworkSaveGameTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+            "docs/EngineFramework/modules/save_game.md:92::- G4-CRITERION-PERSIST-CONTINUITY: `PERSIST-CONTINUITY` was reviewed for this module against its authoritative state, li"
+          ],
+          "criterion": "PERSIST-CONTINUITY",
+          "rationale": "B07 reviewed PERSIST-CONTINUITY for SaveGame against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkSaveGameTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
+              ],
+              "target": "EpidemicGameFrameworkSaveGameTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+            "docs/EngineFramework/modules/save_game.md:91::- G4-CRITERION-PERSIST-FAILURE: `PERSIST-FAILURE` was reviewed for this module against its authoritative state, lifecycl"
+          ],
+          "criterion": "PERSIST-FAILURE",
+          "rationale": "B07 reviewed PERSIST-FAILURE for SaveGame against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkSaveGameTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
+              ],
+              "target": "EpidemicGameFrameworkSaveGameTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+            "docs/EngineFramework/modules/save_game.md:88::- G4-CRITERION-PERSIST-SNAPSHOT: `PERSIST-SNAPSHOT` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-SNAPSHOT",
+          "rationale": "B07 reviewed PERSIST-SNAPSHOT for SaveGame against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkSaveGameTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
+              ],
+              "target": "EpidemicGameFrameworkSaveGameTests"
+            }
+          ]
+        },
+        {
+          "anchors": [
+            "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+            "docs/EngineFramework/modules/save_game.md:89::- G4-CRITERION-PERSIST-VALIDATE: `PERSIST-VALIDATE` was reviewed for this module against its authoritative state, lifecy"
+          ],
+          "criterion": "PERSIST-VALIDATE",
+          "rationale": "B07 reviewed PERSIST-VALIDATE for SaveGame against the exact module contract and owned observable regression.",
+          "status": "PASS",
+          "test_targets": [
+            "EpidemicGameFrameworkSaveGameTests"
+          ],
+          "tests": [
+            {
+              "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)",
+              "assertions": [
+                "EngineFramework/DevelopmentInfrastructure/Tests/save_game_tests.cpp:70::if (fail_restore)"
+              ],
+              "target": "EpidemicGameFrameworkSaveGameTests"
+            }
+          ]
+        }
+      ],
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "qualified_symbol": "epidemic::gameplay::savegame::ValidationScope",
+      "related_methods": [],
+      "risk_flags": [],
+      "source_line": 837,
+      "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp",
+      "state_type": "ValidationScope",
       "visibility": "PRIVATE"
     },
     {
@@ -29999,7 +30124,7 @@
       "risk_flags": [
         "RAW_POINTER"
       ],
-      "source_line": 296,
+      "source_line": 300,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
       "state_type": "SnapshotParticipant",
       "visibility": "PUBLIC"
@@ -30128,7 +30253,7 @@
         "RestoreSnapshot"
       ],
       "risk_flags": [],
-      "source_line": 17,
+      "source_line": 18,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/internal/Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h",
       "state_type": "SnapshotRestoreAccess",
       "visibility": "PRIVATE"
@@ -30253,7 +30378,7 @@
       "qualified_symbol": "epidemic::gameplay::savegame::detail::SnapshotReader",
       "related_methods": [],
       "risk_flags": [],
-      "source_line": 76,
+      "source_line": 79,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/internal/Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h",
       "state_type": "SnapshotReader",
       "visibility": "PRIVATE"
@@ -30378,7 +30503,7 @@
       "qualified_symbol": "epidemic::gameplay::savegame::detail::SnapshotValueCodec",
       "related_methods": [],
       "risk_flags": [],
-      "source_line": 96,
+      "source_line": 99,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/internal/Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h",
       "state_type": "SnapshotValueCodec",
       "visibility": "PRIVATE"
@@ -30505,7 +30630,7 @@
       "risk_flags": [
         "RAW_POINTER"
       ],
-      "source_line": 68,
+      "source_line": 71,
       "source_path": "EngineFramework/GameplayWorldStateOwners/SaveGame/internal/Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h",
       "state_type": "SnapshotWriter",
       "visibility": "PRIVATE"

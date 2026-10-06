@@ -4604,6 +4604,22 @@
       "scope": "epidemic::gameplay::narrative::NarrativeService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterConditionResolver(NarrativeConditionTypeId type,const INarrativeConditionResolver&resolver);"
     },
+    "9ca97e2efaa2a183": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback",
+      "review_rationale": "Restore validation is private and dependency ordered. No-throw Begin/End share a workspace view until the last participant exits; every exit discards candidates without changing live owners. Stage/Commit remain separate.",
+      "scope": "epidemic::gameplay::savegame::ISaveParticipant",
+      "signature": "virtual void EndRestoreValidation()noexcept"
+    },
     "9ce39952afa84689": {
       "classification": "FACTORY",
       "classification_status": "REVIEWED",
@@ -5619,6 +5635,22 @@
       "review_rationale": "B07 reviewed this callable against the current public header, module contract and owned module-specific regression suite.",
       "scope": "epidemic::gameplay::narrative::NarrativeService",
       "signature": "[[nodiscard]] foundation::Result<void> CompleteObjective(NarrativeObjectiveId objective,GameplayContext context={});"
+    },
+    "bb418d00f29f67bc": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values",
+      "review_rationale": "Restore validation is private and dependency ordered. No-throw Begin/End share a workspace view until the last participant exits; every exit discards candidates without changing live owners. Stage/Commit remain separate.",
+      "scope": "epidemic::gameplay::savegame::ISaveParticipant",
+      "signature": "virtual void BeginRestoreValidation()noexcept"
     },
     "bcb67c444dbdcdd8": {
       "classification": "QUERY",
@@ -8212,6 +8244,11 @@
       "rationale": "The callable consumes or returns module-owned identities, references or cursors whose stale/unknown behavior is part of the reviewed local contract.",
       "status": "REVIEWED"
     },
+    "63691b644a05208c": {
+      "callable_id": "9ca97e2efaa2a183",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "status": "REVIEWED"
+    },
     "645fda626ba64201": {
       "callable": "epidemic::gameplay::narrative::NarrativeService::[[nodiscard]] foundation::Result<void> MarkObjectiveOptionalMissed(NarrativeObjectiveId objective,GameplayContext context={});",
       "callable_id": "3785291e04c495da",
@@ -8561,6 +8598,11 @@
       "evidence": "EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:131",
       "module": "EngineFramework/GameplayWorldStateOwners/Dialogue",
       "rationale": "The callable consumes or returns module-owned identities, references or cursors whose stale/unknown behavior is part of the reviewed local contract.",
+      "status": "REVIEWED"
+    },
+    "ce32e1ee593a4fb2": {
+      "callable_id": "bb418d00f29f67bc",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
       "status": "REVIEWED"
     },
     "d0b1f76e52663b49": {

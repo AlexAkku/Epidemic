@@ -1,6 +1,7 @@
 #include "Epidemic/GameFramework/Facts/gameplay_facts.h"
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include <stdexcept>
 #include <thread>
@@ -56,6 +57,81 @@ foundation::Result<TestEvent> DecodeEvent(std::span<const std::byte> bytes, std:
 
 int main()
 {
+    // G5-DET-FACTS-001: hash-table insertion order must not assign event identity.
+    const bool expiration_order_ok = [] {
+        GameplayFactsService source;
+        const auto domain = GameplayDomainId::FromString("det.expiry");
+        const auto type = source.RegisterFactType<int>("det.expiry.fact", domain);
+        if (!type) return false;
+        GameplayContext context; context.tick = GameplayTickId{1}; context.time = GameplayTimePoint{1};
+        auto transaction = source.BeginTransaction(domain);
+        std::vector<FactKey> expected;
+        for (int index = 0; index < 32; ++index)
+        {
+            const GameplayObjectRef subject{domain, GameplayObjectId::FromString("det.subject." + std::to_string(index))};
+            const GameplayObjectRef scope{domain, GameplayObjectId::FromString("det.scope." + std::to_string(index % 3))};
+            expected.push_back({type.Value(), subject, scope});
+            transaction.Set<int>(type.Value(), subject, scope, index, FactPersistence::Timed, GameplayTimePoint{50});
+        }
+        if (!source.Commit(std::move(transaction), context) || !source.Dispatch()) return false;
+        const auto captured = source.CaptureSnapshot();
+        if (!captured) return false;
+        std::sort(expected.begin(), expected.end(), [](const auto& left, const auto& right) {
+            return std::tie(left.type, left.subject, left.scope) < std::tie(right.type, right.subject, right.scope);
+        });
+        std::vector<std::uint64_t> control_sequences;
+        for (int variant = 0; variant < 2; ++variant)
+        {
+            GameplayFactsService restored;
+            if (!restored.RegisterFactType<int>("det.expiry.fact", domain)) return false;
+            auto snapshot = captured.Value();
+            if (variant) std::reverse(snapshot.facts.begin(), snapshot.facts.end());
+            if (!restored.RestoreSnapshot(std::move(snapshot))) return false;
+            std::vector<FactKey> removed;
+            std::vector<std::uint64_t> sequences;
+            const auto subscription = restored.Subscribe<FactChange>(restored.FactChangedEventType(),
+                SubscriberId::FromString("det.expiry.observer"), 0,
+                [&](const EventEnvelope& envelope, const FactChange& change) {
+                    if (change.kind == FactChangeKind::Removed) { removed.push_back(change.key); sequences.push_back(envelope.sequence); }
+                });
+            if (!subscription) return false;
+            context.time = GameplayTimePoint{50};
+            const auto expired = restored.ExpireDueFacts(context.time, context);
+            if (!expired || expired.Value() != expected.size() || !restored.Dispatch() || removed != expected) return false;
+            if (!variant) control_sequences = sequences;
+            else if (sequences != control_sequences) return false;
+        }
+        return true;
+    }();
+    // G5-DET-FACTS-002: one wave cannot accept ambiguous full ordering keys.
+    const bool batch_collision_ok = [] {
+        GameplayFactsService owner;
+        const auto domain = GameplayDomainId::FromString("det.batch");
+        const auto type = owner.RegisterEventType<TestEvent>("det.batch.event", domain);
+        if (!type) return false;
+        const auto producer = ProducerId::FromString("det.batch.producer");
+        GameplayContext context; context.tick = GameplayTickId{42};
+        const GameplayObjectRef subject{domain, GameplayObjectId::FromString("det.batch.subject")};
+        std::vector<int> delivered;
+        const auto subscription = owner.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString("det.batch.observer"), 0,
+            [&](const EventEnvelope&, const TestEvent& event) { delivered.push_back(event.value); });
+        if (!subscription) return false;
+        auto accepted = owner.CreateBatch(producer, 7); accepted.Publish(type.Value(), context, subject, TestEvent{1});
+        auto collision = owner.CreateBatch(producer, 7); collision.Publish(type.Value(), context, subject, TestEvent{2});
+        if (!owner.SubmitBatch(std::move(accepted))) return false;
+        const auto before = owner.GetDiagnostics().published_events;
+        const auto rejected = owner.SubmitBatch(std::move(collision));
+        if (rejected || rejected.GetError().code != "gameplay.event_batch_order_collision" || owner.GetDiagnostics().published_events != before) return false;
+        if (!owner.Dispatch() || delivered != std::vector<int>{1}) return false;
+        // A new wave and a distinct explicit tick are legal, not blanket producer bans.
+        auto next_wave = owner.CreateBatch(producer, 7); next_wave.Publish(type.Value(), context, subject, TestEvent{3});
+        auto distinct_tick = owner.CreateBatch(producer, 7); ++context.tick.value;
+        distinct_tick.Publish(type.Value(), context, subject, TestEvent{4});
+        if (!owner.SubmitBatch(std::move(next_wave)) || !owner.SubmitBatch(std::move(distinct_tick)) || !owner.Dispatch()) return false;
+        return delivered == std::vector<int>({1, 3, 4});
+    }();
+    std::cerr << "G5-DET-FACTS-001=" << expiration_order_ok << " G5-DET-FACTS-002=" << batch_collision_ok << '\n';
+    if (!expiration_order_ok || !batch_collision_ok) return 110;
     GameplayFactsService service;
     const auto owner = GameplayDomainId::FromString("framework.test");
     const auto other = GameplayDomainId::FromString("framework.other");

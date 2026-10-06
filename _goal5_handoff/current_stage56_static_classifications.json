@@ -1,0 +1,57 @@
+{
+  "status": "PASS_CLASSIFIED_CHECKER_LIMITATIONS",
+  "raw_wrapper_status": "FAIL",
+  "checks": 36,
+  "successful_checks": 32,
+  "classifications": {
+    "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp/cppcheck": {
+      "raw_result": "FAIL",
+      "finding_ids": [
+        "throwInEntryPoint"
+      ],
+      "stdout_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_DevelopmentInfrastructure_Tests_facts_tests.cpp.cppcheck.stdout.log",
+      "stderr_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_DevelopmentInfrastructure_Tests_facts_tests.cpp.cppcheck.stderr.log"
+    },
+    "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp/cppcheck": {
+      "raw_result": "FAIL",
+      "finding_ids": [
+        "constStatement",
+        "passedByValue"
+      ],
+      "stdout_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_DevelopmentInfrastructure_Tests_gameplayintegration_save_participant_tests.cpp.cppcheck.stdout.log",
+      "stderr_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_DevelopmentInfrastructure_Tests_gameplayintegration_save_participant_tests.cpp.cppcheck.stderr.log"
+    },
+    "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp/cppcheck": {
+      "raw_result": "FAIL",
+      "finding_ids": [
+        "constStatement",
+        "passedByValue",
+        "returnByReference"
+      ],
+      "stdout_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_DevelopmentInfrastructure_Tests_save_participant_mechanics_tests.cpp.cppcheck.stdout.log",
+      "stderr_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_DevelopmentInfrastructure_Tests_save_participant_mechanics_tests.cpp.cppcheck.stderr.log"
+    },
+    "EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp/clang-tidy": {
+      "raw_result": "FAIL",
+      "finding_ids": [
+        "bugprone-exception-escape",
+        "clang-diagnostic-error"
+      ],
+      "stdout_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_IntegrationLayer_GameplayIntegration_src_gameplay_adapters.cpp.clang-tidy.stdout.log",
+      "stderr_log": "E:\\Epidemic engine v1.0\\_ai_logs\\static\\EngineFramework_IntegrationLayer_GameplayIntegration_src_gameplay_adapters.cpp.clang-tidy.stderr.log"
+    }
+  },
+  "rationales": {
+    "throwInEntryPoint": "Unchanged historical subscriber callback deliberately throws. Facts.Dispatch catches callback exceptions; executable verifies healthy subscriber continuation.",
+    "constStatement": "Requires-expression probes member existence; unevaluated operands are not redundant runtime statements.",
+    "passedByValue": "Test contract receives an expected dependency vector by value; this is a fixture-only performance suggestion with no semantic defect.",
+    "returnByReference": "Snapshot fixture must return an independent value; reference return violates transactional candidate isolation.",
+    "clang-diagnostic-error": "MSVC14.51 STL vectorized std::find specialization rejects GameplayObjectRef in clang-tidy; completed clangd, Cppcheck and native Debug/Release compilation independently pass."
+  },
+  "inspected_source_sha256": {
+    "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp": "ce8cc518e761df7b81fc229f5060d4c5907ee94b11401c2857f94c907a3cc0aa",
+    "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h": "96626da56237940081ee0717f19c76073ece5e433b0508455316cc8c2b716da3",
+    "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp": "73eef20e66c035a5ce491435a493a2fcc5043b1e095de995204f58ed19a1b748",
+    "EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp": "847170f8566bfc5d576e76c7ff361806c9b31438aa1d7ef93a38a81398ebf6c7"
+  }
+}

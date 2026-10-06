@@ -21,6 +21,14 @@ EXPECTED_PROFILES = {
     "full-release": ("ON", "ON", "Release"),
 }
 FREEZE_COMMANDS = (
+    "python docs/freeze/goal5_determinism_inventory.py --check",
+    "python docs/freeze/goal5_determinism_inventory.py --self-test",
+    "python docs/freeze/goal5_determinism_contract.py --check",
+    "python docs/freeze/goal5_determinism_contract.py --self-test",
+    "python docs/freeze/goal5_evidence_quality.py --check",
+    "python docs/freeze/goal5_evidence_quality.py --self-test",
+    "python docs/freeze/goal5_contract.py --check",
+    "python docs/freeze/goal5_contract.py --self-test",
     "python docs/freeze/goal5_admission.py --check",
     "python docs/freeze/goal5_admission.py --self-test",
     "python docs/freeze/goal5_persistence_inventory.py --check",

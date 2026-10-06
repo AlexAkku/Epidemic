@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "started_at_utc": "2026-10-04T15:36:40.8831667Z",
+  "finished_at_utc": "2026-10-04T15:48:45.2913114Z",
+  "duration_ms": 724408,
+  "status": "ok",
+  "mode": "Full",
+  "goal5_source_sha256": null,
+  "stages": [
+    {
+      "name": "self-check",
+      "status": "ok",
+      "note": "Runner, orchestrator, config and required tools are valid",
+      "duration_ms": 73,
+      "details": {}
+    },
+    {
+      "name": "fmt",
+      "status": "skip",
+      "note": "No repository-wide C++ formatter policy is adopted yet; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "line-limits",
+      "status": "skip",
+      "note": "No enforceable baseline has been approved; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "lint:freeze-validators",
+      "status": "ok",
+      "note": "All freeze/evidence validators and negative fixtures passed",
+      "duration_ms": 137312,
+      "details": {}
+    },
+    {
+      "name": "build:full-debug",
+      "status": "ok",
+      "note": "/W4 /WX build and public-header self-containment passed",
+      "duration_ms": 215220,
+      "details": {}
+    },
+    {
+      "name": "test:full-debug",
+      "status": "ok",
+      "note": "111/111 tests passed",
+      "duration_ms": 226674,
+      "details": {
+        "log": "D:\\MyProjects\\Epidemic engine v1.0\\.ci_cache\\logs\\test-full-debug.log",
+        "profile": "full-debug",
+        "regex": null
+      }
+    },
+    {
+      "name": "build:full-release",
+      "status": "ok",
+      "note": "/W4 /WX build and public-header self-containment passed",
+      "duration_ms": 115161,
+      "details": {}
+    },
+    {
+      "name": "test:full-release",
+      "status": "ok",
+      "note": "111/111 tests passed",
+      "duration_ms": 28819,
+      "details": {
+        "log": "D:\\MyProjects\\Epidemic engine v1.0\\.ci_cache\\logs\\test-full-release.log",
+        "profile": "full-release",
+        "regex": null
+      }
+    },
+    {
+      "name": "coverage",
+      "status": "skip",
+      "note": "No Windows C++ coverage collector is configured; stage retained and enablement tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "security",
+      "status": "skip",
+      "note": "No package manifest/SAST baseline is present; Architecture Freeze remains enforced",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "archive",
+      "status": "skip",
+      "note": "Testing entry point does not create release archives",
+      "duration_ms": 0,
+      "details": {}
+    }
+  ],
+  "issues": [],
+  "metrics": {
+    "test_counts": {
+      "total": 222,
+      "passed": 222,
+      "skipped": 0,
+      "failed": 0
+    }
+  }
+}

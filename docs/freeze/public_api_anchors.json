@@ -34,9 +34,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -174,9 +174,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:791::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:819::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:818::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:846::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -388,9 +388,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -756,9 +756,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1036,9 +1036,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:63::if (snapshot.records.size() != 1) return 9;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:75::if (snapshot.records.size() != 1) return 9;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:63::if (snapshot.records.size() != 1) return 9;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:75::if (snapshot.records.size() != 1) return 9;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -1148,9 +1148,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1531,9 +1531,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1592,9 +1592,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:612::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:612::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -1816,9 +1816,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1058::bool TestRaycastRejectsInvalidInputAndInvalidBackendPayload(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1086::bool TestRaycastRejectsInvalidInputAndInvalidBackendPayload(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1075::return !invalid_hit && invalid_hit.GetError().HasCode(\"physics.invalid_backend_hit\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1103::return !invalid_hit && invalid_hit.GetError().HasCode(\"physics.invalid_backend_hit\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -2026,9 +2026,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:389::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:465::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:389::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:465::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -2268,9 +2268,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -2562,9 +2562,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3166,9 +3166,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -3180,9 +3180,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -3208,9 +3208,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (restore_after.records.size() != restore_before.records.size() ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:185::if (restore_after.records.size() != restore_before.records.size() ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (restore_after.records.size() != restore_before.records.size() ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:185::if (restore_after.records.size() != restore_before.records.size() ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -3872,9 +3872,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:49::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:61::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:50::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:62::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -4208,9 +4208,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -4384,9 +4384,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -4626,9 +4626,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -5457,9 +5457,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:159::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:235::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -5969,9 +5969,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -6095,9 +6095,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:111::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:123::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:112::if (!service.Create(requested) || service.Create(requested)) return 18;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:124::if (!service.Create(requested) || service.Create(requested)) return 18;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -6390,9 +6390,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -6894,9 +6894,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -7188,9 +7188,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:343::if (!compact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:419::if (!compact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -7230,9 +7230,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -7692,9 +7692,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -8182,9 +8182,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -8438,9 +8438,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:115::denied.Set<int>(fact_type.Value(), subject, {}, 5, FactPersistence::Persistent);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:191::denied.Set<int>(fact_type.Value(), subject, {}, 5, FactPersistence::Persistent);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -8937,9 +8937,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -8965,9 +8965,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:791::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:819::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:818::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:846::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -9162,9 +9162,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:541::bool TestExternalBackendInvalidContactIsDroppedAtomically(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:569::bool TestExternalBackendInvalidContactIsDroppedAtomically(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:567::return step && runtime->Contacts().size() == 1 && runtime->Contacts()[0].a == first.Value() &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:595::return step && runtime->Contacts().size() == 1 && runtime->Contacts()[0].a == first.Value() &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -9579,9 +9579,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:171::if (service.RestoreSnapshot(restore_before)) return 906;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:183::if (service.RestoreSnapshot(restore_before)) return 906;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -9817,9 +9817,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:82::if (event.value == 1)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:158::if (event.value == 1)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:82::if (event.value == 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:158::if (event.value == 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -10424,9 +10424,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -10606,9 +10606,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:97::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:109::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:97::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:109::if (!restored || restored->archetype != object_id.Value() || restored->materialization != EntityMaterializationState::Abstract) return 16;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -11098,9 +11098,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -11393,9 +11393,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -11568,9 +11568,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -11714,9 +11714,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -11856,9 +11856,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -11986,9 +11986,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -12224,9 +12224,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1130::bool TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1158::bool TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1146::return !failed && failed.GetError().HasCode(\"physics.create_body_failed\") &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1174::return !failed && failed.GetError().HasCode(\"physics.create_body_failed\") &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -12648,9 +12648,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:968::bool TestTransformSourceFailureStopsBeforeBackendBodyCreation(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:996::bool TestTransformSourceFailureStopsBeforeBackendBodyCreation(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:982::return !created && created.GetError().HasCode(\"physics.transform_read_failed\") &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1010::return !created && created.GetError().HasCode(\"physics.transform_read_failed\") &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -12732,9 +12732,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:729::bool TestInvalidBodyInputsAreRejectedBeforeBackend(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:757::bool TestInvalidBodyInputsAreRejectedBeforeBackend(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:755::return !type_result && type_result.GetError().HasCode(\"physics.invalid_body_type\") &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:783::return !type_result && type_result.GetError().HasCode(\"physics.invalid_body_type\") &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -14028,9 +14028,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -14354,9 +14354,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -14751,9 +14751,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -15180,9 +15180,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:821::bool TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:849::bool TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:838::return second && runtime.PendingProjectionCountForTesting() == 0 && adapter->writes >= 3;"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:866::return second && runtime.PendingProjectionCountForTesting() == 0 && adapter->writes >= 3;"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -15236,9 +15236,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -15408,9 +15408,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::remove.Remove(key);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:220::remove.Remove(key);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:145::if (!service.Commit(std::move(remove), context))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:221::if (!service.Commit(std::move(remove), context))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -16549,9 +16549,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:986::bool TestShutdownCleansIndependentShapesAfterBodyFailure(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1014::bool TestShutdownCleansIndependentShapesAfterBodyFailure(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1002::return !failed && failed.GetError().HasCode(\"physics.destroy_body_failed\") &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1030::return !failed && failed.GetError().HasCode(\"physics.destroy_body_failed\") &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -16871,9 +16871,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -16997,9 +16997,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:791::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:819::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:818::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:846::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -17053,9 +17053,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:126::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:138::if (restored_destroy_change.empty() || restored_destroy_change.back().destroy_reason != EntityDestroyReason::Consumed) return 185;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -17969,9 +17969,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:93::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:105::if (!second || second.Value().handle.slot == first_handle.slot) return 14;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -18153,9 +18153,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -18558,9 +18558,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -18801,9 +18801,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -18857,9 +18857,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:945::bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:973::bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:964::return retried && backend->simulates == 1 && runtime.AccumulatorForTesting().value.count() == 0 &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:992::return retried && backend->simulates == 1 && runtime.AccumulatorForTesting().value.count() == 0 &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -19493,9 +19493,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -19996,9 +19996,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1078::bool TestRaycastLargeFiniteDirectionNormalizesSafely(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1106::bool TestRaycastLargeFiniteDirectionNormalizesSafely(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1126::return reference_hit && reference_hit.Value().hit && std::isfinite(reference_hit.Value().distance) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1154::return reference_hit && reference_hit.Value().hit && std::isfinite(reference_hit.Value().distance) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -20290,9 +20290,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:57::if (!service.Convert(first_id, object_id.Value())) return 7;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!service.Convert(first_id, object_id.Value())) return 7;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:57::if (!service.Convert(first_id, object_id.Value())) return 7;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!service.Convert(first_id, object_id.Value())) return 7;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -21018,9 +21018,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -21403,9 +21403,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -21459,9 +21459,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!bad_schema.facts.empty())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:379::if (!bad_schema.facts.empty())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!bad_schema.facts.empty())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:379::if (!bad_schema.facts.empty())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -21580,9 +21580,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:791::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:819::bool TestRevisionAndAllocatorExhaustionAreAtomic(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:818::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:846::return !create && create.GetError().HasCode(\"physics.body_id_overflow\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -21608,9 +21608,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:232::if (!service.FindFact(timed_key))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:308::if (!service.FindFact(timed_key))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:232::if (!service.FindFact(timed_key))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:308::if (!service.FindFact(timed_key))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -21832,9 +21832,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -22186,9 +22186,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -23070,9 +23070,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -23420,9 +23420,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -23756,9 +23756,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -24068,9 +24068,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:449::if (!fault_fact)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:525::if (!fault_fact)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:449::if (!fault_fact)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:525::if (!fault_fact)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -24530,9 +24530,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -24698,9 +24698,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:132::const auto entity_scope = GameplayObjectId::FromString(\"framework.entities.instances\").High();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:144::const auto entity_scope = GameplayObjectId::FromString(\"framework.entities.instances\").High();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:127::if (!service.RestoreSnapshot(snapshot)) return 186;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:139::if (!service.RestoreSnapshot(snapshot)) return 186;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -24835,9 +24835,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:70::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:82::if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed)) return 12;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -25157,9 +25157,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -26745,9 +26745,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -27092,9 +27092,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:186::if (!service.Create(stress)) return 19;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:198::if (!service.Create(stress)) return 19;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -27281,9 +27281,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -27732,9 +27732,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -27802,9 +27802,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -28342,9 +28342,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:364::if (!scoped_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:440::if (!scoped_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -28710,9 +28710,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:109::if (service.HistoryCount() != 2)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:185::if (service.HistoryCount() != 2)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:109::if (service.HistoryCount() != 2)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:185::if (service.HistoryCount() != 2)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -28858,9 +28858,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -30322,9 +30322,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -30479,9 +30479,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -31733,9 +31733,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:159::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:235::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -32288,9 +32288,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -33030,9 +33030,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:606::bool TestInvalidBackendSnapshotDoesNotMutateBody(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:634::bool TestInvalidBackendSnapshotDoesNotMutateBody(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:632::if (adapter->writes != writes_before_failed_step + 1) { std::cerr << \"valid retry did not write sink\\n\"; return false; }"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:660::if (adapter->writes != writes_before_failed_step + 1) { std::cerr << \"valid retry did not write sink\\n\"; return false; }"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -33226,9 +33226,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:874::bool TestBackendExceptionsStayInsideResultBoundary(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:902::bool TestBackendExceptionsStayInsideResultBoundary(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:888::return !impulse && impulse.GetError().HasCode(\"physics.backend_exception\") && runtime.RevisionForTesting() == rev;"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:916::return !impulse && impulse.GetError().HasCode(\"physics.backend_exception\") && runtime.RevisionForTesting() == rev;"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -34063,9 +34063,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:146::requested_behind.requested_id = EntityId::FromRaw(entity_scope, 42);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:158::requested_behind.requested_id = EntityId::FromRaw(entity_scope, 42);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:149::if (!own_scope_behind || !generated_after_behind || generated_after_behind.Value().id.Low() <= generated_after.Value().id.Low()) return 190;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!own_scope_behind || !generated_after_behind || generated_after_behind.Value().id.Low() <= generated_after.Value().id.Low()) return 190;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -34133,9 +34133,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -34233,9 +34233,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -34359,9 +34359,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -35542,9 +35542,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -35900,9 +35900,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -36319,9 +36319,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -36600,9 +36600,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:154::if (!value || *value != 42 || service.HistoryCount() != 2)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:230::if (!value || *value != 42 || service.HistoryCount() != 2)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:154::if (!value || *value != 42 || service.HistoryCount() != 2)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:230::if (!value || *value != 42 || service.HistoryCount() != 2)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -36684,9 +36684,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:163::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:175::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:163::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:175::if (!replacement || service.Resolve(transient.Value().handle).has_value() || !service.Resolve(replacement.Value().handle).has_value()) return 193;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -36712,9 +36712,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -36884,9 +36884,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -37101,9 +37101,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -37403,6 +37403,20 @@
         "target": "EpidemicGameFrameworkNarrativeTests"
       }
     },
+    "9ca97e2efaa2a183": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
+      }
+    },
     "9cdb8308976180fc": {
       "contract": {
         "anchor": "docs/EngineFramework/Society.md:92::- `9cdb8308976180fc` | `MUTATOR` | `epidemic::gameplay::society::SocietyService` | `[[nodiscard]] foundation::Result<void> ApplyReputationChange(ReputationChangeRequest request);`",
@@ -37625,9 +37639,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:49::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:61::const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:50::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:62::if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id) return 51;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -37948,9 +37962,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:137::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:213::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:137::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:213::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -39320,7 +39334,7 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:173::auto participant = savegame::CreateDeathRewardAdapterSaveParticipant(",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:175::auto participant = savegame::CreateDeathRewardAdapterSaveParticipant(",
         "assertions": [
           "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:31::Check(participant.Id()",
           "EngineFramework/DevelopmentInfrastructure/Tests/participant_test_contract.h:34::Check(participant.Dependencies()",
@@ -39543,9 +39557,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:161::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:173::if (!transient_destroyed || !service.Remove(transient.Value().id)) return 192;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -40215,9 +40229,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:709::bool TestShutdownRetriesBodyBeforeDestroyingShape(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:737::bool TestShutdownRetriesBodyBeforeDestroyingShape(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:724::return body && !failed && failed.GetError().HasCode(\"physics.destroy_body_failed\") &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:752::return body && !failed && failed.GetError().HasCode(\"physics.destroy_body_failed\") &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -40512,9 +40526,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:189::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:201::if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count) return 20;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -41005,9 +41019,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:114::auto denied = service.BeginTransaction(other);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:190::auto denied = service.BeginTransaction(other);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -41079,9 +41093,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -41499,9 +41513,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -41527,9 +41541,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:330::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord> records) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:406::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord> records) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:332::if (records.empty())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:408::if (records.empty())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -41800,9 +41814,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:485::const auto before_diag = fault_service.GetDiagnostics();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:561::const auto before_diag = fault_service.GetDiagnostics();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -41898,9 +41912,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:945::bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:973::bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:964::return retried && backend->simulates == 1 && runtime.AccumulatorForTesting().value.count() == 0 &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:992::return retried && backend->simulates == 1 && runtime.AccumulatorForTesting().value.count() == 0 &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -42779,9 +42793,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -42863,9 +42877,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:81::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:69::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:81::if (!pending || pending->lifecycle != EntityLifecycleState::PendingDestroy) return 11;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -42975,9 +42989,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -44516,6 +44530,20 @@
         "target": "EpidemicRuntimeAnimationTests"
       }
     },
+    "bb418d00f29f67bc": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
+      }
+    },
     "bb43106c7534f6f5": {
       "contract": {
         "anchor": "docs/EngineRuntime/modules/persistence.md:19::## \u0418\u043d\u0432\u0430\u0440\u0438\u0430\u043d\u0442\u044b",
@@ -45068,9 +45096,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -45124,9 +45152,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -45612,9 +45640,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -45668,9 +45696,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -45836,9 +45864,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -46495,9 +46523,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:945::bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:973::bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:964::return retried && backend->simulates == 1 && runtime.AccumulatorForTesting().value.count() == 0 &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:992::return retried && backend->simulates == 1 && runtime.AccumulatorForTesting().value.count() == 0 &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -46677,9 +46705,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -47427,9 +47455,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1235::bool TestDirtyFlagsAndServicesFactory(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1263::bool TestDirtyFlagsAndServicesFactory(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1239::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1267::return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -47595,9 +47623,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -49157,9 +49185,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1227::bool TestFactoryReportsBackendInitializationFailure(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1255::bool TestFactoryReportsBackendInitializationFailure(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1232::return !services && services.GetError().HasCode(\"physics.init_failed\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1260::return !services && services.GetError().HasCode(\"physics.init_failed\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -49563,9 +49591,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -50967,9 +50995,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -51071,9 +51099,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -51208,9 +51236,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:401::if (!subscriber_type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:477::if (!subscriber_type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -51292,9 +51320,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:106::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:118::if (!service.Activate(first_id) || !service.Find(first_id) || service.Find(first_id)->lifecycle != EntityLifecycleState::Alive) return 173;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -51404,9 +51432,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -52055,9 +52083,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1183::bool TestOverlapResultsAreDeterministicAndDetached(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1211::bool TestOverlapResultsAreDeterministicAndDetached(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1212::return detached.bodies.size() == 2 && after && after.Value().bodies.size() == 1;"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1240::return detached.bodies.size() == 2 && after && after.Value().bodies.size() == 1;"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -52309,9 +52337,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -52963,9 +52991,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:98::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:110::if (service.HandleOf(first_id).generation == 0 || service.Resolve(first_handle).has_value()) return 17;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -52991,9 +53019,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -53819,9 +53847,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:87::if (service.CurrentRevision() != before_invalid_revision) return 133;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:99::if (service.CurrentRevision() != before_invalid_revision) return 133;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:87::if (service.CurrentRevision() != before_invalid_revision) return 133;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:99::if (service.CurrentRevision() != before_invalid_revision) return 133;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -53917,9 +53945,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:482::if (!type)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:558::if (!type)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -54200,9 +54228,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -54312,9 +54340,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -54438,9 +54466,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1006::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
+        "anchor": "EngineRuntime/Physics/tests/physics_tests.cpp:1034::bool TestShapeRegistrationValidationAndBackendFailureAtomicity(",
         "assertions": [
-          "EngineRuntime/Physics/tests/physics_tests.cpp:1026::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
+          "EngineRuntime/Physics/tests/physics_tests.cpp:1054::return created && !duplicate && duplicate.GetError().HasCode(\"physics.duplicate_shape\");"
         ],
         "reviewed": true,
         "target": "EpidemicRuntimePhysicsTests"
@@ -54649,9 +54677,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -55206,9 +55234,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:60::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72::if (service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed) return 81;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -55276,9 +55304,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:141::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:153::if (!generated_after || generated_after.Value().id.High() != entity_scope || generated_after.Value().id.Low() <= 1000000) return 188;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -55458,9 +55486,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:422::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:498::if (!subscriber_dispatch || subscriber_dispatch.Value() != 1 || delivered_after_failure != 1 ||"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -56433,9 +56461,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -56909,9 +56937,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -58217,9 +58245,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:332::if (records.empty())",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:408::if (records.empty())",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:332::if (records.empty())"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:408::if (records.empty())"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -58287,9 +58315,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -58465,9 +58493,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:111::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:123::requested.requested_id = EntityId::FromString(\"test.entity.requested\");",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:112::if (!service.Create(requested) || service.Create(requested)) return 18;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:124::if (!service.Create(requested) || service.Create(requested)) return 18;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -59615,9 +59643,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -59686,9 +59714,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"
@@ -59714,9 +59742,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:52::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
+          "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:64::if (!generic_hand.IsValid() || EntityService::FromGameplayObjectPartRef(generic_hand) != *hand) return 52;"
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkEntitiesTests"
@@ -60234,9 +60262,9 @@
         "reviewed": true
       },
       "test": {
-        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:456::const auto before = fault_service.CaptureSnapshot();",
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:532::const auto before = fault_service.CaptureSnapshot();",
         "assertions": [
-          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:457::if (!before)"
+          "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:533::if (!before)"
         ],
         "reviewed": true,
         "target": "EpidemicGameplayFactsTests"

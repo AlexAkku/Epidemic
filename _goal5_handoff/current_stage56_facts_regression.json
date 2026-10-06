@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "baseline_regression_exit": 110,
+  "current_exit": 0,
+  "baseline_markers": "G5-DET-FACTS-001=0 G5-DET-FACTS-002=0",
+  "current_markers": "G5-DET-FACTS-001=1 G5-DET-FACTS-002=1",
+  "source_sha256": {
+    "EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp": "b581f8c2dd836f2f1e031a031d0af5a51bbf527f2fe3c56ca8afa89ad8a95dc3",
+    "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp": "ce8cc518e761df7b81fc229f5060d4c5907ee94b11401c2857f94c907a3cc0aa"
+  },
+  "baseline_sha256": "ef40d82c91b1950c2e3566837265f5aabf0d53d51130aa4a1a0bbd9e304898e0"
+}

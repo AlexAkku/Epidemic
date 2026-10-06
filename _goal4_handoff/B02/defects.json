@@ -95,11 +95,11 @@
       "fix": "The six baseline users were migrated to module-private/internal deterministic fault seams. Conditions uses the same local restore seam convention as additional B02 evidence. Restore coverage now exercises candidate-construction and pre-commit publication boundaries; shared allocation/sweep helpers remain read-only for serial removal after all Bxx merge.",
       "logical_id": "G4-INFRA-001",
       "module": "B02 / seven owned modules (six baseline global-helper users)",
-      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:170::test_seam::FailNext(fault);",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:182::test_seam::FailNext(fault);",
       "regressions": {
         "EpidemicGameFrameworkConditionsTests": "EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:224::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkEffectsTests": "EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:426::test_seam::FailNext(test_seam::FaultPoint::RegisterHandlerBeforePublish);",
-        "EpidemicGameFrameworkEntitiesTests": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:170::test_seam::FailNext(fault);",
+        "EpidemicGameFrameworkEntitiesTests": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:182::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkEnvironmentTests": "EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:302::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkInteractionTests": "EngineFramework/DevelopmentInfrastructure/Tests/interaction_gameplay_tests.cpp:121::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkMaterialsTests": "EngineFramework/DevelopmentInfrastructure/Tests/materials_tests.cpp:102::test_seam::FailNext(fault);",

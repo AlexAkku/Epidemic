@@ -1,0 +1,3276 @@
+{
+  "execution_receipt_required": true,
+  "generated_from": {
+    "_goal5_handoff/final_defects.json": "ee1e1e2fcc3e51094a87628630316ae1bb85fef7d9a7897e76f0789129d88b7a",
+    "ctest_manifest.json": "6223c4bcf636a15653ec11561d385742048883c3f2ba63081adf57f8ac39e5ce",
+    "goal5_admission.json": "98889f922834eec4f0a08fa5d7ff18da3a6643ddc5ede52faa554098ae42a1cd",
+    "goal5_determinism_candidates.json": "a700e1ab2d84d23f641fb1bd35b81ecbcee20c41f7342d24129dc91d004084c1",
+    "goal5_determinism_contract.json": "46a8d7f1044f0a2ff81c34976e11c7d7e2de5174a784f44da51f032c12a5b2d6",
+    "goal5_determinism_reviewed.json": "e1628f8936db5b3ea459c11dc92b54b89ca1a8767bfc32f781bf0c926b75492f",
+    "goal5_participant_contract.json": "1737cef7d2d803b176d49af7b6c8b0e2149ef116bd6ed25e3f3684b20993c80b",
+    "goal5_persistence_contract.json": "33fbb6786009956b62fb2db7de8cbc05e0df1694586cac9dc2a3512dd6df1777",
+    "goal5_persistence_gaps.json": "d234446a0285e20da5b695f2ce09d3136122dffbe9e7a0684ac436672c39574f",
+    "goal5_required_scenarios.json": "20dce9cf0d45507dc6f2c5e26e169e6078d2c76b7d622e7933e74fc7c12d569c",
+    "goal5_restore_contract.json": "6755f4db119be6d7edcf85dd5063b49f3daa118aac1f1d0c6b0aa9f931db09fe",
+    "goal5_save_generation_contract.json": "5cd0157ee1ad504331ce8263162cbbcf65d762c9c3410d07a8063f062a0a7ba5",
+    "goal5_schema_contract.json": "a675c1971b389d20bee2aea35f58a70ae8f5de7ed17610388ecb6fc27bbcc2b1"
+  },
+  "modules": [
+    {
+      "candidate_ids": [
+        "G5P-6cc64f1bcb2b7d44"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-13211a0c039657a7c78f",
+        "G5D-15165b0d54d17f5da6cd",
+        "G5D-2d4d9f4b3096e9a94b86",
+        "G5D-3e6b3dc8e05bf7246f59",
+        "G5D-48c43f7cb16bd1cb6b3a",
+        "G5D-4cf64cc7516fb49459b9",
+        "G5D-4e53bd67143492c8c8b0",
+        "G5D-51096274b86d98cce01e",
+        "G5D-607af31f1baadff6e66d",
+        "G5D-6548cffcd3f0912b848b",
+        "G5D-71271f955f06b76f51b1",
+        "G5D-72324602555b54d4384e",
+        "G5D-7240e9f1a5fec73b7e6a",
+        "G5D-96237a6084fb37bdaa2e",
+        "G5D-a27ceaa60a7e178acb1b",
+        "G5D-ad80fb291ba435a20006",
+        "G5D-b36ea69586cfc6a9771b",
+        "G5D-b779485b5b6d96e60568",
+        "G5D-d8b3603d24720ef918b2",
+        "G5D-e318dba4e3416f08e66d",
+        "G5D-f1b2a7f79fbafb2c8909",
+        "G5D-f62e7086fcb24c4e82c7",
+        "G5D-f764b93476f5ba17b2c4"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/Core",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Core exposes no durable snapshot format.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicCoreUnitTests"
+      ]
+    },
+    {
+      "candidate_ids": [],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-232bbf4ade40d7c7ef48",
+        "G5D-2dfaaa02dbeddaed7513",
+        "G5D-3cd112fa11678e6341e3",
+        "G5D-44188f79d54e864df10f",
+        "G5D-54997e2b85e601b4cc0d",
+        "G5D-66c4c7930efb43a5e2eb",
+        "G5D-68fe47a07510bb4fb1a3",
+        "G5D-81a2251a4f874d5eba4d",
+        "G5D-96aa01d21eb95ff6e23c",
+        "G5D-cd5053698dfe0bcb1b50",
+        "G5D-d0b251beca2709bece94",
+        "G5D-de23d9f2addb5ce6697b",
+        "G5D-e7913313d0e5d57ed324"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/Diagnostics",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicDiagnosticsUnitTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-ba74160d72058281"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0b5e1f854a550f21d2d2",
+        "G5D-30b58fe9a66d2f528c2e",
+        "G5D-6ef5e0ddbfc6d85b242a",
+        "G5D-87acd18b21b03f2b355a"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/Foundation",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Foundation owns no persistent authoritative state and exposes no snapshot participant.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicFoundationUnitTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-b3961b28d3b9f4a0"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-629ca1db46a87d8d8eb6"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/Input",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicPlatformInputIntegrationTests"
+      ]
+    },
+    {
+      "candidate_ids": [],
+      "defect_ids": [],
+      "determinism_applicability": "NOT_APPLICABLE",
+      "determinism_candidate_ids": [],
+      "determinism_rationale": "Reviewed domain/scanner contracts contain no included semantic state or observable finding. Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "determinism_status": "N/A",
+      "module": "EngineBase/Memory",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": []
+    },
+    {
+      "candidate_ids": [
+        "G5P-1fbc2bfa7b1ad517",
+        "G5P-f039a2e321cc25b3"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-094f9fa5d9ed5397d646",
+        "G5D-1c4df00ec490d6c3999a",
+        "G5D-28f90b7ff3fda290a8f4",
+        "G5D-579167b295d734cd42b9",
+        "G5D-badacd025045804d84f6",
+        "G5D-c405de9dafed68a8883a",
+        "G5D-db17cf5c94f8df1fe849",
+        "G5D-fc1a874b890a757ef3bf"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/Platform",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Platform native/process state is not persistent.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicPersistenceWireTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-7bd6e981771ab343673a"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/RHI",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRhiUnitTests"
+      ]
+    },
+    {
+      "candidate_ids": [],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-cda35d18fb2a75371b45"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineBase/RHI_D3D11",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRhiIntegrationTests"
+      ]
+    },
+    {
+      "candidate_ids": [],
+      "defect_ids": [],
+      "determinism_applicability": "NOT_APPLICABLE",
+      "determinism_candidate_ids": [],
+      "determinism_rationale": "Reviewed domain/scanner contracts contain no included semantic state or observable finding. Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "determinism_status": "N/A",
+      "module": "EngineBase/Support",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": []
+    },
+    {
+      "candidate_ids": [
+        "G5P-1d686a1f76d3e4f3",
+        "G5P-323ef4c50278c523",
+        "G5P-6a2becd61aa5ff8e",
+        "G5P-6abd166bf4360131",
+        "G5P-79ce7e60a0d34757",
+        "G5P-89cb0ab25f939f4f",
+        "G5P-8b29503a0282fc26"
+      ],
+      "defect_ids": [
+        "G5-DET-FACTS-001",
+        "G5-DET-FACTS-002"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-005fdefb98a732a59e05",
+        "G5D-00991564c5881a95a762",
+        "G5D-09cbf804abeb3373c979",
+        "G5D-1a5afbed17e907e81950",
+        "G5D-212b43e1b514c7351b44",
+        "G5D-26804801e3f1efec9a40",
+        "G5D-2f2b8765c0473297b9af",
+        "G5D-35c3143e0adc53ecbcd9",
+        "G5D-3747f215dec0a1f0e3f7",
+        "G5D-4cdf608ed6ac57fa287a",
+        "G5D-50ea3d7f3d7f78c94af5",
+        "G5D-5a6ee8c785bf5ccfee14",
+        "G5D-6f21902df74de6f45534",
+        "G5D-7233d413a89c50b0d4a6",
+        "G5D-7a2d91fa0cc880050c60",
+        "G5D-8b04676e63e4157cafac",
+        "G5D-8d9358bffb3a2c9c75f8",
+        "G5D-9775a31b499051ce66c4",
+        "G5D-97eaadafad5112b0ca65",
+        "G5D-a716b809cde4e40db684",
+        "G5D-b0a9154d44a5c836c4ea",
+        "G5D-bd02a316a1ac8de9cea4",
+        "G5D-ca4bc05628b1c5500ce6",
+        "G5D-d866685d33b040c22ba3",
+        "G5D-eee902da1cb841d2e56b",
+        "G5D-f4d9d8321f69ada4a3cd",
+        "G5D-f4fce34e7e3d7f1dcf7b",
+        "G5D-f5c5e8e8982d0cf720e3"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/BaseInfrastructure/Facts",
+      "participant_ids": [
+        "framework.facts"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameplayFactsTests",
+        "EpidemicIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-2ade67b67f40ba4c",
+        "G5P-2d511a66b134ba57",
+        "G5P-42e7abe83c47b590",
+        "G5P-5dd06288c70ee9b3",
+        "G5P-685b300e6538fe4d",
+        "G5P-68ee9783f67a3a55",
+        "G5P-b1e8d534c5ab9439"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-2fbe65b5b3007992b0fa",
+        "G5D-3e7821dedd7e019be4c4",
+        "G5D-4204f48043eeeda6dab0",
+        "G5D-77a21a98619aea95eda4",
+        "G5D-e156a22c059fc1f1d1c7"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/BaseInfrastructure/Foundation",
+      "participant_ids": [],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicGameFrameworkFoundationTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-14396c34ffbbb43d",
+        "G5P-20dd51ba3272f003",
+        "G5P-2ffd290eedb53bd0",
+        "G5P-3351bfd256ed2190",
+        "G5P-4be41408ada3164e",
+        "G5P-5be04dcf57daf9b4",
+        "G5P-dfbc94daba7ee8d4",
+        "G5P-ea8c626497bec76f"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-084e0e7f6a6c49457704",
+        "G5D-1d0f030dc69677c71a54",
+        "G5D-2739f6672659081ed7ff",
+        "G5D-7d77158f841670028028",
+        "G5D-97541ba7b6c4d99c6896",
+        "G5D-c0051e2a2ab15cb94509",
+        "G5D-d88324d8198528f14ab2"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/BaseInfrastructure/Queries",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "QuerySnapshot is an observational detached provider snapshot, not a durable service persistence format.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicGameplayQueriesTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-4e8ec68232f7711a",
+        "G5P-dc736e7cf782ac87"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-30f6a416ab1dacf0ce61",
+        "G5D-ec47dfd1651e707f1582",
+        "G5D-fa936c4536e552b78fcc"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/BaseInfrastructure/SupportRandom",
+      "participant_ids": [],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicGameFrameworkRandomSupportTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-2589e3d438df4a73",
+        "G5P-fcc6ab97c0304f05"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-287f71979a9b75bf322c",
+        "G5D-3a95b92bae1ce785ed41",
+        "G5D-43cbc5f86cb8cac8cc9a",
+        "G5D-4f75a5305bf762267fbf",
+        "G5D-8893e53eb4796c0ea0df",
+        "G5D-a13ab754bb05b380c5d6",
+        "G5D-a1c986c236dd98c4c225",
+        "G5D-a7d7a9e781ac5efaf737",
+        "G5D-b5c7ca09a90ad4bb9fa0",
+        "G5D-c0fd03cf375601b92525",
+        "G5D-c3717f6d9897574b7bc5",
+        "G5D-df63bb0128ee06548149",
+        "G5D-e0cae17fcda1d663f252",
+        "G5D-ee9c32fd51a4c65b7dfa"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/BaseInfrastructure/Time",
+      "participant_ids": [
+        "framework.time"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameplayTimeTests",
+        "EpidemicIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-32fc3209fe0b555e",
+        "G5P-65fb4b2fd7579219",
+        "G5P-70b5555610a15e65",
+        "G5P-9a94bdc58df3b719",
+        "G5P-a53b473da16704e0",
+        "G5P-bb6c4a0869ef1ece"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-160e7b7aba478aab0577",
+        "G5D-38d468d4dccf70498c9e",
+        "G5D-3a666c175c7522bcd86c",
+        "G5D-48d0e158bc27c8cac0aa",
+        "G5D-548d13b97445e2aa9538",
+        "G5D-7b0307bcb4061aa508e2",
+        "G5D-8e6e70b0e4dbc5d7f7f4",
+        "G5D-95c4ecdc895987d29e03",
+        "G5D-b9726ddc372bdae5f5e4",
+        "G5D-d2c0a28a011f73b84ff3"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/AI",
+      "participant_ids": [
+        "framework.ai"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkAITests",
+        "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0576e7704d8e3577",
+        "G5P-204c962d567a0ceb",
+        "G5P-239d1542eb69554d",
+        "G5P-30b3e918668d28f2",
+        "G5P-46be8f024bc6d38e",
+        "G5P-6c8b59fc62e43e8a",
+        "G5P-ecc2d1ae5ae33917",
+        "G5P-f0aa8c064ad774af"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-11fc441657f5f5364959",
+        "G5D-1275994d783da6a9c0ca",
+        "G5D-18c21ee38f14bb29df97",
+        "G5D-25cd2c92cf6d2971b17c",
+        "G5D-2d9009199cf3e3854ee6",
+        "G5D-2f74e8fdd3067bd7a4f1",
+        "G5D-313d43532edb59370b03",
+        "G5D-3b6fb7ab841b3494cb0c",
+        "G5D-3f0c82665bca5dec7f78",
+        "G5D-4d8e01e7a64764bade36",
+        "G5D-5507da387b6e73ea8b59",
+        "G5D-59c438b138ca9f6a6519",
+        "G5D-6004d5feffc3813b61ae",
+        "G5D-6b60f335edcb74f1c634",
+        "G5D-8aafbeebee1551e2e688",
+        "G5D-950123de3507f4f32d4f",
+        "G5D-9e88852d054f45c85765",
+        "G5D-aaf23ba9224725401950",
+        "G5D-ad451aeb3d7730b48587",
+        "G5D-aecfb7c160af76356703",
+        "G5D-c035db5de6d4ee5457c6",
+        "G5D-c1055344a95b8b4e5c8d",
+        "G5D-c2caa675cec7a5acd05b",
+        "G5D-cd7e63974df8d1cd430c",
+        "G5D-cdc64bcf9b775ae78d5e",
+        "G5D-d07c2facee268bcbf0b1",
+        "G5D-e859b02c86ab578c881e"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Abilities",
+      "participant_ids": [
+        "framework.abilities"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkAbilitiesTests",
+        "EpidemicGameplayIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1a33f3d61c8ab856",
+        "G5P-4a979c1f51a8dfd6",
+        "G5P-4df2bc3ddafa4217",
+        "G5P-5375e8e2071d110f",
+        "G5P-54734df34dcafe98",
+        "G5P-92fe236eb0a0c6b2",
+        "G5P-ad59dece08272f36"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-12f7d5bc842f90e0e437",
+        "G5D-288a4cff61d2c0886a79",
+        "G5D-31720f795cb8296bcbd8",
+        "G5D-33db2b483c28bcdc6fb0",
+        "G5D-7ce15e1ace274726bb95",
+        "G5D-9e43726c9f407c8259e5",
+        "G5D-e2d0dcc68148cf3f5e5a",
+        "G5D-f6752f31ffa0e7261530"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Combat",
+      "participant_ids": [
+        "framework.combat"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkCombatTests",
+        "EpidemicGameplayIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0038d03f8e5d24fb",
+        "G5P-4adb07c0ff9e23b8",
+        "G5P-d83d2a95193d4caf",
+        "G5P-e2698897a709e851"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-31a7ae2df776fb4edabd",
+        "G5D-340735321c1d265f7c85",
+        "G5D-3528fecb372dc9bd7e58",
+        "G5D-6d58c86d8ebafc69c6f3",
+        "G5D-a74665bb39c861b72050",
+        "G5D-fc2649d286807028f19c"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Conditions",
+      "participant_ids": [
+        "framework.conditions"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkConditionsTests",
+        "EpidemicStateIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-04763e6050ca7d16",
+        "G5P-2499fb7e694c91c1",
+        "G5P-2629b6f8a726c4a4",
+        "G5P-33686bdf71e352b5",
+        "G5P-5815b5d43a565e47",
+        "G5P-6a101c4ae5cb3b98",
+        "G5P-ad967c3ca3beb4be",
+        "G5P-af894904df6442c7",
+        "G5P-d06213053daa95ba",
+        "G5P-ef09e7e7541f76ca",
+        "G5P-f2645786c0021bb8",
+        "G5P-fbf5b1a27a74efcb",
+        "G5P-fc93197211762fa2"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-13dbfb9d1abebe7ea6e4",
+        "G5D-14dd39e18fb55a314471",
+        "G5D-30e660702bcad4fae13c",
+        "G5D-4e031dc61968bbb7937f",
+        "G5D-5be30dce6ab29721923f",
+        "G5D-5e8c82b59d34c407a17f",
+        "G5D-75e8e6091993a08c6381",
+        "G5D-78a2f9a009a34741d6b3",
+        "G5D-7e159cfdb6725229c9d0",
+        "G5D-9e68c3ce2ec52c8128ad",
+        "G5D-9fb2dfbb0f2e345fbf47",
+        "G5D-a599e620c1cfc9945000",
+        "G5D-ab66bd317e0ccc5d342b",
+        "G5D-b4aa8dd50894085676c8",
+        "G5D-b8672b77f2f3dee8827d",
+        "G5D-c33df9cfcaba7568e3d3",
+        "G5D-c39a27db495b626647b4",
+        "G5D-c62dc42cf7abcc4d0980",
+        "G5D-d235710a31370a2288f1",
+        "G5D-d64452b27650576cbc1f",
+        "G5D-e7bb8f7fdefa40cd0475",
+        "G5D-e91b0ef0aee30b5d7e47",
+        "G5D-f071166e9a8dddf7debe",
+        "G5D-fb5cf164b0072429a895"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Construction",
+      "participant_ids": [
+        "framework.construction"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkConstructionTests",
+        "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-190e79fd1f362301",
+        "G5P-640605387f2042a3",
+        "G5P-681f4bc3e3615faf",
+        "G5P-dd0b4e074a62e526"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-1ef1f3c668e3db3ae2ce",
+        "G5D-2510a7c97cc302b97c82",
+        "G5D-3941d28b2d39683eb1da",
+        "G5D-4109bba0bcee9266d63f",
+        "G5D-430b0c587a9cd8088fc0",
+        "G5D-525779f3ff4d73771bd5",
+        "G5D-7d7b1e2ba713983a153d",
+        "G5D-7fb20105f593bd51a9ca",
+        "G5D-853dfa20d13e2111f653",
+        "G5D-899085ab6bb5dd142427",
+        "G5D-91d2fd86c9a922591683",
+        "G5D-944ac58f8478d340eebe",
+        "G5D-96c8bd48f746908faf6a",
+        "G5D-a25ce59602756ca2a7da",
+        "G5D-acd8dcb768db13f831fd",
+        "G5D-bf57d69a656a346ca8bb",
+        "G5D-c5d2a5720e4be3eeea45",
+        "G5D-cd0cebb807369562944f",
+        "G5D-d7e005c606e33fe7793d",
+        "G5D-d9462ca9825febc23c8d",
+        "G5D-e2a186c1484d56913198",
+        "G5D-e60ecfdcfae834e01710"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Crime",
+      "participant_ids": [
+        "framework.crime"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkCrimeTests",
+        "EpidemicSocialLegalIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-6ab66c3917a7b538",
+        "G5P-754ca17db48fc0c7",
+        "G5P-859294741d5e3c76",
+        "G5P-aed58d497b91d3c1",
+        "G5P-bba3fec5d4e51aec",
+        "G5P-bbedb5e9e68a714a",
+        "G5P-cf7b2991093d30f1"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0d5fc7f7a586f80108ec",
+        "G5D-144c187fbaf42945fc92",
+        "G5D-34288911d2b71e036f81",
+        "G5D-3cb03671b84339b1b8db",
+        "G5D-5e3bfee533ed8257fb3c",
+        "G5D-609edfacb1bd24cdb29a",
+        "G5D-83936ebc91c754ffe48c",
+        "G5D-8f6527d1a6f0c10792ba",
+        "G5D-92ce71a1a06b4ccba5ac",
+        "G5D-9ceb6e882164c11f96c1",
+        "G5D-a008ea4ab0de7ac12f5f",
+        "G5D-a3ec8de7c8d72c3134b4",
+        "G5D-af825443bc8b940fb470",
+        "G5D-c4f63b2b26560b7a3f22",
+        "G5D-c833ad991df4cb51214b",
+        "G5D-ce2735fc30bd845cf05f",
+        "G5D-d4a4ac89d183ac762e47",
+        "G5D-e65569c0e746f29ccb38",
+        "G5D-eb25e9af46c8fdd49436",
+        "G5D-f95e0f916a9ce59cd0af"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Dialogue",
+      "participant_ids": [
+        "framework.dialogue"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkDialogueTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-03e69f73a56516cd",
+        "G5P-4f72acdd4279a7ff",
+        "G5P-9cf78beddbe11a0f",
+        "G5P-b528f76c99ff02dd",
+        "G5P-c93bf087c04673c1",
+        "G5P-d2e437d8f6205275",
+        "G5P-fe8297eb102eaea4"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0546b005e2216b306bf9",
+        "G5D-06bc0be512c65908be10",
+        "G5D-20752df6475966d37fc3",
+        "G5D-22f67655765c4d602f4c",
+        "G5D-3ab8740208dbff8e43ae",
+        "G5D-74ecb82c137a9ed70fb7",
+        "G5D-836dd6e3f9b5d8888aa5",
+        "G5D-883592dc2279f143bf0c",
+        "G5D-941df0ab45b81099f851",
+        "G5D-ce72d5ac8b189cb7e2f7",
+        "G5D-d47552fda45fa342ac50",
+        "G5D-dcf4d45ea667af5218c5",
+        "G5D-e0cd7840f0aa1ed4e450",
+        "G5D-e592cfea814453f3ffe7",
+        "G5D-ea59f51b179208bcf3c4",
+        "G5D-f504f56d21977b5b759f",
+        "G5D-f687661034dece869761"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Economy",
+      "participant_ids": [
+        "framework.economy"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkEconomyTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-2b3c1bba68786921",
+        "G5P-55807ced9b323969",
+        "G5P-6fae4a2d30143710",
+        "G5P-ab8525325fd4423d",
+        "G5P-addab9fb80abb970"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-3ba50e784af2f524c60e",
+        "G5D-478e43f188ea5487e579",
+        "G5D-59e14d342d584126d72b",
+        "G5D-8b641aa51ecc11a652f0",
+        "G5D-a89e09668ad5e3ea753a",
+        "G5D-be02a5de8717edf89565",
+        "G5D-c8827f835ae83d893caf",
+        "G5D-cd8f7b86fbc38451f391",
+        "G5D-f51831a34396db50e51b",
+        "G5D-fd5db7f59770d27166aa"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Effects",
+      "participant_ids": [
+        "framework.effects"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkEffectsTests",
+        "EpidemicStateIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-22ed1e3fe57389f1",
+        "G5P-443d6be2b551f17f",
+        "G5P-8f29293a6d908b06",
+        "G5P-cee5edc1f2f5bf91"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-094dbe5c29c3a439a28c",
+        "G5D-1764fdba722971c87e84",
+        "G5D-1b09c31177ee9dbc3ddb",
+        "G5D-1d104f4ed03db529ea53",
+        "G5D-35563f6293b36dfb6edd",
+        "G5D-5c4f30fa3299f92f38c2",
+        "G5D-63bc4c8144f8910be0ce",
+        "G5D-82cd55278cf01ad5f684",
+        "G5D-83ed5871825e4c801aab",
+        "G5D-851672c7f71c59a91b99",
+        "G5D-8c9d894098fc1db3b521",
+        "G5D-8d87f8a82fe5ab76cefc",
+        "G5D-9010dca3fff68e6fa21b",
+        "G5D-ae8b657bc9f190468f57",
+        "G5D-b77c76213f95a5cbfdcb",
+        "G5D-c4d5f62d80a8d060ef91",
+        "G5D-cb69d4855dbd0bb2f6d1",
+        "G5D-cba8fdf502ba4b87b3c9",
+        "G5D-e2d1ada9f2b29f90e125",
+        "G5D-ec74c467730ef0defb3b",
+        "G5D-ed332a0a685ef3a2fae4"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Encounters",
+      "participant_ids": [
+        "framework.encounters"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkEncountersTests",
+        "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0a0d68790a1190c2",
+        "G5P-0c76b4dfe84b6bc7",
+        "G5P-7d9f5b01ac1e2aad",
+        "G5P-976cc3940deffac5",
+        "G5P-97dd9c4867d2558c",
+        "G5P-b1fa424e204f93c5",
+        "G5P-ce30cf4e30fe4505"
+      ],
+      "defect_ids": [
+        "G5-RESTORE-ENTITY-HANDLE-001"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-3b5174d13960b0316592",
+        "G5D-79d3f53a0d62548cd53a",
+        "G5D-82864ebf0ee4e84e4289",
+        "G5D-95b6c44227a37f12bb4a",
+        "G5D-d09c39ee867de499904e",
+        "G5D-d63904c2f57f5d420954",
+        "G5D-e8b10b40083888a092b1"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Entities",
+      "participant_ids": [
+        "framework.entities"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkEntitiesTests",
+        "EpidemicStateIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-5071377603aa8eb0",
+        "G5P-7aa6a75108deabd7",
+        "G5P-b502d32092dc1dab",
+        "G5P-d8a4fcf6d2cc5bde"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-12b4d0a092aeb70291d3",
+        "G5D-2c56e79f288efda082bc",
+        "G5D-5473b4022b8bb6931615",
+        "G5D-65497e5b151f96a9d0b2",
+        "G5D-7784fbb8f0bed4d215b4",
+        "G5D-7dbc3f892da76eeb5267",
+        "G5D-8e623abe5c05fe204511",
+        "G5D-906377051b0d5f74ab96",
+        "G5D-a276d187c20072077d63",
+        "G5D-b670d623be427e06b48b",
+        "G5D-c2496eccea72b75f94c7"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Environment",
+      "participant_ids": [
+        "framework.environment"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkEnvironmentTests",
+        "EpidemicWholeEngineRestoreTruthTests",
+        "EpidemicWorldIntegrationSaveParticipantTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-10004c2bdc27123f",
+        "G5P-3ed85dcafabbc11a",
+        "G5P-6f88fb2682967839",
+        "G5P-7facf410fb24639f",
+        "G5P-b13f2e6165737b33",
+        "G5P-be64c186de8b3a32"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-056e35101f772aeff409",
+        "G5D-092f17fee9e45e51a177",
+        "G5D-455826a8cbd6c8f113de",
+        "G5D-649c8f7a72661572ac58",
+        "G5D-71602f3ee070604449ea",
+        "G5D-7666e26d304080f5f350",
+        "G5D-b40048d2f00f88de4e28",
+        "G5D-c4693e0bece0f889799f",
+        "G5D-c8ae7ae6dcc1db3c85f2",
+        "G5D-d1cc5b05d0a7b956aec6",
+        "G5D-d31164397430345958af",
+        "G5D-d7c68d12d166a9a40098",
+        "G5D-dc0c60b50ea12e091199"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Equipment",
+      "participant_ids": [
+        "framework.equipment"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkEquipmentTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-2812c8ebdadd426f",
+        "G5P-aa0dfb97fd350152",
+        "G5P-bed9f2689261fb4a",
+        "G5P-d6f4f2b64c709e1c",
+        "G5P-ec5f5ccda8f48423"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-174c25959e8e6d67fd39",
+        "G5D-21a78ee7712debf3147f",
+        "G5D-33c2b6539f2088ea933d",
+        "G5D-4c0fb19b7f549e8d0bf9",
+        "G5D-4e193f3ba1b1466c1d23",
+        "G5D-5a81719049591915c37e",
+        "G5D-5e91a2116dea5dc5cedb",
+        "G5D-6248be61a90bbe4661ff",
+        "G5D-6799686e5081ada90715",
+        "G5D-7047473e5008759f8c2d",
+        "G5D-938af46c37c1b65fc13b",
+        "G5D-9fa9c9880404011d52a3",
+        "G5D-a0443320a47ae419a386",
+        "G5D-a237ba40a14f8f85cce7",
+        "G5D-abfbb575b79a66b2939c",
+        "G5D-c29b2df46dba4ce654c8",
+        "G5D-d11e82a8ea499d75cecd",
+        "G5D-d230406fde26140241b2",
+        "G5D-d2591a8aed6554542e6b",
+        "G5D-d3b0030af5c3e8f8d5ca"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Interaction",
+      "participant_ids": [
+        "framework.interaction"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkInteractionTests",
+        "EpidemicWholeEngineRestoreTruthTests",
+        "EpidemicWorldIntegrationSaveParticipantTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0730f25ad63a5436",
+        "G5P-84aaab5dd8471d69",
+        "G5P-b724404bd2dd69eb",
+        "G5P-d145bcebddd8b338",
+        "G5P-e31e1d1ac8e1a7c0",
+        "G5P-e867a223bf85379d",
+        "G5P-f6cf3723f7a038ef",
+        "G5P-fb9ac6ca234a95df"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0a5ede06e2ef41a7a2f2",
+        "G5D-1370e813ceff1ec13f5e",
+        "G5D-168078be1e06aba8a1b3",
+        "G5D-1764e84c17be6177fe98",
+        "G5D-3ae62ff56faaaacf601f",
+        "G5D-3e65ac23986a067f2a03",
+        "G5D-604d0011b4e68c2b03ae",
+        "G5D-6084cc5f461a36284f6d",
+        "G5D-765c8eade111019d4738",
+        "G5D-7810b3dab3170772406b",
+        "G5D-90648f09772cab4c433d",
+        "G5D-9af4bd6b4e6f1d07e050",
+        "G5D-9e7d76ceb032f195465d",
+        "G5D-b4a2c5dce082f8ca0dff",
+        "G5D-c3546a4edcd438d4ec32",
+        "G5D-c59503347854d8324cde",
+        "G5D-c658476089358c61542b",
+        "G5D-e5d1eb7b972d8989abc4",
+        "G5D-e77ef4c2a50f073bbe32",
+        "G5D-f13d60610cd5dadea2b6",
+        "G5D-f3224183812b5dbe5f1b",
+        "G5D-f8872f85b0f546ba9faf",
+        "G5D-f96b416f984d1a81a154"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/ItemsInventory",
+      "participant_ids": [
+        "framework.items"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkItemsInventoryTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-5d208e78f6350f3e",
+        "G5P-cbd3e2ac78b00c32",
+        "G5P-d94d8dd337fb90a3",
+        "G5P-ff54634d077bafd1"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-2509b0ae8fde21d479a7",
+        "G5D-279d1cb372b4bb1de876",
+        "G5D-387995aceac63d8aeba1",
+        "G5D-7137e7c99ff56df5d42a",
+        "G5D-7e9a9c48931b6e70a4b1",
+        "G5D-8756be07a7c4b97185f2",
+        "G5D-ab93ac835836413de408",
+        "G5D-b81b0f6285b8dc42dcd3",
+        "G5D-bbfaf3d10ac5ddf2ee80",
+        "G5D-bf82b9fdaeb95835847e",
+        "G5D-f5991a6674376e82e66a"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Knowledge",
+      "participant_ids": [
+        "framework.knowledge"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkKnowledgeTests",
+        "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-01e89ad744fbb038",
+        "G5P-1543ee3ea40352f1",
+        "G5P-1f73a8323b691c74",
+        "G5P-66051a45cddfc347",
+        "G5P-97029c9e525dcfc2",
+        "G5P-da8533b9ac6fdd9f",
+        "G5P-e46a8aac0b605776"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-1639dc10e5beb60cb673",
+        "G5D-228f4d477b18b0529964",
+        "G5D-7fc9cbab695ac231e670",
+        "G5D-8c1f7c7900bdd378975b",
+        "G5D-93e6fc2189b14cf4b814",
+        "G5D-9718d196ed15c5adca6d",
+        "G5D-9dfc4317ada5681dd528",
+        "G5D-a88e9f1f4a9343da4477",
+        "G5D-b93c4b0d86fc388ed574",
+        "G5D-be2bf50ea0185b002551",
+        "G5D-c9b6a01adec12e7161fc",
+        "G5D-e286741975156aac636c",
+        "G5D-f8b4c9b9cfa5dfba297d",
+        "G5D-fb785319d1bb602b0e42",
+        "G5D-fe740b7b10db553700bf"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Loot",
+      "participant_ids": [
+        "framework.loot"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkLootTests",
+        "EpidemicGameplayIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-93974ba4fe93271b",
+        "G5P-946f0c82112a3788",
+        "G5P-b7cc033a424d006e",
+        "G5P-cee0297e0a031aaf",
+        "G5P-d1706934f07c3dfb"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-15379293693178bf86ae",
+        "G5D-18fc19b37e6b08cca689",
+        "G5D-1a7314234e1b56e0534e",
+        "G5D-1d2f0b0c70fb65599de2",
+        "G5D-24258c027ca561a5bd92",
+        "G5D-2eb74488d0d211220506",
+        "G5D-2ed9879c4d15c00a5ecc",
+        "G5D-455e2a01bc1c9d26ca38",
+        "G5D-55b055508a107e2d0e34",
+        "G5D-770792fbc2513a8192f8",
+        "G5D-a6d846300d912cddbfc3",
+        "G5D-dcdfced973dbdc24bd7f",
+        "G5D-f9cb2607a8ce8e4eebd0"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Materials",
+      "participant_ids": [
+        "framework.materials"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkMaterialsTests",
+        "EpidemicStateIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-058baef850d7a213",
+        "G5P-307034a1b0cdcc5c",
+        "G5P-4c8194ed7dd8f83f",
+        "G5P-4cf4071cc798a337",
+        "G5P-713c0977bf8a0cd8",
+        "G5P-97bf2e9eb5ddf380",
+        "G5P-9812e092818d544b",
+        "G5P-a8fd38a9959570da",
+        "G5P-ab00f7ada2dd5344",
+        "G5P-b7d9fb9d7ea3a25f",
+        "G5P-b9dec906ba1c7cda",
+        "G5P-ea18ebdd98306f17",
+        "G5P-f70981f4b176e5ca",
+        "G5P-fbd43d24b0fe2322"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0d66f3542a0c8c39a6c9",
+        "G5D-0fd87ffae7d56cb8da9d",
+        "G5D-27b7f1bb6bbdd369bc7f",
+        "G5D-284775c0260ac800527b",
+        "G5D-2cce0c595d35cc791f1f",
+        "G5D-2d0dd85c7f7643d97207",
+        "G5D-343948ea74ebf1c68029",
+        "G5D-399439a7ebdd30be883f",
+        "G5D-3cc1f9d47a98b6054bb0",
+        "G5D-3e24344f4d6bf12f5c61",
+        "G5D-444bd945936f9fa4378f",
+        "G5D-45a95ad80acb4785a900",
+        "G5D-4a697e0981563aa23b8a",
+        "G5D-5cf42f4fdcd9e1824789",
+        "G5D-5f6beb8ab20ee1d4550c",
+        "G5D-60351ad9429e6b59b7fc",
+        "G5D-6099c0c86572b0f61f26",
+        "G5D-71a6594acf3125ee30e7",
+        "G5D-763e2d622f2457bce1fe",
+        "G5D-7729e55992b0b31e4e75",
+        "G5D-7b0f69fbe8c9f5331dac",
+        "G5D-86a3154abd7c3820ea83",
+        "G5D-88044d8f8d64780713f9",
+        "G5D-904a498b1d4f589a7453",
+        "G5D-9af2f442dd28bb2fd1eb",
+        "G5D-9bcc976a00897241df0d",
+        "G5D-a3a3cbc0c5fa4d9f36dc",
+        "G5D-a7022bd3e1ca551631d5",
+        "G5D-a888ece637207020b3ce",
+        "G5D-aa652de6d6e8cf91cc6d",
+        "G5D-aad0586b4831bc2c4f03",
+        "G5D-ab9575581c1961fdb799",
+        "G5D-ac770ce7af1d85bf1b3c",
+        "G5D-adff777aa21347d72f55",
+        "G5D-ba62b263c22e7c5a5730",
+        "G5D-c12605b10c561411af4b",
+        "G5D-d3f8ace58b838e817de5",
+        "G5D-d5f6efe8a7ea28ddce03",
+        "G5D-db20db03af00949b602e",
+        "G5D-df1142e235ed7fee8332",
+        "G5D-e53116b94f0928343995",
+        "G5D-e77f2f147e75ab489d10",
+        "G5D-f8a0d76b7782933b426e",
+        "G5D-fc3d8415c551ca77d25a",
+        "G5D-fc61742ffee01d86f7e3"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Narrative",
+      "participant_ids": [
+        "framework.narrative"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkNarrativeTests",
+        "EpidemicNarrativeIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-51b98ca5e87afd35",
+        "G5P-774662df895ba305",
+        "G5P-9f939c9bada76f17",
+        "G5P-d16d42fcdf7561f7",
+        "G5P-d9ae3ed17b0a79e4"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0f21baf78858606ec547",
+        "G5D-1dbe87440510691e6d32",
+        "G5D-1f83cdc2f86d94b79397",
+        "G5D-345802d56715cd15f2f1",
+        "G5D-7ffeba57ba303f489198",
+        "G5D-a32790ce1101dcf27342",
+        "G5D-ae7f082656852d54fce1",
+        "G5D-c348f68bddd55861e3b6",
+        "G5D-cd8558b5a37cc6e78d1f",
+        "G5D-d621d55f4e1c1c8af7d4"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/NavigationSemantics",
+      "participant_ids": [
+        "framework.navigation_semantics"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkNavigationSemanticsTests",
+        "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0588f19548972cf7",
+        "G5P-4f168788839fcdb5",
+        "G5P-986762d0f0f8146e",
+        "G5P-ce8203d9e0d26c0d"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0ae09f12f0a2eb898d18",
+        "G5D-0b09a30da48e97596849",
+        "G5D-0cedfeca67eb246b632a",
+        "G5D-10fdb791a9c829f69b32",
+        "G5D-1f685e7bb6384a5075f0",
+        "G5D-30b51dbb71d09404de9e",
+        "G5D-5a1a05317980f322c020",
+        "G5D-5cc1acdd7c6ece76ede3",
+        "G5D-6421b8fc86519105331e",
+        "G5D-6fc98e15bcf63cb7b94c",
+        "G5D-7cd8282e5b5169f6ad10",
+        "G5D-96fca98d7a9bbca46fb8",
+        "G5D-9e98d6fabd17ebf5c857",
+        "G5D-c3d5303f67ed7578fcd1",
+        "G5D-c75c33a5d7fe5b3dd747",
+        "G5D-e378d34cf1180bab08ed",
+        "G5D-e73e7000d5f1aa741372",
+        "G5D-f8367d7ec054106e4faa",
+        "G5D-fa879f7d35b5a96be946"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/NeedsLife",
+      "participant_ids": [
+        "framework.needs_life"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkNeedsLifeTests",
+        "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0217bf52ae49861c",
+        "G5P-0f5d4457fc8f5232",
+        "G5P-186c6b55b833d62e",
+        "G5P-a7173fe66523e8d1",
+        "G5P-f10c9e34be99fda9"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-38c738f0753964073fc7",
+        "G5D-3ae35602ee0c387338b8",
+        "G5D-3d5ce4dcd76079ca1978",
+        "G5D-5890546c3186758b4ee2",
+        "G5D-6e63049fe420c0ca1817",
+        "G5D-82d5f0a449f3bb73aa45",
+        "G5D-85fd376fb14c153c4461",
+        "G5D-911f25cacf223b3e35a7",
+        "G5D-979aa92737b0bf02890d",
+        "G5D-a44762b01ede8458a1a5",
+        "G5D-b7f9aead1c3c807c50a6",
+        "G5D-b8fa41ff915078569251",
+        "G5D-c175f0551ae2876cef8f",
+        "G5D-dfe35acd047b373e2198"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Ownership",
+      "participant_ids": [
+        "framework.ownership"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkOwnershipTests",
+        "EpidemicSocialLegalIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-5783271290a31a24",
+        "G5P-6695bf7423bd0b0a",
+        "G5P-75d59e833a496910",
+        "G5P-84ef4928a0157be5",
+        "G5P-9976f27b8efaf492",
+        "G5P-cd6e754c2ed65d58"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-136e002670858ffd1027",
+        "G5D-2195b7c0b19479d60172",
+        "G5D-3386f6ae8e10464df9f0",
+        "G5D-33bb13e66d1316ba7356",
+        "G5D-504ee4f26c28575f69eb",
+        "G5D-59d6fbd5ea4eb6506cc2",
+        "G5D-68e1e4ad802203230640",
+        "G5D-7aa7a33fb1186cbb438f",
+        "G5D-7cf7191832844c99938e",
+        "G5D-8d8199ab2b3931072fab",
+        "G5D-913666ce8023d6b48c72",
+        "G5D-9bd72155bad8907ceb02",
+        "G5D-a035a21cd99205b04de1",
+        "G5D-ba5df1cb71b965611108",
+        "G5D-c9cc231d77fa9f218dd2",
+        "G5D-cc25c4dbd0e6aa4fd9ec",
+        "G5D-d6bffa9fa229d19da73a",
+        "G5D-e6999eba67a1ca37d51d",
+        "G5D-e8932650774df23f0de0",
+        "G5D-f520047a8cae8543bc06",
+        "G5D-f96fd8cde9b68e69196f"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Perception",
+      "participant_ids": [
+        "framework.perception"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkPerceptionTests",
+        "EpidemicPerceptionKnowledgeAIIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-3d1d41c5905352d0",
+        "G5P-944e41e653630395",
+        "G5P-bb9cf06eec8de20b",
+        "G5P-ec13e8285cae5c9e",
+        "G5P-f9e239b240159995"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-1761dd2e9ecf89588e82",
+        "G5D-24b425cc60dab521466b",
+        "G5D-26e0fb402c0b9792bfda",
+        "G5D-2ef9a787fc0dac2da30a",
+        "G5D-38d57c51522c21576ad6",
+        "G5D-3b388d9643b86436153b",
+        "G5D-4379e2a49be3ea76086a",
+        "G5D-5067faf83fc8355a34b0",
+        "G5D-54306f25846e772e1835",
+        "G5D-5f5962446b86baad588d",
+        "G5D-6a4991e5f160fc988340",
+        "G5D-72dab6b3642a376b1452",
+        "G5D-74cd7b9cd7a7fcee16d4",
+        "G5D-822ef1930c41a6633a22",
+        "G5D-8afa97b8ca616643c533",
+        "G5D-abd75f7e435fd4bfa487",
+        "G5D-b14b37d2956589d48903",
+        "G5D-b22d5889715787abc962",
+        "G5D-db53701af2e2dbfd6091",
+        "G5D-dc736bb9cf7a87e99ea6",
+        "G5D-ee9609fb836c53834f2e",
+        "G5D-f1c4f3bdb2cf99788423"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Population",
+      "participant_ids": [
+        "framework.population"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkPopulationTests",
+        "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-183af4b02aab7f47",
+        "G5P-23a06877775a9acf",
+        "G5P-27e758ad42c2fd5b",
+        "G5P-3ff742f370a26017",
+        "G5P-61d11c4dc8691a37",
+        "G5P-719469face4dd431",
+        "G5P-7967b7865b07e8ef",
+        "G5P-9d99c031de601631",
+        "G5P-d66b30b713b4ecab",
+        "G5P-dbc17393a39918c4",
+        "G5P-eb39a3d4467ec5fa"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0431e8cd0c38dc7d32ad",
+        "G5D-0506950d33c5430e91a5",
+        "G5D-06efc2b02710d24bd809",
+        "G5D-12f406068d49b7b9f753",
+        "G5D-16585f9747e3ba4d5bcc",
+        "G5D-3cd1c1214346452e4122",
+        "G5D-3ed0cdcd730a8e10489b",
+        "G5D-4538811120016037a5a2",
+        "G5D-473aac9deceb539f3412",
+        "G5D-5901ebb25dc54452499c",
+        "G5D-5e1079f209e78d3c8870",
+        "G5D-5fa5ceecfae6cf4f8b3f",
+        "G5D-642df95c672e1ed987f1",
+        "G5D-6aab1acb7b6df2e879fa",
+        "G5D-6ae55335506348e5600d",
+        "G5D-6f250efd4efb9d4b6f6f",
+        "G5D-6f66764edc3759344647",
+        "G5D-9039ee3a94eaa5c9918c",
+        "G5D-9d5b58481f7a1b101acf",
+        "G5D-a01733468a869da73eb2",
+        "G5D-a6b04c4b62a4e2210208",
+        "G5D-b4d4bd0d3d2b5aa3b12b",
+        "G5D-c27c4657c8ba0b2c6232",
+        "G5D-c5053dccbcd631138977",
+        "G5D-caaac4e23b2c91d31d52",
+        "G5D-d30a24506cea95c5534a",
+        "G5D-e0812c6824437fe5d47f",
+        "G5D-e16996fbd5de5bc7f18d",
+        "G5D-f1b4f1fc19533556f744",
+        "G5D-f66dd18409d163c4aa85"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Processes",
+      "participant_ids": [
+        "framework.processes"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkProcessesTests",
+        "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-240cd39182d1c65a",
+        "G5P-3abcd4e1d44f4710",
+        "G5P-43e5c4870836b7c0",
+        "G5P-643f81e38d029814",
+        "G5P-8af150157cfdcef2",
+        "G5P-8da3c0cab3680196",
+        "G5P-9570d5a093203f3c",
+        "G5P-c3152d77251baedf"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-1ba3c55b9231a15ec51c",
+        "G5D-21ddbb0a81b0a46153de",
+        "G5D-3ced449fecb74f2f9c51",
+        "G5D-5108d55557408adbe01b",
+        "G5D-5cc46a12163ca16ad022",
+        "G5D-605b9c8d3133cacc69ac",
+        "G5D-61ad9a8e3bceed95b8b0",
+        "G5D-6aa37252d87a03a0e8af",
+        "G5D-726197f836c82d01ad87",
+        "G5D-8d0062233e2eec3392f9",
+        "G5D-92444f42b5d0df0c29eb",
+        "G5D-9a81cf0daf85a0bcd4ce",
+        "G5D-9be9e39cbd409e6326a0",
+        "G5D-a5341ec1ea68f883af5b",
+        "G5D-a65c4685c4918074bbfd",
+        "G5D-ac46da67dc10d54037c5",
+        "G5D-ad377ad02733b5ee6534",
+        "G5D-b2f98dc8b59fe55b9ab5",
+        "G5D-bf4e0fec9bbf2701cbcb",
+        "G5D-dac1d4c6ee4d28aae32e",
+        "G5D-e1c762be5254b7ce91a4",
+        "G5D-e9581cff4d7b78084b26",
+        "G5D-fdcb59fd9c9d4d56fee8"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Progression",
+      "participant_ids": [
+        "framework.progression"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkProgressionTests",
+        "EpidemicGameplayIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1f1395bb4c5e9ac3",
+        "G5P-276f3de57865aada",
+        "G5P-35caeb661f2641dd",
+        "G5P-3b2ee0ae1476a524",
+        "G5P-448549f95e1efa41",
+        "G5P-8ba83a08fd9a9823",
+        "G5P-b9f1b843fc28d951",
+        "G5P-bf5a096ef41ab2e6",
+        "G5P-f1616a38828f5c69"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-15246e7c1e5233a34546",
+        "G5D-23bf59e342ad9e8485aa",
+        "G5D-49def45fd3b0d0627626",
+        "G5D-7475583a473c22593715",
+        "G5D-a309c0f4fa12edcfb1e4",
+        "G5D-b1e8a8b4617abd307a53",
+        "G5D-b22ec68f1d6e9abf93f6",
+        "G5D-bcda91bbceac445ba7f0",
+        "G5D-cfc5296888050ef6c375",
+        "G5D-d8e357fdc12661da2bd4",
+        "G5D-d9fd7f8b9b8cbd8cf8c3"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/ResourcesProduction",
+      "participant_ids": [
+        "framework.resources"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkResourcesProductionSeparationTests",
+        "EpidemicGameFrameworkResourcesProductionTests",
+        "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-298c5bd247575cf2",
+        "G5P-7008a2a494cb2ce7",
+        "G5P-c693c7149d336e11",
+        "G5P-c8a48b74242cdb82"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0f33205eeb5ad49e5297",
+        "G5D-1e90c809a62fd8abacd9",
+        "G5D-243a2e1ee230c1ee6be8",
+        "G5D-251dc12ba9720ddab0e0",
+        "G5D-2d4e9ab700ec63a21857",
+        "G5D-327ab828c8595d616aa1",
+        "G5D-3924e3e2b0a0c8b01e3c",
+        "G5D-3e94aeff6be39ede1450",
+        "G5D-4bb42414319fe6c2754a",
+        "G5D-511b1a1a7d2892ce54ef",
+        "G5D-5210c2c2145fe834635e",
+        "G5D-5e95830e0eb624fdf29b",
+        "G5D-5f5c26e0bf1dc1f753aa",
+        "G5D-6375b4eb4f3f4641e128",
+        "G5D-6ac76bb33401b343bd78",
+        "G5D-748f73635a32ac0dea3f",
+        "G5D-74e68eb970e5970068e0",
+        "G5D-8b303cc5c62419d3a65a",
+        "G5D-9a0f715ad399abb2d774",
+        "G5D-9df4485fa6bff3355d97",
+        "G5D-a71f15f4d268fcaca23c",
+        "G5D-b0e691251ee0c44ae62b",
+        "G5D-b31f4a6b90e437c7df88",
+        "G5D-b92088f66148b12219f0",
+        "G5D-c1fc162be7a6278b036e",
+        "G5D-d282c4422eae416f4127",
+        "G5D-d338554db45247bd8910",
+        "G5D-d905f5893ed1efb5b4a9",
+        "G5D-e0fae3f5500c0414e5a5",
+        "G5D-fa813b50dd36c3b95a0b"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/RolesJobs",
+      "participant_ids": [
+        "framework.roles_jobs"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkRolesJobsTests",
+        "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1c737d10e0e7ba54",
+        "G5P-466f8c5a6454073c",
+        "G5P-47f375d819711007",
+        "G5P-4f775100809cd993",
+        "G5P-50cd1aa2a8152051",
+        "G5P-5de9d355755f4fb4",
+        "G5P-64c5cc6877ef4f5c",
+        "G5P-72aacfe4f9a82e18",
+        "G5P-741da75486e06796",
+        "G5P-85e7d88a424aeeb0",
+        "G5P-86bbdc5f4a401b97",
+        "G5P-92d56dbf34c0999a",
+        "G5P-95548cacc404ff12",
+        "G5P-980ebf989e48c7a4",
+        "G5P-a37ea83d6843958c",
+        "G5P-a58b180db0991763",
+        "G5P-cf3aec47978c873d",
+        "G5P-d11023e293aecb81",
+        "G5P-d7eed107190d1dc0",
+        "G5P-db0ec62f1ba26e4d",
+        "G5P-ef9a157fecfaa064"
+      ],
+      "defect_ids": [
+        "G5-BARRIER-001",
+        "G5-PORTABILITY-AGGREGATE-001",
+        "G5-RESTORE-VALIDATION-VIEW-001",
+        "G5-SAVE-001"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-17558d527e120bb1af5d",
+        "G5D-2a91e5dbae21f196a88b",
+        "G5D-39b45d85a18010aeba9d",
+        "G5D-4fb83de49b817cba6b75",
+        "G5D-61963403c58d42f73d14",
+        "G5D-7668f1105fe0e1ece708",
+        "G5D-774388026b2dc9c5142f",
+        "G5D-779227e78f7d3546b8f9",
+        "G5D-7c5ebabacc71a12e069f",
+        "G5D-7f4b789a71fd979012a3",
+        "G5D-88f741efc661e5c8735c",
+        "G5D-8af6e83c4c5d7ab172f1",
+        "G5D-92452e34fe4d42272a90",
+        "G5D-94b01f99b45989fe30cb",
+        "G5D-97793aafa91ca4b2f533",
+        "G5D-a225f6a2f2ef8f6a5a18",
+        "G5D-ae397c05935524e2e704",
+        "G5D-af6e41069ca30c081d2c",
+        "G5D-b7697e9fe3ae7209d68d",
+        "G5D-bf0fab1cbc0b3ddb7d38",
+        "G5D-bfa41d4776bb81e7d66a",
+        "G5D-c563ec985590446b23b1",
+        "G5D-ccfcfa5f2e6da57849e5",
+        "G5D-d5a94b5f21c9c015cbdc",
+        "G5D-e0c7015945d9c14b916e",
+        "G5D-e55020678577c3d7053e",
+        "G5D-e82960c2a3d5d100ebea",
+        "G5D-ea9abe7c3a25ca539940",
+        "G5D-f8ce7c3412b94444d23c",
+        "G5D-fae9a004b2458cea1e5f",
+        "G5D-fe15b8a7e41481c54236"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "participant_ids": [],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicGameFrameworkSaveGameTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1de5fc8a50a77968",
+        "G5P-357a6d57d024231b",
+        "G5P-35c7c112496c39d6",
+        "G5P-5b7342939de0823b",
+        "G5P-a396e3a9aabb42cb",
+        "G5P-ee4e184d87157750",
+        "G5P-f5d894859231d2a5"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-00e8a7f93db2c4549634",
+        "G5D-0efb13aecc71f9ae683b",
+        "G5D-5112243b50455c7db509",
+        "G5D-52b70c5748498bf2a5ea",
+        "G5D-57fae6903868895dbeb6",
+        "G5D-859d658b5b8cb50344d6",
+        "G5D-85f197f1fd9e936e3e7c",
+        "G5D-97ddbcde504c6538740a",
+        "G5D-a84adb1b9ea6b93588f4",
+        "G5D-adedb4b427c626a603c4",
+        "G5D-b2c79e5c446622f658b5",
+        "G5D-b7c5b08d9cdc6f71f64d",
+        "G5D-c8a8d2e00ba99f95e8e9",
+        "G5D-dbfb84e387a306039ea6",
+        "G5D-f5f5117cf0b2f52e45bf",
+        "G5D-fa9cc1f13924964257f9"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Simulation",
+      "participant_ids": [
+        "framework.simulation"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkSimulationTests",
+        "EpidemicProcessResourceSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-331d18474f80f357",
+        "G5P-55e59901da279541",
+        "G5P-57a1fe19948dab39",
+        "G5P-5983e95c5477e38e",
+        "G5P-a80f58c238d214e8",
+        "G5P-db085998710fd26b"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-014d189299950eab6ffe",
+        "G5D-15357373897555ebdb40",
+        "G5D-277932aa739c5c6106da",
+        "G5D-582e2b3ef8ec41e8180e",
+        "G5D-723b0cebb05c9ae9deea",
+        "G5D-95a60b5546a2acdfca95",
+        "G5D-affec7bd25831d127cd6",
+        "G5D-b515f65aabe63d7dee6e",
+        "G5D-c83306f2cc62ec8da293",
+        "G5D-ecd5b048da12e359a601",
+        "G5D-ee3d9dd8d49578bd7da1",
+        "G5D-f9bd48b0691fd02cac33"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Society",
+      "participant_ids": [
+        "framework.society"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkSocietyTests",
+        "EpidemicSocialLegalIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-03b8385d41d93a48",
+        "G5P-68ec1d77b77b1374",
+        "G5P-b721c225ca60f30a",
+        "G5P-da9665370eca69cd",
+        "G5P-df77f317336e7ace"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-001e09846cb60f5fae81",
+        "G5D-03920b143cd5249ac68e",
+        "G5D-1236197c741cb0ff1b2d",
+        "G5D-1cb43c81527ed4dbee1a",
+        "G5D-41fa68a03a87b6504010",
+        "G5D-463cf750f54c262a4a4e",
+        "G5D-5192391152bac7deb393",
+        "G5D-6a1a1336e539dff81f8f",
+        "G5D-75574fdbae8f16aa2358",
+        "G5D-765ee425b784cd2d58c2",
+        "G5D-9a5d6a179f1d69946da2",
+        "G5D-ae8f5c2c4b609efc4ca4",
+        "G5D-ba06e37a6ca904003a13",
+        "G5D-c28a27f5f0fd3b904926",
+        "G5D-c53e5393b86587dd86e3",
+        "G5D-c87b5826b536d4291c3c",
+        "G5D-dbb8ee413d3a96d9b7ac",
+        "G5D-de19ff14349cf6d1493b",
+        "G5D-f9b15fae930d8b9ca6de",
+        "G5D-fcacb0e7b7a8d74f8fe5"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/Traversal",
+      "participant_ids": [
+        "framework.traversal"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkTraversalTests",
+        "EpidemicTraversalNavigationConstructionIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1d9b520c6a175e82",
+        "G5P-311c3fc14667feb9",
+        "G5P-72e4b18022daf191",
+        "G5P-b1d2b91259d957ac",
+        "G5P-fe529449e2717229"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-00f4bd08bfbdc322b566",
+        "G5D-0b167ad41148a72c4173",
+        "G5D-16496e9bcf449dac8902",
+        "G5D-1c1faba222e796885334",
+        "G5D-2d0301341058c6db1f3a",
+        "G5D-32c4a0f4e2ff947363f0",
+        "G5D-3b0602a5c5803a89c59a",
+        "G5D-570bb128a5f68b7ff613",
+        "G5D-57c93f922ca0a79d8e81",
+        "G5D-5f0ef16522294c1440f2",
+        "G5D-72ff9c417c6d2a11d081",
+        "G5D-733dd875e6ca7738c135",
+        "G5D-83a1fa83a6483f03df0a",
+        "G5D-898aeb2742ace0fed0c3",
+        "G5D-adaaa5556d9c2c011cad",
+        "G5D-b1397012fcad82c9c8f6",
+        "G5D-b65cb9c57f804f3d9706",
+        "G5D-b678426404f87ea2252f",
+        "G5D-bad84c2896478dac85ed",
+        "G5D-bc1e4527712a567fb129",
+        "G5D-ce16b84c9a484bf8f38e",
+        "G5D-e1fd3dc1988a4fa0debd",
+        "G5D-f42bc1d2516e80e7d421",
+        "G5D-fa3dcaf6d4e227644356"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/GameplayWorldStateOwners/World",
+      "participant_ids": [
+        "framework.world"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkWorldTests",
+        "EpidemicWholeEngineRestoreTruthTests",
+        "EpidemicWorldIntegrationSaveParticipantTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-103b8317de20d2cc",
+        "G5P-17496b51bc1735c0",
+        "G5P-3003679845f83cd5",
+        "G5P-3ef90744b8b6cb16",
+        "G5P-421469254649f41d",
+        "G5P-6258e1e43df52ae8",
+        "G5P-68d858764ed18692",
+        "G5P-790d12e477b62c1b",
+        "G5P-8735f05e852ec639",
+        "G5P-adb31fedfa081a7b",
+        "G5P-bb1ae578072e7182",
+        "G5P-c6ef93701c8cbe8a",
+        "G5P-f8a1e5a0559af64f"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-06e1ada8caa0a091b58b",
+        "G5D-2ebe0cdd279d4fa68443",
+        "G5D-30252789734545ca5748",
+        "G5D-379b9397da6e8c61a51b",
+        "G5D-40a59422be710429e42b",
+        "G5D-4391df0a00afdc10da20",
+        "G5D-4bae9deaffc57cae0b4b",
+        "G5D-697f3bde4ff3afc46f0a",
+        "G5D-abdaa1bb6aba78c194e4",
+        "G5D-dbf5786a01de2adc2594",
+        "G5D-e7035beb57887d583bc9",
+        "G5D-f54da421206b97c87c75",
+        "G5D-f8e254ac540c2e7e8e8d"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/ExtendedGameplayIntegration",
+      "participant_ids": [
+        "integration.trade"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicExtendedGameplayIntegrationSaveParticipantTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkExtendedGameplayIntegrationTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-064b28d7907c3f47",
+        "G5P-0ac34e1be8e84e01",
+        "G5P-114687fe02d8ae8c",
+        "G5P-1f8badc040d283f4",
+        "G5P-25563a98eefd043b",
+        "G5P-296cdfa0f52b4cb9",
+        "G5P-2afb5b540da667b0",
+        "G5P-31d5ae7609a94bba",
+        "G5P-34a842c9d9578579",
+        "G5P-38d9fa9c5355cf47",
+        "G5P-3bd6cfaac1120da7",
+        "G5P-6ebc204e04472264",
+        "G5P-78de6916ca6dd7ad",
+        "G5P-7959108970986ab7",
+        "G5P-7a28a2f1b637495a",
+        "G5P-9f0dfb3f32397214",
+        "G5P-ac766b88773b6808",
+        "G5P-b436b1c36bfef141",
+        "G5P-b5581ea665fff9f2",
+        "G5P-c8751fc132c51c36",
+        "G5P-df79f8a4c95f47b3",
+        "G5P-f2bc2359a0946e1e"
+      ],
+      "defect_ids": [
+        "G5-RESTORE-CONDITION-PROJECTION-001",
+        "G5-RESTORE-DEATH-CURSOR-001",
+        "G5-RESTORE-DEATH-ENUM-001"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-096bd7b71075472d88a1",
+        "G5D-19d85a5a4dcaa9bf2776",
+        "G5D-2ccba0fd4b118565d268",
+        "G5D-523dde04c9584d0b1351",
+        "G5D-62171b1cecd412effe59",
+        "G5D-7981275114dd66e41623",
+        "G5D-88e6a84559303c2beef5",
+        "G5D-893f16fe2b67f0038480",
+        "G5D-95e818656b76e7917b6e",
+        "G5D-9d802cbce1b6dbd6795d",
+        "G5D-a5302ce637d87e46e5b9",
+        "G5D-ac580ff260ad7a98b4cc",
+        "G5D-e6b3342853bce292896f",
+        "G5D-f300acd3e46a33cbc921"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/GameplayIntegration",
+      "participant_ids": [
+        "integration.ability_effects",
+        "integration.ability_time",
+        "integration.condition_progression",
+        "integration.death_reward"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkGameplayIntegrationTests",
+        "EpidemicGameplayIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-00241a9fe2c1cd7c",
+        "G5P-246a0038e29cfa3f",
+        "G5P-27adcea36b7e4a92",
+        "G5P-2d46725e003682f3",
+        "G5P-3025cbbddca523da",
+        "G5P-39326a65eb5c9084",
+        "G5P-623979e0630ae0b4",
+        "G5P-81fa1a448019c222",
+        "G5P-b9955c6d5f6018dc",
+        "G5P-bd9ffedc756a7b66",
+        "G5P-c8efe96f2ca895ad",
+        "G5P-ca588bf7a35541f6",
+        "G5P-eef4ce42f4a42d6b",
+        "G5P-fe96cc7c2f37d2a7"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-05c827a2655195c77dc6",
+        "G5D-1db3f15c37efefdd02a3",
+        "G5D-25a7e37016c8f5cf5528",
+        "G5D-29a61b92f67751fcc697",
+        "G5D-3af2f50e50ffd78df644",
+        "G5D-5b5a9612ec3b02896fef",
+        "G5D-5f8013f3e92856cc2450",
+        "G5D-73d02ea01b906a89dca4",
+        "G5D-7c9565359ca7cbd1caa0",
+        "G5D-844d18e380450a6d4774",
+        "G5D-8b74d8a1aa4c52819520",
+        "G5D-97ee66fdbbdaee56195e",
+        "G5D-9e37c269b47c626b8594",
+        "G5D-a88dd9f33241f20de903",
+        "G5D-c65f614b904510ba411e",
+        "G5D-c867c744b2054b43204c",
+        "G5D-d746242ac88ffa521c70",
+        "G5D-f8a46da457ac04eba8c4",
+        "G5D-fe6371fdf5f0bc887064"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "participant_ids": [
+        "integration.scheduled_trigger_dispatcher"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkCoreIntegrationTests",
+        "EpidemicGameFrameworkRestoreCoordinationTests",
+        "EpidemicGameFrameworkSaveGenerationTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-19973260af108422",
+        "G5P-2927ca1852531c5c",
+        "G5P-2c7dd9140d8e6570",
+        "G5P-745ea22157719fdd",
+        "G5P-77e4562bd2e535a2",
+        "G5P-7fc310eb81ed89a6",
+        "G5P-ba39081e9149e5e8",
+        "G5P-c476bf150d65f28f"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-136cc4574edfbd0dd332",
+        "G5D-1c5c57221a2e70270bbd",
+        "G5D-5b47b3e2bb632c214cd7",
+        "G5D-81bbbbcbf9a6781ee0d5",
+        "G5D-8bfaa6b7a8a35243f0d6",
+        "G5D-c3150eced1ffcf4a56bb",
+        "G5D-dc1ea22b21a1f50314ff"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/InteractionEffectsIntegration",
+      "participant_ids": [
+        "integration.interaction_effects"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkInteractionEffectsIntegrationTests",
+        "EpidemicInteractionEffectsIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-09732d483de48cb8",
+        "G5P-b8ad59199d530225",
+        "G5P-cd6c442427a9c7ab"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-36655a817561bd59623f",
+        "G5D-734c4c872d1810c3b2e5",
+        "G5D-de1035dab518ed5b9fc0",
+        "G5D-ea90f6fbb9542346ca08"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/InteractionTimeIntegration",
+      "participant_ids": [],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicGameFrameworkInteractionTimeIntegrationTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-055cb1143dfb10e1",
+        "G5P-0ae8f85f17ab7c50",
+        "G5P-7516b80a79bfe983",
+        "G5P-9f322b83d654feb2",
+        "G5P-a31d267118e78aa7",
+        "G5P-c0590d03d6e9e508"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0b8106ec65fad4cc3afc",
+        "G5D-0f9220483610b268de33",
+        "G5D-70ff858c9e36c3ff6821",
+        "G5D-77cf530d49ff95319621",
+        "G5D-b00e7abe85c7b5fea44c",
+        "G5D-bee2d9c989a07dbf00b7",
+        "G5D-d6032c23e0f44c5d33aa"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/NarrativeIntegration",
+      "participant_ids": [
+        "integration.narrative.external_consequence_delivery"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkNarrativeIntegrationTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1bde30ca385d5b44",
+        "G5P-3ee170f13cb1d232",
+        "G5P-8f5548db8cddb8cc"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "NOT_APPLICABLE",
+      "determinism_candidate_ids": [],
+      "determinism_rationale": "Reviewed domain/scanner contracts contain no included semantic state or observable finding. Typed capture/restore mechanics delegate authority, never own a second durable copy; temporary stage storage is not itself saved. Existing reviewed nonsemantic value; excluded inputs remain outside the domain.",
+      "determinism_status": "N/A",
+      "module": "EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": []
+    },
+    {
+      "candidate_ids": [
+        "G5P-20bf3fff9438662c",
+        "G5P-2e839e263436e2b8",
+        "G5P-3d5caad2c9f12f4b",
+        "G5P-46c4941a13dedeeb",
+        "G5P-58903e9110600f72",
+        "G5P-61e8c03306d8be49",
+        "G5P-6b0934b09f691bf8",
+        "G5P-7d2813cd229ecf1c",
+        "G5P-b7ee8cadeb946abe",
+        "G5P-cd788b3564e62a14",
+        "G5P-d8ddd1a795dc4180"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-11f21406df8bbc0873cd",
+        "G5D-27c8a3fd4658baf8874e",
+        "G5D-3e9792d6a0b4f1637f47",
+        "G5D-40800c60b253c86f7e9f",
+        "G5D-4bb43b41522294cc5f29",
+        "G5D-5791bef0019410e99220",
+        "G5D-77667773204ae1d1b2d0",
+        "G5D-7c963c9af3938fcd75eb",
+        "G5D-8d0358841897ef2177c7",
+        "G5D-8d08886c3ae512663a26",
+        "G5D-a29ebe04fb85c7407c53",
+        "G5D-ba3c9e5d8e7315bae12f",
+        "G5D-c942480804cc3201084f",
+        "G5D-ce77bfd117b33c6317f7",
+        "G5D-dac3ffe1c59ae73bb193",
+        "G5D-f2f7635d48745a25150c"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/PopulationSimulationIntegration",
+      "participant_ids": [
+        "integration.population_encounter",
+        "integration.population_lifecycle"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkPopulationSimulationIntegrationTests",
+        "EpidemicPopulationSimulationIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1955048cf17bd5bb",
+        "G5P-7eaebfd88c0fc9a5",
+        "G5P-7edd4c961552b123",
+        "G5P-8a6658def07166d9",
+        "G5P-a30bf92a6ac7fdf4"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-20c98be8744b0f2f5e3e",
+        "G5D-92dd94b5f75089b0a60e"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "PERSIST-SNAPSHOT is not applicable to ProcessResourceSimulationIntegration: the reviewed public surface has no corresponding lifecycle, external, callback, persistence or reconciliation responsibility.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicGameFrameworkProcessResourceSimulationIntegrationTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-688ab9303866a54b",
+        "G5P-bbae54c7c85f00e2",
+        "G5P-bd62aa9bbc1f268c",
+        "G5P-ec2b6e6edf90faff",
+        "G5P-f5c830283570591d",
+        "G5P-fbf5cedc2e8fae4a",
+        "G5P-ff6f03a5afc86f51"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-01e4cadddba1493297b3",
+        "G5D-05b209f40119657dd777",
+        "G5D-0b62769f694171b41fbf",
+        "G5D-1c5860a99ea075be20ad",
+        "G5D-42f5ec6e0d8ebfd1cae6",
+        "G5D-a87e7b28614a5fa12cde",
+        "G5D-dc544b02e9234ff998d9"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/SocialLegalIntegration",
+      "participant_ids": [
+        "integration.social_legal"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkSocialLegalIntegrationTests",
+        "EpidemicSocialLegalIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1a675070f7913aee",
+        "G5P-21ec23243c1ec617",
+        "G5P-2874575bbb79c1fb",
+        "G5P-3f09c8abc3b7db38",
+        "G5P-5c58814ccb63289a",
+        "G5P-5d3c015a32296773",
+        "G5P-6cfce82833cdc6cf",
+        "G5P-86aded28442b6d2b",
+        "G5P-87c6dbe5dad8b0c8",
+        "G5P-937b4b561b279f41",
+        "G5P-97ffae583c03f759",
+        "G5P-a8fb201335f45466",
+        "G5P-bd642968637cd22a",
+        "G5P-cf8c6fe6c31ac29f",
+        "G5P-cfc1a5bdfe626b1a",
+        "G5P-d18eb8d5ea2a179d",
+        "G5P-d6b449ed052e974b",
+        "G5P-dd11a3fdd824c67d",
+        "G5P-de32a7051cc3bae9",
+        "G5P-ee721dc08715eacf",
+        "G5P-f7d4fc6195c67ec6",
+        "G5P-f8758c430a27de8d",
+        "G5P-f9607cb8570bae62",
+        "G5P-fbd60b80586361ef"
+      ],
+      "defect_ids": [
+        "G5-DET-STATE-PRODUCER-001"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-00e578fb4ccda6863647",
+        "G5D-1132bbccff9627f32ab9",
+        "G5D-24bce840d33a1fdaac88",
+        "G5D-2e44d531e6bab7b05e24",
+        "G5D-413b15eecf341139ed27",
+        "G5D-8d66663c3179b8e1b64b",
+        "G5D-b0c55f5dcecba0dc8fff",
+        "G5D-c70be4b9601d9f66a3bd",
+        "G5D-e2bfa7a016673f722d04"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/StateIntegration",
+      "participant_ids": [
+        "integration.state"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkStateIntegrationTests",
+        "EpidemicStateIntegrationSaveParticipantTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-609ff5f349c53cce",
+        "G5P-a0a329c534464b5d",
+        "G5P-d1a1ab9811450ece"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "NOT_APPLICABLE",
+      "determinism_candidate_ids": [],
+      "determinism_rationale": "Reviewed domain/scanner contracts contain no included semantic state or observable finding. Typed capture/restore mechanics delegate authority, never own a second durable copy; temporary stage storage is not itself saved. Existing reviewed nonsemantic value; excluded inputs remain outside the domain.",
+      "determinism_status": "N/A",
+      "module": "EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": []
+    },
+    {
+      "candidate_ids": [
+        "G5P-20121892d3bfed66",
+        "G5P-41d1f1eca2036eaa",
+        "G5P-6422626011ab0c4d",
+        "G5P-9e370f70539f6bfe",
+        "G5P-d963a3d51b79fbe6",
+        "G5P-e7ed285241f4edac",
+        "G5P-fc5242d666bf5a19"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-5227b41aa717b10ef850",
+        "G5D-8bce86476506a28d162c"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/IntegrationLayer/WorldIntegration",
+      "participant_ids": [
+        "integration.world_facts"
+      ],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicFrameworkSaveCompositionTests",
+        "EpidemicGameFrameworkWorldIntegrationTests",
+        "EpidemicWholeEngineRestoreTruthTests",
+        "EpidemicWorldIntegrationSaveParticipantTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-006383dd445624a0",
+        "G5P-24a6ba6e69fa1c9b",
+        "G5P-27a82bc18e8b4e24",
+        "G5P-9ec0878e7688f515",
+        "G5P-f83cb17d95b38728",
+        "G5P-fcfc90c9cd6cba79"
+      ],
+      "defect_ids": [
+        "G5-RUNTIME-IDENTITY-002",
+        "G5-RUNTIME-PUBLISH-001"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-062e13c2629055fde7f4",
+        "G5D-081b00d6b3f7b87c3d45",
+        "G5D-0903053bfac604b9a595",
+        "G5D-1617ad28a1aa563351ab",
+        "G5D-17a94055db05cb46e1b4",
+        "G5D-1aa2a867b0e4f04b1834",
+        "G5D-1d3314fa2a3fa04cc226",
+        "G5D-29bc05190b2efbaa1d8e",
+        "G5D-2c74be62ddfddb35d729",
+        "G5D-3abff35e97d6dde2497b",
+        "G5D-4ef5df63b408b544159a",
+        "G5D-5e19e70f98bc43709469",
+        "G5D-6c541f55efff00d95c7c",
+        "G5D-73e4bbc85e2563167ff5",
+        "G5D-7cbc0b1bc436dea16a79",
+        "G5D-9059da35dd5c09c0f022",
+        "G5D-c7df6ef5755c38d25308",
+        "G5D-cb5119d79c558290b7ae",
+        "G5D-cc6b690e24634efbb841",
+        "G5D-d5cbba1fa7883e231374",
+        "G5D-f339b5826cbf5aa030ab",
+        "G5D-f50c17c3318423e3869d",
+        "G5D-fcb55567ba2c254905f4"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineFramework/RuntimeBoundary/RuntimeBridge",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "RuntimeBridge exposes no durable snapshot/checkpoint API in Goal 4; whole-engine persistence/re-materialization is Goal 5.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicGameFrameworkRuntimeBridgeTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0a67ed3bc774ca7c",
+        "G5P-143ac1a418c33322",
+        "G5P-1773df7d1a263324",
+        "G5P-2082ecef8c00b778",
+        "G5P-ee0762e87973289b",
+        "G5P-f1b472dd2db9aa77",
+        "G5P-ff93dc5cb801a524"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-14911d9ec5bf3dc94be3",
+        "G5D-325047b2773b095b79b5",
+        "G5D-3d7ae89d5889ef62d1f8",
+        "G5D-5454668093654e71fa22",
+        "G5D-5765b23d776f42073433",
+        "G5D-7b48e4896c51acbd3e01",
+        "G5D-96175bd9980798d10b3e",
+        "G5D-afd779957f973726694f",
+        "G5D-bd024a84ccd468a8ea1c",
+        "G5D-d36bb38224f183055480",
+        "G5D-d92f4423f0ff7c9149d2",
+        "G5D-e37553e74d75865fa466",
+        "G5D-e8effd9183546bdb674e",
+        "G5D-f29b0f0c490f2fc0f9ba",
+        "G5D-f913fe54e3bbb999d3e2",
+        "G5D-fa5ff8091ef56b20b3ac"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Animation",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "No local persistence checkpoint/restore contract exists in Goal 3; runtime state is transient and observational snapshots do not claim durability.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeAnimationTests"
+      ]
+    },
+    {
+      "candidate_ids": [],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-00d5e3b5581b0dace2e9",
+        "G5D-063d2e5b04169a6d5efb",
+        "G5D-17a4240155f28985bfc8",
+        "G5D-7f12b195766f4fd2a3a9",
+        "G5D-a12b73b5d6d909f7d1c4",
+        "G5D-dcd2f68796b0a4a2c1c8",
+        "G5D-dceb971c64752cc68f78",
+        "G5D-f7416a4a4f6e3201c279"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Assets",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Goal 4 reviewed this module as persistence-not-applicable; fresh composition is the contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeAssetsTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-64a3b65186b0e40f",
+        "G5P-66b9abf28de351df",
+        "G5P-6e067fb93d1e264c",
+        "G5P-b4d07a1679ee1eca",
+        "G5P-f6829a90827ff769"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-195ed8e0cc24229735d9",
+        "G5D-5cfd6ea50d03164e20ea",
+        "G5D-63f43eccfe6693f4851e",
+        "G5D-65e6b61e7716f6b3ebd5",
+        "G5D-87e1b59e35284fdea9b1",
+        "G5D-8f494d09e0e3357dea53",
+        "G5D-90275415e21be19e2045",
+        "G5D-91f42493aec22071c24b",
+        "G5D-984db5abb90fa00c2a4d",
+        "G5D-9ad3667c8f53cef8b27c",
+        "G5D-9d67088aa4492e4e5984",
+        "G5D-a35341f8907210cb549f",
+        "G5D-b11d62ad82e91eddcc3c",
+        "G5D-bb7f2edc6d2de4d22af4",
+        "G5D-c4f053291b036554ef30",
+        "G5D-c5aa2a8dbf2a9f9ce838",
+        "G5D-f8cbd5f3e629901f6434"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Audio",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "EngineRuntime/Audio does not own a Goal 3 persistence/restore contract; persistence is supplied by composition/persistence owners where applicable.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeAudioTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-62c2051e2a29532c",
+        "G5P-8f764867d9f99d77",
+        "G5P-be8028eb97f69a87",
+        "G5P-d63db7d80073dfa8",
+        "G5P-fd8aef94886f05cf"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0d888b6bf560c2adcba0",
+        "G5D-0f4ce6200c89fa37f064",
+        "G5D-1e3d74361b2790c6534c",
+        "G5D-31f7cca2d707cfe12316",
+        "G5D-83080ec05d3ab232c09a",
+        "G5D-862631ef19f3b45757a2",
+        "G5D-a2d12161c0b59c9863ad",
+        "G5D-a2d78b6cd058ba75d137",
+        "G5D-aef2792877c037911847",
+        "G5D-b272afbf090ea73ed776",
+        "G5D-d55b30a5bc4afbaf4cb0",
+        "G5D-fc98fd09ad6bd610771f"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Environment",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "No module-local persistence restore/checkpoint contract is part of Goal 3; snapshots present here are detached observations.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeEnvironmentTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-445327a1d0d8bcfc",
+        "G5P-526717bada4753c7",
+        "G5P-7a92a72d6703597a",
+        "G5P-801affc053bef13f"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-1ebde61b5f3915d78cd0",
+        "G5D-23ede0943bbe6a21cb38",
+        "G5D-3bf02618e3dccee86401",
+        "G5D-4102004231e919bf6c46",
+        "G5D-425aceb19f5882560808",
+        "G5D-4a264f0abd89c5ae0afb",
+        "G5D-4f49cb47e6e8be9a3b03",
+        "G5D-5091b1b29ec931c36109",
+        "G5D-61cbcec35cdd708bfcba",
+        "G5D-63520341433f81e4a3ef",
+        "G5D-6c7963900e9449da7a7f",
+        "G5D-759907eb06075d6a5acf",
+        "G5D-852a6531de684a6beb0d",
+        "G5D-a29dddc97cd1f5144139",
+        "G5D-a71bdd184f44a9856cd1",
+        "G5D-ab53c9739e82584244c6",
+        "G5D-acf7201b55a8799d5fcb",
+        "G5D-c5291b0cef0a6f6507cd",
+        "G5D-d19d936c0b179fc63935",
+        "G5D-e1d89584abb71f3df5e6",
+        "G5D-e93e541f5bd73ac21f45",
+        "G5D-ffae78392d4217ffa1a3"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Navigation",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "No module-local snapshot/restore surface exists; state is transient Runtime state or external through ports.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeNavigationTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-0474d3f67e9ed4a4",
+        "G5P-0b4eb2230ffc1c11",
+        "G5P-0bb95246392b0b2d",
+        "G5P-0c485cc9ff880067",
+        "G5P-0d2c1536ee06be0d",
+        "G5P-11211462fb7c42ac",
+        "G5P-27d2c6973622bf4d",
+        "G5P-52d6f94b36d49bc3",
+        "G5P-58ca77808e0e7ccf",
+        "G5P-a1ad92ae1d08089e",
+        "G5P-ad11595bfe9f348c",
+        "G5P-d8ebf98c9b09c9e6",
+        "G5P-da66305dc4242fea",
+        "G5P-e90a7e88b10aafc3",
+        "G5P-fc2b046ea44a6e9d",
+        "G5P-fce10afc28059413"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-164d6ef8b72f15ee6168",
+        "G5D-2c5659bb48b710645d0d",
+        "G5D-34b328b3c9ceb35f5021",
+        "G5D-36ef61fe0a518a278c1f",
+        "G5D-3e8425b3f96c0784c9e7",
+        "G5D-4d456e333266235fee2e",
+        "G5D-54a9df426545fa3091b7",
+        "G5D-6c452720fdfc701507fd",
+        "G5D-7c986ca2e2ed9ac2a000",
+        "G5D-8ab3873edc5c3710a2ce",
+        "G5D-8c9777f1c68871a81537",
+        "G5D-9e55b87586ab0ac0d01e",
+        "G5D-a5c518cf0d61a6feed98",
+        "G5D-b4e03d0012090fcad2e1",
+        "G5D-dec556b2479207cc0bf0",
+        "G5D-e2101a20a05674bc387c",
+        "G5D-e8d288a2373954d31784",
+        "G5D-efc5c45fe66206558e33",
+        "G5D-f8adcf71b979b7faffb2"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Persistence",
+      "participant_ids": [],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicRuntimePersistenceTests",
+        "EpidemicRuntimeSupportTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-323888af7ab6bbdc",
+        "G5P-54ff6d0cbc1824c1",
+        "G5P-812ab7273d35eda5",
+        "G5P-ac0541c02e317cf7",
+        "G5P-ce4814677a7ed8b7",
+        "G5P-cf7a9faf97c9b6a1",
+        "G5P-d2f048909c933cba"
+      ],
+      "defect_ids": [
+        "G5-DET-PHYSICS-001",
+        "G5-RUNTIME-IDENTITY-001"
+      ],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-17773591dffa3820535c",
+        "G5D-34fc7bdbc5fb34fe1922",
+        "G5D-3cd3c90132e941fb4b91",
+        "G5D-3f19f548612d61fae6ac",
+        "G5D-410c74a05bbaf005c9f9",
+        "G5D-4bc1a8a4f7abb2647a6e",
+        "G5D-56a43916effc214dd6e8",
+        "G5D-5c11e434d05498f8205c",
+        "G5D-5e9c26fa880cd8553a03",
+        "G5D-63a1c0b820312cd85863",
+        "G5D-63a6bf2b847e77f85777",
+        "G5D-7b42ca7a9a8e9caf2f53",
+        "G5D-8532bccdb4647bbf7b90",
+        "G5D-8a1bcde9319aa1e9b99d",
+        "G5D-943f100c520255e31e4e",
+        "G5D-a08d5d856b5485734c14",
+        "G5D-ab7e80c4a436a7768888",
+        "G5D-b0474f35bbf54b1b4f5a",
+        "G5D-b2194574be0bd93996f6",
+        "G5D-d2d0da480640e108826f",
+        "G5D-de0d2803b2c4086e3554"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Physics",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "No module-local snapshot/restore surface exists; state is transient Runtime state or external through ports.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimePhysicsTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-a70fd61d2c9b3cf3",
+        "G5P-bf30492ed90f3f0d"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-2085386cf44a6ec83460",
+        "G5D-3e1eedd988b13953221e",
+        "G5D-66ed19966cccb2bfdd06",
+        "G5D-c05bc7a951164e0db7c2",
+        "G5D-c99780e44ad507266f4a",
+        "G5D-cda13177817c5584646c",
+        "G5D-e8f91df7d99bf5ff0787"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Renderer",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "EngineRuntime/Renderer does not own a Goal 3 persistence/restore contract; persistence is supplied by composition/persistence owners where applicable.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeRendererTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-069bac6bcd8db6f7",
+        "G5P-47b374e606e6e44d",
+        "G5P-9d726dc531a790d7",
+        "G5P-d7af42b9ef8ef7bb",
+        "G5P-f531f0cf66dd4e55"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-174f5288a7053e4a38d3",
+        "G5D-2c2993e30c2f279f1805",
+        "G5D-2e299941b5f0b603abf5",
+        "G5D-49b52982def3e1bff140",
+        "G5D-7e11accb7ecbaab19e35",
+        "G5D-9ce3b7eebeb733e44aaf",
+        "G5D-a2936f6b41e86547674c",
+        "G5D-dfda04d4e840efd3559b",
+        "G5D-e7bff2c7765ae7bb6a20",
+        "G5D-eb85f5d0af914011d479",
+        "G5D-f44169c4c451945c769f",
+        "G5D-f4dc8932f5176a030582",
+        "G5D-ff62f488f7f136e5a696"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Resources",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Resources has no snapshot/restore API.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeResourcesTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-bf3d5ca8d55dd885"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-08c541f551d03e08c330",
+        "G5D-4eec714e0247d20d7989",
+        "G5D-6e42ae2b26fa22ec9382",
+        "G5D-8ba2b48075f3cdfa297c",
+        "G5D-a6e709b0764054e0b0b1",
+        "G5D-b450195195e0ccac4bf2",
+        "G5D-c1b988ee02f01d17b39b",
+        "G5D-d3213108529ddb8ad0ca",
+        "G5D-e157def52a996053d251"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/RuntimeFoundation",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "RuntimeFoundation owns no persistent module state or snapshot format.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeFoundationTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-19a3b2103d16a42f",
+        "G5P-25f0f234dcfec8b0",
+        "G5P-5ad302b5512e6565",
+        "G5P-93717e21da6c5f16",
+        "G5P-ad4ed6a550a54253"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-0deb0e146f3a45a3a186",
+        "G5D-12682b7914d835307937",
+        "G5D-4d4834d6bc984bc65eae",
+        "G5D-57ef65fba676b840f11b",
+        "G5D-843be360aa5b2d4fd297",
+        "G5D-8bc747a28d53cd467ea1",
+        "G5D-e8b2d9cd9ca924828049",
+        "G5D-f4e51ae95194911f68e2",
+        "G5D-fcb6f53a8d18aa37058f"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Scene",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "EngineRuntime/Scene does not own a Goal 3 persistence/restore contract; persistence is supplied by composition/persistence owners where applicable.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeSceneTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-fe8c6c7989c149d5"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-04576da4fab00bb32969",
+        "G5D-1bc752c8fa9cdad43b33",
+        "G5D-2c0ea46e2e6c50098e95",
+        "G5D-4deb99f1919c09718c2b",
+        "G5D-767f476e345047f8e220",
+        "G5D-7c74218e5c7c5e0695f7",
+        "G5D-82c56bab2f47e81a8dfd",
+        "G5D-a6a604ab518806ddfe88",
+        "G5D-a6dd3de6840b63f19ad0",
+        "G5D-cb6d8e4d1f2b61d47b9b",
+        "G5D-ce993ca32144f491177a",
+        "G5D-e395340278db263ef563",
+        "G5D-f89c7d92a0d4ab163a22"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Serialization",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "Serialization defines archive carriers, not live-module snapshot ownership.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeSerializationTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-4d6ed67326c65827",
+        "G5P-a49e20c17727e8ba",
+        "G5P-a7ffd42fb62318ae",
+        "G5P-c66b0e420c4bb73b",
+        "G5P-dab00555fe95f5c9",
+        "G5P-eb664e9fd8e18e60"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-005813e86aa5b4c029cd",
+        "G5D-0ab652b50bc04e0846ec",
+        "G5D-11f57095b37cb4c0b11b",
+        "G5D-1dba262c2008725dc3ee",
+        "G5D-2e2fcba984cdba9ee19d",
+        "G5D-33e1827ed14cdb9f9bf5",
+        "G5D-3c7d67f39b67e93c3628",
+        "G5D-5803bd648055575a0991",
+        "G5D-5a289e1f51d9f0d71cac",
+        "G5D-643de3f7ab88eb760cda",
+        "G5D-6bd3afb4292738402686",
+        "G5D-6d26dbc8075a7416c730",
+        "G5D-96771783a65387f06bc9",
+        "G5D-9a5ba1019f6a22839893",
+        "G5D-bf142badd3b50591e228",
+        "G5D-d74f38b4494807f7903c",
+        "G5D-d884084454b50f58c440",
+        "G5D-d93af9a5fde11192916d",
+        "G5D-dc61c0a6c04d7b63036b",
+        "G5D-e4051cba3ea237b12df8",
+        "G5D-eb29dc2b24fffaa9639f",
+        "G5D-ec9ca60c110c2e9795c7",
+        "G5D-f40fbe4ab07ee3c7de4d"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Simulation",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "No module-local snapshot/restore surface exists; state is transient Runtime state or external through ports.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeSimulationTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-10f34f49254b2549",
+        "G5P-1164ccd8ecc7deca",
+        "G5P-1f913437dcd5e174",
+        "G5P-2b6cf1d9f2c911fb",
+        "G5P-4a185de562f0ca51",
+        "G5P-4efd7a2eabcc0276",
+        "G5P-65380588de5beaf9",
+        "G5P-6931720e6611d431",
+        "G5P-6f39a08e834042c9",
+        "G5P-7d19568adf306c84",
+        "G5P-8730c60d41f552a1",
+        "G5P-87a918041f89a27b",
+        "G5P-8d45e55a88a8e8fa",
+        "G5P-926268fd1999f58d",
+        "G5P-977260472a9ac3f5",
+        "G5P-9d0a64f5fc2051a5",
+        "G5P-b1e356800353b2eb",
+        "G5P-b3b52d2bfba25e3f",
+        "G5P-c1263bedb442b7e3",
+        "G5P-d5ba41d3faa60764",
+        "G5P-d5dfa2de76131b63",
+        "G5P-ed3fb9c9e2cbf789",
+        "G5P-efb9c8c4624cdb60",
+        "G5P-f97e48a4dc45fba3"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-046dcb225720cb365c76",
+        "G5D-318c5cc657ae8c40c90d",
+        "G5D-3a0a301eb8bcb2fd63dc",
+        "G5D-40c8a388fae840407e15",
+        "G5D-426156dd36b6de3b53a9",
+        "G5D-4a5602b1d05fd363649f",
+        "G5D-6405107c0fa221535121",
+        "G5D-872439d3bc699152323b",
+        "G5D-a5cbe8971306f53ebb1e",
+        "G5D-cd9446c221effe59d1aa",
+        "G5D-e025f0181301f41d3544",
+        "G5D-e49ed803951003964899",
+        "G5D-e90c5878a4ed73a937ec"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Streaming",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "No module-local snapshot/restore surface exists; state is transient Runtime state or external through ports.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeStreamingTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-02e4e733075a354a",
+        "G5P-1833595cfe185311",
+        "G5P-4afbf948c70ed768",
+        "G5P-4f9aa00bcaec73a5",
+        "G5P-56bbc538a2732b5b",
+        "G5P-62f47a0f38864fd5",
+        "G5P-78d615cc3d0a853a",
+        "G5P-7e07b1827309d0fa",
+        "G5P-8069d981bfc8700a",
+        "G5P-99da840baa79ca83",
+        "G5P-a857a91a6df0cee4",
+        "G5P-c4b61d50e0d47b61",
+        "G5P-ce09c3dcfb179a97",
+        "G5P-e50b7a7932a46ff2",
+        "G5P-f2146c4a6c65b43b",
+        "G5P-f27c73e5ab4a8cd1",
+        "G5P-f5bb4abecf8dd343"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-6268b0983408f61c250f",
+        "G5D-6ee4b5feabbb0aada182",
+        "G5D-85570d8f4a7068998662",
+        "G5D-9957c7da6d93bc779db7",
+        "G5D-9a7d681c61eaf9a33e54",
+        "G5D-b03d9e5ac953684a9aa5",
+        "G5D-bd95b3f57c3b763b0b41",
+        "G5D-c370e46e05b23c86e70c",
+        "G5D-e8631daa722b23ff8fc2"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Support",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "EngineRuntime/Support does not own a Goal 3 persistence/restore contract; persistence is supplied by composition/persistence owners where applicable.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeSaveGenerationPackageTests",
+        "EpidemicRuntimeSupportTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-1f839989c2ce034a",
+        "G5P-3be0d1ab93c200e5",
+        "G5P-41bbe64ab1c758fc",
+        "G5P-7be5b06b1da9d666",
+        "G5P-d403f6923eb95151"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-251bf6276312eab5bf3b",
+        "G5D-2b3433ac954373f310b9",
+        "G5D-bb84a0f64faec4c9a643"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/Time",
+      "participant_ids": [],
+      "persistence_applicability": "APPLICABLE",
+      "persistence_rationale": "Goal 4 local-ready persistence criteria are PASS; discovered state participates in Goal 5 review.",
+      "persistence_status": "PASS",
+      "scenario_evidence": [
+        "EpidemicDeterminismSaveLoadTruthTests",
+        "EpidemicRuntimeTimeTests",
+        "EpidemicWholeEngineRestoreTruthTests"
+      ]
+    },
+    {
+      "candidate_ids": [
+        "G5P-365a3017a0461a92",
+        "G5P-6c39e686428b5af5",
+        "G5P-763c03937fbafdfb",
+        "G5P-a1c09d6f3cc65a07",
+        "G5P-e6107dae9d5a5557"
+      ],
+      "defect_ids": [],
+      "determinism_applicability": "APPLICABLE",
+      "determinism_candidate_ids": [
+        "G5D-30fa091d1976f290e68f",
+        "G5D-7ca961ed71385835eaa4",
+        "G5D-808258463102c43a590e",
+        "G5D-99fd6ffed5e32b5addf4",
+        "G5D-ada70a7930ea52f23d02",
+        "G5D-b56a0e6936cf233e04e2",
+        "G5D-bea0f7b9dcbfaaac6053",
+        "G5D-d4cd32826bc6844957f7"
+      ],
+      "determinism_rationale": "Reviewed digest contributors and exact source-bound observable-output policies.",
+      "determinism_status": "PASS",
+      "module": "EngineRuntime/World",
+      "participant_ids": [],
+      "persistence_applicability": "NOT_APPLICABLE",
+      "persistence_rationale": "World exposes detached observations, not a module-local persistence restore/checkpoint contract.",
+      "persistence_status": "N/A",
+      "scenario_evidence": [
+        "EpidemicRuntimeWorldTests"
+      ]
+    }
+  ],
+  "qualification": "SOURCE_CONTRACTS_EXECUTION_REQUIRED",
+  "schema_version": 1,
+  "stage": "5.7.A",
+  "summary": {
+    "BLOCKED": 0,
+    "UNCLASSIFIED": 0,
+    "modules": 78
+  }
+}

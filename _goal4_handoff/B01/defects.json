@@ -23,7 +23,7 @@
       "regression": "EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:272::epidemic::gameplay::detail::SetFoundationFaultPointForTesting(\"type_registry.publish\");",
       "regressions": {
         "EpidemicGameFrameworkFoundationTests": "EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:272::epidemic::gameplay::detail::SetFoundationFaultPointForTesting(\"type_registry.publish\");",
-        "EpidemicGameplayFactsTests": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:460::epidemic::gameplay::facts::detail::SetFactsFaultPointForTesting(\"transaction_commit.publish\");",
+        "EpidemicGameplayFactsTests": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::epidemic::gameplay::facts::detail::SetFactsFaultPointForTesting(\"transaction_commit.publish\");",
         "EpidemicGameplayQueriesTests": "EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:486::epidemic::gameplay::queries::detail::SetQueryFaultPointForTesting(\"provider_registration.publish\");",
         "EpidemicGameplayTimeTests": "EngineFramework/DevelopmentInfrastructure/Tests/time_tests.cpp:281::epidemic::gameplay::time::detail::SetTimeFaultPointForTesting(\"clock_registration.publish\");"
       },

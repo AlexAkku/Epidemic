@@ -830,6 +830,20 @@ foundation::Result<void> SaveGameOrchestrator::Restore(SaveGameImage image, cons
     migrated_sections.reserve(participants_.size());
     std::size_t migrated_total_payload_bytes = 0;
 
+    std::vector<ISaveParticipant*> validation_participants;
+    validation_participants.reserve(order.Value().size());
+    for (const auto id : order.Value()) validation_participants.push_back(participants_.at(id).participant);
+    for (auto* participant : validation_participants) participant->BeginRestoreValidation();
+    struct ValidationScope
+    {
+        const std::vector<ISaveParticipant*>& participants;
+        ~ValidationScope()
+        {
+            for (auto it = participants.rbegin(); it != participants.rend(); ++it)
+                (*it)->EndRestoreValidation();
+        }
+    } validation_scope{validation_participants};
+
     for (const auto id : order.Value())
     {
         const auto &registration = participants_.at(id);

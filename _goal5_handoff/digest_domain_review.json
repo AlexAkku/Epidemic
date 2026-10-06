@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "stage": "5.5.A",
+  "reviewed": true,
+  "basis": "Reviewed immutable 5.1 ownership/relevance decisions, exact 47 participant boundaries, Runtime Time/Persistence value packages; no new role or owner decisions are inferred.",
+  "decision_policy": "PERSISTENT_OWNER/PERSISTENT_CHECKPOINT -> INCLUDED; existing DERIVED_AND_VERIFIED -> DERIVED_AND_VERIFIED; existing NO/EXCLUDE -> EXCLUDED_NON_SEMANTIC; all other combinations fail closed.",
+  "ordering_policy": "Owner CaptureSnapshot contracts sort keyed records by stable semantic IDs; logical queues preserve explicit sequence order; contributions sort by stable owner identity; strings and byte arrays carry explicit uint64 lengths; scalar integers are little-endian.",
+  "floating_policy": "FINITE_QUANTIZED_1E-6_INT64_NEGATIVE_ZERO_NORMALIZED_NONFINITE_REJECTED",
+  "runtime_payload_policy": "Runtime canonical v1 value codecs have no floating fields; application payloads are explicit schema-owned semantic input bytes, never native objects or ambient identity.",
+  "excluded_inputs": ["pointers", "allocator_addresses", "runtime_transient_handles", "binding_capabilities", "thread_ids", "diagnostics", "log_timestamps", "wall_clock_timings", "renderer_backend_identities", "audio_backend_identities", "os_handles"],
+  "derived_policy": "Foundation ID-generator scope/next and Society standings are included through their authoritative snapshots. Runtime projection/cache/handle state is recreated by fresh Runtime boot, then module-owned rebuild and reconciliation contracts; it is not copied as semantic identity.",
+  "execution_receipt_required": true
+}

@@ -4524,6 +4524,7 @@
         "struct SaveResourceLimits",
         "struct SaveSection",
         "struct SaveWireLimits",
+        "struct ValidationRecord",
         "struct WorkspaceTestAccess",
         "struct detail::WorkspaceTestAccess"
       ],
@@ -4554,7 +4555,7 @@
         "SavePhase"
       ],
       "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
-      "normalized_sha256": "7d420ecd63ddcfd578948ee5b029fd3ba47535e82d2173adfecd68ac4c0660f8",
+      "normalized_sha256": "727c73a9203348922285855627cd9375f0d85867ebfa810950c30b7b48e3bec6",
       "public_fields": [
         "ParticipantRegistration::dependencies",
         "ParticipantRegistration::participant",
@@ -4574,7 +4575,9 @@
         "SaveResourceLimits::max_dependencies_per_participant",
         "SaveResourceLimits::max_participants",
         "SaveResourceLimits::max_section_bytes",
-        "SaveResourceLimits::max_total_payload_bytes"
+        "SaveResourceLimits::max_total_payload_bytes",
+        "ValidationRecord::storage",
+        "ValidationRecord::view"
       ],
       "templates": [
         "template <typename Owner>"

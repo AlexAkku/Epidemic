@@ -1,0 +1,663 @@
+{
+  "evidence": {
+    "postcommit_symbol": "PostcommitFailureRetainsSemanticsAndRetriesOnlyUnfinishedPhases",
+    "precommit_symbol": "PrecommitFailurePreservesBothPlanesAndReleasesPreparedState",
+    "source": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp",
+    "target": "EpidemicGameFrameworkRestoreCoordinationTests"
+  },
+  "generated_from": "_goal5_handoff/restore_contract_review.json + goal5_participant_contract.json + goal5_persistence_contract.json",
+  "nodes": [
+    {
+      "candidate_ids": [
+        "G5P-0576e7704d8e3577",
+        "G5P-30b3e918668d28f2",
+        "G5P-46be8f024bc6d38e",
+        "G5P-6c8b59fc62e43e8a",
+        "G5P-ecc2d1ae5ae33917",
+        "G5P-f0aa8c064ad774af"
+      ],
+      "dependencies": [],
+      "id": "framework.abilities",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-32fc3209fe0b555e",
+        "G5P-a53b473da16704e0",
+        "G5P-bb6c4a0869ef1ece"
+      ],
+      "dependencies": [],
+      "id": "framework.ai",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-1a33f3d61c8ab856",
+        "G5P-4a979c1f51a8dfd6",
+        "G5P-5375e8e2071d110f",
+        "G5P-54734df34dcafe98",
+        "G5P-ad59dece08272f36"
+      ],
+      "dependencies": [],
+      "id": "framework.combat",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-0038d03f8e5d24fb",
+        "G5P-4adb07c0ff9e23b8",
+        "G5P-d83d2a95193d4caf"
+      ],
+      "dependencies": [],
+      "id": "framework.conditions",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-2629b6f8a726c4a4",
+        "G5P-33686bdf71e352b5",
+        "G5P-5815b5d43a565e47",
+        "G5P-6a101c4ae5cb3b98",
+        "G5P-f2645786c0021bb8",
+        "G5P-fc93197211762fa2"
+      ],
+      "dependencies": [],
+      "id": "framework.construction",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-681f4bc3e3615faf",
+        "G5P-dd0b4e074a62e526"
+      ],
+      "dependencies": [],
+      "id": "framework.crime",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-6ab66c3917a7b538",
+        "G5P-754ca17db48fc0c7",
+        "G5P-bbedb5e9e68a714a"
+      ],
+      "dependencies": [],
+      "id": "framework.dialogue",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-03e69f73a56516cd",
+        "G5P-c93bf087c04673c1",
+        "G5P-d2e437d8f6205275",
+        "G5P-fe8297eb102eaea4"
+      ],
+      "dependencies": [],
+      "id": "framework.economy",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-6fae4a2d30143710",
+        "G5P-ab8525325fd4423d"
+      ],
+      "dependencies": [],
+      "id": "framework.effects",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-8f29293a6d908b06",
+        "G5P-cee5edc1f2f5bf91"
+      ],
+      "dependencies": [],
+      "id": "framework.encounters",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-0c76b4dfe84b6bc7",
+        "G5P-b1fa424e204f93c5"
+      ],
+      "dependencies": [],
+      "id": "framework.entities",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-7aa6a75108deabd7",
+        "G5P-b502d32092dc1dab"
+      ],
+      "dependencies": [],
+      "id": "framework.environment",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-3ed85dcafabbc11a",
+        "G5P-b13f2e6165737b33"
+      ],
+      "dependencies": [],
+      "id": "framework.equipment",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-1d686a1f76d3e4f3",
+        "G5P-6a2becd61aa5ff8e",
+        "G5P-89cb0ab25f939f4f"
+      ],
+      "dependencies": [],
+      "id": "framework.facts",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-aa0dfb97fd350152",
+        "G5P-d6f4f2b64c709e1c"
+      ],
+      "dependencies": [],
+      "id": "framework.interaction",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-b724404bd2dd69eb",
+        "G5P-e867a223bf85379d",
+        "G5P-f6cf3723f7a038ef"
+      ],
+      "dependencies": [],
+      "id": "framework.items",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-5d208e78f6350f3e",
+        "G5P-d94d8dd337fb90a3"
+      ],
+      "dependencies": [],
+      "id": "framework.knowledge",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-01e89ad744fbb038",
+        "G5P-97029c9e525dcfc2",
+        "G5P-da8533b9ac6fdd9f",
+        "G5P-e46a8aac0b605776"
+      ],
+      "dependencies": [],
+      "id": "framework.loot",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-946f0c82112a3788",
+        "G5P-b7cc033a424d006e"
+      ],
+      "dependencies": [],
+      "id": "framework.materials",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-058baef850d7a213",
+        "G5P-307034a1b0cdcc5c",
+        "G5P-4cf4071cc798a337",
+        "G5P-9812e092818d544b",
+        "G5P-b9dec906ba1c7cda",
+        "G5P-ea18ebdd98306f17",
+        "G5P-fbd43d24b0fe2322"
+      ],
+      "dependencies": [],
+      "id": "framework.narrative",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-51b98ca5e87afd35",
+        "G5P-774662df895ba305",
+        "G5P-d16d42fcdf7561f7"
+      ],
+      "dependencies": [],
+      "id": "framework.navigation_semantics",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-0588f19548972cf7",
+        "G5P-986762d0f0f8146e"
+      ],
+      "dependencies": [],
+      "id": "framework.needs_life",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-0f5d4457fc8f5232",
+        "G5P-186c6b55b833d62e"
+      ],
+      "dependencies": [],
+      "id": "framework.ownership",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-9976f27b8efaf492",
+        "G5P-cd6e754c2ed65d58"
+      ],
+      "dependencies": [],
+      "id": "framework.perception",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-3d1d41c5905352d0",
+        "G5P-f9e239b240159995"
+      ],
+      "dependencies": [],
+      "id": "framework.population",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-3ff742f370a26017",
+        "G5P-9d99c031de601631",
+        "G5P-dbc17393a39918c4",
+        "G5P-eb39a3d4467ec5fa"
+      ],
+      "dependencies": [],
+      "id": "framework.processes",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-240cd39182d1c65a",
+        "G5P-8af150157cfdcef2",
+        "G5P-8da3c0cab3680196",
+        "G5P-c3152d77251baedf"
+      ],
+      "dependencies": [],
+      "id": "framework.progression",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-1f1395bb4c5e9ac3",
+        "G5P-35caeb661f2641dd",
+        "G5P-3b2ee0ae1476a524",
+        "G5P-b9f1b843fc28d951"
+      ],
+      "dependencies": [],
+      "id": "framework.resources",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-7008a2a494cb2ce7",
+        "G5P-c8a48b74242cdb82"
+      ],
+      "dependencies": [],
+      "id": "framework.roles_jobs",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-357a6d57d024231b",
+        "G5P-35c7c112496c39d6",
+        "G5P-5b7342939de0823b",
+        "G5P-a396e3a9aabb42cb"
+      ],
+      "dependencies": [],
+      "id": "framework.simulation",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-57a1fe19948dab39",
+        "G5P-5983e95c5477e38e",
+        "G5P-a80f58c238d214e8"
+      ],
+      "dependencies": [],
+      "id": "framework.society",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-2589e3d438df4a73",
+        "G5P-fcc6ab97c0304f05"
+      ],
+      "dependencies": [],
+      "id": "framework.time",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-03b8385d41d93a48",
+        "G5P-68ec1d77b77b1374",
+        "G5P-b721c225ca60f30a"
+      ],
+      "dependencies": [],
+      "id": "framework.traversal",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-311c3fc14667feb9",
+        "G5P-72e4b18022daf191"
+      ],
+      "dependencies": [],
+      "id": "framework.world",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-25563a98eefd043b",
+        "G5P-b5581ea665fff9f2"
+      ],
+      "dependencies": [
+        "framework.abilities",
+        "framework.effects"
+      ],
+      "id": "integration.ability_effects",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-ac766b88773b6808",
+        "G5P-df79f8a4c95f47b3"
+      ],
+      "dependencies": [
+        "framework.abilities",
+        "framework.time"
+      ],
+      "id": "integration.ability_time",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-114687fe02d8ae8c",
+        "G5P-b436b1c36bfef141"
+      ],
+      "dependencies": [
+        "framework.conditions",
+        "framework.progression"
+      ],
+      "id": "integration.condition_progression",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-7959108970986ab7",
+        "G5P-9f0dfb3f32397214"
+      ],
+      "dependencies": [
+        "framework.combat",
+        "framework.loot"
+      ],
+      "id": "integration.death_reward",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-2927ca1852531c5c",
+        "G5P-745ea22157719fdd",
+        "G5P-77e4562bd2e535a2"
+      ],
+      "dependencies": [
+        "framework.interaction",
+        "framework.effects"
+      ],
+      "id": "integration.interaction_effects",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-0ae8f85f17ab7c50",
+        "G5P-9f322b83d654feb2",
+        "G5P-c0590d03d6e9e508"
+      ],
+      "dependencies": [],
+      "id": "integration.narrative.external_consequence_delivery",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-61e8c03306d8be49",
+        "G5P-7d2813cd229ecf1c"
+      ],
+      "dependencies": [
+        "framework.population",
+        "framework.encounters"
+      ],
+      "id": "integration.population_encounter",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-2e839e263436e2b8",
+        "G5P-46c4941a13dedeeb",
+        "G5P-58903e9110600f72"
+      ],
+      "dependencies": [
+        "framework.population",
+        "framework.roles_jobs",
+        "framework.needs_life"
+      ],
+      "id": "integration.population_lifecycle",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-00241a9fe2c1cd7c",
+        "G5P-eef4ce42f4a42d6b"
+      ],
+      "dependencies": [],
+      "id": "integration.scheduled_trigger_dispatcher",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-bd62aa9bbc1f268c",
+        "G5P-ec2b6e6edf90faff"
+      ],
+      "dependencies": [
+        "framework.crime",
+        "framework.society"
+      ],
+      "id": "integration.social_legal",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-1a675070f7913aee",
+        "G5P-2874575bbb79c1fb",
+        "G5P-86aded28442b6d2b",
+        "G5P-87c6dbe5dad8b0c8",
+        "G5P-97ffae583c03f759",
+        "G5P-bd642968637cd22a",
+        "G5P-cf8c6fe6c31ac29f",
+        "G5P-dd11a3fdd824c67d",
+        "G5P-de32a7051cc3bae9",
+        "G5P-ee721dc08715eacf",
+        "G5P-f9607cb8570bae62",
+        "G5P-fbd60b80586361ef"
+      ],
+      "dependencies": [
+        "framework.entities",
+        "framework.materials",
+        "framework.conditions",
+        "framework.effects",
+        "framework.facts",
+        "framework.time"
+      ],
+      "id": "integration.state",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-103b8317de20d2cc",
+        "G5P-3003679845f83cd5",
+        "G5P-3ef90744b8b6cb16"
+      ],
+      "dependencies": [
+        "framework.economy",
+        "framework.items",
+        "framework.ownership"
+      ],
+      "id": "integration.trade",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-41d1f1eca2036eaa",
+        "G5P-d963a3d51b79fbe6"
+      ],
+      "dependencies": [
+        "framework.world",
+        "framework.environment",
+        "framework.interaction",
+        "framework.facts"
+      ],
+      "id": "integration.world_facts",
+      "kind": "FRAMEWORK_PARTICIPANT"
+    },
+    {
+      "candidate_ids": [],
+      "dependencies": [
+        "framework.abilities",
+        "framework.ai",
+        "framework.combat",
+        "framework.conditions",
+        "framework.construction",
+        "framework.crime",
+        "framework.dialogue",
+        "framework.economy",
+        "framework.effects",
+        "framework.encounters",
+        "framework.entities",
+        "framework.environment",
+        "framework.equipment",
+        "framework.facts",
+        "framework.interaction",
+        "framework.items",
+        "framework.knowledge",
+        "framework.loot",
+        "framework.materials",
+        "framework.narrative",
+        "framework.navigation_semantics",
+        "framework.needs_life",
+        "framework.ownership",
+        "framework.perception",
+        "framework.population",
+        "framework.processes",
+        "framework.progression",
+        "framework.resources",
+        "framework.roles_jobs",
+        "framework.simulation",
+        "framework.society",
+        "framework.time",
+        "framework.traversal",
+        "framework.world",
+        "integration.ability_effects",
+        "integration.ability_time",
+        "integration.condition_progression",
+        "integration.death_reward",
+        "integration.interaction_effects",
+        "integration.narrative.external_consequence_delivery",
+        "integration.population_encounter",
+        "integration.population_lifecycle",
+        "integration.scheduled_trigger_dispatcher",
+        "integration.social_legal",
+        "integration.state",
+        "integration.trade",
+        "integration.world_facts",
+        "runtime.persistence",
+        "runtime.time"
+      ],
+      "id": "restore.rebuild_transient",
+      "kind": "POSTCOMMIT"
+    },
+    {
+      "candidate_ids": [],
+      "dependencies": [
+        "restore.rebuild_transient"
+      ],
+      "id": "restore.reconcile_external",
+      "kind": "POSTCOMMIT"
+    },
+    {
+      "candidate_ids": [],
+      "dependencies": [
+        "restore.runtime_bridge"
+      ],
+      "id": "restore.resume",
+      "kind": "RESUME_GUARD"
+    },
+    {
+      "candidate_ids": [
+        "G5P-006383dd445624a0",
+        "G5P-24a6ba6e69fa1c9b",
+        "G5P-27a82bc18e8b4e24",
+        "G5P-9ec0878e7688f515",
+        "G5P-f83cb17d95b38728",
+        "G5P-fcfc90c9cd6cba79"
+      ],
+      "dependencies": [
+        "restore.reconcile_external"
+      ],
+      "id": "restore.runtime_bridge",
+      "kind": "POSTCOMMIT"
+    },
+    {
+      "candidate_ids": [
+        "G5P-0b4eb2230ffc1c11",
+        "G5P-0c485cc9ff880067",
+        "G5P-52d6f94b36d49bc3",
+        "G5P-d8ebf98c9b09c9e6",
+        "G5P-fc2b046ea44a6e9d",
+        "G5P-fce10afc28059413"
+      ],
+      "dependencies": [],
+      "id": "runtime.persistence",
+      "kind": "RUNTIME_PREPARED_PLANE"
+    },
+    {
+      "candidate_ids": [
+        "G5P-41bbe64ab1c758fc",
+        "G5P-7be5b06b1da9d666"
+      ],
+      "dependencies": [],
+      "id": "runtime.time",
+      "kind": "RUNTIME_PREPARED_PLANE"
+    }
+  ],
+  "phase_mapping": {
+    "COMMIT_SEMANTIC": "CommittedSemantic: SaveGame no-throw participant commit followed by Runtime prepared-stage no-throw publication under the same restore lease",
+    "LOAD": "AwaitLoad: store LoadCurrent and bounded outer/Framework wire decode; no live publication",
+    "MATERIALIZE_RUNTIME": "MaterializeRuntime: injected projection rebuild; no simulation resume until completed",
+    "REBUILD_TRANSIENT": "RebuildTransient: injected composition rebuild, completed phase cursor retained",
+    "RECONCILE_EXTERNAL": "ReconcileExternal: injected accepted-work reconciliation; retry preserves accepted work identity",
+    "RESUME": "ReadyToResume: CanResume only after all three successful callbacks and release of the complete restore lease",
+    "STAGE": "Precommit: Runtime prepared composition and all Framework participant stages privately owned",
+    "VALIDATE": "Precommit: Runtime Prepare and SaveGameOrchestrator Restore validation/migration"
+  },
+  "postcommit": {
+    "failure_policy": "SEMANTIC_RETAINED_RECONCILIATION_REQUIRED",
+    "resume_policy": "ALL_PHASES_COMPLETE_AND_QUIESCENCE_RELEASED",
+    "retry_policy": "COMPLETED_PHASE_CURSOR_WITH_IDEMPOTENT_IN_PHASE_RETRY",
+    "runtime_bridge_policy": "REBUILD_FROM_SEMANTIC_IDENTITIES_REJECT_OLD_RUNTIME_OBSERVATIONS",
+    "thread_policy": "OWNER_THREAD_ONLY"
+  },
+  "precommit": {
+    "failure_policy": "Any precommit failure leaves both original live planes unchanged, disposes every private stage and releases quiescence; the same coordinator may retry LOAD.",
+    "fallible_preparation": "Runtime Prepare validates and allocates an unpublished composition. SaveGame Restore validates, migrates and allocates every stage before its commit loop.",
+    "publication": "Runtime stage Commit is noexcept; Framework participant CommitRestore is noexcept. No fallible callback is called between their publication boundaries."
+  },
+  "qualification": "COORDINATION_CORE_ONLY",
+  "remaining_qualification": [
+    "5.4.B: production Runtime restore-port implementation, fresh Base/Runtime/Framework whole-engine composition and real RuntimeBridge identity/causal continuation",
+    "5.4.C: whole-engine LOAD/VALIDATE/STAGE/postcommit failure matrix and fresh-process restore"
+  ],
+  "schema_version": 1,
+  "stage": "5.4.A"
+}

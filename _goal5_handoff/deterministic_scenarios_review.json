@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "stage": "5.5.C",
+  "reviewed": true,
+  "execution_receipt_required": true,
+  "scenarios": [
+    {
+      "id": "scenario.mini",
+      "source": "Tests/Truth/determinism_tests.cpp",
+      "symbol": "RealFreshCompositionsAndSaveReloadAreEquivalent",
+      "target": "EpidemicDeterminismTruthTests",
+      "process_target": "EpidemicDeterminismProcessTruthTests",
+      "assertions": ["RequireEquivalent(descriptor, control, fresh)", "RequireEquivalent(descriptor, control, restored)", "different_input.semantic_digest != control.semantic_digest"],
+      "semantic_contract": "Actual 47 Framework snapshots plus Runtime Time and Persistence value packages; independent composition and destroyed/fresh save-load continuation compare state, full semantic trace and logical step count."
+    }
+  ]
+}

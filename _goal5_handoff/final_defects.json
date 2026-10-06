@@ -1,0 +1,312 @@
+{
+  "defects": {
+    "G5-BARRIER-001": {
+      "compatibility_impact": "none; no public API or wire change",
+      "fix": "prepare the owning lease before no-fail publication and use scoped acquisition cleanup",
+      "regression": "LeasePreparationFailureDoesNotStrandQuiescence",
+      "regression_source": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+      "regression_symbol": "LeasePreparationFailureDoesNotStrandQuiescence",
+      "reproducer": [
+        "_goal5_handoff/save_generation_failure_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "lease allocation followed publication of active state or nested counter increment, stranding quiescence on allocation failure",
+      "source": "EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp",
+      "source_sha256": "1a1ee5fd7b4e6aef7c04fa41e01e9c247cf5274a174839e4a3324b99df3c1ddd",
+      "status": "FIXED",
+      "test_target": "EpidemicGameFrameworkSaveGenerationTests"
+    },
+    "G5-DET-FACTS-001": {
+      "before_after_receipt": "_goal5_handoff/current_stage56_facts_regression.json",
+      "fix": "Sort expiration keys by type, subject and scope before publishing removal events.",
+      "kind": "PRODUCTION",
+      "origin": "PRESERVED_USER_CHECKOUT_FIX",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp::main expiration_order_ok",
+      "regression_source": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp",
+      "regression_symbol": "expiration_order_ok",
+      "reproducer": [
+        "_goal5_handoff/stage56_defect_review.json",
+        "_goal5_handoff/current_stage56_facts_regression.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Expired facts inherited unordered storage traversal when allocating removal event identity.",
+      "source": "EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp",
+      "source_sha256": "b581f8c2dd836f2f1e031a031d0af5a51bbf527f2fe3c56ca8afa89ad8a95dc3",
+      "status": "FIXED",
+      "test_target": "EpidemicGameplayFactsTests"
+    },
+    "G5-DET-FACTS-002": {
+      "before_after_receipt": "_goal5_handoff/current_stage56_facts_regression.json",
+      "fix": "Reject duplicate complete worker ordering keys atomically rather than choosing an implicit hash/insertion order.",
+      "kind": "PRODUCTION",
+      "origin": "PRESERVED_USER_CHECKOUT_FIX",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp::main batch_collision_ok",
+      "regression_source": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp",
+      "regression_symbol": "batch_collision_ok",
+      "reproducer": [
+        "_goal5_handoff/stage56_defect_review.json",
+        "_goal5_handoff/current_stage56_facts_regression.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Different messages with the same complete producer/batch/tick/local-sequence key had no deterministic tie breaker.",
+      "source": "EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp",
+      "source_sha256": "b581f8c2dd836f2f1e031a031d0af5a51bbf527f2fe3c56ca8afa89ad8a95dc3",
+      "status": "FIXED",
+      "test_target": "EpidemicGameplayFactsTests"
+    },
+    "G5-DET-PHYSICS-001": {
+      "failing_receipt": "_ai_logs/20261005-190232-ms5-p6-physics-tie-fail-qualified.stdout.log",
+      "fix": "Both raycast paths select the smallest stable body id at equal distance, including the first-hit sentinel boundary.",
+      "kind": "PRODUCTION",
+      "passing_receipt": "_ai_logs/20261005-190417-ms5-p6-physics-tie-pass.stdout.log",
+      "regression": "EngineRuntime/Physics/tests/physics_tests.cpp::TestEqualDistanceRaycastUsesStableBodyOrder",
+      "regression_source": "EngineRuntime/Physics/tests/physics_tests.cpp",
+      "regression_symbol": "TestEqualDistanceRaycastUsesStableBodyOrder",
+      "reproducer": [
+        "_goal5_handoff/stage56_defect_review.json",
+        "_ai_logs/20261005-190232-ms5-p6-physics-tie-fail-qualified.stdout.log"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Equal-distance native and backend raycasts chose the first unordered body visited; bucket order affected the semantic hit.",
+      "source": "EngineRuntime/Physics/src/physics_runtime_impl.cpp",
+      "source_sha256": "a17a1b0b1b43d9fbfd403d36527bd8aaab6833ac169b7b25c222f3797aa04b67",
+      "status": "FIXED",
+      "test_target": "EpidemicRuntimePhysicsTests"
+    },
+    "G5-DET-STATE-PRODUCER-001": {
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "source": "EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp",
+      "source_sha256": "a26d33c2f05ba51a19c0757495158a740e781cbaedc6275db6b0fe533f617be7",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-EVIDENCE-COMPILED-SOURCE-001": {
+      "failing_receipt": "_ai_logs/20261005-213336-ms5-p6-source-stamp-negative-before.stdout.log",
+      "fix": "CMake generates a source-tree fingerprint embedded in the executable; every emitted scenario receipt must match the independently computed current fingerprint.",
+      "kind": "EVIDENCE_VALIDATOR",
+      "passing_receipt": "_ai_logs/20261005-215414-ms5-p6-stamped-process-qualification.stdout.log",
+      "regression": ".ai/check-ms56-source-stamp.py",
+      "regression_source": "docs/freeze/goal5_required_scenarios_contract.py",
+      "regression_symbol": "check_compiled_stamp",
+      "reproducer": [
+        "_goal5_handoff/stage56_defect_review.json",
+        "_ai_logs/20261005-213336-ms5-p6-source-stamp-negative-before.stdout.log"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Matching executable hashes did not prove that cached receipts were compiled against the current scenario and engine source tree.",
+      "source": "docs/freeze/goal5_required_scenarios_contract.py",
+      "source_sha256": "dee23458119874b5b928b11159cf680da7bcf54cb10582c4226f8b17326550f2",
+      "status": "FIXED",
+      "test_target": "EpidemicGoal5ContractTruthTests"
+    },
+    "G5-EVIDENCE-OPEN-STATUS-001": {
+      "fix": "Require the finite reviewed defect set and explicit closed statuses before generating any record.",
+      "regression_source": "tools/record_goal5_final_defects.py",
+      "regression_symbol": "self_test",
+      "reproducer": [
+        "_ai_logs/20261006-084930-ms5-p7-open-defect-regression-before.stdout.log"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Generator overwrote an unresolved owning status with FIXED without validating closed reviewed inputs.",
+      "source": "tools/record_goal5_final_defects.py",
+      "source_sha256": "400732a7754dd15ed7cd6f50d5420de2fb0c37b7b5ef5bfa94cf547afac1b4e9",
+      "status": "FIXED",
+      "test_target": "EpidemicGoal5ContractTruthTests"
+    },
+    "G5-EVIDENCE-SCOPED-001": {
+      "regression_source": "docs/freeze/goal5_evidence_quality.py",
+      "regression_symbol": "std::filesystem::remove_all(path, error)",
+      "reproducer": [
+        "_ai_logs/20261005-184619-ms5-p5-scoped-evidence-fail-qualified.stdout.log"
+      ],
+      "review_status": "REVIEWED",
+      "source": "docs/freeze/goal5_evidence_quality.py",
+      "source_sha256": "af990680ccc8eac58bc2264c97448ba917b6c1ccfb3d8c6901b3c8bda4c5b3a2",
+      "status": "FIXED",
+      "test_target": "EpidemicGoal5ContractTruthTests"
+    },
+    "G5-HARNESS-ABILITY-RECONCILIATION-001": {
+      "failing_receipt": "_ai_logs/20261005-210101-ms5-p6-required-matrix-game-clock.stdout.log",
+      "fix": "Run ReconcileRestoredReservations when required inside the pre-resume reconciliation callback.",
+      "kind": "QUALIFICATION_HARNESS",
+      "passing_receipt": "_ai_logs/20261005-210228-ms5-p6-required-reservation-reconciliation.stdout.log",
+      "regression": "Tests/Truth/determinism_save_load_tests.cpp::RequiredScenarioMatrixHasEquivalentContinuation scenario.E",
+      "regression_source": "Tests/Truth/determinism_save_load_tests.cpp",
+      "regression_symbol": "RequiredScenarioMatrixHasEquivalentContinuation",
+      "reproducer": [
+        "_goal5_handoff/stage56_defect_review.json",
+        "_ai_logs/20261005-210101-ms5-p6-required-matrix-game-clock.stdout.log"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Whole restore allowed resume without running Ability's existing restored-resource reservation reconciliation.",
+      "source": "Tests/Truth/goal5_whole_composition.h",
+      "source_sha256": "4115e07c435adc2299bfbf45ab70bf69ba49960d3bbddfb412957ba4434c66e9",
+      "status": "FIXED",
+      "test_target": "EpidemicDeterminismSaveLoadTruthTests"
+    },
+    "G5-PORTABILITY-AGGREGATE-001": {
+      "regression_source": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp",
+      "regression_symbol": "AggregateArity<ValueSnapshot>",
+      "reproducer": [
+        "_ai_logs/20261005-223734-ms5-p7-clangcl-public-headers.stderr.log"
+      ],
+      "review_status": "REVIEWED",
+      "source": "EngineFramework/GameplayWorldStateOwners/SaveGame/internal/Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h",
+      "source_sha256": "e58f4708abfa45a68b1be08fded34fffd800d67f79da17cf1eea1cb1e65351eb",
+      "status": "FIXED",
+      "test_target": "EpidemicGameFrameworkSaveGameTests"
+    },
+    "G5-QUALIFICATION-MSVC-C1202-001": {
+      "regression_source": "tools/generate_goal5_participants.py",
+      "regression_symbol": "qualification_codec_self_test",
+      "reproducer": [
+        "_ai_logs/20261005-182341-ms5-p4-release-c1202-current.stdout.log"
+      ],
+      "review_status": "REVIEWED",
+      "source": "tools/generate_goal5_participants.py",
+      "source_sha256": "55981231ece00c1b91e6f67762b2e9f61ccfac624fdfa238e1b81a1b14b735a4",
+      "status": "FIXED",
+      "test_target": "EpidemicGoal5ContractTruthTests"
+    },
+    "G5-RESTORE-CONDITION-PROJECTION-001": {
+      "fix": "Compare every derived modifier field with the existing source projection before replacement. Preserve identical durable IDs, generators and revisions; changed projections retain the atomic replacement path.",
+      "regression": "RetainedConditionJournalReconcilesWithoutChangingProgression: failing semantic comparison before the fix; restored epoch reconciliation and repeated processing preserve the complete canonical Progression snapshot.",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "RetainedConditionJournalReconcilesWithoutChangingProgression",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "A retained Conditions journal obtains a new observation epoch on restore. ReconcileAll replaced an unchanged Progression projection, consuming durable modifier IDs and incrementing revisions.",
+      "source": "EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp",
+      "source_sha256": "847170f8566bfc5d576e76c7ff361806c9b31438aa1d7ef93a38a81398ebf6c7",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-RESTORE-DEATH-CURSOR-001": {
+      "regression_source": "EngineFramework/DevelopmentInfrastructure/Tests/gameplay_integration_tests.cpp",
+      "regression_symbol": "rebound_death_checkpoint",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "source": "EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp",
+      "source_sha256": "847170f8566bfc5d576e76c7ff361806c9b31438aa1d7ef93a38a81398ebf6c7",
+      "status": "FIXED",
+      "test_target": "EpidemicGameFrameworkGameplayIntegrationTests"
+    },
+    "G5-RESTORE-DEATH-ENUM-001": {
+      "fix": "Reject every state outside Generated and Pending before publishing either the cursor or delivery ledger.",
+      "regression": "DeathRewardRejectsUnknownDeliveryStateAtomically failed with state 99 before the fix, then rejected it without changing the full semantic checkpoint.",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "DeathRewardRejectsUnknownDeliveryStateAtomically",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "DeathReward RestoreCheckpoint accepted unknown durable delivery-state enum values because it validated keys and generated rewards but omitted the enum domain check.",
+      "source": "EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp",
+      "source_sha256": "847170f8566bfc5d576e76c7ff361806c9b31438aa1d7ef93a38a81398ebf6c7",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-RESTORE-ENTITY-HANDLE-001": {
+      "fix": "Bounded atomic process-local generation reservations for every issued Create/Restore handle; source durable IDs and snapshot schema unchanged.",
+      "regression": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally rejects retired handles; Entities tests reject cross-owner Create and replaced owner handles.",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Fresh EntityService rebuilt generation one and accepted a stale handle from the destroyed composition.",
+      "source": "EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp",
+      "source_sha256": "a5e067380cd452074056f469afc6572278353aa05eaa2ad28b3388aebdaccddd",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-RESTORE-VALIDATION-VIEW-001": {
+      "fix": "Restore-scoped private validation candidates resolved in dependency order, shared by participants and discarded on every exit. Separate Validate, Stage and no-throw Commit phases remain intact.",
+      "regression": "NonemptyCrossOwnerRestoreUsesSavedDependencies preserves exact durable bytes on precommit failure, restores successfully on the same-composition retry, and processes the restored delivery ledger without duplicate semantic changes.",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "NonemptyCrossOwnerRestoreUsesSavedDependencies",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "SnapshotParticipant validation cloned adapters against fresh live peer owners before the saved peer snapshots were staged. Nonempty valid DeathReward checkpoints were rejected against the empty Combat journal.",
+      "source": "EngineFramework/GameplayWorldStateOwners/SaveGame/internal/Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h",
+      "source_sha256": "e58f4708abfa45a68b1be08fded34fffd800d67f79da17cf1eea1cb1e65351eb",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-RUNTIME-IDENTITY-001": {
+      "fix": "One exhaustion-checked atomic process-local Runtime capability namespace, reserved before external materialization/path acceptance. Not semantic identity or digest input.",
+      "regression": "FreshBackendsRejectRetiredOpaqueCapabilities + FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "FreshBackendsRejectRetiredOpaqueCapabilities",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Each production backend restarted opaque handle counters at one; a fresh instance could accept a retired capability for a different representation.",
+      "source": "EngineRuntime/Physics/src/physics_runtime_impl.cpp",
+      "source_sha256": "a17a1b0b1b43d9fbfd403d36527bd8aaab6833ac169b7b25c222f3797aa04b67",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-RUNTIME-IDENTITY-002": {
+      "fix": "Exhaustion-checked process-local binding capability allocation. Remove reuse, preserve monotonicity and validate stale commands. Numeric adjacency/reset-to-one were unsafe incidental behavior, not durable identity.",
+      "regression": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally + runtime_bridge_tests forget/recreate stale attachment rejection",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "FreshWholeEngineRestoresAllPlanesAndContinuesCausally",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Binding generations restarted at one on fresh services and forget/recreate; generation-only stale commands could mutate a new binding.",
+      "source": "EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp",
+      "source_sha256": "e68a29529fd0a7ff919a3df55e0d144ceff54fa57765a30739a2db9929a888b0",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-RUNTIME-PUBLISH-001": {
+      "fix": "Prepare node handles and bucket capacity before external acceptance; transfer nodes after acceptance without allocation and retain failed projection requests.",
+      "regression": "WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject injects bridge preparation failure and accepted materialization failures, retries once and asserts one native object and one binding.",
+      "regression_source": "Tests/Truth/whole_engine_restore_tests.cpp",
+      "regression_symbol": "WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject",
+      "reproducer": [
+        "_goal5_handoff/whole_engine_restore_failure_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "Backend and Framework binding maps allocated nodes after accepted Runtime materialization/path requests, risking untracked representations on allocation failure.",
+      "source": "EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp",
+      "source_sha256": "e68a29529fd0a7ff919a3df55e0d144ceff54fa57765a30739a2db9929a888b0",
+      "status": "FIXED",
+      "test_target": "EpidemicWholeEngineRestoreTruthTests"
+    },
+    "G5-SAVE-001": {
+      "compatibility_impact": "none; stale lineage now fails instead of silently reusing generation",
+      "fix": "reread authoritative lineage under the generation lease; reject stale lineage with controlled retry",
+      "regression": "RunSaveGenerationTests",
+      "regression_source": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp",
+      "regression_symbol": "RunSaveGenerationTests",
+      "reproducer": [
+        "_goal5_handoff/save_generation_failure_review.json"
+      ],
+      "review_status": "REVIEWED",
+      "root_cause": "next generation was computed before acquiring the safe point without verifying that another coordinator had not published meanwhile",
+      "source": "EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp",
+      "source_sha256": "1a1ee5fd7b4e6aef7c04fa41e01e9c247cf5274a174839e4a3324b99df3c1ddd",
+      "status": "FIXED",
+      "test_target": "EpidemicGameFrameworkSaveGenerationTests"
+    }
+  },
+  "schema_version": 1,
+  "status": "REVIEWED"
+}

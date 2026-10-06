@@ -1,110 +1,203 @@
 # Epidemic agent execution contract
 
-## Doctrine
+## Core doctrine
 
-- Preserve the dependency direction `EngineBase -> EngineRuntime -> EngineFramework`; lower layers never depend on higher layers.
-- Do not edit generated canonical freeze JSON manually. Update its source inventory/handoff and run the owning generator.
-- A change is not complete until the relevant local CI entry point passes.
+Preserve dependency direction:
 
-## Project map
+EngineBase -> EngineRuntime -> EngineFramework
 
-- `EngineBase/`: platform, diagnostics, input, memory, RHI and application lifecycle.
-- `EngineRuntime/`: independent runtime majors; cross-major technical composition belongs in Runtime Support.
-- `EngineFramework/`: reusable gameplay state owners, integration adapters and Framework tests.
-- `docs/freeze/`: architecture, public-surface, coverage and LOCAL_READY validators.
-- `_goal4_handoff/`: raw Goal 4 evidence; canonical outputs are produced by its merge script.
-- `tools/ci/`: language/toolchain layer for the local CI runner.
+Allowed dependency direction is downward:
+- EngineRuntime may depend on EngineBase.
+- EngineFramework may depend on EngineRuntime and permitted lower-layer contracts.
+- EngineBase must never depend on EngineRuntime or EngineFramework.
+- EngineRuntime must never depend on EngineFramework.
 
-## Read-only/generated zones
+Do not hand-edit generated canonical freeze artifacts.
+Update their owning source/inventory/handoff and run the owning generator.
 
-- Treat `build/`, `.ci_cache/`, `.enforcer/`, `.idea/` and `Deltas/` as local artifacts.
-- Do not hand-edit `docs/freeze/coverage_manifests.json`, `public_api_anchors.json`,
-  `module_dossier_reviews.json` or `local_ready_ledger.json`.
+Correctness must be demonstrated by code, tests and machine-readable evidence.
 
-## Quality control
+## Single-agent rule
 
-- Default final verification: `./run.ps1 -Mode Full -NoCache`.
-- For dependency/profile changes: `./run.ps1 -Mode Matrix -NoCache`.
-- For a focused iteration: `./run.ps1 -Mode Module -Module <name>`.
-- Give full local CI at least a 25-minute terminal timeout; command-level heartbeats and logs are built in.
+Use exactly ONE Codex/LLM reasoning agent.
 
-The runner is adapted from the AgentEnforcer2 blueprint:
-https://github.com/Artemonim/AgentEnforcer2
+Never create LLM subagents for:
+- analysis
+- research
+- review
+- builds
+- tests
+- validators
+- static analysis
+- auditing
 
-## Large codebase navigation
+LLM concurrency = 1.
 
-This is a large C++ codebase. Minimize context consumption.
+Local tools, Auditor collectors/analyzers, compiler processes, test processes and other non-LLM OS processes are not agents.
 
-Before reading source files:
+Parallelism is allowed only between mechanically independent local OS processes.
 
-1. Use clangd symbol navigation when a symbol is known.
-2. Use definitions, references, implementations and call hierarchy before broad source exploration.
-3. Use ripgrep for exact textual searches.
-4. Use ast-grep for structural C++ searches.
-5. Use Repomix compressed output for architectural context; narrow it to the subsystem.
-6. Read narrow source ranges instead of complete files whenever possible.
-7. Do not recursively open large numbers of files.
-8. Do not read complete large files unless full context is required.
-9. Prefer symbol-level navigation over directory exploration.
-10. Treat root `compile_commands.json` as the compilation database.
+Never run concurrent processes that write to the same:
+- build directory
+- generated canonical artifact
+- evidence database
+- mutable task-state file
+- shared output directory
 
-Preferred tool selection:
+unless that concurrency is explicitly designed and proven safe.
 
-- known symbol -> clangd
-- references/callers/types -> clangd
-- exact text -> ripgrep
-- AST/code pattern -> ast-grep
-- subsystem architecture -> Repomix
+## Context budget
 
-Run `powershell -ExecutionPolicy Bypass -File .ai/check-ai-tools.ps1` to check
-local navigation prerequisites. Run `node .ai/smoke-ai-tools.mjs` to verify LSP
-background indexing, MCP queries and Repomix sandbox confinement. Use
-`npm run ai:repomix-mcp` for Repomix MCP: always keep `--sandbox .`; never expose
-an unrestricted MCP filesystem server. Use `.ai/run-clangd-mcp.ps1` for clangd MCP.
+Correctness first. Then minimize model-visible context.
 
-For navigation-infrastructure-only changes, these checks plus `npm run ai:tokens`
-are the relevant verification entry points; do not build/test the C++ project
-unless the task requires it. Refresh the generated compilation database after
-CMake source/target changes; do not hand-edit its compiler commands.
+Normal step:
+- <= 3 ranges
+- <= 200 LOC total
+- <= 12 search results
 
-<!-- graft:start -->
-## Graft — repo context graph
+Deep step:
+- <= 5 ranges
+- <= 400 LOC total
+- <= 20 search results
 
-This repo is indexed in `graft/`: small linked markdown nodes that explain each
-system and carry exact file:line spans, kept in sync with the code through git.
+These are TOTALS per reasoning step, not per file/tool call.
 
-For ANY task here — understanding how something works, finding where code lives,
-or scoping a change — get context from the graph before grepping or opening
-source files. Re-ask freely (it's cheap) and reuse literal identifiers you
-already have (symbol, error string, file name) as the query. New to this repo?
-Run `graft map` first — a token-budgeted orientation (dir clusters, hubs,
-hotspots), no LLM, no key.
+Never dump whole JSON/log/source files.
+Query fields/ranges first.
+If the budget is insufficient, refine the query before reading more.
 
-- Run `graft ask "<your question>" --source` → ranked nodes with the relevant
-  code spans inlined (each hit's ≤8-line crux by default; `--full` for whole
-  definitions when the crux isn't enough). Match the tool to the task shape:
-  for understanding or editing, the top node IS the answer — cite its
-  `covers:` file:line spans and edit straight from `--source`. For
-  exhaustive tasks ("every occurrence / every caller of this pattern"), ranked
-  results are top-N, not complete — run `graft grep "<literal>"` instead
-  (exhaustive over indexed files, grouped by enclosing symbol), falling back
-  to raw `grep -rn` only for unindexed files.
-- `graft skeleton <file>` → every definition's signature + span, ~10× cheaper
-  than reading the file; use it to skim an API surface.
-- `graft callers <symbol>` gives precomputed, exact edges — who calls this.
-  Add `--direction out` for what it calls, or `--depth N` to walk
-  transitively for the full blast radius. For structural questions, skip
-  ranking and use this directly.
-- Or browse: `graft/INDEX.md` lists every node; follow the links.
-- Monorepos and folders of multiple repos rank fairly across sub-projects —
-  hits carry `[scope/]` labels naming which one they're from. Narrow with
-  `graft ask "<task>" --in <scope>/` once you know where you're working.
+## Navigation routing
 
-If a returned span is truncated ("+N more lines"), open the file at that exact
-range before finalizing. Only open source files when a node genuinely lacks a
-needed detail, and then at the exact file:line the node points to — never
-re-read whole files.
+Use one primary navigation mechanism per question.
 
-After big code changes, refresh the graph with `graft build` (deterministic,
-no API key, $0).
-<!-- graft:end -->
+- architecture / subsystem scope / blast radius -> Graft
+- known C++ symbol / references / callers / types -> clangd
+- unknown symbol but known behavior -> persistent local retrieval daemon
+- exact text / identifier / diagnostic -> ripgrep
+- structural invariant -> ast-grep
+
+All exploratory `rg` output must normally be capped to 12 matches. Use 20 only for deep investigation.
+
+Do not cascade all navigation tools for one question.
+
+Do not use Repomix in the normal workflow.
+
+Root compile_commands.json is the authoritative clangd compilation database.
+
+## Persistent semantic retrieval
+
+The retrieval daemon must already be running.
+
+Use:
+
+.ai/retrieval/.venv/Scripts/python.exe .ai/retrieval/client.py search "<query>"
+
+Default result count: 3.
+Maximum normal result count: 5.
+
+Never expose internal candidate sets to Codex.
+
+The retrieval daemon owns:
+- Qwen3 embedding queries
+- FTS5
+- reciprocal-rank fusion
+- resident CPU BGE reranker
+- in-memory vector matrix
+- incremental refresh of changed files
+
+A changed source file must not disable semantic retrieval.
+
+Do not repair or redesign retrieval infrastructure during milestone work.
+
+## Mechanical commands
+
+Builds, tests, validators, and static analysis are local processes, never agents.
+
+Use `.ai/run-quiet.ps1` for noisy commands. 
+
+Example: 
+
+.ai/run-quiet.ps1 `
+    -Name test `
+    -TimeoutSec 600 `
+    -Command 'ctest ...'
+
+It owns PowerShell 7, MSBuild node reuse/telemetry, and task process cleanup.
+
+Do not manually:
+- poll processes/logs
+- use `Get-Process`, `Get-CimInstance`, or `Stop-Process` for cleanup
+- set `MSBUILDDISABLENODEREUSE` or `VSCMD_SKIP_SENDTELEMETRY`
+
+On PASS consume only status, duration, and log path. Do not read raw logs unless required to establish missing evidence.
+On FAIL consume only exit code, concise diagnostics, and log path.
+Read more only if that evidence is insufficient.
+
+Use `.ai/verify-changed.ps1` for changed C++ static checks.
+Run `.ai/preflight-generated.ps1` before full Validators.
+
+Do not embed large Python/PowerShell scripts in shell commands.
+If temporary logic exceeds ~20 lines, place it under `.ai/` and execute or patch that file.
+
+## Process safety
+
+Normal process cleanup is owned by wrappers. Do not poll or manually kill build/test children.
+
+Exception: after confirmed OOM/C1060 or a proven orphan-process leak, cleanup of repo-owned orphan tool processes is allowed after verifying ownership. Never terminate active MCP servers, retrieval daemons, or unrelated processes.
+
+On OOM/C1060 or <4 GiB free virtual memory:
+- stop builds, clangd and static-analysis launches
+- perform one memory/process diagnosis
+- clean confirmed orphan tool processes
+- resume only after memory headroom is restored
+
+Use only one persistent clangd MCP server. Do not leave per-query clangd/bridge processes alive after a request.
+
+## Task state
+
+Maintain .ai/task-state.json.
+
+Keep it small:
+- current requirement
+- completed requirements
+- working files
+- confirmed facts
+- known blockers
+- open questions
+
+Update it after each completed logical subpoint.
+
+After compaction/restart, use `.ai/state-summary.ps1`.
+Do not read `.ai/task-state.json` directly unless modifying or investigating its structure.
+
+## Generated/read-only areas
+
+Treat build/, .ci_cache/, .enforcer/, .idea/ and Deltas/ as local artifacts.
+
+Do not manually edit generator-owned canonical freeze JSON when an owning generator exists.
+
+Temporary scripts >20 lines MUST be created/edited as files. 
+Never generate them through `$code=@'...'@`, Python `-c`, or equivalent shell embedding.
+
+Do not rewrite an existing temporary script through string replacement if a direct file edit is possible.
+
+## Final verification
+
+Before declaring a milestone complete:
+
+1. Verify every requirement against actual machine-readable evidence.
+2. Verify that all final evidence belongs to the exact source/input tree being qualified.
+3. Run required builds/tests/validators through quiet wrappers.
+4. Enumerate the complete git diff mechanically.
+5. Semantically review every changed production, build, validator and test file in bounded slices.
+6. Do not dump a large complete diff into model context merely to satisfy "review complete diff".
+7. Review git status and classify every remaining file.
+8. Verify no weakened validators, deleted negative fixtures, temporary bypasses, fake PASS paths or note-dependent acceptance.
+9. Verify generated artifacts were produced by their owning generators and are idempotent where required.
+10. Update owning final records and work-plan.
+11. State PASS or BLOCKED explicitly.
+
+During a final qualification campaign, freeze all source, CMake, generator, validator and test inputs.
+
+If any such input changes after a qualification receipt was produced,
+that receipt is stale for final closure and the affected qualification must be rerun.

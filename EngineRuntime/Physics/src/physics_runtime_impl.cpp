@@ -912,9 +912,11 @@ foundation::Result<RaycastHit> PhysicsRuntime::Raycast(const RaycastQuery& query
     best.distance = std::numeric_limits<float>::max();
     for (const auto& [body_id, body] : bodies_)
     {
-        (void)body_id;
         float distance = 0.0f;
-        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance && distance < best.distance)
+        // Equal-distance hits use the explicit local body identity, never hash traversal order.
+        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance &&
+            (distance < best.distance ||
+             (distance == best.distance && (!best.hit || body_id.value < best.body.id.value))))
         {
             best = RaycastHit{
                 true,
@@ -948,12 +950,15 @@ foundation::Result<BackendRaycastHit> PhysicsRuntime::RaycastBackend(const Rayca
 
     BackendRaycastHit best{};
     best.distance = std::numeric_limits<float>::max();
+    std::uint64_t best_body_value = std::numeric_limits<std::uint64_t>::max();
     for (const auto& [body_id, body] : bodies_)
     {
-        (void)body_id;
         float distance = 0.0f;
-        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance && distance < best.distance)
+        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance &&
+            (distance < best.distance ||
+             (distance == best.distance && (!best.hit || body_id.value < best_body_value))))
         {
+            best_body_value = body_id.value;
             best = BackendRaycastHit{
                 true,
                 body.backend_handle,

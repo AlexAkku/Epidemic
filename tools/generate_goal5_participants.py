@@ -15,6 +15,39 @@ from goal5_participant_bindings import bindings, DURABLE_MEMBERS, ADAPTER_ACCESS
 from goal5_persistence_inventory import matching_brace
 
 
+def qualification_codec_fields(source, symbol, reviewed_fields):
+    start = source.index('struct ' + symbol + '\n')
+    opening = source.index('{', start)
+    closing = matching_brace(source, opening)
+    if closing is None:
+        raise ValueError('unbalanced ' + symbol)
+    fields = []
+    for declaration in source[opening + 1:closing].split(';'):
+        if not declaration.strip():
+            continue
+        declaration = declaration.split('=')[0].split('{')[0].strip()
+        match = re.search(r'\b([A-Za-z_]\w*)$', declaration)
+        if not match:
+            raise ValueError('unsupported ' + symbol + ' field declaration')
+        fields.append(match.group(1))
+    if fields != reviewed_fields.split():
+        raise ValueError(symbol + ' schema changed; explicit qualification codec review required')
+    return fields
+
+
+def qualification_codec_self_test():
+    source = 'struct Record\n{ int first{}; std::vector<int> second; };'
+    assert qualification_codec_fields(source, 'Record', 'first second') == ['first', 'second']
+    for fields in ('second first', 'first', 'first second third'):
+        try:
+            qualification_codec_fields(source, 'Record', fields)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('qualification codec accepted schema drift: ' + fields)
+    print('PASS: qualification codec field order, additions and omissions fail closed.')
+
+
 INTEGRATION_PUBLICATION_MUTATIONS = {
     "TradeCoordinator": """auto checkpoint = owner.CaptureSnapshot();
         checkpoint.execution_ids.next += 17;
@@ -39,7 +72,7 @@ INTEGRATION_PUBLICATION_MUTATIONS = {
         checkpoint.cursor = ChangeCursor{77, 9};
         return owner.RestoreCheckpoint(checkpoint);""",
     "DeathRewardAdapter": """auto checkpoint = owner.CaptureCheckpoint();
-        checkpoint.cursor = combat.LatestChangeCursor().AtSequence(checkpoint.cursor.sequence + 1);
+        checkpoint.cursor = combat.LatestChangeCursor();
         return owner.RestoreCheckpoint(std::move(checkpoint));""",
     "InteractionEffectExecutor": """auto snapshot = owner.CaptureSnapshot();
         interaction_effects_integration::InteractionEffectDeliveryRecord record;
@@ -246,7 +279,11 @@ def generate_composition_test():
                     '    epidemic::gameplay::ClockId clock;', '    epidemic::gameplay::ActionTypeId action;']
     view_args = ', '.join(aliases[b['id']] for b in specs) + ', state_facts, state_lifecycle, state_delivery, state_time, orchestrator, clock.Value(), action.Value()'
     freeze_start = next(i for i, line in enumerate(body) if 'participant_tests::FreezeOwner(' in line)
-    body[freeze_start:freeze_start] = [f'    FrameworkCompositionView view{{{view_args}}};', '    bootstrap(view);']
+    mapping_freezes = [line for line in body if any(name + '.FreezeMappings()' in line for name in
+                      ('condition_progression', 'death_reward', 'ability_effects'))]
+    body = [line for line in body if line not in mapping_freezes]
+    freeze_start = next(i for i, line in enumerate(body) if 'participant_tests::FreezeOwner(' in line)
+    body[freeze_start:freeze_start] = [f'    FrameworkCompositionView view{{{view_args}}};', '    bootstrap(view);', *mapping_freezes]
     digest_lines = [f'inline constexpr std::size_t kFrameworkSemanticOwnerCount = {len(specs)};',
                     'template <typename Digest>', 'void AddFrameworkSemanticContributions(FrameworkCompositionView& view, Digest& digest)', '{']
     for b in specs:
@@ -277,27 +314,34 @@ def generate_composition_test():
         closing = matching_brace(source, opening)
         if closing is None: raise ValueError('unbalanced reviewed value codec: ' + relative)
         codecs.append(source[start:closing + 2])
-    # MSVC exceeds its dependency-context limit reflecting this 21-field DTO
-    # under the additional qualification writer. Derive the field order from
-    # its actual declaration, instead of changing v1 production serialization.
-    knowledge = (ROOT / 'EngineFramework/GameplayWorldStateOwners/Knowledge/include/Epidemic/GameFramework/Knowledge/knowledge.h').read_text(encoding='utf-8')
-    start = knowledge.index('struct KnowledgeRecord\n')
-    opening = knowledge.index('{', start)
-    closing = matching_brace(knowledge, opening)
-    if closing is None: raise ValueError('unbalanced KnowledgeRecord')
-    fields = []
-    for declaration in knowledge[opening + 1:closing].split(';'):
-        if not declaration.strip(): continue
-        declaration = declaration.split('=')[0].split('{')[0].strip()
-        match = re.search(r'\b([A-Za-z_]\w*)$', declaration)
-        if not match: raise ValueError('unsupported KnowledgeRecord field declaration')
-        fields.append(match.group(1))
-    reviewed_fields = 'id owner type topic assertion epistemic_state confidence subject source_kind source derived_from original_source_kind original_source transmission_depth learned_at last_confirmed_at last_decay_at decay_rule persistence payload revision'.split()
-    if fields != reviewed_fields: raise ValueError('KnowledgeRecord schema changed; explicit qualification codec review required')
-    codecs += ['template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord>', '{',
-               '    template <typename IO> static void Transfer(IO& io, knowledge::KnowledgeRecord& value)', '    {']
-    codecs += ['        TransferSnapshot(io, value.' + field + ');' for field in fields]
-    codecs += ['    }', '};', '}', '']
+    # MSVC C1202 is reproduced for these DTOs in the combined qualification TU.
+    # Preserve declaration order and v1 production serialization; specialize
+    # only the qualification codec, guarded by an exact reviewed field list.
+    for relative, namespace, symbol, reviewed_fields in [
+        ('EngineFramework/GameplayWorldStateOwners/Knowledge/include/Epidemic/GameFramework/Knowledge/knowledge.h',
+         'knowledge', 'KnowledgeRecord',
+         'id owner type topic assertion epistemic_state confidence subject source_kind source derived_from original_source_kind original_source transmission_depth learned_at last_confirmed_at last_decay_at decay_rule persistence payload revision'),
+        ('EngineFramework/GameplayWorldStateOwners/Processes/include/Epidemic/GameFramework/Processes/processes.h',
+         'processes', 'ProcessInstance',
+         'id recipe actor station target simulation_area state started_at due_at last_updated_at reserved_inputs prepared_outputs total_duration paused_remaining quality runtime_payload revision')]:
+        source = (ROOT / relative).read_text(encoding='utf-8')
+        fields = qualification_codec_fields(source, symbol, reviewed_fields)
+        qualified = namespace + '::' + symbol
+        codecs += ['template <> struct SnapshotValueCodec<' + qualified + '>', '{',
+                   '    template <typename IO> static void Transfer(IO& io, ' + qualified + '& value)', '    {']
+        codecs += ['        TransferSnapshot(io, value.' + field + ');' for field in fields]
+        codecs += ['    }', '};']
+    codecs += ['template <> struct SnapshotValueCodec<::epidemic::gameplay::ChangeCursor>', '{',
+               '    template <typename IO> static void Transfer(IO& io, ::epidemic::gameplay::ChangeCursor& value)',
+               '    {',
+               '        if constexpr (!IO::reading && requires { IO::semantic_observation_identity; })',
+               '        {',
+               '            auto epoch = static_cast<std::uint64_t>(value.IsValid());',
+               '            TransferSnapshot(io, epoch);',
+               '        }',
+               '        else TransferSnapshot(io, value.epoch);',
+               '        TransferSnapshot(io, value.sequence);',
+               '    }', '};', '}', '']
     return {
         ROOT / 'EngineFramework/DevelopmentInfrastructure/Tests/framework_save_composition_tests.cpp': '\n'.join(lines),
         ROOT / 'EngineFramework/DevelopmentInfrastructure/Tests/goal5_framework_composition.h': '\n'.join(utility),
@@ -422,7 +466,12 @@ def main():
     parser.add_argument("--tests-only", action="store_true")
     parser.add_argument("--record", action="store_true")
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+    if args.self_test:
+        qualification_codec_self_test()
+        if not args.record and not args.check:
+            return 0
     if not args.record and not args.check:
         parser.error("choose --record or --check")
     artifacts = generate_tests()

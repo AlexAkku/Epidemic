@@ -38,7 +38,7 @@ $script:Issues = @()
 $script:Metrics = @{ test_counts = @{ total = 0; passed = 0; failed = 0; skipped = 0 } }
 $script:Failed = $false
 $script:Goal5SourceHashes = $null
-if ($Mode -eq 'Matrix') {
+if ($Mode -in @('Matrix', 'Validators')) {
     $identity = & python docs/freeze/goal5_participant_contract.py --source-fingerprints
     if ($LASTEXITCODE -ne 0) { throw 'Cannot snapshot Goal 5 qualification sources before Matrix' }
     $script:Goal5SourceHashes = $identity | ConvertFrom-Json
@@ -149,6 +149,14 @@ function Invoke-Validators {
         @('python', @('docs/freeze/goal5_stage52_contract.py','--self-test'), 'goal5-stage52-contract-self-test'),
         @('python', @('tools/generate_goal5_participants.py','--check'), 'goal5-participant-generation'),
         @('python', @('tools/audit_goal5_restore_members.py','--check'), 'goal5-restore-footprint'),
+        @('python', @('docs/freeze/goal5_determinism_inventory.py','--check'), 'goal5-determinism-inventory'),
+        @('python', @('docs/freeze/goal5_determinism_inventory.py','--self-test'), 'goal5-determinism-inventory-self-test'),
+        @('python', @('docs/freeze/goal5_determinism_contract.py','--check'), 'goal5-determinism-contract'),
+        @('python', @('docs/freeze/goal5_determinism_contract.py','--self-test'), 'goal5-determinism-contract-self-test'),
+        @('python', @('docs/freeze/goal5_evidence_quality.py','--check'), 'goal5-evidence-quality'),
+        @('python', @('docs/freeze/goal5_evidence_quality.py','--self-test'), 'goal5-evidence-quality-self-test'),
+        @('python', @('docs/freeze/goal5_contract.py','--check'), 'goal5-final-contract'),
+        @('python', @('docs/freeze/goal5_contract.py','--self-test'), 'goal5-final-contract-self-test'),
         @('python', @('docs/freeze/goal4_evidence_quality.py','--check'), 'goal4-quality-check'),
         @('python', @('docs/freeze/goal4_evidence_quality.py','--self-test'), 'goal4-quality-self-test'),
         @('python', @('docs/freeze/module_dossiers.py','--check'), 'dossiers-check'),

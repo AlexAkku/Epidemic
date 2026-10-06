@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "started_at_utc": "2026-10-05T11:31:49.7307663Z",
+  "finished_at_utc": "2026-10-05T11:34:16.9501229Z",
+  "duration_ms": 147219,
+  "status": "ok",
+  "mode": "Validators",
+  "goal5_source_sha256": null,
+  "stages": [
+    {
+      "name": "self-check",
+      "status": "ok",
+      "note": "Runner, orchestrator, config and required tools are valid",
+      "duration_ms": 184,
+      "details": {}
+    },
+    {
+      "name": "fmt",
+      "status": "skip",
+      "note": "No repository-wide C++ formatter policy is adopted yet; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "line-limits",
+      "status": "skip",
+      "note": "No enforceable baseline has been approved; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "lint:freeze-validators",
+      "status": "ok",
+      "note": "All freeze/evidence validators and negative fixtures passed",
+      "duration_ms": 143669,
+      "details": {}
+    },
+    {
+      "name": "coverage",
+      "status": "skip",
+      "note": "No Windows C++ coverage collector is configured; stage retained and enablement tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "security",
+      "status": "skip",
+      "note": "No package manifest/SAST baseline is present; Architecture Freeze remains enforced",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "archive",
+      "status": "skip",
+      "note": "Testing entry point does not create release archives",
+      "duration_ms": 0,
+      "details": {}
+    }
+  ],
+  "issues": [],
+  "metrics": {
+    "test_counts": {
+      "total": 0,
+      "skipped": 0,
+      "passed": 0,
+      "failed": 0
+    }
+  }
+}

@@ -44,6 +44,18 @@ int main()
     const auto first_handle = created.Value().handle;
     const auto first_id = created.Value().id;
     if (!service.Resolve(first_handle).has_value() || service.HandleOf(first_id) != first_handle) return 5;
+    {
+        EntityService replacement;
+        if (!replacement.RegisterArchetype(actor)) return 174;
+        replacement.Freeze();
+        const auto replacement_entity = replacement.Create(create);
+        if (!replacement_entity || replacement_entity.Value().handle == first_handle ||
+            replacement.Resolve(first_handle)) return 175;
+        const auto replaced_handle = replacement_entity.Value().handle;
+        if (!replacement.RestoreSnapshot(service.CaptureSnapshot()) ||
+            replacement.Resolve(first_handle) || replacement.Resolve(replaced_handle) ||
+            !replacement.Resolve(replacement.HandleOf(first_id))) return 176;
+    }
     if (!service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::RequireMaterialized) return 53;
     const auto hand = service.GetPart(first_id, hand_part.id);
     const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};

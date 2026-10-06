@@ -129,25 +129,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:25::`0482e2f1948220f0`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:25::`0482e2f1948220f0`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:25::`0482e2f1948220f0`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:25::`0482e2f1948220f0`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))"
         }
       },
       "obligations": {
@@ -156,7 +156,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:149::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:225::if (!snapshot || !service.RestoreSnapshot(snapshot.Value()))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<void> RestoreSnapshot(FactsSnapshot snapshot);"
@@ -231,7 +231,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:340::GameplayFactsService compact_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:416::GameplayFactsService compact_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] std::optional<FactRecord> FindFactCopy(const FactKey&key)const"
@@ -242,7 +242,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:612::if (!retry || retry.Value() != 1 || delivered != 1 || fault_service.HistoryCount() != 1)",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactKeyHash",
       "signature": "[[nodiscard]] std::size_t operator()(const FactKey&key)const noexcept"
@@ -306,7 +306,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:389::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:465::if (scope_a_history.size() != 1 || scope_b_history.size() != 1 ||",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactTransaction",
       "signature": "[[nodiscard]] bool Empty()const noexcept"
@@ -343,25 +343,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:29::`0aedbcc481948a93`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:29::`0aedbcc481948a93`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:29::`0aedbcc481948a93`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:29::`0aedbcc481948a93`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:511::if (!type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:587::if (!type)"
         }
       },
       "obligations": {
@@ -370,7 +370,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:508::GameplayFactsService fault_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:584::GameplayFactsService fault_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TValue,typename TEncode,typename TDecode> [[nodiscard]] foundation::Result<void> RegisterFactCodec(FactTypeId type,std::string_view schema_name,std::uint32_t version,TEncode&&encode,TDecode&&decode)"
@@ -385,25 +385,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:30::`0d09d86db5dac3b7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:30::`0d09d86db5dac3b7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:30::`0d09d86db5dac3b7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:30::`0d09d86db5dac3b7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;"
         }
       },
       "obligations": {
@@ -412,7 +412,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:299::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:375::if (!disk_restored.RestorePersistenceSnapshot(disk_snapshot.Value())) return 263;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<void> RestorePersistenceSnapshot(FactsPersistenceSnapshot snapshot);"
@@ -524,25 +524,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:31::`11de0c3d4fdeb7af`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:31::`11de0c3d4fdeb7af`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:31::`11de0c3d4fdeb7af`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:31::`11de0c3d4fdeb7af`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))"
         }
       },
       "obligations": {
@@ -551,7 +551,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:227::if (!service.Commit(std::move(timed), timed_context))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!service.Commit(std::move(timed), timed_context))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<std::vector<FactChange>> Commit(FactTransaction transaction,GameplayContext context,EventId source_event={});"
@@ -701,7 +701,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:159::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:235::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "[[nodiscard]] std::uint64_t BatchOrder()const noexcept"
@@ -791,25 +791,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:33::`19d6a357d621c19f`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:33::`19d6a357d621c19f`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:33::`19d6a357d621c19f`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:33::`19d6a357d621c19f`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())"
         }
       },
       "obligations": {
@@ -818,7 +818,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:377::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:453::if (!scoped_service.SubmitBatch(std::move(scoped_batch)) || !scoped_service.Dispatch())",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<std::uint64_t> Dispatch(EventDispatchLimits limits={});"
@@ -926,7 +926,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:340::GameplayFactsService compact_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:416::GameplayFactsService compact_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] GameplayEventBatch CreateBatch(ProducerId producer,std::uint64_t batch_order)const"
@@ -1016,25 +1016,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:35::`235e8a53d2cbec4c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:35::`235e8a53d2cbec4c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:35::`235e8a53d2cbec4c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:35::`235e8a53d2cbec4c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:117::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:193::if (denied_result || !denied_result.GetError().HasCode(\"gameplay.fact_owner_violation\"))"
         }
       },
       "obligations": {
@@ -1043,7 +1043,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:115::denied.Set<int>(fact_type.Value(), subject, {}, 5, FactPersistence::Persistent);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:191::denied.Set<int>(fact_type.Value(), subject, {}, 5, FactPersistence::Persistent);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactTransaction",
       "signature": "template <typename TValue> void Set(FactTypeId type,GameplayObjectRef subject,GameplayObjectRef scope,TValue value,FactPersistence persistence=FactPersistence::Session,std::optional<GameplayTimePoint> expires_at=std::nullopt)"
@@ -1140,7 +1140,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:82::if (event.value == 1)",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:158::if (event.value == 1)",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactKey",
       "signature": "[[nodiscard]] constexpr bool operator==(const FactKey&)const noexcept=default;"
@@ -1226,7 +1226,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:361::GameplayFactsService scoped_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:437::GameplayFactsService scoped_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<FactsPersistenceSnapshot> CapturePersistenceSnapshot()const;"
@@ -1281,7 +1281,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "[[nodiscard]] ProducerId Producer()const noexcept"
@@ -1345,7 +1345,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:59::GameplayFactsService service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:135::GameplayFactsService service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "GameplayFactsService();"
@@ -1735,25 +1735,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:40::`4101226d3cb55422`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:145::if (!service.Commit(std::move(remove), context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:221::if (!service.Commit(std::move(remove), context))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:40::`4101226d3cb55422`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:145::if (!service.Commit(std::move(remove), context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:221::if (!service.Commit(std::move(remove), context))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:40::`4101226d3cb55422`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:145::if (!service.Commit(std::move(remove), context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:221::if (!service.Commit(std::move(remove), context))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:40::`4101226d3cb55422`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:145::if (!service.Commit(std::move(remove), context))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:221::if (!service.Commit(std::move(remove), context))"
         }
       },
       "obligations": {
@@ -1762,7 +1762,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::remove.Remove(key);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:220::remove.Remove(key);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactTransaction",
       "signature": "void Remove(FactKey key)"
@@ -2013,25 +2013,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:41::`4d619454e149d74c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:41::`4d619454e149d74c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:41::`4d619454e149d74c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:41::`4d619454e149d74c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:64::if (!event_type || !fact_type)"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:140::if (!event_type || !fact_type)"
         }
       },
       "obligations": {
@@ -2040,7 +2040,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:59::GameplayFactsService service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:135::GameplayFactsService service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<std::uint64_t> ExpireDueFacts(GameplayTimePoint now,GameplayContext context);"
@@ -2077,25 +2077,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:42::`50af5d5ef29556cd`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:42::`50af5d5ef29556cd`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:42::`50af5d5ef29556cd`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:42::`50af5d5ef29556cd`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         }
       },
       "obligations": {
@@ -2104,7 +2104,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:291::GameplayFactsService disk_restored;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:367::GameplayFactsService disk_restored;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TPayload> [[nodiscard]] foundation::Result<EventTypeId> RegisterEventType(std::string_view canonical_name,GameplayDomainId owner,HistoryPolicy history_policy=HistoryPolicy::None,std::size_t recent_limit=256)"
@@ -2223,7 +2223,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:303::if (!bad_schema.facts.empty())",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:379::if (!bad_schema.facts.empty())",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactTransaction",
       "signature": "explicit FactTransaction(GameplayDomainId owner={})"
@@ -2234,7 +2234,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:232::if (!service.FindFact(timed_key))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:308::if (!service.FindFact(timed_key))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] std::optional<FactRecord> FindFact(const FactKey&key)const;"
@@ -2517,7 +2517,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:255::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:331::if (!noop_result || !noop_result.Value().empty() || service.FactRevision() != revision_before_noop)",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] Revision FactRevision()const noexcept"
@@ -2561,7 +2561,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::GameplayFactsService fault_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:523::GameplayFactsService fault_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] bool IsFrozen()const noexcept"
@@ -2691,7 +2691,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "GameplayEventBatch(ProducerId producer,std::uint64_t batch_order)"
@@ -2821,7 +2821,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:479::GameplayFactsService fault_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:555::GameplayFactsService fault_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] std::vector<FactRecord> FindFacts(FactTypeId type,GameplayObjectRef subject={},GameplayObjectRef scope={})const;"
@@ -2940,7 +2940,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:361::GameplayFactsService scoped_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:437::GameplayFactsService scoped_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] std::vector<EventRecord> FindHistory(const HistoryQuery&query)const;"
@@ -2973,7 +2973,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:109::if (service.HistoryCount() != 2)",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:185::if (service.HistoryCount() != 2)",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactTransaction",
       "signature": "[[nodiscard]] GameplayDomainId Owner()const noexcept"
@@ -3293,7 +3293,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:159::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:235::GameplayEventBatch batch_a = service.CreateBatch(ProducerId::FromString(\"producer.a\"), 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "[[nodiscard]] bool Empty()const noexcept"
@@ -3474,25 +3474,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:52::`8ee8da041801a4c7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:52::`8ee8da041801a4c7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:52::`8ee8da041801a4c7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:52::`8ee8da041801a4c7`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||"
         }
       },
       "obligations": {
@@ -3501,7 +3501,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:68::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:144::if (!service.RegisterEventCodec<TestEvent>(event_type.Value(), \"framework.test.event.v1\", 1, EncodeEvent, DecodeEvent) ||",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TPayload,typename TEncode,typename TDecode> [[nodiscard]] foundation::Result<void> RegisterEventCodec(EventTypeId type,std::string_view schema_name,std::uint32_t version,TEncode&&encode,TDecode&&decode)"
@@ -3781,25 +3781,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:53::`9514520c1ccced0d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:53::`9514520c1ccced0d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:53::`9514520c1ccced0d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:53::`9514520c1ccced0d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))"
         }
       },
       "obligations": {
@@ -3808,7 +3808,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:270::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:346::if (!service.Publish<TestEvent>(event_type.Value(), context, subject, TestEvent{33}))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TPayload> [[nodiscard]] foundation::Result<void> Publish(EventTypeId type,GameplayContext context,GameplayObjectRef scope,GameplayObjectRef subject,TPayload payload,ProducerId producer={})"
@@ -3856,25 +3856,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:54::`95f7dece02c06ece`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:54::`95f7dece02c06ece`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:54::`95f7dece02c06ece`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:54::`95f7dece02c06ece`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:290::if (!disk_snapshot) return 261;"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:366::if (!disk_snapshot) return 261;"
         }
       },
       "obligations": {
@@ -3883,7 +3883,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:291::GameplayFactsService disk_restored;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:367::GameplayFactsService disk_restored;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<void> CompactHistory(EventTypeId type,const IHistoryCompactor&compactor);"
@@ -3947,7 +3947,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:154::if (!value || *value != 42 || service.HistoryCount() != 2)",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:230::if (!value || *value != 42 || service.HistoryCount() != 2)",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] std::uint64_t HistoryCount()const noexcept"
@@ -3962,25 +3962,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:56::`99959b33200e37f5`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:56::`99959b33200e37f5`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:56::`99959b33200e37f5`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:56::`99959b33200e37f5`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         }
       },
       "obligations": {
@@ -3989,7 +3989,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TPayload> [[nodiscard]] foundation::Result<void> Publish(EventTypeId type,GameplayContext context,GameplayObjectRef subject,TPayload payload,ProducerId producer={})"
@@ -4000,7 +4000,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:508::GameplayFactsService fault_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:584::GameplayFactsService fault_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] EventTypeId FactChangedEventType()const noexcept"
@@ -4108,7 +4108,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:137::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:213::if (!fact_change_dispatch || fact_change_dispatch.Value() != 1)",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::FactRecord",
       "signature": "std::type_index value_type{typeid(void)};"
@@ -4344,7 +4344,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:114::auto denied = service.BeginTransaction(other);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:190::auto denied = service.BeginTransaction(other);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] FactTransaction BeginTransaction(GameplayDomainId owner)const"
@@ -4366,7 +4366,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:330::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord> records) const override",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:406::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord> records) const override",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::IHistoryCompactor",
       "signature": "[[nodiscard]] virtual std::vector<EventRecord> Compact(std::span<const EventRecord> records)const=0;"
@@ -4377,7 +4377,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:485::const auto before_diag = fault_service.GetDiagnostics();",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:561::const auto before_diag = fault_service.GetDiagnostics();",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] FactsDiagnostics GetDiagnostics()const noexcept;"
@@ -4456,25 +4456,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:62::`b4e9610202133383`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:62::`b4e9610202133383`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:62::`b4e9610202133383`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:62::`b4e9610202133383`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,"
         }
       },
       "obligations": {
@@ -4483,7 +4483,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:514::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:590::if (!fault_service.Subscribe<TestEvent>(type.Value(), SubscriberId::FromString(\"fault.batch.sub\"), 0,",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TPayload,typename TCallback> [[nodiscard]] foundation::Result<void> Subscribe(EventTypeId type,SubscriberId subscriber,int priority,TCallback&&callback)"
@@ -4562,25 +4562,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:63::`bf649afbcb5076bb`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:63::`bf649afbcb5076bb`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:63::`bf649afbcb5076bb`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:63::`bf649afbcb5076bb`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))"
         }
       },
       "obligations": {
@@ -4589,7 +4589,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:163::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:239::if (!service.SubmitBatch(std::move(batch_b)) || !service.SubmitBatch(std::move(batch_a)))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<void> SubmitBatch(GameplayEventBatch batch);"
@@ -4883,7 +4883,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:398::GameplayFactsService subscriber_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:474::GameplayFactsService subscriber_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TValue> [[nodiscard]] std::optional<TValue> FindFactValueCopy(const FactKey&key)const"
@@ -5037,25 +5037,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:65::`d3c6bb52f42e833b`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:65::`d3c6bb52f42e833b`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:65::`d3c6bb52f42e833b`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:65::`d3c6bb52f42e833b`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:294::if (!disk_event || !disk_fact ||"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:370::if (!disk_event || !disk_fact ||"
         }
       },
       "obligations": {
@@ -5064,7 +5064,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:293::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:369::const auto disk_fact = disk_restored.RegisterFactType<int>(\"framework.test.fact\", owner);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "template <typename TValue> [[nodiscard]] foundation::Result<FactTypeId> RegisterFactType(std::string_view canonical_name,GameplayDomainId owner)"
@@ -5113,7 +5113,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:398::GameplayFactsService subscriber_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:474::GameplayFactsService subscriber_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "void Freeze();"
@@ -5270,7 +5270,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:479::GameplayFactsService fault_service;",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:555::GameplayFactsService fault_service;",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] std::vector<EventRecord> FindHistory(EventTypeId type,GameplayObjectRef subject={})const;"
@@ -5296,25 +5296,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:68::`e1b6a183698d7d0c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:68::`e1b6a183698d7d0c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:68::`e1b6a183698d7d0c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:68::`e1b6a183698d7d0c`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))"
         }
       },
       "obligations": {
@@ -5323,7 +5323,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:371::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:447::if (!scoped_service.Publish<TestEvent>(scoped_type.Value(), context, scope_a, subject, TestEvent{41}))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "template <typename TPayload> void Publish(EventTypeId type,GameplayContext context,GameplayObjectRef subject,TPayload payload)"
@@ -5420,7 +5420,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:430::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:506::[[nodiscard]] std::vector<EventRecord> Compact(std::span<const EventRecord>) const override",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::EventRecord",
       "signature": "std::type_index payload_type{typeid(void)};"
@@ -5607,25 +5607,25 @@
           "contract": "docs/EngineFramework/modules/facts.md:70::`ec159a3b1e961c3d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         },
         "noop": {
           "contract": "docs/EngineFramework/modules/facts.md:70::`ec159a3b1e961c3d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         },
         "preconditions": {
           "contract": "docs/EngineFramework/modules/facts.md:70::`ec159a3b1e961c3d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         },
         "success": {
           "contract": "docs/EngineFramework/modules/facts.md:70::`ec159a3b1e961c3d`",
           "rationale": "B01 reviewed this mutator outcome against the module contract and module regression suite; exact canonical anchors are merged by the serial integrator.",
           "status": "REVIEWED",
-          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
+          "test": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))"
         }
       },
       "obligations": {
@@ -5634,7 +5634,7 @@
         "preconditions": "REVIEWED",
         "success": "REVIEWED"
       },
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:500::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:576::if (!fault_service.Publish<TestEvent>(type.Value(), context, subject, TestEvent{92}))",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "template <typename TPayload> void Publish(EventTypeId type,GameplayContext context,GameplayObjectRef scope,GameplayObjectRef subject,TPayload payload)"
@@ -5784,7 +5784,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:328::struct DuplicateCompactor final : IHistoryCompactor",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:404::struct DuplicateCompactor final : IHistoryCompactor",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::IHistoryCompactor",
       "signature": "virtual ~IHistoryCompactor()=default;"
@@ -5914,7 +5914,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:160::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:236::GameplayEventBatch batch_b = service.CreateBatch(ProducerId::FromString(\"producer.b\"), 0);",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayEventBatch",
       "signature": "GameplayEventBatch()=default;"
@@ -5947,7 +5947,7 @@
       "header": "EngineFramework/BaseInfrastructure/Facts/include/Epidemic/GameFramework/Facts/gameplay_facts.h",
       "module": "EngineFramework/BaseInfrastructure/Facts",
       "obligations": {},
-      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:456::const auto before = fault_service.CaptureSnapshot();",
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:532::const auto before = fault_service.CaptureSnapshot();",
       "review_rationale": "B01 reviewed this callable against the current module header, module contract and existing module-specific regression suite.",
       "scope": "epidemic::gameplay::facts::GameplayFactsService",
       "signature": "[[nodiscard]] foundation::Result<FactsSnapshot> CaptureSnapshot()const;"

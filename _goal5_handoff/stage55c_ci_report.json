@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "started_at_utc": "2026-10-04T20:10:35.3075031Z",
+  "finished_at_utc": "2026-10-04T20:15:40.8731919Z",
+  "duration_ms": 305566,
+  "status": "fail",
+  "mode": "Full",
+  "goal5_source_sha256": null,
+  "stages": [
+    {
+      "name": "self-check",
+      "status": "ok",
+      "note": "Runner, orchestrator, config and required tools are valid",
+      "duration_ms": 92,
+      "details": {}
+    },
+    {
+      "name": "fmt",
+      "status": "skip",
+      "note": "No repository-wide C++ formatter policy is adopted yet; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "line-limits",
+      "status": "skip",
+      "note": "No enforceable baseline has been approved; tracked in CI_TODO.md",
+      "duration_ms": 0,
+      "details": {}
+    },
+    {
+      "name": "lint:freeze-validators",
+      "status": "ok",
+      "note": "All freeze/evidence validators and negative fixtures passed",
+      "duration_ms": 146269,
+      "details": {}
+    },
+    {
+      "name": "build:full-debug",
+      "status": "fail",
+      "note": "build:full-debug failed. Full log: D:\\MyProjects\\Epidemic engine v1.0\\.ci_cache\\logs\\build-full-debug.log",
+      "duration_ms": 158035,
+      "details": {}
+    }
+  ],
+  "issues": [
+    {
+      "language": "cpp",
+      "tool": "cmake-build",
+      "rule": "exit_code",
+      "count": 1,
+      "message": "build:full-debug failed with exit code 1",
+      "log_path": "D:\\MyProjects\\Epidemic engine v1.0\\.ci_cache\\logs\\build-full-debug.log"
+    },
+    {
+      "language": "cpp",
+      "tool": "build:full-debug",
+      "rule": "stage_failed",
+      "count": 1,
+      "message": "build:full-debug failed. Full log: D:\\MyProjects\\Epidemic engine v1.0\\.ci_cache\\logs\\build-full-debug.log",
+      "log_path": ""
+    }
+  ],
+  "metrics": {
+    "test_counts": {
+      "total": 0,
+      "passed": 0,
+      "skipped": 0,
+      "failed": 0
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "candidates": {
+    "G5P-b9955c6d5f6018dc": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-b9955c6d5f6018dc",
+      "capture_contract": "N/A: process-local one-cycle coordinator, never a gameplay owner",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A: process-local coordination only",
+      "durable_storage": "N/A: owning state lives in the three generation payloads",
+      "evidence": [
+        {
+          "contract_assertion": "postcommit failure owns reconciliation and blocks simulation resume",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp",
+          "test_symbol": "PostcommitFailureRetainsSemanticsAndRetriesOnlyUnfinishedPhases",
+          "test_target": "EpidemicGameFrameworkRestoreCoordinationTests"
+        }
+      ],
+      "migration_policy": "N/A: not serialized",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "persistence_role": "NON_PERSISTENT_OWNER",
+      "qualified_symbol": "epidemic::gameplay::integration::WholeRestorePhase",
+      "rationale": "Phase/cursor/lease describe this process restore lifecycle; persistent owners remain exclusively assigned to their existing participants/Runtime planes.",
+      "reconciliation": "Retain the recovery lease after semantic commit; retry only unfinished phases before CanResume",
+      "restore_contract": "LoadAndRestore stages real owners; RetryReconciliation retains private process-local cursor",
+      "review_status": "REVIEWED",
+      "risk_review": {},
+      "save_plane": "NONE",
+      "transient_rebuild": "Create a fresh coordinator against the fresh composition and store"
+    },
+    "G5P-fe96cc7c2f37d2a7": {
+      "authoritative_owner": "N/A",
+      "candidate_id": "G5P-fe96cc7c2f37d2a7",
+      "capture_contract": "N/A: process-local one-cycle coordinator, never a gameplay owner",
+      "dependencies": [],
+      "deterministic_relevance": "NO",
+      "digest_policy": "EXCLUDE",
+      "durable_schema": "N/A: process-local coordination only",
+      "durable_storage": "N/A: owning state lives in the three generation payloads",
+      "evidence": [
+        {
+          "contract_assertion": "postcommit failure owns reconciliation and blocks simulation resume",
+          "kind": "executable",
+          "source_path": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp",
+          "test_symbol": "PostcommitFailureRetainsSemanticsAndRetriesOnlyUnfinishedPhases",
+          "test_target": "EpidemicGameFrameworkRestoreCoordinationTests"
+        }
+      ],
+      "migration_policy": "N/A: not serialized",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "persistence_role": "NON_PERSISTENT_OWNER",
+      "qualified_symbol": "epidemic::gameplay::integration::WholeEngineRestoreCoordinator",
+      "rationale": "Phase/cursor/lease describe this process restore lifecycle; persistent owners remain exclusively assigned to their existing participants/Runtime planes.",
+      "reconciliation": "Retain the recovery lease after semantic commit; retry only unfinished phases before CanResume",
+      "restore_contract": "LoadAndRestore stages real owners; RetryReconciliation retains private process-local cursor",
+      "review_status": "REVIEWED",
+      "risk_review": {
+        "PROCESS_LOCAL_CALLBACK": {
+          "decision": "EXCLUDED_FROM_DURABLE_REPRESENTATION",
+          "rationale": "Injected callbacks are fresh composition wiring; never captured as semantic state."
+        }
+      },
+      "save_plane": "NONE",
+      "transient_rebuild": "Create a fresh coordinator against the fresh composition and store"
+    }
+  },
+  "schema_version": 1
+}

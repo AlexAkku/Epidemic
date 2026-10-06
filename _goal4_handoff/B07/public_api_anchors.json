@@ -3492,6 +3492,20 @@
         "target": "EpidemicGameFrameworkNarrativeTests"
       }
     },
+    "9ca97e2efaa2a183": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:75::last validation exit discards private candidates and restores live fallback"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
+      }
+    },
     "9ce39952afa84689": {
       "contract": {
         "anchor": "docs/EngineFramework/modules/narrative.md:127::- G4-API-9ce39952afa84689: `epidemic::gameplay::narrative::NarrativeBeatId` \u2014 `static constexpr NarrativeBeatId FromStri",
@@ -4232,6 +4246,20 @@
         ],
         "reviewed": true,
         "target": "EpidemicGameFrameworkNarrativeTests"
+      }
+    },
+    "bb418d00f29f67bc": {
+      "contract": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_participant_mechanics_tests.cpp:68::validated dependencies remain private and retain durable values"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGameTests"
       }
     },
     "bcb67c444dbdcdd8": {

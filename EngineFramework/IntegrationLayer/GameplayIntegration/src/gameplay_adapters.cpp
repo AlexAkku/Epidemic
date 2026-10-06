@@ -479,6 +479,31 @@ foundation::Result<void> ConditionProgressionAdapter::Project(const conditions::
         modifier.persistent = true;
         modifiers.push_back(std::move(modifier));
     }
+    // Rebinding a journal epoch must preserve an already restored projection,
+    // including its durable modifier IDs, generator and profile revision.
+    const auto profile = progression_.GetProfileSnapshot(condition.subject);
+    if (profile)
+    {
+        std::size_t index = 0;
+        bool unchanged = true;
+        for (const auto &existing : profile.Value().modifiers)
+        {
+            if (existing.source != source)
+                continue;
+            if (index == modifiers.size())
+            {
+                unchanged = false;
+                break;
+            }
+            const auto &desired = modifiers[index++];
+            if (existing.target != desired.target || existing.operation != desired.operation ||
+                existing.value_micro != desired.value_micro || existing.priority != desired.priority ||
+                existing.modifier_type != desired.modifier_type || existing.persistent != desired.persistent)
+                unchanged = false;
+        }
+        if (unchanged && index == modifiers.size())
+            return foundation::Result<void>::Success();
+    }
     auto replaced = progression_.ReplaceModifiersBySource(condition.subject, source, std::move(modifiers), context);
     if (!replaced)
         return foundation::Result<void>::Failure(replaced.GetError());
@@ -864,7 +889,7 @@ DeathRewardCheckpoint DeathRewardAdapter::CaptureCheckpoint() const
 foundation::Result<void> DeathRewardAdapter::RestoreCheckpoint(DeathRewardCheckpoint checkpoint)
 {
     if (!mappings_frozen_ || checkpoint.mapping_revision != mapping_revision_ ||
-        !checkpoint.cursor.IsValid() || checkpoint.cursor.epoch != combat_.LatestChangeCursor().epoch ||
+        !checkpoint.cursor.IsValid() || checkpoint.cursor.sequence > combat_.LatestChangeCursor().sequence ||
         checkpoint.deliveries.size() > kDeliveryCapacity)
         return foundation::Result<void>::Failure(
             Error("gameplay.integration.checkpoint_invalid", "death reward checkpoint is incompatible with frozen mappings"));
@@ -874,7 +899,9 @@ foundation::Result<void> DeathRewardAdapter::RestoreCheckpoint(DeathRewardCheckp
     {
         const auto &record = checkpoint.deliveries[i];
         if (record.key.combat_sequence == 0 || !record.key.subject.IsValid() || !record.key.table.IsValid() ||
-            !record.reward.IsValid() || (i != 0 && checkpoint.deliveries[i - 1].key == record.key))
+            !record.reward.IsValid() ||
+            (record.state != DeathRewardDeliveryState::Generated && record.state != DeathRewardDeliveryState::Pending) ||
+            (i != 0 && checkpoint.deliveries[i - 1].key == record.key))
             return foundation::Result<void>::Failure(
                 Error("gameplay.integration.checkpoint_invalid", "death reward checkpoint contains invalid delivery records"));
         if (record.state == DeathRewardDeliveryState::Generated && loot_.FindGenerated(record.reward) == nullptr &&
@@ -882,7 +909,7 @@ foundation::Result<void> DeathRewardAdapter::RestoreCheckpoint(DeathRewardCheckp
             return foundation::Result<void>::Failure(
                 Error("gameplay.integration.checkpoint_invalid", "death reward generated delivery no longer exists in Loot"));
     }
-    cursor_ = checkpoint.cursor;
+    cursor_ = combat_.LatestChangeCursor().AtSequence(checkpoint.cursor.sequence);
     deliveries_ = std::move(checkpoint.deliveries);
     return foundation::Result<void>::Success();
 }

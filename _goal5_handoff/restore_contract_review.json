@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "stage": "5.4.A",
+  "reviewed": true,
+  "qualification": "COORDINATION_CORE_ONLY",
+  "phase_mapping": {
+    "LOAD": "AwaitLoad: store LoadCurrent and bounded outer/Framework wire decode; no live publication",
+    "VALIDATE": "Precommit: Runtime Prepare and SaveGameOrchestrator Restore validation/migration",
+    "STAGE": "Precommit: Runtime prepared composition and all Framework participant stages privately owned",
+    "COMMIT_SEMANTIC": "CommittedSemantic: SaveGame no-throw participant commit followed by Runtime prepared-stage no-throw publication under the same restore lease",
+    "REBUILD_TRANSIENT": "RebuildTransient: injected composition rebuild, completed phase cursor retained",
+    "RECONCILE_EXTERNAL": "ReconcileExternal: injected accepted-work reconciliation; retry preserves accepted work identity",
+    "MATERIALIZE_RUNTIME": "MaterializeRuntime: injected projection rebuild; no simulation resume until completed",
+    "RESUME": "ReadyToResume: CanResume only after all three successful callbacks and release of the complete restore lease"
+  },
+  "precommit": {
+    "fallible_preparation": "Runtime Prepare validates and allocates an unpublished composition. SaveGame Restore validates, migrates and allocates every stage before its commit loop.",
+    "publication": "Runtime stage Commit is noexcept; Framework participant CommitRestore is noexcept. No fallible callback is called between their publication boundaries.",
+    "failure_policy": "Any precommit failure leaves both original live planes unchanged, disposes every private stage and releases quiescence; the same coordinator may retry LOAD."
+  },
+  "postcommit": {
+    "failure_policy": "SEMANTIC_RETAINED_RECONCILIATION_REQUIRED",
+    "retry_policy": "COMPLETED_PHASE_CURSOR_WITH_IDEMPOTENT_IN_PHASE_RETRY",
+    "resume_policy": "ALL_PHASES_COMPLETE_AND_QUIESCENCE_RELEASED",
+    "thread_policy": "OWNER_THREAD_ONLY",
+    "runtime_bridge_policy": "REBUILD_FROM_SEMANTIC_IDENTITIES_REJECT_OLD_RUNTIME_OBSERVATIONS"
+  },
+  "remaining_qualification": [
+    "5.4.B: production Runtime restore-port implementation, fresh Base/Runtime/Framework whole-engine composition and real RuntimeBridge identity/causal continuation",
+    "5.4.C: whole-engine LOAD/VALIDATE/STAGE/postcommit failure matrix and fresh-process restore"
+  ],
+  "evidence": {
+    "source": "EngineFramework/DevelopmentInfrastructure/Tests/restore_coordination_tests.cpp",
+    "target": "EpidemicGameFrameworkRestoreCoordinationTests",
+    "precommit_symbol": "PrecommitFailurePreservesBothPlanesAndReleasesPreparedState",
+    "postcommit_symbol": "PostcommitFailureRetainsSemanticsAndRetriesOnlyUnfinishedPhases"
+  }
+}

@@ -186,6 +186,10 @@ class ISaveParticipant
         return SaveParticipantRequirement::Required;
     }
     [[nodiscard]] virtual std::vector<SaveParticipantId> Dependencies() const = 0;
+    // A restore-wide private validation view follows Dependencies() order and
+    // is discarded on every exit. It must never publish to gameplay owners.
+    virtual void BeginRestoreValidation() noexcept {}
+    virtual void EndRestoreValidation() noexcept {}
     [[nodiscard]] virtual foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const = 0;
     [[nodiscard]] virtual foundation::Result<void> ValidateSnapshot(const SaveSection &,
                                                                     const RestoreContext &) const = 0;
@@ -320,6 +324,8 @@ class SaveRestoreWorkspace
     {
         if (const auto staged = staged_.find(typeid(Owner)); staged != staged_.end())
             return *static_cast<Owner*>(staged->second);
+        if (const auto validated = validated_.find(typeid(Owner)); validated != validated_.end())
+            return *static_cast<Owner*>(validated->second.view);
         const auto found = live_.find(typeid(Owner));
         if (found == live_.end())
             throw std::runtime_error("missing restore owner binding");
@@ -330,11 +336,20 @@ class SaveRestoreWorkspace
     template <typename Owner> Owner& Resolve(Owner& live) const noexcept
     {
         const auto found = staged_.find(typeid(std::remove_const_t<Owner>));
-        return found == staged_.end() ? live : *static_cast<Owner*>(found->second);
+        if (found != staged_.end()) return *static_cast<Owner*>(found->second);
+        const auto validated = validated_.find(typeid(std::remove_const_t<Owner>));
+        return validated == validated_.end() ? live : *static_cast<Owner*>(validated->second.view);
     }
 
     std::unordered_map<std::type_index, void*> live_;
     std::unordered_map<std::type_index, void*> staged_;
+    struct ValidationRecord
+    {
+        std::shared_ptr<void> storage;
+        void* view = nullptr;
+    };
+    std::unordered_map<std::type_index, ValidationRecord> validated_;
+    std::size_t validation_users_ = 0;
     template <typename Owner> friend class detail::SnapshotParticipant;
     friend struct detail::WorkspaceTestAccess;
     template <typename Owner> friend struct ::epidemic::gameplay::SnapshotRestoreAccess;

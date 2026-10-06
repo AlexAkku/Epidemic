@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "stage": "5.5.B",
+  "reviewed": true,
+  "source": "Tests/Truth/goal5_scenario.h",
+  "self_test_source": "Tests/Truth/goal5_scenario_self_tests.h",
+  "test_symbol": "CanonicalScenarioRunnerRejectsAdversarialInputs",
+  "step_kinds": ["SubmitCommand", "AdvanceGameTime", "Tick", "CompleteExternalOperation", "ApplyBudget", "StreamOut", "StreamIn", "SaveReload", "Reconcile", "Materialize"],
+  "descriptor_fields": ["scenario_id", "config_id", "seed_set", "initial_state_id", "steps", "expected_contract"],
+  "failure_fields": ["scenario_id", "seed_set", "step_index", "expected_digest", "actual_digest", "first_differing_trace_event"],
+  "policies": {
+    "clock": "LOGICAL_EXPLICIT",
+    "seed": "EXPLICIT_OWNED_STREAMS",
+    "completion": "EXPLICIT_ORDERED_INPUT",
+    "floating": "CANONICAL_QUANTIZED",
+    "trace": "SEMANTIC_COMMITS_ONLY_WITH_UNIQUE_LOGICAL_ORDER"
+  },
+  "execution_receipt_required": true,
+  "adversarial_classes": ["pointer_address", "unordered_iteration", "ambient_wall_clock", "random_device_seed", "missing_owner", "missing_tie_breaker", "duplicate_event_order", "implicit_async_order", "raw_float", "hidden_mutable_state"]
+}

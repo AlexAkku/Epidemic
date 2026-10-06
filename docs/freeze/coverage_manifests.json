@@ -28242,6 +28242,20 @@
       "scope": "epidemic::gameplay::narrative::NarrativeService",
       "signature": "[[nodiscard]] foundation::Result<void> RegisterConditionResolver(NarrativeConditionTypeId type,const INarrativeConditionResolver&resolver);"
     },
+    "9ca97e2efaa2a183": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::savegame::ISaveParticipant",
+      "signature": "virtual void EndRestoreValidation()noexcept"
+    },
     "9cdb8308976180fc": {
       "classification": "MUTATOR",
       "classification_status": "REVIEWED",
@@ -33599,6 +33613,20 @@
       "obligations": {},
       "scope": "epidemic::runtime::animation::AnimatorInstanceId",
       "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
+    },
+    "bb418d00f29f67bc": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/GameplayWorldStateOwners/SaveGame/include/Epidemic/GameFramework/SaveGame/save_game.h",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "scope": "epidemic::gameplay::savegame::ISaveParticipant",
+      "signature": "virtual void BeginRestoreValidation()noexcept"
     },
     "bb43106c7534f6f5": {
       "classification": "LIFECYCLE",
@@ -46574,7 +46602,7 @@
       "regression": "EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:272::epidemic::gameplay::detail::SetFoundationFaultPointForTesting(\"type_registry.publish\");",
       "regressions": {
         "EpidemicGameFrameworkFoundationTests": "EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:272::epidemic::gameplay::detail::SetFoundationFaultPointForTesting(\"type_registry.publish\");",
-        "EpidemicGameplayFactsTests": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:460::epidemic::gameplay::facts::detail::SetFactsFaultPointForTesting(\"transaction_commit.publish\");",
+        "EpidemicGameplayFactsTests": "EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:536::epidemic::gameplay::facts::detail::SetFactsFaultPointForTesting(\"transaction_commit.publish\");",
         "EpidemicGameplayQueriesTests": "EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:486::epidemic::gameplay::queries::detail::SetQueryFaultPointForTesting(\"provider_registration.publish\");",
         "EpidemicGameplayTimeTests": "EngineFramework/DevelopmentInfrastructure/Tests/time_tests.cpp:281::epidemic::gameplay::time::detail::SetTimeFaultPointForTesting(\"clock_registration.publish\");"
       },
@@ -46592,11 +46620,11 @@
       "fix": "The six baseline users were migrated to module-private/internal deterministic fault seams. Conditions uses the same local restore seam convention as additional B02 evidence. Restore coverage now exercises candidate-construction and pre-commit publication boundaries; shared allocation/sweep helpers remain read-only for serial removal after all Bxx merge.",
       "logical_id": "G4-INFRA-001",
       "module": "B02 / seven owned modules (six baseline global-helper users)",
-      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:170::test_seam::FailNext(fault);",
+      "regression": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:182::test_seam::FailNext(fault);",
       "regressions": {
         "EpidemicGameFrameworkConditionsTests": "EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:224::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkEffectsTests": "EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:426::test_seam::FailNext(test_seam::FaultPoint::RegisterHandlerBeforePublish);",
-        "EpidemicGameFrameworkEntitiesTests": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:170::test_seam::FailNext(fault);",
+        "EpidemicGameFrameworkEntitiesTests": "EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:182::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkEnvironmentTests": "EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:302::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkInteractionTests": "EngineFramework/DevelopmentInfrastructure/Tests/interaction_gameplay_tests.cpp:121::test_seam::FailNext(fault);",
         "EpidemicGameFrameworkMaterialsTests": "EngineFramework/DevelopmentInfrastructure/Tests/materials_tests.cpp:102::test_seam::FailNext(fault);",
@@ -50715,6 +50743,11 @@
       "module": "EngineFramework/GameplayWorldStateOwners/Effects",
       "status": "REVIEWED"
     },
+    "63691b644a05208c": {
+      "callable_id": "9ca97e2efaa2a183",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
+      "status": "REVIEWED"
+    },
     "637c30a70b39aa0e": {
       "callable_id": "4455d8b3f1fb252d",
       "module": "EngineFramework/GameplayWorldStateOwners/Equipment",
@@ -53133,6 +53166,11 @@
     "ce2de5d7e98c8f92": {
       "callable_id": "a1aa79924fb50509",
       "module": "EngineFramework/GameplayWorldStateOwners/Equipment",
+      "status": "REVIEWED"
+    },
+    "ce32e1ee593a4fb2": {
+      "callable_id": "bb418d00f29f67bc",
+      "module": "EngineFramework/GameplayWorldStateOwners/SaveGame",
       "status": "REVIEWED"
     },
     "cf722762a92c24e7": {

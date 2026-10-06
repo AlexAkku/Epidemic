@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import re
 import sys
+import difflib
+import subprocess
 from pathlib import Path
 
 
@@ -419,7 +421,37 @@ for module, raw_module in handoff_local_ready.items():
     else:
         module_status = "LOCAL_READY"
     local_ready["modules"][module] = {"status": module_status, "criteria": normalized}
-save(local_ready_path, local_ready)
+# Physics is outside the eight Framework handoffs. The MS5 equal-hit regression
+# moves its existing test evidence; preserve each exact unchanged Git line rather
+# than selecting a nearby repeated assertion or manufacturing a new decision.
+physics_test = 'EngineRuntime/Physics/tests/physics_tests.cpp'
+physics_old = subprocess.run(['git', 'show', 'HEAD:' + physics_test], cwd=ROOT,
+                             check=True, capture_output=True, text=True).stdout.splitlines()
+physics_new = (ROOT / physics_test).read_text(encoding='utf-8').splitlines()
+physics_lines = {old + index + 1: new + index + 1
+                 for tag, old, end, new, _ in difflib.SequenceMatcher(
+                     None, physics_old, physics_new, autojunk=False).get_opcodes()
+                 if tag == 'equal' for index in range(end - old)}
+
+def rebase_physics(value):
+    if isinstance(value, dict):
+        return {key: rebase_physics(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [rebase_physics(item) for item in value]
+    if not isinstance(value, str):
+        return value
+    match = re.fullmatch(re.escape(physics_test) + r':(\d+)::(.+)', value)
+    if not match:
+        return value
+    line, symbol = int(match[1]), match[2]
+    if 1 <= line <= len(physics_new) and symbol in physics_new[line - 1]:
+        return value
+    mapped = physics_lines.get(line)
+    if mapped is None or symbol not in physics_old[line - 1] or symbol not in physics_new[mapped - 1]:
+        raise RuntimeError('Physics evidence no longer an unchanged reviewed line: ' + value)
+    return f'{physics_test}:{mapped}::{symbol}'
+
+save(local_ready_path, rebase_physics(local_ready))
 
 print(
     "Merged Goal 4 evidence: "

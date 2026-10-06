@@ -185,6 +185,10 @@ def source_fingerprints():
     files.add(ROOT / 'tools/generate_goal5_participants.py')
     files.add(ROOT / 'docs/freeze/goal5_participant_bindings.py')
     files.add(ROOT / 'docs/freeze/goal5_participant_contract.py')
+    files.update((ROOT / 'docs/freeze').glob('goal5*.py'))
+    files.update((ROOT / 'docs/freeze').glob('goal5*.json'))
+    files.add(ROOT / '_goal5_handoff/reconciliation_review.json')
+    files.add(ROOT / 'tools/record_goal5_reconciliation.py')
     files.add(ROOT / 'tools/audit_goal5_restore_members.py')
     files.add(ROOT / 'tools/record_goal5_participant_qualification.py')
     files.update((ROOT / 'tools/ci').glob('*.ps1'))
@@ -232,7 +236,20 @@ def source_fingerprints():
         'docs/freeze/goal5_scenario_contract.py',
         '_goal5_handoff/scenario_runner_review.json',
         'docs/freeze/goal5_evidence_quality.py',
-        '_goal5_handoff/deterministic_scenarios_review.json'))
+        '_goal5_handoff/deterministic_scenarios_review.json',
+        'docs/freeze/goal5_determinism_inventory.py',
+        'docs/freeze/goal5_determinism_candidates.json',
+        'docs/freeze/goal5_determinism_review.py',
+        'docs/freeze/goal5_determinism_reviewed.json',
+        '_goal5_handoff/determinism_candidate_review.json',
+        'docs/freeze/goal5_required_scenarios_contract.py',
+        'docs/freeze/goal5_required_scenarios.json',
+        '_goal5_handoff/stage56_defect_review.json',
+        'docs/freeze/goal5_contract.py',
+        'docs/freeze/goal5_ledger.json',
+        'docs/freeze/goal5_final_qualification.py',
+        'tools/record_goal5_final_defects.py',
+        '_goal5_handoff/final_defects.json'))
     files.add(REVIEW)
     files.add(CONTRACT)
     files.add(ROOT / 'docs/freeze/goal5_admission.py')

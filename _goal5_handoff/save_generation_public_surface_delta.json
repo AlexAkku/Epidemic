@@ -1,0 +1,938 @@
+{
+  "anchors": {
+    "1ed86eb8fefcfa6f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:7::`1ed86eb8fefcfa6f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "234fe162ca5a5b30": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:8::`234fe162ca5a5b30`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "2cc0b22f41ff9d46": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:9::`2cc0b22f41ff9d46`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "32654f67cbe3cbc8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:10::`32654f67cbe3cbc8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:29::bool(decoded_time)",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:29::bool(decoded_time)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
+    "3307e1f6a02a8d84": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:11::`3307e1f6a02a8d84`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "3e9245980d098d65": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:12::`3e9245980d098d65`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "57205007beb750ef": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:13::`57205007beb750ef`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "5febee624f2c3050": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:14::`5febee624f2c3050`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "650b6cad17968dee": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:15::`650b6cad17968dee`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "6ca5ce09d825fd1d": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:16::`6ca5ce09d825fd1d`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "7354119ae09a1805": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:17::`7354119ae09a1805`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:53::in-memory Persistence v1 encode",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:53::in-memory Persistence v1 encode"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
+    "76c9e7a9e7f8c7fd": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:18::`76c9e7a9e7f8c7fd`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "8022c7bfa80894fb": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:19::`8022c7bfa80894fb`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "8ecf8fc1449286d2": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:20::`8ecf8fc1449286d2`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "8f2ab556f9f5637f": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:21::`8f2ab556f9f5637f`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "90b829927cd967c7": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:22::`90b829927cd967c7`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "97614defdd33b629": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:23::`97614defdd33b629`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "9815fab0d40eb5a5": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:24::`9815fab0d40eb5a5`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "9e926c1e16a81252": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:25::`9e926c1e16a81252`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:27::in-memory Time v1 encode",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:27::in-memory Time v1 encode"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
+    "a704e590beca5ea3": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:26::`a704e590beca5ea3`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "aa9dd7c7cbfe94e0": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:27::`aa9dd7c7cbfe94e0`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "b3476c1fb0feb3e4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:28::`b3476c1fb0feb3e4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:50::bool(snapshot)",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:50::bool(snapshot)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    },
+    "b7e0900eef78e7ac": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:29::`b7e0900eef78e7ac`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "d36afc4d71a9f0be": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:30::`d36afc4d71a9f0be`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "da44daf5197ad7e7": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:31::`da44daf5197ad7e7`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "de317d1e602df8a4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:32::`de317d1e602df8a4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "e9f715cc146df7d4": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:33::`e9f715cc146df7d4`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "ea96acac975ccc18": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:34::`ea96acac975ccc18`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "ec16873a63a3f33b": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:35::`ec16873a63a3f33b`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "ed95f62048697195": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:36::`ed95f62048697195`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "ed9dced04fa14ef8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:37::`ed9dced04fa14ef8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+        "assertions": [
+          "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation"
+        ],
+        "reviewed": true,
+        "target": "EpidemicGameFrameworkSaveGenerationTests"
+      }
+    },
+    "f20bdc193585c8e8": {
+      "contract": {
+        "anchor": "docs/EngineFramework/goal5_save_generation.md:38::`f20bdc193585c8e8`",
+        "reviewed": true
+      },
+      "test": {
+        "anchor": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:55::bool(decoded_persistence)",
+        "assertions": [
+          "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:55::bool(decoded_persistence)"
+        ],
+        "reviewed": true,
+        "target": "EpidemicRuntimeSaveGenerationPackageTests"
+      }
+    }
+  },
+  "api": {
+    "1ed86eb8fefcfa6f": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] constexpr bool operator==(const SaveGenerationId&)const noexcept=default;"
+    },
+    "234fe162ca5a5b30": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::IRuntimeSaveGenerationPort",
+      "signature": "virtual ~IRuntimeSaveGenerationPort()=default;"
+    },
+    "2cc0b22f41ff9d46": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "~SaveGenerationBarrier()override;"
+    },
+    "32654f67cbe3cbc8": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:29::bool(decoded_time)",
+      "review_rationale": "Runtime Support exposes the existing canonical v1 Time/Persistence wire representation in memory and captures a revision-stable Persistence snapshot for the injected whole-save port.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(std::span<const std::byte> package);"
+    },
+    "3307e1f6a02a8d84": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration",
+      "signature": "[[nodiscard]] foundation::Result<SaveGenerationPackage> DecodeSaveGenerationPackage(std::span<const std::byte> bytes,SaveGenerationLimits limits={});"
+    },
+    "3e9245980d098d65": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::FileSaveGenerationStore",
+      "signature": "explicit FileSaveGenerationStore(std::filesystem::path path,SaveGenerationLimits limits={})"
+    },
+    "57205007beb750ef": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "explicit SaveGenerationBarrier(SaveGenerationBarrierCallbacks callbacks);"
+    },
+    "5febee624f2c3050": {
+      "classification": "FACTORY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] static constexpr SaveGenerationId FromRaw(std::uint64_t raw)noexcept"
+    },
+    "650b6cad17968dee": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::CallbackRuntimeSaveGenerationPort",
+      "signature": "[[nodiscard]] foundation::Result<RuntimeSaveGenerationCapture> Capture(SaveGenerationId generation)override;"
+    },
+    "6ca5ce09d825fd1d": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:362::outer package generation roundtrip",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeSaveGenerationPackage(const SaveGenerationPackage&package,SaveGenerationLimits limits={});"
+    },
+    "7354119ae09a1805": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:53::in-memory Persistence v1 encode",
+      "review_rationale": "Runtime Support exposes the existing canonical v1 Time/Persistence wire representation in memory and captures a revision-stable Persistence snapshot for the injected whole-save port.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimePersistencePackage(const PersistenceSnapshot&snapshot);"
+    },
+    "76c9e7a9e7f8c7fd": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "SaveGenerationBarrier&operator=(const SaveGenerationBarrier&)=delete;"
+    },
+    "8022c7bfa80894fb": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireGenerationLease(SaveGenerationId generation);"
+    },
+    "8ecf8fc1449286d2": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireRestoreLease()override;"
+    },
+    "8f2ab556f9f5637f": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] constexpr std::uint64_t Raw()const noexcept"
+    },
+    "90b829927cd967c7": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationCoordinator",
+      "signature": "SaveGenerationCoordinator(savegame::SaveGameOrchestrator&framework,IRuntimeSaveGenerationPort&runtime,SaveGenerationBarrier&barrier,ISaveGenerationStore&store,SaveGenerationLimits limits={},savegame::SaveWireLimits framework_limits={})noexcept;"
+    },
+    "97614defdd33b629": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireCaptureLease()override;"
+    },
+    "9815fab0d40eb5a5": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:353::first generation is 1",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationId",
+      "signature": "[[nodiscard]] constexpr bool IsValid()const noexcept"
+    },
+    "9e926c1e16a81252": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:27::in-memory Time v1 encode",
+      "review_rationale": "Runtime Support exposes the existing canonical v1 Time/Persistence wire representation in memory and captures a revision-stable Persistence snapshot for the injected whole-save port.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimeTimeCheckpointPackage(const TimeCheckpoint&checkpoint);"
+    },
+    "a704e590beca5ea3": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:375::generation increments from current authoritative package",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationCoordinator",
+      "signature": "[[nodiscard]] foundation::Result<SaveGenerationId> CaptureAndCommit(const savegame::SaveContext&context);"
+    },
+    "aa9dd7c7cbfe94e0": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::CallbackRuntimeSaveGenerationPort",
+      "signature": "CallbackRuntimeSaveGenerationPort(PlaneCapture time_capture,PlaneCapture persistence_capture)"
+    },
+    "b3476c1fb0feb3e4": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:50::bool(snapshot)",
+      "review_rationale": "Runtime Support exposes the existing canonical v1 Time/Persistence wire representation in memory and captures a revision-stable Persistence snapshot for the injected whole-save port.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(const IPersistenceQuery&query);"
+    },
+    "b7e0900eef78e7ac": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::ISaveGenerationStore",
+      "signature": "[[nodiscard]] virtual foundation::Result<void> CommitCurrent(std::span<const std::byte> package)=0;"
+    },
+    "d36afc4d71a9f0be": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] bool IsCaptureActive()const noexcept;"
+    },
+    "da44daf5197ad7e7": {
+      "classification": "CONSTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "SaveGenerationBarrier(const SaveGenerationBarrier&)=delete;"
+    },
+    "de317d1e602df8a4": {
+      "classification": "DESTRUCTOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::ISaveGenerationStore",
+      "signature": "virtual ~ISaveGenerationStore()=default;"
+    },
+    "e9f715cc146df7d4": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::FileSaveGenerationStore",
+      "signature": "[[nodiscard]] foundation::Result<void> CommitCurrent(std::span<const std::byte> package)override;"
+    },
+    "ea96acac975ccc18": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::FileSaveGenerationStore",
+      "signature": "[[nodiscard]] foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent()override;"
+    },
+    "ec16873a63a3f33b": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {},
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:355::outer lease owns one safe point and nested SaveGame capture reuses it",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::SaveGenerationBarrier",
+      "signature": "[[nodiscard]] SaveGenerationId ActiveGeneration()const noexcept;"
+    },
+    "ed95f62048697195": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:356::Runtime planes receive same generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::IRuntimeSaveGenerationPort",
+      "signature": "[[nodiscard]] virtual foundation::Result<RuntimeSaveGenerationCapture> Capture(SaveGenerationId generation)=0;"
+    },
+    "ed9dced04fa14ef8": {
+      "classification": "MUTATOR",
+      "classification_status": "REVIEWED",
+      "header": "EngineFramework/IntegrationLayer/Integration/include/Epidemic/GameFramework/Integration/core_adapters.h",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "obligations": {
+        "failure": "REVIEWED",
+        "noop": "REVIEWED",
+        "preconditions": "REVIEWED",
+        "success": "REVIEWED"
+      },
+      "review_evidence": "EngineFramework/DevelopmentInfrastructure/Tests/save_generation_tests.cpp:383::failed outer commit preserves previous authoritative generation",
+      "review_rationale": "Framework Integration owns the cross-plane generation boundary: one valid generation identity, one safe-point lease, injected Runtime capture and one atomic outer-package publication.",
+      "scope": "epidemic::gameplay::integration::ISaveGenerationStore",
+      "signature": "[[nodiscard]] virtual foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent()=0;"
+    },
+    "f20bdc193585c8e8": {
+      "classification": "QUERY",
+      "classification_status": "REVIEWED",
+      "header": "EngineRuntime/Support/include/Epidemic/Runtime/Support/runtime_support.h",
+      "module": "EngineRuntime/Support",
+      "obligations": {},
+      "review_evidence": "EngineRuntime/Support/tests/runtime_generation_package_tests.cpp:55::bool(decoded_persistence)",
+      "review_rationale": "Runtime Support exposes the existing canonical v1 Time/Persistence wire representation in memory and captures a revision-stable Persistence snapshot for the injected whole-save port.",
+      "scope": "epidemic::runtime",
+      "signature": "[[nodiscard]] foundation::Result<PersistenceSnapshot> DecodeRuntimePersistencePackage(std::span<const std::byte> package);"
+    }
+  },
+  "external_boundary": {
+    "3c5f488923eaf6ee": {
+      "callable_id": "234fe162ca5a5b30",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "8919c3cd442b427d": {
+      "callable_id": "90b829927cd967c7",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "c178281f850e4500": {
+      "callable_id": "aa9dd7c7cbfe94e0",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "e04d0054ff2ac1aa": {
+      "callable_id": "57205007beb750ef",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    }
+  },
+  "lifecycle": {},
+  "reviewed": true,
+  "schema_version": 1,
+  "stale_identity": {
+    "0d2a874a6f278598": {
+      "callable_id": "97614defdd33b629",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "1856ebe8a983f765": {
+      "callable_id": "8022c7bfa80894fb",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "2ec71ec45341f815": {
+      "callable_id": "b7e0900eef78e7ac",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "3f92b1067a37844a": {
+      "callable_id": "ed95f62048697195",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "87093f0ef7944331": {
+      "callable_id": "8ecf8fc1449286d2",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "b5e57e4a06eb4073": {
+      "callable_id": "a704e590beca5ea3",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "bc564137dda331dd": {
+      "callable_id": "650b6cad17968dee",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "e82d60452ca99d4a": {
+      "callable_id": "ea96acac975ccc18",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    },
+    "f3b4134627ddb234": {
+      "callable_id": "e9f715cc146df7d4",
+      "module": "EngineFramework/IntegrationLayer/Integration",
+      "status": "REVIEWED"
+    }
+  }
+}
