@@ -1,4 +1,4 @@
-# Society Goal 4 local audit
+# Society
 
 ## Scope
 
@@ -51,7 +51,7 @@ Block-local review result: LOCAL_READY candidate for serial integration. This do
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B04 callable. The matching assertion is recorded in `_goal4_handoff/B04/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B04 callable.
 
 - `0081df8f83a717bd` | `QUERY` | `epidemic::gameplay::society::SocietyService` | `[[nodiscard]] ChangeCursor LatestChangeCursor()const noexcept`
 - `00ae3b8468c6f297` | `MUTATOR` | `epidemic::gameplay::society::SocietyService` | `[[nodiscard]] foundation::Result<void> RemoveMembership(MembershipId id,GameplayContext context={});`

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "input": {
+    "maxFileSize": 52428800
+  },
+    "output": {
+      "filePath": ".ai/repomix-output.xml",
+      "style": "xml",
+      "removeComments": false,
+      "showLineNumbers": true
+    },
+    "ignore": {
+      "useGitignore": true,
+      "customPatterns": [
+        "**/deleted/**",
+        "**/.tools/**",
+        "**/.cache/clangd/**",
+        "**/.ai/repomix-output*",
+        "**/build*/**",
+        "**/build/**",
+        "**/build-*/**",
+        "**/out/**",
+        "**/dist/**",
+        "**/.git/**",
+        "**/.vs/**",
+        "**/.vscode/**",
+        "**/.idea/**",
+        "**/node_modules/**",
+        "**/third_party/**",
+        "**/thirdparty/**",
+        "**/vendor/**",
+        "**/generated/**",
+        "**/*.min.js",
+        "**/*.lock",
+        "**/*.png",
+        "**/*.jpg",
+        "**/*.jpeg",
+        "**/*.gif",
+        "**/*.dll",
+        "**/*.exe",
+        "**/*.lib",
+        "**/*.pdb",
+        "**/*.obj",
+        "**/*.{bmp,webp,svg,ico,tif,tiff,avif,heic,psd,pdf}",
+        "**/*.{o,a,so,dylib,pch,ipch,ilk,exp,bin,dat,zip,7z,tar,gz,wasm}"
+      ]
+    },
+    "security": {
+      "enableSecurityCheck": true
+    },
+    "tokenCount": {
+      "encoding": "o200k_base"
+    }
+  }

@@ -1,0 +1,4 @@
+# Navigation configuration only; project-wide lint rules require separate review.
+ruleDirs: []
+languageGlobs:
+  cpp: ['**/*.h', '**/*.hpp', '**/*.hxx', '**/*.hh']

@@ -1,6 +1,5 @@
-# Effects Goal 4 local audit
+# Effects
 
-Status: B02 worker review complete. This document is module-local handoff evidence for Goal 4. It does not by itself promote the module or the whole Framework to canonical `LOCAL_READY`/`FROZEN`; serial integration and the official Windows/MSVC gates remain authoritative.
 
 ## Responsibility
 
@@ -8,7 +7,7 @@ Owns effect handler/definition registries, immediate effect execution orchestrat
 
 ## Public headers and types
 
-Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Effects/include/Epidemic/GameFramework/Effects/effects.h`. The admission inventory in `docs/freeze/coverage_manifests.json` is the exact callable review input; B02 does not change public headers or public signatures.
+Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Effects/include/Epidemic/GameFramework/Effects/effects.h`.
 
 ## Dependency list
 
@@ -48,11 +47,11 @@ The current module is owner-thread/external-serialization gameplay state. No str
 
 ## Public mutation API
 
-Registration and deferred publication have module-local pre-publication fault seams. Execute stages result/wave capacity and first-wave prepare before accepting the execution ID. Aggregate derived effects are admitted only when both per-parent and total max_effects budgets can contain them; exceeding the remaining total budget records BudgetExceeded without publishing more derived work. If framework-owned preparation of a later derived wave fails after an earlier handler commit, the accepted execution terminates as a successful Result carrying Failed batch disposition rather than returning a retryable top-level Failure. Every admission mutator has success/no-op/precondition/failure decisions recorded in `_goal4_handoff/B02/coverage_reviews.json`.
+Registration and deferred publication have module-local pre-publication fault seams. Execute stages result/wave capacity and first-wave prepare before accepting the execution ID. Aggregate derived effects are admitted only when both per-parent and total max_effects budgets can contain them; exceeding the remaining total budget records BudgetExceeded without publishing more derived work. If framework-owned preparation of a later derived wave fails after an earlier handler commit, the accepted execution terminates as a successful Result carrying Failed batch disposition rather than returning a retryable top-level Failure.
 
 ## Read/query API for invariants
 
-Read/query methods are used as invariant witnesses in `effects_tests.cpp` and are anchored per callable in `_goal4_handoff/B02/public_api_anchors.json`. Queries do not acquire hidden ownership of external objects.
+Queries do not acquire hidden ownership of external objects.
 
 ## Local invariants
 

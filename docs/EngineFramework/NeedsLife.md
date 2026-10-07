@@ -1,4 +1,4 @@
-# NeedsLife Goal 4 local audit
+# NeedsLife
 
 ## Scope
 
@@ -51,7 +51,7 @@ Block-local review result: LOCAL_READY candidate for serial integration. This do
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B04 callable. The matching assertion is recorded in `_goal4_handoff/B04/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B04 callable.
 
 - `01bcdb9e8e863023` | `QUERY` | `epidemic::gameplay::needs_life::NeedsLifeService` | `[[nodiscard]] static constexpr GameplayDomainId Domain()noexcept`
 - `03c36824950e3580` | `MUTATOR` | `epidemic::gameplay::needs_life::NeedsLifeService` | `[[nodiscard]] foundation::Result<std::size_t> SweepExpiredPressures(GameplayTimePoint now,GameplayContext context={});`

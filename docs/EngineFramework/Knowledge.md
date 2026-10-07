@@ -56,7 +56,7 @@ Goal 4 replaces process-global restore allocation injection with deterministic s
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B05 callable. The matching assertion is recorded in `_goal4_handoff/B05/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B05 callable.
 
 - `094f917c173c7e2a` | `MUTATOR` | `epidemic::gameplay::knowledge::KnowledgeService` | `[[nodiscard]] foundation::Result<KnowledgeRecordId> Learn(LearnKnowledgeRequest request);`
 - `0cf80e8a814b5b2b` | `QUERY` | `epidemic::gameplay::knowledge::MemoryRecordId` | `GameplayObjectId value{};static constexpr MemoryRecordId FromString(std::string_view s)noexcept`
@@ -101,4 +101,4 @@ Each row is the exact reviewed contract for one B05 callable. The matching asser
 
 ## Local-ready projection
 
-All 37 Goal 4 local criteria have a typed block-local `PASS` decision with exact contract/state/test evidence in `_goal4_handoff/B05/local_ready.json`. All 15 dossier fields are `REVIEWED`; canonical promotion remains the serial integrator step.
+

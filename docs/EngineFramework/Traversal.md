@@ -1,6 +1,5 @@
-# Traversal Goal 4 local audit
+# Traversal
 
-Status: B06 worker review complete. This is block-local Goal 4 evidence and not a whole-Framework freeze claim.
 
 ## Responsibility
 
@@ -68,7 +67,7 @@ Revision and ID generator exhaustion are explicit. Journal sequence exhaustion r
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B06 callable. The matching assertion is recorded in `_goal4_handoff/B06/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B06 callable.
 
 - `03d324ae2fd245c1` | `QUERY` | `epidemic::gameplay::traversal::TraversalProfileId` | `[[nodiscard]] constexpr auto operator<=>(const TraversalProfileId&)const noexcept=default;`
 - `0d05a121c9ea7b12` | `QUERY` | `epidemic::gameplay::traversal::TraversalService` | `[[nodiscard]] TraversalDiagnostics GetDiagnostics()const noexcept;`

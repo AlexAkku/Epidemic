@@ -59,7 +59,7 @@ Goal 4 adds source-private publication fault points around profile, agent, sched
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B05 callable. The matching assertion is recorded in `_goal4_handoff/B05/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B05 callable.
 
 - `015b85bcbf0854a9` | `QUERY` | `epidemic::gameplay::ai::AIConsiderationId` | `[[nodiscard]] constexpr bool operator==(const AIConsiderationId&)const noexcept=default;`
 - `01753aae8231f2e6` | `QUERY` | `epidemic::gameplay::ai::AIAccessPolicyId` | `[[nodiscard]] constexpr bool operator==(const AIAccessPolicyId&)const noexcept=default;`
@@ -154,4 +154,4 @@ Each row is the exact reviewed contract for one B05 callable. The matching asser
 
 ## Local-ready projection
 
-All 37 Goal 4 local criteria have a typed block-local `PASS` decision with exact contract/state/test evidence in `_goal4_handoff/B05/local_ready.json`. All 15 dossier fields are `REVIEWED`; canonical promotion remains the serial integrator step.
+

@@ -1,4 +1,4 @@
-# Crime Goal 4 local audit
+# Crime
 
 ## Scope
 
@@ -51,7 +51,7 @@ Block-local review result: LOCAL_READY candidate for serial integration. This do
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B04 callable. The matching assertion is recorded in `_goal4_handoff/B04/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B04 callable.
 
 - `08c9ada691f8407d` | `QUERY` | `epidemic::gameplay::crime::LawId` | `[[nodiscard]] constexpr bool IsValid()const noexcept`
 - `0ab257e136234bc0` | `FACTORY` | `epidemic::gameplay::crime::LawResponseId` | `static constexpr LawResponseId FromRaw(std::uint64_t h,std::uint64_t l)noexcept`

@@ -1,6 +1,5 @@
-# Entities Goal 4 local audit
+# Entities
 
-Status: B02 worker review complete. This document is module-local handoff evidence for Goal 4. It does not by itself promote the module or the whole Framework to canonical `LOCAL_READY`/`FROZEN`; serial integration and the official Windows/MSVC gates remain authoritative.
 
 ## Responsibility
 
@@ -8,7 +7,7 @@ Owns gameplay entity archetype registration, entity records, lifecycle, part ref
 
 ## Public headers and types
 
-Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h`. The admission inventory in `docs/freeze/coverage_manifests.json` is the exact callable review input; B02 does not change public headers or public signatures.
+Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Entities/include/Epidemic/GameFramework/Entities/entities.h`.
 
 ## Dependency list
 
@@ -48,11 +47,11 @@ The current module is owner-thread/external-serialization gameplay state. No str
 
 ## Public mutation API
 
-Registration rejects duplicate/mismatched archetypes. Create supports deterministic requested IDs without allowing collisions. Activate/deactivate, materialization, convert, tags, destruction and remove validate stale/terminal state. No-op operations do not advance revision. Every admission mutator has success/no-op/precondition/failure decisions recorded in `_goal4_handoff/B02/coverage_reviews.json`.
+Registration rejects duplicate/mismatched archetypes. Create supports deterministic requested IDs without allowing collisions. Activate/deactivate, materialization, convert, tags, destruction and remove validate stale/terminal state. No-op operations do not advance revision.
 
 ## Read/query API for invariants
 
-Read/query methods are used as invariant witnesses in `entities_tests.cpp` and are anchored per callable in `_goal4_handoff/B02/public_api_anchors.json`. Queries do not acquire hidden ownership of external objects.
+Queries do not acquire hidden ownership of external objects.
 
 ## Local invariants
 

@@ -6,9 +6,9 @@
 
 Each production freeze unit owns one document in this directory or in `modules/`. A module document records responsibility, authoritative and derived state, direct dependencies, public mutation/query surface, identity/lifecycle rules, persistence boundary, external ports, limits, threading contract, local invariants, and current Goal 4 status. Contract text describes the current headers and tests rather than copying stale roadmap prose.
 
-Canonical generated evidence under `docs/freeze/` remains owned by the serial integrator. Worker deltas place reviewed dossier, coverage, API-anchor and defect metadata under `_goal4_handoff/Bxx/`.
 
-Current canonical status (2026-09-28): `docs/freeze/local_ready_ledger.json` has 52/52 Framework modules `LOCAL_READY` and 0 `BLOCKED`. `python docs/freeze/goal4_evidence_quality.py --check` and all canonical validator self-tests pass after serial merge. The quality gate also rejects setup-only/include/type anchors as sole test evidence, and direct module-local regressions cover API surfaces that previously lacked an executable anchor. This is module-local readiness only; it does not claim whole-engine `SYSTEM_READY` or `FROZEN`. Final exact-tree Windows/MSVC serial qualification and remote CI are recorded separately.
+
+
 
 ## Module documents in `modules/`
 

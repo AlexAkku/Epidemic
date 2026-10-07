@@ -1,6 +1,5 @@
-# Combat Goal 4 local audit
+# Combat
 
-Status: B06 worker review complete. This is block-local Goal 4 evidence only. Canonical `LOCAL_READY` promotion and whole-engine `FROZEN` remain serial/Goals 5-9 responsibilities.
 
 ## Responsibility
 
@@ -68,7 +67,7 @@ Int64 resource arithmetic saturates/validates at semantic bounds. Change journal
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B06 callable. The matching assertion is recorded in `_goal4_handoff/B06/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B06 callable.
 
 - `0b04e28ad9b86e07` | `MUTATOR` | `epidemic::gameplay::combat::CombatService` | `[[nodiscard]] foundation::Result<void> RemoveCombatant(GameplayObjectRef subject,GameplayContext context={});`
 - `18894cac088fa694` | `QUERY` | `epidemic::gameplay::combat::CombatResourceTypeId` | `[[nodiscard]] constexpr auto operator<=>(const CombatResourceTypeId&)const noexcept=default;`

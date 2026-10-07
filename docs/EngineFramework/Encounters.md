@@ -1,4 +1,4 @@
-# Encounters Goal 4 local audit
+# Encounters
 
 ## Scope
 
@@ -51,7 +51,7 @@ Block-local review result: LOCAL_READY candidate for serial integration. This do
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B04 callable. The matching assertion is recorded in `_goal4_handoff/B04/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B04 callable.
 
 - `03ebb494449cd2b4` | `FACTORY` | `epidemic::gameplay::encounters::EncounterInstanceId` | `static constexpr EncounterInstanceId FromString(std::string_view s)noexcept`
 - `05d39a567f3106dd` | `MUTATOR` | `epidemic::gameplay::encounters::EncountersService` | `[[nodiscard]] foundation::Result<void> ExpireEncounter(EncounterInstanceId id,GameplayContext context={});`

@@ -1,53 +1,64 @@
-# Production repository allowlist. Files stay on disk; tracked files are not
-# removed from the Git index by ignore rules.
-/*
-!/.gitignore
-!/LICENSE
-!/README.md
-!/CMakeLists.txt
-!/CMakePresets.json
-!/EngineBase/
-!/EngineRuntime/
-!/EngineFramework/
-!/cmake/
+# ============================================================================
+# Epidemic Engine - repository ignore rules
+#
+# Policy:
+#   Track source code, tests, project configuration, project tooling and
+#   authoritative documentation.
+#
+#   Ignore only reproducible/downloadable dependencies, generated data,
+#   build products, caches, logs and machine-local state.
+# ============================================================================
 
-# Only CMake modules needed by the existing production build.
-/cmake/*
-!/cmake/ArchitectureFreeze.cmake
-!/cmake/ProductionSourceExtensions.cmake
-!/cmake/SaveGamePrivateSurface.cmake
 
-# FrameworkArchitecture.cmake is included even with BUILD_TESTING=OFF.
-/EngineFramework/DevelopmentInfrastructure/*
-!/EngineFramework/DevelopmentInfrastructure/cmake/
-/EngineFramework/DevelopmentInfrastructure/cmake/*
-!/EngineFramework/DevelopmentInfrastructure/cmake/FrameworkArchitecture.cmake
+# ----------------------------------------------------------------------------
+# Quarantine / intentionally removed material
+# ----------------------------------------------------------------------------
 
-# EngineBase/Apps is currently added unconditionally by EngineBase/CMakeLists.txt.
-# Keep its build inputs until examples are made optional in a separate change.
+/deleted/
 
-# Development-only trees inside otherwise allowed engine directories.
-**/Tests/
-**/tests/
-**/docs/
-**/Docs/
-**/benchmarks/
-**/Benchmarks/
-**/tools/
-**/.git/
-**/.idea/
-**/.vs/
-**/.vscode/
-**/node_modules/
-**/__pycache__/
 
-# Build outputs, caches and binary artifacts at any engine depth.
-**/build*/
-**/cmake-build*/
-**/out/
-**/dist/
-**/logs/
-**/.cache/
+# ----------------------------------------------------------------------------
+# IDE / editor / OS-local state
+# ----------------------------------------------------------------------------
+
+/.idea/
+/.vs/
+/.vscode/
+
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+
+# ----------------------------------------------------------------------------
+# CMake / compiler build output
+# ----------------------------------------------------------------------------
+
+/build/
+/build-*/
+/build_*/
+/cmake-build-*/
+/out/
+/dist/
+
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/CTestTestfile.cmake
+**/Testing/
+
+compile_commands.json
+
+
+# ----------------------------------------------------------------------------
+# Native binary / compiler artifacts
+# ----------------------------------------------------------------------------
+
 *.obj
 *.o
 *.pdb
@@ -61,16 +72,114 @@
 *.ipch
 *.ilk
 *.exp
+*.idb
+*.tlog
+*.lastbuildstate
+
 *.zip
+*.7z
+*.tar
+*.gz
 
-# Documentation/planning is local, apart from the root project overview.
-*.md
-!/README.md
 
-# Explicit local-tool exclusions (also covered by the root allowlist).
+# ----------------------------------------------------------------------------
+# Python generated/downloaded state
+# ----------------------------------------------------------------------------
+
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+
+
+# Retrieval service: keep source/config, regenerate runtime state
+/.ai/retrieval/.venv/
+/.ai/retrieval/models/
+/.ai/retrieval/index.sqlite
+/.ai/retrieval/index.sqlite-*
+
+
+# ----------------------------------------------------------------------------
+# Node / JS downloaded dependencies and caches
+# ----------------------------------------------------------------------------
+
+**/node_modules/
+**/.npm/
+**/.yarn/
+**/.pnpm-store/
+
+
+# ----------------------------------------------------------------------------
+# Generic caches / temporary files
+# ----------------------------------------------------------------------------
+
+**/.cache/
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+~$*
+
+
+# ----------------------------------------------------------------------------
+# Logs and generated run output
+# ----------------------------------------------------------------------------
+
+/_ai_logs/
+**/logs/
+
+*.log
+
+
+# ----------------------------------------------------------------------------
+# Historical generated milestone evidence / handoff data
+# ----------------------------------------------------------------------------
+
+/_goal*_handoff/
+
+
+# Old generated freeze/qualification machinery.
+# Review individual authoritative documents separately if anything here
+# actually needs to survive.
+/docs/freeze/
+
+
+# Temporary retained investigation material
+/dev-log/retained-research/
+
+
+# ----------------------------------------------------------------------------
+# Downloaded / vendored development tools
+# ----------------------------------------------------------------------------
+
 /.tools/
-/build-clangd/
-/compile_commands.json
 
-# graft's local graph cache — regenerable, not committed (run `graft build`).
-/graft/
+# This currently appears to be a separately downloaded upstream repository.
+/tools/clangd-mcp-server/
+
+
+# ----------------------------------------------------------------------------
+# Local clangd state
+# ----------------------------------------------------------------------------
+
+/build-clangd/
+**/.clangd-index/
+**/.cache/clangd/
+
+
+# ----------------------------------------------------------------------------
+# ETW / profiler / dump output
+# ----------------------------------------------------------------------------
+
+*.etl
+*.dmp
+*.mdmp
+*.trace
+*.trace.zip

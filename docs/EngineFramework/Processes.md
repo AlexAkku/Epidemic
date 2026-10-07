@@ -58,7 +58,7 @@ Registered module target: `EpidemicGameFrameworkProcessesTests` from `EngineFram
 
 ## Exact public API anchors
 
-Each row is the block-local contract anchor for one admission callable. The matching test anchor is stored in `_goal4_handoff/B03/public_api_anchors.json`.
+Each row is the block-local contract anchor for one admission callable.
 
 - `024eeb81ae9dc351` | `QUERY` | `epidemic::gameplay::processes::ProcessesService` | `[[nodiscard]] const ProcessRecipe*FindRecipe(ProcessRecipeId id)const noexcept;`
 - `05ffe91a0df45785` | `QUERY` | `epidemic::gameplay::processes::ProcessRecipeId` | `[[nodiscard]] constexpr auto operator<=>(const ProcessRecipeId&)const noexcept=default;`
@@ -156,4 +156,4 @@ Each row is the block-local contract anchor for one admission callable. The matc
 
 ## Local-ready projection
 
-All 37 Goal 4 local criteria have a block-local `PASS` decision with concrete contract/state/test evidence in `_goal4_handoff/B03/local_ready.json`. All 15 dossier fields are `REVIEWED`. Canonical `docs/freeze/**` regeneration remains the serial integrator step after all eight Bxx deltas are merged.
+

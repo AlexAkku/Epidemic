@@ -1,6 +1,5 @@
-# Interaction Goal 4 local audit
+# Interaction
 
-Status: B02 worker review complete. This document is module-local handoff evidence for Goal 4. It does not by itself promote the module or the whole Framework to canonical `LOCAL_READY`/`FROZEN`; serial integration and the official Windows/MSVC gates remain authoritative.
 
 ## Responsibility
 
@@ -8,7 +7,7 @@ Owns interaction definitions, provider/executor registrations, active timed inte
 
 ## Public headers and types
 
-Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Interaction/include/Epidemic/GameFramework/Interaction/interaction.h`. The admission inventory in `docs/freeze/coverage_manifests.json` is the exact callable review input; B02 does not change public headers or public signatures.
+Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Interaction/include/Epidemic/GameFramework/Interaction/interaction.h`.
 
 ## Dependency list
 
@@ -48,11 +47,11 @@ The current module is owner-thread/external-serialization gameplay state. No str
 
 ## Public mutation API
 
-Commit revalidates plan, revisions and materialization before executor side effects. Completion/cancellation/time sweep are terminal and duplicate terminal execution is rejected/no-op according to the method contract. Schedule bind validates one-to-one ownership. Every admission mutator has success/no-op/precondition/failure decisions recorded in `_goal4_handoff/B02/coverage_reviews.json`.
+Commit revalidates plan, revisions and materialization before executor side effects. Completion/cancellation/time sweep are terminal and duplicate terminal execution is rejected/no-op according to the method contract. Schedule bind validates one-to-one ownership.
 
 ## Read/query API for invariants
 
-Read/query methods are used as invariant witnesses in `interaction_gameplay_tests.cpp` and are anchored per callable in `_goal4_handoff/B02/public_api_anchors.json`. Queries do not acquire hidden ownership of external objects.
+Queries do not acquire hidden ownership of external objects.
 
 ## Local invariants
 

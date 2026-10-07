@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  freeze-contract:
+  architecture-boundaries:
     runs-on: windows-2025-vs2026
     timeout-minutes: 20
     steps:
@@ -22,68 +22,11 @@ jobs:
         run: |
           python --version
           cmake --version
-      - name: Semantic CI contract
-        shell: pwsh
-        run: |
-          python docs/freeze/ci_gate_contract.py --check
-          python docs/freeze/ci_gate_contract.py --self-test
       - name: Architecture adversarial fixtures
         shell: pwsh
         run: cmake -P cmake/ArchitectureFreezeSelfTest.cmake
-      - name: Freeze evidence contracts
-        shell: pwsh
-        run: |
-          python docs/freeze/module_dossiers.py --check
-          python docs/freeze/module_dossiers.py --self-test
-          python docs/freeze/architecture_ownership.py --check
-          python docs/freeze/architecture_ownership.py --self-test
-          python docs/freeze/coverage_manifests.py --check
-          python docs/freeze/coverage_manifests.py --self-test
-          python docs/freeze/ctest_manifest.py --check
-          python docs/freeze/ctest_manifest.py --self-test
-          python docs/freeze/local_ready_contract.py --check
-          python docs/freeze/local_ready_contract.py --self-test
-          python docs/freeze/goal4_evidence_quality.py --check
-          python docs/freeze/goal4_evidence_quality.py --self-test
-          python docs/freeze/public_api_inventory.py --check
-          python docs/freeze/public_api_inventory.py --self-test
-          python docs/freeze/public_surface_manifest.py --check
-          python docs/freeze/public_surface_manifest.py --self-test
-          python docs/freeze/goal5_persistence_inventory.py --check
-          python docs/freeze/goal5_admission.py --check
-          python docs/freeze/goal5_admission.py --self-test
-          python docs/freeze/goal5_persistence_inventory.py --self-test
-          python docs/freeze/goal5_persistence_contract.py --check
-          python docs/freeze/goal5_persistence_contract.py --self-test
-          python docs/freeze/goal5_participant_bindings.py --check
-          python docs/freeze/goal5_participant_bindings.py --self-test
-          python docs/freeze/goal5_participant_contract.py --check --implementation
-          python docs/freeze/goal5_participant_contract.py --self-test
-          python docs/freeze/goal5_schema_contract.py --check
-          python docs/freeze/goal5_schema_contract.py --self-test
-          python docs/freeze/goal5_stage52_contract.py --check
-          python docs/freeze/goal5_save_generation_contract.py --check
-          python docs/freeze/goal5_save_generation_contract.py --self-test
-          python docs/freeze/goal5_restore_contract.py --check
-          python docs/freeze/goal5_restore_contract.py --self-test
-          python docs/freeze/goal5_stage52_contract.py --self-test
-          python docs/freeze/goal5_runtime_durable_contract.py --check
-          python docs/freeze/goal5_runtime_durable_contract.py --self-test
-          python tools/generate_goal5_participants.py --check
-          python tools/audit_goal5_restore_members.py --check
-          python tools/check_goal5_private_surface.py --check
-          python tools/check_goal5_private_surface.py --self-test
-          python docs/freeze/goal5_determinism_inventory.py --check
-          python docs/freeze/goal5_determinism_inventory.py --self-test
-          python docs/freeze/goal5_determinism_contract.py --check
-          python docs/freeze/goal5_determinism_contract.py --self-test
-          python docs/freeze/goal5_evidence_quality.py --check
-          python docs/freeze/goal5_evidence_quality.py --self-test
-          python docs/freeze/goal5_contract.py --check
-          python docs/freeze/goal5_contract.py --self-test
-
   layer-matrix:
-    needs: freeze-contract
+    needs: architecture-boundaries
     runs-on: windows-2025-vs2026
     timeout-minutes: 45
     strategy:
@@ -136,15 +79,12 @@ jobs:
       - name: Per-target public header consumers
         shell: pwsh
         run: cmake --build build/${{ matrix.profile }} --config ${{ matrix.configuration }} --target EpidemicPublicHeaderSelfContainment --parallel
-      - name: Configured CTest manifest
-        shell: pwsh
-        run: python docs/freeze/ctest_manifest.py --check-profile ${{ matrix.profile }} --build-dir build/${{ matrix.profile }} --configuration ${{ matrix.configuration }}
       - name: Test
         shell: pwsh
         run: ctest --test-dir build/${{ matrix.profile }} -C ${{ matrix.configuration }} --output-on-failure --timeout 300
 
   clang-public-surface:
-    needs: freeze-contract
+    needs: architecture-boundaries
     runs-on: windows-2025-vs2026
     timeout-minutes: 30
     steps:

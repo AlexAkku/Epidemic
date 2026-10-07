@@ -1,7 +1,7 @@
 add_library(EpidemicGameFrameworkSaveGame STATIC src/save_game.cpp src/save_wire.cpp)
 target_include_directories(EpidemicGameFrameworkSaveGame PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(EpidemicGameFrameworkSaveGame PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/internal")
-include("${CMAKE_SOURCE_DIR}/cmake/SaveGamePrivateSurface.cmake")
+include("${EpidemicEngine_SOURCE_DIR}/cmake/SaveGamePrivateSurface.cmake")
 target_link_libraries(EpidemicGameFrameworkSaveGame PUBLIC EpidemicGameFrameworkFoundation PUBLIC EpidemicFoundation)
 epidemic_configure_target(EpidemicGameFrameworkSaveGame)
 

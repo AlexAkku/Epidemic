@@ -1,4 +1,4 @@
-# Population Goal 4 local audit
+# Population
 
 ## Scope
 
@@ -51,7 +51,7 @@ Block-local review result: LOCAL_READY candidate for serial integration. This do
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B04 callable. The matching assertion is recorded in `_goal4_handoff/B04/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B04 callable.
 
 - `0275f1c8b9365621` | `QUERY` | `epidemic::gameplay::population::PopulationService` | `[[nodiscard]] const PopulationTemplate*GetTemplate(PopulationTemplateId id)const noexcept;`
 - `07cbd604e77ec26d` | `QUERY` | `epidemic::gameplay::population::PopulationProfileId` | `[[nodiscard]] constexpr bool IsValid()const noexcept`

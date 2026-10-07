@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "ai:repomix": "repomix --compress",
+    "ai:tokens": "repomix --token-count-tree",
+    "ai:repomix-mcp": "repomix --mcp --sandbox .",
+    "ai:ast": "ast-grep",
+    "ai:ast:scan": "ast-grep scan"
+  },
+  "devDependencies": {
+    "@ast-grep/cli": "^0.45.3",
+    "repomix": "^1.18.1"
+  }
+}

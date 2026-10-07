@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+
+  "embedding_model": "qwen3-embedding:4b-q8_0",
+  "embedding_digest": "357d756ba8e5a3f26040d5e61c78f889c9f81f75b1d8b087855daa4432a5d9d3",
+  "embedding_dimensions": 2560,
+  "ollama_url": "http://127.0.0.1:11434",
+  "ollama_keep_alive": -1,
+
+  "reranker_model": "BAAI/bge-reranker-v2-m3",
+  "reranker_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+  "reranker_device": "cpu",
+
+  "roots": [
+    "EngineBase",
+    "EngineRuntime",
+    "EngineFramework",
+    "Tests",
+    "tools",
+    "docs/freeze"
+  ],
+
+  "suffixes": [
+    ".h",
+    ".hpp",
+    ".cpp",
+    ".cc",
+    ".cxx",
+    ".py",
+    ".cmake",
+    ".ps1"
+  ],
+
+  "excluded_parts": [
+    "deleted",
+    "build",
+    "out",
+    "dist",
+    "node_modules",
+    "third_party",
+    "thirdparty",
+    "vendor",
+    "generated",
+    "__pycache__",
+    ".venv"
+  ],
+
+  "chunk_chars": 1600,
+  "overlap_lines": 5,
+  "embedding_batch": 8,
+
+  "candidate_count": 50,
+  "rerank_count": 20,
+
+  "default_top": 3,
+  "max_top": 5,
+  "snippet_chars": 1200,
+
+  "daemon_host": "127.0.0.1",
+  "daemon_port": 8765,
+  "watch_interval_sec": 1.0
+}

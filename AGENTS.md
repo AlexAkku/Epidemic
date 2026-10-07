@@ -41,7 +41,7 @@ Never run concurrent processes that write to the same:
 - build directory
 - generated canonical artifact
 - evidence database
-- mutable task-state file
+- mutable output file
 - shared output directory
 
 unless that concurrency is explicitly designed and proven safe.
@@ -134,7 +134,6 @@ On FAIL consume only exit code, concise diagnostics, and log path.
 Read more only if that evidence is insufficient.
 
 Use `.ai/verify-changed.ps1` for changed C++ static checks.
-Run `.ai/preflight-generated.ps1` before full Validators.
 
 Do not embed large Python/PowerShell scripts in shell commands.
 If temporary logic exceeds ~20 lines, place it under `.ai/` and execute or patch that file.
@@ -153,26 +152,11 @@ On OOM/C1060 or <4 GiB free virtual memory:
 
 Use only one persistent clangd MCP server. Do not leave per-query clangd/bridge processes alive after a request.
 
-## Task state
-
-Maintain .ai/task-state.json.
-
-Keep it small:
-- current requirement
-- completed requirements
-- working files
-- confirmed facts
-- known blockers
-- open questions
-
-Update it after each completed logical subpoint.
-
-After compaction/restart, use `.ai/state-summary.ps1`.
-Do not read `.ai/task-state.json` directly unless modifying or investigating its structure.
+The deleted/ quarantine is excluded from project, build, test and tool inputs.
 
 ## Generated/read-only areas
 
-Treat build/, .ci_cache/, .enforcer/, .idea/ and Deltas/ as local artifacts.
+Treat build/, .idea/ and Deltas/ as local artifacts.
 
 Do not manually edit generator-owned canonical freeze JSON when an owning generator exists.
 
@@ -180,6 +164,18 @@ Temporary scripts >20 lines MUST be created/edited as files.
 Never generate them through `$code=@'...'@`, Python `-c`, or equivalent shell embedding.
 
 Do not rewrite an existing temporary script through string replacement if a direct file edit is possible.
+
+## Storage and resource retention
+
+Keep only the latest instance of each project build configuration and each analysis/qualification packet kind. Use stable build directories; do not accumulate UUID build trees, deployment copies, database snapshots or decoded tables. A packet may contain all mandatory good/bad fixtures; retention must never remove fixture source or weaken qualification.
+
+Before retiring an old instance, retain only compact textual research records under `dev-log/retained-research/`: source/input/output SHA-256, commands, status, clocks, provenance and relevant diagnostics. Do not archive heavy binaries or full tables for speculative future research. Explicitly record unavailable retired raw evidence; historical receipts do not prove the current tree. Keep the small authoritative baseline source snapshot and canonical contracts.
+
+Use bounded RAM buffers for transient computation. Always leave at least 4 GiB free physical AND virtual memory. `.ai/run-quiet.ps1` enforces admission, a Windows Job commit limit and runtime reserve checks; never lower or bypass them. Large JSON/log/ETW inputs must be streamed or processed in bounded partitions, not materialized repeatedly.
+
+Critical heavy files that genuinely require filesystem persistence belong under `D:/codex/Epidemic-engine/`, with verified SHA-256, provenance and a compact project-resident locator. Temporary filesystem tests/compiler artifacts may use that storage when RAM is not a valid substitute. Do not install a RAM disk or adjust Windows/pagefile configuration. Normal C: storage must contain no project build/capture/deployment remnants; the single installed privileged broker EXE is operational software. Preserve the broker-controlled output ACL/ownership boundary and release its completed payload after verified import.
+
+After each completed packet, run `.ai/storage-policy-check.py` through the quiet wrapper and retire superseded instances through the storage owner. Never prune while another local run writes the same artifact class. The check must PASS before milestone freeze; pending cleanup or unavailable current raw is a BLOCKED condition, not a note-based exception.
 
 ## Final verification
 

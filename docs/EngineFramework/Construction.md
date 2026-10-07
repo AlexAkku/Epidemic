@@ -1,6 +1,5 @@
-# Construction Goal 4 local audit
+# Construction
 
-Status: B06 worker review complete. This document is block-local evidence only and does not claim whole-engine freeze.
 
 ## Responsibility
 
@@ -68,7 +67,7 @@ Revision/generator/journal boundaries are controlled and output retention has ex
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B06 callable. The matching assertion is recorded in `_goal4_handoff/B06/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B06 callable.
 
 - `012b9f789b28565f` | `MUTATOR` | `epidemic::gameplay::construction::IConstructionCostProvider` | `[[nodiscard]] virtual foundation::Result<ConstructionCostReservation> Reserve(GameplayObjectRef actor,const ConstructionCost&cost,const GameplayContext&context)=0;`
 - `0199821b998d6789` | `QUERY` | `epidemic::gameplay::construction::PlacementReasonId` | `[[nodiscard]] constexpr bool IsValid()const noexcept`

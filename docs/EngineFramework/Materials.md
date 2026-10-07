@@ -1,6 +1,5 @@
-# Materials Goal 4 local audit
+# Materials
 
-Status: B02 worker review complete. This document is module-local handoff evidence for Goal 4. It does not by itself promote the module or the whole Framework to canonical `LOCAL_READY`/`FROZEN`; serial integration and the official Windows/MSVC gates remain authoritative.
 
 ## Responsibility
 
@@ -8,7 +7,7 @@ Owns material, substance, slot and reaction definitions plus per-subject materia
 
 ## Public headers and types
 
-Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Materials/include/Epidemic/GameFramework/Materials/materials.h`. The admission inventory in `docs/freeze/coverage_manifests.json` is the exact callable review input; B02 does not change public headers or public signatures.
+Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Materials/include/Epidemic/GameFramework/Materials/materials.h`.
 
 ## Dependency list
 
@@ -48,11 +47,11 @@ The current module is owner-thread/external-serialization gameplay state. No str
 
 ## Public mutation API
 
-Composition is validated and normalized to the exact composition unit. Slot assignment, contents, exposures and stimuli reject unknown IDs and invalid quantities. Re-applying identical state is a no-op. Reaction evaluation does not replace primary composition with derived response state. Every admission mutator has success/no-op/precondition/failure decisions recorded in `_goal4_handoff/B02/coverage_reviews.json`.
+Composition is validated and normalized to the exact composition unit. Slot assignment, contents, exposures and stimuli reject unknown IDs and invalid quantities. Re-applying identical state is a no-op. Reaction evaluation does not replace primary composition with derived response state.
 
 ## Read/query API for invariants
 
-Read/query methods are used as invariant witnesses in `materials_tests.cpp` and are anchored per callable in `_goal4_handoff/B02/public_api_anchors.json`. Queries do not acquire hidden ownership of external objects.
+Queries do not acquire hidden ownership of external objects.
 
 ## Local invariants
 

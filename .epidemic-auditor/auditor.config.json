@@ -1,0 +1,34 @@
+{
+  "project_root": "..",
+  "build_dir": "../build/audit",
+  "cmake": {
+    "configure_args": ["-A", "x64"],
+    "build_config": "Debug",
+    "parallel": 0
+  },
+  "tests": {
+    "ctest_args": [],
+    "timeout_seconds": 300,
+    "group_by": "labels_or_prefix"
+  },
+  "run": {
+    "command": [],
+    "working_dir": "..",
+    "environment": {}
+  },
+  "capture": {
+    "sample_interval_ms": 200,
+    "enable_wpr_in_deep": true,
+    "wpr_profile": "GeneralProfile"
+  },
+  "storage": {
+    "runs_dir": "data/runs",
+    "database": "data/auditor.sqlite3",
+    "keep_raw_console": true
+  },
+  "static_scan": {
+    "roots": ["../EngineBase", "../EngineRuntime", "../EngineFramework", "../src"],
+    "extensions": [".h", ".hpp", ".hh", ".c", ".cc", ".cpp", ".cxx", ".ixx", ".cppm"],
+    "exclude": ["build", ".git", ".epidemic-auditor", "third_party", "external", "vendor"]
+  }
+}

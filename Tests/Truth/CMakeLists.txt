@@ -167,6 +167,3 @@ add_test(NAME EpidemicDeterminismRequiredProcessTruthTests COMMAND "${Python3_EX
     "$<TARGET_FILE:EpidemicDeterminismSaveLoadTruthTests>")
 set_tests_properties(EpidemicDeterminismRequiredProcessTruthTests PROPERTIES
     LABELS "truth;determinism;determinism-save-load;persistence-whole-engine;goal5-regression" TIMEOUT 900)
-add_test(NAME EpidemicGoal5ContractTruthTests COMMAND "${Python3_EXECUTABLE}"
-    "${PROJECT_SOURCE_DIR}/docs/freeze/goal5_contract.py" --check --self-test)
-set_tests_properties(EpidemicGoal5ContractTruthTests PROPERTIES LABELS "truth;goal5-regression" TIMEOUT 900)

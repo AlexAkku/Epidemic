@@ -1,6 +1,5 @@
-# Abilities Goal 4 local audit
+# Abilities
 
-Status: B06 worker review complete. This document is module-local Goal 4 evidence and does not by itself promote canonical status.
 
 ## Responsibility
 
@@ -68,7 +67,7 @@ Revision, change sequence and generator exhaustion are explicit. Change journal 
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B06 callable. The matching assertion is recorded in `_goal4_handoff/B06/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B06 callable.
 
 - `0225a34b29e3b3eb` | `MUTATOR` | `epidemic::gameplay::abilities::IAbilityResourceProvider` | `[[nodiscard]] virtual foundation::Result<AbilityResourceReservation> Reserve(GameplayObjectRef owner,AbilityResourceTypeId type,std::int64_t amount_micro,GameplayContext context)=0;`
 - `02f07f200e565351` | `QUERY` | `epidemic::gameplay::abilities::AbilityResourceTypeId` | `[[nodiscard]] constexpr bool IsValid()const noexcept`

@@ -1,6 +1,5 @@
-# Ownership Goal 4 local audit
+# Ownership
 
-Status: B02 worker review complete. This document is module-local handoff evidence for Goal 4. It does not by itself promote the module or the whole Framework to canonical `LOCAL_READY`/`FROZEN`; serial integration and the official Windows/MSVC gates remain authoritative.
 
 ## Responsibility
 
@@ -8,7 +7,7 @@ Owns semantic ownership records, permissions, access rules and property claims, 
 
 ## Public headers and types
 
-Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Ownership/include/Epidemic/GameFramework/Ownership/ownership.h`. The admission inventory in `docs/freeze/coverage_manifests.json` is the exact callable review input; B02 does not change public headers or public signatures.
+Public surface is rooted at `EngineFramework/GameplayWorldStateOwners/Ownership/include/Epidemic/GameFramework/Ownership/ownership.h`.
 
 ## Dependency list
 
@@ -48,11 +47,11 @@ The current module is owner-thread/external-serialization gameplay state. No str
 
 ## Public mutation API
 
-Assign/transfer/remove enforce one canonical owner per property/domain and stale expected-revision checks. Permission/rule/claim mutators publish journal changes before destructive removal where needed. Restore and multi-index operations use staged containers for failure atomicity. Every admission mutator has success/no-op/precondition/failure decisions recorded in `_goal4_handoff/B02/coverage_reviews.json`.
+Assign/transfer/remove enforce one canonical owner per property/domain and stale expected-revision checks. Permission/rule/claim mutators publish journal changes before destructive removal where needed. Restore and multi-index operations use staged containers for failure atomicity.
 
 ## Read/query API for invariants
 
-Read/query methods are used as invariant witnesses in `ownership_tests.cpp` and are anchored per callable in `_goal4_handoff/B02/public_api_anchors.json`. Queries do not acquire hidden ownership of external objects.
+Queries do not acquire hidden ownership of external objects.
 
 ## Local invariants
 

@@ -1,6 +1,5 @@
-# Progression Goal 4 local audit
+# Progression
 
-Status: B06 worker review complete. This is module-local Goal 4 evidence only; canonical promotion is performed after serial convergence.
 
 ## Responsibility
 
@@ -68,7 +67,7 @@ Revisions, monotonic IDs and change sequence exhaust deterministically. Journal 
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B06 callable. The matching assertion is recorded in `_goal4_handoff/B06/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B06 callable.
 
 - `01d0fe0cb35fabdc` | `MUTATOR` | `epidemic::gameplay::progression::ProgressionService` | `[[nodiscard]] foundation::Result<AttributeTypeId> RegisterAttribute(AttributeDefinition definition);`
 - `0c810f6837035df9` | `MUTATOR` | `epidemic::gameplay::progression::ProgressionService` | `[[nodiscard]] foundation::Result<void> RevokePerk(GameplayObjectRef subject,PerkDefinitionId perk,GameplayContext context={});`

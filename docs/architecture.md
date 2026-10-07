@@ -86,7 +86,7 @@ Game — конечный composition root и конкретная игра. З�
 
 Layer boundaries are enforced by `cmake/ArchitectureFreeze.cmake` during every CMake configuration. The validator inspects both direct and interface link dependencies, scans production includes, and compiles every public header as an isolated translation unit.
 
-`cmake/ArchitectureFreezeSelfTest.cmake` is the negative contract for this gate: it accepts the approved graph fixture and must reject every forbidden layer, ownership, integration, boundary and include fixture. The separate `docs/freeze/architecture_ownership.py --check` and `--self-test` runs independently verify the reviewed owner/non-owner registry, dependency visibility and external SDK boundaries.
+`cmake/ArchitectureFreezeSelfTest.cmake` is the negative contract for this gate: it accepts the approved graph fixture and must reject every forbidden layer, ownership, integration, boundary and include fixture.
 
 The frozen dependency rules are:
 

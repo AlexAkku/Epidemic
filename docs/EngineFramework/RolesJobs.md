@@ -1,4 +1,4 @@
-# RolesJobs Goal 4 local audit
+# RolesJobs
 
 ## Scope
 
@@ -51,7 +51,7 @@ Block-local review result: LOCAL_READY candidate for serial integration. This do
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B04 callable. The matching assertion is recorded in `_goal4_handoff/B04/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B04 callable.
 
 - `07ade6805ccebd74` | `MUTATOR` | `epidemic::gameplay::roles_jobs::RolesJobsService` | `[[nodiscard]] foundation::Result<DutyId> CreateDuty(Duty duty,GameplayContext context={});`
 - `08b4336667a763aa` | `FACTORY` | `epidemic::gameplay::roles_jobs::RoleFunctionId` | `static constexpr RoleFunctionId FromString(std::string_view s)noexcept`

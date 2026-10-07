@@ -55,7 +55,7 @@ Goal 4 migrates restore failure evidence to narrow source-private fault points f
 
 ## Exact public API anchors
 
-Each row is the exact reviewed contract for one B05 callable. The matching assertion is recorded in `_goal4_handoff/B05/public_api_anchors.json`.
+Each row is the exact reviewed contract for one B05 callable.
 
 - `024229478713755e` | `QUERY` | `epidemic::gameplay::navigation_semantics::NavigationSemanticsService` | `[[nodiscard]] NavigationChangeBatch ReadChangesSince(ChangeCursor cursor)const`
 - `075e65e889ae647a` | `MUTATOR` | `epidemic::gameplay::navigation_semantics::NavigationSemanticsService` | `[[nodiscard]] foundation::Result<void> RestoreSnapshot(NavigationSnapshot snapshot);`
@@ -129,4 +129,4 @@ Each row is the exact reviewed contract for one B05 callable. The matching asser
 
 ## Local-ready projection
 
-All 37 Goal 4 local criteria have a typed block-local `PASS` decision with exact contract/state/test evidence in `_goal4_handoff/B05/local_ready.json`. All 15 dossier fields are `REVIEWED`; canonical promotion remains the serial integrator step.
+
