@@ -26,13 +26,13 @@ def capture_batch(record, selected, results, cancel_reason):
             raise EvidenceError("batch child snapshot exceeds capture capacity")
 
     retain("batch/selection.json", json.dumps([test.to_dict() for test in selected], sort_keys=True).encode())
-    observations = []
+    observations, coverage_profiles, coverage_binaries = [], [], {}
     for index, result in enumerate(results):
         directory = Path(result["capture_dir"])
         before = digest(directory / "run.json")
         child = authoritative_run(directory)
         child_raw = RawEvidence(directory)
-        child_raw.verify()
+        child_manifest = child_raw.verify()
         if child["metadata"].get("parent_run_id") != record.run_id or child["run_id"] != result["test_run_id"]:
             raise EvidenceError("batch child identity/parent mismatch")
         prefix = "batch/children/" + str(index) + "/"
@@ -43,6 +43,23 @@ def capture_batch(record, selected, results, cancel_reason):
             retain(prefix + relative, path.read_bytes())
         for relative in ("ctest/junit.xml", "ctest/compatibility.json", "process/lifecycle.json"):
             retain(prefix + relative, child_raw.read_bytes(relative))
+        # Copy verified capture bytes into the existing independently replayable parent.
+        for artifact in child_manifest['raw_files']:
+            relative = artifact['path'].removeprefix('raw/')
+            if relative.startswith('exact/') and (relative.endswith('.bin') or relative.endswith('-symbols.json') or relative.endswith('-health.json')):
+                raw.import_file(relative, directory / artifact['path'], artifact['sha256'],
+                    collector=artifact['collector'], version=artifact['collector_version'],
+                    start_ns=artifact['start_ns'], end_ns=artifact['end_ns'], health=artifact['health'],
+                    provenance=artifact['provenance'], confidence=artifact['confidence'])
+            elif relative.startswith('coverage/') and relative.endswith('.profraw'):
+                coverage_profiles.append(directory / artifact['path'])
+        if (directory / 'raw/coverage/report.json').is_file():
+            report = json.loads(child_raw.read_bytes('coverage/report.json'))
+            for binary, fingerprint in report['producer_inputs'].items():
+                if not binary.endswith('.profraw'):
+                    if binary in coverage_binaries and coverage_binaries[binary] != fingerprint:
+                        raise EvidenceError('batch mixes incompatible coverage binaries')
+                    coverage_binaries[binary] = fingerprint
         if digest(directory / "run.json") != before:
             raise EvidenceError("batch child authority changed during observation")
         lifecycle = load_json(directory / "raw/process/lifecycle.json")
@@ -65,6 +82,13 @@ def capture_batch(record, selected, results, cancel_reason):
                "unstarted_count": len(selected) - len(observations), "cancel_requested": cancelled,
                "cancel_reason": cancel_reason, "status": status, "children": observations}
     retain("batch/observation.json", json.dumps(summary, sort_keys=True).encode())
+    if coverage_profiles:
+        from ep_auditor.collectors.coverage import collect_coverage
+        if any(not Path(binary).is_file() or digest(Path(binary)) != fingerprint for binary, fingerprint in coverage_binaries.items()):
+            raise EvidenceError('batch coverage binary changed after child capture')
+        collect_coverage(record.run_dir, coverage_profiles, list(map(Path, coverage_binaries)),
+            scope={'kind': 'selected_test_batch', 'requested_count': len(selected), 'observed_count': len(observations),
+                   'tests': [test.name for test in selected], 'selection_complete': len(observations) == len(selected)})
     seal_run_capture(record)
     lineage = EvidenceLineage(record.run_dir)
     references = [lineage.reference("raw", path.relative_to(record.run_dir / "raw").as_posix())

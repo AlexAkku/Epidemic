@@ -23,6 +23,8 @@ class EnvironmentEvidenceTests(unittest.TestCase):
             self.assertEqual(environment["engine_source"]["files"]["EngineBase/main.cpp"], digest(source))
             self.assertGreater(environment["total_memory_bytes"], 0)
             self.assertTrue(environment["auditor_source"]["files"])
+            self.assertIn('native/tracing/exact_hooks.asm', environment['auditor_source']['files'])
+            self.assertIn('rules/architecture.yaml', environment['auditor_source']['files'])
             self.assertTrue(environment["compiler_toolchain"]["availability"] in {"observed", "unavailable"})
             before = environment["engine_source"]["sha256"]
             source.write_text("int main() { return 1; }\n")

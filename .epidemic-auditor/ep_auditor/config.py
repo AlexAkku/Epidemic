@@ -60,11 +60,11 @@ class AuditorConfig:
 
     @property
     def runs_dir(self) -> Path:
-        return self.resolve(self.data.get("storage", {}).get("runs_dir", "data/runs"))
+        return self.resolve(self.data.get("storage", {}).get("runs_dir", str(self.project_root / ".ai/auditor/runs")))
 
     @property
     def database_path(self) -> Path:
-        return self.resolve(self.data.get("storage", {}).get("database", "data/auditor.sqlite3"))
+        return self.resolve(self.data.get("storage", {}).get("database", str(self.project_root / ".ai/auditor/auditor.sqlite3")))
 
     @property
     def build_config(self) -> str:
@@ -76,7 +76,11 @@ class AuditorConfig:
 
     @property
     def parallel(self) -> int:
-        return int(self.data.get("cmake", {}).get("parallel", 0) or 0)
+        value = self.data.get('cmake', {}).get('parallel', 2)
+        if type(value) is not int or value < 0:
+            from ep_auditor.core.evidence import EvidenceError
+            raise EvidenceError('compiler parallelism must be a nonnegative integer')
+        return value or 2
 
     @property
     def test_timeout(self) -> float:

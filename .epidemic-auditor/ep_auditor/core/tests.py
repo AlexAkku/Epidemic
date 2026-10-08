@@ -206,7 +206,17 @@ class TestExecutor:
             *self.config.ctest_args,
         ]
         timeout = test.timeout or self.config.test_timeout
-        process = self.runner.run(cmd, self.config.project_root, test_dir, capture_mode, log_callback=log, timeout=timeout)
+        env_extra = {}
+        if capture_mode.lower() != 'coverage' and next(config.build_dir.rglob('AuditorExactRuntime.vcxproj'), None):
+            env_extra['EP_AUDITOR_REQUIRE_EXACT'] = '1'
+        # Only a real C++ coverage build declares a mandatory producer. Generic
+        # CTest projects (including LANGUAGES NONE) cannot promise C++ coverage.
+        if capture_mode.lower() == 'coverage' and (config.build_dir / 'CMakeFiles').is_dir():
+            executable = Path(test.executable or (test.command[0] if test.command else ''))
+            if executable.is_file() and any((config.build_dir / 'CMakeFiles').glob('*/CMakeCXXCompiler.cmake')):
+                env_extra['EP_AUDITOR_COVERAGE_BINARIES'] = json.dumps([str(executable)])
+        process = self.runner.run(cmd, self.config.project_root, test_dir, capture_mode, log_callback=log,
+                                  env_extra=env_extra, timeout=timeout)
         payload = junit.read_bytes() if junit.is_file() else b""
         raw = RawEvidence(test_dir)
         now = time.perf_counter_ns()

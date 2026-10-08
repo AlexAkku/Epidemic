@@ -7,7 +7,7 @@ import re
 
 PIPE = r"\\.\pipe\EpidemicAuditorEtwBroker.v1"
 SERVICE = "EpidemicAuditorEtwBroker"
-STORE = Path(r"E:\Epidemic engine v1.0\_goal6_handoff\etw-broker\captures")
+STORE = Path(r"E:\EpidemicAuditorEtwBroker\captures")
 ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 
 

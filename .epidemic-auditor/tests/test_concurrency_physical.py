@@ -17,7 +17,7 @@ from ep_auditor.collectors.process_stats import windows_clock_calibration
 from test_core import AuditorCoreTests
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = ROOT / "build/ms62/native/Release/EpidemicAuditorConcurrencyFixture.exe"
+FIXTURE = ROOT / "build/auditor-native/bin" / os.environ.get("EP_AUDITOR_NATIVE_CONFIG", "Release") / "EpidemicAuditorConcurrencyFixture.exe"
 HELPER = FIXTURE.with_name("EpidemicAuditorObservation.exe")
 
 

@@ -183,3 +183,5 @@ compile_commands.json
 *.mdmp
 *.trace
 *.trace.zip
+
+/Temp/

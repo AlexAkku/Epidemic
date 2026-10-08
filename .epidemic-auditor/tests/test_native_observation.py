@@ -18,7 +18,7 @@ from ep_auditor.core.storage import RunStorage
 from ep_auditor.core.evidence import RawEvidence, digest
 
 ROOT = Path(__file__).resolve().parents[2]
-HELPER = ROOT / "build/ms62/native/Release/EpidemicAuditorObservation.exe"
+HELPER = ROOT / "build/auditor-native/bin" / os.environ.get("EP_AUDITOR_NATIVE_CONFIG", "Release") / "EpidemicAuditorObservation.exe"
 SOURCE = ROOT / ".epidemic-auditor/native/observation.cpp"
 
 

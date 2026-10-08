@@ -4,12 +4,16 @@
 #include <psapi.h>
 #include <objbase.h>
 #include <wct.h>
+#include <evntrace.h>
+#include <evntcons.h>
 #include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <filesystem>
+#include <fstream>
 
 int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant);
 
@@ -105,6 +109,70 @@ static void wait_chain(std::ostream& output, DWORD pid, DWORD tid) {
 
 int wmain(int argc, wchar_t** argv) {
     try {
+        if (argc == 5 && std::wstring(argv[1]) == L"--symbol-file") {
+            const std::filesystem::path image(argv[2]), addresses(argv[4]);
+            const auto base = number(argv[3]);
+            if (std::filesystem::file_size(addresses) > 512 * 1024) throw std::runtime_error("symbol batch exceeded bound");
+            const auto process = GetCurrentProcess();
+            SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_EXACT_SYMBOLS | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_NO_PROMPTS | SYMOPT_UNDNAME);
+            if (!SymInitializeW(process, image.parent_path().c_str(), FALSE)) throw std::runtime_error("offline symbols unavailable");
+            struct Cleanup { HANDLE process; ~Cleanup() { SymCleanup(process); } } cleanup{process};
+            if (!SymLoadModuleExW(process, nullptr, image.c_str(), nullptr, base, 0, nullptr, 0)) throw std::runtime_error("offline module load failed");
+            IMAGEHLP_MODULEW64 module{};
+            module.SizeOfStruct = sizeof(module);
+            const bool matched = SymGetModuleInfoW64(process, base, &module) && module.SymType == SymPdb
+                && !module.PdbUnmatched && !module.DbgUnmatched;
+            wchar_t guid[40]{};
+            if (matched && !StringFromGUID2(module.PdbSig70, guid, static_cast<int>(std::size(guid)))) throw std::runtime_error("PDB identity unavailable");
+            std::cout << "{\"pdb_matched\":" << (matched ? "true" : "false") << ",\"pdb_guid\":" << quoted(guid)
+                << ",\"pdb_age\":" << module.PdbAge << ",\"symbols\":[";
+            std::ifstream input(addresses);
+            DWORD64 address = 0;
+            unsigned count = 0;
+            while (input >> address) {
+                if (++count > 8192) throw std::runtime_error("symbol batch exceeded count bound");
+                if (count > 1) std::cout << ',';
+                alignas(SYMBOL_INFOW) unsigned char bytes[sizeof(SYMBOL_INFOW) + MAX_SYM_NAME * sizeof(wchar_t)]{};
+                auto* symbol = reinterpret_cast<SYMBOL_INFOW*>(bytes);
+                symbol->SizeOfStruct = sizeof(SYMBOL_INFOW);
+                symbol->MaxNameLen = MAX_SYM_NAME;
+                DWORD64 displacement = 0;
+                const bool resolved = matched && SymFromAddrW(process, address, &displacement, symbol);
+                IMAGEHLP_LINEW64 line{};
+                line.SizeOfStruct = sizeof(line);
+                DWORD offset = 0;
+                const bool source = resolved && SymGetLineFromAddrW64(process, address, &offset, &line);
+                std::cout << "{\"address\":" << address << ",\"function_address\":";
+                if (resolved) std::cout << symbol->Address; else std::cout << "null";
+                std::cout << ",\"function\":";
+                if (resolved) std::cout << quoted(std::wstring(symbol->Name, symbol->NameLen)); else std::cout << "null";
+                std::cout << ",\"source_file\":";
+                if (source) std::cout << quoted(line.FileName); else std::cout << "null";
+                std::cout << ",\"source_line\":";
+                if (source) std::cout << line.LineNumber; else std::cout << "null";
+                std::cout << '}';
+            }
+            if (!input.eof()) throw std::runtime_error("malformed symbol address batch");
+            std::cout << "]}\n";
+            return 0;
+        }
+        if (argc == 3 && std::wstring(argv[1]) == L"--trace-header") {
+            EVENT_TRACE_LOGFILEW logfile{};
+            logfile.LogFileName = argv[2];
+            logfile.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD;
+            const auto trace = OpenTraceW(&logfile);
+            if (trace == INVALID_PROCESSTRACE_HANDLE) throw std::runtime_error("OpenTrace failed: " + std::to_string(GetLastError()));
+            const auto header = logfile.LogfileHeader;
+            if (CloseTrace(trace) != ERROR_SUCCESS) throw std::runtime_error("CloseTrace failed");
+            std::cout << "{\"buffer_size\":" << header.BufferSize
+                << ",\"buffers_written\":" << header.BuffersWritten
+                << ",\"buffers_lost\":" << header.BuffersLost
+                << ",\"events_lost\":" << header.EventsLost
+                << ",\"log_file_mode\":" << header.LogFileMode
+                << ",\"start_time\":" << header.StartTime.QuadPart
+                << ",\"end_time\":" << header.EndTime.QuadPart << "}\n";
+            return 0;
+        }
         if (argc == 4 && std::wstring(argv[1]) == L"--mutex-fixture")
             return observe_mutex_fixture(argv[2], argv[3]);
         DWORD pid = GetCurrentProcessId();

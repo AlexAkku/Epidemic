@@ -24,13 +24,15 @@ class WindowsThreadTests(unittest.TestCase):
 
     def test_process_parent_pid_reuse_and_trace_namespaces_are_bound(self):
         rows = [event("P-Start", 0, 40, **{"Process Name ( PID)": "parent (40)", "ParentPID": "1", "UniqueKey": "p"}),
-                event("P-Start", 1, 41, **{"Process Name ( PID)": "child (41)", "ParentPID": "40", "UniqueKey": "c"})]
+                event("P-Start", 1, 41, **{"Process Name ( PID)": "child (41)", "ParentPID": "40", "UniqueKey": "c",
+                                          "Command Line": "fixture.exe --actual-xperf-column"})]
         rows += self._fixture()
         rows += [event("P-End", 16, 42, **{"Process Name ( PID)": "child (41)", "UniqueKey": "c", "Status": "0x0"}),
                  event("P-End", 17, 43, **{"Process Name ( PID)": "parent (40)", "UniqueKey": "p", "Status": "0x0"}),
                  event("P-Start", 20, 44, **{"Process Name ( PID)": "other (41)", "ParentPID": "40", "UniqueKey": "reused"})]
         result = thread_timeline(rows, identity_namespace="trace-A")
         parent, child, reused = result["processes"]
+        self.assertEqual(child["command_line"], "fixture.exe --actual-xperf-column")
         self.assertEqual(child["parentProcessId"], parent["processId"])
         self.assertIsNone(reused["parentProcessId"])
         self.assertEqual(result["threads"][0]["processId"], child["processId"])

@@ -4,7 +4,7 @@
   "cmake": {
     "configure_args": ["-A", "x64"],
     "build_config": "Debug",
-    "parallel": 0
+    "parallel": 2
   },
   "tests": {
     "ctest_args": [],
@@ -22,8 +22,8 @@
     "wpr_profile": "GeneralProfile"
   },
   "storage": {
-    "runs_dir": "data/runs",
-    "database": "data/auditor.sqlite3",
+    "runs_dir": "../.ai/auditor/runs",
+    "database": "../.ai/auditor/auditor.sqlite3",
     "keep_raw_console": true
   },
   "static_scan": {

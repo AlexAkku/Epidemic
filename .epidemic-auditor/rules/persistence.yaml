@@ -1,0 +1,1 @@
+{"schemaVersion":1,"domain":"persistence","rules":[{"id":"no-observed-corruption","kind":"max_metric","metric":"corruptions","maximum":0}]}

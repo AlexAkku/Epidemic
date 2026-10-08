@@ -1,0 +1,1 @@
+{"schemaVersion":1,"domain":"concurrency","rules":[{"id":"no-observed-deadlocks","kind":"max_metric","metric":"deadlocks","maximum":0}]}

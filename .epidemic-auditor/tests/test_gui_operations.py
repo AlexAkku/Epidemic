@@ -1,9 +1,12 @@
 import json
+import ctypes
+from ctypes import wintypes
 import os
 from pathlib import Path
 import sys
 import tempfile
 import threading
+import time
 import unittest
 import uuid
 
@@ -12,10 +15,63 @@ from ep_auditor.core.run_manager import RunManager
 from ep_auditor.core.storage import RunStorage
 from ep_auditor.ui.main_window import AuditorWindow
 from ep_auditor.core.lifecycle import authoritative_run
+from ep_auditor.core.owned_process import OwnedProcess
+from ep_auditor.collectors.etw_broker import BrokerClient
 import test_core
 
 
 class GuiOperationTests(unittest.TestCase):
+    def test_native_executable_opens_private_runtime_gui_and_closes_cleanly(self):
+        root = Path(__file__).resolve().parents[2]
+        executable = root / ".ai/tools/auditor/EpidemicAuditor.exe"
+        self.assertTrue(executable.is_file(), "build and deploy the native application before qualification")
+        BrokerClient()._normal_token()  # The application inherits a non-elevated token.
+        user = ctypes.WinDLL("user32", use_last_error=True)
+        callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        user.EnumWindows.argtypes = [callback_type, wintypes.LPARAM]
+        user.EnumWindows.restype = wintypes.BOOL
+        user.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+        user.GetWindowThreadProcessId.restype = wintypes.DWORD
+        user.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+        user.GetWindowTextW.restype = ctypes.c_int
+        user.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+        user.ShowWindow.restype = wintypes.BOOL
+        user.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+        user.PostMessageW.restype = wintypes.BOOL
+        with tempfile.TemporaryDirectory(dir=root / ".ai/tmp", prefix="native-gui-") as temporary:
+            config, project = test_core.AuditorCoreTests._config(self, Path(temporary))
+            process = OwnedProcess([str(executable), "--config", str(config.config_path)],
+                                   str(project), dict(os.environ), 0)
+            windows = []
+
+            @callback_type
+            def observe(hwnd, _):
+                pid = wintypes.DWORD()
+                user.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+                if pid.value == process.pid:
+                    title = ctypes.create_unicode_buffer(256)
+                    user.GetWindowTextW(hwnd, title, len(title))
+                    if title.value == "Epidemic Auditor":
+                        user.ShowWindow(hwnd, 0)
+                        windows.append(hwnd)
+                return True
+
+            try:
+                deadline = time.monotonic() + 20
+                while not windows and process.poll() is None and time.monotonic() < deadline:
+                    self.assertTrue(user.EnumWindows(observe, 0))
+                    time.sleep(0.05)
+                self.assertTrue(windows, "native EXE did not create its actual GUI window")
+                self.assertTrue(user.PostMessageW(windows[0], 0x0010, 0, 0))  # WM_CLOSE
+                deadline = time.monotonic() + 10
+                while process.poll() is None and time.monotonic() < deadline:
+                    time.sleep(0.05)
+                self.assertEqual(process.poll(), 0, "GUI failed to shut down its private runtime")
+            finally:
+                if process.poll() is None:
+                    process.cancel("fixture_cleanup")
+                process.close()
+
     def test_actual_widgets_share_backend_ids_group_labels_stop_and_shutdown(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

@@ -6,7 +6,7 @@ namespace etw_broker {
 inline constexpr wchar_t service_name[] = L"EpidemicAuditorEtwBroker";
 inline constexpr wchar_t pipe_name[] = L"\\\\.\\pipe\\EpidemicAuditorEtwBroker.v1";
 inline constexpr wchar_t instance_name[] = L"EpidemicAuditorEtwBroker";
-inline constexpr wchar_t store_path[] = L"E:\\Epidemic engine v1.0\\_goal6_handoff\\etw-broker";
+inline constexpr wchar_t store_path[] = L"E:\\EpidemicAuditorEtwBroker";
 enum class Operation { invalid, start, stop, status, cancel };
 struct Request { Operation operation = Operation::invalid; std::string capture_id; };
 struct Peer {

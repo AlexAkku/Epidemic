@@ -70,14 +70,17 @@ def main():
         if name.parts[0] in {"psutil", "psutil-" + distribution.version + ".dist-info"} and original.is_file() and "__pycache__" not in name.parts:
             copy_file(original, Path("runtime/Lib/site-packages") / name, "declared_dependency.psutil")
     copy_tree(source / "ep_auditor", Path("runtime/app/ep_auditor"), "auditor_source")
+    copy_tree(source / 'rules', Path('runtime/app/rules'), 'auditor_rules')
     copy_file(source / "VERSION", Path("runtime/app/VERSION"), "auditor_version")
     environment = {"tcl": "tcl" + str(tkinter.TclVersion), "tk": "tk" + str(tkinter.TkVersion)}
     (runtime / "environment.json").write_text(json.dumps(environment, sort_keys=True) + "\n")
     config = output / "auditor.config.json"
     if not config.exists():
         data = json.loads((source / "auditor.config.json").read_text())
-        data.update(project_root=".", build_dir="build/audit")
-        data["storage"] = {"runs_dir": "data/runs", "database": "data/auditor.sqlite3"}
+        project = source.parent
+        data.update(project_root=str(project), build_dir=str(project / "build/audit"))
+        data["storage"] = {"runs_dir": str(project / ".ai/auditor/runs"),
+                           "database": str(project / ".ai/auditor/auditor.sqlite3")}
         config.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     files = [{"path": "EpidemicAuditor.exe", "sha256": sha(executable), "role": "native_host"},
              {"path": "runtime/environment.json", "sha256": sha(runtime / "environment.json"), "role": "private_runtime_environment"}]
@@ -85,11 +88,8 @@ def main():
                else "external_observation_helper"} for path in helpers]
     files += [{"path": name, "sha256": sha(output / name), **value} for name, value in sorted(copied.items())]
     native_inputs = {path.relative_to(source).as_posix(): sha(path)
-                     for path in (source / "native/CMakeLists.txt", source / "native/launcher.cpp", source / "native/observation.cpp",
-                                  source / "native/mutex_observation.cpp",
-                                  source / "native/etw_broker.cpp", source / "native/etw_broker_install.cpp",
-                                  source / "native/etw_broker_protocol.h", source / "native/etw_broker_security.h",
-                                  source / "native/etw_broker_profile.h", Path(__file__))}
+                     for path in (source / 'native').rglob('*') if path.is_file()
+                     and (path.suffix in {'.cpp', '.h', '.asm', '.py'} or path.name == 'CMakeLists.txt')}
     prior.write_text(json.dumps({"schemaVersion": 1, "files": files, "sdk_version": sys.version,
                                 "native_source_sha256": native_inputs,
                                 "generator_sha256": sha(Path(__file__))}, sort_keys=True, indent=2) + "\n")

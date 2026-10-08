@@ -102,6 +102,10 @@ class RunStorage:
 
     def finish_run(self, record: RunRecord, status: str, summary: dict[str, Any] | None = None) -> None:
         finalize_run(record, status, summary or {})
+        for path in sorted((record.run_dir / 'metrics/exact').glob('*-functions.json')):
+            self.evidence_index.index(record.run_dir, 'functions', 'metrics', 'exact/' + path.name)
+        if (record.run_dir / 'metrics/coverage.json').is_file():
+            self.evidence_index.index(record.run_dir, 'coverage_history', 'metrics', 'coverage.json')
         with self._connect() as conn:
             conn.execute(
                 "UPDATE runs SET finished_utc=?, status=?, summary_json=? WHERE run_id=?",
@@ -134,6 +138,42 @@ class RunStorage:
                     item["summary"] = {}
             result.append(item)
         return result
+
+    def history_for_function(self, function_id: str) -> dict:
+        """History from verified existing function facts, scoped to a binary-bound FunctionId."""
+        samples, tests, seen = [], set(), set()
+        for directory in sorted(self.config.runs_dir.iterdir()):
+            if not (directory / 'run.json').is_file():
+                continue
+            header = json.loads((directory / 'run.json').read_text(encoding='utf-8'))
+            if header.get('metadata', {}).get('finalization', {}).get('state') != 'committed':
+                continue
+            run = authoritative_run(directory)
+            if run['kind'] == 'tests':
+                continue  # Group/suite projections must not double-count child execution.
+            for item in self.evidence_index.query(directory, 'functions'):
+                row = item['fact']
+                if not item['complete'] or row.get('functionId') != function_id:
+                    continue
+                capture_key = row['trace_sha256']
+                if capture_key in seen:
+                    continue
+                seen.add(capture_key)
+                samples.append({'run_id': run['run_id'], 'started_utc': run['started_utc'],
+                    'calls': row['calls'], 'mean_ns': row['mean_ns'], 'p95_ns': row['p95_ns'],
+                    'cpu_self_100ns': row['cpu_self_100ns'], 'evidence': {
+                        'layer': item['layer'], 'path': item['artifact_path'], 'sha256': item['artifact_sha256']}})
+                if run['kind'] == 'test':
+                    tests.add(run['title'])
+        samples.sort(key=lambda row: row['started_utc'])
+        total = sum(row['calls'] for row in samples)
+        return {'functionId': function_id, 'observed_runs': len({row['run_id'] for row in samples}),
+            'observed_tests': len(tests), 'total_calls': total, 'history': samples,
+            'once_candidate': total == 1,
+            'performance_regression': (samples[-1]['mean_ns'] > 1.2 * samples[-2]['mean_ns']) if len(samples) >= 2 else None,
+            'comparison_availability': 'observed' if len(samples) >= 2 else 'insufficient_samples',
+            'comparison_policy': 'heuristic >20% mean increase for the same binary-bound function; not causal proof',
+            'scope': 'verified complete captures only; absence is not proof of never executing outside these runs'}
 
     def history_for_test(self, test_id: str, compatibility_id: str) -> dict:
         from .evidence import RawEvidence

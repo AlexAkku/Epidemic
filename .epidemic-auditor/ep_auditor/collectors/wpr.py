@@ -4,6 +4,7 @@ import json
 import time
 from pathlib import Path
 from ep_auditor.collectors.etw_broker import BrokerClient, capture_directory
+from ep_auditor.collectors.xperf import XperfPostProcessor
 from ep_auditor.core.evidence import RawEvidence, digest
 
 
@@ -48,16 +49,30 @@ class WprCollector:
                 raise RuntimeError("completed broker trace missing or empty")
             raw = RawEvidence(self._run_dir)
             started = time.perf_counter_ns()
-            # Unknown loss remains incomplete until independent decoder stats.
+            statistics = XperfPostProcessor().trace_statistics(source, self._run_dir / "xperf")
+            self.metadata["trace_statistics"] = statistics
+            loss = statistics["trace_loss"]
+            loss_reason = ("trace_loss_not_yet_independently_verified" if loss is None else
+                           "etw_event_loss" if any(loss.values()) else None)
+            report = statistics["report"]
+            if report:
+                report = Path(report)
+                size = report.stat().st_size
+                if size <= 1024 * 1024:
+                    raw.import_file("xperf/trace_statistics.txt", report, digest(report),
+                        collector="external_xperf_trace_statistics", version="1",
+                        start_ns=started, end_ns=time.perf_counter_ns(), health={"capacity": 1024 * 1024,
+                            "observed": size, "dropped": 0, "incomplete_reason": loss_reason})
             for path in sorted(directory.iterdir()):
                 if path.is_file() and (path.name == "trace.etl" or path.suffix in {".json", ".log", ".wprp"}):
                     size = path.stat().st_size
                     if size > 2 * 1024**3:
                         raise RuntimeError("broker output exceeded bounded capture size")
                     raw.import_file(path.name if path.name == "trace.etl" else "broker/" + path.name,
-                        path, digest(path), collector="external_privileged_etw_broker", version="1",
-                        start_ns=started, end_ns=time.perf_counter_ns(), health={"capacity": size,
-                            "observed": size, "dropped": 0, "incomplete_reason": "trace_loss_not_yet_independently_verified"})
+                        path, statistics["trace_sha256"] if path.name == "trace.etl" else digest(path),
+                        collector="external_privileged_etw_broker", version="1",
+                        start_ns=started, end_ns=time.perf_counter_ns(), health={"capacity": 2 * 1024**3,
+                            "observed": size, "dropped": 0, "incomplete_reason": loss_reason})
             self.metadata["release"] = self.client.cancel(self.capture_id)
             if self.metadata["release"].get("state") != "RELEASED":
                 raise RuntimeError("completed capture lease release unproven")
@@ -68,11 +83,11 @@ class WprCollector:
             raw.import_file("broker/release_receipt.json", release_file, digest(release_file),
                 collector="external_privileged_etw_broker", version="1", start_ns=started, end_ns=time.perf_counter_ns(),
                 health={"capacity": release_file.stat().st_size, "observed": release_file.stat().st_size,
-                        "dropped": 0, "incomplete_reason": "trace_loss_not_yet_independently_verified"})
+                        "dropped": 0, "incomplete_reason": loss_reason})
             payload = json.dumps(self.metadata, sort_keys=True).encode()
             raw.append("broker/client_receipt.json", payload, collector="non_elevated_broker_client", version="1",
                 start_ns=started, end_ns=time.perf_counter_ns(), health={"capacity": len(payload), "observed": len(payload),
-                    "dropped": 0, "incomplete_reason": "trace_loss_not_yet_independently_verified"})
+                    "dropped": 0, "incomplete_reason": loss_reason})
             self.active = False
             return raw.raw / source.name
         except Exception as exc:

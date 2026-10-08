@@ -29,6 +29,8 @@ class BuildController:
         request_file_api(config.build_dir)
         cmd = ["cmake", "-S", str(config.project_root), "-B", str(config.build_dir),
                *config.configure_args, "-DEP_AUDITOR_PROFILE:STRING=" + profile]
+        if profile == 'audit-coverage' and not any(argument.startswith(('-G', '-T')) for argument in config.configure_args):
+            cmd += ['-T', 'ClangCL']
         start_ns = time.perf_counter_ns()
         result = self.runner.run(cmd, config.project_root, run_dir, capture_mode, log_callback=log)
         record_build(config, run_dir, capture_mode, "configure", result, start_ns, time.perf_counter_ns())

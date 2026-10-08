@@ -53,7 +53,7 @@ def process_timeline(events, identity_namespace):
                        "ppid": int(fields["ParentPID"]) if fields.get("ParentPID") else None,
                        "parentProcessId": None, "creation_ns": timestamp if kind == "P-Start" else None,
                        "first_observation_ns": timestamp, "end_ns": None, "exit_code": None,
-                       "command_line": fields.get("CommandLine"), "unique_key": fields.get("UniqueKey"),
+                       "command_line": fields.get("CommandLine", fields.get("Command Line")), "unique_key": fields.get("UniqueKey"),
                        "cwd": None, "environment": None, "metadata_scope": "cwd/environment unavailable from these ETW events",
                        "rawOrdinals": [event["rawOrdinal"]], "provenance": "external", "confidence": "derived"}
             active[pid] = process

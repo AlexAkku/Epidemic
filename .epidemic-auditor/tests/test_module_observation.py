@@ -13,7 +13,7 @@ from ep_auditor.core.identity import function_identity, module_identity
 from ep_auditor.core.storage import RunStorage
 
 ROOT = Path(__file__).resolve().parents[2]
-HELPER = ROOT / "build/ms62/native/Release/EpidemicAuditorObservation.exe"
+HELPER = ROOT / "build/auditor-native/bin" / os.environ.get("EP_AUDITOR_NATIVE_CONFIG", "Release") / "EpidemicAuditorObservation.exe"
 
 
 class ModuleObservationTests(unittest.TestCase):

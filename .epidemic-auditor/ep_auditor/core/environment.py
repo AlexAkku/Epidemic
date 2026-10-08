@@ -47,7 +47,7 @@ def capture_environment(config: AuditorConfig, instrumentation_profile: str = "a
         "provenance": "external",
         "confidence": "observed",
         "engine_source": source_fingerprint(config.project_root),
-        "auditor_source": source_fingerprint(Path(__file__).resolve().parents[1]),
+        "auditor_source": source_fingerprint(Path(__file__).resolve().parents[2]),
         "compiler_toolchain": compiler_toolchain(config.build_dir),
     }
     for tool in ("cmake", "ctest", "git", "cl", "clang", "clang-cl"):
@@ -74,13 +74,13 @@ def source_fingerprint(root: Path) -> dict[str, Any]:
     """Hash source/build inputs, including dirty files; exclude local artifact trees."""
     excluded = {".git", ".ai", ".venv", "venv", "__pycache__", "build", ".idea", "Deltas",
                 "_goal6_handoff", "deleted", ".epidemic-auditor"}
-    extensions = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl", ".cmake", ".py", ".ps1"}
+    extensions = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inl", ".cmake", ".py", ".ps1", ".asm", ".yaml", ".yml"}
     files = {}
     for directory, children, names in os.walk(root):
         children[:] = sorted(name for name in children if name not in excluded)
         for name in sorted(names):
             path = Path(directory) / name
-            if path.suffix.lower() in extensions or name in {"CMakeLists.txt", "CMakePresets.json"}:
+            if path.suffix.lower() in extensions or name in {"CMakeLists.txt", "CMakePresets.json", "auditor.config.json", "requirements.txt"}:
                 if path.is_symlink():
                     raise EvidenceError("source fingerprint input is a symbolic link")
                 files[path.relative_to(root).as_posix()] = digest(path)

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import re
+import hashlib
+import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from ep_auditor.config import AuditorConfig
+from ep_auditor.core.evidence import EvidenceError, RawEvidence, digest
 
 
 _INCLUDE_RE = re.compile(r'^\s*#\s*include\s*[<"]([^>"]+)[>"]')
@@ -18,6 +21,8 @@ def scan_sources(config: AuditorConfig) -> dict[str, Any]:
     markers: list[dict[str, Any]] = []
     total_lines = 0
     total_bytes = 0
+    source_paths = []
+    source_hashes = {}
 
     for root in config.static_roots:
         if not root.exists():
@@ -29,10 +34,13 @@ def scan_sources(config: AuditorConfig) -> dict[str, Any]:
             if lowered_parts & config.static_exclude:
                 continue
             try:
-                raw = path.read_text(encoding="utf-8", errors="replace")
+                source_bytes = path.read_bytes()
+                raw = source_bytes.decode('utf-8', errors='replace')
             except OSError:
                 continue
             lines = raw.splitlines()
+            source_paths.append(path)
+            source_hashes[str(path.resolve())] = hashlib.sha256(source_bytes).hexdigest()
             rel = _relative(path, config.project_root)
             total_lines += len(lines)
             size = path.stat().st_size
@@ -66,7 +74,22 @@ def scan_sources(config: AuditorConfig) -> dict[str, Any]:
         {"source": src, "target": dst, "count": count, "provenance": "external_static_scan"}
         for (src, dst), count in include_edges.most_common()
     ]
+    from ep_auditor.analyzers.architecture import static_architecture
+    architecture = static_architecture(source_paths, config.project_root)
+    from ep_auditor.analyzers.compiler_ast import analyze_compilation_database
+    database = config.resolve(config.data.get('static_scan', {}).get('compilation_database',
+                              str(config.project_root / 'build/clangd/compile_commands.json')))
+    filters = sorted({name.split('::')[0] for names in architecture['namespaces'].values() for name in names})
+    architecture['compiler_semantics'] = analyze_compilation_database(config.project_root, database, source_paths,
+                                                                     symbol_filters=filters, source_fingerprints=source_hashes)
+    if any(digest(Path(path)) != fingerprint for path, fingerprint in source_hashes.items()):
+        raise EvidenceError('source changed during static analysis')
+    from ep_auditor.analyzers.rules import load_rules, evaluate_rules
+    rules = evaluate_rules(load_rules(Path(__file__).resolve().parents[2] / 'rules'), {'architecture': architecture})
     return {
+        'architecture': architecture,
+        'source_sha256': source_hashes,
+        'rules': rules,
         "provenance": "external_static_scan",
         "files": len(files),
         "lines": total_lines,
@@ -84,3 +107,10 @@ def _relative(path: Path, root: Path) -> str:
         return str(path.resolve().relative_to(root.resolve())).replace("\\", "/")
     except ValueError:
         return str(path.resolve()).replace("\\", "/")
+
+
+def capture_scan(run: Path, report: dict):
+    payload = json.dumps(report, sort_keys=True).encode()
+    RawEvidence(run).append('static/architecture.json', payload, collector='source_dependency_analysis', version='1',
+        start_ns=0, end_ns=0, health={'capacity': len(payload), 'observed': len(payload), 'dropped': 0,
+                                    'incomplete_reason': None}, provenance='static_analysis', confidence='heuristic')

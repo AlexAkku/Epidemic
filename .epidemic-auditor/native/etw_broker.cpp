@@ -57,6 +57,19 @@ static unsigned long long qpc() {
 }
 struct WprResult { DWORD exit_code = 0; bool timed_out = false; std::string stdout_text; std::wstring command; };
 
+static void verify_retention(const std::filesystem::path& root) {
+    unsigned long long bytes = 0;
+    unsigned captures = 0;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
+        no_reparse(entry.path());
+        if (entry.is_regular_file()) bytes += entry.file_size();
+        // WPR creates many nested temporary folders inside a single capture.
+        if (entry.is_directory() && entry.path().parent_path() == root) ++captures;
+        if (bytes > (32ULL << 30) || captures > 128)
+            throw std::runtime_error("broker retention capacity exhausted; evidence retained");
+    }
+}
+
 class Broker {
     std::filesystem::path root = std::filesystem::path(store_path) / L"captures";
     std::vector<std::unique_ptr<Handle>> pinned_paths;
@@ -141,14 +154,7 @@ class Broker {
         ULARGE_INTEGER available{}, total{}, free{};
         // At most 2 GiB temporary input + 2 GiB merged ETL + 2 GiB reserve.
         if (!GetDiskFreeSpaceExW(root.c_str(), &available, &total, &free) || available.QuadPart < (6ULL << 30)) throw std::runtime_error("capture disk headroom below bounded 6 GiB budget");
-        unsigned long long bytes = 0;
-        unsigned count = 0;
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
-            no_reparse(entry.path());
-            if (entry.is_regular_file()) bytes += entry.file_size();
-            if (entry.is_directory()) ++count;
-            if (bytes > (32ULL << 30) || count > 128) throw std::runtime_error("broker retention capacity exhausted; evidence retained");
-        }
+        verify_retention(root);
     }
 public:
     Broker() {
@@ -419,15 +425,40 @@ static int self_test() {
     const auto raw_client = CreateFileW(test_name.c_str(), 0x00100183, 0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
     if (raw_client == INVALID_HANDLE_VALUE) throw std::runtime_error("actual fixed-right pipe client open failed");
     Handle test_client(raw_client);
-    const auto base = std::filesystem::path(store_path).parent_path() / (L"broker-path-selftest-" + std::wstring(id.begin(), id.end()));
+    const auto base = std::filesystem::temp_directory_path() / (L"broker-path-selftest-"
+        + std::to_wstring(GetCurrentProcessId()) + L"-" + std::to_wstring(GetTickCount64()));
     const auto folder = base / std::wstring(100, L'x');
     const auto long_file = folder / std::wstring(100, L'y');
     struct FixtureCleanup {
         std::filesystem::path base, folder, file;
-        ~FixtureCleanup() { DeleteFileW((L"\\\\?\\" + file.native()).c_str()); RemoveDirectoryW(folder.c_str()); RemoveDirectoryW(base.c_str()); }
+        bool base_created = false, folder_created = false, file_created = false;
+        std::vector<std::filesystem::path> retention_paths{};
+        ~FixtureCleanup() {
+            if (file_created) DeleteFileW(api_path(file).c_str());
+            for (auto iterator = retention_paths.rbegin(); iterator != retention_paths.rend(); ++iterator)
+                RemoveDirectoryW(api_path(*iterator).c_str());
+            if (folder_created) RemoveDirectoryW(api_path(folder).c_str());
+            if (base_created) RemoveDirectoryW(api_path(base).c_str());
+        }
     } fixture_cleanup{base, folder, long_file};
-    if (!CreateDirectoryW(base.c_str(), nullptr) || !CreateDirectoryW(folder.c_str(), nullptr)) throw std::runtime_error("long path fixture setup failed");
-    { Handle fixture(CreateFileW(api_path(long_file).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr)); }
+    if (!CreateDirectoryW(api_path(base).c_str(), nullptr)) throw std::runtime_error("long path fixture root setup failed");
+    fixture_cleanup.base_created = true;
+    if (!CreateDirectoryW(api_path(folder).c_str(), nullptr)) throw std::runtime_error("long path fixture folder setup failed");
+    fixture_cleanup.folder_created = true;
+    { Handle fixture(CreateFileW(api_path(long_file).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr));
+      fixture_cleanup.file_created = true; }
+    const auto create_owned = [&](const std::filesystem::path& path) {
+        if (!CreateDirectoryW(api_path(path).c_str(), nullptr)) throw std::runtime_error("retention fixture setup failed");
+        fixture_cleanup.retention_paths.push_back(path);
+    };
+    for (unsigned index = 0; index < 129; ++index) create_owned(folder / (L"temporary-" + std::to_wstring(index)));
+    verify_retention(base); // One capture with >128 internal folders is admitted.
+    for (unsigned index = 0; index < 128; ++index) create_owned(base / (L"capture-" + std::to_wstring(index)));
+    bool rejected_retention = false;
+    try { verify_retention(base); } catch (const std::runtime_error& error) {
+        rejected_retention = std::string(error.what()) == "broker retention capacity exhausted; evidence retained";
+    }
+    if (!rejected_retention) throw std::runtime_error("capture retention limit was not enforced");
     Descriptor binary(L"O:SYG:SYD:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;0x001200a9;;;" + sid + L")");
     Descriptor foreign(L"O:SYG:SYD:P(A;;GA;;;SY)(A;;0x00100183;;;S-1-0-0)");
     const auto access = [&](PSECURITY_DESCRIPTOR descriptor, DWORD desired) {

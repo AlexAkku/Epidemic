@@ -54,6 +54,10 @@ def seal_run_capture(record) -> dict:
     manifest = raw.verify() if raw.manifest_path.exists() else raw.seal(context)
     if any(manifest.get(key) != value for key, value in context.items()):
         raise EvidenceError("manifest admission identity changed")
+    from ep_auditor.collectors.exact_trace import publish_capture
+    publish_capture(record.run_dir)
+    from ep_auditor.collectors.coverage import publish_coverage
+    publish_coverage(record.run_dir)
     return manifest
 
 

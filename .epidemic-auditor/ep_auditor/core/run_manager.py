@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Iterable
 
-from ep_auditor.analyzers.static_scan import scan_sources
+from ep_auditor.analyzers.static_scan import scan_sources, capture_scan
 from ep_auditor.analyzers.summary import aggregate_test_results, summarize_process_samples
 from ep_auditor.config import AuditorConfig
 from ep_auditor.core.build import BuildController
@@ -154,6 +154,7 @@ class RunManager:
         result = operation(record.run_dir, capture_mode, self._log)
         static = scan_sources(self.config) if capture_mode.lower() in {"full", "deep"} else None
         if static:
+            capture_scan(record.run_dir, static)
             self.storage.write_json(record.run_dir / "metrics" / "static_scan.json", static)
         samples = summarize_process_samples(record.run_dir)
         status = "PASS" if result.exit_code == 0 and not result.cancelled else ("CANCELLED" if result.cancelled else "FAIL")
@@ -183,6 +184,7 @@ class RunManager:
         test_summary = aggregate_test_results(results)
         static = scan_sources(self.config) if capture_mode.lower() in {"full", "deep"} else None
         if static:
+            capture_scan(record.run_dir, static)
             self.storage.write_json(record.run_dir / "metrics" / "static_scan.json", static)
         status, batch = capture_batch(record, tests, results,
                                      self._cancel_reason if self._cancel_requested.is_set() else None)
@@ -221,6 +223,7 @@ class RunManager:
             raise
         static = scan_sources(self.config) if capture_mode.lower() in {"full", "deep"} else None
         if static:
+            capture_scan(record.run_dir, static)
             self.storage.write_json(record.run_dir / "metrics" / "static_scan.json", static)
         samples = summarize_process_samples(record.run_dir)
         status = "PASS" if result.exit_code == 0 and not result.cancelled else ("CANCELLED" if result.cancelled else "FAIL")
@@ -248,6 +251,7 @@ class RunManager:
         record = self.storage.new_run("static", "Static source scan", "Full")
         self.events.emit("run_started", run_id=record.run_id, title="Static source scan")
         result = scan_sources(self.config)
+        capture_scan(record.run_dir, result)
         self.storage.write_json(record.run_dir / "metrics" / "static_scan.json", result)
         summary = {"static_scan": result}
         self.storage.write_json(record.run_dir / "metrics" / "summary.json", summary)

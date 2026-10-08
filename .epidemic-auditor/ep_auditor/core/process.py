@@ -17,7 +17,7 @@ from ep_auditor.collectors.wpr import WprCollector
 from ep_auditor.collectors.xperf import XperfPostProcessor
 from ep_auditor.config import AuditorConfig
 from ep_auditor.core.storage import RunStorage
-from ep_auditor.core.evidence import EvidenceError, RawEvidence
+from ep_auditor.core.evidence import EvidenceError, RawEvidence, digest
 from ep_auditor.core.owned_process import OwnedProcess
 from ep_auditor.models import ProcessResult
 
@@ -92,11 +92,53 @@ class ManagedProcessRunner:
         started_wall = datetime.now(timezone.utc)
         started_perf = time.perf_counter()
         capture_start_ns = time.perf_counter_ns()
+        with self._active_lock:
+            reason = self._pending_stop_reason
+            if reason is None and self.operation_cancel is not None and self.operation_cancel.is_set():
+                reason = "user_stop"
+        if reason is not None:
+            # No target existed: record admission cancellation, rather than
+            # starting a suspended process and reporting missing resource samples.
+            payload = json.dumps({"schemaVersion": 1, "eventType": "process.admission.cancelled",
+                                  "command": command, "cwd": str(cwd), "pid": None,
+                                  "reason": reason, "provenance": "external",
+                                  "confidence": "observed"}, sort_keys=True).encode()
+            capture = RawEvidence(run_dir)
+            capture.append("process/admission_cancelled.json", payload,
+                collector="owned_process_admission", version="1", start_ns=capture_start_ns,
+                end_ns=time.perf_counter_ns(), health={"capacity": len(payload), "observed": len(payload),
+                                                     "dropped": 0, "incomplete_reason": None})
+            # Preserve the consumer stream contract. These are empty because
+            # admission was cancelled, not because a running target was unobserved.
+            for channel in ("stdout", "stderr"):
+                capture.append("process/" + channel + ".bin", b"", collector="external_stdio." + channel,
+                    version="1", start_ns=capture_start_ns, end_ns=time.perf_counter_ns(),
+                    health={"capacity": 1, "observed": 0, "dropped": 0, "incomplete_reason": None})
+            reads = json.dumps({"schemaVersion": 1, "clock_domain": "monotonic_trace",
+                                "capacity_unit": "read_events", "capacity": 1,
+                                "observed": 0, "dropped": 0, "events": [],
+                                "availability": "not_applicable", "reason": "admission_cancelled"}).encode()
+            capture.append("process/stdio_reads.json", reads, collector="external_stdio_read_observation",
+                version="1", start_ns=capture_start_ns, end_ns=time.perf_counter_ns(),
+                health={"capacity": 1, "observed": 0, "dropped": 0, "incomplete_reason": None})
+            return ProcessResult(command=command, cwd=str(cwd), exit_code=None,
+                started_utc=started_wall.isoformat(), finished_utc=datetime.now(timezone.utc).isoformat(),
+                wall_seconds=time.perf_counter() - started_perf, cancelled=True,
+                notes=["cancelled_before_process_creation: " + reason])
         capacity = self.config.data.get("capture", {}).get("stdio_raw_capacity_bytes", 16 * 1024 * 1024)
         if type(capacity) is not int or not 0 < capacity <= 64 * 1024 * 1024:
             raise EvidenceError("invalid bounded stdio raw capacity")
         env = os.environ.copy()
         env.update(env_extra or {})
+        if capture_mode.lower() in {'fast', 'full', 'deep', 'memory', 'stress', 'targeted exact'}:
+            exact_directory = (run_dir / 'exact-capture').resolve()
+            exact_directory.mkdir(parents=True, exist_ok=True)
+            env['EP_AUDITOR_TRACE_DIRECTORY'] = str(exact_directory)
+            env.setdefault('EP_AUDITOR_TRACE_CAPACITY', '262144')
+        if capture_mode.lower() == 'coverage':
+            coverage_directory = (run_dir / 'coverage-capture').resolve()
+            coverage_directory.mkdir(parents=True, exist_ok=True)
+            env['LLVM_PROFILE_FILE'] = str(coverage_directory / 'profile-%p-%m.profraw')
         console_path = run_dir / "console.jsonl"
         raw_stdout = run_dir / "stdout.log"
         raw_stderr = run_dir / "stderr.log"
@@ -265,9 +307,26 @@ class ManagedProcessRunner:
                     "provenance": "external_wpr_raw",
                 }
                 xperf = XperfPostProcessor()
-                xperf_meta = xperf.process(etl, proc.pid, run_dir / "raw" / "xperf")
+                executable = Path(command[0])
+                if not executable.is_absolute():
+                    executable = cwd / executable
+                xperf_meta = xperf.process(etl, proc.pid, run_dir / "xperf" / "reports",
+                                          symbol_dirs=(executable.parent, cwd))
+                for name, report in list(xperf_meta["reports"].items()):
+                    source = Path(report)
+                    size = source.stat().st_size
+                    capture.import_file("xperf/" + source.name, source, digest(source),
+                        collector="external_xperf_analysis", version="1",
+                        start_ns=capture_start_ns, end_ns=time.perf_counter_ns(),
+                        health={"capacity": 2 * 1024**3, "observed": size, "dropped": 0,
+                                "incomplete_reason": None if size else "empty_xperf_report"})
+                    xperf_meta["reports"][name] = str(capture.raw / "xperf" / source.name)
                 wpr_meta["xperf"] = xperf_meta
-                RunStorage.write_json(run_dir / "raw" / "wpr.json", wpr_meta)
+                payload = json.dumps(wpr_meta, sort_keys=True).encode()
+                capture.append("wpr.json", payload, collector="external_wpr_analysis", version="1",
+                    start_ns=capture_start_ns, end_ns=time.perf_counter_ns(),
+                    health={"capacity": len(payload), "observed": len(payload), "dropped": 0,
+                            "incomplete_reason": "xperf_reports_incomplete" if xperf_meta["errors"] else None})
             with self._active_lock:
                 self._active = None
 
@@ -337,5 +396,14 @@ class ManagedProcessRunner:
                        health={"capacity": 1024 * 1024, "observed": len(payload), "dropped": 0,
                                "incomplete_reason": None if exit_code is not None else "process_exit_unobserved"})
         RunStorage.write_json(run_dir / "metrics" / "process.json", result.to_dict())
+        from ep_auditor.collectors.exact_trace import capture_directory
+        capture_directory(run_dir, required=bool(self.config.data.get('capture', {}).get('exact_required', False))
+                          or env.get('EP_AUDITOR_REQUIRE_EXACT') == '1')
+        if capture_mode.lower() == 'coverage':
+            from ep_auditor.collectors.coverage import capture_coverage
+            inputs = json.loads(env.get('EP_AUDITOR_COVERAGE_BINARIES', '[]'))
+            if not isinstance(inputs, list) or any(not isinstance(path, str) for path in inputs):
+                raise EvidenceError('invalid declared coverage binary scope')
+            capture_coverage(run_dir, [Path(path) for path in inputs], scope={'kind': 'owned_process', 'command': command})
         proc.close()
         return result

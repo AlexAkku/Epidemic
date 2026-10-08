@@ -1,0 +1,1 @@
+{"schemaVersion":1,"domain":"performance","rules":[{"id":"no-unexplained-regressions","kind":"max_metric","metric":"regressions","maximum":0}]}

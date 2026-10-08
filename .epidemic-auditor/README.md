@@ -53,7 +53,9 @@ Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 .\.epidemic-auditor\Start-Auditor.ps1
 ```
 
-The launcher creates a local `.venv` and installs only `psutil`.
+The launcher creates the environment under repository-root `.ai/venv/auditor` and installs only `psutil`. Python bytecode and pip caches do not go into the source tree.
+
+`Start-Auditor.ps1 -SetupOnly` restores that environment without starting the application; the agent-tools setup reuses it. Native CMake builds belong in `build/auditor-native/`, with compiler executables/PDBs in its `bin/<Configuration>/`. The existing post-build generator copies the executables/helpers into `.ai/tools/auditor/` and creates the private runtime bundle/configuration there. After deleting `.ai/`, setup-only also redeploys the bundle from preserved native outputs, without relinking or reconstructing configuration manually. On a first checkout, build the native target to create those outputs.
 
 ## Configuration
 
@@ -77,9 +79,47 @@ The game/application command is intentionally empty by default. Set `run.command
 
 The capture mode is persisted in every run and never inferred later.
 
+### Instrumented build profiles
+
+Root CMake accepts `EP_AUDITOR_PROFILE=audit` or `audit-deep` on MSVC x64.
+These profiles apply `/Gh /GH /Ob0` to C++ targets and link the existing native
+exact runtime; ordinary Debug/Release builds have no hooks. The runtime emits
+bounded per-process/module streams only when the managed runner supplies
+`EP_AUDITOR_TRACE_DIRECTORY`. Missing required streams, dropped events, unmatched
+entries/exits, ambiguous cross-module ordering, invalid PDB identity and interrupted
+output remain INCOMPLETE. Process pairing health is captured before the raw seal
+and carried through derived outputs and independently replayed test batches.
+QPC intervals include instrumentation overhead; thread CPU counters have limited
+granularity. Function history is scoped to binary-bound identities and verified
+complete captures; group projections do not count child executions twice.
+
+`EP_AUDITOR_PROFILE=audit-coverage` uses ClangCL source coverage. The managed test
+runner owns `%p-%m` profile files; LLVM tools adjacent to the recorded compiler
+merge and export them, including HTML heatmaps. Coverage binds profiles and
+binaries, while source hashes describe files at decoding time. Unchanged compiled
+source identity must be established separately before interpreting a heatmap as
+current-source proof. Zero coverage and one-call results are bounded candidates,
+not proof of dead code.
+
+Static scan uses `build/clangd/compile_commands.json` for bounded compiler AST
+analysis of owned translation units and declared namespace scopes. It caches
+only the current input key under `.ai/auditor/cache`; failed or partial parses
+cannot supply a complete compiler graph. Compiler-resolved calls distinguish
+calling a function from taking its address. Lexical include/complexity/ownership
+and duplicate candidates retain their heuristic provenance. Runtime architecture
+uses observed PDB-bound calls; absence outside the capture is not verified.
+
+The six product rule files under `.epidemic-auditor/rules/` use the YAML JSON
+subset, schemaVersion 1, with `forbidden_edge` and `max_metric` rules. Unknown or
+incomplete facts produce UNKNOWN, never an inferred zero or PASS. Rule config
+hashes bind findings to the evaluated configuration. Other domains gain observed
+facts only when their corresponding collectors supply complete measurements.
+
 ## Evidence layout
 
-Each operation creates a unique run folder under `data/runs`:
+Each operation creates a unique run folder under repository-root `.ai/auditor/runs`; the SQLite database is `.ai/auditor/auditor.sqlite3`. C++ builds remain under `build/`.
+
+The ETW broker is a separately installed Windows service. Its native protocol and Python client use the fixed protected capture store `E:\EpidemicAuditorEtwBroker\captures`, outside the disposable workspace. The existing native installer creates its SYSTEM-owned protected ACLs and updates only the fixed SCM image using exact old/new binary hashes and the same authorized user SID. An older installed broker is not relocated by a workspace move: rebuild, review and explicitly deploy the matching broker before capture. Never move privileged storage into `.ai/`, change only the client path, or weaken its ACLs. Non-elevated clients copy verified captures into their Run directories.
 
 ```text
 20261004_143812_001/
