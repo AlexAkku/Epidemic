@@ -2,6 +2,7 @@
 ; Preserve GP/flags and enabled SIMD xstate, with real Windows unwind metadata.
 EXTERN auditor_exact_enter:PROC
 EXTERN auditor_exact_exit:PROC
+EXTERN auditor_exact_disabled:DWORD
 EXTERN __chkstk:PROC
 .code
 AUDITOR_HOOK MACRO symbol, callback
@@ -31,6 +32,10 @@ symbol PROC FRAME
     mov rbp, rsp
     .setframe rbp, 0
     .endprolog
+    ; No collector configured: preserve GP/flags but skip costly CPUID/XSAVE.
+    ; Active captures still execute the complete ABI-preserving path below.
+    cmp dword ptr [auditor_exact_disabled], 1
+    je restored
     ; RBP describes the fixed frame even while RSP is dynamically aligned.
     and rsp, -64
     mov rax, 4160

@@ -1,0 +1,22 @@
+﻿MS6.6 EXECUTABLE LINK PROVENANCE
+Date: 2026-10-09T16:15:46.6002055+02:00
+
+=== full-debug ===
+BLOCKED EpidemicCoreUnitTests: executable or unique link log missing
+BLOCKED EpidemicPlatformInputIntegrationTests: executable or unique link log missing
+
+=== full-release ===
+BLOCKED EpidemicCoreUnitTests: executable or unique link log missing
+BLOCKED EpidemicPlatformInputIntegrationTests: executable or unique link log missing
+
+=== audit-deep ===
+BLOCKED EpidemicCoreUnitTests: executable or unique link log missing
+BLOCKED EpidemicPlatformInputIntegrationTests: executable or unique link log missing
+
+=== audit-memory ===
+BLOCKED EpidemicCoreUnitTests: executable or unique link log missing
+BLOCKED EpidemicPlatformInputIntegrationTests: executable or unique link log missing
+
+Passed: 0 / 8
+Failed or blocked: 8
+OVERALL: NOT VERIFIED

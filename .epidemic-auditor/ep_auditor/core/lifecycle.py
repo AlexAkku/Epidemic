@@ -69,9 +69,22 @@ def seal_run_capture(record) -> dict:
 
 
 def observed_target_succeeded(raw: RawEvidence, manifest: dict) -> bool:
-    if not any(row['path'] == 'raw/modules/api_observer_binding.json' for row in manifest['raw_files']):
-        return True
+    """Available external exit/cancellation evidence must never be overridden by PASS."""
     import json
+    paths = {row['path'] for row in manifest['raw_files']}
+    if 'raw/process/launch_failure.json' in paths:
+        return False
+    if 'raw/process/lifecycle.json' in paths:
+        lifecycle = json.loads(raw.read_bytes('process/lifecycle.json'))
+        code = lifecycle.get('exit_code')
+        cancelled = lifecycle.get('cancelled')
+        if (type(code) is not int or not -0x80000000 <= code <= 0xFFFFFFFF
+                or type(cancelled) is not bool):
+            raise EvidenceError('invalid independently observed process outcome')
+        if code != 0 or cancelled:
+            return False
+    if 'raw/modules/api_observer_binding.json' not in paths:
+        return True
     binding = json.loads(raw.read_bytes('modules/api_observer_binding.json'))
     code = binding.get('target_exit_code')
     if type(code) is not int or not 0 <= code <= 0xFFFFFFFF:

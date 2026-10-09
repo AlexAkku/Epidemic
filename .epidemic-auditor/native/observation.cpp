@@ -15,8 +15,8 @@
 #include <filesystem>
 #include <fstream>
 
-int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant);
-int observe_exception_fixture(const wchar_t* binary, const wchar_t* variant);
+int observe_mutex_fixture(const wchar_t* binary, const std::wstring& mode);
+int observe_exception_fixture(const wchar_t* binary, std::wstring mode);
 int observe_exceptions(
     const wchar_t* binary,
     const std::vector<std::wstring>& arguments,
@@ -41,7 +41,8 @@ static std::string quoted(const std::wstring& text) {
         if (byte == '"' || byte == '\\') output << '\\' << static_cast<char>(byte);
         else if (byte < 32) {
             const char hex[] = "0123456789abcdef";
-            output << "\\u00" << hex[byte >> 4] << hex[byte & 15];
+            const auto code = static_cast<unsigned int>(byte);
+            output << "\\u00" << hex[code >> 4U] << hex[code & 15U];
         } else output << static_cast<char>(byte);
     }
     output << '"';
@@ -77,7 +78,9 @@ static void wait_chain(std::ostream& output, DWORD pid, DWORD tid) {
     HWCT session = OpenThreadWaitChainSession(0, nullptr);
     if (!session) throw std::runtime_error("OpenThreadWaitChainSession failed");
     struct SessionScope { HWCT value; ~SessionScope() { CloseThreadWaitChainSession(value); } } scope{session};
-    WAITCHAIN_NODE_INFO nodes[WCT_MAX_NODE_COUNT]{};
+    // Win32 output buffer. Zero-initialized until GetThreadWaitChain
+    // fills the nodes; enum members are read only on successful capture.
+    WAITCHAIN_NODE_INFO nodes[WCT_MAX_NODE_COUNT]{}; // NOLINT(bugprone-invalid-enum-default-initialization)
     DWORD count = WCT_MAX_NODE_COUNT;
     BOOL cycle = FALSE;
     LARGE_INTEGER begin{}, query_end{}, frequency{};
@@ -118,7 +121,27 @@ int wmain(int argc, wchar_t** argv) {
         if (argc == 5 && std::wstring(argv[1]) == L"--symbol-file") {
             const std::filesystem::path image(argv[2]), addresses(argv[4]);
             const auto base = number(argv[3]);
-            if (std::filesystem::file_size(addresses) > 512 * 1024) throw std::runtime_error("symbol batch exceeded bound");
+            WIN32_FILE_ATTRIBUTE_DATA attributes{};
+
+            if (!GetFileAttributesExW(
+                    addresses.c_str(),
+                    GetFileExInfoStandard,
+                    &attributes
+                )) {
+                throw std::runtime_error("symbol batch file size unavailable");
+            }
+
+            if ((attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+                throw std::runtime_error("symbol batch path is a directory");
+            }
+
+            const auto file_size =
+                (static_cast<unsigned long long>(attributes.nFileSizeHigh) << 32U) |
+                static_cast<unsigned long long>(attributes.nFileSizeLow);
+
+            if (file_size > 512ULL * 1024ULL) {
+                throw std::runtime_error("symbol batch exceeded bound");
+            }
             const auto process = GetCurrentProcess();
             SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_EXACT_SYMBOLS | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_NO_PROMPTS | SYMOPT_UNDNAME);
             if (!SymInitializeW(process, image.parent_path().c_str(), FALSE)) throw std::runtime_error("offline symbols unavailable");
@@ -180,9 +203,9 @@ int wmain(int argc, wchar_t** argv) {
             return 0;
         }
         if (argc == 4 && std::wstring(argv[1]) == L"--mutex-fixture")
-            return observe_mutex_fixture(argv[2], argv[3]);
+            return observe_mutex_fixture(argv[2], std::wstring(argv[3]));
         if (argc == 4 && std::wstring(argv[1]) == L"--exception-fixture")
-            return observe_exception_fixture(argv[2], argv[3]);
+            return observe_exception_fixture(argv[2], std::wstring(argv[3]));
                 if (argc >= 3 &&
             (std::wstring(argv[1]) == L"--exceptions" ||
             std::wstring(argv[1]) == L"--exceptions-verifier")) {
@@ -256,7 +279,7 @@ int wmain(int argc, wchar_t** argv) {
             if (!thread_id) throw std::runtime_error("wait-only observation requires target thread");
             std::cout << "{\"schemaVersion\":1,\"observationKind\":\"wait_chain_only\",\"pid\":" << pid
                       << ",\"creation_filetime_100ns\":"
-                      << ((static_cast<unsigned long long>(created.dwHighDateTime) << 32) | created.dwLowDateTime)
+                      << ((static_cast<unsigned long long>(created.dwHighDateTime) << 32U) | created.dwLowDateTime)
                       << ",\"wait_chain\":";
             wait_chain(std::cout, pid, thread_id);
             std::cout << ",\"provenance\":\"external\",\"confidence\":\"observed\"}\n";
@@ -275,7 +298,7 @@ int wmain(int argc, wchar_t** argv) {
         struct SymbolScope { HANDLE handle = nullptr; bool active = false; ~SymbolScope() { if (active) SymCleanup(handle); } } scope{process.value, symbols};
         std::ostringstream output;
         output << "{\"schemaVersion\":1,\"pid\":" << pid << ",\"creation_filetime_100ns\":"
-               << ((static_cast<unsigned long long>(created.dwHighDateTime) << 32) | created.dwLowDateTime)
+               << ((static_cast<unsigned long long>(created.dwHighDateTime) << 32U) | created.dwLowDateTime)
                << ",\"module_capacity\":4096,\"module_count\":" << needed / sizeof(HMODULE)
                << ",\"module_list_complete\":" << (needed <= sizeof(modules) ? "true" : "false") << ",\"modules\":[";
         const auto count = std::min<std::size_t>(needed / sizeof(HMODULE), std::size(modules));

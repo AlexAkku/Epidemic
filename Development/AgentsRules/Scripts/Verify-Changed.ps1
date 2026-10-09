@@ -137,6 +137,11 @@ $cppcheck = $null
 if ($Mode -eq 'Deep') { $cppcheck = Resolve-Tool 'cppcheck.exe' @((Join-Path $env:ProgramFiles 'Cppcheck/cppcheck.exe')) }
 $failures = @()
 $checks = 0
+$headerFilter = '^' + (
+    [regex]::Escape(
+        [IO.Path]::GetFullPath($root).TrimEnd([char[]]@('\', '/'))
+    ).Replace('\\', '[/\\]')
+) + '[/\\]'
 foreach ($full in ($selected | Sort-Object)) {
     $rootFull = [IO.Path]::GetFullPath($root).TrimEnd([char[]]@('\', '/'))
 $rootPrefix = $rootFull + [IO.Path]::DirectorySeparatorChar
@@ -152,6 +157,7 @@ if (-not $fullCanonical.StartsWith(
 $safe = $fullCanonical.Substring($rootPrefix.Length) -replace '[^A-Za-z0-9_.-]', '_'
     $quote = { param($value) "'" + $value.Replace("'", "''") + "'" }
     $cmd = '& ' + (& $quote $clangTidy) + ' ' + (& $quote $full) + ' -p ' + (& $quote $compdb) +
+        ' -header-filter=' + (& $quote $headerFilter) +
         " -checks='-*,clang-analyzer-*,bugprone-*' -warnings-as-errors='*'"
     & $quiet -Name "tidy-$safe" -TimeoutSec 180 -MaxJobMemoryGB 3 -Command $cmd
     $checks++

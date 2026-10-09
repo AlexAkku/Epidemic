@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,6 +36,13 @@ class AuditorCoreTests(unittest.TestCase):
                 "exclude": ["build", ".git", ".epidemic-auditor"]
             }
         }), encoding="utf-8")
+        # Self-Test selects a persistent disposable capture directory. Save this
+        # as an ordinary on-disk fixture configuration, never patch runtime paths.
+        captures = os.environ.get("EP_AUDITOR_FIXTURE_EVIDENCE")
+        if captures:
+            settings = json.loads(cfg_path.read_text(encoding="utf-8"))
+            settings["storage"]["runs_dir"] = str(Path(captures).resolve() / "captures" / root.name)
+            cfg_path.write_text(json.dumps(settings), encoding="utf-8")
         return load_config(cfg_path), project
 
     def test_paths_are_relative_to_auditor(self):

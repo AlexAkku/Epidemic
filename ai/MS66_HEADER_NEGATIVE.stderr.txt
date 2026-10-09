@@ -1,0 +1,11 @@
+warning: in the working copy of 'Development/AgentsRules/Scripts/Verify-Changed.ps1', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai/MS66_VERIFY_CHANGED.stderr.txt', LF will be replaced by CRLF the next time Git touches it
+BLOCKED: no compiled consumer for changed header: E:\Epidemic\EngineRuntime\Persistence\src\ms66_unused_575cabe10fce45f29c7a26a2f2372bb2.h. Build public-header self-containment before qualifying 
+it.
+At E:\Epidemic\Development\AgentsRules\Scripts\Verify-Changed.ps1:122 char:85
++ ... $header)) { throw "BLOCKED: no compiled consumer for changed header:  ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (BLOCKED: no com... qualifying it.:String) [], RuntimeException
+    + FullyQualifiedErrorId : BLOCKED: no compiled consumer for changed header: E:\Epidemic\EngineRuntime\Persistence\src\ms66_unused_575cabe10fce45f29c7a26a2f2372bb2.h. Build public-header self-c 
+   ontainment before qualifying it.
+ 

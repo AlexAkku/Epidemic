@@ -359,8 +359,13 @@ function(epidemic_add_public_header_self_containment_target)
             # Compile-only probes need no shared compiler PDB service. Embedded
             # symbols retain debug information without cold-build C1090 failures.
             # Production libraries and executable debug formats remain unchanged.
-            set_property(TARGET "${_consumer}" PROPERTY MSVC_DEBUG_INFORMATION_FORMAT
-                "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+            if(EP_AUDITOR_PROFILE STREQUAL "audit-memory")
+                # MSVC ASan requires debug information in Release as well (C5072).
+                set_property(TARGET "${_consumer}" PROPERTY MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+            else()
+                set_property(TARGET "${_consumer}" PROPERTY MSVC_DEBUG_INFORMATION_FORMAT
+                    "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+            endif()
         endif()
         set_target_properties("${_consumer}" PROPERTIES FOLDER "Architecture/HeaderConsumers")
         add_dependencies(EpidemicPublicHeaderSelfContainment "${_consumer}")

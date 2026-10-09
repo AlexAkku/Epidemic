@@ -240,12 +240,12 @@ void SortPersistenceSnapshot(PersistenceSnapshot& snapshot)
 size_t PersistenceLocationHash::operator()(const PersistenceLocation& location) const noexcept
 {
     size_t seed = std::hash<RegionId>{}(location.region_id);
-    seed ^= std::hash<ChunkId>{}(location.chunk_id) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<std::uint64_t>{}(location.location_tag.Raw()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<ChunkId>{}(location.chunk_id) + 0x9e3779b9u + (seed << 6u) + (seed >> 2u);
+    seed ^= std::hash<std::uint64_t>{}(location.location_tag.Raw()) + 0x9e3779b9u + (seed << 6u) + (seed >> 2u);
     return seed;
 }
 
-InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot)
+InMemoryPersistenceStore::InMemoryPersistenceStore(const PersistenceSnapshot& snapshot)
 {
     const auto valid = ValidatePersistenceSnapshot(snapshot);
     if (!valid)
@@ -271,9 +271,9 @@ InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot)
     }
 }
 
-InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot, std::shared_ptr<IPersistenceBackend> backend,
+InMemoryPersistenceStore::InMemoryPersistenceStore(const PersistenceSnapshot& snapshot, std::shared_ptr<IPersistenceBackend> backend,
                                                    PersistenceDurability durability)
-    : InMemoryPersistenceStore(std::move(snapshot))
+    : InMemoryPersistenceStore(snapshot)
 {
     backend_ = std::move(backend);
     durability_ = durability;

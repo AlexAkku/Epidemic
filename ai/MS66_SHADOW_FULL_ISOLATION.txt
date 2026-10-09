@@ -1,0 +1,46 @@
+﻿MS6.6 EXTENDED SHADOW ISOLATION
+Date: 2026-10-09T15:59:49.5824707+02:00
+Git HEAD: 5db91e77964e0f68777aacf3256a3f2b8de21668
+
+=== full-debug / Debug ===
+PASS EngineBase/Core/src/application.cpp : shadow=False
+PASS EngineBase/Core/src/event_bus.cpp : shadow=False
+PASS EngineBase/Core/src/main_thread_dispatcher.cpp : shadow=False
+PASS EngineBase/Core/src/task_scheduler.cpp : shadow=False
+PASS EngineBase/Input/src/input_system.cpp : shadow=False
+PASS EngineRuntime/Persistence/src/in_memory_persistence_support.cpp : shadow=False
+PASS EngineRuntime/Physics/src/physics_runtime_impl.cpp : shadow=False
+PASS EngineRuntime/Renderer/src/renderer_runtime_impl.cpp : shadow=False
+PASS EngineRuntime/Support/src/runtime_support.cpp : shadow=False
+PASS EngineRuntime/World/src/world_runtime_impl.cpp : shadow=False
+PASS EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp : shadow=False
+
+=== full-release / Release ===
+PASS EngineBase/Core/src/application.cpp : shadow=False
+PASS EngineBase/Core/src/event_bus.cpp : shadow=False
+PASS EngineBase/Core/src/main_thread_dispatcher.cpp : shadow=False
+PASS EngineBase/Core/src/task_scheduler.cpp : shadow=False
+PASS EngineBase/Input/src/input_system.cpp : shadow=False
+PASS EngineRuntime/Persistence/src/in_memory_persistence_support.cpp : shadow=False
+PASS EngineRuntime/Physics/src/physics_runtime_impl.cpp : shadow=False
+PASS EngineRuntime/Renderer/src/renderer_runtime_impl.cpp : shadow=False
+PASS EngineRuntime/Support/src/runtime_support.cpp : shadow=False
+PASS EngineRuntime/World/src/world_runtime_impl.cpp : shadow=False
+PASS EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp : shadow=False
+
+=== audit-deep / Release ===
+PASS EngineBase/Core/src/application.cpp : shadow=True
+PASS EngineBase/Core/src/event_bus.cpp : shadow=True
+PASS EngineBase/Core/src/main_thread_dispatcher.cpp : shadow=True
+PASS EngineBase/Core/src/task_scheduler.cpp : shadow=True
+PASS EngineBase/Input/src/input_system.cpp : shadow=True
+PASS EngineRuntime/Persistence/src/in_memory_persistence_support.cpp : shadow=True
+PASS EngineRuntime/Physics/src/physics_runtime_impl.cpp : shadow=True
+PASS EngineRuntime/Renderer/src/renderer_runtime_impl.cpp : shadow=True
+PASS EngineRuntime/Support/src/runtime_support.cpp : shadow=True
+PASS EngineRuntime/World/src/world_runtime_impl.cpp : shadow=True
+PASS EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp : shadow=True
+
+Objects checked: 33 / 33
+Failures: 0
+OVERALL: PASS

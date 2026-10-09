@@ -30,6 +30,20 @@ class ExactTraceTests(unittest.TestCase):
             result = subprocess.run([str(native / executable), *arguments], capture_output=True, timeout=20)
             self.assertEqual(result.returncode, 0, (executable, result.returncode, result.stderr))
 
+    def test_inactive_shadow_hook_finishes_real_scene_debug_without_capture(self):
+        # Ordinary CTest has no recorder directory. Exercise that same mode on
+        # the production Scene implementation, not a replacement microfixture.
+        scene = ROOT / 'build/audit-deep/EngineRuntime/Scene/tests/Debug/EpidemicRuntimeSceneTests.exe'
+        self.assertTrue(scene.is_file(), 'mandatory Audit-Deep Debug Scene target must be built')
+        env = dict(os.environ)
+        for name in ('EP_AUDITOR_TRACE_DIRECTORY', 'EP_AUDITOR_DIAGNOSTICS_DIRECTORY',
+                     'EP_AUDITOR_CAUSAL_DIRECTORY', 'EP_AUDITOR_ROLLING_DIRECTORY'):
+            env.pop(name, None)
+        result = subprocess.run([str(scene)], cwd=scene.parent, env=env,
+                                # The full Debug Scene workload takes ~41 s with inactive hooks.
+                                capture_output=True, timeout=120)
+        self.assertEqual(result.returncode, 0, result.stderr[-2048:])
+
     def capture(self, directory, variant='balanced', capacity=262144):
         configuration = os.environ.get('EP_AUDITOR_NATIVE_CONFIG', 'Debug')
         native = ROOT / 'build/auditor-native/bin' / configuration

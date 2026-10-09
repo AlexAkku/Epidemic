@@ -12,6 +12,7 @@
 #include <Epidemic/Core/service_container.h>
 #include <Epidemic/Core/task_scheduler.h>
 #include <Epidemic/Diagnostics/counters.h>
+#include <Epidemic/Memory/allocator.h>
 
 #include <algorithm>
 #include <atomic>
@@ -1261,6 +1262,11 @@ int RunAuditorCausalScenario()
     std::atomic<int> state{0};
     action("action.start", "causal-action");
     scenario("scenario.start", "causal-scenario");
+    // Real engine allocator under compiler instrumentation, not a declared
+    // ShadowFixture function label. Both facts must resolve to physical calls.
+    epidemic::memory::DefaultAllocator allocator;
+    void* allocation = allocator.Allocate(512);
+    allocator.Deallocate(allocation, 512);
     const auto handler = [&state](const Signal& signal) {
         const auto change = identity();
         flow("state.request", change.data());

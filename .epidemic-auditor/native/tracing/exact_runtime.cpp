@@ -4,6 +4,9 @@
 #include <cstdlib>
 #include <cwchar>
 
+// Published once after initialization. ASM reads the aligned flag atomically.
+extern "C" { volatile LONG auditor_exact_disabled = 0; }
+
 namespace {
 #pragma pack(push, 1)
 struct Header {
@@ -44,7 +47,7 @@ thread_local bool active_call_unresolved = false;
 #endif
 
 std::uint64_t ticks(FILETIME value) noexcept {
-    return (static_cast<std::uint64_t>(value.dwHighDateTime) << 32) | value.dwLowDateTime;
+    return (static_cast<std::uint64_t>(value.dwHighDateTime) << 32u) | value.dwLowDateTime;
 }
 bool write_bytes(const void* bytes, DWORD count) noexcept {
     const auto* cursor = static_cast<const unsigned char*>(bytes);
@@ -55,6 +58,42 @@ bool write_bytes(const void* bytes, DWORD count) noexcept {
         count -= written;
     }
     return true;
+}
+enum class CapturePathKind { exact, rolling };
+enum class Radix : std::uint8_t { decimal = 10, hexadecimal = 16 };
+struct CapturePath { wchar_t value[32768]{}; bool valid = false; };
+CapturePath make_capture_path(const wchar_t* directory, CapturePathKind kind) noexcept {
+    // No CRT inline/template calls under the recorder lock: the linker may select
+    // an engine COMDAT compiled with /Gh and recursively enter the recorder.
+    CapturePath result{};
+    std::size_t length = 0;
+    const auto character = [&](wchar_t value) {
+        if (length == 32767) return false;
+        result.value[length++] = value;
+        return true;
+    };
+    const auto text = [&](const wchar_t* value) {
+        while (*value) if (!character(*value++)) return false;
+        return true;
+    };
+    const auto number = [&](std::uint64_t value, Radix radix) {
+        wchar_t reversed[32]{};
+        std::size_t count = 0;
+        const auto base = static_cast<std::uint64_t>(radix);
+        do {
+            const auto digit = value % base;
+            reversed[count++] = static_cast<wchar_t>(digit < 10 ? L'0' + digit : L'a' + digit - 10);
+            value /= base;
+        } while (value);
+        while (count) if (!character(reversed[--count])) return false;
+        return true;
+    };
+    result.valid = text(L"\\\\?\\") && text(directory)
+        && text(kind == CapturePathKind::exact ? L"\\trace-" : L"\\events-")
+        && number(header.pid, Radix::decimal) && character(L'-')
+        && number(header.birth, Radix::decimal) && character(L'-')
+        && number(header.image_base, Radix::hexadecimal) && text(L".bin");
+    return result;
 }
 void flush() noexcept {
     AcquireSRWLockExclusive(&lock);
@@ -108,10 +147,9 @@ void initialize() noexcept {
     wchar_t rolling_directory[32768]{};
     const DWORD rolling_length = GetEnvironmentVariableW(L"EP_AUDITOR_ROLLING_DIRECTORY", rolling_directory, 32768);
     if (rolling_length && rolling_length <= 32500 && rolling_directory[1] == L':') {
-        wchar_t rolling_path[32768]{};
-        if (swprintf_s(rolling_path, L"\\\\?\\%ls\\events-%u-%llu-%llx.bin", rolling_directory,
-                header.pid, header.birth, header.image_base) >= 0) {
-            rolling_file = CreateFileW(rolling_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
+        const auto rolling_path = make_capture_path(rolling_directory, CapturePathKind::rolling);
+        if (rolling_path.valid) {
+            rolling_file = CreateFileW(rolling_path.value, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
                 nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
             if (rolling_file != INVALID_HANDLE_VALUE) {
                 constexpr DWORD bytes = sizeof(RollingHeader) + 65536 * sizeof(Event);
@@ -129,9 +167,9 @@ void initialize() noexcept {
     events = static_cast<Event*>(VirtualAlloc(nullptr, static_cast<SIZE_T>(header.capacity * sizeof(Event)),
         MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     if (!events) return;
-    wchar_t path[32768]{};
-    if (swprintf_s(path, L"\\\\?\\%ls\\trace-%u-%llu-%llx.bin", directory, header.pid, header.birth, header.image_base) < 0) return;
-    output = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+    const auto path = make_capture_path(directory, CapturePathKind::exact);
+    if (!path.valid) return;
+    output = CreateFileW(path.value, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (output == INVALID_HANDLE_VALUE) return;
     if (!write_bytes(&header, sizeof(header)) || !write_bytes(image_path, header.path_chars * sizeof(wchar_t))
         || std::atexit(flush) != 0) {
@@ -139,9 +177,13 @@ void initialize() noexcept {
         output = INVALID_HANDLE_VALUE;
     }
 }
-void record(std::uint64_t address, std::uint8_t kind) noexcept {
+enum class RecordKind : std::uint8_t { enter = 1, exit = 2 };
+void record(std::uint64_t address, RecordKind kind) noexcept {
     AcquireSRWLockExclusive(&lock);
-    if (!initialized) initialize();
+    if (!initialized) {
+        initialize();
+        if (output == INVALID_HANDLE_VALUE) InterlockedExchange(&auditor_exact_disabled, 1);
+    }
     if (output != INVALID_HANDLE_VALUE) {
         {
             LARGE_INTEGER timestamp{};
@@ -163,7 +205,7 @@ void record(std::uint64_t address, std::uint8_t kind) noexcept {
                 value.thread_birth = ticks(born);
                 value.pid = header.pid;
                 value.tid = GetCurrentThreadId();
-                value.kind = kind;
+                value.kind = static_cast<std::uint8_t>(kind);
                 if (rolling) {
                     InterlockedIncrement64(reinterpret_cast<volatile LONG64*>(&rolling->generation));
                     Event live = value;
@@ -176,7 +218,7 @@ void record(std::uint64_t address, std::uint8_t kind) noexcept {
                 if (header.written == header.capacity) { ++header.dropped; ReleaseSRWLockExclusive(&lock); return; }
                 events[header.written++] = value;
 #if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
-                if (kind == 1) {
+                if (kind == RecordKind::enter) {
                     if (active_depth == 1024) active_call_unresolved = true;
                     else active_calls[active_depth++] = ActiveCall{value.sequence, header.image_base};
                 } else if (active_depth) --active_depth;
@@ -188,8 +230,8 @@ void record(std::uint64_t address, std::uint8_t kind) noexcept {
     ReleaseSRWLockExclusive(&lock);
 }
 }
-extern "C" void auditor_exact_enter(std::uint64_t address) noexcept { record(address, 1); }
-extern "C" void auditor_exact_exit(std::uint64_t address) noexcept { record(address, 2); }
+extern "C" void auditor_exact_enter(std::uint64_t address) noexcept { record(address, RecordKind::enter); }
+extern "C" void auditor_exact_exit(std::uint64_t address) noexcept { record(address, RecordKind::exit); }
 #if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
 extern "C" bool auditor_exact_current_call(std::uint64_t* ordinal, std::uint64_t* producer_base) noexcept {
     AcquireSRWLockShared(&lock);

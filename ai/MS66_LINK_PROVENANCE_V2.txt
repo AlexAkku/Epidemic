@@ -1,0 +1,95 @@
+﻿MS6.6 LINK PROVENANCE V2
+Date: 2026-10-09T16:19:11.6686545+02:00
+
+=== full-debug ===
+Target: EpidemicCoreUnitTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\full-debug\EngineBase\Tests\Unit\Debug\EpidemicCoreUnitTests.exe
+  TLOG: E:\Epidemic\build\full-debug\EngineBase\Tests\Unit\EpidemicCoreUnitTests.dir\Debug\Epidemic.6CC148B6.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: False
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+Target: EpidemicPlatformInputIntegrationTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\full-debug\EngineBase\Tests\Integration\Debug\EpidemicPlatformInputIntegrationTests.exe
+  TLOG: E:\Epidemic\build\full-debug\EngineBase\Tests\Integration\EpidemicPlatformInputIntegrationTests.dir\Debug\Epidemic.28FC6E48.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: False
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+
+=== full-release ===
+Target: EpidemicCoreUnitTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\full-release\EngineBase\Tests\Unit\Release\EpidemicCoreUnitTests.exe
+  TLOG: E:\Epidemic\build\full-release\EngineBase\Tests\Unit\EpidemicCoreUnitTests.dir\Release\Epidemic.3B37EF30.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: False
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+Target: EpidemicPlatformInputIntegrationTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\full-release\EngineBase\Tests\Integration\Release\EpidemicPlatformInputIntegrationTests.exe
+  TLOG: E:\Epidemic\build\full-release\EngineBase\Tests\Integration\EpidemicPlatformInputIntegrationTests.dir\Release\Epidemic.E8E6A5D7.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: False
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+
+=== audit-deep ===
+Target: EpidemicCoreUnitTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\audit-deep\EngineBase\Tests\Unit\Release\EpidemicCoreUnitTests.exe
+  TLOG: E:\Epidemic\build\audit-deep\EngineBase\Tests\Unit\EpidemicCoreUnitTests.dir\Release\Epidemic.8A69474B.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: True
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+Target: EpidemicPlatformInputIntegrationTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\audit-deep\EngineBase\Tests\Integration\Release\EpidemicPlatformInputIntegrationTests.exe
+  TLOG: E:\Epidemic\build\audit-deep\EngineBase\Tests\Integration\EpidemicPlatformInputIntegrationTests.dir\Release\Epidemic.FBE4614F.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: True
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+
+=== audit-memory ===
+Target: EpidemicCoreUnitTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\audit-memory\EngineBase\Tests\Unit\Release\EpidemicCoreUnitTests.exe
+  TLOG: E:\Epidemic\build\audit-memory\EngineBase\Tests\Unit\EpidemicCoreUnitTests.dir\Release\Epidemic.D4B3ED77.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: True
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+Target: EpidemicPlatformInputIntegrationTests
+  EXE count: 1
+  TLOG count: 1
+  EXE: E:\Epidemic\build\audit-memory\EngineBase\Tests\Integration\Release\EpidemicPlatformInputIntegrationTests.exe
+  TLOG: E:\Epidemic\build\audit-memory\EngineBase\Tests\Integration\EpidemicPlatformInputIntegrationTests.dir\Release\Epidemic.FAFB187E.tlog\link.command.1.tlog
+  EpidemicCore.lib: True
+  AuditorExactRuntime.lib: True
+  Link command present: True
+  Foreign profile paths: 0
+  RESULT: PASS
+
+PASS: 8 / 8
+BLOCKED: 0
+FAIL: 0
+OVERALL: PASS

@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import tkinter as tk
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
@@ -30,9 +31,16 @@ class AuditorWindow:
         self.target_scope.trace_add("write", self._target_scope_changed)
         self.status_text = tk.StringVar(value="Ready")
         self.progress_text = tk.StringVar(value="")
+        self.trace_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="auditor-event-log")
+        self.trace_future = None
+        self.trace_run = None
+        self.trace_offset = 0
+        self.trace_action = None
+        self.trace_result = None
+        self.trace_detail_offset = 0
         self._build_ui()
         self._refresh_runs()
-        self.root.after(100, self._poll_events)
+        self.poll_after_id = self.root.after(100, self._poll_events)
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def run(self) -> None:
@@ -70,15 +78,18 @@ class AuditorWindow:
         self.runs_tab = ttk.Frame(self.notebook)
         self.console_tab = ttk.Frame(self.notebook)
         self.settings_tab = ttk.Frame(self.notebook)
+        self.actions_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.tests_tab, text="Tests")
         self.notebook.add(self.dashboard_tab, text="Dashboard")
         self.notebook.add(self.runs_tab, text="Runs")
+        self.notebook.add(self.actions_tab, text="Actions / Event Log")
         self.notebook.add(self.console_tab, text="Console")
         self.notebook.add(self.settings_tab, text="Settings")
 
         self._build_tests_tab()
         self._build_dashboard_tab()
         self._build_runs_tab()
+        self._build_actions_tab()
         self._build_console_tab()
         self._build_settings_tab()
 
@@ -152,6 +163,169 @@ class AuditorWindow:
         self.console.pack(fill=tk.BOTH, expand=True, padx=6, pady=6)
         self.console.tag_configure("stderr", foreground="#ff8080")
         self.console.tag_configure("info", foreground="#80c0ff")
+
+    def _build_actions_tab(self) -> None:
+        bar = ttk.Frame(self.actions_tab, padding=6)
+        bar.pack(fill=tk.X)
+        self.trace_controls = []
+        for label, command in (("Open Capture", self._open_trace_capture),
+                               ("Load Selected Run", self._load_trace_run)):
+            button = ttk.Button(bar, text=label, command=command)
+            button.pack(side=tk.LEFT, padx=3)
+            self.trace_controls.append(button)
+        ttk.Label(bar, text="Action:").pack(side=tk.LEFT, padx=(12, 3))
+        self.trace_choice = ttk.Combobox(bar, state="readonly", width=48)
+        self.trace_choice.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.trace_choice.bind("<<ComboboxSelected>>", self._select_trace_action)
+        for label, delta in (("Previous", -50), ("Next", 50)):
+            button = ttk.Button(bar, text=label, command=lambda d=delta: self._trace_page(d))
+            button.pack(side=tk.LEFT, padx=3)
+            self.trace_controls.append(button)
+        self.trace_status = tk.StringVar(value="Open a sealed capture or select a run in Runs.")
+        trace_status_label = ttk.Label(self.actions_tab, textvariable=self.trace_status, padding=6, justify=tk.LEFT)
+        trace_status_label.pack(fill=tk.X)
+        trace_status_label.bind("<Configure>", lambda e: trace_status_label.configure(wraplength=max(200, e.width - 12)))
+        panes = ttk.Panedwindow(self.actions_tab, orient=tk.VERTICAL)
+        panes.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 6))
+        events = ttk.Frame(panes)
+        details = ttk.Frame(panes)
+        panes.add(events, weight=2)
+        panes.add(details, weight=1)
+        columns = ("time", "type", "thread", "event")
+        self.trace_tree = ttk.Treeview(events, columns=columns, show="headings", selectmode="browse")
+        for column, label, width in (("time", "Trace clock (ns)", 180), ("type", "Event", 210),
+                                     ("thread", "PID / epoch / thread", 210), ("event", "Event ID", 360)):
+            self.trace_tree.heading(column, text=label)
+            self.trace_tree.column(column, width=width)
+        scroll = ttk.Scrollbar(events, orient=tk.VERTICAL, command=self.trace_tree.yview)
+        self.trace_tree.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.trace_tree.pack(fill=tk.BOTH, expand=True)
+        self.trace_tree.bind("<<TreeviewSelect>>", self._show_trace_event)
+        detail_bar = ttk.Frame(details)
+        detail_bar.pack(fill=tk.X)
+        ttk.Label(detail_bar, text="Action details:").pack(side=tk.LEFT, padx=3)
+        self.trace_category = ttk.Combobox(detail_bar, state="readonly", width=24,
+            values=("summary", "function_profile", "call_tree", "causal_graph", "exceptions",
+                    "allocations", "threads", "io", "state_changes", "findings"))
+        self.trace_category.set("summary")
+        self.trace_category.pack(side=tk.LEFT)
+        self.trace_category.bind("<<ComboboxSelected>>", lambda _e: self._trace_detail_page(0, reset=True))
+        for label, delta in (("Previous details", -50), ("Next details", 50)):
+            ttk.Button(detail_bar, text=label, command=lambda d=delta: self._trace_detail_page(d)).pack(side=tk.LEFT, padx=3)
+        self.trace_details = tk.Text(details, wrap="word", height=12, state="disabled")
+        detail_scroll = ttk.Scrollbar(details, orient=tk.VERTICAL, command=self.trace_details.yview)
+        self.trace_details.configure(yscrollcommand=detail_scroll.set)
+        detail_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.trace_details.pack(fill=tk.BOTH, expand=True)
+
+    def _open_trace_capture(self) -> None:
+        directory = filedialog.askdirectory(title="Open sealed Auditor capture")
+        if directory:
+            self._request_trace(Path(directory), reset=True)
+
+    def _load_trace_run(self) -> None:
+        run_id = self._selected_run_id()
+        row = self.storage.get_run(run_id) if run_id else None
+        if row:
+            self._request_trace(Path(row["run_dir"]), reset=True)
+        else:
+            self.trace_status.set("Select a captured run in Runs first.")
+
+    @staticmethod
+    def _read_trace(run, offset, action_id):
+        from ep_auditor.analyzers.causality import query_action, query_event_log
+        page = query_event_log(run, offset=offset, limit=50, action_id=action_id)
+        return page, query_action(run, action_id) if action_id is not None else None
+
+    def _request_trace(self, run, *, reset=False) -> None:
+        if self.trace_future is not None:
+            return
+        if reset:
+            self.trace_run, self.trace_offset, self.trace_action = run, 0, None
+        self.trace_result = None
+        self.trace_tree.delete(*self.trace_tree.get_children())
+        self._trace_text("Loading and verifying sealed evidence…")
+        self.trace_status.set("Loading and verifying sealed evidence…")
+        for button in self.trace_controls:
+            button.configure(state="disabled")
+        self.trace_choice.configure(state="disabled")
+        self.trace_future = self.trace_executor.submit(self._read_trace, run, self.trace_offset, self.trace_action)
+
+    def _select_trace_action(self, _event=None) -> None:
+        index = self.trace_choice.current()
+        if self.trace_result is None or index < 0:
+            return
+        self.trace_action = None if index == 0 else self.trace_result[0]["actions"][index - 1]["id"]
+        self.trace_offset = 0
+        self._request_trace(self.trace_run)
+
+    def _trace_page(self, delta) -> None:
+        if self.trace_result is None:
+            return
+        candidate = max(0, self.trace_offset + delta)
+        if candidate >= self.trace_result[0]["total"] and candidate != 0:
+            return
+        self.trace_offset = candidate
+        self._request_trace(self.trace_run)
+
+    def _poll_trace(self) -> None:
+        if self.trace_future is None or not self.trace_future.done():
+            return
+        future, self.trace_future = self.trace_future, None
+        for button in self.trace_controls:
+            button.configure(state="normal")
+        self.trace_choice.configure(state="readonly")
+        try:
+            self.trace_result = future.result()
+            page, action = self.trace_result
+            self.trace_choice["values"] = ["All events"] + [f"{a['name']} [{a['id']}]" for a in page["actions"]]
+            self.trace_choice.current(0 if self.trace_action is None else
+                1 + next(i for i, a in enumerate(page["actions"]) if a["id"] == self.trace_action))
+            complete = page["complete"] is True and (action is None or action["complete"] is True)
+            self.trace_status.set(f"Run {page['run_id']} · {'COMPLETE capture' if complete else 'INCOMPLETE capture'} · "
+                f"events {self.trace_offset + (1 if page['events'] else 0)}–{self.trace_offset + len(page['events'])} / {page['total']} · "
+                "Unobserved activity is UNKNOWN; capture completeness is not a safety verdict.")
+            for i, row in enumerate(page["events"]):
+                thread = row.get("thread", (row.get("pid"), row.get("process_epoch"), row.get("tid")))
+                self.trace_tree.insert("", tk.END, iid=str(i), values=(row.get("timestamp_ns"), row.get("type"), thread, row.get("event_id")))
+            self._trace_detail_page(0, reset=True)
+        except Exception as exc:
+            self.trace_result = None
+            self.trace_choice["values"] = ()
+            self.trace_choice.set("")
+            self.trace_status.set(f"Evidence unavailable: {exc}")
+            self._trace_text("No verified result. Open a sealed, intact capture and retry.")
+
+    def _trace_text(self, value) -> None:
+        self.trace_details.configure(state="normal")
+        self.trace_details.delete("1.0", tk.END)
+        self.trace_details.insert("1.0", value)
+        self.trace_details.configure(state="disabled")
+
+    def _show_trace_event(self, _event=None) -> None:
+        selected = self.trace_tree.selection()
+        if selected and self.trace_result is not None:
+            self._trace_text(json.dumps(self.trace_result[0]["events"][int(selected[0])], indent=2, ensure_ascii=False))
+
+    def _trace_detail_page(self, delta, *, reset=False) -> None:
+        action = self.trace_result[1] if self.trace_result else None
+        if action is None:
+            self._trace_text("Select an Action to inspect its profile, call tree, causal graph and diagnostics.")
+            return
+        category = self.trace_category.get()
+        value = ({key: val for key, val in action.items() if not isinstance(val, (list, dict))} | {"action": action["action"]}
+                 if category == "summary" else action[category])
+        self.trace_detail_offset = 0 if reset else max(0, self.trace_detail_offset + delta)
+        if isinstance(value, list):
+            self.trace_detail_offset = min(self.trace_detail_offset, max(0, ((len(value) - 1) // 50) * 50))
+            value = {"offset": self.trace_detail_offset, "total": len(value),
+                     "records": value[self.trace_detail_offset:self.trace_detail_offset + 50]}
+        elif category == "causal_graph":
+            value = {key: (val[self.trace_detail_offset:self.trace_detail_offset + 50] if isinstance(val, list) else val)
+                     for key, val in value.items()} | {"offset": self.trace_detail_offset,
+                         "totals": {key: len(val) for key, val in action[category].items() if isinstance(val, list)}}
+        self._trace_text(json.dumps(value, indent=2, ensure_ascii=False))
 
     def _build_settings_tab(self) -> None:
         frm = ttk.Frame(self.settings_tab, padding=12)
@@ -398,6 +572,7 @@ class AuditorWindow:
         return f"{n:.2f} TiB"
 
     def _poll_events(self) -> None:
+        self._poll_trace()
         for event in self.events.drain():
             kind = event.kind
             p = event.payload
@@ -425,8 +600,10 @@ class AuditorWindow:
             elif kind == "error":
                 self.status_text.set(p.get("text", "Error"))
                 messagebox.showerror("Epidemic Auditor", p.get("text", "Unknown error"))
-        self.root.after(100, self._poll_events)
+        self.poll_after_id = self.root.after(100, self._poll_events)
 
     def _on_close(self) -> None:
+        self.root.after_cancel(self.poll_after_id)
+        self.trace_executor.shutdown(wait=False, cancel_futures=True)
         self.manager.shutdown()
         self.root.destroy()

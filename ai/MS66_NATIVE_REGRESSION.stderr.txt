@@ -1,0 +1,9 @@
+test_mutex_api_hold_and_acquisition_stack_are_external_and_existing_object_is_rejected (test_concurrency_physical.PhysicalConcurrencyTests.test_mutex_api_hold_and_acquisition_stack_are_external_and_existing_object_is_rejected) ... ok
+test_physical_first_chance_recovery_and_storm (test_ms65_ms66.NativeDiagnosticTests.test_physical_first_chance_recovery_and_storm) ... ok
+test_physical_second_chance_crash_assert_contract (test_ms65_ms66.NativeDiagnosticTests.test_physical_second_chance_crash_assert_contract) ... ok
+test_real_recursion_threads_registers_pdb_tree_and_metrics (test_exact_trace.ExactTraceTests.test_real_recursion_threads_registers_pdb_tree_and_metrics) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 35.546s
+
+OK

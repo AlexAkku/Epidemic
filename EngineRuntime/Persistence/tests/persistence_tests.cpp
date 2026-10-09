@@ -1,14 +1,17 @@
-﻿#include "Epidemic/Runtime/Persistence/persistence_services.h"
+#include "Epidemic/Runtime/Persistence/persistence_services.h"
 #include "Epidemic/Runtime/Persistence/persistence_store.h"
 #include "in_memory_persistence_support.h"
 
 #include <cstddef>
 #include <iostream>
+#include <cstdio>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
+
+static_assert(!std::is_nothrow_default_constructible_v<epidemic::runtime::PersistenceCandidateState>);
 
 namespace epidemic::runtime
 {
@@ -147,11 +150,11 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     return record;
 }
 
-[[nodiscard]] LazyRuleRecord MakeLazyRule(std::uint64_t rule_id, std::uint64_t target_id)
+[[nodiscard]] LazyRuleRecord MakeLazyRule(LazyRuleId rule_id, PersistentObjectId target_id)
 {
     LazyRuleRecord record{};
-    record.rule_id = LazyRuleId{rule_id};
-    record.target_id = PersistentObjectId{target_id};
+    record.rule_id = rule_id;
+    record.target_id = target_id;
     record.kind = LazyRuleKind::Decay;
     record.state = LazyRuleState::Pending;
     record.created_game_time = GameTimePoint{100};
@@ -227,8 +230,9 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     return true;
 }
 
-[[nodiscard]] PersistenceSnapshot MakeBackendSnapshot(std::uint64_t base, epidemic::runtime::PersistenceRevision revision)
+[[nodiscard]] PersistenceSnapshot MakeBackendSnapshot(PersistentObjectId base_id, epidemic::runtime::PersistenceRevision revision)
 {
+    const auto base = base_id.Raw();
     PersistenceSnapshot snapshot{};
     snapshot.current_revision = revision;
     auto object = MakeRecord(base + 1u, base % 2u == 0u ? "state.even" : "state.odd");
@@ -243,7 +247,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     tombstone.revision = revision;
     snapshot.tombstones.push_back(tombstone);
 
-    auto rule = MakeLazyRule(base + 3u, base + 1u);
+    auto rule = MakeLazyRule(LazyRuleId{base + 3u}, PersistentObjectId{base + 1u});
     rule.revision = revision;
     rule.rule_seed = base * 17u;
     snapshot.lazy_rules.push_back(rule);
@@ -257,7 +261,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     zone_tombstone.reason = Id("zone.cleanup");
     zone_tombstone.revision = revision;
     zone.tombstones.push_back(zone_tombstone);
-    auto zone_rule = MakeLazyRule(base + 7u, base + 5u);
+    auto zone_rule = MakeLazyRule(LazyRuleId{base + 7u}, PersistentObjectId{base + 5u});
     zone_rule.revision = revision;
     zone.lazy_rules.push_back(zone_rule);
     zone.revision = revision;
@@ -355,8 +359,8 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 {
     InMemoryPersistenceStore store;
     auto transaction = store.OpenTransaction();
-    if (!transaction || !transaction->UpsertObject(MakeRecord(1001)) || !transaction->UpsertLazyRule(MakeLazyRule(5001, 1001)) ||
-        !transaction->UpsertLazyRule(MakeLazyRule(5002, 1001)) || !transaction->Commit())
+    if (!transaction || !transaction->UpsertObject(MakeRecord(1001)) || !transaction->UpsertLazyRule(MakeLazyRule(LazyRuleId{5001}, PersistentObjectId{1001})) ||
+        !transaction->UpsertLazyRule(MakeLazyRule(LazyRuleId{5002}, PersistentObjectId{1001})) || !transaction->Commit())
     {
         return false;
     }
@@ -371,9 +375,9 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 {
     InMemoryPersistenceStore store;
     auto create = store.OpenTransaction();
-    auto early = MakeLazyRule(5001, 1001);
+    auto early = MakeLazyRule(LazyRuleId{5001}, PersistentObjectId{1001});
     early.evaluate_after_game_time = GameTimePoint{110};
-    auto late = MakeLazyRule(5002, 1001);
+    auto late = MakeLazyRule(LazyRuleId{5002}, PersistentObjectId{1001});
     late.evaluate_after_game_time = GameTimePoint{200};
     if (!create || !create->UpsertObject(MakeRecord(1001)) || !create->UpsertLazyRule(late) || !create->UpsertLazyRule(early) ||
         !create->Commit())
@@ -409,7 +413,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     snapshot.location = MakeLocation(9, "zone/override");
     snapshot.record_ids.push_back(PersistentObjectId{1002});
     snapshot.tombstones.push_back(tombstone);
-    snapshot.lazy_rules.push_back(MakeLazyRule(7001, 1002));
+    snapshot.lazy_rules.push_back(MakeLazyRule(LazyRuleId{7001}, PersistentObjectId{1002}));
 
     auto transaction = store.OpenTransaction();
     auto* admin = dynamic_cast<IPersistenceAdministrativeTransaction*>(transaction.get());
@@ -521,7 +525,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 {
     InMemoryPersistenceStore store;
     auto transaction = store.OpenTransaction();
-    if (!transaction || !transaction->UpsertObject(MakeRecord(1001)) || !transaction->UpdateLazyRule(MakeLazyRule(6001, 1001)))
+    if (!transaction || !transaction->UpsertObject(MakeRecord(1001)) || !transaction->UpdateLazyRule(MakeLazyRule(LazyRuleId{6001}, PersistentObjectId{1001})))
     {
         return false;
     }
@@ -535,7 +539,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 {
     InMemoryPersistenceStore store;
     auto create = store.OpenTransaction();
-    if (!create || !create->UpsertObject(MakeRecord(2002)) || !create->UpsertLazyRule(MakeLazyRule(8001, 2002)) || !create->Commit())
+    if (!create || !create->UpsertObject(MakeRecord(2002)) || !create->UpsertLazyRule(MakeLazyRule(LazyRuleId{8001}, PersistentObjectId{2002})) || !create->Commit())
     {
         return false;
     }
@@ -559,7 +563,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 {
     PersistenceSnapshot snapshot{};
     snapshot.current_revision = 1u;
-    auto rule = MakeLazyRule(9101, 9001);
+    auto rule = MakeLazyRule(LazyRuleId{9101}, PersistentObjectId{9001});
     rule.revision = 1u;
     snapshot.lazy_rules.push_back(rule);
 
@@ -576,7 +580,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 {
     InMemoryPersistenceStore store;
     auto transaction = store.OpenTransaction();
-    if (!transaction || !transaction->UpsertLazyRule(MakeLazyRule(9001, 4001)) || !transaction->RemoveLazyRule(LazyRuleId{9001}))
+    if (!transaction || !transaction->UpsertLazyRule(MakeLazyRule(LazyRuleId{9001}, PersistentObjectId{4001})) || !transaction->RemoveLazyRule(LazyRuleId{9001}))
     {
         return false;
     }
@@ -637,7 +641,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     auto transaction = store.OpenTransaction();
     PersistentObjectRecord invalid_object = MakeRecord(1001);
     invalid_object.payload = PersistencePayload{};
-    LazyRuleRecord invalid_rule = MakeLazyRule(5001, 1001);
+    LazyRuleRecord invalid_rule = MakeLazyRule(LazyRuleId{5001}, PersistentObjectId{1001});
     invalid_rule.evaluate_after_game_time = GameTimePoint{1};
     TombstoneRecord invalid_tombstone{};
     invalid_tombstone.persistent_id = PersistentObjectId{1001};
@@ -765,18 +769,18 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
         const auto result = tx->UpsertObject(record);
         return !result && tx->GetState() == SaveTransactionState::Open && store.GetRevision() == 0u;
     };
-    if (!run_object_case([](auto& r) { r.kind = static_cast<PersistentObjectKind>(999); }) ||
-        !run_object_case([](auto& r) { r.tier = static_cast<epidemic::runtime::PersistenceTier>(999); }) ||
-        !run_object_case([](auto& r) { r.state = static_cast<PersistenceState>(999); }) ||
-        !run_object_case([](auto& r) { r.protection_flags.value = 1u << 31; }))
+    if (!run_object_case([](auto& r) { r.kind = static_cast<PersistentObjectKind>(999); }) || // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
+        !run_object_case([](auto& r) { r.tier = static_cast<epidemic::runtime::PersistenceTier>(999); }) || // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
+        !run_object_case([](auto& r) { r.state = static_cast<PersistenceState>(999); }) || // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
+        !run_object_case([](auto& r) { r.protection_flags.value = 1u << 31u; }))
     {
         return false;
     }
     auto tx = store.OpenTransaction();
-    auto invalid_kind = MakeLazyRule(6302, 6301);
-    invalid_kind.kind = static_cast<LazyRuleKind>(999);
-    auto invalid_state = MakeLazyRule(6303, 6301);
-    invalid_state.state = static_cast<LazyRuleState>(999);
+    auto invalid_kind = MakeLazyRule(LazyRuleId{6302}, PersistentObjectId{6301});
+    invalid_kind.kind = static_cast<LazyRuleKind>(999); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
+    auto invalid_state = MakeLazyRule(LazyRuleId{6303}, PersistentObjectId{6301});
+    invalid_state.state = static_cast<LazyRuleState>(999); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
     const auto a = tx->UpsertLazyRule(invalid_kind);
     const auto b = tx->UpsertLazyRule(invalid_state);
     if (a || b || !a.GetError().HasCode("persistence.invalid_enum") || !b.GetError().HasCode("persistence.invalid_enum")) return false;
@@ -784,7 +788,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     auto backend = std::make_shared<ControlledBackend>();
     auto invalid_loaded = MakeRecord(6304);
     invalid_loaded.revision = 1u;
-    invalid_loaded.state = static_cast<PersistenceState>(999);
+    invalid_loaded.state = static_cast<PersistenceState>(999); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
     backend->snapshot.current_revision = 1u;
     backend->snapshot.objects.push_back(invalid_loaded);
     PersistenceOptions options{};
@@ -854,14 +858,14 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     zone_b.record_ids = {PersistentObjectId{30}, PersistentObjectId{10}};
     zone_b.tombstones.push_back(TombstoneRecord{PersistentObjectId{40}, GameTimePoint{40}, Id("test")});
     zone_b.tombstones.push_back(TombstoneRecord{PersistentObjectId{20}, GameTimePoint{40}, Id("test")});
-    zone_b.lazy_rules.push_back(MakeLazyRule(9002, 10));
-    zone_b.lazy_rules.push_back(MakeLazyRule(9001, 30));
+    zone_b.lazy_rules.push_back(MakeLazyRule(LazyRuleId{9002}, PersistentObjectId{10}));
+    zone_b.lazy_rules.push_back(MakeLazyRule(LazyRuleId{9001}, PersistentObjectId{30}));
 
     ZoneOverrideSnapshot zone_a{};
     zone_a.location = MakeLocation(1, "zone/a");
 
     if (!transaction || !transaction->UpsertObject(MakeRecord(30)) || !transaction->UpsertObject(MakeRecord(10)) ||
-        !transaction->UpsertLazyRule(MakeLazyRule(9002, 10)) || !transaction->UpsertLazyRule(MakeLazyRule(9001, 30)) ||
+        !transaction->UpsertLazyRule(MakeLazyRule(LazyRuleId{9002}, PersistentObjectId{10})) || !transaction->UpsertLazyRule(MakeLazyRule(LazyRuleId{9001}, PersistentObjectId{30})) ||
         !transaction->UpsertZoneOverride(zone_b) || !transaction->UpsertZoneOverride(zone_a) || !transaction->Commit())
     {
         return false;
@@ -886,8 +890,8 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     ZoneOverrideSnapshot zone{};
     zone.location = MakeLocation(11, "zone/detached");
     zone.record_ids.push_back(PersistentObjectId{7101});
-    zone.lazy_rules.push_back(MakeLazyRule(7102, 7101));
-    if (!transaction || !transaction->UpsertObject(MakeRecord(7101)) || !transaction->UpsertLazyRule(MakeLazyRule(7103, 7101)) ||
+    zone.lazy_rules.push_back(MakeLazyRule(LazyRuleId{7102}, PersistentObjectId{7101}));
+    if (!transaction || !transaction->UpsertObject(MakeRecord(7101)) || !transaction->UpsertLazyRule(MakeLazyRule(LazyRuleId{7103}, PersistentObjectId{7101})) ||
         !transaction->UpsertZoneOverride(zone) || !transaction->Commit())
     {
         return false;
@@ -920,7 +924,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     ZoneOverrideSnapshot zone{};
     zone.location = MakeLocation(12, "zone/invalid");
     zone.record_ids = {PersistentObjectId{7201}, PersistentObjectId{7201}};
-    zone.lazy_rules.push_back(MakeLazyRule(7202, 7201));
+    zone.lazy_rules.push_back(MakeLazyRule(LazyRuleId{7202}, PersistentObjectId{7201}));
     if (!transaction || !transaction->UpsertZoneOverride(zone)) return false;
     const auto commit = transaction->Commit();
     return !commit && commit.GetError().HasCode("persistence.invalid_snapshot") && transaction->GetState() == SaveTransactionState::Failed &&
@@ -930,7 +934,7 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
 [[nodiscard]] bool TestRichSnapshotRoundTripsThroughInMemoryBackend()
 {
     InMemoryPersistenceBackend backend;
-    const PersistenceSnapshot expected = MakeBackendSnapshot(7300u, 9u);
+    const PersistenceSnapshot expected = MakeBackendSnapshot(PersistentObjectId{7300u}, 9u);
     if (!backend.CommitSnapshot(expected, PersistenceDurability::SaveRequired)) return false;
     const auto loaded = backend.Load();
     return loaded && SameSnapshot(loaded.Value(), expected);
@@ -979,15 +983,15 @@ concept HasOpenTransaction = requires(T& value) { value.OpenTransaction(); };
     auto backend = std::make_shared<ControlledBackend>();
     PersistenceOptions options{};
     options.backend = backend;
-    options.durability = static_cast<PersistenceDurability>(999);
+    options.durability = static_cast<PersistenceDurability>(999); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange): intentional unknown fixed-underlying enum rejection control.
     const auto services = CreatePersistenceServices(options);
     return !services && services.GetError().HasCode("persistence.invalid_durability") && backend->load_count == 0 && backend->save_count == 0;
 }
 
 [[nodiscard]] bool TestInMemoryBackendStrongCommitUnderAllocationFaults()
 {
-    const PersistenceSnapshot previous = MakeBackendSnapshot(7000u, 7u);
-    const PersistenceSnapshot next = MakeBackendSnapshot(8000u, 8u);
+    const PersistenceSnapshot previous = MakeBackendSnapshot(PersistentObjectId{7000u}, 7u);
+    const PersistenceSnapshot next = MakeBackendSnapshot(PersistentObjectId{8000u}, 8u);
 
     InMemoryPersistenceBackend backend;
     if (!backend.CommitSnapshot(previous, PersistenceDurability::MemoryOnly))
@@ -1162,7 +1166,7 @@ int main(int argc, char** argv)
     {
         if (!test.run())
         {
-            std::cerr << "Persistence test failed: " << test.name << "\n";
+            std::fprintf(stderr, "Persistence test failed: %s\n", test.name);
             return 1;
         }
     }

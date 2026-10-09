@@ -1,0 +1,38 @@
+﻿MS6.6 SHADOW PROBE ISOLATION
+Date: 2026-10-09T15:55:40.0467857+02:00
+
+=== full-debug / Debug ===
+CMake profile correct: True
+Probe macro present: False
+Probe macro correct: True
+Matching objects: 1
+Object: E:\Epidemic\build\full-debug\EngineBase\Core\EpidemicCore.dir\Debug\event_bus.obj
+dumpbin exit code: 0
+Shadow symbols present: False
+Symbol result correct: True
+RESULT: PASS
+
+=== full-release / Release ===
+CMake profile correct: True
+Probe macro present: False
+Probe macro correct: True
+Matching objects: 1
+Object: E:\Epidemic\build\full-release\EngineBase\Core\EpidemicCore.dir\Release\event_bus.obj
+dumpbin exit code: 0
+Shadow symbols present: False
+Symbol result correct: True
+RESULT: PASS
+
+=== audit-deep / Release ===
+CMake profile correct: True
+Probe macro present: True
+Probe macro correct: True
+Matching objects: 1
+Object: E:\Epidemic\build\audit-deep\EngineBase\Core\EpidemicCore.dir\Release\event_bus.obj
+dumpbin exit code: 0
+Shadow symbols present: True
+Symbol result correct: True
+RESULT: PASS
+
+Total failures: 0
+OVERALL: PASS

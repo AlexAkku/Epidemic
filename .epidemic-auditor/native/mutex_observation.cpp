@@ -12,6 +12,8 @@
 #include <vector>
 
 namespace {
+    constexpr std::size_t kMaxBufferedEventBytes =
+    std::size_t{8} * 1024U * 1024U;
 struct Handle {
     HANDLE value = nullptr;
     ~Handle() { if (value && value != INVALID_HANDLE_VALUE) CloseHandle(value); }
@@ -32,7 +34,12 @@ std::string text(const std::wstring& value) {
     std::ostringstream result; result << '"';
     for (const unsigned char character : bytes) {
         if (character == '"' || character == '\\') result << '\\' << character;
-        else if (character < 32) result << "\\u00" << "0123456789abcdef"[character >> 4] << "0123456789abcdef"[character & 15];
+        else if (character < 32) {
+        const auto code = static_cast<unsigned int>(character);
+        result << "\\u00"
+            << "0123456789abcdef"[code >> 4U]
+            << "0123456789abcdef"[code & 15U];
+    }
         else result << character;
     }
     return result.str() + '"';
@@ -109,7 +116,7 @@ int observe_exceptions(
     FILETIME created{}, exited{}, kernel{}, user{};
     if (!GetProcessTimes(process.value, &created, &exited, &kernel, &user))
         throw std::runtime_error("exception process identity unavailable");
-    const auto epoch = (static_cast<unsigned long long>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+    const auto epoch = (static_cast<unsigned long long>(created.dwHighDateTime) << 32U) | created.dwLowDateTime;
     LARGE_INTEGER frequency{};
     if (!QueryPerformanceFrequency(&frequency)) throw std::runtime_error("exception QPC unavailable");
     SymSetOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_NO_PROMPTS);
@@ -134,8 +141,8 @@ int observe_exceptions(
     const auto thread_cpu = [&](DWORD tid, unsigned long long& value) {
         FILETIME creation{}, exit{}, system{}, application{};
         if (!threads.count(tid) || !GetThreadTimes(threads.at(tid), &creation, &exit, &system, &application)) return false;
-        value = ((static_cast<unsigned long long>(system.dwHighDateTime) << 32) | system.dwLowDateTime)
-              + ((static_cast<unsigned long long>(application.dwHighDateTime) << 32) | application.dwLowDateTime);
+        value = ((static_cast<unsigned long long>(system.dwHighDateTime) << 32U) | system.dwLowDateTime)
+              + ((static_cast<unsigned long long>(application.dwHighDateTime) << 32U) | application.dwLowDateTime);
         return true;
     };
     std::size_t observation_bytes = 0;
@@ -259,7 +266,7 @@ int observe_exceptions(
                         if (previous.cpu_available && thread_cpu(tid, cpu) && cpu >= previous.cpu)
                             suffix += ",\"thread_cpu_interval_100ns\":" + std::to_string(cpu - previous.cpu);
                         suffix += ",\"continuation_scope\":\"debugger-observed target marker; handler-exclusive cost unknown\"}";
-                        if (suffix.size() > 8 * 1024 * 1024 - observation_bytes) loss = true;
+                        if (suffix.size() > kMaxBufferedEventBytes - observation_bytes) loss = true;
                         else {
                             auto& row = observations.at(previous.index);
                             row.pop_back(); row += suffix;
@@ -315,7 +322,7 @@ int observe_exceptions(
                         row << ',' << captured_frame(stack.AddrPC.Offset);
                     }
                     auto payload = row.str() + "]}";
-                    if (payload.size() > 65536 || payload.size() > 8 * 1024 * 1024 - api_bytes) api_loss = true;
+                    if (payload.size() > 65536 || payload.size() > kMaxBufferedEventBytes - api_bytes) api_loss = true;
                     else { api_bytes += payload.size(); api_calls.push_back(std::move(payload)); }
                 }
                 // All debuggee threads are stopped at this event. Keep peers
@@ -358,7 +365,7 @@ int observe_exceptions(
                         }
                     }
                     auto payload = row.str() + "]}";
-                    if (payload.size() > 65536 || payload.size() > 8 * 1024 * 1024 - observation_bytes) loss = true;
+                    if (payload.size() > 65536 || payload.size() > kMaxBufferedEventBytes - observation_bytes) loss = true;
                     else {
                         observation_bytes += payload.size(); observations.push_back(std::move(payload));
                         if (info.dwFirstChance)
@@ -372,12 +379,42 @@ int observe_exceptions(
             throw std::runtime_error("exception continue failed");
     }
     const bool deadline_exceeded = !owned.exited && GetTickCount64() >= deadline;
+    std::vector<std::string> timeout_threads;
+    if (deadline_exceeded) {
+        for (const auto& thread : threads) {
+            if (timeout_threads.size() == 16) break;
+            if (SuspendThread(thread.second) == MAXDWORD) {
+                timeout_threads.push_back("{\"tid\":" + std::to_string(thread.first) + ",\"context_available\":false}");
+                continue;
+            }
+            CONTEXT context{};
+            context.ContextFlags = CONTEXT_FULL;
+            std::ostringstream row;
+            row << "{\"tid\":" << thread.first;
+            const bool available = GetThreadContext(thread.second, &context) != FALSE;
+            row << ",\"context_available\":" << (available ? "true" : "false") << ",\"stack\":[";
+            if (available) {
+                row << captured_frame(context.Rip);
+                STACKFRAME64 stack{};
+                stack.AddrPC = {context.Rip, 0, AddrModeFlat};
+                stack.AddrFrame = {context.Rbp, 0, AddrModeFlat};
+                stack.AddrStack = {context.Rsp, 0, AddrModeFlat};
+                for (unsigned depth = 1; depth < 16 && StackWalk64(IMAGE_FILE_MACHINE_AMD64, process.value,
+                     thread.second, &stack, &context, nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr); ++depth) {
+                    if (!stack.AddrPC.Offset) break;
+                    row << ',' << captured_frame(stack.AddrPC.Offset);
+                }
+            }
+            if (ResumeThread(thread.second) == MAXDWORD) throw std::runtime_error("timeout thread resume failed");
+            timeout_threads.push_back(row.str() + "]}");
+        }
+    }
     const auto end = stamp();
     const bool api_complete = !api_loss && owned.exited && api_steps.empty() && !api_points.empty();
     const bool complete = owned.exited && !loss && api_complete;
     const bool times = owned.exited && GetProcessTimes(process.value, &created, &exited, &kernel, &user);
-    const auto cpu = ((static_cast<unsigned long long>(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime)
-                   + ((static_cast<unsigned long long>(user.dwHighDateTime) << 32) | user.dwLowDateTime);
+    const auto cpu = ((static_cast<unsigned long long>(kernel.dwHighDateTime) << 32U) | kernel.dwLowDateTime)
+                   + ((static_cast<unsigned long long>(user.dwHighDateTime) << 32U) | user.dwLowDateTime);
     std::cout << "{\"schemaVersion\":1,\"provenance\":\"external\",\"confidence\":\"observed\",\"complete\":"
             << (complete ? "true" : "false")
             << ",\"pid\":" << child.dwProcessId
@@ -407,25 +444,26 @@ int observe_exceptions(
     }
     std::cout << "],\"api_calls\":[";
     for (std::size_t index = 0; index < api_calls.size(); ++index) std::cout << (index ? "," : "") << api_calls[index];
-    std::cout << "],\"scope\":\"Owned fixture debugger; recovery markers describe controlled fixture continuation; process CPU includes all target work, not per-exception cost\"}" << std::endl;
+    std::cout << "],\"timeout_threads\":[";
+    for (std::size_t index = 0; index < timeout_threads.size(); ++index) std::cout << (index ? "," : "") << timeout_threads[index];
+    std::cout << "],\"timeout_thread_capacity\":16,\"scope\":\"Owned target debugger; recovery markers describe target continuation; process CPU includes all target work, not per-exception cost\"}" << std::endl;
     return complete ? 0 : 2;
 #endif
 }
 
-int observe_exception_fixture(const wchar_t* binary, const wchar_t* variant) {
-    const std::wstring mode(variant);
+int observe_exception_fixture(const wchar_t* binary, std::wstring mode) {
     if (mode != L"handled" && mode != L"crash" && mode != L"storm" && mode != L"assert" && mode != L"contract"
         && mode != L"verifier-good" && mode != L"verifier-bad")
         throw std::runtime_error("invalid exception fixture variant");
     return observe_exceptions(binary, {mode}, 15000UL);
 }
 
-int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant) {
+int observe_mutex_fixture(const wchar_t* binary, const std::wstring& mode) {
 #if !defined(_M_X64)
-    (void)binary; (void)variant;
+    (void)binary; (void)mode;
     throw std::runtime_error("mutex native debugger requires x64");
 #else
-    const std::wstring mode(variant), image(binary);
+    const std::wstring image(binary);
     if (mode != L"good" && mode != L"bad" && mode != L"existing") throw std::runtime_error("invalid mutex fixture variant");
     if (image.find(L'"') != std::wstring::npos) throw std::runtime_error("invalid mutex fixture image");
     GUID id{}; wchar_t guid[40]{};
@@ -442,7 +480,7 @@ int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant) {
     if (!DebugSetProcessKillOnExit(TRUE)) throw std::runtime_error("mutex debugger kill-on-exit failed");
     FILETIME created{}, exited{}, kernel{}, user{};
     if (!GetProcessTimes(process.value, &created, &exited, &kernel, &user)) throw std::runtime_error("mutex creation identity unavailable");
-    const auto creation = (static_cast<unsigned long long>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+    const auto creation = (static_cast<unsigned long long>(created.dwHighDateTime) << 32U) | created.dwLowDateTime;
     SymSetOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_NO_PROMPTS);
     if (!SymInitializeW(process.value, nullptr, FALSE)) throw std::runtime_error("mutex symbol initialization failed");
     struct Symbols { HANDLE process; ~Symbols() { SymCleanup(process); } } symbols{process.value};

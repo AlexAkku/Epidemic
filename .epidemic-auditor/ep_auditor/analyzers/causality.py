@@ -295,7 +295,8 @@ def query_action(run, action_id: str) -> dict:
     run = Path(run)
     if not isinstance(action_id, str) or not IDENTIFIER.fullmatch(action_id):
         raise EvidenceError('invalid ActionId')
-    manifest = RawEvidence(run).verify()
+    raw = RawEvidence(run)
+    manifest = raw.verify()
     publish_family(run, 'causal', verify_only=True)
     lineage = EvidenceLineage(run)
     report = lineage.verify('metrics', 'causal/actions.json')['records'][0]
@@ -345,6 +346,35 @@ def query_action(run, action_id: str) -> dict:
         diagnostic_complete = diagnostic_report.get('complete') is True
         findings = [row for row in diagnostic_report.get('findings', [])
                     if row.get('action_id') == action_id]
+    exceptions = [row for row in diagnostics
+                  if row['type'].startswith('exception.') or row['type'] in {'crash', 'assert', 'contract'}]
+    native_exceptions_available = any(row['path'] == 'raw/modules/api_observer_binding.json'
+                                     for row in manifest['raw_files'])
+    if native_exceptions_available:
+        import json
+        from ep_auditor.collectors.modules import publish_api_snapshot
+        # Replay verifies the raw/helper/target identity, exit and original graph.
+        publish_api_snapshot(run, verify_only=True)
+        native_report = lineage.verify('metrics', 'diagnostics/native_exceptions.json')['records'][0]
+        snapshot = json.loads(raw.read_bytes('process/stdout.bin'))
+        diagnostic_complete = diagnostic_complete and native_report['complete'] is True
+        reference = lineage.reference('raw', 'process/stdout.bin')
+        for index, row in enumerate(snapshot['exceptions']):
+            thread = (snapshot['pid'], snapshot['process_epoch'], row['tid'])
+            timestamp = row['qpc'] * 1_000_000_000 // snapshot['qpc_frequency']
+            if thread not in threads or not action['start_ns'] <= timestamp <= action['end_ns']:
+                continue
+            # Interval membership is derived; it never creates a causal edge or
+            # asserts handler recovery merely because a first chance was seen.
+            fact = native_report['events'][index]
+            exceptions.append(dict(row, type='exception.first_chance' if row['first_chance'] else 'exception.second_chance',
+                pid=thread[0], process_epoch=thread[1], timestamp_ns=timestamp,
+                action_id=action_id, action_membership_confidence='derived',
+                action_membership_scope='observed QPC interval on an explicitly linked thread; no causal inference',
+                handling={'classification': fact['classification'], 'confidence': 'derived',
+                          'continuation_observed': fact['continuation_observed']},
+                provenance='external', confidence='observed', rawReference=reference,
+                raw_json_pointer='/exceptions/' + str(index)))
     parents = {row['event_id']: row for row in graph['nodes']}
     diagnostic_events = {row.get('event_id'): row for row in diagnostics if row.get('event_id')}
     finding_links, unresolved_finding_links = [], []
@@ -375,7 +405,8 @@ def query_action(run, action_id: str) -> dict:
             'call_tree_availability': 'observed' if files else 'UNKNOWN',
             'diagnostic_availability': 'observed_engine_probe_stream' if diagnostic_path.is_file() else 'UNKNOWN',
             'absence_semantics': 'Empty categories do not establish zero activity or memory safety; unobserved activity is UNKNOWN',
-            'exceptions': [row for row in diagnostics if row['type'].startswith('exception.') or row['type'] in {'crash','assert','contract'}],
+            'exceptions': exceptions,
+            'native_exception_availability': 'observed_external_debugger' if native_exceptions_available else 'UNKNOWN',
             'allocations': [row for row in diagnostics if row['type'] in {'allocation','deallocation','memory.error'}],
             'io': [row for row in diagnostics if row['type'].startswith(('io.','network.'))],
             'findings': findings,

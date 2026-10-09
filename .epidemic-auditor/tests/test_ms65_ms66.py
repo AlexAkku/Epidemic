@@ -283,6 +283,67 @@ class DiagnosticAnalyzerTests(unittest.TestCase):
 
 
 class CapturePipelineTests(unittest.TestCase):
+    def test_interactive_event_log_pages_selects_action_and_rejects_tampering(self):
+        from ep_auditor.ui.main_window import AuditorWindow
+        from ep_auditor.core.events import EventBus
+        from ep_auditor.core.run_manager import RunManager
+        from ep_auditor.core.storage import RunStorage
+        from test_core import AuditorCoreTests
+        import time
+        rows = [event('action.start', 1, action_id='a', name='Pickup')]
+        rows += [event('state.changed', i, action_id='a') for i in range(2, 61)]
+        rows += [event('action.end', 61, action_id='a')]
+        self.write_stream('causal', rows)
+        capture_streams(self.root, 'causal')
+        self.seal()
+        publish_telemetry(self.root)
+        config, _ = AuditorCoreTests()._config(self.root)
+        storage, events = RunStorage(config), EventBus()
+        window = AuditorWindow(config, RunManager(config, storage, events), storage, events)
+        window.root.withdraw()
+        self.addCleanup(window._on_close)
+        def wait():
+            deadline = time.monotonic() + 30
+            while window.trace_future is not None and time.monotonic() < deadline:
+                window.root.update()
+                window._poll_trace()
+                time.sleep(.01)
+            self.assertIsNone(window.trace_future, 'UI query timed out')
+        window._request_trace(self.root, reset=True)
+        wait()
+        self.assertIsNotNone(window.trace_result, window.trace_status.get())
+        self.assertTrue(window.trace_result[0]['complete'], window.trace_status.get())
+        self.assertEqual(len(window.trace_tree.get_children()), 50,
+                         (window.trace_status.get(), window.trace_result[0]['total']))
+        window._trace_page(50)
+        wait()
+        self.assertEqual(len(window.trace_tree.get_children()), 11)
+        window.trace_choice.current(1)
+        window.trace_choice.event_generate('<<ComboboxSelected>>')
+        window.root.update()
+        wait()
+        self.assertEqual(window.trace_result[1]['action']['id'], 'a')
+        window.trace_tree.selection_set('0')
+        window._show_trace_event()
+        self.assertIn('rawReference', window.trace_details.get('1.0', 'end'))
+        window.trace_category.set('state_changes')
+        window._trace_detail_page(0, reset=True)
+        detail = json.loads(window.trace_details.get('1.0', 'end'))
+        self.assertEqual(detail['total'], 59)
+        self.assertEqual(len(detail['records']), 50)
+        window._trace_detail_page(50)
+        self.assertEqual(len(json.loads(window.trace_details.get('1.0', 'end'))['records']), 9)
+        captured = self.root / 'raw/causal/stream-0.jsonl'
+        self.assertTrue(captured.is_file())
+        import stat
+        captured.chmod(stat.S_IREAD | stat.S_IWRITE)  # Simulate tampering of this test-owned sealed raw file.
+        captured.write_bytes(b'forged')
+        window._request_trace(self.root, reset=True)
+        wait()
+        self.assertIsNone(window.trace_result)
+        self.assertEqual(window.trace_tree.get_children(), ())
+        self.assertIn('Evidence unavailable:', window.trace_status.get())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -686,6 +747,8 @@ class NativeDiagnosticTests(unittest.TestCase):
             self.assertTrue(report['complete'])
             self.assertEqual(report['provenance'], 'external')
             self.assertGreater(report['process_epoch'], 0)
+            from ep_auditor.core.lifecycle import seal_run_capture
+            seal_run_capture(run)
             return report
 
     def test_physical_scheduler_event_bus_dag_and_context(self):
@@ -734,8 +797,74 @@ class NativeDiagnosticTests(unittest.TestCase):
             detached = [row for row in nodes.values() if row['type'] == 'state.request' and not row['parent_event_id']]
             self.assertEqual(len(detached), 1)
             self.assertFalse(any(edge['target'] == detached[0]['event_id'] for edge in graph['edges']))
+            from ep_auditor.analyzers.causality import query_action
+            allocated_action = query_action(run.run_dir, 'causal-action')
+            allocations = allocated_action['allocations']
+            self.assertEqual({row['type'] for row in allocations}, {'allocation', 'deallocation'})
+            self.assertTrue(all(row['size_bytes'] == 512 for row in allocations))
+            self.assertTrue(all(row['call_link_status'] == 'explicit_compiler_entry_verified' for row in allocations))
+            self.assertTrue(all(row['call_id'] in actual_calls for row in allocations))
+            self.assertTrue(all(row['stack'] and all(type(address) is int and address > 0 for address in row['stack'])
+                                for row in allocations))
+            diagnostic_rows = EvidenceLineage(run.run_dir).verify('normalized', 'diagnostics/events.json')['records']
+            self.assertTrue(diagnostic_rows)
+            self.assertTrue(all(row['provenance'] == 'engine_probe' and row['confidence'] == 'declared'
+                                for row in diagnostic_rows))
+            metrics = EvidenceLineage(run.run_dir).verify('metrics', 'diagnostics/report.json')['records'][0]['allocation_metrics']
+            allocated = next(row for row in allocations if row['type'] == 'allocation')
+            released = next(row for row in allocations if row['type'] == 'deallocation')
+            self.assertEqual(allocated['address'], released['address'])
+            lifetime = next(row for row in metrics['lifetimes'] if row['allocation_event_id'] == allocated['event_id'])
+            self.assertEqual(lifetime['deallocation_event_id'], released['event_id'])
+            self.assertEqual(lifetime['duration_ns'], released['timestamp_ns'] - allocated['timestamp_ns'])
+            self.assertGreater(lifetime['duration_ns'], 0)
+            self.assertEqual(metrics['by_function'][allocated['function_id']], {'count': 1, 'bytes': 512})
+            self.assertEqual(metrics['by_action']['causal-action'], {'count': 1, 'bytes': 512})
+            span = max(row['timestamp_ns'] for row in diagnostic_rows) - min(row['timestamp_ns'] for row in diagnostic_rows)
+            self.assertAlmostEqual(metrics['rate_per_second'], 1e9 / span)
+            self.assertFalse(metrics['whole_heap_observed'])
             finalize_run(run, 'PASS', {})
             self.assertEqual(authoritative_run(run.run_dir)['status'], 'PASS')
+            self.assert_physical_action_ui(config, run, 'causal-action')
+
+    def assert_physical_action_ui(self, config, run, action_id):
+        from ep_auditor.ui.main_window import AuditorWindow
+        from ep_auditor.core.events import EventBus
+        from ep_auditor.core.run_manager import RunManager
+        from ep_auditor.core.storage import RunStorage
+        import time
+        storage, events = RunStorage(config), EventBus()
+        window = AuditorWindow(config, RunManager(config, storage, events), storage, events)
+        try:
+            window.notebook.select(window.actions_tab)
+            def wait():
+                deadline = time.monotonic() + 120
+                while window.trace_future is not None and time.monotonic() < deadline:
+                    window.root.update()
+                    window._poll_trace()
+                    time.sleep(.02)
+                self.assertIsNone(window.trace_future, 'physical Action UI query timed out')
+                self.assertIsNotNone(window.trace_result, window.trace_status.get())
+            window._request_trace(run.run_dir, reset=True)
+            wait()
+            index = next(i for i, a in enumerate(window.trace_result[0]['actions']) if a['id'] == action_id)
+            window.trace_choice.current(index + 1)
+            window.trace_choice.event_generate('<<ComboboxSelected>>')
+            window.root.update()
+            wait()
+            query = window.trace_result[1]
+            self.assertTrue(query['complete'])
+            self.assertEqual(query['action']['run_id'], run.run_id)
+            self.assertTrue(query['call_tree'])
+            self.assertTrue(query['causal_graph']['edges'])
+            self.assertTrue(window.trace_tree.get_children())
+            window.trace_category.set('function_profile')
+            window._trace_detail_page(0, reset=True)
+            rendered = json.loads(window.trace_details.get('1.0', 'end'))
+            self.assertEqual(rendered['total'], len(query['function_profile']))
+            self.assertTrue(rendered['records'])
+        finally:
+            window._on_close()
 
     def test_physical_dispatcher_sync_event_and_cancel_context(self):
         from collections import Counter
@@ -952,7 +1081,7 @@ class NativeDiagnosticTests(unittest.TestCase):
         cases = (
             (self.root / 'build/audit-deep/EngineFramework/build/tests/Release/EpidemicGameFrameworkItemsInventoryTests.exe', '--auditor-pickup', 'pickup'),
             (self.root / 'build/audit-deep/EngineFramework/build/tests/Release/EpidemicGameFrameworkCombatTests.exe', '--auditor-combat', 'combat'),
-            (self.root / 'build/audit-deep/EngineFramework/build/tests/Release/EpidemicGameFrameworkSaveGameTests.exe', '--auditor-save-load', 'save-load'),
+            (self.root / 'build/audit-deep/EngineFramework/build/tests/Release/EpidemicExtendedGameplayIntegrationSaveParticipantTests.exe', '--auditor-save-load', 'save-load'),
             (self.root / 'build/audit-deep/EngineRuntime/Streaming/tests/Release/EpidemicRuntimeStreamingTests.exe', '--auditor-streaming', 'streaming'),
             (self.binary('EpidemicAuditorShadowFixture'), 'menu', 'menu'),
         )
@@ -977,6 +1106,16 @@ class NativeDiagnosticTests(unittest.TestCase):
                 if name == 'save-load':
                     self.assertEqual({row['type'] for row in query['io']}, {'io.read','io.write'})
                     self.assertTrue(all(row['bytes'] > 0 and row['duration_ns'] > 0 for row in query['io']))
+                    # Decode's rejected corrupt package uses a C++ exception internally.
+                    # /Gh /GH has no unwind EXIT: keep this independent negative
+                    # capture INCOMPLETE instead of certifying a fabricated call tree.
+                    bad = RunStorage(config).new_run('scenario-negative', 'save-load-corrupt', 'Deep')
+                    rejected = ManagedProcessRunner(config).run([str(binary), '--auditor-save-load-corrupt'], binary.parent,
+                                                               bad.run_dir, 'Deep', timeout=45)
+                    self.assertEqual(rejected.exit_code, 0, 'engine must reject the corrupt package without changing live inventory')
+                    seal_run_capture(bad)
+                    incomplete = query_action(bad.run_dir, 'save-load-action')
+                    self.assertFalse(incomplete['complete'], 'unobserved exception unwind must never claim COMPLETE')
                 elif name == 'menu':
                     self.assertEqual(query['call_tree_availability'], 'UNKNOWN')
                 else:
@@ -1059,6 +1198,10 @@ class NativeDiagnosticTests(unittest.TestCase):
                 report = capture_verifier_fixture(config, run.run_dir,
                     self.binary('EpidemicAuditorShadowFixture'), mode, helper=self.binary('EpidemicAuditorObservation'))
                 self.assertEqual(report['memory_safety_verdict'], 'UNKNOWN')
+                if mode == 'verifier-good':
+                    snapshot = json.loads(RawEvidence(run.run_dir).read_bytes('process/stdout.bin'))
+                    memory_apis = {row['name'] for row in snapshot['api_calls'] if row['family'] == 'memory'}
+                    self.assertTrue({'VirtualAlloc', 'VirtualFree'} <= memory_apis, memory_apis)
                 if mode == 'leak-bad':
                     self.assertTrue(report['candidates'])
                 finalize_run(run, 'PASS', {})
@@ -1066,11 +1209,18 @@ class NativeDiagnosticTests(unittest.TestCase):
                 self.assertEqual(authoritative_run(run.run_dir)['status'], expected)
                 published = EvidenceLineage(run.run_dir).verify('normalized', 'diagnostics/verifier.json')
                 self.assertTrue(published['records'][0]['activation_verified'])
-                path = run.run_dir / 'normalized/diagnostics/verifier.json'
-                published['records'][0]['activation_verified'] = False
-                path.write_text(json.dumps(published), encoding='utf-8')
-                with self.assertRaises(EvidenceError):
-                    authoritative_run(run.run_dir)
+                # Preserve the physical capture. Tamper only a verified independent
+                # copy, with a positive control before changing its derived record.
+                import shutil
+                with tempfile.TemporaryDirectory() as tampered:
+                    clone = Path(tampered) / 'capture'
+                    shutil.copytree(run.run_dir, clone)
+                    self.assertEqual(authoritative_run(clone)['status'], expected)
+                    path = clone / 'normalized/diagnostics/verifier.json'
+                    published['records'][0]['activation_verified'] = False
+                    path.write_text(json.dumps(published), encoding='utf-8')
+                    with self.assertRaises(EvidenceError):
+                        authoritative_run(clone)
 
     def test_physical_api_export_entries_and_call_stacks(self):
         from test_core import AuditorCoreTests
@@ -1120,11 +1270,17 @@ class NativeDiagnosticTests(unittest.TestCase):
             self.assertTrue(any(edge['api'] == 'ReadFile' and edge['raw_json_pointer'].startswith('/api_calls/')
                                 for edge in published['edges']))
             self.assertTrue(telemetry_complete(run.run_dir))
-            graph_path = run.run_dir / 'graphs/modules/api_entry_graph.json'
-            changed = json.loads(graph_path.read_bytes())
-            changed['records'][0]['counts']['ReadFile'] += 1
-            graph_path.write_text(json.dumps(changed), encoding='utf-8')
-            self.assertFalse(telemetry_complete(run.run_dir))
+            # Keep the sealed physical capture intact; corrupt only a verified copy.
+            import shutil
+            with tempfile.TemporaryDirectory() as tampered:
+                clone = Path(tampered) / 'capture'
+                shutil.copytree(run.run_dir, clone)
+                self.assertTrue(telemetry_complete(clone))
+                graph_path = clone / 'graphs/modules/api_entry_graph.json'
+                changed = json.loads(graph_path.read_bytes())
+                changed['records'][0]['counts']['ReadFile'] += 1
+                graph_path.write_text(json.dumps(changed), encoding='utf-8')
+                self.assertFalse(telemetry_complete(clone))
 
     def test_physical_second_chance_crash_assert_contract(self):
         for mode, code in (('crash', 0xE0424242), ('assert', 0xC0000420), ('contract', 0xE0434242)):
@@ -1169,22 +1325,100 @@ class NativeDiagnosticTests(unittest.TestCase):
             self.assertTrue(all(row.get('stack') for row in rows if row['type'] in {'allocation', 'deallocation', 'io.read'}))
 
     def test_physical_asan_good_and_memory_failures(self):
+        from test_core import AuditorCoreTests
+        from ep_auditor.core.process import ManagedProcessRunner
+        from ep_auditor.core.storage import RunStorage
+        from ep_auditor.core.lifecycle import seal_run_capture, finalize_run, authoritative_run
+        from ep_auditor.collectors.sanitizer import publish_sanitizer
         fixture = self.root / 'build/auditor-native/bin/Release/EpidemicAuditorMemoryFixture.exe'
         self.assertTrue(fixture.is_file(), 'mandatory Release ASan fixture must be built')
-        env = dict(os.environ, ASAN_OPTIONS='halt_on_error=1:detect_leaks=0:detect_stack_use_after_return=0')
-        good = subprocess.run([str(fixture), 'memory-good'], capture_output=True, env=env, timeout=30)
-        self.assertEqual(good.returncode, 0, good.stderr[-1024:])
-        self.assertEqual(parse_stderr(good.stderr)['candidates'], [])
-        for mode, expected in (('uaf', 'heap-use-after-free'), ('double-free', 'double-free'),
-                               ('oob', 'heap-buffer-overflow'), ('heap-corruption', 'heap-buffer-overflow')):
-            with self.subTest(mode=mode):
-                result = subprocess.run([str(fixture), mode], capture_output=True, env=env, timeout=30)
-                self.assertNotEqual(result.returncode, 0)
-                report = parse_stderr(result.stderr)
-                self.assertTrue(any(expected in row['kind'] for row in report['candidates']), result.stderr[-1024:])
-                # A genuine positive fixture validates the profile; arbitrary
-                # future target stderr remains a tool report rather than proof.
+        options = {'ASAN_OPTIONS': 'halt_on_error=1:detect_leaks=0:detect_stack_use_after_return=0'}
+        for mode, expected in (('memory-good', None), ('uaf', 'heap-use-after-free'),
+                               ('double-free', 'double-free'), ('oob', 'heap-buffer-overflow'),
+                               ('heap-corruption', 'heap-buffer-overflow')):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary:
+                config, _ = AuditorCoreTests()._config(Path(temporary))
+                run = RunStorage(config).new_run('asan', mode, 'Fast')
+                result = ManagedProcessRunner(config).run([str(fixture), mode], fixture.parent,
+                    run.run_dir, 'Fast', env_extra=options, timeout=30)
+                stderr, raw = RawEvidence(run.run_dir).read_capture('process/stderr.bin')
+                self.assertTrue(raw['complete'])
+                report = parse_stderr(stderr)
+                if expected is None:
+                    self.assertEqual(result.exit_code, 0, stderr[-1024:])
+                    self.assertEqual(report['candidates'], [])
+                else:
+                    self.assertNotEqual(result.exit_code, 0)
+                    self.assertTrue(any(expected in row['kind'] for row in report['candidates']), stderr[-1024:])
                 self.assertEqual(report['memory_safety_verdict'], 'UNKNOWN')
+                seal_run_capture(run)
+                publish_sanitizer(run.run_dir)
+                captured = EvidenceLineage(run.run_dir).verify('normalized', 'diagnostics/sanitizer_stderr.json')
+                self.assertEqual(captured['records'][0]['candidates'], report['candidates'])
+                self.assertEqual(captured['records'][0]['confidence'], 'heuristic')
+                finalize_run(run, 'PASS', {})
+                self.assertEqual(authoritative_run(run.run_dir)['status'], 'PASS' if expected is None else 'FAIL')
+                if expected is not None:
+                    import shutil
+                    with tempfile.TemporaryDirectory() as tampered:
+                        clone = Path(tampered) / 'capture'
+                        shutil.copytree(run.run_dir, clone)
+                        self.assertEqual(authoritative_run(clone)['status'], 'FAIL')
+                        status_path = clone / 'run.json'
+                        forged = json.loads(status_path.read_bytes())
+                        forged['status'] = 'PASS'
+                        status_path.write_text(json.dumps(forged), encoding='utf-8')
+                        with self.assertRaises(EvidenceError):
+                            authoritative_run(clone)
+
+    def test_physical_production_action_native_exception(self):
+        from test_core import AuditorCoreTests
+        from ep_auditor.core.storage import RunStorage
+        from ep_auditor.core.lifecycle import seal_run_capture
+        from ep_auditor.collectors.modules import capture_api_snapshot
+        from ep_auditor.analyzers.causality import query_action
+        binary = self.root / 'build/audit-deep/EngineFramework/build/tests/Release/EpidemicExtendedGameplayIntegrationSaveParticipantTests.exe'
+        self.assertTrue(binary.is_file(), 'mandatory production inventory scenario must be built')
+        helper = self.binary('EpidemicAuditorObservation')
+        with tempfile.TemporaryDirectory() as temporary:
+            config, _ = AuditorCoreTests()._config(Path(temporary))
+            run = RunStorage(config).new_run('scenario-negative', 'production Action exception', 'Deep')
+            snapshot, _ = capture_api_snapshot(config, run.run_dir, binary,
+                ['--auditor-save-load-corrupt'], helper=helper)
+            self.assertEqual(snapshot['exit_code'], 0, 'real decoder must reject corruption and preserve live inventory')
+            self.assertTrue(any(row['code'] == 0xE06D7363 for row in snapshot['exceptions']),
+                            'the real decoder C++ exception must be independently observed')
+            seal_run_capture(run)
+            query = query_action(run.run_dir, 'save-load-action')
+            self.assertFalse(query['complete'], 'missing unwind EXIT must remain INCOMPLETE')
+            native = [row for row in query['exceptions'] if row['provenance'] == 'external']
+            self.assertTrue(native, 'Action query must not discard independent native exceptions')
+            self.assertTrue(any(row['code'] == 0xE06D7363 for row in native))
+            self.assertTrue(any('DecodeSaveGameImage' in (frame.get('function') or '')
+                                for row in native for frame in row['stack']))
+            self.assertEqual(query['native_exception_availability'], 'observed_external_debugger')
+            threads = {tuple(row) for row in query['threads']}
+            for row in native:
+                self.assertIn((row['pid'], row['process_epoch'], row['tid']), threads)
+                self.assertLessEqual(query['action']['start_ns'], row['timestamp_ns'])
+                self.assertLessEqual(row['timestamp_ns'], query['action']['end_ns'])
+                self.assertTrue(row['stack'])
+                self.assertEqual(row['confidence'], 'observed')
+                self.assertEqual(row['action_membership_confidence'], 'derived')
+                self.assertEqual(row['handling']['classification'], 'UNKNOWN')
+                self.assertFalse(row['handling']['continuation_observed'])
+                self.assertEqual(row['rawReference']['path'], 'process/stdout.bin')
+                self.assertTrue(row['raw_json_pointer'].startswith('/exceptions/'))
+            import shutil
+            with tempfile.TemporaryDirectory() as tampered:
+                clone = Path(tampered) / 'capture'
+                shutil.copytree(run.run_dir, clone)
+                self.assertTrue(query_action(clone, 'save-load-action')['exceptions'])
+                raw_path = clone / 'raw/process/stdout.bin'
+                os.chmod(raw_path, 0o600)
+                raw_path.write_bytes(raw_path.read_bytes() + b' ')
+                with self.assertRaises(EvidenceError):
+                    query_action(clone, 'save-load-action')
 
     def test_observer_success_cannot_hide_target_crash(self):
         from test_core import AuditorCoreTests
@@ -1255,6 +1489,7 @@ class NativeDiagnosticTests(unittest.TestCase):
                     self.assertTrue(reads)
                     self.assertTrue(all(not row['synchronous_attempt'] and row['main_thread'] for row in reads))
                     names = {row['name'] for row in report['api_calls']}
+                    self.assertTrue({'CreateEventW', 'SetEvent', 'CreateThread'} <= names, names)
                     self.assertIn('GetOverlappedResult', names)
                     if variant == 'cancel-io':
                         self.assertIn('CancelIoEx', names)

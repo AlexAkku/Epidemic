@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 #include <shadow_probe.h>
@@ -26,12 +27,39 @@ class InMemoryPersistenceStore;
 
 struct PersistenceCandidateState
 {
+    // MSVC hash containers may allocate buckets during default construction.
+    PersistenceCandidateState() noexcept(false) {}
+    // MSVC hash containers allocate replacement buckets. Construct before swapping
+    // so allocation failure propagates to the transaction guard, never terminate().
+    PersistenceCandidateState(PersistenceCandidateState&& other) noexcept(false) // NOLINT(bugprone-unsafe-to-allow-exceptions): fallible bucket construction.
+        : PersistenceCandidateState()
+    {
+        Swap(other);
+    }
+    PersistenceCandidateState(const PersistenceCandidateState&) = default;
+    PersistenceCandidateState& operator=(PersistenceCandidateState&& other) noexcept
+    {
+        Swap(other);
+        return *this;
+    }
+    PersistenceCandidateState& operator=(const PersistenceCandidateState&) = default;
+
     PersistenceSnapshot snapshot{};
     std::unordered_map<PersistentObjectId, PersistentObjectRecord> objects{};
     std::unordered_map<LazyRuleId, LazyRuleRecord> lazy_rules{};
     std::unordered_map<PersistentObjectId, TombstoneRecord> tombstones{};
     std::unordered_map<PersistenceLocation, ZoneOverrideSnapshot, PersistenceLocationHash> zone_overrides{};
     std::unordered_set<PersistentObjectId> dirty_ids{};
+
+    void Swap(PersistenceCandidateState& other) noexcept
+    {
+        std::swap(snapshot, other.snapshot);
+        objects.swap(other.objects);
+        lazy_rules.swap(other.lazy_rules);
+        tombstones.swap(other.tombstones);
+        zone_overrides.swap(other.zone_overrides);
+        dirty_ids.swap(other.dirty_ids);
+    }
 };
 
 class InMemorySaveTransaction final : public ISaveTransaction, public IPersistenceAdministrativeTransaction
@@ -76,8 +104,8 @@ class InMemoryPersistenceStore final : public IPersistenceStore
 {
   public:
     InMemoryPersistenceStore() = default;
-    explicit InMemoryPersistenceStore(PersistenceSnapshot snapshot);
-    InMemoryPersistenceStore(PersistenceSnapshot snapshot, std::shared_ptr<IPersistenceBackend> backend, PersistenceDurability durability);
+    explicit InMemoryPersistenceStore(const PersistenceSnapshot& snapshot);
+    InMemoryPersistenceStore(const PersistenceSnapshot& snapshot, std::shared_ptr<IPersistenceBackend> backend, PersistenceDurability durability);
 
     [[nodiscard]] std::optional<PersistentObjectRecord> FindObject(PersistentObjectId id) const override;
     [[nodiscard]] std::vector<PersistentObjectRecord> FindByLocation(const PersistenceLocation& location) const override;
