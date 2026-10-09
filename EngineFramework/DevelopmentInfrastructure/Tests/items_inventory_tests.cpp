@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::items;
 namespace
@@ -21,8 +25,45 @@ GameplayObjectRef Ref(const char *d, const char *i)
     return {GameplayDomainId::FromString(d), GameplayObjectId::FromString(i)};
 }
 } // namespace
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-pickup") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "pickup-action", "Pick up item");
+        scenario("scenario.start", "pickup-scenario");
+        ItemsInventoryService owner;
+        ItemDefinition definition;
+        definition.canonical_name = "auditor.pickup.item";
+        const auto registered = owner.RegisterDefinition(definition);
+        if (!registered) return 2;
+        owner.Freeze();
+        ContainerRecord bag;
+        bag.owner_object = Ref("actor", "auditor.player");
+        const auto container = owner.CreateContainer(bag);
+        if (!container) return 3;
+        ItemInstance item;
+        item.definition = registered.Value();
+        item.location.kind = ItemLocationKind::World;
+        item.location.world_object = Ref("world", "auditor.pickup");
+        const auto created = owner.CreateItem(item);
+        if (!created) return 4;
+        ItemLocation target;
+        target.kind = ItemLocationKind::Container;
+        target.container = container.Value();
+        const auto transition = identity();
+        flow("state.request", transition.data());
+        const auto plan = owner.PrepareTransfer(created.Value(), target, 1);
+        if (!plan || !owner.CommitTransfer(plan.Value())) return 5;
+        flow("state.change", transition.data());
+        const bool success = owner.FindItem(created.Value())->location.container == container.Value();
+        scenario("scenario.end", "pickup-scenario");
+        action("action.end", "pickup-action");
+        return success ? 0 : 6;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     ItemsInventoryService s;
     ItemDefinition apple;
     apple.canonical_name = "item.apple";

@@ -26,7 +26,22 @@ bool initialized = false;
 Header header;
 Event* events = nullptr;
 HANDLE output = INVALID_HANDLE_VALUE;
+// Optional live compiler-event ring. The normal exact capture stays unchanged.
+struct RollingHeader {
+    char magic[8] = {'E','P','R','O','L','L','0','1'};
+    std::uint64_t generation = 0, total = 0, capacity = 65536;
+    std::uint64_t frequency = 0, pid = 0, birth = 0, image_base = 0;
+};
+static_assert(sizeof(RollingHeader) == 64);
+RollingHeader* rolling = nullptr;
+HANDLE rolling_file = INVALID_HANDLE_VALUE, rolling_mapping = nullptr;
 wchar_t image_path[32768]{};
+#if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
+struct ActiveCall { std::uint64_t ordinal, producer_base; };
+thread_local ActiveCall active_calls[1024]{};
+thread_local std::size_t active_depth = 0;
+thread_local bool active_call_unresolved = false;
+#endif
 
 std::uint64_t ticks(FILETIME value) noexcept {
     return (static_cast<std::uint64_t>(value.dwHighDateTime) << 32) | value.dwLowDateTime;
@@ -59,6 +74,9 @@ void flush() noexcept {
         CloseHandle(output);
         output = INVALID_HANDLE_VALUE;
     }
+    if (rolling) { UnmapViewOfFile(rolling); rolling = nullptr; }
+    if (rolling_mapping) { CloseHandle(rolling_mapping); rolling_mapping = nullptr; }
+    if (rolling_file != INVALID_HANDLE_VALUE) { CloseHandle(rolling_file); rolling_file = INVALID_HANDLE_VALUE; }
     ReleaseSRWLockExclusive(&lock);
 }
 void initialize() noexcept {
@@ -87,6 +105,27 @@ void initialize() noexcept {
     header.path_chars = GetModuleFileNameW(image, image_path, 32768);
     if (!header.path_chars || header.path_chars >= 32768) return;
     header.header_bytes = sizeof(Header) + header.path_chars * sizeof(wchar_t);
+    wchar_t rolling_directory[32768]{};
+    const DWORD rolling_length = GetEnvironmentVariableW(L"EP_AUDITOR_ROLLING_DIRECTORY", rolling_directory, 32768);
+    if (rolling_length && rolling_length <= 32500 && rolling_directory[1] == L':') {
+        wchar_t rolling_path[32768]{};
+        if (swprintf_s(rolling_path, L"\\\\?\\%ls\\events-%u-%llu-%llx.bin", rolling_directory,
+                header.pid, header.birth, header.image_base) >= 0) {
+            rolling_file = CreateFileW(rolling_path, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ,
+                nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (rolling_file != INVALID_HANDLE_VALUE) {
+                constexpr DWORD bytes = sizeof(RollingHeader) + 65536 * sizeof(Event);
+                rolling_mapping = CreateFileMappingW(rolling_file, nullptr, PAGE_READWRITE, 0, bytes, nullptr);
+                if (rolling_mapping) rolling = static_cast<RollingHeader*>(MapViewOfFile(rolling_mapping, FILE_MAP_WRITE, 0, 0, bytes));
+                if (rolling) {
+                    RollingHeader initial;
+                    initial.frequency = header.frequency; initial.pid = header.pid;
+                    initial.birth = header.birth; initial.image_base = header.image_base;
+                    *rolling = initial;
+                }
+            }
+        }
+    }
     events = static_cast<Event*>(VirtualAlloc(nullptr, static_cast<SIZE_T>(header.capacity * sizeof(Event)),
         MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
     if (!events) return;
@@ -104,8 +143,7 @@ void record(std::uint64_t address, std::uint8_t kind) noexcept {
     AcquireSRWLockExclusive(&lock);
     if (!initialized) initialize();
     if (output != INVALID_HANDLE_VALUE) {
-        if (header.written == header.capacity) ++header.dropped;
-        else {
+        {
             LARGE_INTEGER timestamp{};
             FILETIME born{}, ended{}, kernel{}, user{};
             ULONG64 cycles = 0;
@@ -126,7 +164,24 @@ void record(std::uint64_t address, std::uint8_t kind) noexcept {
                 value.pid = header.pid;
                 value.tid = GetCurrentThreadId();
                 value.kind = kind;
+                if (rolling) {
+                    InterlockedIncrement64(reinterpret_cast<volatile LONG64*>(&rolling->generation));
+                    Event live = value;
+                    live.sequence = rolling->total;
+                    auto* records = reinterpret_cast<Event*>(rolling + 1);
+                    records[live.sequence % rolling->capacity] = live;
+                    ++rolling->total;
+                    InterlockedIncrement64(reinterpret_cast<volatile LONG64*>(&rolling->generation));
+                }
+                if (header.written == header.capacity) { ++header.dropped; ReleaseSRWLockExclusive(&lock); return; }
                 events[header.written++] = value;
+#if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
+                if (kind == 1) {
+                    if (active_depth == 1024) active_call_unresolved = true;
+                    else active_calls[active_depth++] = ActiveCall{value.sequence, header.image_base};
+                } else if (active_depth) --active_depth;
+                else active_call_unresolved = true;
+#endif
             }
         }
     }
@@ -135,3 +190,15 @@ void record(std::uint64_t address, std::uint8_t kind) noexcept {
 }
 extern "C" void auditor_exact_enter(std::uint64_t address) noexcept { record(address, 1); }
 extern "C" void auditor_exact_exit(std::uint64_t address) noexcept { record(address, 2); }
+#if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
+extern "C" bool auditor_exact_current_call(std::uint64_t* ordinal, std::uint64_t* producer_base) noexcept {
+    AcquireSRWLockShared(&lock);
+    const bool valid = output != INVALID_HANDLE_VALUE && !header.dropped && active_depth && !active_call_unresolved;
+    if (valid) {
+        *ordinal = active_calls[active_depth - 1].ordinal;
+        *producer_base = active_calls[active_depth - 1].producer_base;
+    }
+    ReleaseSRWLockShared(&lock);
+    return valid;
+}
+#endif

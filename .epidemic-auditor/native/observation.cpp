@@ -16,6 +16,8 @@
 #include <fstream>
 
 int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant);
+int observe_exception_fixture(const wchar_t* binary, const wchar_t* variant);
+int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& arguments);
 
 static std::string utf8(const std::wstring& text) {
     if (text.empty()) return {};
@@ -175,6 +177,13 @@ int wmain(int argc, wchar_t** argv) {
         }
         if (argc == 4 && std::wstring(argv[1]) == L"--mutex-fixture")
             return observe_mutex_fixture(argv[2], argv[3]);
+        if (argc == 4 && std::wstring(argv[1]) == L"--exception-fixture")
+            return observe_exception_fixture(argv[2], argv[3]);
+        if (argc >= 3 && std::wstring(argv[1]) == L"--exceptions") {
+            std::vector<std::wstring> arguments;
+            for (int index = 3; index < argc; ++index) arguments.emplace_back(argv[index]);
+            return observe_exceptions(argv[2], arguments);
+        }
         DWORD pid = GetCurrentProcessId();
         DWORD64 address = reinterpret_cast<DWORD64>(&AuditorObservationFixture);
         bool self = false;

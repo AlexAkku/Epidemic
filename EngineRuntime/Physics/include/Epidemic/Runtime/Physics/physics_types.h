@@ -7,6 +7,9 @@
 #include <cstdint>
 #include <functional>
 #include <vector>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::runtime::physics
 {
@@ -139,6 +142,10 @@ struct ContactEvent
     Vec3 normal{};
     float impulse = 0.0f;
     PhysicsEventState state = PhysicsEventState::Begin;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::Context auditor_context{};
+    auditor::shadow::Identity auditor_correlation{};
+#endif
 };
 
 struct BackendContactEvent

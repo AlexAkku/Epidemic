@@ -139,11 +139,38 @@ class ManagedProcessRunner:
             coverage_directory = (run_dir / 'coverage-capture').resolve()
             coverage_directory.mkdir(parents=True, exist_ok=True)
             env['LLVM_PROFILE_FILE'] = str(coverage_directory / 'profile-%p-%m.profraw')
+        # Shadow probes are optional and disabled in normal Engine binaries.
+        # A target-emitted JSONL stream is never labeled external observation.
+        if capture_mode.lower() in {'deep', 'targeted exact', 'memory', 'stress'}:
+            for family, variable in (('diagnostic', 'EP_AUDITOR_DIAGNOSTICS_DIRECTORY'),
+                                     ('causal', 'EP_AUDITOR_CAUSAL_DIRECTORY')):
+                owned_directory = (run_dir / (family + '-capture')).resolve()
+                owned_directory.mkdir(parents=True, exist_ok=True)
+                env[variable] = str(owned_directory)
+            armed = self.config.data.get('capture', {}).get('arm_next_input')
+            if armed is not None:
+                from ep_auditor.analyzers.causality import IDENTIFIER
+                if (not isinstance(armed, dict) or not isinstance(armed.get('action_id'), str)
+                        or not IDENTIFIER.fullmatch(armed['action_id'])):
+                    raise EvidenceError('invalid configured Arm-next-input ActionId')
+                name = armed.get('name', armed['action_id'])
+                if (not isinstance(name, str) or not 0 < len(name.encode('utf-8')) <= 256 or any(ord(ch) < 32 for ch in name)):
+                    raise EvidenceError('invalid configured Arm-next-input name')
+                env['EP_AUDITOR_ARM_NEXT_INPUT_ID'] = armed['action_id']
+                env['EP_AUDITOR_ARM_NEXT_INPUT_NAME'] = name
         console_path = run_dir / "console.jsonl"
         raw_stdout = run_dir / "stdout.log"
         raw_stderr = run_dir / "stderr.log"
         cancelled = False
         notes: list[str] = []
+        rolling = None
+        rolling_options = self.config.data.get('capture', {}).get('rolling')
+        if rolling_options is not None and capture_mode.lower() in {'deep','targeted exact','memory','stress'}:
+            from ep_auditor.collectors.telemetry import RollingCapture
+            rolling = RollingCapture(run_dir, rolling_options)
+            live_exact = run_dir / 'rolling-exact-capture'
+            live_exact.mkdir(exist_ok=False)
+            env['EP_AUDITOR_ROLLING_DIRECTORY'] = str(live_exact)
 
         wpr = WprCollector(self.config.wpr_profile)
         if capture_mode.lower() == "deep" and self.config.enable_wpr_in_deep:
@@ -179,6 +206,13 @@ class ManagedProcessRunner:
             wpr.stop()
             raise
         stats = ProcessStatsCollector(self.config.sample_interval_seconds)
+        def observe_rolling_liveness():
+            before = time.perf_counter_ns()
+            code = proc.poll()
+            rolling.observe_liveness(code, before if code is None else time.perf_counter_ns())
+        if rolling:
+            rolling.liveness_pid = proc.pid
+            stats.on_tick = observe_rolling_liveness
         stats.start(proc.pid, run_dir)
 
         out_queue: queue.Queue[tuple[str, str, float, str]] = queue.Queue(maxsize=1024)
@@ -267,8 +301,13 @@ class ManagedProcessRunner:
         process_finished_wall = started_wall
         try:
             while proc.poll() is None or any(t.is_alive() for t in threads) or not out_queue.empty():
+                if rolling:
+                    observe_rolling_liveness()
+                    rolling.poll(process_alive=False)
                 if deadline is not None and time.perf_counter() >= deadline and proc.active_process_count():
                     notes.append(f"timeout after {timeout:.3f}s")
+                    if rolling:
+                        rolling.trigger('suspected_deadlock', time.perf_counter_ns(), reason='owned_scope_timeout; not proof of deadlock')
                     self.cancel("timeout")
                     cancelled = True
                 try:
@@ -285,6 +324,8 @@ class ManagedProcessRunner:
                     })
                     if log_callback:
                         log_callback(channel, line)
+                    if rolling and channel == 'stderr' and ('ERROR: AddressSanitizer:' in line or 'SUMMARY: AddressSanitizer:' in line):
+                        rolling.trigger('memory_error', time.perf_counter_ns(), reason='observed_sanitizer_diagnostic; not independent safety verdict')
                 except queue.Empty:
                     pass
             for t in threads:
@@ -295,6 +336,12 @@ class ManagedProcessRunner:
                 proc.cancel("root_exit_live_descendants")
             process_finished_perf = time.perf_counter()
             process_finished_wall = datetime.now(timezone.utc)
+            if rolling:
+                code = proc.poll()
+                observe_rolling_liveness()
+                rolling.poll(final=True, process_alive=False)
+                rolling.observe_process_exit(code)
+                rolling.finish(process_exited=code is not None)
         finally:
             stats.stop()
             etl = wpr.stop()
@@ -396,6 +443,9 @@ class ManagedProcessRunner:
                        health={"capacity": 1024 * 1024, "observed": len(payload), "dropped": 0,
                                "incomplete_reason": None if exit_code is not None else "process_exit_unobserved"})
         RunStorage.write_json(run_dir / "metrics" / "process.json", result.to_dict())
+        from ep_auditor.collectors.telemetry import capture_streams
+        capture_streams(run_dir, 'diagnostics', required=bool(self.config.data.get('capture', {}).get('diagnostics_required', False)))
+        capture_streams(run_dir, 'causal', required=bool(self.config.data.get('capture', {}).get('causal_required', False)))
         from ep_auditor.collectors.exact_trace import capture_directory
         capture_directory(run_dir, required=bool(self.config.data.get('capture', {}).get('exact_required', False))
                           or env.get('EP_AUDITOR_REQUIRE_EXACT') == '1')

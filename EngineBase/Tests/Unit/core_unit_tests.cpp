@@ -17,6 +17,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <memory>
 #include <new>
@@ -24,6 +25,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <coroutine>
+#endif
 
 namespace
 {
@@ -301,7 +305,7 @@ void TestServiceContainerContracts()
     try
     {
         precommit_services.RegisterInstancesAtomicWithPreCommit(
-            [] { throw std::runtime_error("precommit failure"); },
+            std::function<void()>{[] { throw std::runtime_error("precommit failure"); }},
             std::shared_ptr<CountingService>(precommit_instance));
     }
     catch (const std::runtime_error &)
@@ -1101,6 +1105,8 @@ void TestModuleRegistryContracts()
                std::count(retry_shutdown_trace.begin(), retry_shutdown_trace.end(), "middle:shutdown") == 2,
            "Shutdown retry must skip modules already cleaned and retry only the failed cleanup");
 
+    // Shutdown retries in Application's destructor must retain the fixture's trace.
+    std::vector<std::string> app_shutdown_trace;
     epidemic::core::Application shutdown_failure_application(epidemic::core::ApplicationOptions{"ShutdownFailureApplication", std::nullopt});
     auto app_logger = std::make_shared<epidemic::tests::RecordingLogger>();
     auto app_scheduler = std::make_shared<RecordingScheduler>();
@@ -1112,7 +1118,6 @@ void TestModuleRegistryContracts()
     shutdown_failure_application.Services().Emplace<epidemic::core::events::IEventBus, epidemic::core::events::EventBus>();
     shutdown_failure_application.Services().RegisterInstance<epidemic::core::tasks::ITaskScheduler>(app_scheduler);
     shutdown_failure_application.Services().Emplace<epidemic::core::IMainThreadDispatcher, epidemic::core::MainThreadDispatcher>();
-    std::vector<std::string> app_shutdown_trace;
     shutdown_failure_application.Modules().Register(
         std::make_unique<ProbeModule>("failing", std::vector<std::string>{}, app_shutdown_trace, false, false, false, true));
     Assert(shutdown_failure_application.Bootstrap() == 0, "Shutdown failure application bootstrap must succeed");
@@ -1246,9 +1251,155 @@ void TestApplicationQuiescesSchedulerBeforeModuleShutdown()
 }
 } // namespace
 
-// Runs the Core unit-test group.
-int main()
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+// Standalone audit scenario, selected explicitly rather than run by CTest.
+int RunAuditorCausalScenario()
 {
+    using namespace epidemic::auditor::shadow;
+    struct Signal { int value; };
+    epidemic::core::events::EventBus bus;
+    std::atomic<int> state{0};
+    action("action.start", "causal-action");
+    scenario("scenario.start", "causal-scenario");
+    const auto handler = [&state](const Signal& signal) {
+        const auto change = identity();
+        flow("state.request", change.data());
+        state.fetch_add(signal.value, std::memory_order_relaxed);
+        flow("state.change", change.data());
+    };
+    bus.SubscribeQueued<Signal>(handler);
+    bus.SubscribeQueued<Signal>(handler);
+    epidemic::core::tasks::SimpleTaskScheduler scheduler(1);
+    const auto job = scheduler.Schedule([&bus] { bus.Enqueue(Signal{3}); }, "auditor-causal-worker");
+    scheduler.Wait(job);
+    const auto drained = bus.DrainQueued();
+    scheduler.Shutdown();
+    scenario("scenario.end", "causal-scenario");
+    action("action.end", "causal-action");
+    // This adjacent pair deliberately has no inherited parent from the job.
+    causal("state.request", "unrelated-state");
+    state.fetch_add(1, std::memory_order_relaxed);
+    causal("state.change", "unrelated-state");
+    return drained == 1 && state.load(std::memory_order_relaxed) == 7 ? 0 : 2;
+}
+
+int RunAuditorRollingExactScenario()
+{
+    if (RunAuditorCausalScenario() != 0) return 2;
+    const auto started = std::chrono::steady_clock::now();
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    epidemic::core::tasks::SimpleTaskScheduler scheduler(1);
+    std::atomic<int> state{0};
+    const auto before = scheduler.Schedule([&state] { state.fetch_add(1); }, "rolling-before");
+    scheduler.Wait(before);
+    epidemic::auditor::shadow::frame(static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - started).count()));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    const auto after = scheduler.Schedule([&state] { state.fetch_add(1); }, "rolling-after");
+    scheduler.Wait(after);
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    scheduler.Shutdown();
+    return state.load() == 2 ? 0 : 3;
+}
+
+int RunAuditorContinuationScenario()
+{
+    using namespace epidemic::auditor::shadow;
+    epidemic::core::MainThreadDispatcher dispatcher;
+    epidemic::core::events::EventBus bus;
+    struct Signal {};
+    int state = 0;
+    bus.SubscribeSync<Signal>([&](const Signal&) { ++state; });
+    action("action.start", "continuation-action");
+    scenario("scenario.start", "continuation-scenario");
+    epidemic::core::tasks::SimpleTaskScheduler scheduler(1);
+    std::atomic<bool> entered{false}, release{false};
+    const auto blocker = scheduler.Schedule([&] {
+        entered.store(true, std::memory_order_release);
+        while (!release.load(std::memory_order_acquire)) std::this_thread::yield();
+        dispatcher.Post([&] { bus.PublishSync(Signal{}); }, "auditor-continuation");
+    });
+    while (!entered.load(std::memory_order_acquire)) std::this_thread::yield();
+    const auto cancelled = scheduler.Schedule([&] { state = -100; });
+    const bool accepted = scheduler.Cancel(cancelled);
+    release.store(true, std::memory_order_release);
+    scheduler.Wait(blocker);
+    scheduler.Wait(cancelled);
+    const auto drained = dispatcher.Drain();
+    scheduler.Shutdown();
+    scenario("scenario.end", "continuation-scenario");
+    action("action.end", "continuation-action");
+    return accepted && drained == 1 && state == 1 ? 0 : 2;
+}
+
+struct AuditorCoroutine
+{
+    struct promise_type {
+        AuditorCoroutine get_return_object() noexcept { return {std::coroutine_handle<promise_type>::from_promise(*this)}; }
+        std::suspend_never initial_suspend() noexcept { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
+        void return_void() noexcept {}
+        void unhandled_exception() noexcept { std::terminate(); }
+    };
+    std::coroutine_handle<promise_type> handle;
+    ~AuditorCoroutine() { if (handle) handle.destroy(); }
+};
+struct AuditorResumeOnMain
+{
+    epidemic::core::MainThreadDispatcher& dispatcher;
+    epidemic::auditor::shadow::Context next = epidemic::auditor::shadow::child_context();
+    epidemic::auditor::shadow::Identity token = epidemic::auditor::shadow::identity();
+    bool await_ready() const noexcept { return false; }
+    void await_suspend(std::coroutine_handle<> handle) {
+        next.cause = epidemic::auditor::shadow::emit_causal("async.suspend", token.data());
+        dispatcher.Post([handle, next = next, token = token] {
+            const epidemic::auditor::shadow::ContextScope scope(next);
+            epidemic::auditor::shadow::flow("async.resume", token.data());
+            handle.resume();
+        });
+    }
+    void await_resume() const noexcept {}
+};
+AuditorCoroutine RunAuditorCoroutine(epidemic::core::MainThreadDispatcher& dispatcher, int& state)
+{
+    co_await AuditorResumeOnMain{dispatcher};
+    ++state;
+}
+int RunAuditorCoroutineScenario()
+{
+    using namespace epidemic::auditor::shadow;
+    epidemic::core::MainThreadDispatcher dispatcher;
+    int state = 0;
+    arm_next_input("coroutine-action", "Resume on main thread");
+    input("auditor-next-input");
+    scenario("scenario.start", "coroutine-scenario");
+    const auto inherited = child_context();
+    std::coroutine_handle<AuditorCoroutine::promise_type> handle;
+    std::thread worker([&] {
+        const ContextScope scope(inherited);
+        auto coroutine = RunAuditorCoroutine(dispatcher, state);
+        handle = std::exchange(coroutine.handle, {});
+    });
+    worker.join();
+    AuditorCoroutine coroutine{handle};
+    const auto drained = dispatcher.Drain();
+    scenario("scenario.end", "coroutine-scenario");
+    action("action.end", "coroutine-action");
+    return drained == 1 && state == 1 && handle.done() ? 0 : 2;
+}
+#endif
+
+// Runs the Core unit-test group, or an explicitly selected standalone audit scenario.
+int main(int argc, char** argv)
+{
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string(argv[1]) == "--auditor-causal") return RunAuditorCausalScenario();
+    if (argc == 2 && std::string(argv[1]) == "--auditor-rolling-exact") return RunAuditorRollingExactScenario();
+    if (argc == 2 && std::string(argv[1]) == "--auditor-continuations") return RunAuditorContinuationScenario();
+    if (argc == 2 && std::string(argv[1]) == "--auditor-coroutine") return RunAuditorCoroutineScenario();
+#else
+    (void)argc; (void)argv;
+#endif
     return epidemic::tests::RunNamedTests({
         {"ServiceContainerContracts", &TestServiceContainerContracts},
         {"EventBusContracts", &TestEventBusContracts},

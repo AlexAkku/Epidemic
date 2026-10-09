@@ -1,11 +1,37 @@
 #include "Epidemic/GameFramework/Entities/entities.h"
 #include "../../GameplayWorldStateOwners/Entities/src/entities_test_seam.h"
+#include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::entities;
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-entity") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "entity-action");
+        scenario("scenario.start", "entity-scenario");
+        EntityService owner;
+        EntityArchetypeDefinition archetype;
+        archetype.canonical_name = "auditor.entity.actor";
+        const auto registered = owner.RegisterArchetype(archetype);
+        if (!registered) return 2;
+        owner.Freeze();
+        CreateEntityRequest request;
+        request.archetype = registered.Value();
+        const auto created = owner.Create(request);
+        if (!created || !owner.Deactivate(created.Value().id) || !owner.Activate(created.Value().id)) return 3;
+        scenario("scenario.end", "entity-scenario");
+        action("action.end", "entity-action");
+        return owner.Find(created.Value().id)->lifecycle == EntityLifecycleState::Alive ? 0 : 4;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     EntityService service;
     EntityArchetypeDefinition actor;
     actor.canonical_name = "test.entity.actor";

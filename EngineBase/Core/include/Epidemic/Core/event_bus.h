@@ -1,6 +1,9 @@
 #pragma once
 
 #include <any>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 #include <cstdint>
 #include <functional>
 #include <mutex>
@@ -110,6 +113,10 @@ class EventBus final : public IEventBus
     {
         std::type_index type{typeid(void)};
         std::any payload;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        std::uint64_t auditor_correlation{}; // Build-only queue delivery identity.
+        auditor::shadow::Context auditor_context;
+#endif
     };
 
     // Registers a type-erased handler in the correct subscription map.

@@ -2,6 +2,10 @@
 
 #include <algorithm>
 #include <limits>
+#include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::combat;
@@ -29,8 +33,43 @@ DamageRequest Request(GameplayObjectRef attacker, GameplayObjectRef target, Dama
 }
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-combat") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "combat-action", "Apply combat damage");
+        scenario("scenario.start", "combat-scenario");
+        CombatService owner;
+        CombatResourceDefinition health;
+        health.canonical_name = "auditor.health";
+        health.default_maximum_micro = 100;
+        const auto hp = owner.RegisterResource(health);
+        const auto damage = owner.RegisterDamageType("auditor.damage");
+        if (!hp || !damage) return 2;
+        DamageProfile profile;
+        profile.canonical_name = "auditor.damage.health";
+        profile.target_resource = hp.Value();
+        profile.can_miss = profile.can_evade = profile.can_block = profile.can_critical = false;
+        const auto registered = owner.RegisterDamageProfile(profile);
+        if (!registered) return 3;
+        owner.Freeze();
+        const auto target = Obj("auditor.target");
+        if (!owner.RegisterCombatant(target, {{hp.Value(), 100, 100}})) return 4;
+        const auto transition = identity();
+        flow("state.request", transition.data());
+        const auto plan = owner.PrepareDamage(Request(Obj("auditor.attacker"), target, damage.Value(), registered.Value(), 10, 1));
+        if (!plan) return 5;
+        const auto committed = owner.CommitDamage(plan.Value(), {1});
+        if (!committed || committed.Value().resource_after_micro != 90) return 6;
+        flow("state.change", transition.data());
+        scenario("scenario.end", "combat-scenario");
+        action("action.end", "combat-action");
+        return 0;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     CombatService s;
 
     CombatResourceDefinition health;

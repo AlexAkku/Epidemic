@@ -25,7 +25,16 @@ void MainThreadDispatcher::Post(std::function<void()> task, std::string debug_na
     }
 
     std::scoped_lock lock(mutex_);
-    tasks_.push(PendingTask{std::move(task), std::move(debug_name)});
+    PendingTask pending{std::move(task), std::move(debug_name)
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        , auditor::shadow::child_context(), auditor::shadow::identity()
+#endif
+    };
+    tasks_.push(std::move(pending));
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto& accepted = tasks_.back();
+    accepted.auditor_context.cause = auditor::shadow::emit_causal("async.submit", accepted.auditor_correlation.data());
+#endif
 }
 
 // Executes queued tasks in FIFO order on the owner thread and updates diagnostics counters.
@@ -48,6 +57,10 @@ std::size_t MainThreadDispatcher::Drain()
     {
         auto task = std::move(pending_tasks.front());
         pending_tasks.pop();
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        const auditor::shadow::ContextScope auditor_scope(task.auditor_context);
+        auditor::shadow::flow("async.execute", task.auditor_correlation.data());
+#endif
         try
         {
             task.task();

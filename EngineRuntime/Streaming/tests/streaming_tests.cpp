@@ -6,6 +6,10 @@
 #include "Epidemic/Foundation/error.h"
 
 #include <chrono>
+#include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 #include <cstddef>
 #include <limits>
 #include <new>
@@ -1609,8 +1613,29 @@ bool TestLargeStepReceivesAvailableBudget()
 }
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-streaming") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "streaming-action", "Load and unload chunk");
+        scenario("scenario.start", "streaming-scenario");
+        auto controller = std::make_shared<InMemoryResidencyController>();
+        StreamingRuntime owner(MakeDependencies({}, {}, {}, controller));
+        const ChunkId chunk{104};
+        const auto transition = identity();
+        flow("state.request", transition.data());
+        const auto demand = owner.Request(StreamingTarget{ChunkStreamingTarget{chunk}}, StreamingPriorityClass::Normal);
+        if (!demand || !AdvanceTo(owner, chunk, StreamingState::Active)) return 2;
+        flow("state.change", transition.data());
+        if (!owner.ReleaseDemand(demand.Value()) || !AdvanceTo(owner, chunk, StreamingState::Unloaded)) return 3;
+        scenario("scenario.end", "streaming-scenario");
+        action("action.end", "streaming-action");
+        return 0;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     static_assert(std::is_same_v<decltype(StreamingBudget{}.max_requests), std::size_t>);
     static_assert(StreamingBudget{}.IsUnlimited());
     static_assert(std::is_abstract_v<IStreamingRuntime>);

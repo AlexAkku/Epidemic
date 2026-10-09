@@ -26,7 +26,26 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("run")
     sub.add_parser("build-run")
     sub.add_parser("static")
+    action = sub.add_parser("action", help="Query an Action in an existing sealed RunId")
+    action.add_argument("run_directory")
+    action.add_argument("action_id")
+    log = sub.add_parser("event-log", help="Page a sealed event log and select a recorded Action")
+    log.add_argument("run_directory")
+    log.add_argument("--offset", type=int, default=0)
+    log.add_argument("--limit", type=int, default=50)
+    log.add_argument("--action-id")
     args = parser.parse_args(argv)
+
+    if args.command == 'event-log':
+        from ep_auditor.analyzers.causality import query_event_log
+        print(json.dumps(query_event_log(Path(args.run_directory).resolve(), offset=args.offset,
+                                        limit=args.limit, action_id=args.action_id), ensure_ascii=False))
+        return 0
+
+    if args.command == 'action':
+        from ep_auditor.analyzers.causality import query_action
+        print(json.dumps(query_action(Path(args.run_directory).resolve(), args.action_id), ensure_ascii=False))
+        return 0
 
     cfg = load_config(Path(args.config).resolve())
     events = EventBus()

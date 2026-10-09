@@ -9,6 +9,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::runtime
 {
@@ -63,6 +66,10 @@ class InMemorySaveTransaction final : public ISaveTransaction, public IPersisten
     SaveTransactionState state_ = SaveTransactionState::Open;
     std::vector<PersistenceOperation> operations_;
     bool fail_next_operation_allocation_for_testing_ = false;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::Context auditor_context_;
+    auditor::shadow::Identity auditor_transaction_;
+#endif
 };
 
 class InMemoryPersistenceStore final : public IPersistenceStore

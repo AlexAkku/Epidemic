@@ -9,6 +9,9 @@
 #include <new>
 #include <string_view>
 #include <utility>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::runtime
 {
@@ -250,6 +253,13 @@ foundation::Result<void> WorldRuntime::SetChunkState(ChangeChunkStateCommand com
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const CreateObjectCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data()); // Entered execution, not successful mutation.
+#endif
     WorldObjectRecord record = command.record;
     if (record.persistent_id.IsValid() && persistent_to_runtime_.contains(record.persistent_id))
     {
@@ -318,6 +328,13 @@ foundation::Result<WorldCommandResult> WorldRuntime::Apply(const CreateObjectCom
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const ChangePlacementCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data());
+#endif
     auto iterator = world_objects_.find(command.runtime_id);
     if (iterator == world_objects_.end())
     {
@@ -361,6 +378,13 @@ foundation::Result<WorldCommandResult> WorldRuntime::Apply(const ChangePlacement
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const ChangeResidencyCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data());
+#endif
     auto iterator = world_objects_.find(command.runtime_id);
     if (iterator == world_objects_.end())
     {
@@ -408,6 +432,13 @@ foundation::Result<WorldCommandResult> WorldRuntime::Apply(const ChangeResidency
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const PromotePersistenceTierCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data());
+#endif
     auto iterator = world_objects_.find(command.runtime_id);
     if (iterator == world_objects_.end())
     {
@@ -510,6 +541,13 @@ foundation::Result<WorldCommandResult> WorldRuntime::Apply(const PromotePersiste
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const MaterializeObjectCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data());
+#endif
     if (!command.request.persistent_id.IsValid())
     {
         return WorldFailureValue<WorldCommandResult>("world.invalid_persistent_object",
@@ -572,6 +610,13 @@ foundation::Result<WorldCommandResult> WorldRuntime::Apply(const MaterializeObje
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const DemoteObjectCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data());
+#endif
     auto iterator = world_objects_.find(command.request.runtime_id);
     if (iterator == world_objects_.end())
     {
@@ -630,6 +675,13 @@ foundation::Result<WorldCommandResult> WorldRuntime::Apply(const DemoteObjectCom
 
 foundation::Result<WorldCommandResult> WorldRuntime::Apply(const DestroyObjectCommand& command)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto auditor_context = auditor::shadow::child_context();
+    const auto auditor_command = auditor::shadow::identity();
+    auditor_context.cause = auditor::shadow::emit_causal("command.dispatch", auditor_command.data());
+    const auditor::shadow::ContextScope auditor_scope(auditor_context);
+    auditor::shadow::flow("command.execute", auditor_command.data());
+#endif
     if (!command.runtime_id.IsValid())
     {
         return WorldFailureValue<WorldCommandResult>("world.invalid_object", "runtime object id must be valid before destruction");

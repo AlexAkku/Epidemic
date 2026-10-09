@@ -32,6 +32,10 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <chrono>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 #define NOMINMAX
 #define WIN32_LEAN_AND_MEAN
@@ -1058,8 +1062,35 @@ void TestPlatformAndInputIntegration()
 } // namespace
 
 // Runs Platform contract and Platform/Input integration tests on real Win32 objects.
-int main()
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+int RunAuditorInputScenario()
 {
+    using namespace epidemic::auditor::shadow;
+    epidemic::input::InputSystem input_system;
+    epidemic::platform::PlatformEvent event;
+    event.type = epidemic::platform::PlatformEventType::KeyPressed;
+    event.key_code = 0;
+    input_system.QueuePlatformEvent(event);
+    input_system.PublishSnapshot();
+    if (!input_system.CurrentEvents().empty()) return 2;
+    const auto start = std::chrono::steady_clock::now();
+    event.key_code = 65;
+    input_system.QueuePlatformEvent(event);
+    event.key_code = 66;
+    input_system.QueuePlatformEvent(event);
+    input_system.PublishSnapshot();
+    frame(static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now() - start).count()));
+    return input_system.CurrentEvents().size() == 2 ? 0 : 3;
+}
+#endif
+int main(int argc, char** argv)
+{
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-input") return RunAuditorInputScenario();
+#else
+    (void)argc; (void)argv;
+#endif
     return epidemic::tests::RunNamedTests({
         {"InputKeyboardContracts", &TestInputKeyboardContracts},
         {"InputMouseContracts", &TestInputMouseContracts},

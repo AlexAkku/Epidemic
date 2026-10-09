@@ -1091,8 +1091,28 @@ bool TestPublicApiEvidenceCoverage()
 
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-persistence") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "persistence-action");
+        scenario("scenario.start", "persistence-scenario");
+        InMemoryPersistenceStore store;
+        auto committed = store.OpenTransaction();
+        auto stale = store.OpenTransaction();
+        if (!committed->UpsertObject(MakeRecord(1)) || !committed->Commit()) return 2;
+        if (stale->Commit()) return 3;
+        stale->Rollback(); // Failed terminal must not produce a second terminal.
+        auto rolled_back = store.OpenTransaction();
+        rolled_back->Rollback();
+        scenario("scenario.end", "persistence-scenario");
+        action("action.end", "persistence-action");
+        return store.ListObjects().size() == 1 ? 0 : 4;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     struct NamedTest
     {
         const char* name;

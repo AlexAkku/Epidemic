@@ -5,6 +5,12 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <chrono>
+#include <memory>
+#include <string>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::savegame;
@@ -66,6 +72,42 @@ void RecordSaveWireFixtures(const std::filesystem::path& root)
     WriteFixture(root / "whole/1/empty.bin", empty.Value());
     WriteFixture(root / "whole/1/multi.bin", multi.Value());
 }
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+int RunAuditorSaveLoadScenario()
+{
+    using namespace epidemic::auditor::shadow;
+    std::string directory;
+#ifdef _WIN32
+    char* value = nullptr; size_t length = 0;
+    if (_dupenv_s(&value, &length, "EP_AUDITOR_CAUSAL_DIRECTORY")) return 2;
+    const std::unique_ptr<char, decltype(&std::free)> owned(value, &std::free);
+    if (value) directory = value;
+#else
+    if (const auto* value = std::getenv("EP_AUDITOR_CAUSAL_DIRECTORY")) directory = value;
+#endif
+    if (directory.empty() || !std::filesystem::is_directory(directory) || std::filesystem::is_symlink(directory)) return 2;
+    const auto path = std::filesystem::path(directory) / "scenario-save.bin";
+    if (std::filesystem::exists(path)) return 3;
+    action("action.start", "save-load-action", "Save and load wire package");
+    scenario("scenario.start", "save-load-scenario");
+    const auto image = WireImage();
+    const auto encoded = EncodeSaveGameImage(image);
+    if (!encoded) return 4;
+    const auto write_start = std::chrono::steady_clock::now();
+    WriteFixture(path, encoded.Value());
+    io("io.write", "scenario-save", encoded.Value().size(), static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - write_start).count()));
+    const auto read_start = std::chrono::steady_clock::now();
+    const auto bytes = ReadFixture(path);
+    io("io.read", "scenario-load", bytes.size(), static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - read_start).count()));
+    const auto decoded = DecodeSaveGameImage(bytes);
+    if (!decoded || decoded.Value().sections.size() != image.sections.size() || bytes != encoded.Value()) return 5;
+    scenario("scenario.end", "save-load-scenario");
+    action("action.end", "save-load-action");
+    return 0;
+}
+#endif
 void TestSaveWireCodec()
 {
     auto empty = EncodeSaveGameImage({});

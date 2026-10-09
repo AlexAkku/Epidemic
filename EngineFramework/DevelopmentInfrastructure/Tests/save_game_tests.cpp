@@ -346,8 +346,14 @@ void TestCompatibilityProfileMatrix()
     }
 }
 
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+int RunAuditorSaveLoadScenario();
+#endif
 int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-save-load") return RunAuditorSaveLoadScenario();
+#endif
     if (argc == 3 && std::string_view(argv[1]) == "--record-wire-fixtures")
     { RecordSaveWireFixtures(argv[2]); return 0; }
     TestCompositionRegistryClosure();

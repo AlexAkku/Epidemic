@@ -4,7 +4,7 @@
     {
       "name": "base-debug",
       "displayName": "EngineBase only",
-      "binaryDir": "${sourceDir}/build/presets/base-debug",
+      "binaryDir": "${sourceDir}/build/base-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_TESTING": "ON",
@@ -16,7 +16,7 @@
     {
       "name": "runtime-debug",
       "displayName": "EngineRuntime without Framework",
-      "binaryDir": "${sourceDir}/build/presets/runtime-debug",
+      "binaryDir": "${sourceDir}/build/runtime-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_TESTING": "ON",
@@ -28,7 +28,7 @@
     {
       "name": "full-debug",
       "displayName": "Full engine",
-      "binaryDir": "${sourceDir}/build/presets/full-debug",
+      "binaryDir": "${sourceDir}/build/full-debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_TESTING": "ON",

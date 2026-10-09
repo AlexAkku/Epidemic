@@ -93,6 +93,38 @@ class EtwImportTests(unittest.TestCase):
             with self.assertRaises(EvidenceError):
                 import_capture(run, files, context, pids={41}, encoding="utf-8", scope=scope)
 
+    def test_disk_completion_lineage_and_missing_init(self):
+        for missing in (False, True):
+            with self.subTest(missing_init=missing), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                files, scope, context = self.fixture(directory, 0)
+                events = directory / 'events.csv'
+                rows = [['BeginHeader'],
+                    ['P-Start','TimeStamp','Process Name ( PID)'],
+                    ['DiskWriteInit','TimeStamp','Process Name ( PID)','ThreadID','IrpPtr'],
+                    ['DiskWrite','TimeStamp','Process Name ( PID)','ThreadID','IrpPtr','IOSize'],
+                    ['EndHeader'], ['P-Start','1','fixture (41)'],
+                    ['DiskWrite','30','fixture (41)','9','0x123','0x200']]
+                if not missing:
+                    rows.append(['DiskWriteInit','10','fixture (41)','9','0x123'])
+                with events.open('w', newline='', encoding='utf-8') as stream:
+                    csv.writer(stream).writerows(rows)
+                metadata = directory / 'metadata.json'
+                data = json.loads(metadata.read_text())
+                data['csv_sha256'] = digest(events)
+                metadata.write_text(json.dumps(data))
+                files['events.csv']['sha256'] = digest(events)
+                files['metadata.json']['sha256'] = digest(metadata)
+                run = directory / 'run'
+                import_capture(run, files, context, pids={41}, encoding='utf-8', scope=scope)
+                envelope = EvidenceLineage(run).verify('metrics', 'windows_disk_io.json')
+                report = envelope['records'][0]
+                self.assertEqual(report['complete'], not missing)
+                if not missing:
+                    self.assertEqual(report['disk_requests'][0]['latency_ns'], 20000)
+                    self.assertEqual(report['disk_requests'][0]['bytes'], 512)
+                self.assertEqual(report['rawReference']['sha256'], digest(events))
+
     def test_capacity_fail_retains_raw_without_derived_acceptance(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

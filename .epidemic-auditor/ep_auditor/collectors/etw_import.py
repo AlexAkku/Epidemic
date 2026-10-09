@@ -166,4 +166,12 @@ def import_capture(run_dir: Path, files: dict, context: dict, *, pids: set[int],
     lineage.write("graphs", "windows_scheduler_sampling.json", producer_version="1",
                   producer_source=Path(__file__).parents[1] / "analyzers/windows_threads.py",
                   inputs=[normalized_ref], records=[graph])
+    if any(event['kind'].startswith('Disk') for event in events):
+        from ep_auditor.analyzers.io import disk_requests
+        disk = disk_requests(events, complete=counters == [0,0], main_thread_id=scope.get('main_thread_id'))
+        disk['rawReference'] = csv_ref
+        disk['observationScope'] = scope
+        lineage.write('metrics', 'windows_disk_io.json', producer_version='ms65-disk-1',
+            producer_source=Path(__file__).parents[1] / 'analyzers/io.py', inputs=[normalized_ref],
+            records=[{'eventType': 'windows.disk.requests', 'required': True, **disk}])
     return graph

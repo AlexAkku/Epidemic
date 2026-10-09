@@ -8,6 +8,10 @@
 #include <new>
 #include <stdexcept>
 
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include "shadow_probe.h"
+#endif
+
 namespace epidemic::memory
 {
 // This file contains the minimal allocator contracts used by the memory baseline.
@@ -62,7 +66,12 @@ class DefaultAllocator final : public IAllocator
             throw std::length_error("allocation size exceeds PTRDIFF_MAX");
         }
 
-        return ::operator new(NormalizeAllocationSize(bytes), std::align_val_t(alignment));
+        auto *pointer = ::operator new(NormalizeAllocationSize(bytes), std::align_val_t(alignment));
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        auditor::shadow::allocation("allocation", reinterpret_cast<std::uintptr_t>(pointer),
+                                    NormalizeAllocationSize(bytes), "DefaultAllocator.Allocate");
+#endif
+        return pointer;
     }
 
     // Releases storage through aligned operator delete. Null or invalid requests are ignored.
@@ -75,6 +84,10 @@ class DefaultAllocator final : public IAllocator
             return;
         }
 
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        auditor::shadow::allocation("deallocation", reinterpret_cast<std::uintptr_t>(pointer),
+                                    NormalizeAllocationSize(bytes), "DefaultAllocator.Deallocate");
+#endif
         ::operator delete(pointer, std::align_val_t(alignment));
     }
 };

@@ -5,6 +5,9 @@
 #include <queue>
 #include <string>
 #include <thread>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::core
 {
@@ -47,6 +50,10 @@ class MainThreadDispatcher final : public IMainThreadDispatcher
     {
         std::function<void()> task;
         std::string debug_name;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        auditor::shadow::Context auditor_context;
+        auditor::shadow::Identity auditor_correlation;
+#endif
     };
 
     std::thread::id owner_thread_id_;

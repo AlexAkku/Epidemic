@@ -6,6 +6,9 @@
 #include <atomic>
 #include <limits>
 #include <unordered_set>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::gameplay::entities
 {
@@ -214,6 +217,10 @@ bool EntityService::CanRecordChanges(std::size_t count) const noexcept
 
 void EntityService::RecordChange(EntityChange change) noexcept
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::entity_change(change.entity.High(), change.entity.Low(), static_cast<unsigned>(change.kind),
+        static_cast<unsigned>(change.previous_lifecycle), static_cast<unsigned>(change.lifecycle));
+#endif
     if (next_change_sequence_ == 0) return;
     const auto sequence = next_change_sequence_;
     change.sequence = sequence;

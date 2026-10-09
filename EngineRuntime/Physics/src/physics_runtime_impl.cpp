@@ -859,6 +859,12 @@ foundation::Result<std::vector<BackendContactEvent>> PhysicsRuntime::ConsumeCont
         if (left != nullptr && right != nullptr)
         {
             consumed.push_back(BackendContactEvent{left->backend_handle, right->backend_handle, contact.point, contact.normal, contact.impulse, contact.state});
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            if (contact.auditor_correlation[0]) {
+                const auditor::shadow::ContextScope scope(contact.auditor_context);
+                auditor::shadow::flow("physics.callback", contact.auditor_correlation.data());
+            }
+#endif
         }
     }
     contacts_.clear();
@@ -1011,6 +1017,12 @@ void PhysicsRuntime::Clear()
 void PhysicsRuntime::QueueContact(ContactEvent event)
 {
     contacts_.push_back(event);
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto& accepted = contacts_.back();
+    accepted.auditor_context = auditor::shadow::child_context();
+    accepted.auditor_correlation = auditor::shadow::identity();
+    accepted.auditor_context.cause = auditor::shadow::emit_causal("physics.dispatch", accepted.auditor_correlation.data());
+#endif
 }
 
 void PhysicsRuntime::SetTransformSource(IPhysicsTransformSource* source) noexcept
@@ -1493,6 +1505,14 @@ foundation::Result<PhysicsStepResult> PhysicsRuntime::CompleteFixedStep(RuntimeF
         }
     }
     contacts_.insert(contacts_.end(), mapped_contacts.begin(), mapped_contacts.end());
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    for (auto index = contacts_.size() - mapped_contacts.size(); index < contacts_.size(); ++index) {
+        auto& accepted = contacts_[index];
+        accepted.auditor_context = auditor::shadow::child_context();
+        accepted.auditor_correlation = auditor::shadow::identity();
+        accepted.auditor_context.cause = auditor::shadow::emit_causal("physics.dispatch", accepted.auditor_correlation.data());
+    }
+#endif
     invalid_backend_contact_count_ += invalid_contact_delta;
     pending_backend_contacts_.clear();
     backend_contacts_pending_sync_ = false;

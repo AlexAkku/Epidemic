@@ -15,6 +15,10 @@ from ep_auditor.core.evidence import EvidenceError, digest
 OBSERVATION_KINDS = {"P-Start", "P-End", "P-DCStart", "P-DCEnd", "T-Start", "T-End", "T-DCStart", "T-DCEnd",
                      "CSwitch", "ReadyThread", "SampledProfile", "Stack", "I-Start", "I-End", "I-DCStart", "I-DCEnd",
                      "ImageId", "DbgId/None", "DbgId/Bin", "DbgId/RSDS", "DbgId/ILRSDS"}
+IO_KINDS = {'DiskRead','DiskWrite','DiskFlush','DiskReadInit','DiskWriteInit','DiskFlushInit',
+            'FileIoCreate','FileIoCleanup','FileIoClose','FileIoRead','FileIoWrite','FileIoFlush',
+            'FileIoSetInfo','FileIoQueryInfo','FileIoFSCTL','FileIoDelete','FileIoDirEnum','FileIoOpEnd'}
+OBSERVATION_KINDS |= IO_KINDS
 
 
 def process_id(value: str) -> int:

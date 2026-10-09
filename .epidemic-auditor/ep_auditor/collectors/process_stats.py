@@ -51,6 +51,7 @@ class ProcessStatsCollector:
         self.error: str | None = None
         self.capture_state: dict[str, dict[str, int]] = {}
         self._stop = threading.Event()
+        self.on_tick = None # Optional run-owned observer; uses this existing sampler thread.
         self._thread: threading.Thread | None = None
         self._root_pid: int | None = None
         self._run_dir: Path | None = None
@@ -121,6 +122,8 @@ class ProcessStatsCollector:
             return
 
         while not self._stop.is_set():
+            if self.on_tick is not None:
+                self.on_tick()
             now_mono = time.perf_counter()
             processes = self._tree(root)
             aggregate_cpu = 0.0

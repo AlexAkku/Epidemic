@@ -1,5 +1,13 @@
 function(epidemic_configure_target target_name)
     target_compile_features(${target_name} PUBLIC cxx_std_23)
+    if(EP_AUDITOR_PROFILE STREQUAL "audit-memory")
+        get_target_property(target_type ${target_name} TYPE)
+        if(target_type MATCHES "^(EXECUTABLE|SHARED_LIBRARY|MODULE_LIBRARY)$")
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${EP_AUDITOR_ASAN_RUNTIME}" "$<TARGET_FILE_DIR:${target_name}>"
+                VERBATIM)
+        endif()
+    endif()
 
     if(MSVC)
         target_compile_options(${target_name} PRIVATE /W4 /permissive- /EHsc)

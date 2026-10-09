@@ -11,6 +11,10 @@
 #include <type_traits>
 #include <unordered_set>
 #include <vector>
+#include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::runtime::renderer
 {
@@ -1176,8 +1180,28 @@ class TestCommandSink final : public IRenderCommandSink
 }
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-render") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "render-action");
+        scenario("scenario.start", "render-scenario");
+        TestResourceBridge bridge;
+        TestSceneSource scene;
+        TestCommandSink sink;
+        scene.AddNode(RenderTransformId{68});
+        RendererRuntime owner(&bridge, &scene, &sink);
+        const auto proxy = owner.RegisterProxy(MakeProxyDesc(RenderTransformId{68}, ResourceId::FromString("mesh/auditor"), ResourceId::FromString("mat/auditor")));
+        const auto view = owner.CreateView(ViewDesc{RenderTransformId{68}, 60.0f, 0.1f, 100.0f});
+        if (!proxy || !view || !owner.SetMainView(view.Value()) || !owner.PrepareFrame() || !owner.RenderFrame()) return 2;
+        scenario("scenario.end", "render-scenario");
+        action("action.end", "render-action");
+        return sink.begin_count == 1 && sink.submit_count == 1 ? 0 : 3;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     static_assert(std::is_abstract_v<IRenderScene>);
     static_assert(std::is_abstract_v<IViewSystem>);
     static_assert(std::is_abstract_v<IRendererRuntime>);

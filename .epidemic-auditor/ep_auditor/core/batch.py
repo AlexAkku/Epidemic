@@ -51,6 +51,14 @@ def capture_batch(record, selected, results, cancel_reason):
                     collector=artifact['collector'], version=artifact['collector_version'],
                     start_ns=artifact['start_ns'], end_ns=artifact['end_ns'], health=artifact['health'],
                     provenance=artifact['provenance'], confidence=artifact['confidence'])
+            elif ((relative.startswith(('diagnostics/', 'causal/')) and relative.endswith(('.jsonl', '.health.json', 'capture-failure.json')))
+                  or relative in {'diagnostics/verifier.xml', 'modules/api_observer_binding.json'}):
+                # Keep child transport inputs as raw evidence; do not fuse distinct
+                # child causal scopes into an invented parent DAG.
+                raw.import_file(prefix + 'raw/' + relative, directory / artifact['path'], artifact['sha256'],
+                    collector=artifact['collector'], version=artifact['collector_version'],
+                    start_ns=artifact['start_ns'], end_ns=artifact['end_ns'], health=artifact['health'],
+                    provenance=artifact['provenance'], confidence=artifact['confidence'])
             elif relative.startswith('coverage/') and relative.endswith('.profraw'):
                 coverage_profiles.append(directory / artifact['path'])
         if (directory / 'raw/coverage/report.json').is_file():

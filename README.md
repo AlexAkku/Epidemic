@@ -1,15 +1,15 @@
 # Epidemic Engine
 
-Epidemic Engine — Windows-only C++23 движок, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и никогда не протягивают зависимости обратно вниз.
+Epidemic Engine — Windows-only C++23 движок, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и зависят только от разрешённых нижних слоёв.
 
-Текущая структура проекта:
+Порядок слоёв от нижнего к верхнему; разрешённые зависимости направлены сверху вниз (`Game → EngineFramework → EngineRuntime → EngineBase`):
 
 ```text
 EngineBase
     ↓
 EngineRuntime
     ↓
-GameFramework
+EngineFramework (GameFramework)
     ↓
 Game
 ```
@@ -18,7 +18,7 @@ Game
 
 `GameFramework` должен содержать переиспользуемые gameplay-системы, а `Game` — конкретные правила, контент и конечный composition root.
 
-Подробное устройство слоев описано в [`docs/architecture.md`](docs/architecture.md). Документация EngineBase находится в [`docs/EngineBase/README.md`](docs/EngineBase/README.md), практическое использование — в [`docs/EngineBase/using_enginebase.md`](docs/EngineBase/using_enginebase.md). Для Runtime аналогичные документы находятся в [`docs/EngineRuntime/README.md`](docs/EngineRuntime/README.md) и [`docs/EngineRuntime/using_engineruntime.md`](docs/EngineRuntime/using_engineruntime.md).
+Подробное устройство слоев описано в [`Documentation/architecture.md`](Documentation/architecture.md). Документация EngineBase находится в [`Documentation/EngineBase/README.md`](Documentation/EngineBase/README.md), практическое использование — в [`Documentation/EngineBase/using_enginebase.md`](Documentation/EngineBase/using_enginebase.md). Для Runtime аналогичные документы находятся в [`Documentation/EngineRuntime/README.md`](Documentation/EngineRuntime/README.md) и [`Documentation/EngineRuntime/using_engineruntime.md`](Documentation/EngineRuntime/using_engineruntime.md).
 
 ## Сборка
 
@@ -52,7 +52,18 @@ ctest --test-dir build -C Debug -R EpidemicRuntime --output-on-failure
 .\build\EngineBase\Apps\RhiClearScreenApp\EpidemicRhiClearScreenApp.exe
 ```
 
-Логи записываются в `logs/epidemic.log`.
+Логи запускаемых вручную smoke-приложений зависят от рабочего каталога; для разработки запускайте их с рабочим каталогом `.ai/`, чтобы логи оставались в `.ai/logs/`.
+
+## Подготовка рабочего пространства
+
+Единый контракт работы агента: [`Development/AgentsRules/AGENT_RULES.md`](Development/AgentsRules/AGENT_RULES.md). Подробное описание процесса: [`Development/AgentsRules/WORKFLOW.ru.md`](Development/AgentsRules/WORKFLOW.ru.md).
+
+```powershell
+Development/AgentsRules/Scripts/Setup-AgentTools.ps1
+Development/AgentsRules/Scripts/Invoke-Dev.ps1 -Action Build -Profile full -Configuration Debug
+```
+
+C++ сборки находятся в `build/`. Все остальные создаваемые инструменты, виртуальные окружения, индексы, модели, временные файлы и логи находятся в `.ai/`. Исходники и настройки инструментов хранятся в `Development/AgentsRules/`.
 
 ## Главное правило зависимостей
 

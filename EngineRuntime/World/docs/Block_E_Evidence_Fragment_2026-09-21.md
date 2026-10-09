@@ -174,7 +174,7 @@ Current generated coverage has no external-boundary candidate row for this modul
 
 | Defect | Verified fix | Exact regression/evidence | CTest target/gate |
 | --- | --- | --- | --- |
-| `G3-DOC-001 (World)` | Premature current-state `World frozen` wording is replaced by conditional `LOCAL_READY` language and system-level freeze remains deferred to Goals 5–9. | `docs/EngineRuntime/modules/world.md::Стабильность` | `documentation gate` |
+| `G3-DOC-001 (World)` | Premature current-state `World frozen` wording is replaced by conditional `LOCAL_READY` language and system-level freeze remains deferred to Goals 5–9. | `Documentation/EngineRuntime/modules/world.md::Стабильность` | `documentation gate` |
 
 ## Block E validation note
 

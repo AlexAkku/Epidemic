@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::core::tasks
 {
@@ -46,6 +49,10 @@ struct TaskHandle::State
     std::weak_ptr<void> owner;
     std::exception_ptr exception;
     std::string debug_name;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::Context auditor_context;
+    auditor::shadow::Identity auditor_job{};
+#endif
 };
 
 // Shared aggregation state for a set of related scheduled tasks.
@@ -397,6 +404,10 @@ TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGrou
     auto handle_state = std::make_shared<TaskHandle::State>();
     handle_state->debug_name = std::move(debug_name);
     handle_state->owner = state_;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    handle_state->auditor_context = auditor::shadow::child_context();
+    handle_state->auditor_job = auditor::shadow::identity();
+#endif
 
     {
         std::scoped_lock lock(state_->mutex);
@@ -433,6 +444,9 @@ TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGrou
         }
 #endif
         state_->tasks.push(QueuedTask{std::move(task), handle_state, group_state});
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        handle_state->auditor_context.cause = auditor::shadow::emit_causal("job.submit", handle_state->auditor_job.data());
+#endif
         if (group_state)
         {
             if (bind_group_owner)
@@ -486,6 +500,10 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
             }
         }
 
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        const auditor::shadow::ContextScope auditor_scope(queued_task.handle_state->auditor_context);
+        auditor::shadow::flow(queued_task.task ? "job.execute" : "job.cancel", queued_task.handle_state->auditor_job.data());
+#endif
         std::exception_ptr task_exception;
         if (queued_task.task)
         {

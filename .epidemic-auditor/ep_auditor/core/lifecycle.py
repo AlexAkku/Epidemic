@@ -58,7 +58,25 @@ def seal_run_capture(record) -> dict:
     publish_capture(record.run_dir)
     from ep_auditor.collectors.coverage import publish_coverage
     publish_coverage(record.run_dir)
+    from ep_auditor.collectors.telemetry_pipeline import publish_telemetry
+    publish_telemetry(record.run_dir)
+    from ep_auditor.collectors.sanitizer import publish_sanitizer
+    publish_sanitizer(record.run_dir)
+    if any(row['path'] == 'raw/modules/api_observer_binding.json' for row in manifest['raw_files']):
+        from ep_auditor.collectors.modules import publish_api_snapshot
+        publish_api_snapshot(record.run_dir)
     return manifest
+
+
+def observed_target_succeeded(raw: RawEvidence, manifest: dict) -> bool:
+    if not any(row['path'] == 'raw/modules/api_observer_binding.json' for row in manifest['raw_files']):
+        return True
+    import json
+    binding = json.loads(raw.read_bytes('modules/api_observer_binding.json'))
+    code = binding.get('target_exit_code')
+    if type(code) is not int or not 0 <= code <= 0xFFFFFFFF:
+        raise EvidenceError('invalid independently observed target exit code')
+    return code == 0
 
 
 def finalize_run(record, requested_status: str, summary: dict) -> None:
@@ -76,10 +94,15 @@ def finalize_run(record, requested_status: str, summary: dict) -> None:
             raise EvidenceError("run already finalized")
         raw = RawEvidence(record.run_dir)
         manifest = seal_run_capture(record)
-        record.status = requested_status if manifest["capture_complete"] else "INCOMPLETE"
+        from ep_auditor.collectors.telemetry_pipeline import telemetry_complete
+        derived_telemetry_complete = telemetry_complete(record.run_dir)
+        record.status = requested_status if (manifest["capture_complete"] and derived_telemetry_complete) else "INCOMPLETE"
+        if record.status == 'PASS' and not observed_target_succeeded(raw, manifest):
+            record.status = 'FAIL'
         record.finished_utc = utc_now()
         record.metadata["finalization"] = {"state": "committed", "requested_status": requested_status,
                                           "manifest_sha256": digest(raw.manifest_path),
+                                          "telemetry_complete": derived_telemetry_complete,
                                           "environment_sha256": manifest["environment_sha256"], "summary": summary}
         # Single atomic commit point. A crash before replacement leaves INCOMPLETE.
         atomic_json(record.run_dir / "run.json", record.to_dict())
@@ -102,6 +125,15 @@ def authoritative_run(run_dir: Path) -> dict:
         raise EvidenceError("run commit evidence binding mismatch")
     if not manifest["capture_complete"] and record["status"] != "INCOMPLETE":
         raise EvidenceError("incomplete capture falsely marked clean")
+    # Do not let successful process exit hide a semantically broken causal stream.
+    # Old runs without telemetry retain their original admission contract.
+    from ep_auditor.collectors.telemetry_pipeline import telemetry_complete
+    current_telemetry = telemetry_complete(run_dir)
+    if (completion.get("telemetry_complete", current_telemetry) != current_telemetry
+            or (not current_telemetry and record["status"] != "INCOMPLETE")):
+        raise EvidenceError("derived telemetry evidence falsely marked clean")
     if record["status"] not in {"PASS", "FAIL", "CANCELLED", "INCOMPLETE"}:
         raise EvidenceError("unknown committed run status")
+    if record['status'] == 'PASS' and not observed_target_succeeded(raw, manifest):
+        raise EvidenceError('failed observed target falsely marked PASS')
     return record

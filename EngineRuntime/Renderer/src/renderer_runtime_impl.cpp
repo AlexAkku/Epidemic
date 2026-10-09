@@ -12,6 +12,9 @@
 #include <tuple>
 #include <vector>
 #include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::runtime::renderer
 {
@@ -682,6 +685,13 @@ foundation::Result<void> RendererRuntime::RenderFrame()
     {
         try
         {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            auto auditor_context = auditor::shadow::child_context();
+            const auto auditor_command = auditor::shadow::identity();
+            auditor_context.cause = auditor::shadow::emit_causal("render.submit", auditor_command.data());
+            const auditor::shadow::ContextScope auditor_scope(auditor_context);
+            auditor::shadow::flow("render.execute", auditor_command.data()); // Synchronous sink dispatch; not GPU completion.
+#endif
             const auto submitted = command_sink_->SubmitProxy(submission);
             if (!submitted)
             {

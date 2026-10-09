@@ -70,6 +70,343 @@ std::string frame(HANDLE process, DWORD64 address) {
 }
 }
 
+int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& arguments) {
+#if !defined(_M_X64)
+    (void)binary; (void)arguments;
+    throw std::runtime_error("exception debugger requires x64");
+#else
+    const std::wstring image(binary);
+    if (image.find(L'"') != std::wstring::npos) throw std::runtime_error("invalid exception fixture image");
+    std::wstring command = L"\"" + image + L"\"";
+    for (const auto& argument : arguments) {
+        // Windows argv quoting: escape quotes and double trailing backslashes.
+        command += L" \"";
+        std::size_t slashes = 0;
+        for (const auto character : argument) {
+            if (character == L'\\') { ++slashes; continue; }
+            command.append(character == L'"' ? slashes * 2 + 1 : slashes, L'\\');
+            slashes = 0;
+            command += character;
+        }
+        command.append(slashes * 2, L'\\');
+        command += L'"';
+    }
+    if (command.size() > 32766) throw std::runtime_error("exception command exceeds Windows limit");
+    STARTUPINFOW startup{}; startup.cb = sizeof(startup); PROCESS_INFORMATION child{};
+    if (!CreateProcessW(image.c_str(), command.data(), nullptr, nullptr, FALSE,
+                        DEBUG_ONLY_THIS_PROCESS | CREATE_NO_WINDOW, nullptr, nullptr, &startup, &child))
+        throw std::runtime_error("exception debug fixture launch failed");
+    Handle process(child.hProcess), primary(child.hThread);
+    // Every exceptional return also destroys our child. No arbitrary PID attach.
+    struct OwnedChild { HANDLE process; bool exited = false;
+        ~OwnedChild() { if (!exited) { TerminateProcess(process, 124); WaitForSingleObject(process, 5000); } }
+    } owned{process.value};
+    if (!DebugSetProcessKillOnExit(TRUE)) throw std::runtime_error("exception kill-on-exit failed");
+    FILETIME created{}, exited{}, kernel{}, user{};
+    if (!GetProcessTimes(process.value, &created, &exited, &kernel, &user))
+        throw std::runtime_error("exception process identity unavailable");
+    const auto epoch = (static_cast<unsigned long long>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+    LARGE_INTEGER frequency{};
+    if (!QueryPerformanceFrequency(&frequency)) throw std::runtime_error("exception QPC unavailable");
+    SymSetOptions(SYMOPT_UNDNAME | SYMOPT_LOAD_LINES | SYMOPT_FAIL_CRITICAL_ERRORS | SYMOPT_NO_PROMPTS);
+    // Empty symbol search path: only image/PDB files supplied by loaded modules.
+    if (!SymInitializeW(process.value, L"", FALSE)) throw std::runtime_error("exception symbols unavailable");
+    struct Symbols { HANDLE process; ~Symbols() { SymCleanup(process); } } symbols{process.value};
+    std::map<DWORD, HANDLE> threads;
+    struct Threads { std::map<DWORD, HANDLE>& rows;
+        ~Threads() { for (auto& row : rows) CloseHandle(row.second); }
+    } cleanup{threads};
+    std::vector<std::string> observations, continuations, verifier_modules, api_calls;
+    std::map<DWORD64, unsigned long long> module_epochs;
+    const auto captured_frame = [&](DWORD64 address) {
+        const auto base = SymGetModuleBase64(process.value, address);
+        auto result = frame(process.value, address);
+        result.pop_back();
+        return result + ",\"module_base\":" + std::to_string(base)
+            + ",\"module_load_qpc\":" + std::to_string(module_epochs.count(base) ? module_epochs.at(base) : 0) + '}';
+    };
+    struct PendingException { std::size_t index; unsigned long long cpu, qpc; bool cpu_available; };
+    std::map<DWORD, PendingException> pending_exceptions;
+    const auto thread_cpu = [&](DWORD tid, unsigned long long& value) {
+        FILETIME creation{}, exit{}, system{}, application{};
+        if (!threads.count(tid) || !GetThreadTimes(threads.at(tid), &creation, &exit, &system, &application)) return false;
+        value = ((static_cast<unsigned long long>(system.dwHighDateTime) << 32) | system.dwLowDateTime)
+              + ((static_cast<unsigned long long>(application.dwHighDateTime) << 32) | application.dwLowDateTime);
+        return true;
+    };
+    std::size_t observation_bytes = 0;
+    struct ApiPoint { unsigned char original; std::string name, family; DWORD64 module_base; };
+    std::map<DWORD64, ApiPoint> api_points;
+    std::map<DWORD, DWORD64> api_steps;
+    std::vector<HANDLE> suspended_threads;
+    std::size_t api_bytes = 0;
+    bool api_loss = false;
+    // Export entry observation is intrusive and records attempted calls. Return
+    // values, physical disk latency and packet traffic are not inferred from it.
+    auto arm_api = [&](HANDLE file, const wchar_t* path, DWORD64 remote_base) {
+        std::wstring filename(path); const auto slash = filename.find_last_of(L"\\/");
+        filename = filename.substr(slash == std::wstring::npos ? 0 : slash + 1);
+        struct Entry { const char* name; const char* family; };
+        static const Entry kernel[] = {{"CreateFileW","file"},{"CloseHandle","file"},{"ReadFile","file"},
+            {"WriteFile","file"},{"CancelIoEx","file"},{"GetOverlappedResult","file"},
+            {"SetFilePointer","file"},{"SetFilePointerEx","file"},
+            {"CreateFileMappingW","file"},{"MapViewOfFile","file"},{"FindFirstFileW","file"},
+            {"FindNextFileW","file"},{"FindClose","file"},{"MoveFileExW","file"},{"VirtualAlloc","memory"},{"VirtualFree","memory"},
+            {"CreateEventW","synchronization"},{"SetEvent","synchronization"},{"CreateThread","thread"}};
+        static const Entry socket[] = {{"connect","socket"},{"send","socket"},{"recv","socket"},{"closesocket","socket"}};
+        static const Entry window[] = {{"CreateWindowExW","window"},{"DestroyWindow","window"},{"PeekMessageW","window"}};
+        static const Entry graphics[] = {{"D3D11CreateDevice","graphics"},{"D3D11CreateDeviceAndSwapChain","graphics"}};
+        const Entry* entries = nullptr; std::size_t count = 0;
+        if (_wcsicmp(filename.c_str(), L"KernelBase.dll") == 0) { entries = kernel; count = std::size(kernel); }
+        else if (_wcsicmp(filename.c_str(), L"WS2_32.dll") == 0) { entries = socket; count = std::size(socket); }
+        else if (_wcsicmp(filename.c_str(), L"USER32.dll") == 0) { entries = window; count = std::size(window); }
+        else if (_wcsicmp(filename.c_str(), L"D3D11.dll") == 0) { entries = graphics; count = std::size(graphics); }
+        if (!entries) return;
+        wchar_t system[MAX_PATH]{}, observed[32768]{};
+        if (!GetSystemDirectoryW(system, MAX_PATH) || !GetFinalPathNameByHandleW(file, observed, 32768, FILE_NAME_NORMALIZED)) {
+            api_loss = true; return;
+        }
+        std::wstring canonical(observed);
+        if (canonical.rfind(L"\\\\?\\", 0) == 0) canonical.erase(0, 4);
+        if (_wcsicmp(canonical.c_str(), (std::wstring(system) + L"\\" + filename).c_str()) != 0) {
+            api_loss = true; return;
+        }
+        const auto local = LoadLibraryExW(filename.c_str(), nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (!local) { api_loss = true; return; }
+        struct Module { HMODULE value; ~Module() { FreeLibrary(value); } } module{local};
+        for (std::size_t index = 0; index < count; ++index) {
+            const auto address = reinterpret_cast<DWORD64>(GetProcAddress(local, entries[index].name));
+            HMODULE owner = nullptr;
+            if (!address || !GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                    reinterpret_cast<const wchar_t*>(address), &owner) || owner != local) continue; // forwarded/unsupported
+            const auto remote = remote_base + address - reinterpret_cast<DWORD64>(local);
+            if (api_points.count(remote)) continue;
+            if (read<std::array<unsigned char,16>>(process.value, remote)
+                != read<std::array<unsigned char,16>>(GetCurrentProcess(), address)) { api_loss = true; continue; }
+            const auto original = read<unsigned char>(process.value, remote);
+            if (original == 0xcc) { api_loss = true; continue; }
+            api_points.emplace(remote, ApiPoint{original, entries[index].name, entries[index].family, remote_base});
+            patch(process.value, remote, 0xcc);
+        }
+    };
+    bool initial_break = false, loss = false;
+    DWORD exit_code = MAXDWORD;
+    const auto begin = stamp(), deadline = GetTickCount64() + 15000;
+    while (!owned.exited && GetTickCount64() < deadline) {
+        DEBUG_EVENT event{};
+        if (!WaitForDebugEventEx(&event, 100)) {
+            if (GetLastError() == ERROR_SEM_TIMEOUT) continue;
+            throw std::runtime_error("exception debug wait failed");
+        }
+        DWORD disposition = DBG_CONTINUE;
+        const auto tid = event.dwThreadId;
+        if (event.dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT || event.dwDebugEventCode == CREATE_THREAD_DEBUG_EVENT) {
+            const auto source = event.dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT
+                ? event.u.CreateProcessInfo.hThread : event.u.CreateThread.hThread;
+            HANDLE duplicate = nullptr;
+            if (!DuplicateHandle(GetCurrentProcess(), source, GetCurrentProcess(), &duplicate, 0, FALSE, DUPLICATE_SAME_ACCESS))
+                throw std::runtime_error("exception thread unavailable");
+            threads.emplace(tid, duplicate);
+            if (event.dwDebugEventCode == CREATE_PROCESS_DEBUG_EVENT) {
+                module_epochs[reinterpret_cast<DWORD64>(event.u.CreateProcessInfo.lpBaseOfImage)] = stamp();
+                SymLoadModuleExW(process.value, event.u.CreateProcessInfo.hFile, image.c_str(), nullptr,
+                                reinterpret_cast<DWORD64>(event.u.CreateProcessInfo.lpBaseOfImage), 0, nullptr, 0);
+                if (event.u.CreateProcessInfo.hFile) CloseHandle(event.u.CreateProcessInfo.hFile);
+            }
+        } else if (event.dwDebugEventCode == LOAD_DLL_DEBUG_EVENT) {
+            module_epochs[reinterpret_cast<DWORD64>(event.u.LoadDll.lpBaseOfDll)] = stamp();
+            const auto file = event.u.LoadDll.hFile;
+            wchar_t path[32768]{};
+            if (file && GetFinalPathNameByHandleW(file, path, 32768, FILE_NAME_NORMALIZED)) {
+                SymLoadModuleExW(process.value, file, path, nullptr,
+                                reinterpret_cast<DWORD64>(event.u.LoadDll.lpBaseOfDll), 0, nullptr, 0);
+                arm_api(file, path, reinterpret_cast<DWORD64>(event.u.LoadDll.lpBaseOfDll));
+                std::wstring filename(path); const auto slash = filename.find_last_of(L"\\/");
+                filename = filename.substr(slash == std::wstring::npos ? 0 : slash + 1);
+                if (_wcsicmp(filename.c_str(), L"verifier.dll") == 0 || _wcsicmp(filename.c_str(), L"vrfcore.dll") == 0) {
+                    if (verifier_modules.size() < 8) verifier_modules.push_back(text(path));
+                    else loss = true;
+                }
+            }
+            if (file) CloseHandle(file);
+        } else if (event.dwDebugEventCode == UNLOAD_DLL_DEBUG_EVENT) {
+            const auto base = reinterpret_cast<DWORD64>(event.u.UnloadDll.lpBaseOfDll);
+            module_epochs.erase(base);
+            SymUnloadModule64(process.value,base);
+            for (auto point = api_points.begin(); point != api_points.end();) {
+                if (point->second.module_base == base) point = api_points.erase(point);
+                else ++point;
+            }
+        } else if (event.dwDebugEventCode == EXIT_THREAD_DEBUG_EVENT) {
+            if (threads.count(tid)) { CloseHandle(threads.at(tid)); threads.erase(tid); }
+        } else if (event.dwDebugEventCode == EXIT_PROCESS_DEBUG_EVENT) {
+            owned.exited = true; exit_code = event.u.ExitProcess.dwExitCode;
+        } else if (event.dwDebugEventCode == OUTPUT_DEBUG_STRING_EVENT) {
+            const auto& data = event.u.DebugString;
+            if (!data.fUnicode && data.nDebugStringLength > 0 && data.nDebugStringLength <= 128) {
+                std::array<char, 129> message{}; SIZE_T copied = 0;
+                if (ReadProcessMemory(process.value, data.lpDebugStringData, message.data(), data.nDebugStringLength, &copied)
+                    && copied == data.nDebugStringLength && std::string(message.data()).rfind("EP_RECOVERY:", 0) == 0) {
+                    const auto tick = stamp();
+                    if (pending_exceptions.count(tid)) {
+                        const auto previous = pending_exceptions.at(tid);
+                        std::string suffix = ",\"continuation_qpc\":" + std::to_string(tick);
+                        unsigned long long cpu = 0;
+                        if (previous.cpu_available && thread_cpu(tid, cpu) && cpu >= previous.cpu)
+                            suffix += ",\"thread_cpu_interval_100ns\":" + std::to_string(cpu - previous.cpu);
+                        suffix += ",\"continuation_scope\":\"debugger-observed target marker; handler-exclusive cost unknown\"}";
+                        if (suffix.size() > 8 * 1024 * 1024 - observation_bytes) loss = true;
+                        else {
+                            auto& row = observations.at(previous.index);
+                            row.pop_back(); row += suffix;
+                            observation_bytes += suffix.size() - 1;
+                        }
+                        pending_exceptions.erase(tid);
+                    }
+                    if (continuations.size() < 4096) continuations.push_back("{\"tid\":" + std::to_string(tid)
+                        + ",\"qpc\":" + std::to_string(tick) + "}");
+                    else loss = true;
+                }
+            }
+        } else if (event.dwDebugEventCode == EXCEPTION_DEBUG_EVENT) {
+            const auto& info = event.u.Exception;
+            const auto code = info.ExceptionRecord.ExceptionCode;
+            const auto address = reinterpret_cast<DWORD64>(info.ExceptionRecord.ExceptionAddress);
+            if (code == EXCEPTION_SINGLE_STEP && api_steps.count(tid)) {
+                const auto entry = api_steps.at(tid); api_steps.erase(tid);
+                patch(process.value, entry, 0xcc);
+                CONTEXT context{}; context.ContextFlags = CONTEXT_CONTROL;
+                if (!GetThreadContext(threads.at(tid), &context)) throw std::runtime_error("API step context failed");
+                context.EFlags &= ~0x100UL;
+                if (!SetThreadContext(threads.at(tid), &context)) throw std::runtime_error("API step restore failed");
+                for (const auto thread : suspended_threads)
+                    if (ResumeThread(thread) == MAXDWORD) throw std::runtime_error("API peer resume failed");
+                suspended_threads.clear();
+            } else if (code == EXCEPTION_BREAKPOINT && api_points.count(address)) {
+                CONTEXT context{}; context.ContextFlags = CONTEXT_FULL;
+                if (!threads.count(tid) || !GetThreadContext(threads.at(tid), &context))
+                    throw std::runtime_error("API thread context unavailable");
+                context.Rip = address;
+                const auto& api = api_points.at(address);
+                if (api_calls.size() >= 4096) api_loss = true;
+                else {
+                    std::ostringstream row;
+                    row << "{\"name\":" << text(std::wstring(api.name.begin(),api.name.end()))
+                        << ",\"family\":" << text(std::wstring(api.family.begin(),api.family.end()))
+                        << ",\"tid\":" << tid << ",\"qpc\":" << stamp()
+                        << ",\"address\":" << address;
+                    if (api.name == "ReadFile" || api.name == "WriteFile") {
+                        const auto overlapped = read<DWORD64>(process.value, context.Rsp + 40);
+                        row << ",\"requested_bytes\":" << static_cast<DWORD>(context.R8)
+                            << ",\"synchronous_attempt\":" << (!overlapped ? "true" : "false")
+                            << ",\"main_thread\":" << (tid == child.dwThreadId ? "true" : "false");
+                    }
+                    row << ",\"stack\":[" << captured_frame(address);
+                    auto walking = context; STACKFRAME64 stack{};
+                    stack.AddrPC = {context.Rip,0,AddrModeFlat}; stack.AddrFrame = {context.Rbp,0,AddrModeFlat};
+                    stack.AddrStack = {context.Rsp,0,AddrModeFlat};
+                    for (unsigned depth = 1; depth < 32 && StackWalk64(IMAGE_FILE_MACHINE_AMD64,process.value,threads.at(tid),
+                            &stack,&walking,nullptr,SymFunctionTableAccess64,SymGetModuleBase64,nullptr); ++depth) {
+                        if (!stack.AddrPC.Offset) break;
+                        row << ',' << captured_frame(stack.AddrPC.Offset);
+                    }
+                    auto payload = row.str() + "]}";
+                    if (payload.size() > 65536 || payload.size() > 8 * 1024 * 1024 - api_bytes) api_loss = true;
+                    else { api_bytes += payload.size(); api_calls.push_back(std::move(payload)); }
+                }
+                // All debuggee threads are stopped at this event. Keep peers
+                // suspended through the one restored instruction, so none can
+                // cross an unarmed export and disappear from the observation.
+                for (const auto& thread : threads) if (thread.first != tid) {
+                    if (SuspendThread(thread.second) == MAXDWORD) throw std::runtime_error("API peer suspend failed");
+                    suspended_threads.push_back(thread.second);
+                }
+                patch(process.value,address,api.original);
+                context.EFlags |= 0x100UL; api_steps.emplace(tid,address);
+                if (!SetThreadContext(threads.at(tid),&context)) throw std::runtime_error("API entry restore failed");
+            } else if (!initial_break && code == EXCEPTION_BREAKPOINT && info.dwFirstChance) {
+                initial_break = true;
+            } else {
+                // Let the target's SEH handle it. DBG_CONTINUE here would hide crashes.
+                disposition = DBG_EXCEPTION_NOT_HANDLED;
+                if (observations.size() >= 4096) loss = true;
+                else {
+                    const auto tick = stamp();
+                    unsigned long long thread_ticks = 0;
+                    const bool cpu_available = thread_cpu(tid, thread_ticks);
+                    std::ostringstream row;
+                    row << "{\"code\":" << code << ",\"address\":"
+                        << reinterpret_cast<DWORD64>(info.ExceptionRecord.ExceptionAddress)
+                        << ",\"tid\":" << tid << ",\"qpc\":" << tick
+                        << ",\"first_chance\":" << (info.dwFirstChance ? "true" : "false") << ",\"stack\":[";
+                    CONTEXT context{}; context.ContextFlags = CONTEXT_FULL;
+                    if (!threads.count(tid) || !GetThreadContext(threads.at(tid), &context)) loss = true;
+                    else {
+                        STACKFRAME64 stack{};
+                        stack.AddrPC = {context.Rip, 0, AddrModeFlat};
+                        stack.AddrFrame = {context.Rbp, 0, AddrModeFlat};
+                        stack.AddrStack = {context.Rsp, 0, AddrModeFlat};
+                        row << captured_frame(context.Rip);
+                        for (unsigned depth = 1; depth < 32 && StackWalk64(IMAGE_FILE_MACHINE_AMD64, process.value,
+                             threads.at(tid), &stack, &context, nullptr, SymFunctionTableAccess64, SymGetModuleBase64, nullptr); ++depth) {
+                            if (!stack.AddrPC.Offset) break;
+                            row << ',' << captured_frame(stack.AddrPC.Offset);
+                        }
+                    }
+                    auto payload = row.str() + "]}";
+                    if (payload.size() > 65536 || payload.size() > 8 * 1024 * 1024 - observation_bytes) loss = true;
+                    else {
+                        observation_bytes += payload.size(); observations.push_back(std::move(payload));
+                        if (info.dwFirstChance)
+                            pending_exceptions[tid] = {observations.size() - 1, thread_ticks, tick, cpu_available};
+                        else pending_exceptions.erase(tid);
+                    }
+                }
+            }
+        }
+        if (!ContinueDebugEvent(event.dwProcessId, event.dwThreadId, disposition))
+            throw std::runtime_error("exception continue failed");
+    }
+    const auto end = stamp();
+    const bool api_complete = !api_loss && owned.exited && api_steps.empty() && !api_points.empty();
+    const bool complete = owned.exited && !loss && api_complete;
+    const bool times = owned.exited && GetProcessTimes(process.value, &created, &exited, &kernel, &user);
+    const auto cpu = ((static_cast<unsigned long long>(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime)
+                   + ((static_cast<unsigned long long>(user.dwHighDateTime) << 32) | user.dwLowDateTime);
+    std::cout << "{\"schemaVersion\":1,\"provenance\":\"external\",\"confidence\":\"observed\",\"complete\":"
+              << (complete ? "true" : "false") << ",\"pid\":" << child.dwProcessId << ",\"process_epoch\":" << epoch
+              << ",\"main_thread_id\":" << child.dwThreadId << ",\"exit_code\":" << exit_code
+              << ",\"qpc_frequency\":" << frequency.QuadPart << ",\"begin_qpc\":" << begin << ",\"end_qpc\":" << end
+              << ",\"process_cpu_100ns\":";
+    if (times) std::cout << cpu; else std::cout << "null";
+    std::cout << ",\"exceptions\":[";
+    for (std::size_t index = 0; index < observations.size(); ++index) std::cout << (index ? "," : "") << observations[index];
+    std::cout << "],\"recovery_markers\":[";
+    for (std::size_t index = 0; index < continuations.size(); ++index) std::cout << (index ? "," : "") << continuations[index];
+    std::cout << "],\"verifier_modules\":[";
+    for (std::size_t index = 0; index < verifier_modules.size(); ++index) std::cout << (index ? "," : "") << verifier_modules[index];
+    std::cout << "],\"api_entry_scope_complete\":" << (api_complete ? "true" : "false")
+              << ",\"api_supported_exports\":[";
+    bool first_export = true;
+    for (const auto& item : api_points) {
+        std::cout << (first_export ? "" : ",") << text(std::wstring(item.second.name.begin(),item.second.name.end()));
+        first_export = false;
+    }
+    std::cout << "],\"api_calls\":[";
+    for (std::size_t index = 0; index < api_calls.size(); ++index) std::cout << (index ? "," : "") << api_calls[index];
+    std::cout << "],\"scope\":\"Owned fixture debugger; recovery markers describe controlled fixture continuation; process CPU includes all target work, not per-exception cost\"}" << std::endl;
+    return complete ? 0 : 2;
+#endif
+}
+
+int observe_exception_fixture(const wchar_t* binary, const wchar_t* variant) {
+    const std::wstring mode(variant);
+    if (mode != L"handled" && mode != L"crash" && mode != L"storm" && mode != L"assert" && mode != L"contract"
+        && mode != L"verifier-good" && mode != L"verifier-bad")
+        throw std::runtime_error("invalid exception fixture variant");
+    return observe_exceptions(binary, {mode});
+}
+
 int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant) {
 #if !defined(_M_X64)
     (void)binary; (void)variant;

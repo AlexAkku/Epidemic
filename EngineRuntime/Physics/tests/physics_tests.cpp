@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <string_view>
+#include <thread>
 
 namespace
 {
@@ -1282,8 +1284,40 @@ struct HasBackendSnapshotBody<T, std::void_t<decltype(std::declval<T>().body)>> 
 };
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-physics") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "physics-action");
+        scenario("scenario.start", "physics-scenario");
+        PhysicsRuntime owner;
+          const CollisionShapeId shape{1};
+          if (!RegisterDefaultShape(owner, shape)) return 2;
+          const auto left = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
+          const auto right = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+          if (!left || !right) return 3;
+        const auto inherited = child_context();
+        std::thread producer([&] {
+            const ContextScope scope(inherited);
+            ContactEvent contact{};
+              contact.a = left.Value();
+              contact.b = right.Value();
+            contact.state = epidemic::runtime::physics::PhysicsEventState::Begin;
+            owner.QueueContact(contact);
+        });
+        producer.join();
+          const auto consumed = owner.ConsumeContactEvents();
+          const bool delivered = consumed && consumed.Value().size() == 1
+              && consumed.Value()[0].state == epidemic::runtime::physics::PhysicsEventState::Begin;
+        owner.Clear();
+        scenario("scenario.end", "physics-scenario");
+        action("action.end", "physics-action");
+          return delivered ? 0 : 4;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     static_assert(std::is_abstract_v<ICollisionShapeRegistry>);
     static_assert(std::is_abstract_v<IPhysicsScene>);
     static_assert(std::is_abstract_v<IPhysicsStepper>);
