@@ -50,7 +50,14 @@ def capture_verifier_fixture(config, run: Path, binary: Path, variant: str, *, h
         with export.open('xb'):
             pass
         command('-enable', 'Heaps', 'Leak', '-for', binary.name)
-        snapshot, _ = capture_api_snapshot(config, run, binary, [variant], helper=helper)
+        snapshot, _ = capture_api_snapshot(
+            config,
+            run,
+            binary,
+            [variant],
+            helper=helper,
+            verifier_fixture=True
+        )
         if not snapshot['verifier_modules']:
             raise EvidenceError('Application Verifier activation unobserved')
         command('-export', 'log', '-for', binary.name, '-with', 'To=' + str(export))

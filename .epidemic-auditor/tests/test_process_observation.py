@@ -15,10 +15,86 @@ from ep_auditor.core.process import ManagedProcessRunner
 from ep_auditor.core.storage import RunStorage
 from ep_auditor.core.evidence import RawEvidence, load_json, EvidenceError
 from ep_auditor.analyzers.summary import summarize_process_samples
+from contextlib import contextmanager
 import test_core
 
+def _cleanup_windows_fixture_directory(
+    temporary,
+    *,
+    windows=None,
+    sleep=time.sleep
+):
+    if windows is None:
+        windows = os.name == 'nt'
+
+    for attempt in range(10):
+        try:
+            temporary.cleanup()
+
+        except PermissionError as error:
+            if (
+                not windows
+                or getattr(error, 'winerror', None) not in (5, 32)
+                or attempt == 9
+            ):
+                raise
+
+            sleep(0.05 * (attempt + 1))
+
+        else:
+            break
+
+
+@contextmanager
+def _sampling_fixture_directory():
+    temporary = tempfile.TemporaryDirectory()
+
+    try:
+        yield temporary.name
+
+    finally:
+        _cleanup_windows_fixture_directory(temporary)
 
 class ProcessObservationTests(unittest.TestCase):
+    def test_sampling_fixture_cleanup_retries_only_bounded_windows_sharing_errors(self):
+        class Temporary:
+            def __init__(self, failures):
+                self.failures = list(failures)
+                self.calls = 0
+
+            def cleanup(self):
+                self.calls += 1
+
+                if self.failures:
+                    error = PermissionError('simulated locked directory')
+                    error.winerror = self.failures.pop(0)
+                    raise error
+
+        temporary = Temporary([32, 5])
+        delays = []
+
+        _cleanup_windows_fixture_directory(
+            temporary,
+            windows=True,
+            sleep=delays.append
+        )
+
+        self.assertEqual(temporary.calls, 3)
+        self.assertEqual(len(delays), 2)
+
+        for failures, windows in (
+            ([32], False),
+            ([13], True),
+            ([32] * 10, True),
+        ):
+            with self.subTest(failures=failures, windows=windows):
+                with self.assertRaises(PermissionError):
+                    _cleanup_windows_fixture_directory(
+                        Temporary(failures),
+                        windows=windows,
+                        sleep=lambda _: None
+                    )
+
     def test_external_clock_calibration_bounds_precise_utc_and_qpc(self):
         before = time.time_ns()
         anchor = windows_clock_calibration()
@@ -94,7 +170,7 @@ class ProcessObservationTests(unittest.TestCase):
                 self._close_owned(process)
 
     def test_real_sampling_distinct_clocks_context_and_unavailable_io(self):
-        with tempfile.TemporaryDirectory() as temporary:
+        with _sampling_fixture_directory() as temporary:
             directory = Path(temporary)
             process = OwnedProcess([sys.executable, "-c", "import time; time.sleep(30)"], str(directory), os.environ.copy())
             collector = ProcessStatsCollector(0.01)

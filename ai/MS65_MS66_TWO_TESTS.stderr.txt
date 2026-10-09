@@ -1,0 +1,7 @@
+test_physical_verifier_heap_and_leak_controls (test_ms65_ms66.NativeDiagnosticTests.test_physical_verifier_heap_and_leak_controls) ... ok
+test_real_sampling_distinct_clocks_context_and_unavailable_io (test_process_observation.ProcessObservationTests.test_real_sampling_distinct_clocks_context_and_unavailable_io) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 60.910s
+
+OK

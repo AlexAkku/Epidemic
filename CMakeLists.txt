@@ -27,7 +27,19 @@ if(EP_AUDITOR_PROFILE MATCHES "^audit(-deep|-memory)?$")
         include_directories(BEFORE "${CMAKE_CURRENT_SOURCE_DIR}/.epidemic-auditor/native/probes")
     endif()
     if(EP_AUDITOR_PROFILE STREQUAL "audit-memory")
+        # The exact tracing hook must remain free of function-entry
+        # instrumentation. However, shadow_probe.cpp uses the MSVC STL,
+        # so its ASan annotations must match the instrumented engine.
+        #
+        # Apply ASan only to this translation unit inside AuditorExactRuntime.
+        set_source_files_properties(
+            "${CMAKE_CURRENT_SOURCE_DIR}/.epidemic-auditor/native/probes/shadow_probe.cpp"
+            TARGET_DIRECTORY AuditorExactRuntime
+            PROPERTIES COMPILE_OPTIONS "/fsanitize=address"
+        )
+
         # ASan cannot coexist with Debug /RTC checks or incremental linking.
+        
         string(REGEX REPLACE "[/\\-]RTC[1su]+" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
         add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/fsanitize=address>)
         add_link_options(/INCREMENTAL:NO)

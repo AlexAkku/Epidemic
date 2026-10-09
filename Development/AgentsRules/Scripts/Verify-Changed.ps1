@@ -39,7 +39,9 @@ $headers = @($changed | Where-Object { $_ -match '\.(h|hh|hpp|hxx|inl|ipp|tpp)$'
 $sources = @($changed | Where-Object { $_ -match '\.(cpp|cc|cxx|cppm|ixx)$' })
 $dbPath = Join-Path $compdb 'compile_commands.json'
 if (-not (Test-Path -LiteralPath $dbPath)) { throw 'BLOCKED: compilation database missing; run Prepare-Clangd.ps1.' }
-$entries = @(Get-Content -LiteralPath $dbPath -Raw | ConvertFrom-Json)
+$entries = ConvertFrom-Json -InputObject (
+    Get-Content -LiteralPath $dbPath -Raw
+)
 $units = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
 foreach ($entry in $entries) {
     $file = Full-Path $entry.file $entry.directory
@@ -61,10 +63,31 @@ if ($headers.Count) {
     $scanner = Resolve-Tool 'clang-scan-deps.exe' @((Join-Path $env:ProgramFiles 'LLVM/bin/clang-scan-deps.exe'))
     Set-AgentRuntimeEnvironment
     $dependencyPath = Join-Path $root ".ai/tmp/changed-dependencies-$PID.json"
+    $filteredDbPath = Join-Path $root ".ai/tmp/changed-cpp-$PID.json"
+
+    $scanEntries = @(
+        foreach ($entry in $entries) {
+            if ([string]$entry.file -match '\.(cpp|cc|cxx|cppm|ixx)$') {
+                $entry
+            }
+        }
+    )
+
+    if ($scanEntries.Count -eq 0) {
+        throw 'BLOCKED: no C/C++ translation units for dependency discovery.'
+    }
+
+    [IO.File]::WriteAllText(
+        $filteredDbPath,
+        (ConvertTo-Json -InputObject $scanEntries -Depth 32),
+        (New-Object System.Text.UTF8Encoding($false))
+    )
     try {
         $quote = { param($value) "'" + $value.Replace("'", "''") + "'" }
-        $cmd = '& ' + (& $quote $scanner) + ' -compilation-database ' + (& $quote $dbPath) +
-            ' -format experimental-full -j 1 -o ' + (& $quote $dependencyPath)
+        $cmd = '& ' + (& $quote $scanner) +
+            ' -compilation-database ' + (& $quote $filteredDbPath) +
+            ' -format experimental-full -j 1 -o ' +
+            (& $quote $dependencyPath)
         & $quiet -Name 'changed-dependencies' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $cmd
         if ($LASTEXITCODE -ne 0) { throw 'BLOCKED: compiler dependency discovery failed; consumers are unknown.' }
         $dependencies = Get-Content -LiteralPath $dependencyPath -Raw | ConvertFrom-Json
@@ -98,7 +121,11 @@ if ($headers.Count) {
         foreach ($file in $units) { if (-not $seen.Contains($file)) { throw "BLOCKED: incomplete dependency scan: $file" } }
         foreach ($header in $headerPaths) { if (-not $consumed.Contains($header)) { throw "BLOCKED: no compiled consumer for changed header: $header. Build public-header self-containment before qualifying it." } }
     }
-    finally { if (Test-Path -LiteralPath $dependencyPath) { Remove-Item -LiteralPath $dependencyPath -Force } }
+    finally { 
+        if (Test-Path -LiteralPath $filteredDbPath) {
+    Remove-Item -LiteralPath $filteredDbPath -Force
+}
+     }
 }
 
 if (-not $selected.Count) {
@@ -111,7 +138,18 @@ if ($Mode -eq 'Deep') { $cppcheck = Resolve-Tool 'cppcheck.exe' @((Join-Path $en
 $failures = @()
 $checks = 0
 foreach ($full in ($selected | Sort-Object)) {
-    $safe = [IO.Path]::GetRelativePath($root,$full) -replace '[^A-Za-z0-9_.-]', '_'
+    $rootFull = [IO.Path]::GetFullPath($root).TrimEnd([char[]]@('\', '/'))
+$rootPrefix = $rootFull + [IO.Path]::DirectorySeparatorChar
+$fullCanonical = [IO.Path]::GetFullPath($full)
+
+if (-not $fullCanonical.StartsWith(
+    $rootPrefix,
+    [StringComparison]::OrdinalIgnoreCase
+)) {
+    throw "BLOCKED: source outside project root: $fullCanonical"
+}
+
+$safe = $fullCanonical.Substring($rootPrefix.Length) -replace '[^A-Za-z0-9_.-]', '_'
     $quote = { param($value) "'" + $value.Replace("'", "''") + "'" }
     $cmd = '& ' + (& $quote $clangTidy) + ' ' + (& $quote $full) + ' -p ' + (& $quote $compdb) +
         " -checks='-*,clang-analyzer-*,bugprone-*' -warnings-as-errors='*'"

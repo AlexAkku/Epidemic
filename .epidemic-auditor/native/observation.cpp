@@ -17,7 +17,11 @@
 
 int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant);
 int observe_exception_fixture(const wchar_t* binary, const wchar_t* variant);
-int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& arguments);
+int observe_exceptions(
+    const wchar_t* binary,
+    const std::vector<std::wstring>& arguments,
+    DWORD timeout_ms
+);
 
 static std::string utf8(const std::wstring& text) {
     if (text.empty()) return {};
@@ -179,10 +183,48 @@ int wmain(int argc, wchar_t** argv) {
             return observe_mutex_fixture(argv[2], argv[3]);
         if (argc == 4 && std::wstring(argv[1]) == L"--exception-fixture")
             return observe_exception_fixture(argv[2], argv[3]);
-        if (argc >= 3 && std::wstring(argv[1]) == L"--exceptions") {
+                if (argc >= 3 &&
+            (std::wstring(argv[1]) == L"--exceptions" ||
+            std::wstring(argv[1]) == L"--exceptions-verifier")) {
+
+            const bool verifier =
+                std::wstring(argv[1]) == L"--exceptions-verifier";
+
+            if (verifier) {
+                const std::wstring path(argv[2]);
+                const auto pos = path.find_last_of(L"\\/");
+                const auto name = path.substr(
+                    pos == std::wstring::npos ? 0 : pos + 1
+                );
+
+                if (argc != 4 ||
+                    _wcsicmp(
+                        name.c_str(),
+                        L"EpidemicAuditorShadowFixture.exe"
+                    ) != 0 ||
+                    (std::wstring(argv[3]) != L"verifier-good" &&
+                    std::wstring(argv[3]) != L"verifier-bad" &&
+                    std::wstring(argv[3]) != L"leak-good" &&
+                    std::wstring(argv[3]) != L"leak-bad")) {
+
+                    throw std::runtime_error(
+                        "extended verifier observation is restricted "
+                        "to the owned fixture"
+                    );
+                }
+            }
+
             std::vector<std::wstring> arguments;
-            for (int index = 3; index < argc; ++index) arguments.emplace_back(argv[index]);
-            return observe_exceptions(argv[2], arguments);
+
+            for (int index = 3; index < argc; ++index) {
+                arguments.emplace_back(argv[index]);
+            }
+
+            return observe_exceptions(
+                argv[2],
+                arguments,
+                verifier ? 90000UL : 15000UL
+            );
         }
         DWORD pid = GetCurrentProcessId();
         DWORD64 address = reinterpret_cast<DWORD64>(&AuditorObservationFixture);

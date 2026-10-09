@@ -74,17 +74,72 @@ def capture_pe_imports(config, run_dir: Path, binary: Path, *, tool: Path | None
                                             'dropped': 0, 'incomplete_reason': None})
     return report
 
+def _observer_execution_plan(
+    binary: Path,
+    arguments: list[str],
+    verifier_fixture: bool
+) -> tuple[str, int]:
 
-def capture_api_snapshot(config, run_dir: Path, binary: Path, arguments: list[str], *, helper: Path,
-                         capture_mode: str = 'Deep'):
+    if type(verifier_fixture) is not bool:
+        raise EvidenceError(
+            'invalid verifier observation selection'
+        )
+
+    if not verifier_fixture:
+        return '--exceptions', 25
+
+    allowed = (
+        ['verifier-good'],
+        ['verifier-bad'],
+        ['leak-good'],
+        ['leak-bad'],
+    )
+
+    if (
+        binary.name != 'EpidemicAuditorShadowFixture.exe'
+        or arguments not in allowed
+    ):
+        raise EvidenceError(
+            'extended verifier observation is restricted '
+            'to the owned fixture'
+        )
+
+    return '--exceptions-verifier', 120
+
+def capture_api_snapshot(
+    config,
+    run_dir: Path,
+    binary: Path,
+    arguments: list[str],
+    *,
+    helper: Path,
+    capture_mode: str = 'Deep',
+    verifier_fixture: bool = False
+):
     """Own a bounded debuggee through the existing native helper and raw capture."""
     from ep_auditor.analyzers.diagnostics import analyze_api_snapshot
     binary, helper = binary.resolve(strict=True), helper.resolve(strict=True)
-    if not isinstance(arguments, list) or any(not isinstance(arg, str) or '\x00' in arg for arg in arguments):
-        raise EvidenceError('invalid native API observation arguments')
+    if not isinstance(arguments, list) or any(
+        not isinstance(arg, str) or '\x00' in arg
+        for arg in arguments
+    ):
+        raise EvidenceError(
+            'invalid native API observation arguments'
+        )
+    observer_mode, timeout = _observer_execution_plan(
+        binary,
+        arguments,
+        verifier_fixture
+    )
+
     before = (digest(binary), digest(helper))
-    result = ManagedProcessRunner(config).run([str(helper), '--exceptions', str(binary), *arguments],
-                                             binary.parent, run_dir, capture_mode, timeout=25)
+    result = ManagedProcessRunner(config).run(
+        [str(helper), observer_mode, str(binary), *arguments],
+        binary.parent,
+        run_dir,
+        capture_mode,
+        timeout=timeout
+    )
     if before != (digest(binary), digest(helper)):
         raise EvidenceError('native API inputs changed during capture')
     raw = RawEvidence(run_dir)
@@ -96,7 +151,9 @@ def capture_api_snapshot(config, run_dir: Path, binary: Path, arguments: list[st
         raise EvidenceError('native API capture incomplete: helper_exit=' + str(result.exit_code)
             + ', target_exit=' + str(snapshot.get('exit_code'))
             + ', api_complete=' + str(snapshot.get('api_entry_scope_complete'))
-            + ', elapsed_qpc=' + str(snapshot.get('end_qpc', 0) - snapshot.get('begin_qpc', 0)))
+            + ', elapsed_qpc=' + str(snapshot.get('end_qpc', 0) - snapshot.get('begin_qpc', 0))
+            + ', observer_deadline_exceeded=' + str(snapshot.get('deadline_exceeded'))
+        )
     graph = analyze_api_snapshot(snapshot)
     if not graph['complete']:
         raise EvidenceError('native API entry scope incomplete')

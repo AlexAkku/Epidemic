@@ -395,8 +395,8 @@ $wrapperFailure = $null
 $timedOut = $false
 $resourceBlocked = $false
 $peakJobBytes = 0
-$minimumPhysicalBytes = [ulong]($freePhysicalGB * 1GB)
-$minimumVirtualBytes = [ulong]($freeVirtualGB * 1GB)
+$minimumPhysicalBytes = [UInt64]($freePhysicalGB * 1GB)
+$minimumVirtualBytes = [UInt64]($freeVirtualGB * 1GB)
 
 try {
     $job = [AiQuiet.JobObject]::CreateKillOnClose($jobBudgetBytes)

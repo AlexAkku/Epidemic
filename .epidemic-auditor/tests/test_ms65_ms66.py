@@ -124,6 +124,36 @@ class CausalAnalyzerTests(unittest.TestCase):
 
 
 class DiagnosticAnalyzerTests(unittest.TestCase):
+    def test_verifier_long_budget_is_bounded_and_never_available_to_general_observation(self):
+        from ep_auditor.collectors.modules import _observer_execution_plan
+
+        fixture = Path('EpidemicAuditorShadowFixture.exe')
+
+        self.assertEqual(
+            _observer_execution_plan(fixture, ['verifier-good'], True),
+            ('--exceptions-verifier', 120)
+        )
+
+        self.assertEqual(
+            _observer_execution_plan(fixture, ['leak-bad'], True),
+            ('--exceptions-verifier', 120)
+        )
+
+        self.assertEqual(
+            _observer_execution_plan(fixture, ['handled'], False),
+            ('--exceptions', 25)
+        )
+
+        for path, args, scope in (
+            (Path('Epidemic.exe'), ['verifier-good'], True),
+            (fixture, ['handled'], True),
+            (fixture, ['verifier-good', 'extra'], True),
+            (fixture, ['verifier-good'], 'yes'),
+        ):
+            with self.subTest(path=path, args=args, scope=scope):
+                with self.assertRaises(EvidenceError):
+                    _observer_execution_plan(path, args, scope)
+
     def test_disk_irp_pairing_reassembly_reuse_and_negative_controls(self):
         from ep_auditor.analyzers.io import disk_requests
         def observed(kind, time, ordinal, **fields):

@@ -1,0 +1,15 @@
+﻿Epidemic MS6.5 / MS6.6 focused test results
+Date: 2026-10-09T13:04:27.7854553+02:00
+Exit code: 0
+Evidence: E:\Epidemic\.ai\auditor\test-results\manual-cf3cc7e211064b60910f8736ee226b35
+
+========== STDERR ==========
+test_physical_verifier_heap_and_leak_controls (test_ms65_ms66.NativeDiagnosticTests.test_physical_verifier_heap_and_leak_controls) ... ok
+test_real_sampling_distinct_clocks_context_and_unavailable_io (test_process_observation.ProcessObservationTests.test_real_sampling_distinct_clocks_context_and_unavailable_io) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 60.910s
+
+OK
+
+========== STDOUT ==========

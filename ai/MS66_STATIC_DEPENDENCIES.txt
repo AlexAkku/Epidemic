@@ -1,0 +1,3 @@
+Entries before: 1
+C/C++ entries: 0
+Exit code: 0

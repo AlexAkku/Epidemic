@@ -70,9 +70,13 @@ std::string frame(HANDLE process, DWORD64 address) {
 }
 }
 
-int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& arguments) {
+int observe_exceptions(
+    const wchar_t* binary,
+    const std::vector<std::wstring>& arguments,
+    DWORD timeout_ms
+) {
 #if !defined(_M_X64)
-    (void)binary; (void)arguments;
+    (void)binary; (void)arguments; (void)timeout_ms;
     throw std::runtime_error("exception debugger requires x64");
 #else
     const std::wstring image(binary);
@@ -191,7 +195,7 @@ int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& a
     };
     bool initial_break = false, loss = false;
     DWORD exit_code = MAXDWORD;
-    const auto begin = stamp(), deadline = GetTickCount64() + 15000;
+    const auto begin = stamp(), deadline = GetTickCount64() + timeout_ms;
     while (!owned.exited && GetTickCount64() < deadline) {
         DEBUG_EVENT event{};
         if (!WaitForDebugEventEx(&event, 100)) {
@@ -367,6 +371,7 @@ int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& a
         if (!ContinueDebugEvent(event.dwProcessId, event.dwThreadId, disposition))
             throw std::runtime_error("exception continue failed");
     }
+    const bool deadline_exceeded = !owned.exited && GetTickCount64() >= deadline;
     const auto end = stamp();
     const bool api_complete = !api_loss && owned.exited && api_steps.empty() && !api_points.empty();
     const bool complete = owned.exited && !loss && api_complete;
@@ -374,10 +379,18 @@ int observe_exceptions(const wchar_t* binary, const std::vector<std::wstring>& a
     const auto cpu = ((static_cast<unsigned long long>(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime)
                    + ((static_cast<unsigned long long>(user.dwHighDateTime) << 32) | user.dwLowDateTime);
     std::cout << "{\"schemaVersion\":1,\"provenance\":\"external\",\"confidence\":\"observed\",\"complete\":"
-              << (complete ? "true" : "false") << ",\"pid\":" << child.dwProcessId << ",\"process_epoch\":" << epoch
-              << ",\"main_thread_id\":" << child.dwThreadId << ",\"exit_code\":" << exit_code
-              << ",\"qpc_frequency\":" << frequency.QuadPart << ",\"begin_qpc\":" << begin << ",\"end_qpc\":" << end
-              << ",\"process_cpu_100ns\":";
+            << (complete ? "true" : "false")
+            << ",\"pid\":" << child.dwProcessId
+            << ",\"process_epoch\":" << epoch
+            << ",\"main_thread_id\":" << child.dwThreadId
+            << ",\"exit_code\":" << exit_code
+            << ",\"observation_timeout_ms\":" << timeout_ms
+            << ",\"deadline_exceeded\":"
+            << (deadline_exceeded ? "true" : "false")
+            << ",\"qpc_frequency\":" << frequency.QuadPart
+            << ",\"begin_qpc\":" << begin
+            << ",\"end_qpc\":" << end
+            << ",\"process_cpu_100ns\":";
     if (times) std::cout << cpu; else std::cout << "null";
     std::cout << ",\"exceptions\":[";
     for (std::size_t index = 0; index < observations.size(); ++index) std::cout << (index ? "," : "") << observations[index];
@@ -404,7 +417,7 @@ int observe_exception_fixture(const wchar_t* binary, const wchar_t* variant) {
     if (mode != L"handled" && mode != L"crash" && mode != L"storm" && mode != L"assert" && mode != L"contract"
         && mode != L"verifier-good" && mode != L"verifier-bad")
         throw std::runtime_error("invalid exception fixture variant");
-    return observe_exceptions(binary, {mode});
+    return observe_exceptions(binary, {mode}, 15000UL);
 }
 
 int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant) {
@@ -554,13 +567,21 @@ int observe_mutex_fixture(const wchar_t* binary, const wchar_t* variant) {
     LARGE_INTEGER frequency{}; QueryPerformanceFrequency(&frequency);
     const bool complete = acquired && released && exit_code == 0;
     std::cout << "{\"schemaVersion\":1,\"observationKind\":\"native_mutex_api\",\"provenance\":\"external\",\"confidence\":\"observed\","
-              << "\"pid\":" << child.dwProcessId << ",\"creation_filetime_100ns\":" << creation << ",\"owner_os_tid\":" << child.dwThreadId
-              << ",\"resource_name\":" << text(name) << ",\"variant\":" << text(mode) << ",\"mutex_handle\":" << mutex_handle
-              << ",\"complete\":" << (complete ? "true" : "false") << ",\"not_new\":" << (not_new ? "true" : "false")
-              << ",\"child_exit_code\":" << exit_code << ",\"qpc_frequency\":" << frequency.QuadPart
-              << ",\"create_status\":" << create_status << ",\"release_status\":" << release_status
-              << ",\"acquire_begin\":" << acquire_begin << ",\"acquire_end\":" << acquire_end
-              << ",\"release_begin\":" << release_begin << ",\"release_end\":" << release_end
+              << "\"pid\":" << child.dwProcessId 
+              << ",\"creation_filetime_100ns\":" << creation 
+              << ",\"owner_os_tid\":" << child.dwThreadId
+              << ",\"resource_name\":" << text(name) << ",\"variant\":" 
+              << text(mode) << ",\"mutex_handle\":" << mutex_handle
+              << ",\"complete\":" << (complete ? "true" : "false") 
+              << ",\"not_new\":" << (not_new ? "true" : "false")
+              << ",\"child_exit_code\":" << exit_code
+              << ",\"qpc_frequency\":" << frequency.QuadPart
+              << ",\"create_status\":" << create_status 
+              << ",\"release_status\":" << release_status
+              << ",\"acquire_begin\":" << acquire_begin 
+              << ",\"acquire_end\":" << acquire_end
+              << ",\"release_begin\":" << release_begin 
+              << ",\"release_end\":" << release_end
               << ",\"acquisition_stack\":[";
     if (complete) for (std::size_t index = 0; index < stack.size(); ++index) std::cout << (index ? "," : "") << stack[index];
     std::cout << "],\"scope\":\"Intrusive debugger of controlled initial-owner fixture; observed NtCreateMutant/NtReleaseMutant boundary bounds include observer pauses; no arbitrary engine/syscall coverage claim\"}" << std::endl;
