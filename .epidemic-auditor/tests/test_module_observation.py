@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import tempfile
 import unittest
 
@@ -11,6 +12,8 @@ from ep_auditor.collectors.modules import identify_snapshot, observe
 from ep_auditor.core.evidence import EvidenceError, RawEvidence
 from ep_auditor.core.identity import function_identity, module_identity
 from ep_auditor.core.storage import RunStorage
+from ep_auditor.analyzers.summary import query_run_view
+from ep_auditor.exporters.agent import export_investigation
 
 ROOT = Path(__file__).resolve().parents[2]
 HELPER = ROOT / "build/auditor-native/bin" / os.environ.get("EP_AUDITOR_NATIVE_CONFIG", "Release") / "EpidemicAuditorObservation.exe"
@@ -58,7 +61,21 @@ class ModuleObservationTests(unittest.TestCase):
             payload, row = RawEvidence(run.run_dir).read_capture("modules/binary_files.json")
             self.assertTrue(row["complete"])
             self.assertEqual(len(json.loads(payload)["fingerprints"]), sum(bool(module.get("available")) for module in snapshot["modules"]))
+            storage.finish_run(run, 'PASS')
+            module_id = known[0]['moduleId']
+            page = export_investigation(run.run_dir, 'module', module_id)
+            self.assertTrue(page['items'])
+            self.assertTrue(all(item['moduleId'] == module_id for item in page['items']))
+            self.assertTrue(all(item['provenance'] == 'external' for item in page['items']))
+            self.assertTrue(all(len(item['capture_refs']) == 2 for item in page['items']))
+            missing = query_run_view(run.run_dir, 'Modules', scope='module:not-captured')
+            self.assertEqual(missing['items'], [])
             shutil.copytree(run.run_dir, Path(os.environ["EP_AUDITOR_FIXTURE_EVIDENCE"]) / self._testMethodName)
+            captured_stdout = run.run_dir / 'raw/process/stdout.bin'
+            captured_stdout.chmod(stat.S_IWRITE | stat.S_IREAD)
+            captured_stdout.write_bytes(b'{}')
+            with self.assertRaises(EvidenceError):
+                export_investigation(run.run_dir, 'module', module_id)
             with self.assertRaises(EvidenceError):
                 other = storage.new_run("modules", "PID reuse rejection", "Fast")
                 observe(cfg, other.run_dir, os.getpid(), created.value + 1, helper=HELPER)

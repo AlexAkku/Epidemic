@@ -1,2 +1,0 @@
-warning: in the working copy of 'Development/AgentsRules/Scripts/Verify-Changed.ps1', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'ai/MS66_VERIFY_CHANGED.stderr.txt', LF will be replaced by CRLF the next time Git touches it

@@ -80,5 +80,4 @@ class ProjectDiscoveryTests(unittest.TestCase):
                 self.assertEqual(window.setting_vars["project_root"].get(), str(source))
                 self.assertEqual(config.data["project_selection"]["selected_root"], str(source))
             finally:
-                manager.shutdown()
-                window.root.destroy()
+                window._on_close()

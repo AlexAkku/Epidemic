@@ -5,6 +5,7 @@ import codecs
 import hashlib
 import json
 import queue
+import stat
 import subprocess
 import threading
 import time
@@ -92,6 +93,17 @@ class ManagedProcessRunner:
         started_wall = datetime.now(timezone.utc)
         started_perf = time.perf_counter()
         capture_start_ns = time.perf_counter_ns()
+        memory_scope = self.config.data.get('capture', {}).get('memory_scope')
+        persistent_pressure = memory_scope == 'persistent_pressure'
+        if memory_scope is not None:
+            capture = self.config.data.get('capture', {})
+            if not persistent_pressure or capture_mode.lower() != 'memory':
+                raise EvidenceError('memory_scope requires Memory persistent_pressure')
+            if (any(capture.get(key, False) for key in
+                    ('exact_required', 'diagnostics_required', 'causal_required')) or
+                    capture.get('rolling') is not None or
+                    (env_extra or {}).get('EP_AUDITOR_REQUIRE_EXACT') == '1'):
+                raise EvidenceError('persistent_pressure conflicts with required telemetry or rolling capture')
         with self._active_lock:
             reason = self._pending_stop_reason
             if reason is None and self.operation_cancel is not None and self.operation_cancel.is_set():
@@ -130,18 +142,37 @@ class ManagedProcessRunner:
             raise EvidenceError("invalid bounded stdio raw capacity")
         env = os.environ.copy()
         env.update(env_extra or {})
-        if capture_mode.lower() in {'fast', 'full', 'deep', 'memory', 'stress', 'targeted exact'}:
+        persistent_workspace = None
+        if persistent_pressure:
+            for variable in ('EP_AUDITOR_TRACE_DIRECTORY', 'EP_AUDITOR_TRACE_CAPACITY',
+                             'EP_AUDITOR_REQUIRE_EXACT', 'EP_AUDITOR_DIAGNOSTICS_DIRECTORY',
+                             'EP_AUDITOR_CAUSAL_DIRECTORY', 'EP_AUDITOR_ROLLING_DIRECTORY',
+                             'EP_AUDITOR_ARM_NEXT_INPUT_ID', 'EP_AUDITOR_ARM_NEXT_INPUT_NAME'):
+                env.pop(variable, None)
+            persistent_workspace = run_dir / 'persistent-pressure-workspace'
+            persistent_workspace.mkdir(exist_ok=False)
+            env['EP_AUDITOR_SAVE_DIRECTORY'] = str(persistent_workspace.resolve())
+        if not persistent_pressure and capture_mode.lower() in {'fast', 'full', 'deep', 'memory', 'stress', 'targeted exact'}:
             exact_directory = (run_dir / 'exact-capture').resolve()
             exact_directory.mkdir(parents=True, exist_ok=True)
             env['EP_AUDITOR_TRACE_DIRECTORY'] = str(exact_directory)
-            env.setdefault('EP_AUDITOR_TRACE_CAPACITY', '262144')
+            exact_capacity = (env_extra or {}).get('EP_AUDITOR_TRACE_CAPACITY',
+                self.config.data.get('capture', {}).get('exact_capacity_events',
+                    env.get('EP_AUDITOR_TRACE_CAPACITY', 262144)))
+            if isinstance(exact_capacity, str):
+                if not exact_capacity.isascii() or not exact_capacity.isdecimal():
+                    raise EvidenceError('invalid decimal exact event capacity')
+                exact_capacity = int(exact_capacity)
+            if type(exact_capacity) is not int or not 1 <= exact_capacity <= 1048576:
+                raise EvidenceError('exact event capacity must be 1–1048576')
+            env['EP_AUDITOR_TRACE_CAPACITY'] = str(exact_capacity)
         if capture_mode.lower() == 'coverage':
             coverage_directory = (run_dir / 'coverage-capture').resolve()
             coverage_directory.mkdir(parents=True, exist_ok=True)
             env['LLVM_PROFILE_FILE'] = str(coverage_directory / 'profile-%p-%m.profraw')
         # Shadow probes are optional and disabled in normal Engine binaries.
         # A target-emitted JSONL stream is never labeled external observation.
-        if capture_mode.lower() in {'deep', 'targeted exact', 'memory', 'stress'}:
+        if not persistent_pressure and capture_mode.lower() in {'deep', 'targeted exact', 'memory', 'stress'}:
             for family, variable in (('diagnostic', 'EP_AUDITOR_DIAGNOSTICS_DIRECTORY'),
                                      ('causal', 'EP_AUDITOR_CAUSAL_DIRECTORY')):
                 owned_directory = (run_dir / (family + '-capture')).resolve()
@@ -369,6 +400,9 @@ class ManagedProcessRunner:
                                 "incomplete_reason": None if size else "empty_xperf_report"})
                     xperf_meta["reports"][name] = str(capture.raw / "xperf" / source.name)
                 wpr_meta["xperf"] = xperf_meta
+                wpr_meta['trace_loss'] = wpr.metadata.get('trace_statistics', {}).get('trace_loss')
+                wpr_meta['scope'] = {'selection': 'owned root process PID window', 'pids': [proc.pid],
+                    'clock_domain': 'etl_relative_trace_ns', 'full_system_coverage': False}
                 payload = json.dumps(wpr_meta, sort_keys=True).encode()
                 capture.append("wpr.json", payload, collector="external_wpr_analysis", version="1",
                     start_ns=capture_start_ns, end_ns=time.perf_counter_ns(),
@@ -437,6 +471,15 @@ class ManagedProcessRunner:
                      "observer_start_perf_ns": capture_start_ns, "observer_finish_perf_ns": time.perf_counter_ns(),
                      "environment_sha256": hashlib.sha256(json.dumps(env, sort_keys=True).encode()).hexdigest(),
                      "termination": proc.termination_observation, "provenance": "external", "confidence": "observed"}
+        if persistent_workspace is not None:
+            count, stored_bytes = self._capture_persistent_files(run_dir, persistent_workspace, capture_start_ns)
+            lifecycle['capture_scope'] = {
+                'memory_scope': 'persistent_pressure',
+                'requested': ['sanitizer_stdio', 'process_resources', 'persistent_files'],
+                'not_captured': ['exact', 'diagnostics', 'causal'],
+                'persistent_workspace': str(persistent_workspace.resolve()),
+                'persistent_count': count, 'persistent_bytes': stored_bytes,
+                'persistent_provenance': 'external_owned_file_observation'}
         payload = json.dumps(lifecycle, sort_keys=True, allow_nan=False).encode()
         capture.append("process/lifecycle.json", payload, collector="windows_job_process_lifecycle", version="1",
                        start_ns=capture_start_ns, end_ns=time.perf_counter_ns(),
@@ -444,11 +487,13 @@ class ManagedProcessRunner:
                                "incomplete_reason": None if exit_code is not None else "process_exit_unobserved"})
         RunStorage.write_json(run_dir / "metrics" / "process.json", result.to_dict())
         from ep_auditor.collectors.telemetry import capture_streams
-        capture_streams(run_dir, 'diagnostics', required=bool(self.config.data.get('capture', {}).get('diagnostics_required', False)))
-        capture_streams(run_dir, 'causal', required=bool(self.config.data.get('capture', {}).get('causal_required', False)))
+        if not persistent_pressure:
+            capture_streams(run_dir, 'diagnostics', required=bool(self.config.data.get('capture', {}).get('diagnostics_required', False)))
+            capture_streams(run_dir, 'causal', required=bool(self.config.data.get('capture', {}).get('causal_required', False)))
         from ep_auditor.collectors.exact_trace import capture_directory
-        capture_directory(run_dir, required=bool(self.config.data.get('capture', {}).get('exact_required', False))
-                          or env.get('EP_AUDITOR_REQUIRE_EXACT') == '1')
+        if not persistent_pressure:
+            capture_directory(run_dir, required=bool(self.config.data.get('capture', {}).get('exact_required', False))
+                              or env.get('EP_AUDITOR_REQUIRE_EXACT') == '1')
         if capture_mode.lower() == 'coverage':
             from ep_auditor.collectors.coverage import capture_coverage
             inputs = json.loads(env.get('EP_AUDITOR_COVERAGE_BINARIES', '[]'))
@@ -457,3 +502,29 @@ class ManagedProcessRunner:
             capture_coverage(run_dir, [Path(path) for path in inputs], scope={'kind': 'owned_process', 'command': command})
         proc.close()
         return result
+
+    def _capture_persistent_files(self, run_dir: Path, workspace: Path, start_ns: int):
+        """Retain bounded owned file bytes in the existing raw manifest."""
+        expected = run_dir / 'persistent-pressure-workspace'
+        attributes = workspace.lstat()
+        if (workspace != expected or workspace.is_symlink() or
+                getattr(attributes, 'st_file_attributes', 0) & 0x400 or not stat.S_ISDIR(attributes.st_mode)):
+            raise EvidenceError('persistent workspace must be an owned plain directory')
+        raw, count, total = RawEvidence(run_dir), 0, 0
+        for source in workspace.iterdir():
+            attributes = source.lstat()
+            if (source.is_symlink() or getattr(attributes, 'st_file_attributes', 0) & 0x400 or
+                    not stat.S_ISREG(attributes.st_mode)):
+                raise EvidenceError('persistent capture rejects links and nonregular files')
+            size = attributes.st_size
+            if not 0 < size <= 1024**2 or count >= 10000 or total + size > 64 * 1024**2:
+                raise EvidenceError('persistent file capture capacity exceeded')
+            raw.import_file('persistent/files/' + source.name, source, digest(source),
+                collector='external_owned_persistent_file', version='1', start_ns=start_ns,
+                end_ns=time.perf_counter_ns(), health={'capacity': 1024**2, 'observed': size,
+                                                     'dropped': 0, 'incomplete_reason': None})
+            count += 1
+            total += size
+        if count == 0:
+            raise EvidenceError('persistent capture requires observed files')
+        return count, total

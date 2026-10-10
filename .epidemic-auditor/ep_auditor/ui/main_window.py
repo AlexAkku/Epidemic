@@ -23,6 +23,9 @@ class AuditorWindow:
         self.events = events
         self.tests: list[TestCase] = []
         self.root = tk.Tk()
+        self._closed = False
+        self.poll_after_id = None
+        self.root.bind('<Destroy>', self._on_destroy, add='+')
         self.root.title("Epidemic Auditor")
         self.root.geometry("1380x900")
         self.root.minsize(1050, 700)
@@ -38,6 +41,8 @@ class AuditorWindow:
         self.trace_action = None
         self.trace_result = None
         self.trace_detail_offset = 0
+        self.view_future = None
+        self.product_views = {}
         self._build_ui()
         self._refresh_runs()
         self.poll_after_id = self.root.after(100, self._poll_events)
@@ -79,8 +84,8 @@ class AuditorWindow:
         self.console_tab = ttk.Frame(self.notebook)
         self.settings_tab = ttk.Frame(self.notebook)
         self.actions_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.tests_tab, text="Tests")
-        self.notebook.add(self.dashboard_tab, text="Dashboard")
+        self.notebook.add(self.tests_tab, text="Test launcher")
+        self.notebook.add(self.dashboard_tab, text="Process summary")
         self.notebook.add(self.runs_tab, text="Runs")
         self.notebook.add(self.actions_tab, text="Actions / Event Log")
         self.notebook.add(self.console_tab, text="Console")
@@ -92,6 +97,15 @@ class AuditorWindow:
         self._build_actions_tab()
         self._build_console_tab()
         self._build_settings_tab()
+        self._build_product_views()
+        navigation = ttk.Frame(self.root, padding=(8, 0, 8, 4))
+        navigation.pack(fill=tk.X, before=self.notebook)
+        ttk.Label(navigation, text='View:').pack(side=tk.LEFT)
+        self.view_navigation = ttk.Combobox(navigation, state='readonly', width=28,
+            values=[self.notebook.tab(tab, 'text') for tab in self.notebook.tabs()])
+        self.view_navigation.pack(side=tk.LEFT, padx=6)
+        self.view_navigation.bind('<<ComboboxSelected>>', lambda _event: self.notebook.select(
+            self.notebook.tabs()[self.view_navigation.current()]))
 
         status = ttk.Frame(self.root, padding=(8, 2, 8, 6))
         status.pack(fill=tk.X)
@@ -101,6 +115,435 @@ class AuditorWindow:
     @staticmethod
     def _button(parent, text, command):
         return ttk.Button(parent, text=text, command=command)
+
+    def _build_product_views(self):
+        from ep_auditor.analyzers.summary import VIEWS
+        for name in ['Dashboard'] + [view for view in VIEWS if view not in ('Actions',)] + ['History', 'Compare', 'Agent']:
+            frame = ttk.Frame(self.notebook, padding=6)
+            self.notebook.add(frame, text=name)
+            bar = ttk.Frame(frame)
+            bar.pack(fill=tk.X)
+            run_id, scope, baseline = tk.StringVar(), tk.StringVar(), tk.StringVar()
+            ttk.Label(bar, text='RunId (or selected run):').pack(side=tk.LEFT)
+            ttk.Entry(bar, textvariable=run_id, width=30).pack(side=tk.LEFT, padx=4)
+            ttk.Label(bar, text='Baseline RunId:' if name in ('Compare', 'Dashboard') else 'Stable ID:').pack(side=tk.LEFT)
+            ttk.Entry(bar, textvariable=baseline if name in ('Compare', 'Dashboard') else scope, width=36).pack(side=tk.LEFT, padx=4)
+            load = ttk.Button(bar, text='Compare' if name == 'Compare' else 'Load',
+                              command=lambda view=name: self._request_product_view(view, reset=True))
+            load.pack(side=tk.LEFT, padx=4)
+            next_page = ttk.Button(bar, text='Next page', state='disabled',
+                                   command=lambda view=name: self._request_product_view(view))
+            next_page.pack(side=tk.LEFT)
+            status = tk.StringVar(value='Select a sealed run. Unobserved activity is UNKNOWN.')
+            ttk.Label(frame, textvariable=status).pack(anchor='w', pady=6)
+            chart = tk.Canvas(frame, height=170, background='white', highlightthickness=1)
+            chart.pack(fill=tk.X, side=tk.BOTTOM)
+            body = ttk.Frame(frame)
+            body.pack(fill=tk.BOTH, expand=True)
+            tree = ttk.Treeview(body, columns=('kind', 'confidence', 'complete'), show='tree headings')
+            for key, label in (('#0', 'Stable ID / source'), ('kind', 'Type / rule'),
+                               ('confidence', 'Provenance / confidence'), ('complete', 'Observation')):
+                tree.heading(key, text=label)
+            tree.column('#0', width=400)
+            scroll = ttk.Scrollbar(body, orient=tk.VERTICAL, command=tree.yview)
+            tree.configure(yscrollcommand=scroll.set)
+            tree.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+            scroll.pack(fill=tk.Y, side=tk.LEFT)
+            detail = tk.Text(body, width=64, wrap='word', state='disabled')
+            detail.pack(fill=tk.BOTH, expand=True, side=tk.RIGHT)
+            state = dict(frame=frame, run_id=run_id, scope=scope, baseline=baseline, tree=tree, detail=detail,
+                         chart=chart, status=status, load=load, next=next_page, page=None, cursor=None)
+            self.product_views[name] = state
+            state['metric'] = tk.StringVar(value='automatic')
+            metric_bar = ttk.Frame(frame)
+            metric_bar.pack(fill=tk.X, before=body)
+            ttk.Label(metric_bar, text='Chart metric (verified page):').pack(side=tk.LEFT)
+            selector = ttk.Combobox(metric_bar, textvariable=state['metric'], state='readonly', width=22,
+                values=('automatic', 'inclusive_ns', 'self_ns', 'calls', 'p95_ns', 'p99_ns', 'size_bytes',
+                        'bytes', 'latency_ns', 'rss_bytes_sum', 'cpu_percent_sum', 'wall_seconds'))
+            selector.pack(side=tk.LEFT, padx=4)
+            selector.bind('<<ComboboxSelected>>', lambda _event, view=name: self._refresh_product_chart(view))
+            state['field_choice'] = tk.StringVar()
+            state['field_selector'] = ttk.Combobox(metric_bar, textvariable=state['field_choice'], state='readonly', width=35)
+            state['field_selector'].pack(side=tk.LEFT, padx=4)
+            ttk.Button(metric_bar, text='More frames / list', command=lambda view=name: self._request_product_field(view)).pack(side=tk.LEFT)
+            ttk.Button(bar, text='Source context', command=lambda view=name: self._show_product_source(view)).pack(side=tk.LEFT, padx=4)
+            tree.bind('<<TreeviewSelect>>', lambda _event, view=name: self._select_product_row(view))
+            if name == 'Coverage':
+                ttk.Button(metric_bar, text='Open captured heatmap', command=self._open_coverage_heatmap).pack(side=tk.LEFT, padx=4)
+            chart.bind('<Button-1>', lambda event, view=name: self._select_chart_row(view, event))
+            if name == 'Agent':
+                state['agent_kind'] = tk.StringVar(value='action')
+                ttk.Combobox(bar, textvariable=state['agent_kind'], state='readonly', width=10,
+                             values=('finding', 'test', 'action', 'trace', 'function', 'module', 'scenario')).pack(side=tk.LEFT, padx=4)
+                ttk.Button(bar, text='Export reports', command=lambda: self._request_product_view('Agent', export=True)).pack(side=tk.LEFT, padx=4)
+            if name == 'Compare':
+                state['compare_field'] = tk.StringVar(value='function_timings')
+                ttk.Combobox(bar, textvariable=state['compare_field'], state='readonly', width=18,
+                    values=('function_timings', 'findings', 'new_functions', 'removed_functions', 'new_edges', 'removed_edges')).pack(side=tk.LEFT, padx=4)
+            if name == 'History':
+                state['history_kind'] = tk.StringVar(value='function')
+                ttk.Combobox(bar, textvariable=state['history_kind'], state='readonly', width=12,
+                             values=('function', 'test', 'regression')).pack(side=tk.LEFT, padx=4)
+            if name == 'Stress':
+                ttk.Button(bar, text='Configure / start campaign', command=self._configure_stress).pack(side=tk.LEFT, padx=4)
+
+    def _configure_stress(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title('Owned stress campaign')
+        ttk.Label(dialog, text='Explicit target, finite budget and injectors. Stop owns only this campaign tree.').pack(padx=10, pady=8)
+        editor = tk.Text(dialog, width=90, height=24)
+        editor.pack(fill=tk.BOTH, expand=True, padx=10)
+        editor.insert('1.0', json.dumps(self.config.data.get('stress', {
+            'command': self.config.run_command, 'working_dir': str(self.config.run_working_dir),
+            'iterations': 1, 'timeout_seconds': 30, 'budget_seconds': 300,
+            'injectors': [{'type': 'cpu_pressure', 'workers': 1}]}), indent=2))
+        status = tk.StringVar()
+        ttk.Label(dialog, textvariable=status).pack(anchor='w', padx=10, pady=6)
+        def start():
+            try:
+                from ep_auditor.core.run_manager import validate_stress
+                spec = validate_stress(json.loads(editor.get('1.0', 'end')))
+                if self.manager.busy:
+                    raise RuntimeError('Wait for the active operation')
+                self.config.data['stress'] = spec
+                future = self.manager.submit_operation('stress', self.capture_mode.get())
+                if future is None:
+                    raise RuntimeError('Campaign admission failed')
+                dialog.destroy()
+            except Exception as error:
+                status.set(str(error))
+        ttk.Button(dialog, text='Start owned campaign', command=start).pack(pady=8)
+
+    def _request_product_view(self, name, *, reset=False, export=False):
+        if self._closed or self.view_future is not None or self.trace_future is not None:
+            return
+        state = self.product_views[name]
+        if not reset and state.get('field_mode') and state.get('cursor'):
+            self._request_product_field(name, continuation=state['cursor'])
+            return
+        state['field_mode'] = False
+        state['field_tokens'] = {}
+        state['field_choice'].set('')
+        state['field_selector'].configure(values=())
+        run_id = state['run_id'].get().strip() or self._selected_run_id()
+        row = self.storage.get_run(run_id) if run_id else None
+        if not row:
+            state['status'].set('No verified RunId selected')
+            return
+        baseline = None
+        if name == 'Compare' or (name == 'Dashboard' and state['baseline'].get().strip()):
+            base = self.storage.get_run(state['baseline'].get().strip())
+            if not base:
+                state['status'].set('Select a baseline RunId')
+                return
+            baseline = Path(base['run_dir'])
+        cursor = None if reset else state['cursor']
+        state['run_dir'] = Path(row['run_dir'])
+        state['page'] = None
+        state['tree'].delete(*state['tree'].get_children())
+        state['chart'].delete('all')
+        self._product_detail(state, 'Reading verified capture…')
+        state['load'].configure(state='disabled')
+        state['next'].configure(state='disabled')
+        state['status'].set('Reading verified capture…')
+        self.view_future = (name, self.trace_executor.submit(self._read_product_view, Path(row['run_dir']), name,
+                                                            state['scope'].get().strip() or None, cursor, baseline, export,
+                                                            state['agent_kind'].get() if name == 'Agent' else None,
+                                                            state['compare_field'].get() if name == 'Compare' else None,
+                                                            state['history_kind'].get() if name == 'History' else None))
+
+    def _read_product_view(self, run, name, scope, cursor, baseline, export, agent_kind=None, compare_field=None, history_kind=None):
+        from ep_auditor.analyzers.summary import query_run_view
+        if name == 'History':
+            if history_kind == 'test':
+                return self.storage.history_for_test(scope, cursor=cursor)
+            if history_kind == 'regression':
+                return self.storage.history_for_regression(scope, cursor=cursor)
+            return self.storage.history_for_function(scope, cursor=cursor)
+        if name == 'Dashboard':
+            return query_run_view(run, name, cursor=cursor, baseline=baseline)
+        if name == 'Compare':
+            from ep_auditor.analyzers.compare import compare_runs
+            result = compare_runs(baseline, run, cursor=cursor)
+            field = compare_field or 'function_timings'
+            items = result['differences'].get(field, [])
+            rows = [dict(row, functionId=row['function_ids'][1]) if isinstance(row, dict) and row.get('function_ids')
+                    else row if isinstance(row, dict) else {'id': row, 'eventType': field} for row in items]
+            return dict(result, items=rows, availability=result['compatibility'],
+                        continuation=result.get('continuations', {}).get(field))
+        if name == 'Agent':
+            from ep_auditor.exporters.agent import export_agent_pack, export_investigation
+            if export:
+                return {'items': [{'directory': str(export_agent_pack(run))}], 'availability': 'exported', 'complete': False}
+            if scope:
+                kind = next((kind for prefix, kind in [('FindingId:', 'finding'), ('TestId:', 'test'),
+                    ('ActionId:', 'action'), ('TraceId:', 'trace'), ('FunctionId:', 'function'),
+                    ('ModuleId:', 'module'), ('ScenarioId:', 'scenario')] if scope.startswith(prefix)), None)
+                kind = kind or agent_kind
+                if not kind:
+                    raise ValueError('Select the kind and a recorded stable ID')
+                return export_investigation(run, kind, scope, cursor=cursor)
+            return query_run_view(run, 'Dashboard')
+        return query_run_view(run, name, scope=scope, cursor=cursor)
+
+    def _poll_product_view(self):
+        if self.view_future is None or not self.view_future[1].done():
+            return
+        name, future = self.view_future
+        self.view_future = None
+        state = self.product_views[name]
+        state['load'].configure(state='normal')
+        try:
+            page = future.result()
+            state['page'], state['cursor'] = page, page.get('continuation')
+            state['status'].set(f"{page.get('run_id', '')} · {page.get('availability', 'UNKNOWN')} · "
+                f"{'complete observation' if page.get('complete') is True else 'partial/unknown observation'} · "
+                f"{len(page.get('items', []))} rows · truncated={page.get('truncated', False)}")
+            state['next'].configure(state='normal' if state['cursor'] else 'disabled')
+            for index, row in enumerate(page.get('items', [])):
+                identity = next((row[key] for key in ('finding_id', 'functionId', 'moduleId', 'callId', 'event_id', 'id', 'test_id', 'pid', 'run_id') if row.get(key) is not None), index)
+                state['tree'].insert('', tk.END, iid=str(index), text=str(identity), values=(
+                    row.get('rule_id', row.get('type', row.get('eventType', row.get('graph_kind', 'report')))),
+                    str(row.get('provenance', 'UNKNOWN')) + ' / ' + str(row.get('confidence', 'UNKNOWN')),
+                    'observed' if page.get('availability') != 'UNKNOWN' else 'UNKNOWN'))
+            self._product_detail(state, json.dumps({key: value for key, value in page.items() if key != 'items'}, indent=2))
+            self._draw_product_chart(state, name, page.get('items', []))
+        except Exception as error:
+            state['page'], state['cursor'] = None, None
+            state['status'].set('Evidence unavailable: ' + str(error))
+            self._product_detail(state, 'No verified result. ' + str(error))
+
+    @staticmethod
+    def _product_detail(state, value):
+        state['detail'].configure(state='normal')
+        state['detail'].delete('1.0', tk.END)
+        state['detail'].insert('1.0', value)
+        state['detail'].configure(state='disabled')
+
+    def _select_product_row(self, name):
+        state = self.product_views[name]
+        selected = state['tree'].selection()
+        if selected and state['page']:
+            row = state['page']['items'][int(selected[0])]
+            self._product_detail(state, json.dumps(row, indent=2, ensure_ascii=False))
+            import base64
+            tokens = row.get('field_continuations', [])
+            labels = [' / '.join(map(str, json.loads(base64.urlsafe_b64decode(token))['field'])) for token in tokens]
+            state['field_tokens'] = dict(zip(labels, tokens))
+            state['field_selector'].configure(values=labels)
+            state['field_choice'].set(labels[0] if labels else '')
+
+    def _request_product_field(self, name, *, continuation=None):
+        if self._closed or self.view_future is not None or self.trace_future is not None:
+            return
+        state = self.product_views[name]
+        token = continuation or state.get('field_tokens', {}).get(state['field_choice'].get())
+        if not token or not state.get('run_dir'):
+            return
+        state['field_mode'] = True
+        state['tree'].delete(*state['tree'].get_children())
+        state['chart'].delete('all')
+        state['load'].configure(state='disabled')
+        state['next'].configure(state='disabled')
+        self.view_future = (name, self.trace_executor.submit(self._read_product_field, state['run_dir'], token))
+
+    @staticmethod
+    def _read_product_field(run, token):
+        from ep_auditor.analyzers.summary import query_view_field
+        from ep_auditor.core.lifecycle import authoritative_run
+        page = query_view_field(run, token)
+        page['items'] = [row if isinstance(row, dict) else {'value': row} for row in page['items']]
+        header = authoritative_run(run)
+        page.update(run_id=header['run_id'], availability='observed' if page['items'] else 'UNKNOWN', status=header['status'])
+        return page
+
+    def _select_chart_row(self, name, event):
+        state = self.product_views[name]
+        for item in state['chart'].find_overlapping(event.x, event.y, event.x, event.y):
+            for tag in state['chart'].gettags(item):
+                if tag.startswith('row:'):
+                    identity = tag[4:]
+                    if state['tree'].exists(identity):
+                        state['tree'].selection_set(identity)
+                        state['tree'].see(identity)
+                        self._select_product_row(name)
+                    return
+
+    def _refresh_product_chart(self, name):
+        state = self.product_views[name]
+        if state['page']:
+            self._draw_product_chart(state, name, state['page']['items'])
+
+    def _open_coverage_heatmap(self):
+        from ep_auditor.core.evidence import RawEvidence, EvidenceError
+        from ep_auditor.core.lifecycle import authoritative_run
+        from ep_auditor.analyzers.summary import _verified_rows
+        import webbrowser
+        state = self.product_views['Coverage']
+        try:
+            run = state.get('run_dir')
+            if run is None:
+                raise EvidenceError('No verified Coverage Run selected')
+            authoritative_run(run)
+            name = 'coverage/heatmap/index.html'
+            entries = [item for row, _, _, _ in _verified_rows(run, ('metrics/coverage.json',))
+                       for item in row.get('heatmap', []) if item.get('path') == 'raw/' + name]
+            if len(entries) != 1:
+                raise EvidenceError('Captured coverage index unavailable in selected report')
+            raw = RawEvidence(run)
+            import hashlib
+            if hashlib.sha256(raw.read_bytes(name)).hexdigest() != entries[0]['sha256']:
+                raise EvidenceError('Captured heatmap differs from its coverage report')
+            if not webbrowser.open((raw.raw / name).resolve(strict=True).as_uri()):
+                raise EvidenceError('No local HTML viewer accepted the captured heatmap')
+        except (EvidenceError, OSError, ValueError) as error:
+            state['status'].set('Evidence unavailable: ' + str(error))
+
+    def _show_product_source(self, name):
+        from ep_auditor.core.evidence import EvidenceError, load_json, digest
+        from ep_auditor.core.lifecycle import authoritative_run
+        state = self.product_views[name]
+        selected = state['tree'].selection()
+        if not selected or not state['page']:
+            return
+        try:
+            row = state['page']['items'][int(selected[0])]
+            source = row.get('symbol', {}).get('source', row.get('source_ref', {}))
+            if not isinstance(source, dict):
+                raise EvidenceError('No verified file/line source location')
+            filename = source.get('file', row.get('symbol', {}).get('source_file', row.get('source_file')))
+            line = source.get('line', row.get('symbol', {}).get('source_line', row.get('source_line', row.get('symbol', {}).get('line'))))
+            run = state['run_dir']
+            authoritative_run(run)
+            environment = load_json(run / 'environment.json')
+            root = Path(environment['project_root']).resolve(strict=True)
+            path = Path(filename) if filename else None
+            if path is None:
+                raise EvidenceError('Source location unavailable')
+            path = (path if path.is_absolute() else root / path).resolve(strict=True)
+            if path.is_relative_to(Path(__file__).resolve().parents[2]):
+                relative = path.relative_to(Path(__file__).resolve().parents[2]).as_posix()
+                expected = environment['auditor_source']['files'].get(relative)
+            else:
+                relative = path.relative_to(root).as_posix()
+                expected = environment['engine_source']['files'].get(relative)
+            with path.open('rb') as stream:
+                payload = stream.read(2 * 1024**2 + 1)
+            import hashlib
+            if not expected or len(payload) > 2 * 1024**2 or hashlib.sha256(payload).hexdigest() != expected:
+                raise EvidenceError('Local source differs from captured input or exceeds display capacity')
+            if type(line) is not int or not 1 <= line <= 200000:
+                raise EvidenceError('Invalid source line')
+            import itertools
+            start = max(1, line - 10)
+            excerpt = ''.join(f'{number}: {text}\n' for number, text in enumerate(
+                itertools.islice(payload.decode('utf-8').splitlines(), start - 1, start + 39), start))
+            self._product_detail(state, f'{relative} · captured source hash {expected}\n\n{excerpt}')
+        except (EvidenceError, OSError, ValueError, KeyError, TypeError) as error:
+            self._product_detail(state, 'Source context unavailable: ' + str(error))
+
+    @staticmethod
+    def _draw_product_chart(state, name, rows):
+        canvas = state['chart']
+        canvas.delete('all')
+        # Every chart is explicitly page-local and links back to its verified
+        # row. Missing timestamps/edges are never invented for display.
+        canvas.create_text(6, 4, anchor='nw', text=name + ' · verified page only; use continuation for remaining data')
+        width = max(600, canvas.winfo_width()) - 30
+        metric = state['metric'].get() if 'metric' in state else 'automatic'
+        if name in ('Allocations', 'Exceptions'):
+            from collections import Counter
+            bins = Counter()
+            for row in rows:
+                value = row.get('size_bytes') if name == 'Allocations' else row.get('code')
+                if type(value) is int and value >= 0:
+                    low = 1 << max(0, value.bit_length() - 1)
+                    label = ('0 bytes' if value == 0 else f'{low}–{2 * low - 1} bytes') if name == 'Allocations' else hex(value)
+                    bins[label] += 1
+            if bins:
+                maximum = max(bins.values())
+                for index, (label, count) in enumerate(sorted(bins.items())[:10]):
+                    top = 27 + index * 12
+                    canvas.create_text(8, top, anchor='nw', text=f'{label}: {count}')
+                    canvas.create_rectangle(180, top, 180 + 280 * count / maximum, top + 10, fill='#286b9b', outline='')
+                return
+        if name in ('Call Tree', 'Threads', 'Locks & Waits', 'IO', 'Timeline'):
+            intervals = []
+            for index, row in enumerate(rows):
+                series = row.get('intervals', [row]) if name == 'Threads' else [row]
+                for entry in series:
+                    start = entry.get('start_ns', entry.get('request_ns'))
+                    end = entry.get('end_ns', entry.get('complete_ns'))
+                    if type(start) is int and type(end) is int and end >= start:
+                        intervals.append((index, entry, start, end))
+            if intervals:
+                origin = min(item[2] for item in intervals)
+                span = max(item[3] for item in intervals) - origin or 1
+                calls = {row.get('callId'): row for row in rows if row.get('callId')}
+                for index, entry, start, end in intervals[:200]:
+                    depth, parent, visited = 0, entry.get('parentCallId'), set()
+                    while parent in calls and parent not in visited and depth < 20:
+                        visited.add(parent)
+                        depth += 1
+                        parent = calls[parent].get('parentCallId')
+                    lane = depth if name == 'Call Tree' else index % 10
+                    top = 27 + lane * 12
+                    left = 12 + width * (start - origin) / span
+                    right = max(left + 2, 12 + width * (end - origin) / span)
+                    canvas.create_rectangle(left, top, right, top + 10, fill='#286b9b', outline='white', tags=('row:' + str(index),))
+                canvas.create_text(12, 153, anchor='nw', text=f'Observed interval {span} ns · flame/timeline clipping limited to this page')
+                return
+        if name in ('Causal Graph', 'Architecture'):
+            edges = []
+            for index, row in enumerate(rows):
+                for edge in row.get('edges', [row]):
+                    source, target = edge.get('source'), edge.get('target')
+                    if source is not None and target is not None:
+                        edges.append((index, str(source), str(target)))
+            nodes = sorted({node for _, source, target in edges for node in (source, target)})[:20]
+            if nodes:
+                import math
+                coordinates = {node: (width / 2 + width * .38 * math.cos(i * 2 * math.pi / len(nodes)),
+                                     88 + 55 * math.sin(i * 2 * math.pi / len(nodes))) for i, node in enumerate(nodes)}
+                for index, source, target in edges[:200]:
+                    if source in coordinates and target in coordinates:
+                        canvas.create_line(*coordinates[source], *coordinates[target], arrow=tk.LAST, fill='#286b9b', tags=('row:' + str(index),))
+                for node, (x, y) in coordinates.items():
+                    canvas.create_text(x, y, text=node[:20], fill='#222')
+                return
+        if name in ('Memory', 'History'):
+            history_kind = state['page'].get('history_kind') if state.get('page') else None
+            if history_kind == 'regression':
+                rows = [dict(row, delta_ns=row['regression']['delta_ns']) for row in rows]
+            default_key = 'wall_seconds' if history_kind == 'test' else 'delta_ns' if history_kind == 'regression' else 'mean_ns'
+            series_key = (metric if metric in ('calls', 'mean_ns', 'p95_ns', 'cpu_self_100ns', 'wall_seconds', 'delta_ns') else default_key) if name == 'History' else (
+                metric if metric in ('rss_bytes_sum', 'cpu_percent_sum') else 'rss_bytes_sum')
+            measured = [(index, row[series_key]) for index, row in enumerate(rows) if type(row.get(series_key)) in (int, float)]
+            if measured:
+                maximum = max(abs(value) for _, value in measured) or 1
+                points = [coordinate for position, (index, value) in enumerate(measured) for coordinate in
+                          (12 + width * position / max(1, len(measured) - 1),
+                           (88 - 55 * value / maximum) if history_kind == 'regression' else 145 - 110 * value / maximum)]
+                if len(points) >= 4:
+                    canvas.create_line(*points, fill='#286b9b', width=2)
+                canvas.create_text(12, 153, anchor='nw', text=f'Observed {series_key} samples · peak in page {maximum}')
+                return
+        keys = (metric,) if metric != 'automatic' else ('inclusive_ns', 'self_ns', 'calls', 'size_bytes', 'bytes', 'latency_ns', 'timestamp_ns', 'wall_seconds', 'rss_bytes_sum')
+        candidates = [(row, next((key for key in keys
+                                  if type(row.get(key)) in (int, float) and row[key] >= 0), None)) for row in rows[:20]]
+        values = [(row, key) for row, key in candidates if key]
+        if not values:
+            canvas.create_text(12, 12, anchor='nw', text=name + ': no measured numeric series in this page (UNKNOWN)')
+            return
+        key = values[0][1]
+        values = [(row, field) for row, field in values if field == key]
+        maximum = max(row[key] for row, _ in values) or 1
+        for index, (row, _) in enumerate(values[:10]):
+            top = 20 + index * 14
+            canvas.create_text(6, top, anchor='nw', text=str(row.get('functionId', row.get('event_id', index)))[:24])
+            canvas.create_rectangle(180, top, 180 + 280 * row[key] / maximum, top + 10, fill='#286b9b', outline='', tags=('row:' + str(rows.index(row)),))
+        canvas.create_text(480, 12, anchor='nw', text=key + ' (verified page)')
 
     def _build_tests_tab(self) -> None:
         bar = ttk.Frame(self.tests_tab, padding=6)
@@ -457,38 +900,22 @@ class AuditorWindow:
         if not row:
             return
         run_dir = Path(row["run_dir"])
-        summary = self.storage.read_json(run_dir / "metrics" / "summary.json", {})
-        self._show_dashboard(run_id, row, summary, run_dir)
-        self.notebook.select(self.dashboard_tab)
+        state = self.product_views['Dashboard']
+        state['run_id'].set(run_id)
+        self._request_product_view('Dashboard', reset=True)
+        self.notebook.select(state['frame'])
 
     def _show_dashboard(self, run_id: str, row: dict, summary: dict, run_dir: Path) -> None:
         self.dashboard_text.delete("1.0", tk.END)
-        proc = summary.get("process", {})
-        tests = summary.get("tests", {})
-        static = summary.get("static_scan", {})
         lines = [
             f"Run: {run_id}",
-            f"Status: {row.get('status')}",
+            'Open the verified Dashboard view for authoritative status and metrics.',
             f"Kind: {row.get('kind')}",
             f"Capture: {row.get('capture_mode')}",
         ]
-        if proc:
-            lines += [
-                f"Wall: {proc.get('wall_seconds', 0):.3f} s",
-                f"Peak RSS: {self._human_bytes(proc.get('peak_rss_bytes', 0))}",
-                f"Peak threads: {proc.get('peak_threads', 0)}",
-                f"I/O read/write: {self._human_bytes(proc.get('total_read_bytes', 0))} / {self._human_bytes(proc.get('total_write_bytes', 0))}",
-            ]
-        if tests:
-            lines += [f"Tests: {tests.get('passed', 0)} pass, {tests.get('failed', 0)} fail, {tests.get('cancelled', 0)} cancelled / {tests.get('total', 0)} total"]
-        if static:
-            lines += [f"Static scan: {static.get('files', 0)} files, {static.get('lines', 0)} lines, {static.get('marker_count', 0)} markers"]
         self.dashboard_text.insert(tk.END, "\n".join(lines))
-        sample_path = run_dir / "process_samples.jsonl"
-        if sample_path.exists():
-            self._draw_samples(sample_path)
-        else:
-            self._draw_test_durations(run_dir / "tests" / "results.jsonl")
+        self.chart.delete('all')
+        self.chart.create_text(12, 12, anchor='nw', text='Metrics are UNKNOWN until the sealed capture is queried.')
 
 
     def _draw_test_durations(self, path: Path) -> None:
@@ -572,8 +999,18 @@ class AuditorWindow:
         return f"{n:.2f} TiB"
 
     def _poll_events(self) -> None:
+        if self._closed:
+            return
+        # This entry point also supports explicit refreshes. Replace, rather
+        # than orphan, the outstanding timer before scheduling the next one.
+        if self.poll_after_id is not None:
+            self.root.after_cancel(self.poll_after_id)
+            self.poll_after_id = None
         self._poll_trace()
+        self._poll_product_view()
         for event in self.events.drain():
+            if self._closed:
+                return
             kind = event.kind
             p = event.payload
             if kind == "log":
@@ -600,10 +1037,27 @@ class AuditorWindow:
             elif kind == "error":
                 self.status_text.set(p.get("text", "Error"))
                 messagebox.showerror("Epidemic Auditor", p.get("text", "Unknown error"))
-        self.poll_after_id = self.root.after(100, self._poll_events)
+        if not self._closed:
+            self.poll_after_id = self.root.after(100, self._poll_events)
 
-    def _on_close(self) -> None:
-        self.root.after_cancel(self.poll_after_id)
+    def _release_resources(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        if self.poll_after_id is not None:
+            self.root.after_cancel(self.poll_after_id)
+            self.poll_after_id = None
         self.trace_executor.shutdown(wait=False, cancel_futures=True)
         self.manager.shutdown()
-        self.root.destroy()
+
+    def _on_destroy(self, event) -> None:
+        if event.widget is self.root:
+            self._release_resources()
+
+    def _on_close(self) -> None:
+        if self._closed:
+            return
+        try:
+            self._release_resources()
+        finally:
+            self.root.destroy()

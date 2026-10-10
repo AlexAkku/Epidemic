@@ -30,7 +30,7 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def load_json(path: Path) -> dict:
+def load_json(path: Path, *, expected_sha256: str | None = None) -> dict:
     def unique(pairs):
         result = {}
         for key, value in pairs:
@@ -40,7 +40,10 @@ def load_json(path: Path) -> dict:
         return result
     def nonfinite(value):
         raise EvidenceError("nonfinite evidence JSON number")
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique, parse_constant=nonfinite)
+    payload = path.read_bytes()
+    if expected_sha256 is not None and hashlib.sha256(payload).hexdigest() != expected_sha256:
+        raise EvidenceError('evidence JSON snapshot hash mismatch')
+    return json.loads(payload.decode('utf-8'), object_pairs_hook=unique, parse_constant=nonfinite)
 
 
 def guard_sealed_raw(path: Path) -> None:

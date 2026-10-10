@@ -6,6 +6,7 @@
 #include <sstream>
 #include <algorithm>
 #include <memory>
+#include <cstdio>
 
 namespace etw_broker {
 static HANDLE stop_event = nullptr; // One service-lifetime event, released by process exit.
@@ -35,8 +36,17 @@ static void write_new(const std::filesystem::path& path, const std::string& valu
     DWORD written = 0;
     if (!WriteFile(file.value, value.data(), static_cast<DWORD>(value.size()), &written, nullptr) || written != value.size() || !FlushFileBuffers(file.value)) throw std::runtime_error("receipt write failed");
 }
+static std::uint64_t file_bytes(const std::filesystem::path& path) {
+    Handle file(CreateFileW(api_path(path).c_str(), FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL, nullptr));
+    LARGE_INTEGER size{};
+    if (!GetFileSizeEx(file.value, &size) || size.QuadPart < 0)
+        throw std::runtime_error("broker file size unavailable");
+    return static_cast<std::uint64_t>(size.QuadPart);
+}
 static std::string read_small(const std::filesystem::path& path) {
-    if (std::filesystem::file_size(path) > 65536) throw std::runtime_error("WPR diagnostics exceeded bound");
+    if (file_bytes(path) > 65536) throw std::runtime_error("WPR diagnostics exceeded bound");
     std::ifstream input(path, std::ios::binary);
     if (!input) throw std::runtime_error("WPR diagnostic unavailable");
     return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
@@ -62,10 +72,10 @@ static void verify_retention(const std::filesystem::path& root) {
     unsigned captures = 0;
     for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
         no_reparse(entry.path());
-        if (entry.is_regular_file()) bytes += entry.file_size();
+        if (entry.is_regular_file()) bytes += file_bytes(entry.path());
         // WPR creates many nested temporary folders inside a single capture.
         if (entry.is_directory() && entry.path().parent_path() == root) ++captures;
-        if (bytes > (32ULL << 30) || captures > 128)
+        if (bytes > (32ULL << 30U) || captures > 128)
             throw std::runtime_error("broker retention capacity exhausted; evidence retained");
     }
 }
@@ -99,7 +109,7 @@ class Broker {
         if (!InitializeProcThreadAttributeList(list, 1, 0, &bytes)) throw std::runtime_error("handle-list initialization failed");
         struct Attributes { LPPROC_THREAD_ATTRIBUTE_LIST value; ~Attributes() { DeleteProcThreadAttributeList(value); } } cleanup{list};
         HANDLE inherited[] = {stdout_file.value, stderr_file.value, stdin_file.value};
-        if (!UpdateProcThreadAttribute(list, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherited, sizeof(inherited), nullptr, nullptr)) throw std::runtime_error("handle allowlist failed");
+        if (!UpdateProcThreadAttribute(list, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, static_cast<void*>(inherited), sizeof(inherited), nullptr, nullptr)) throw std::runtime_error("handle allowlist failed");
         STARTUPINFOEXW start{};
         start.StartupInfo.cb = sizeof(start);
         start.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
@@ -136,7 +146,7 @@ class Broker {
         if (!GetExitCodeProcess(process.value, &result.exit_code) || result.exit_code == STILL_ACTIVE) throw std::runtime_error("WPR exit status unavailable");
         // Child is finished; closing inherited output handles flushes these files.
         result.stdout_text = read_small(out);
-        if (std::filesystem::file_size(err) > 65536) throw std::runtime_error("WPR error output exceeded bound");
+        if (file_bytes(err) > 65536) throw std::runtime_error("WPR error output exceeded bound");
         write_new(directory / (stem + L".command.json"), "{\"application\":" + json_quote(utf8(wpr.native())) +
             ",\"command\":" + json_quote(utf8(result.command)) + ",\"exit_code\":" + std::to_string(result.exit_code) +
             ",\"timed_out\":" + (result.timed_out ? "true" : "false") + "}");
@@ -153,7 +163,11 @@ class Broker {
     void quota() const {
         ULARGE_INTEGER available{}, total{}, free{};
         // At most 2 GiB temporary input + 2 GiB merged ETL + 2 GiB reserve.
-        if (!GetDiskFreeSpaceExW(root.c_str(), &available, &total, &free) || available.QuadPart < (6ULL << 30)) throw std::runtime_error("capture disk headroom below bounded 6 GiB budget");
+        if (!GetDiskFreeSpaceExW(root.c_str(), &available, &total, &free)) {
+            const auto error = GetLastError();
+            throw std::runtime_error("capture disk headroom query failed, Win32 error " + std::to_string(error));
+        }
+        if (available.QuadPart < (6ULL << 30U)) throw std::runtime_error("capture disk headroom below bounded 6 GiB budget");
         verify_retention(root);
     }
 public:
@@ -180,7 +194,9 @@ public:
     }
     ~Broker() {
         if (may_have_session) {
-            try { run(L"-cancel", 30000, false); } catch (...) { /* Startup recovery handles only our named instance. */ }
+            try { run(L"-cancel", 30000, false); } catch (...) {
+                OutputDebugStringW(L"Epidemic ETW broker cancellation failed; named instance recovery required.\n");
+            }
         }
     }
     std::string execute(const Request& request, const Peer& peer) {
@@ -192,7 +208,7 @@ public:
             owner_process = std::make_unique<Handle>(OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, peer.pid));
             FILETIME created{}, ended{}, kernel{}, user{};
             if (!GetProcessTimes(owner_process->value, &created, &ended, &kernel, &user)
-                || ((static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime) != peer.creation
+                || ((static_cast<std::uint64_t>(created.dwHighDateTime) << 32U) | created.dwLowDateTime) != peer.creation
                 || WaitForSingleObject(owner_process->value, 0) != WAIT_TIMEOUT)
                 throw std::runtime_error("capture owner lifetime changed");
             capture_id = guid();
@@ -258,7 +274,7 @@ public:
         const auto begin = qpc();
         const auto result = run(L"-stop \"" + trace.native() + L"\"", 240000);
         bool good = !result.timed_out && result.exit_code == 0 && std::filesystem::is_regular_file(trace);
-        if (good) { no_reparse(trace); good = std::filesystem::file_size(trace) > 0 && std::filesystem::file_size(trace) <= (2ULL << 30); }
+        if (good) { no_reparse(trace); const auto bytes = file_bytes(trace); good = bytes > 0 && bytes <= (2ULL << 30U); }
         state = good ? "COMPLETE" : "FAILED";
         if (good) may_have_session = false;
         else recover_failed_operation();
@@ -271,12 +287,12 @@ public:
         bool capacity_exceeded = false;
         if (may_have_session) {
             ULARGE_INTEGER available{}, total{}, free{};
-            capacity_exceeded = !GetDiskFreeSpaceExW(root.c_str(), &available, &total, &free) || available.QuadPart < (2ULL << 30);
+            capacity_exceeded = !GetDiskFreeSpaceExW(root.c_str(), &available, &total, &free) || available.QuadPart < (2ULL << 30U);
             unsigned long long bytes = 0;
             for (const auto& entry : std::filesystem::recursive_directory_iterator(directory)) {
                 no_reparse(entry.path());
-                if (entry.is_regular_file()) bytes += entry.file_size();
-                if (bytes > (2ULL << 30)) { capacity_exceeded = true; break; }
+                if (entry.is_regular_file()) bytes += file_bytes(entry.path());
+                if (bytes > (2ULL << 30U)) { capacity_exceeded = true; break; }
             }
         }
         if (may_have_session && (shutdown || GetTickCount64() - started_ms >= 180000
@@ -311,6 +327,8 @@ static bool io(HANDLE pipe, void* buffer, DWORD capacity, DWORD& count, bool wri
     }
     return GetOverlappedResult(pipe, &pending, &count, FALSE) != FALSE;
 }
+// Service status and Win32 error are distinct fields of the fixed SCM callback API.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static void report(DWORD state, DWORD error = NO_ERROR) {
     SERVICE_STATUS status{};
     status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
@@ -368,12 +386,14 @@ static void WINAPI service_main(DWORD, wchar_t**) {
                         Handle client(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
                         FILETIME created{}, ended{}, kernel{}, user{};
                         if (!GetProcessTimes(client.value, &created, &ended, &kernel, &user)) throw std::runtime_error("client lifetime unavailable");
-                        const Peer peer{pid, (static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime};
+                        const Peer peer{pid, (static_cast<std::uint64_t>(created.dwHighDateTime) << 32U) | created.dwLowDateTime};
                         result = broker.execute(parse(std::string(request, count)), peer);
                     }
                     catch (const std::exception& failure) {
                         const auto win32_error = GetLastError();
-                        try { broker.recover_failed_operation(); } catch (...) {}
+                        try { broker.recover_failed_operation(); } catch (...) {
+                            OutputDebugStringW(L"Epidemic ETW broker recovery failed; original operation remains failed.\n");
+                        }
                         std::string reason(failure.what());
                         if (reason.size() > 160) reason.resize(160);
                         for (auto& character : reason) if (static_cast<unsigned char>(character) < 32 || static_cast<unsigned char>(character) > 126) character = '?';
@@ -430,17 +450,35 @@ static int self_test() {
     const auto folder = base / std::wstring(100, L'x');
     const auto long_file = folder / std::wstring(100, L'y');
     struct FixtureCleanup {
-        std::filesystem::path base, folder, file;
+        std::wstring base, folder, file;
         bool base_created = false, folder_created = false, file_created = false;
-        std::vector<std::filesystem::path> retention_paths{};
-        ~FixtureCleanup() {
-            if (file_created) DeleteFileW(api_path(file).c_str());
-            for (auto iterator = retention_paths.rbegin(); iterator != retention_paths.rend(); ++iterator)
-                RemoveDirectoryW(api_path(*iterator).c_str());
-            if (folder_created) RemoveDirectoryW(api_path(folder).c_str());
-            if (base_created) RemoveDirectoryW(api_path(base).c_str());
+        std::vector<std::wstring> retention_paths{};
+        bool finish() noexcept {
+            bool complete = true;
+            if (file_created) {
+                if (DeleteFileW(file.c_str())) file_created = false;
+                else complete = false;
+            }
+            for (auto iterator = retention_paths.rbegin(); iterator != retention_paths.rend(); ++iterator) {
+                if (iterator->empty()) continue;
+                if (RemoveDirectoryW(iterator->c_str())) iterator->clear();
+                else complete = false;
+            }
+            if (folder_created) {
+                if (RemoveDirectoryW(folder.c_str())) folder_created = false;
+                else complete = false;
+            }
+            if (base_created) {
+                if (RemoveDirectoryW(base.c_str())) base_created = false;
+                else complete = false;
+            }
+            return complete;
         }
-    } fixture_cleanup{base, folder, long_file};
+        ~FixtureCleanup() noexcept {
+            if (!finish()) std::fputs("broker self-test fixture cleanup failed\n", stderr);
+        }
+    } fixture_cleanup{api_path(base), api_path(folder), api_path(long_file)};
+    fixture_cleanup.retention_paths.reserve(257);
     if (!CreateDirectoryW(api_path(base).c_str(), nullptr)) throw std::runtime_error("long path fixture root setup failed");
     fixture_cleanup.base_created = true;
     if (!CreateDirectoryW(api_path(folder).c_str(), nullptr)) throw std::runtime_error("long path fixture folder setup failed");
@@ -448,8 +486,11 @@ static int self_test() {
     { Handle fixture(CreateFileW(api_path(long_file).c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr));
       fixture_cleanup.file_created = true; }
     const auto create_owned = [&](const std::filesystem::path& path) {
-        if (!CreateDirectoryW(api_path(path).c_str(), nullptr)) throw std::runtime_error("retention fixture setup failed");
-        fixture_cleanup.retention_paths.push_back(path);
+        if (fixture_cleanup.retention_paths.size() == fixture_cleanup.retention_paths.capacity())
+            throw std::runtime_error("retention fixture capacity exhausted before creation");
+        auto native = api_path(path);
+        if (!CreateDirectoryW(native.c_str(), nullptr)) throw std::runtime_error("retention fixture setup failed");
+        fixture_cleanup.retention_paths.push_back(std::move(native));
     };
     for (unsigned index = 0; index < 129; ++index) create_owned(folder / (L"temporary-" + std::to_wstring(index)));
     verify_retention(base); // One capture with >128 internal folders is admitted.
@@ -475,8 +516,12 @@ static int self_test() {
     for (unsigned int index = 0; index < sizeof(results) / sizeof(results[0]); ++index) {
         if (!results[index]) { std::cerr << "ACL assertion failed: " << index << '\n'; return 1; }
     }
+    { Handle locked_fixture(CreateFileW(fixture_cleanup.file.c_str(), GENERIC_READ, 0, nullptr,
+          OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+      if (fixture_cleanup.finish()) throw std::runtime_error("broker self-test accepted blocked cleanup"); }
+    if (!fixture_cleanup.finish()) throw std::runtime_error("broker self-test cleanup unproven; no PASS");
     std::cout << "{\"status\":\"PASS\",\"positive\":4,\"negative\":" << invalid.size()
-              << ",\"acl_checks\":8,\"client_elevated\":false,\"scope\":\"protocol and actual token ACL checks; service/real ETL qualification still required\"}\n";
+              << ",\"acl_checks\":8,\"cleanup_controls\":2,\"client_elevated\":false,\"scope\":\"protocol and actual token ACL checks; service/real ETL qualification still required\"}\n";
     return 0;
 }
 }
@@ -505,7 +550,10 @@ int wmain(int argc, wchar_t** argv) {
                 DWORD count = 0;
                 WriteFile(file.value, text.data(), static_cast<DWORD>(text.size()), &count, nullptr);
                 FlushFileBuffers(file.value);
-            } catch (...) { /* No diagnostics are written through an untrusted store. */ }
+            } catch (...) {
+                // Debug output avoids writing through an untrusted installation store.
+                OutputDebugStringW(L"Epidemic ETW broker installation failure diagnostics unavailable.\n");
+            }
         }
         return 2;
     }

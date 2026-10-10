@@ -32,7 +32,8 @@ class EtwBrokerTests(unittest.TestCase):
             directory = Path(temporary)
             output = directory / "reports"
             decoder = XperfPostProcessor()
-            decoder.exe = Path("xperf.exe")
+            decoder.exe = directory / 'xperf.exe'
+            decoder.exe.write_bytes(b'synthetic tool identity fixture')
             def invoke(command, **options):
                 self.assertEqual(options["env"]["_NT_SYMBOL_PATH"], str(directory.resolve()))
                 self.assertTrue(Path(options["env"]["_NT_SYMCACHE_PATH"]).is_relative_to(output.resolve()))
@@ -43,7 +44,36 @@ class EtwBrokerTests(unittest.TestCase):
             with patch("ep_auditor.collectors.xperf.subprocess.run", side_effect=invoke):
                 result = decoder.process(directory / "trace.etl", 41, output, symbol_dirs=(directory,))
             self.assertFalse(result["errors"])
-            self.assertEqual(len(result["reports"]), 3)
+            self.assertEqual(len(result["reports"]), 4)
+            self.assertEqual(result['decoder_commands']['events'][-2:], ['-a', 'dumper'])
+
+    def test_dumper_capacity_matches_streamed_raw_bound_and_rejects_overflow(self):
+        from subprocess import CompletedProcess
+        from ep_auditor.collectors.xperf import EVENT_DUMP_LIMIT_BYTES
+        original_stat = Path.stat
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            decoder = XperfPostProcessor()
+            decoder.exe = directory / 'xperf.exe'
+            decoder.exe.write_bytes(b'unit boundary decoder')
+            def invoke(command, **options):
+                Path(command[command.index('-o') + 1]).write_text('decoder boundary output')
+                return CompletedProcess(command, 0, stdout='', stderr='')
+            for reported_size, accepted in ((600 * 1024**2, True), (EVENT_DUMP_LIMIT_BYTES + 1, False)):
+                def observed_stat(path, *args, **kwargs):
+                    value = original_stat(path, *args, **kwargs)
+                    if path.name == 'events.csv':
+                        fields = list(value)
+                        fields[6] = reported_size
+                        return os.stat_result(fields)
+                    return value
+                with self.subTest(size=reported_size), patch.object(Path, 'stat', observed_stat), \
+                        patch('ep_auditor.collectors.xperf.subprocess.run', side_effect=invoke):
+                    result = decoder.process(directory / 'trace.etl', 41, directory / 'reports')
+                self.assertEqual('events' in result['reports'], accepted)
+                self.assertEqual(bool(result['errors']), not accepted)
+                if not accepted:
+                    self.assertIn('capacity exceeded', result['errors'][0])
 
     def test_physical_deep_runner_registers_xperf_outputs_and_seals_raw(self):
         from test_core import AuditorCoreTests
@@ -69,13 +99,20 @@ class EtwBrokerTests(unittest.TestCase):
                 project, record.run_dir, "Deep", timeout=30)
             self.assertEqual(result.exit_code, 0)
             raw = RawEvidence(record.run_dir)
+            raw.seal({"run_id": record.run_id, "instrumentation_profile": "audit-deep",
+                      "source_fingerprints": {}, "binary_fingerprints": {}, "analyzer_version": "current-source"})
+            manifest = raw.verify()
+            self.assertTrue(manifest["capture_complete"],
+                {"notes": result.notes, "incomplete": [row for row in manifest['raw_files'] if not row['complete']]})
             payload, _ = raw.read_capture("wpr.json")
             metadata = json.loads(payload)
             self.assertFalse(metadata["xperf"]["errors"], metadata["xperf"])
-            self.assertEqual(set(metadata["xperf"]["reports"]), {"cpu_profile", "cpu_disk", "profile_stacks"})
-            raw.seal({"run_id": record.run_id, "instrumentation_profile": "audit-deep",
-                      "source_fingerprints": {}, "binary_fingerprints": {}, "analyzer_version": "current-source"})
-            self.assertTrue(raw.verify()["capture_complete"])
+            self.assertEqual(set(metadata["xperf"]["reports"]), {"cpu_profile", "cpu_disk", "profile_stacks", 'events'})
+            from ep_auditor.collectors.etw_import import publish_wpr_capture
+            from ep_auditor.collectors.telemetry_pipeline import telemetry_complete
+            graph = publish_wpr_capture(record.run_dir)
+            self.assertTrue(graph['threads'], 'real SDK capture must expose the owned process threads')
+            self.assertTrue(telemetry_complete(record.run_dir))
             truncated = record.run_dir / "xperf/truncated.etl"
             with (raw.raw / "trace.etl").open("rb") as source:
                 truncated.write_bytes(source.read(65536))

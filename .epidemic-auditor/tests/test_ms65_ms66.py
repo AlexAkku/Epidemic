@@ -124,6 +124,29 @@ class CausalAnalyzerTests(unittest.TestCase):
 
 
 class DiagnosticAnalyzerTests(unittest.TestCase):
+    def test_verifier_command_bounds_elevation_and_reports_unverified_timeout(self):
+        from unittest.mock import patch
+        from ep_auditor.collectors.sanitizer import _verifier_command
+
+        tool = Path('C:/Windows/System32/appverif.exe')
+        with patch.dict(os.environ, {'SystemRoot': 'C:/Windows'}), \
+                patch('ep_auditor.collectors.sanitizer.subprocess.CREATE_NO_WINDOW', 0, create=True), \
+                patch('ep_auditor.collectors.sanitizer.subprocess.run') as invoke:
+            invoke.return_value = subprocess.CompletedProcess([], 0, b'', b'')
+            _verifier_command(tool, '-enable', 'Heaps', 'Leak', '-for', 'EpidemicAuditorShadowFixture.exe')
+            command = invoke.call_args.args[0]
+            self.assertEqual(invoke.call_args.kwargs['timeout'], 150)
+            self.assertIn('-Verb RunAs', command[-1])
+            self.assertIn('WaitForExit(120000)', command[-1])
+            self.assertIn('$p.Kill()', command[-1])
+            self.assertIn('EpidemicAuditorShadowFixture.exe', command[-1])
+            invoke.return_value = subprocess.CompletedProcess([], 1, b'', b'UAC denied')
+            with self.assertRaisesRegex(EvidenceError, 'UAC denied'):
+                _verifier_command(tool, '-enable', 'Heaps')
+            invoke.side_effect = subprocess.TimeoutExpired(command, 150)
+            with self.assertRaisesRegex(EvidenceError, 'activation and cleanup are NOT VERIFIED'):
+                _verifier_command(tool, '-enable', 'Heaps')
+
     def test_verifier_long_budget_is_bounded_and_never_available_to_general_observation(self):
         from ep_auditor.collectors.modules import _observer_execution_plan
 
@@ -1198,13 +1221,18 @@ class NativeDiagnosticTests(unittest.TestCase):
                 report = capture_verifier_fixture(config, run.run_dir,
                     self.binary('EpidemicAuditorShadowFixture'), mode, helper=self.binary('EpidemicAuditorObservation'))
                 self.assertEqual(report['memory_safety_verdict'], 'UNKNOWN')
-                if mode == 'verifier-good':
-                    snapshot = json.loads(RawEvidence(run.run_dir).read_bytes('process/stdout.bin'))
-                    memory_apis = {row['name'] for row in snapshot['api_calls'] if row['family'] == 'memory'}
-                    self.assertTrue({'VirtualAlloc', 'VirtualFree'} <= memory_apis, memory_apis)
                 if mode == 'leak-bad':
                     self.assertTrue(report['candidates'])
+                # Verified raw reads require the authoritative sealed capture.
+                # Keep the pre-seal rejection as a negative control.
+                with self.assertRaises(EvidenceError):
+                    RawEvidence(run.run_dir).read_bytes('process/stdout.bin')
                 finalize_run(run, 'PASS', {})
+                if mode == 'verifier-good':
+                    snapshot = json.loads(RawEvidence(run.run_dir).read_bytes('process/stdout.bin'))
+                    self.assertEqual(snapshot['exit_code'], 0)
+                    self.assertIs(snapshot['complete'], True)
+                    self.assertTrue(snapshot['verifier_modules'], 'SDK activation must be physically observed')
                 expected = 'PASS' if mode.endswith('good') else 'FAIL'
                 self.assertEqual(authoritative_run(run.run_dir)['status'], expected)
                 published = EvidenceLineage(run.run_dir).verify('normalized', 'diagnostics/verifier.json')
@@ -1221,6 +1249,29 @@ class NativeDiagnosticTests(unittest.TestCase):
                     path.write_text(json.dumps(published), encoding='utf-8')
                     with self.assertRaises(EvidenceError):
                         authoritative_run(clone)
+
+    def test_physical_memory_api_calls_are_observed(self):
+        from test_core import AuditorCoreTests
+        from ep_auditor.core.storage import RunStorage
+        from ep_auditor.core.lifecycle import finalize_run, authoritative_run
+        from ep_auditor.collectors.modules import capture_api_snapshot
+        # The existing disk-io fixture actually allocates and releases an 8 MiB
+        # VirtualAlloc buffer. Verifier's HeapAlloc case does not call these APIs.
+        with tempfile.TemporaryDirectory() as temporary:
+            config, _ = AuditorCoreTests()._config(Path(temporary))
+            run = RunStorage(config).new_run('api', 'physical Virtual memory APIs', 'Deep')
+            snapshot, graph = capture_api_snapshot(config, run.run_dir,
+                self.binary('EpidemicAuditorShadowFixture'), ['disk-io'],
+                helper=self.binary('EpidemicAuditorObservation'))
+            self.assertEqual(snapshot['exit_code'], 0)
+            self.assertIs(graph['complete'], True)
+            finalize_run(run, 'PASS', {})
+            sealed = json.loads(RawEvidence(run.run_dir).read_bytes('process/stdout.bin'))
+            self.assertEqual(sealed, snapshot)
+            memory_calls = [row for row in sealed['api_calls'] if row['family'] == 'memory']
+            self.assertTrue({'VirtualAlloc', 'VirtualFree'} <= {row['name'] for row in memory_calls})
+            self.assertTrue(all(row['address'] and row['stack'] for row in memory_calls))
+            self.assertEqual(authoritative_run(run.run_dir)['status'], 'PASS')
 
     def test_physical_api_export_entries_and_call_stacks(self):
         from test_core import AuditorCoreTests
@@ -1489,10 +1540,15 @@ class NativeDiagnosticTests(unittest.TestCase):
                     self.assertTrue(reads)
                     self.assertTrue(all(not row['synchronous_attempt'] and row['main_thread'] for row in reads))
                     names = {row['name'] for row in report['api_calls']}
-                    self.assertTrue({'CreateEventW', 'SetEvent', 'CreateThread'} <= names, names)
+                    # OVERLAPPED completion signals the event in the kernel;
+                    # this scenario neither calls SetEvent nor starts a thread.
+                    self.assertTrue({'CreateEventW', 'CreateFileW', 'ReadFile',
+                                     'CloseHandle', 'GetOverlappedResult'} <= names, names)
                     self.assertIn('GetOverlappedResult', names)
                     if variant == 'cancel-io':
                         self.assertIn('CancelIoEx', names)
+                    else:
+                        self.assertIn('WriteFile', names)
                     self.assertTrue(graph['complete'])
                     finalize_run(run, 'PASS', {})
                     self.assertEqual(authoritative_run(run.run_dir)['status'], 'PASS')

@@ -35,6 +35,10 @@ void scenario(const char*, const char*) noexcept;
 void entity_change(std::uint64_t, std::uint64_t, unsigned, unsigned, unsigned) noexcept;
 void io(const char*, const char*, std::uint64_t, std::uint64_t) noexcept;
 void allocation(const char*, std::uint64_t, std::uint64_t, const char* = nullptr) noexcept;
+bool fail_allocation(const char*) noexcept;
+#ifdef _WIN32
+void delay_io(const wchar_t*) noexcept;
+#endif
 void exception(const char*, std::uint64_t, std::uint64_t) noexcept;
 } // namespace epidemic::auditor::shadow
 

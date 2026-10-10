@@ -114,7 +114,10 @@ def capture_api_snapshot(
     *,
     helper: Path,
     capture_mode: str = 'Deep',
-    verifier_fixture: bool = False
+    verifier_fixture: bool = False,
+    env_extra: dict[str, str] | None = None,
+    runner=None,
+    timeout_seconds: float | None = None
 ):
     """Own a bounded debuggee through the existing native helper and raw capture."""
     from ep_auditor.analyzers.diagnostics import analyze_api_snapshot
@@ -133,12 +136,17 @@ def capture_api_snapshot(
     )
 
     before = (digest(binary), digest(helper))
-    result = ManagedProcessRunner(config).run(
+    if timeout_seconds is not None:
+        if type(timeout_seconds) not in (int, float) or not 0 < timeout_seconds <= timeout:
+            raise EvidenceError('invalid shortened native observer timeout')
+        timeout = timeout_seconds
+    result = (runner or ManagedProcessRunner(config)).run(
         [str(helper), observer_mode, str(binary), *arguments],
         binary.parent,
         run_dir,
         capture_mode,
-        timeout=timeout
+        timeout=timeout,
+        env_extra=env_extra
     )
     if before != (digest(binary), digest(helper)):
         raise EvidenceError('native API inputs changed during capture')

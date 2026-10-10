@@ -8,7 +8,7 @@ from ep_auditor.core.storage import RunStorage
 from ep_auditor.core.tests import TestCatalog, TestExecutor
 
 OPERATIONS = frozenset({"configure", "build", "build-and-run", "discover-tests", "run-all-tests",
-                        "run-one-test", "run-selected-tests", "run-group", "start-game", "stop", "reproduction-matrix"})
+                        "run-one-test", "run-selected-tests", "run-group", "start-game", "stop", "reproduction-matrix", "stress"})
 
 
 def admit(manager, operation_id, mode, test_ids, labels, entry_point):
@@ -30,6 +30,9 @@ def admit(manager, operation_id, mode, test_ids, labels, entry_point):
         if manager._closed or manager.busy:
             raise RuntimeError("Auditor is closed or busy")
         snapshot = deepcopy(manager.config).for_mode(mode)
+        if operation_id == 'stress':
+            from ep_auditor.core.run_manager import validate_stress
+            snapshot.data['stress'] = validate_stress(snapshot.data.get('stress', {}))
         mode_selection(mode, snapshot.data.get("capture", {}).get("target_scope"))
         parallelisms = snapshot.data.get("cmake", {}).get("reproduction_parallelisms", [1, 2])
         if operation_id == "reproduction-matrix" and (not isinstance(parallelisms, list)
@@ -72,6 +75,8 @@ def perform(manager, admitted):
             manager._start_game(mode)
         elif operation == "discover-tests":
             manager._discover_tests(mode)
+        elif operation == 'stress':
+            manager._run_stress(mode)
         elif operation == "reproduction-matrix":
             for index, parallelism in enumerate(request["parallelisms"]):
                 if manager._cancel_requested.is_set():

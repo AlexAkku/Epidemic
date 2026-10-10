@@ -25,7 +25,7 @@ template <typename Owner> void FreezeOwner(Owner& owner)
 // Called for every concrete participant, never a mock participant substitute.
 inline void CheckParticipantContract(epidemic::gameplay::savegame::ISaveParticipant& participant,
                                      std::string_view identity,
-                                     std::vector<epidemic::gameplay::savegame::SaveParticipantId> dependencies)
+                                     const std::vector<epidemic::gameplay::savegame::SaveParticipantId>& dependencies)
 {
     using namespace epidemic::gameplay::savegame;
     Check(participant.Id() == SaveParticipantId::FromString(identity), "stable participant Id");
@@ -130,6 +130,8 @@ template <typename Snapshot> auto SnapshotCounters(Snapshot& snapshot)
         const auto inspect = [&](auto& field) {
             using Field = std::remove_cvref_t<decltype(field)>;
             if constexpr (std::is_same_v<Field, epidemic::gameplay::Revision>) counters.push_back(field.value);
+            // These are unevaluated C++20 member requirements, not unused accesses.
+            // cppcheck-suppress constStatement
             else if constexpr (requires { field.scope; field.next; })
             { counters.push_back(field.scope); counters.push_back(field.next); }
         };
@@ -148,6 +150,8 @@ void CheckOwnerCounterContinuity(Owner& owner, epidemic::gameplay::savegame::ISa
         const auto seed = [](auto& field) {
             using Field = std::remove_cvref_t<decltype(field)>;
             if constexpr (std::is_same_v<Field, epidemic::gameplay::Revision>) field.value += 7;
+            // Unevaluated member requirements select generator fields at compile time.
+            // cppcheck-suppress constStatement
             else if constexpr (requires { field.scope; field.next; }) field.next += 17;
         };
         (seed(fields), ...);

@@ -66,6 +66,9 @@ class DefaultAllocator final : public IAllocator
             throw std::length_error("allocation size exceeds PTRDIFF_MAX");
         }
 
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        if (auditor::shadow::fail_allocation("DefaultAllocator.Allocate")) throw std::bad_alloc{};
+#endif
         auto *pointer = ::operator new(NormalizeAllocationSize(bytes), std::align_val_t(alignment));
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
         auditor::shadow::allocation("allocation", reinterpret_cast<std::uintptr_t>(pointer),

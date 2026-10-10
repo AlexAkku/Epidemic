@@ -11,6 +11,29 @@ from ep_auditor.core.evidence import RawEvidence, EvidenceError
 from ep_auditor.core.lineage import EvidenceLineage, normalized_record
 
 
+def _verifier_command(tool: Path, *args: str) -> None:
+    # Only the SDK utility is elevated. ShellExecute admission (including UAC)
+    # and the admitted utility both have finite, separately diagnosed budgets.
+    quote = lambda value: "'" + str(value).replace("'", "''") + "'"
+    script = ("$ErrorActionPreference='Stop'; $p=Start-Process -FilePath " + quote(tool)
+              + ' -ArgumentList ' + quote(subprocess.list2cmdline(list(args)))
+              + ' -Verb RunAs -PassThru -WindowStyle Hidden; '
+              + 'if (-not $p.WaitForExit(120000)) { '
+              + 'try { $p.Kill() } catch { throw "Owned Application Verifier cleanup failed: $_" }; '
+              + 'throw "Owned Application Verifier execution exceeded 120 seconds" }; exit $p.ExitCode')
+    powershell = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+    try:
+        result = subprocess.run([str(powershell), '-NoProfile', '-NonInteractive', '-Command', script],
+                                capture_output=True, timeout=150,
+                                creationflags=subprocess.CREATE_NO_WINDOW)
+    except subprocess.TimeoutExpired as exc:
+        raise EvidenceError('Application Verifier admission/UAC or owned utility did not finish within '
+                            '150 seconds; activation and cleanup are NOT VERIFIED') from exc
+    if result.returncode != 0:
+        diagnostic = result.stderr.decode(errors='replace')[:2048]
+        raise EvidenceError('Application Verifier command failed: ' + str(result.returncode) + ': ' + diagnostic)
+
+
 def capture_verifier_fixture(config, run: Path, binary: Path, variant: str, *, helper: Path) -> dict:
     """Explicit, bounded Heaps/Leak controls; never activate arbitrary image names."""
     if os.name != 'nt' or binary.name != 'EpidemicAuditorShadowFixture.exe' or variant not in {
@@ -32,18 +55,7 @@ def capture_verifier_fixture(config, run: Path, binary: Path, variant: str, *, h
         raise EvidenceError('refuse preexisting verifier fixture settings')
     export = (run / 'verifier-export.xml').resolve()
     def command(*args):
-        # appverif has a requireAdministrator manifest: use the explicit narrow
-        # ShellExecute recipe, never elevate the Python/UI process itself.
-        quote = lambda value: "'" + str(value).replace("'", "''") + "'"
-        script = ("$ErrorActionPreference='Stop'; $p=Start-Process -FilePath " + quote(tool)
-                  + ' -ArgumentList ' + quote(subprocess.list2cmdline(list(args)))
-                  + ' -Wait -PassThru -WindowStyle Hidden; exit $p.ExitCode')
-        powershell = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
-        result = subprocess.run([str(powershell), '-NoProfile', '-NonInteractive', '-Command', script],
-                                capture_output=True, timeout=60,
-                                creationflags=subprocess.CREATE_NO_WINDOW)
-        if result.returncode != 0:
-            raise EvidenceError('Application Verifier command failed: ' + str(result.returncode))
+        _verifier_command(tool, *args)
     try:
         # Keep export ownership with this caller; the privileged tool truncates
         # an existing owned file rather than creating an administrator-only one.
@@ -96,7 +108,8 @@ def publish_sanitizer(run: Path) -> None:
                                 'required': True, **report}, {'diagnostics.sanitizer_stderr'}, ref, 0)
     destination = run / 'normalized/diagnostics/sanitizer_stderr.json'
     if destination.is_file():
-        lineage.verify('normalized', 'diagnostics/sanitizer_stderr.json')
+        if lineage.verify('normalized', 'diagnostics/sanitizer_stderr.json')['records'] != [record]:
+            raise EvidenceError('sanitizer projection differs from sealed stderr')
         return
     lineage.write('normalized', 'diagnostics/sanitizer_stderr.json', producer_version='sanitizer-stderr-1',
                   producer_source=Path(__file__), inputs=[ref], records=[record])

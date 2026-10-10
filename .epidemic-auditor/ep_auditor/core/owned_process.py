@@ -70,7 +70,8 @@ class OwnedProcess:
         thread_handle = None
         try:
             limits = ExtendedLimits()
-            limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            limits.basic.flags = 0x2000 | 0x200  # KILL_ON_JOB_CLOSE | JOB_MEMORY
+            limits.job_memory = 8 * 1024**3
             self._check(self.kernel.SetInformationJobObject(self.job, 9, ctypes.byref(limits), ctypes.sizeof(limits)))
             current = _winapi.GetCurrentProcess()
 

@@ -10,6 +10,7 @@
 #include <memory>
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 #include <shadow_probe.h>
+#include <Epidemic/Platform/iplatform_runtime.h>
 #endif
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
@@ -114,17 +115,20 @@ void TestTradeCoordinatorSaveParticipant()
     });
 }
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-int RunAuditorInventorySaveLoadScenario(bool corrupt_control)
+int RunAuditorInventorySaveLoadScenario(bool corrupt_control, unsigned cycle = 0)
 {
     using namespace epidemic::auditor::shadow;
     char* environment = nullptr;
     std::size_t environment_size = 0;
-    if (_dupenv_s(&environment, &environment_size, "EP_AUDITOR_CAUSAL_DIRECTORY") != 0) return 2;
+    if (_dupenv_s(&environment, &environment_size, "EP_AUDITOR_SAVE_DIRECTORY") != 0) return 2;
+    if (!environment && _dupenv_s(&environment, &environment_size, "EP_AUDITOR_CAUSAL_DIRECTORY") != 0) return 2;
     const std::unique_ptr<char, decltype(&std::free)> owned(environment, &std::free);
     if (!environment) return 2;
     const std::filesystem::path directory(environment);
     if (!std::filesystem::is_directory(directory) || std::filesystem::is_symlink(directory)) return 2;
-    const auto path = directory / "inventory-save.bin";
+    const auto path = directory / ("inventory-save-" + std::to_string(cycle) + ".bin");
+    const auto action_id = "save-load-action" + (cycle ? "-" + std::to_string(cycle) : std::string{});
+    const auto scenario_id = "save-load-scenario" + (cycle ? "-" + std::to_string(cycle) : std::string{});
     if (std::filesystem::exists(path)) return 3;
     items::ItemsInventoryService owner;
     owner.Freeze();
@@ -137,8 +141,8 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control)
     if (!created) return 4;
     savegame::SaveRestoreWorkspace workspace;
     auto participant = savegame::CreateItemsInventoryServiceSaveParticipant(owner, workspace);
-    action("action.start", "save-load-action", "Save and restore live inventory");
-    scenario("scenario.start", "save-load-scenario");
+    action("action.start", action_id.c_str(), "Save and restore live inventory");
+    scenario("scenario.start", scenario_id.c_str());
     const auto section = participant->CaptureSnapshot({});
     if (!section || !participant->ValidateSnapshot(section.Value(), {})) return 5;
     savegame::SaveGameImage image;
@@ -148,22 +152,13 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control)
     const auto encoded = savegame::EncodeSaveGameImage(image);
     if (!encoded) return 6;
     const auto write_start = std::chrono::steady_clock::now();
-    {
-        std::ofstream file(path, std::ios::binary);
-        file.write(reinterpret_cast<const char*>(encoded.Value().data()), static_cast<std::streamsize>(encoded.Value().size()));
-        file.close();
-        if (!file) return 7;
-    }
+    if (!epidemic::platform::CommitFilePackage(epidemic::foundation::Path(path), encoded.Value(), 1024 * 1024)) return 7;
     io("io.write", "inventory-save", encoded.Value().size(), static_cast<std::uint64_t>(
         std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - write_start).count()));
     const auto read_start = std::chrono::steady_clock::now();
-    std::ifstream file(path, std::ios::binary);
-    if (!file) return 8;
-    const std::vector<char> loaded((std::istreambuf_iterator<char>(file)), {});
-    if (file.bad()) return 8;
-    std::vector<std::byte> bytes;
-    bytes.reserve(loaded.size());
-    for (const auto value : loaded) bytes.push_back(static_cast<std::byte>(static_cast<unsigned char>(value)));
+    auto loaded = epidemic::platform::ReadFilePackage(epidemic::foundation::Path(path), 1024 * 1024);
+    if (!loaded) return 8;
+    auto bytes = std::move(loaded.Value());
     io("io.read", "inventory-load", bytes.size(), static_cast<std::uint64_t>(
         std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - read_start).count()));
     if (corrupt_control)
@@ -172,8 +167,8 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control)
         if (corrupt.empty()) return 9;
         corrupt.back() ^= std::byte{1};
         if (savegame::DecodeSaveGameImage(corrupt) || owner.FindContainer(created.Value()) == nullptr) return 9;
-        scenario("scenario.end", "save-load-scenario");
-        action("action.end", "save-load-action");
+        scenario("scenario.end", scenario_id.c_str());
+        action("action.end", action_id.c_str());
         return 0;
     }
     const auto decoded = savegame::DecodeSaveGameImage(bytes);
@@ -185,9 +180,10 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control)
     if (!stage || owner.FindContainer(created.Value()) != nullptr) return 13;
     participant->CommitRestore(*stage.Value());
     const auto* restored = owner.FindContainer(created.Value());
-    if (!restored || restored->max_slots != container.max_slots || restored->owner_object != container.owner_object) return 14;
-    scenario("scenario.end", "save-load-scenario");
-    action("action.end", "save-load-action");
+    if (!restored || restored->max_slots != container.max_slots || restored->max_weight != container.max_weight ||
+        restored->owner_object != container.owner_object) return 14;
+    scenario("scenario.end", scenario_id.c_str());
+    action("action.end", action_id.c_str());
     return 0;
 }
 #endif
@@ -198,6 +194,22 @@ int main(int argc, char** argv)
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     if (argc == 2 && std::string_view(argv[1]) == "--auditor-save-load") return RunAuditorInventorySaveLoadScenario(false);
     if (argc == 2 && std::string_view(argv[1]) == "--auditor-save-load-corrupt") return RunAuditorInventorySaveLoadScenario(true);
+    if (argc == 3 && std::string_view(argv[1]) == "--auditor-save-load-stress") {
+        char* end = nullptr;
+        const auto cycles = std::strtoul(argv[2], &end, 10);
+        if (!end || *end || cycles == 0 || cycles > 10000) return 2;
+        for (unsigned cycle = 1; cycle <= cycles; ++cycle) {
+            const auto result = RunAuditorInventorySaveLoadScenario(false, cycle);
+            if (result != 0) {
+                std::printf("{\"scenario\":\"production-inventory-save-restore\",\"iterations\":%lu,\"completed\":%u,\"failures\":1,\"state_checks\":%u,\"error_code\":%d}\n",
+                            cycles, cycle - 1, cycle - 1, result);
+                return result;
+            }
+        }
+        std::printf("{\"scenario\":\"production-inventory-save-restore\",\"iterations\":%lu,\"completed\":%lu,\"failures\":0,\"state_checks\":%lu}\n",
+                    cycles, cycles, cycles);
+        return 0;
+    }
 #else
     (void)argc;
     (void)argv;

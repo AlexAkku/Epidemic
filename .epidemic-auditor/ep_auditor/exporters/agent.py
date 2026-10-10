@@ -1,126 +1,102 @@
+"""Bounded agent projections of the same sealed evidence used by the GUI."""
 from __future__ import annotations
 
+import csv
+import html
+import io
 import json
 from pathlib import Path
-from typing import Any
 
-from ep_auditor.core.storage import RunStorage
+from ep_auditor.analyzers.summary import query_run_view, query_view_field
+from ep_auditor.core.evidence import atomic_json, digest, load_json, EvidenceError
+from ep_auditor.core.exports import _write
+from ep_auditor.core.lifecycle import authoritative_run
+
+REPORTS = {
+    'RUN_SUMMARY': 'Dashboard', 'BUILD_DIAGNOSTICS': 'Build', 'FAILURES': 'Findings',
+    'ACTIONS': 'Actions', 'EXCEPTIONS': 'Exceptions', 'FUNCTION_PROFILE': 'Functions',
+    'CALL_GRAPH': 'Call Tree', 'THREADS': 'Threads', 'LOCKS': 'Locks & Waits',
+    'MEMORY': 'Memory', 'IO': 'IO', 'COVERAGE': 'Coverage', 'ARCHITECTURE': 'Architecture',
+    'HOT_PATHS': 'Hot Paths', 'IMPORTED_APIS': 'Imported APIs', 'STATIC_SCAN': 'Static Scan',
+    'STRESS': 'Stress', 'MODULES': 'Modules',
+}
+KINDS = {'finding': 'Findings', 'test': 'Tests', 'action': 'Actions', 'trace': 'Timeline',
+         'function': 'Functions', 'module': 'Modules', 'scenario': 'Timeline'}
 
 
-def export_agent_pack(run_dir: Path, run_meta: dict[str, Any], summary: dict[str, Any], tests: list[dict[str, Any]] | None = None, static_scan: dict[str, Any] | None = None) -> None:
-    agent = run_dir / "agent"
+def export_investigation(run_dir, kind, stable_id, *, cursor=None, limit=200, frame_limit=50):
+    if kind not in KINDS:
+        raise ValueError('unsupported investigation kind')
+    if not stable_id:
+        raise ValueError('a stable ID is required')
+    view = KINDS[kind]
+    page = query_run_view(run_dir, view, scope=stable_id, cursor=cursor, limit=limit, frame_limit=frame_limit)
+    # Related findings/neighbors remain independent, explicitly bounded pages.
+    page['related_findings'] = query_run_view(run_dir, 'Findings', scope=stable_id, limit=20, reference_scope=True)
+    page['neighbors'] = query_run_view(run_dir, 'Causal Graph', scope=stable_id, limit=20)
+    page['events'] = query_run_view(run_dir, 'Timeline', scope=stable_id, limit=200, frame_limit=frame_limit)
+    page['calls'] = query_run_view(run_dir, 'Call Tree', scope=stable_id, limit=20, frame_limit=frame_limit)
+    return page
+
+
+def _report(agent, name, page):
+    compact = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True, allow_nan=False)
+    atomic_json(agent / (name + '.json'), page)
+    metadata = {key: value for key, value in page.items() if key != 'items'}
+    rows = [{'metadata': metadata, 'record': row} for row in page.get('items', [])]
+    # An empty category still exports UNKNOWN metadata rather than an empty proof.
+    if not rows:
+        rows = [{'metadata': metadata, 'record': None}]
+    _write(agent / (name + '.jsonl'), ''.join(compact(row) + '\n' for row in rows))
+    stream = io.StringIO(newline='')
+    writer = csv.writer(stream)
+    writer.writerow(('metadata_json', 'record_json'))
+    writer.writerows((compact(row['metadata']), compact(row['record'])) for row in rows)
+    _write(agent / (name + '.csv'), stream.getvalue())
+    _write(agent / (name + '.md'), '# ' + name.replace('_', ' ').title() + '\n\n<pre>' + html.escape(compact(page)) + '</pre>\n')
+
+
+def export_agent_pack(run_dir: Path, run_meta=None, summary=None, tests=None, static_scan=None, *, baseline=None):
+    """Legacy callers stay compatible; caller summaries never become evidence."""
+    run_dir = Path(run_dir)
+    header = authoritative_run(run_dir)
+    snapshot = digest(run_dir / 'manifest.json')
+    agent = run_dir / 'agent'
     agent.mkdir(parents=True, exist_ok=True)
-    tests = tests or []
-    failures = [t for t in tests if t.get("status") != "PASS"]
+    pages = {name: query_run_view(run_dir, view) for name, view in REPORTS.items()}
+    from ep_auditor.analyzers.compare import compare_runs
+    pages['REGRESSIONS'] = ({'items': [compare_runs(baseline, run_dir)], 'availability': 'observed'} if baseline else
+                            {'items': [], 'availability': 'UNKNOWN', 'reason': 'No baseline selected'})
+    raw = load_json(run_dir / 'manifest.json', expected_sha256=snapshot)
+    files = raw['raw_files']
+    pages['RAW_EVIDENCE'] = {'run_id': header['run_id'], 'items': files[:200],
+                             'snapshot': snapshot, 'truncated': len(files) > 200,
+                             'manifest': '../manifest.json', 'continuation': 200 if len(files) > 200 else None}
+    pages['INDEX'] = {'run_id': header['run_id'], 'status': header['status'], 'items': [
+        {'report': name, 'availability': page.get('availability', 'observed'),
+         'truncated': page.get('truncated', False), 'path': name + '.json'} for name, page in pages.items()],
+        'policy': 'UNKNOWN is not zero; a heuristic finding is not a verified defect; follow continuation tokens'}
+    for name, page in pages.items():
+        _report(agent, name, page)
+    names = [name + suffix for name in pages for suffix in ('.md', '.json', '.jsonl', '.csv')]
+    if digest(run_dir / 'manifest.json') != snapshot or authoritative_run(run_dir) != header:
+        raise EvidenceError('run changed during agent export; no completed pack can be published')
+    atomic_json(agent / 'manifest.json', {'schemaVersion': 1, 'run_id': header['run_id'], 'status': header['status'],
+                                        'capture_manifest_sha256': snapshot,
+                                        'producer_source_sha256': digest(Path(__file__)),
+                                        'files': {name: digest(agent / name) for name in names}})
+    return agent
 
-    index = [
-        f"# Epidemic Auditor run {run_meta.get('run_id', run_dir.name)}",
-        "",
-        f"Status: {run_meta.get('status', 'UNKNOWN')}",
-        f"Kind: {run_meta.get('kind', 'unknown')}",
-        f"Capture mode: {run_meta.get('capture_mode', 'unknown')}",
-        "",
-        "## Read first",
-        "",
-        "- `RUN_SUMMARY.md`: normalized high-level evidence.",
-        "- `FAILURES.md`: failed/cancelled tests and excerpts.",
-        "- `HOT_PATHS.md`: process-level CPU/RSS hotspots from external sampling.",
-        "- `STATIC_SCAN.md`: source-tree counts and markers.",
-        "- `../process_samples.jsonl`: raw normalized process-tree samples.",
-        "- `../console.jsonl`: timestamped console evidence when this run has a single process.",
-        "- `../raw/trace.etl`: raw WPR/ETW trace when Deep capture succeeded.",
-        "- `../raw/xperf/profile_stacks.txt`: sampled native call-stack report when xperf symbol decoding succeeded.",
-        "- `../raw/xperf/cpu_profile.txt`: sampled CPU-by-function report when available.",
-        "",
-        "All generated evidence states its provenance. Engine-declared semantic probes are not used by this version.",
-    ]
-    (agent / "INDEX.md").write_text("\n".join(index) + "\n", encoding="utf-8")
 
-    process = summary.get("process", summary)
-    test_summary = summary.get("tests", {})
-    lines = [
-        "# Run summary", "",
-        f"Run: {run_meta.get('run_id', run_dir.name)}",
-        f"Title: {run_meta.get('title', '')}",
-        f"Status: {run_meta.get('status', '')}",
-        f"Started: {run_meta.get('started_utc', '')}",
-        f"Finished: {run_meta.get('finished_utc', '')}",
-        "",
-        "## Process evidence", "",
-        f"Wall time: {process.get('wall_seconds', 0):.3f} s" if isinstance(process.get('wall_seconds', 0), (int, float)) else f"Wall time: {process.get('wall_seconds')}",
-        f"Peak RSS: {process.get('peak_rss_bytes', 0)} bytes",
-        f"Peak threads: {process.get('peak_threads', 0)}",
-        f"Read bytes: {process.get('total_read_bytes', 0)}",
-        f"Write bytes: {process.get('total_write_bytes', 0)}",
-    ]
-    if test_summary:
-        lines += [
-            "", "## Tests", "",
-            f"Total: {test_summary.get('total', 0)}",
-            f"Passed: {test_summary.get('passed', 0)}",
-            f"Failed: {test_summary.get('failed', 0)}",
-            f"Cancelled: {test_summary.get('cancelled', 0)}",
-        ]
-    (agent / "RUN_SUMMARY.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-    failure_lines = ["# Failures", ""]
-    if not failures:
-        failure_lines.append("No failed or cancelled tests were recorded.")
-    for item in failures:
-        failure_lines += [
-            f"## {item.get('test_name')}", "",
-            f"Status: {item.get('status')}",
-            f"Exit code: {item.get('exit_code')}",
-            f"Capture: {item.get('capture_dir')}",
-            "", "```text", str(item.get("failure_excerpt", ""))[-12000:], "```", "",
-        ]
-    (agent / "FAILURES.md").write_text("\n".join(failure_lines) + "\n", encoding="utf-8")
-
-    samples_summary = summary.get("samples", {})
-    hot = ["# Process hotspots", "", "These are external process-level samples, not native function-level instrumentation.", ""]
-    for p in samples_summary.get("processes", [])[:30]:
-        avg = f"{p['cpu_avg']:.2f}%" if p.get("cpu_avg") is not None else "unavailable"
-        peak = f"{p['cpu_peak']:.2f}%" if p.get("cpu_peak") is not None else "unavailable"
-        hot.append(f"- {p.get('process')}: avg CPU {avg}, peak CPU {peak}, peak RSS {p.get('rss_peak_bytes')} bytes")
-    if len(hot) == 4:
-        hot.append("No process samples available.")
-    (agent / "HOT_PATHS.md").write_text("\n".join(hot) + "\n", encoding="utf-8")
-
-    static_lines = ["# Static scan", ""]
-    if static_scan:
-        static_lines += [
-            f"Files: {static_scan.get('files', 0)}",
-            f"Lines: {static_scan.get('lines', 0)}",
-            f"Bytes: {static_scan.get('bytes', 0)}",
-            f"TODO/FIXME/HACK/XXX markers: {static_scan.get('marker_count', 0)}",
-            "", "## Largest files", "",
-        ]
-        for row in static_scan.get("largest_files", [])[:30]:
-            static_lines.append(f"- {row.get('path')}: {row.get('lines')} lines")
-        static_lines += ["", "## Markers", ""]
-        for row in static_scan.get("markers", [])[:200]:
-            static_lines.append(f"- {row.get('file')}:{row.get('line')} [{row.get('marker')}] {row.get('text')}")
-    else:
-        static_lines.append("Static scan was not part of this run.")
-    (agent / "STATIC_SCAN.md").write_text("\n".join(static_lines) + "\n", encoding="utf-8")
-
-    manifest = {
-        "run_id": run_meta.get("run_id", run_dir.name),
-        "status": run_meta.get("status"),
-        "provenance_policy": {
-            "external_process": "observed outside the engine process via OS process APIs",
-            "external_console": "captured from process stdout/stderr by the auditor",
-            "external_ctest": "derived from CTest invocation controlled by the auditor",
-            "external_static_scan": "derived from read-only source-tree scan",
-            "external_wpr_raw": "raw Windows Performance Recorder trace",
-            "external_xperf_analysis": "text reports derived externally from ETL using xperf",
-        },
-        "files": {
-            "index": "INDEX.md",
-            "summary": "RUN_SUMMARY.md",
-            "failures": "FAILURES.md",
-            "hot_paths": "HOT_PATHS.md",
-            "static_scan": "STATIC_SCAN.md",
-        },
-    }
-    RunStorage.write_json(agent / "manifest.json", manifest)
+def query_raw_evidence(run_dir, *, offset=0, limit=200, snapshot=None):
+    from ep_auditor.core.evidence import RawEvidence, EvidenceError
+    run_dir = Path(run_dir)
+    authoritative_run(run_dir)
+    manifest = RawEvidence(run_dir).verify()
+    current = digest(run_dir / 'manifest.json')
+    if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 200 or snapshot not in (None, current):
+        raise EvidenceError('invalid raw evidence page or changed snapshot')
+    rows = manifest['raw_files']
+    more = offset + limit < len(rows)
+    return {'items': rows[offset:offset + limit], 'snapshot': current, 'truncated': more,
+            'continuation': offset + limit if more else None}

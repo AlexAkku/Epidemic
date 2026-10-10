@@ -232,11 +232,53 @@ def publish_telemetry(run: Path) -> None:
         publish_family(run, family)
 
 
+_checked_telemetry = {}
+
+
+def _telemetry_signature(run):
+    from ep_auditor.core.evidence import digest
+    package = Path(__file__).parents[1]
+    paths = [path for path in (run / 'manifest.json', run / 'environment.json') if path.is_file()]
+    # Includes every transitive derived input, not timestamps or file sizes.
+    paths.extend(path for layer in ('normalized', 'graphs', 'metrics', 'findings')
+                 for path in (run / layer).rglob('*.json'))
+    paths.extend(package.rglob('*.py'))
+    return hashlib.sha256(json.dumps([(str(path), digest(path)) for path in sorted(paths)],
+                                    sort_keys=True).encode()).hexdigest()
+
+
 def telemetry_complete(run: Path) -> bool:
+    run = Path(run)
+    RawEvidence(run).verify()  # Always check actual raw bytes and completeness.
+    before = _telemetry_signature(run)
+    if before in _checked_telemetry:
+        return _checked_telemetry[before]
+    result = _telemetry_complete(run)
+    if before != _telemetry_signature(run):
+        raise EvidenceError('telemetry changed during semantic replay')
+    if len(_checked_telemetry) >= 8:
+        _checked_telemetry.pop(next(iter(_checked_telemetry)))
+    _checked_telemetry[before] = result
+    return result
+
+
+def _telemetry_complete(run: Path) -> bool:
     """Only present streams are mandatory. Never silently PASS incomplete derived evidence."""
     raw = RawEvidence(run)
     manifest = raw.verify()
     lineage = EvidenceLineage(run)
+    if any(row['path'] in {'raw/wpr.json', 'raw/etw/events.csv'} for row in manifest['raw_files']):
+        try:
+            from ep_auditor.collectors.etw_import import verify_etw_capture
+            verify_etw_capture(run)
+        except (EvidenceError, OSError, ValueError, KeyError, TypeError):
+            return False
+    if (run / 'normalized/diagnostics/sanitizer_stderr.json').is_file():
+        try:
+            from ep_auditor.collectors.sanitizer import publish_sanitizer
+            publish_sanitizer(run)
+        except (EvidenceError, OSError, ValueError, KeyError, TypeError):
+            return False
     if any(row['path'] == 'raw/diagnostics/verifier.xml' for row in manifest['raw_files']):
         try:
             from ep_auditor.collectors.sanitizer import publish_verifier

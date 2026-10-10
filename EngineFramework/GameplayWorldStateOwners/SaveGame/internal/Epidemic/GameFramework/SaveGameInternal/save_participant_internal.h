@@ -215,8 +215,9 @@ template <typename Owner> class SnapshotParticipant final : public ISaveParticip
     }
     void EndRestoreValidation() noexcept override
     {
-        if (workspace_.validation_users_ != 0 && --workspace_.validation_users_ == 0)
-            workspace_.validated_.clear();
+        if (workspace_.validation_users_ == 0) return;
+        --workspace_.validation_users_;
+        if (workspace_.validation_users_ == 0) workspace_.validated_.clear();
     }
     foundation::Result<SaveSection> CaptureSnapshot(const SaveContext&) const override
     {

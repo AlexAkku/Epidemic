@@ -15,7 +15,7 @@ namespace epidemic::tests
 struct NamedTest
 {
     std::string_view name;
-    void (*function)();
+    void (*function)() = nullptr;
 };
 
 // Throws when a test condition is false.
@@ -35,6 +35,7 @@ inline int RunNamedTests(std::initializer_list<NamedTest> tests)
         for (const auto &test : tests)
         {
             std::cout << "[RUN] " << test.name << '\n' << std::flush;
+            if (!test.function) throw std::invalid_argument("Named test has no implementation");
             test.function();
             std::cout << "[PASS] " << test.name << '\n' << std::flush;
         }

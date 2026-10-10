@@ -14,7 +14,8 @@ TYPES = {'exception.first_chance', 'exception.second_chance', 'exception.handled
          'crash', 'assert', 'contract', 'allocation', 'deallocation', 'memory.error',
          'io.open', 'io.close', 'io.read', 'io.write', 'io.seek', 'io.map', 'io.directory',
          'network.connect', 'network.send', 'network.receive', 'api.call'}
-MEMORY_ERRORS = {'leak', 'use_after_free', 'double_free', 'out_of_bounds', 'heap_corruption', 'unknown'}
+MEMORY_ERRORS = {'leak', 'use_after_free', 'double_free', 'out_of_bounds', 'heap_corruption',
+                 'injected_allocation_failure', 'unknown'}
 API_FAMILIES = {'file', 'memory', 'synchronization', 'thread', 'socket', 'window', 'graphics', 'other'}
 HEX_ID = re.compile(r'^[A-Za-z0-9_.:\-]{1,128}$')
 

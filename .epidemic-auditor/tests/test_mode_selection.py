@@ -33,8 +33,7 @@ class ModeSelectionTests(unittest.TestCase):
                 window.target_scope.set("module:controlled, function:controlled")
                 self.assertEqual(config.data["capture"]["target_scope"], ["module:controlled", "function:controlled"])
             finally:
-                manager.shutdown()
-                window.root.destroy()
+                window._on_close()
 
     def test_targeted_exact_requires_explicit_scope_and_persists_selection(self):
         with tempfile.TemporaryDirectory() as temporary:

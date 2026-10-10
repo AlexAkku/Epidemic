@@ -150,7 +150,10 @@ inline std::string hash_file(HANDLE file) {
     if (BCryptFinishHash(hash, result.data(), static_cast<ULONG>(result.size()), 0) < 0) throw std::runtime_error("SHA256 finish failed");
     std::string text;
     constexpr char digits[] = "0123456789abcdef";
-    for (const auto value : result) { text += digits[value >> 4]; text += digits[value & 15]; }
+    for (const auto value : result) {
+        const auto byte = static_cast<unsigned int>(value);
+        text += digits[byte >> 4U]; text += digits[byte & 15U];
+    }
     return text;
 }
 inline bool authorize(HANDLE pipe, const std::wstring& sid) {

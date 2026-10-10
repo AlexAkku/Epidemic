@@ -113,13 +113,15 @@ def publish_coverage(run: Path):
     if not path.is_file():
         return
     lineage = EvidenceLineage(run)
-    if (run / 'metrics/coverage.json').is_file():
-        lineage.verify('metrics', 'coverage.json')
-        return
     report = json.loads(path.read_text(encoding='utf-8'))
     ref = lineage.reference('raw', 'coverage/report.json')
     report.update(eventType='coverage.source', required=True)
     row = normalized_record(report, {'coverage.source'}, ref, 0)
+    if (run / 'metrics/coverage.json').is_file():
+        if (lineage.verify('normalized', 'coverage.json')['records'] != [row]
+                or lineage.verify('metrics', 'coverage.json')['records'] != [report]):
+            raise EvidenceError('coverage projection differs from captured report')
+        return
     lineage.write('normalized', 'coverage.json', producer_version='1', producer_source=Path(__file__),
                   inputs=[ref], records=[row])
     lineage.write('metrics', 'coverage.json', producer_version='1', producer_source=Path(__file__),

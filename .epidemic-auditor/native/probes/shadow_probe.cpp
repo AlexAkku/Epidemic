@@ -7,6 +7,7 @@
 #include <atomic>
 #include <array>
 #include <cstring>
+#include <cwchar>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -72,7 +73,7 @@ std::uint64_t process_epoch() noexcept {
     static const auto epoch = []() -> std::uint64_t {
         FILETIME created{}, exited{}, kernel{}, user{};
         if (GetProcessTimes(GetCurrentProcess(), &created, &exited, &kernel, &user))
-            return (static_cast<std::uint64_t>(created.dwHighDateTime) << 32) | created.dwLowDateTime;
+            return (static_cast<std::uint64_t>(created.dwHighDateTime) << 32U) | created.dwLowDateTime;
         return 0; // Unavailable identity is loss, never a fabricated module-local epoch.
     }();
     return epoch;
@@ -144,7 +145,7 @@ public:
             health_ = root / (basename + ".health.json");
             data_.open(path, std::ios::binary | std::ios::trunc);
 #endif
-        } catch (...) { }
+        } catch (...) { ++dropped_; }
     }
     Sink(const Sink&) = delete;
     Sink& operator=(const Sink&) = delete;
@@ -182,7 +183,11 @@ public:
                 CloseHandle(health);
             }
 #endif
-        } catch (...) { }
+        } catch (...) {
+#ifdef _WIN32
+            OutputDebugStringW(L"Auditor shadow health publication failed; capture cannot be complete.\n");
+#endif
+        }
     }
     bool opened() const noexcept {
 #ifdef _WIN32
@@ -231,7 +236,11 @@ public:
 };
 Sink &causal() { static Sink sink("EP_AUDITOR_CAUSAL_DIRECTORY"); return sink; }
 Sink &diagnostic() { static Sink sink("EP_AUDITOR_DIAGNOSTICS_DIRECTORY"); return sink; }
+// Best-effort instrumentation must not throw into the observed application;
+// an unavailable sink has no health proof and collectors reject incomplete captures.
+// NOLINTNEXTLINE(bugprone-empty-catch)
 void causal_loss() noexcept { try { causal().reject(); } catch (...) {} }
+// NOLINTNEXTLINE(bugprone-empty-catch)
 void diagnostic_loss() noexcept { try { diagnostic().reject(); } catch (...) {} }
 }  // namespace detail
 
@@ -283,6 +292,8 @@ std::string context_fields(bool include_action = true, bool include_scenario = t
     if (include_scenario) add("scenario_id", current.scenario);
     return fields;
 }
+// Positional fields match the existing event schema; kind and identity remain separate.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 Identity emit_causal_fields(const char *kind, const char *correlation_id, const std::string& extra,
                            bool include_action = true, bool include_scenario = true) noexcept {
     Identity emitted{};
@@ -311,6 +322,8 @@ Identity emit_causal_fields(const char *kind, const char *correlation_id, const 
 Identity emit_causal(const char *kind, const char *correlation_id) noexcept {
     return emit_causal_fields(kind, correlation_id, {});
 }
+// Preserve the published EntityId halves and before/after probe signature.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void entity_change(std::uint64_t high, std::uint64_t low, unsigned kind, unsigned before, unsigned after) noexcept {
     try {
         const auto id = "EntityId:" + std::to_string(high) + ':' + std::to_string(low);
@@ -349,6 +362,8 @@ std::string quoted_name(const char* name, const std::string& fallback) {
     }
     return escaped;
 }
+// Existing action API maps event kind, stable ActionId and display name independently.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void action(const char *kind, const char *action_id, const char* name) noexcept {
     try {
         const std::string value = action_id ? action_id : "";
@@ -367,6 +382,8 @@ void action(const char *kind, const char *action_id, const char* name) noexcept 
         }
     } catch (...) { detail::causal_loss(); }
 }
+// Preserve the existing stable ActionId/display-name API used by input probes.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void arm_next_input(const char* action_id, const char* name) noexcept {
     try {
         const std::string value = action_id ? action_id : "";
@@ -420,6 +437,8 @@ void frame(std::uint64_t duration_ns) noexcept {
         if (detail::automatic_action[0]) action("action.end", detail::automatic_action.data());
     } catch (...) { detail::causal_loss(); }
 }
+// Preserve the existing event-kind/ScenarioId probe API.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void scenario(const char *kind, const char *scenario_id) noexcept {
     try {
         const std::string value = scenario_id ? scenario_id : "";
@@ -434,7 +453,10 @@ void scenario(const char *kind, const char *scenario_id) noexcept {
         else if (operation == "scenario.end") active = {};
     } catch (...) { detail::causal_loss(); }
 }
-void write_diagnostic(const char* kind, std::string fields) noexcept {
+void write_diagnostic(const char* kind, const std::string& original_fields) noexcept {
+    std::string fields;
+    try { fields = original_fields; }
+    catch (...) { detail::diagnostic_loss(); return; }
 #if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
     std::uint64_t ordinal = 0, producer_base = 0;
     if (auditor_exact_current_call(&ordinal, &producer_base)) {
@@ -446,6 +468,8 @@ void write_diagnostic(const char* kind, std::string fields) noexcept {
 #endif
     detail::diagnostic().write(kind, fields);
 }
+// Preserve the existing IO event kind/OperationId/count/duration probe signature.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void io(const char *kind, const char *operation_id, std::uint64_t bytes, std::uint64_t duration_ns) noexcept {
     try {
         const std::string value = operation_id ? operation_id : "";
@@ -469,6 +493,7 @@ void allocation(const char *kind, std::uint64_t address, std::uint64_t size,
                        const char *function) noexcept {
     try {
         std::string fields = context_fields(false) + ",\"address\":" + std::to_string(address) + ",\"size_bytes\":" + std::to_string(size);
+        if (std::strcmp(kind, "memory.error") == 0) fields += ",\"error_kind\":\"injected_allocation_failure\"";
         if (!detail::active_action.empty()) fields += ",\"action_id\":\"" + detail::active_action + "\"";
         if (function) {
             if (!detail::safe(function)) { detail::diagnostic_loss(); return; }
@@ -487,6 +512,52 @@ void allocation(const char *kind, std::uint64_t address, std::uint64_t size,
         write_diagnostic(kind, std::move(fields));
     } catch (...) { detail::diagnostic_loss(); }
 }
+bool fail_allocation(const char *scope) noexcept {
+    // Audit builds only. The environment belongs to this owned target process;
+    // a different allocator scope neither consumes the counter nor fails.
+    try {
+    const auto selected = detail::environment("EP_AUDITOR_ALLOC_SCOPE");
+    const auto requested = detail::environment("EP_AUDITOR_ALLOC_FAIL_N");
+    if (selected.empty() || requested.empty() || !scope || selected != scope) return false;
+#ifdef _WIN32
+    std::array<wchar_t, 32768> selected_module{}, actual_module{};
+    const auto selected_length = GetEnvironmentVariableW(L"EP_AUDITOR_ALLOC_MODULE", selected_module.data(),
+                                                          static_cast<DWORD>(selected_module.size()));
+    static int module_anchor = 0;
+    HMODULE module = nullptr;
+    if (!selected_length || selected_length >= selected_module.size() ||
+        !GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                           reinterpret_cast<LPCWSTR>(&module_anchor), &module)) return false;
+    const auto actual_length = GetModuleFileNameW(module, actual_module.data(), static_cast<DWORD>(actual_module.size()));
+    if (!actual_length || actual_length >= actual_module.size() || _wcsicmp(selected_module.data(), actual_module.data()) != 0) return false;
+#endif
+    char* end = nullptr;
+    const auto nth = std::strtoull(requested.c_str(), &end, 10);
+    if (!end || *end || nth == 0 || nth > 1000000) return false;
+    static std::atomic<std::uint64_t> counter{0};
+    if (counter.fetch_add(1, std::memory_order_relaxed) + 1 != nth) return false;
+    allocation("memory.error", 0, 0, scope);
+    return true;
+    } catch (...) { return false; }
+}
+#ifdef _WIN32
+void delay_io(const wchar_t* path) noexcept {
+    // Scoped completion delay, not a claim of slower physical media/IRPs.
+    // No machine-wide filter, persistent setting or ordinary-build behavior.
+    try {
+    std::array<wchar_t, 32768> scope{};
+    const auto length = GetEnvironmentVariableW(L"EP_AUDITOR_IO_SCOPE", scope.data(), static_cast<DWORD>(scope.size()));
+    const auto requested = detail::environment("EP_AUDITOR_IO_DELAY_MS");
+    if (!length || length >= scope.size() || !path || requested.empty()) return;
+    if (_wcsnicmp(scope.data(), path, length) != 0 ||
+        (path[length] != L'\0' && path[length] != L'\\' && path[length] != L'/')) return;
+    char* end = nullptr;
+    const auto delay = std::strtoul(requested.c_str(), &end, 10);
+    if (!end || *end || delay == 0 || delay > 5000) return;
+    Sleep(static_cast<DWORD>(delay));
+    } catch (...) { return; }
+}
+#endif
 void exception(const char *kind, std::uint64_t code, std::uint64_t address) noexcept {
     try {
         write_diagnostic(kind, context_fields() + ",\"code\":" + std::to_string(code) +

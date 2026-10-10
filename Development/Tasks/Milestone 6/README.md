@@ -1,5 +1,15 @@
 # Milestone 6 Auditor — document set
 
+## Current status (2026-10-10)
+
+**PARTIALLY COMPLETE.** By the user's decision, full MS6 acceptance is deferred
+until MS8 is fully complete and the first test game exists in `Game`.
+Implemented capabilities and passing focused regressions do not close all
+SRC-1–460 obligations. Existing PARTIAL/FAIL/BLOCKED items remain backlog;
+Game scenarios remain DEFERRED and must not be replaced by fixtures.
+The next comprehensive Self-Test/build/test/static qualification is manual;
+GitHub CI exercises bounded Auditor regressions, not full physical acceptance.
+
 ## Minimal reading path for an implementation block
 
 1. Read **P.2–P.5** in `Milestone_6_Auditor_Layer3_Execution_Plan.md` (workflow/qualification contract).

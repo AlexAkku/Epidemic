@@ -47,6 +47,17 @@ class TestHistoryEvidenceTests(unittest.TestCase):
             self.assertEqual(history["stability"]["failed"], 1)
             self.assertAlmostEqual(history["stability"]["pass_rate"], 2 / 3)
             self.assertTrue(all(row["wall_seconds"] >= 0 for row in history["results"]))
+            page = storage.history_for_test(test.test_id, first.compatibility_id, limit=1)
+            self.assertTrue(page['truncated'])
+            self.assertEqual(page['items'][0]['provenance'], 'external_ctest_observation')
+            resumed = storage.history_for_test(test.test_id, first.compatibility_id,
+                cursor=page['continuation'], limit=1)
+            self.assertNotEqual(page['items'][0]['run_id'], resumed['items'][0]['run_id'])
+            self.assertTrue(resumed['items'][0]['evidence']['sha256'])
+            with self.assertRaises(EvidenceError):
+                storage.history_for_test(test.test_id, 'BuildId:wrong', cursor=page['continuation'], limit=1)
+            with self.assertRaises(EvidenceError):
+                storage.history_for_test(test.test_id, first.compatibility_id, cursor=page['continuation'], limit=2)
             with storage._connect() as connection:
                 connection.execute("UPDATE evidence_facts SET fact_json='{}' WHERE domain='tests'")
             with self.assertRaises(EvidenceError):
@@ -55,6 +66,8 @@ class TestHistoryEvidenceTests(unittest.TestCase):
             self.assertEqual(storage.history_for_test(test.test_id, first.compatibility_id), history)
             (project / "run.cmake").write_text('message(STATUS "changed binary-equivalent script input")\n')
             changed = executor.run_one(test, parent.run_dir, "Fast")
+            with self.assertRaises(EvidenceError):
+                storage.history_for_test(test.test_id, first.compatibility_id, cursor=page['continuation'], limit=1)
             self.assertNotEqual(changed.compatibility_id, first.compatibility_id)
             self.assertEqual(len(storage.history_for_test(test.test_id, first.compatibility_id)["results"]), 3)
             self.assertEqual(len(storage.history_for_test(test.test_id, changed.compatibility_id)["results"]), 1)

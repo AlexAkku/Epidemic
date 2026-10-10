@@ -6,7 +6,7 @@ import hashlib
 
 from ep_auditor.analyzers.windows_threads import thread_timeline, project_monotonic_time
 from ep_auditor.collectors.xperf import iter_windows_events
-from ep_auditor.core.evidence import EvidenceError, RawEvidence
+from ep_auditor.core.evidence import EvidenceError, RawEvidence, digest
 from ep_auditor.core.lineage import EvidenceLineage, normalized_record
 
 
@@ -140,21 +140,41 @@ def import_capture(run_dir: Path, files: dict, context: dict, *, pids: set[int],
                         start_ns=start, end_ns=time.perf_counter_ns(), health={"capacity": size,
                             "observed": size, "dropped": 0, "incomplete_reason": loss_reason if name != "metadata.json" else None})
     raw.seal(context)
+    return _publish_events(run_dir, pids=pids, encoding=encoding, scope=scope,
+        event_capacity=event_capacity, csv_name='etw/events.csv', metadata_name='etw/metadata.json',
+        trace_name='etw/trace.etl', complete=counters == [0, 0])
+
+
+def _publish_events(run_dir, *, pids, encoding, scope, event_capacity, csv_name, metadata_name,
+                    trace_name, complete, verify_only=False):
+    raw = RawEvidence(run_dir)
+    context = raw.verify()
     lineage = EvidenceLineage(run_dir)
-    csv_ref = lineage.reference("raw", "etw/events.csv")
-    metadata_ref = lineage.reference("raw", "etw/metadata.json")
-    trace_ref = lineage.reference("raw", "etw/trace.etl")
+    csv_ref = lineage.reference("raw", csv_name)
+    metadata_ref = lineage.reference("raw", metadata_name)
+    trace_ref = lineage.reference("raw", trace_name)
+    selection = {'pids': sorted(pids), 'encoding': encoding}
+    def publish(layer, path, **fields):
+        destination = run_dir / layer / path
+        if destination.is_file():
+            envelope = lineage.verify(layer, path)
+            if envelope['records'] != fields['records'] or envelope['inputs'] != fields['inputs']:
+                raise EvidenceError('ETW projection differs from sealed decoder bytes: ' + path)
+        elif verify_only:
+            raise EvidenceError('required ETW projection absent: ' + path)
+        else:
+            lineage.write(layer, path, **fields)
     records, events = [], []
-    for event in iter_windows_events(raw.raw / "etw/events.csv", pids, encoding=encoding):
+    for event in iter_windows_events(raw.raw / csv_name, pids, encoding=encoding):
         if len(events) >= event_capacity:
             raise EvidenceError("ETW normalization exceeded event capacity; no derived PASS artifact")
         events.append(event)
         records.append(normalized_record({"schemaVersion": 1, "eventType": "windows.etw.observation",
-            "required": True, "payload": event, "observationScope": scope,
+            "required": True, "payload": event, "observationScope": scope, 'decoderSelection': selection,
             "provenance": "external", "confidence": "observed"}, {"windows.etw.observation"}, csv_ref, event["rawOrdinal"]))
     if not records:
         raise EvidenceError("selected ETW observations absent")
-    lineage.write("normalized", "windows_events.json", producer_version="1", producer_source=Path(__file__),
+    publish("normalized", "windows_events.json", producer_version="1", producer_source=Path(__file__),
                   inputs=[csv_ref, metadata_ref, trace_ref], records=records)
     normalized_ref = lineage.reference("normalized", "windows_events.json")
     graph = thread_timeline(events, identity_namespace=trace_ref["sha256"] + ":" + context["run_id"])
@@ -163,15 +183,66 @@ def import_capture(run_dir: Path, files: dict, context: dict, *, pids: set[int],
     graph["rawReference"] = csv_ref
     graph["observationScope"] = scope
     graph["normalizationProducerSha256"] = lineage.verify("normalized", "windows_events.json")["producerSourceSha256"]
-    lineage.write("graphs", "windows_scheduler_sampling.json", producer_version="1",
+    graph['decoderSelection'] = selection
+    publish("graphs", "windows_scheduler_sampling.json", producer_version="1",
                   producer_source=Path(__file__).parents[1] / "analyzers/windows_threads.py",
                   inputs=[normalized_ref], records=[graph])
     if any(event['kind'].startswith('Disk') for event in events):
         from ep_auditor.analyzers.io import disk_requests
-        disk = disk_requests(events, complete=counters == [0,0], main_thread_id=scope.get('main_thread_id'))
+        disk = disk_requests(events, complete=complete, main_thread_id=scope.get('main_thread_id'))
         disk['rawReference'] = csv_ref
         disk['observationScope'] = scope
-        lineage.write('metrics', 'windows_disk_io.json', producer_version='ms65-disk-1',
+        publish('metrics', 'windows_disk_io.json', producer_version='ms65-disk-1',
             producer_source=Path(__file__).parents[1] / 'analyzers/io.py', inputs=[normalized_ref],
             records=[{'eventType': 'windows.disk.requests', 'required': True, **disk}])
     return graph
+
+
+def publish_wpr_capture(run_dir: Path, *, verify_only=False):
+    """Reuse the ETW importer for a run's real broker/xperf capture."""
+    raw = RawEvidence(run_dir)
+    manifest = raw.verify()
+    if not any(entry['path'] == 'raw/wpr.json' for entry in manifest['raw_files']):
+        return
+    metadata = json.loads(raw.read_bytes('wpr.json'))
+    decoder = metadata['xperf']
+    scope = metadata.get('scope')
+    if (decoder.get('errors') or not scope or scope.get('full_system_coverage') is not False
+            or not decoder.get('decoder_commands', {}).get('events') or not decoder.get('decoder_sha256')):
+        raise EvidenceError('WPR capture has no verified bounded event decoder')
+    lifecycle = json.loads(raw.read_bytes('process/lifecycle.json'))
+    if scope.get('pids') != [lifecycle['pid']]:
+        raise EvidenceError('WPR selected process differs from owned lifecycle')
+    loss = metadata.get('trace_loss')
+    if not isinstance(loss, dict):
+        raise EvidenceError('WPR event loss is unknown')
+    from ep_auditor.collectors.xperf import parse_trace_loss
+    observed_loss = parse_trace_loss(raw.read_bytes('xperf/trace_statistics.txt').decode('mbcs', errors='strict'))
+    if loss != observed_loss:
+        raise EvidenceError('WPR loss metadata differs from sealed SDK statistics')
+    return _publish_events(run_dir, pids=set(scope['pids']), encoding=decoder['event_encoding'], scope=scope,
+        event_capacity=500000, csv_name='xperf/events.csv', metadata_name='wpr.json', trace_name='trace.etl',
+        complete=loss == {'lost_events': 0, 'lost_buffers': 0}, verify_only=verify_only)
+
+
+def verify_etw_capture(run_dir: Path):
+    """Replay existing projections from the immutable decoder input and selection."""
+    raw = RawEvidence(run_dir)
+    manifest = raw.verify()
+    names = {entry['path'] for entry in manifest['raw_files']}
+    if 'raw/wpr.json' in names:
+        return publish_wpr_capture(run_dir, verify_only=True)
+    if 'raw/etw/events.csv' not in names:
+        return None
+    metadata = json.loads(raw.read_bytes('etw/metadata.json'))
+    envelope = EvidenceLineage(run_dir).verify('normalized', 'windows_events.json')
+    selection = envelope['records'][0].get('decoderSelection')
+    if not selection or metadata.get('scope') != envelope['records'][0].get('observationScope'):
+        raise EvidenceError('ETW decoder selection absent or inconsistent')
+    if (metadata.get('trace_sha256') != digest(raw.raw / 'etw/trace.etl')
+            or metadata.get('csv_sha256') != digest(raw.raw / 'etw/events.csv')):
+        raise EvidenceError('ETW decoder input binding differs from sealed inputs')
+    return _publish_events(run_dir, pids=set(selection['pids']), encoding=selection['encoding'],
+        scope=metadata['scope'], event_capacity=500000, csv_name='etw/events.csv',
+        metadata_name='etw/metadata.json', trace_name='etw/trace.etl',
+        complete=metadata.get('trace_loss') == {'lost_events': 0, 'lost_buffers': 0}, verify_only=True)

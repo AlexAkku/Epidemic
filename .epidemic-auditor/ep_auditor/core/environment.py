@@ -4,6 +4,7 @@ import os
 import hashlib
 import json
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -28,6 +29,7 @@ def capture_environment(config: AuditorConfig, instrumentation_profile: str = "a
         "system": platform.system(),
         "release": platform.release(),
         "machine": platform.machine(),
+        "hostname": platform.node(),
         "processor": platform.processor(),
         "logical_cpu_count": psutil.cpu_count(logical=True),
         "physical_cpu_count": psutil.cpu_count(logical=False),
@@ -44,6 +46,9 @@ def capture_environment(config: AuditorConfig, instrumentation_profile: str = "a
         "git": {"availability": "unavailable", "reason": "git checkout/tool unavailable"},
         "schemaVersion": 1,
         "instrumentation_profile": instrumentation_profile,
+        "capture_configuration": {key: value for key, value in config.data.get('capture', {}).items()
+                                  if key != 'selected_mode'},
+        "metric_units": {"time": "ns", "memory": "bytes", "cpu_ticks": "100ns"},
         "provenance": "external",
         "confidence": "observed",
         "engine_source": source_fingerprint(config.project_root),
@@ -99,11 +104,28 @@ def compiler_toolchain(build_dir: Path) -> dict[str, Any]:
             name, value = line.split("=", 1)
             entries[name.split(":", 1)[0]] = value
     compiler = entries.get("CMAKE_CXX_COMPILER") or entries.get("CMAKE_C_COMPILER")
+    detection = None
+    reported_version = None
+    if not compiler:
+        # Visual Studio generators store the detected compiler in CMakeFiles,
+        # not necessarily in CMakeCache. Read data; never execute CMake source.
+        candidates = list((build_dir / 'CMakeFiles').glob('*/CMakeCXXCompiler.cmake'))
+        detected = []
+        for candidate in candidates:
+            text = candidate.read_text(encoding='utf-8', errors='strict')
+            values = dict(re.findall(r'^set\((CMAKE_CXX_COMPILER(?:_VERSION|_ID)?) "([^"\n]+)"\)', text, re.MULTILINE))
+            if values.get('CMAKE_CXX_COMPILER'):
+                detected.append((candidate, values))
+        if len(detected) == 1:
+            detection, values = detected[0]
+            compiler = values['CMAKE_CXX_COMPILER']
+            reported_version = values.get('CMAKE_CXX_COMPILER_VERSION')
     if not compiler or not Path(compiler).is_file():
         return {"availability": "unavailable", "compiler": compiler, "reason": "cached compiler missing",
                 "cache_sha256": digest(cache)}
     return {"availability": "observed", "compiler": compiler, "compiler_sha256": digest(Path(compiler)),
-            "reported_version": _run_text([compiler, "--version"], build_dir, limit=8000),
+            "reported_version": reported_version or _run_text([compiler, "--version"], build_dir, limit=8000),
+            "detection_sha256": digest(detection) if detection else None,
             "cache_sha256": digest(cache), "generator": entries.get("CMAKE_GENERATOR"),
             "build_type": entries.get("CMAKE_BUILD_TYPE"), "configurations": entries.get("CMAKE_CONFIGURATION_TYPES")}
 

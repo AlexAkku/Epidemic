@@ -21,6 +21,55 @@ import test_core
 
 
 class GuiOperationTests(unittest.TestCase):
+    def test_gui_poll_timer_and_callback_errors_are_owned_until_destroy(self):
+        for close_mode in ('close', 'destroy'):
+            with self.subTest(close_mode=close_mode), tempfile.TemporaryDirectory() as temporary:
+                config, _ = test_core.AuditorCoreTests._config(self, Path(temporary))
+                storage, events = RunStorage(config), EventBus()
+                manager = RunManager(config, storage, events)
+                window = AuditorWindow(config, manager, storage, events)
+                window.root.withdraw()
+                python_errors = []
+                window.root.report_callback_exception = lambda kind, error, trace: python_errors.append(str(error))
+                window.root.tk.setvar('auditor_test_bg_errors', ())
+                window.root.tk.call('proc', 'bgerror', 'message',
+                                    'lappend ::auditor_test_bg_errors $message')
+
+                def assert_callbacks_clean():
+                    self.assertEqual(python_errors, [], 'Python callback failed')
+                    self.assertEqual(window.root.tk.splitlist(
+                        window.root.tk.getvar('auditor_test_bg_errors')), (), 'Tcl background callback failed')
+
+                try:
+                    # Prove the oracle catches both error paths that Tk otherwise
+                    # prints without failing unittest.
+                    window.root.after(0, lambda: 1 / 0)
+                    window.root.update()
+                    with self.assertRaises(AssertionError):
+                        assert_callbacks_clean()
+                    python_errors.clear()
+                    window.root.tk.call('after', 0, 'auditor_missing_callback_negative_control')
+                    window.root.update()
+                    with self.assertRaises(AssertionError):
+                        assert_callbacks_clean()
+                    window.root.tk.setvar('auditor_test_bg_errors', ())
+
+                    for _ in range(10):
+                        window._poll_events()
+                        self.assertEqual(len(window.root.tk.splitlist(
+                            window.root.tk.call('after', 'info'))), 1, 'polling leaked a second timer')
+                    if close_mode == 'destroy':
+                        window.root.destroy()
+                    else:
+                        window._on_close()
+                    window._on_close()  # Cleanup is idempotent after either path.
+                    self.assertEqual(window.root.tk.splitlist(window.root.tk.call('after', 'info')), ())
+                    window.root.tk.call('after', 150)
+                    window.root.tk.call('update')
+                    assert_callbacks_clean()
+                finally:
+                    window._on_close()
+
     def test_native_executable_opens_private_runtime_gui_and_closes_cleanly(self):
         root = Path(__file__).resolve().parents[2]
         executable = root / ".ai/tools/auditor/EpidemicAuditor.exe"
@@ -166,8 +215,4 @@ class GuiOperationTests(unittest.TestCase):
                         self.assertEqual(header["metadata"]["backend_operation"]["entry_point"], "gui")
                 (base / "gui-operations-oracle.json").write_text(json.dumps({"calls": calls, "runs_dir": str(config.runs_dir)}))
             finally:
-                manager.shutdown()
-                try:
-                    window.root.destroy()
-                except Exception:
-                    pass
+                window._on_close()

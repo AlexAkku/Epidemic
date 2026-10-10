@@ -20,6 +20,11 @@ IO_KINDS = {'DiskRead','DiskWrite','DiskFlush','DiskReadInit','DiskWriteInit','D
             'FileIoSetInfo','FileIoQueryInfo','FileIoFSCTL','FileIoDelete','FileIoDirEnum','FileIoOpEnd'}
 OBSERVATION_KINDS |= IO_KINDS
 
+# Dumper output contains the whole kernel trace and is streamed by the PID
+# normalizer. Match the existing raw capture bound; analytical text stays small.
+REPORT_LIMIT_BYTES = 512 * 1024**2
+EVENT_DUMP_LIMIT_BYTES = 2 * 1024**3
+
 
 def process_id(value: str) -> int:
     match = re.search(r"\(\s*(\d+)\s*\)\s*$", value)
@@ -210,6 +215,9 @@ class XperfPostProcessor:
             "trace": str(trace),
             "pid": pid,
             "reports": {},
+            "decoder_commands": {},
+            "decoder_sha256": digest(self.exe) if self.exe else None,
+            "event_encoding": "mbcs",
             "report_scopes": {"cpu_profile": "trace-wide process/module buckets",
                               "cpu_disk": "selected PID", "profile_stacks": "selected PID"},
             "errors": [],
@@ -226,21 +234,27 @@ class XperfPostProcessor:
             ("cpu_profile", ["-a", "profile", "-detail"]),
             ("cpu_disk", ["-a", "cpudisk", "-pids", str(pid), "-thread"]),
             ("profile_stacks", ["-a", "stack", "-pid", str(pid), "-event", "Profile", "-butterfly", "1"]),
+            ("events", ["-a", "dumper"]),
         ]
         for name, action in jobs:
-            out = output_dir / f"{name}.txt"
+            out = output_dir / ("events.csv" if name == 'events' else f"{name}.txt")
             cmd = [str(self.exe), "-i", str(trace), "-o", str(out)]
             if name == "profile_stacks":
                 cmd += ["-symbols"]
             cmd += action
+            result['decoder_commands'][name] = cmd
             try:
                 out.unlink(missing_ok=True)
                 proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
                                       timeout=180, check=False, env=environment)
-                if proc.returncode == 0 and out.exists():
+                bound = EVENT_DUMP_LIMIT_BYTES if name == 'events' else REPORT_LIMIT_BYTES
+                if (proc.returncode == 0 and out.is_file() and out.stat().st_size <= bound
+                        and digest(self.exe) == result['decoder_sha256']):
                     result["reports"][name] = str(out)
                 else:
                     detail = (proc.stderr or proc.stdout or "").strip()
+                    if out.is_file() and out.stat().st_size > bound:
+                        detail = f'report capacity exceeded: {out.stat().st_size} > {bound} bytes; ' + detail
                     result["errors"].append(f"{name}: xperf exit {proc.returncode}: {detail[:4000]}")
             except Exception as exc:
                 result["errors"].append(f"{name}: {exc}")

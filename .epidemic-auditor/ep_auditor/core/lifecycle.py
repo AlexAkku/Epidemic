@@ -62,6 +62,15 @@ def seal_run_capture(record) -> dict:
     publish_telemetry(record.run_dir)
     from ep_auditor.collectors.sanitizer import publish_sanitizer
     publish_sanitizer(record.run_dir)
+    from ep_auditor.collectors.etw_import import publish_wpr_capture
+    try:
+        publish_wpr_capture(record.run_dir)
+    except (EvidenceError, OSError, ValueError, KeyError, TypeError) as error:
+        if manifest['capture_complete']:
+            raise
+        # An explicitly failed collector still gets an authoritative INCOMPLETE
+        # lifecycle. Never suppress mismatches in a claimed complete capture.
+        record.metadata['wpr_projection_error'] = str(error)[:1000]
     if any(row['path'] == 'raw/modules/api_observer_binding.json' for row in manifest['raw_files']):
         from ep_auditor.collectors.modules import publish_api_snapshot
         publish_api_snapshot(record.run_dir)

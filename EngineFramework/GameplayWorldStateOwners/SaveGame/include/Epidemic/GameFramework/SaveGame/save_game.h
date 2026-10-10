@@ -223,7 +223,10 @@ struct SaveGameDiagnostics
 class SaveGameOrchestrator
 {
   public:
-    explicit SaveGameOrchestrator(SaveFormatSupport format = {}, SaveResourceLimits limits = {}) noexcept
+    // Container construction can allocate; propagate failure instead of terminating.
+    // Fixed-size scalar limits are copied into this owner's configuration; preserve the value API.
+    // cppcheck-suppress passedByValue
+    explicit SaveGameOrchestrator(SaveFormatSupport format = {}, SaveResourceLimits limits = {})
         : format_(format), limits_(limits)
     {
     }
@@ -244,6 +247,8 @@ class SaveGameOrchestrator
     [[nodiscard]] foundation::Result<std::vector<SaveParticipantId>> ResolveOrder() const;
     [[nodiscard]] foundation::Result<SaveGameImage> Capture(const SaveContext &context);
     [[nodiscard]] foundation::Result<void> Restore(SaveGameImage image, const RestoreContext &context);
+    // Return an owned point-in-time snapshot, not a reference changing during later operations.
+    // cppcheck-suppress returnByReference
     [[nodiscard]] SaveGameDiagnostics GetDiagnostics() const noexcept
     {
         return diagnostics_;

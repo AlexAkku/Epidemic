@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdio>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -480,7 +481,8 @@ void TestFramePhaseValidation()
 
     try
     {
-        application.AddFramePhaseHandler(static_cast<epidemic::core::FramePhase>(255), [](const auto &) {});
+        // Deliberately invalid input proves rejection before handler-array indexing.
+        application.AddFramePhaseHandler(static_cast<epidemic::core::FramePhase>(255), [](const auto &) {}); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     }
     catch (const std::invalid_argument &)
     {
@@ -1396,7 +1398,7 @@ int RunAuditorCoroutineScenario()
 #endif
 
 // Runs the Core unit-test group, or an explicitly selected standalone audit scenario.
-int main(int argc, char** argv)
+int main(int argc, char** argv) try
 {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     if (argc == 2 && std::string(argv[1]) == "--auditor-causal") return RunAuditorCausalScenario();
@@ -1423,4 +1425,7 @@ int main(int argc, char** argv)
         {"ModuleRegistryContracts", &TestModuleRegistryContracts},
         {"ApplicationQuiescesSchedulerBeforeModuleShutdown", &TestApplicationQuiescesSchedulerBeforeModuleShutdown},
     });
+} catch (const std::exception& error) {
+    std::fprintf(stderr, "[FAIL] Core test setup: %s\n", error.what());
+    return 1;
 }

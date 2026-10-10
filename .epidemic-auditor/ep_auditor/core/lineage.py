@@ -46,6 +46,9 @@ class EvidenceLineage:
     def __init__(self, run_dir: Path):
         self.run_dir = run_dir
         self.raw = RawEvidence(run_dir)
+        self._validated_inputs = {}
+        self._verification_depth = 0
+        self._verification_manifest = None
 
     def reference(self, layer: str, path: str) -> dict:
         if layer not in LAYERS:
@@ -69,12 +72,27 @@ class EvidenceLineage:
         if not target.is_file() or digest(target) != ref["sha256"]:
             raise EvidenceError("input evidence hash mismatch")
         if index == 0:
-            manifest = self.raw.verify()
+            manifest = self._verification_manifest if self._verification_depth else self.raw.verify()
             rows = [row for row in manifest["raw_files"] if row["path"] == "raw/" + ref["path"]]
             if len(rows) != 1 or rows[0]["sha256"] != ref["sha256"]:
                 raise EvidenceError("input raw not registered in manifest")
             return rows[0]["complete"]
-        return self.verify(ref["layer"], ref["path"])["completeness"]["complete"]
+        key = (ref['layer'], ref['path'], ref['sha256'])
+        cached = self._validated_inputs.get(key)
+        if cached is not None:
+            inputs, complete = cached
+            # Content hashes are always checked above, and every transitive
+            # input (including the raw manifest) is checked again. Only repeated
+            # parsing/record validation of identical bytes is memoized.
+            current = all([self._input(child, index) for child in inputs])
+            if current != complete:
+                raise EvidenceError('cached lineage completeness changed')
+            return complete
+        envelope = self.verify(ref['layer'], ref['path'], expected_sha256=ref['sha256'])
+        if len(self._validated_inputs) >= 512:
+            self._validated_inputs.clear()
+        self._validated_inputs[key] = (deepcopy(envelope['inputs']), envelope['completeness']['complete'])
+        return envelope['completeness']['complete']
 
     def _validate(self, value: dict, layer: str) -> dict:
         if (not isinstance(value, dict) or type(value.get("schemaVersion")) is not int or value["schemaVersion"] != 1
@@ -106,7 +124,13 @@ class EvidenceLineage:
                 if ref not in inputs:
                     raise EvidenceError("normalized raw reference not an envelope input")
                 # Type support is checked by the consumer registry in read_normalized.
-                normalized_record(record, {record.get("eventType")}, ref, record.get("rawOrdinal"))
+                # Identity/schema validation does not need to deepcopy every
+                # forwarded stack/context extension. Preserve those fields in
+                # the envelope and validate exactly the same metadata here.
+                metadata = {key: record.get(key) for key in
+                            ('schemaVersion', 'eventType', 'required', 'provenance', 'confidence', 'eventId')}
+                supported = {record['eventType']} if isinstance(record.get('eventType'), str) else set()
+                normalized_record(metadata, supported, ref, record.get('rawOrdinal'))
         health = value.get("completeness")
         if (not isinstance(health, dict) or type(health.get("complete")) is not bool
                 or health["complete"] != complete
@@ -141,10 +165,22 @@ class EvidenceLineage:
             claim.unlink()
         return self.verify(layer, path)
 
-    def verify(self, layer: str, path: str) -> dict:
+    def verify(self, layer: str, path: str, *, expected_sha256: str | None = None) -> dict:
         if layer not in LAYERS[1:]:
             raise EvidenceError("derived verification layer invalid")
-        return self._validate(load_json(checked_path(self.run_dir / layer, path)), layer)
+        outermost = self._verification_depth == 0
+        if outermost:
+            self._verification_manifest = self.raw.verify()
+        self._verification_depth += 1
+        try:
+            value = self._validate(load_json(checked_path(self.run_dir / layer, path), expected_sha256=expected_sha256), layer)
+            if outermost and self.raw.verify() != self._verification_manifest:
+                raise EvidenceError('raw authority changed during lineage verification')
+            return value
+        finally:
+            self._verification_depth -= 1
+            if outermost:
+                self._verification_manifest = None
 
     def read_normalized(self, path: str, supported_types: set[str]) -> list[dict]:
         envelope = self.verify("normalized", path)

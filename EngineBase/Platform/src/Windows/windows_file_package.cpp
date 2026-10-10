@@ -13,6 +13,9 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include "shadow_probe.h"
+#endif
 
 namespace epidemic::platform
 {
@@ -67,7 +70,10 @@ foundation::Result<std::vector<std::byte>> ReadFilePackage(const foundation::Pat
         std::vector<std::byte> bytes(static_cast<std::size_t>(size.QuadPart)); std::size_t position=0;
         while (position<bytes.size())
         {
-            const auto count=static_cast<DWORD>(std::min<std::size_t>(bytes.size()-position,1024*1024)); DWORD received=0;
+            const auto count=static_cast<DWORD>(std::min<std::size_t>(bytes.size()-position,1024U*1024U)); DWORD received=0;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            auditor::shadow::delay_io(path.c_str());
+#endif
             if (!ReadFile(file.value,bytes.data()+position,count,&received,nullptr) || received==0)
                 return foundation::Result<std::vector<std::byte>>::Failure(FileError("read",path,GetLastError()));
             position+=received;

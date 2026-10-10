@@ -11,6 +11,60 @@ from ep_auditor.core.lineage import EvidenceLineage
 
 
 class EtwImportTests(unittest.TestCase):
+    def test_unavailable_wpr_decoder_commits_incomplete_run(self):
+        from test_core import AuditorCoreTests
+        from ep_auditor.core.storage import RunStorage
+        from ep_auditor.core.lifecycle import authoritative_run
+        with tempfile.TemporaryDirectory() as temporary:
+            config, _ = AuditorCoreTests()._config(Path(temporary))
+            storage = RunStorage(config)
+            record = storage.new_run('process', 'synthetic unavailable decoder protocol control', 'Deep')
+            payload = json.dumps({'xperf': {'errors': ['decoder unavailable']}}).encode()
+            RawEvidence(record.run_dir).append('wpr.json', payload, collector='synthetic_protocol_test',
+                version='1', start_ns=1, end_ns=2, health={'capacity': len(payload), 'observed': len(payload),
+                'dropped': 0, 'incomplete_reason': 'xperf_reports_incomplete'})
+            storage.finish_run(record, 'PASS')
+            self.assertEqual(authoritative_run(record.run_dir)['status'], 'INCOMPLETE')
+            self.assertIn('wpr_projection_error', record.metadata)
+            self.assertFalse((record.run_dir / 'normalized/windows_events.json').exists())
+
+    def test_replay_rejects_projection_forgery_and_binds_owned_wpr_scope(self):
+        from ep_auditor.collectors.etw_import import publish_wpr_capture, verify_etw_capture
+        from ep_auditor.collectors.telemetry_pipeline import telemetry_complete
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            files, scope, context = self.fixture(directory, 0)
+            run = directory / 'run'
+            import_capture(run, files, context, pids={41}, encoding='utf-8', scope=scope)
+            self.assertTrue(telemetry_complete(run))
+            verify_etw_capture(run)
+            path = run / 'graphs/windows_scheduler_sampling.json'
+            value = json.loads(path.read_text())
+            value['records'][0]['folded_stacks'] = {'forged': 999}
+            path.write_text(json.dumps(value))
+            with self.assertRaises(EvidenceError):
+                verify_etw_capture(run)
+            self.assertFalse(telemetry_complete(run))
+            from ep_auditor.analyzers.summary import _verified_rows
+            with self.assertRaises(EvidenceError):
+                list(_verified_rows(run, ('graphs/windows_scheduler_sampling.json',)))
+            # Explicit synthetic protocol fixture; not a physical SDK capture.
+            wpr_run = directory / 'wpr'
+            raw = RawEvidence(wpr_run)
+            metadata = {'xperf': {'errors': [], 'decoder_commands': {'events': ['synthetic fixture']},
+                'decoder_sha256': 'a' * 64, 'event_encoding': 'utf-8'},
+                'scope': dict(scope, pids=[41]), 'trace_loss': {'lost_events': 0, 'lost_buffers': 0}}
+            payloads = {'wpr.json': json.dumps(metadata).encode(), 'process/lifecycle.json': b'{"pid":41}',
+                'xperf/trace_statistics.txt': b'Total # Lost Events: 0\nTotal # Lost Buffers: 0\n',
+                'xperf/events.csv': (directory / 'events.csv').read_bytes(), 'trace.etl': b'synthetic fixture only'}
+            for name, payload in payloads.items():
+                raw.append(name, payload, collector='synthetic_protocol_test', version='1', start_ns=1, end_ns=2,
+                    health={'capacity': len(payload), 'observed': len(payload), 'dropped': 0, 'incomplete_reason': None})
+            raw.seal(context)
+            publish_wpr_capture(wpr_run)
+            self.assertTrue(telemetry_complete(wpr_run))
+            self.assertEqual(len(verify_etw_capture(wpr_run)['samples']), 1)
+
     def test_external_control_and_wct_require_correlated_lifetimes_and_bounded_clocks(self):
         from ep_auditor.collectors.etw_import import external_concurrency_observations
         ref = {"layer": "raw", "path": "control/fixture.json", "sha256": "a" * 64}

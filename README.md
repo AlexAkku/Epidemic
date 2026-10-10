@@ -80,7 +80,7 @@ C++ сборки находятся в `build/`. Все остальные со�
   - [x] Цель 3. Полный локальный freeze-аудит EngineRuntime
   - [x] Цель 4. Полный локальный freeze-аудит EngineFramework
   - [x] Цель 5. Доказать persistence и determinism всего движка
-  - [ ] Цель 6. Build independent observer
+  - [ ] Цель 6. Build independent observer — частично завершена; полное закрытие отложено до завершения MS8 и появления первой тестовой игры в `Game`.
   - [ ] Цель 7. Hardering
   - [ ] Цель 8. Integration qualification
   - [ ] Цель 9. Destructive/stress/fault qualification

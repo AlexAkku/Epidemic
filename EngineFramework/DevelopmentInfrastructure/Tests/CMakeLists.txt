@@ -14,6 +14,12 @@ foreach(_participant_adapter IN ITEMS Integration StateIntegration GameplayInteg
     epidemic_add_test(${_participant_test})
 endforeach()
 
+# The opt-in Auditor scenario exercises the production bounded file backend.
+# It does not add a dependency to ordinary participant code or public API.
+if(EP_AUDITOR_PROFILE STREQUAL "audit-deep" OR EP_AUDITOR_PROFILE STREQUAL "audit-memory")
+    target_link_libraries(EpidemicExtendedGameplayIntegrationSaveParticipantTests PRIVATE EpidemicPlatform)
+endif()
+
 add_executable(EpidemicFrameworkSaveCompositionTests framework_save_composition_tests.cpp)
 target_include_directories(EpidemicFrameworkSaveCompositionTests PRIVATE "${EpidemicEngine_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")
 target_compile_definitions(EpidemicFrameworkSaveCompositionTests PRIVATE EPIDEMIC_SAVE_FIXTURES="${PROJECT_SOURCE_DIR}/Tests/Fixtures/SaveGame")

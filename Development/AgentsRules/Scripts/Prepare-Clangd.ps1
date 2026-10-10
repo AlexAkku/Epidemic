@@ -36,4 +36,29 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $db = Join-Path $build 'compile_commands.json'
 if (-not (Test-Path -LiteralPath $db -PathType Leaf)) { throw 'CMake did not generate compile_commands.json.' }
+$nativeBuild = Join-Path $root 'build/auditor-clangd'
+$nativeSource = Join-Path $root '.epidemic-auditor/native'
+if (Test-Path -LiteralPath (Join-Path $nativeSource 'CMakeLists.txt')) {
+    $nativeCommand = ('cmake -S "' + $nativeSource + '" -B "' + $nativeBuild +
+        '" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
+    & $quiet -Name 'auditor-clangd-configure' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $nativeCommand
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    $nativeDb = Join-Path $nativeBuild 'compile_commands.json'
+    if (-not (Test-Path -LiteralPath $nativeDb -PathType Leaf)) { throw 'Auditor CMake did not generate compile_commands.json.' }
+    $commands = @((Get-Content -LiteralPath $db -Raw | ConvertFrom-Json)) +
+                @((Get-Content -LiteralPath $nativeDb -Raw | ConvertFrom-Json))
+    foreach ($entry in $commands) {
+        # MSVC /Gh and /GH install physical hooks, but clang's analysis driver
+        # does not implement them. Remove only these standalone flags from the
+        # analysis database; leave the actual CMake/compiler builds unchanged.
+        if ($entry.PSObject.Properties['command']) {
+            $entry.command = [regex]::Replace($entry.command, '(?<!\S)/G[hH](?=\s|$)', '')
+        }
+        if ($entry.PSObject.Properties['arguments']) {
+            $entry.arguments = @($entry.arguments | Where-Object { $_ -cnotin @('/Gh', '/GH') })
+        }
+    }
+    [IO.File]::WriteAllText($db, (ConvertTo-Json -InputObject $commands -Depth 32),
+        (New-Object System.Text.UTF8Encoding($false)))
+}
 Write-Output "clangd database: $db"

@@ -194,11 +194,45 @@ def capture_directory(run: Path, *, helper: Path | None = None, required: bool =
                     'incomplete_reason': None if complete else 'exact_process_pairing_incomplete'})
 
 
-def publish_capture(run: Path):
+_replayed_captures = {}
+
+
+def _replay_signature(run):
+    files = {path for directory in ('raw/exact', 'normalized/exact', 'graphs/exact', 'metrics/exact', 'findings/exact')
+             for path in (run / directory).glob('*') if path.is_file()}
+    files.update(path for path in (run / 'raw/static/architecture.json', run / 'environment.json', run / 'manifest.json') if path.is_file())
+    artifacts = {path.relative_to(run).as_posix(): digest(path) for path in sorted(files)}
+    package = Path(__file__).parents[1]
+    producers = [Path(__file__), package / 'analyzers/exact_calls.py', package / 'analyzers/architecture.py',
+                 package / 'analyzers/rules.py', package / 'core/lineage.py', package / 'core/evidence.py', package / 'core/identity.py']
+    producers.extend(sorted((package.parent / 'rules').glob('*.yaml')))
+    code = {str(path): digest(path) for path in producers}
+    signature = hashlib.sha256(json.dumps([artifacts, code], sort_keys=True).encode()).hexdigest()
+    return signature, artifacts
+
+
+def publish_capture(run: Path, *, verify_only: bool = False):
     """Use the existing raw -> normalized -> graphs/metrics product lineage."""
     from ep_auditor.core.lineage import EvidenceLineage, normalized_record
     from ep_auditor.analyzers.exact_calls import reconstruct_calls
     lineage = EvidenceLineage(run)
+    before = _replay_signature(run) if verify_only else None
+    if before is not None and before[0] in _replayed_captures:
+        return dict(_replayed_captures[before[0]])
+    outputs = set()
+    def publish(layer, path, **fields):
+        outputs.add(layer + '/' + path)
+        destination = run / layer / path
+        if destination.is_file():
+            expected_sha = before[1].get(layer + '/' + path) if before else None
+            envelope = lineage.verify(layer, path, expected_sha256=expected_sha)
+            expected = json.loads(json.dumps(fields['records']))
+            if envelope['records'] != expected or envelope['inputs'] != fields['inputs']:
+                raise EvidenceError('exact derived artifact differs from original capture: ' + path)
+        elif verify_only:
+            raise EvidenceError('exact derived artifact missing: ' + path)
+        else:
+            lineage.write(layer, path, **fields)
     groups = {}
     for source in sorted((run / 'raw/exact').glob('*.bin')):
         if not (run / 'raw/exact' / (source.stem + '-symbols.json')).is_file():
@@ -212,7 +246,7 @@ def publish_capture(run: Path):
             raise EvidenceError('exact producers disagree on the process QPC domain')
         prefix = 'exact/process-' + str(pid) + '-' + str(birth)
         destination = run / 'metrics' / (prefix + '-functions.json')
-        if destination.is_file():
+        if destination.is_file() and not verify_only:
             lineage.verify('metrics', prefix + '-functions.json')
             continue
         refs, symbol_refs, symbolizations, producer_hashes = [], [], {}, []
@@ -230,7 +264,7 @@ def publish_capture(run: Path):
             def write_chunk():
                 nonlocal rows, chunk
                 path = 'exact/' + source.stem + '-events-' + str(chunk) + '.json'
-                lineage.write('normalized', path, producer_version='2', producer_source=Path(__file__),
+                publish('normalized', path, producer_version='2', producer_source=Path(__file__),
                               inputs=[raw_ref], records=rows)
                 refs.append(lineage.reference('normalized', path))
                 rows, chunk = [], chunk + 1
@@ -252,11 +286,11 @@ def publish_capture(run: Path):
             graph_inputs.append(lineage.reference('raw', health_path))
         capture_sha = hashlib.sha256(json.dumps(sorted(producer_hashes)).encode()).hexdigest()
         for offset in range(0, len(report['calls']), 2048):
-            lineage.write('graphs', prefix + '-calls-' + str(offset) + '.json',
+            publish('graphs', prefix + '-calls-' + str(offset) + '.json',
                 producer_version='2', producer_source=Path(__file__).parents[1] / 'analyzers/exact_calls.py',
                 inputs=graph_inputs, records=[dict(row, provenance='compiler_instrumentation', confidence='derived')
                                              for row in report['calls'][offset:offset + 2048]])
-        lineage.write('metrics', prefix + '-functions.json', producer_version='2',
+        publish('metrics', prefix + '-functions.json', producer_version='2',
             producer_source=Path(__file__).parents[1] / 'analyzers/exact_calls.py', inputs=graph_inputs,
             records=[{'provenance': 'compiler_instrumentation', 'confidence': 'derived', 'eventType': 'exact.summary',
                       'scope': report['scope'], 'complete': report['complete'], 'problems': report['problems'],
@@ -273,10 +307,23 @@ def publish_capture(run: Path):
             project_root = Path(json.loads((run / 'environment.json').read_text())['project_root'])
             architecture = runtime_architecture(report, project_root, static)
             architecture_path = prefix + '-architecture.json'
-            lineage.write('graphs', architecture_path, producer_version='1',
+            publish('graphs', architecture_path, producer_version='1',
                 producer_source=Path(__file__).parents[1] / 'analyzers/architecture.py',
                 inputs=graph_inputs + [lineage.reference('raw', 'static/architecture.json')], records=[architecture])
             findings = evaluate_rules(load_rules(Path(__file__).resolve().parents[2] / 'rules'), {'architecture': architecture})
-            lineage.write('findings', prefix + '-rules.json', producer_version='1',
+            publish('findings', prefix + '-rules.json', producer_version='1',
                 producer_source=Path(__file__).parents[1] / 'analyzers/rules.py',
                 inputs=[lineage.reference('graphs', architecture_path)], records=findings['findings'])
+    if verify_only:
+        actual = {path.relative_to(run).as_posix() for directory in
+                  ('normalized/exact', 'graphs/exact', 'metrics/exact', 'findings/exact')
+                  for path in (run / directory).glob('*.json')}
+        if actual != outputs:
+            raise EvidenceError('exact output set disagrees with original producer scope')
+        after = _replay_signature(run)
+        if after != before:
+            raise EvidenceError('exact snapshot changed during semantic replay')
+        if len(_replayed_captures) >= 8:
+            _replayed_captures.pop(next(iter(_replayed_captures)))
+        _replayed_captures[before[0]] = dict(before[1])
+        return dict(before[1])

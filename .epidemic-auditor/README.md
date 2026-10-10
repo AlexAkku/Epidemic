@@ -179,4 +179,156 @@ Every normalized record carries provenance. Current external records use values 
 - `external_static_scan`
 - `external_wpr_raw`
 
-Future semantic probes must use a different provenance, for example `engine_probe`, so an agent can distinguish externally observed evidence from engine-declared facts.
+Engine semantic probes retain separate declared provenance, so an agent can distinguish externally observed evidence from engine-declared facts.
+
+## Current development strategy and MS6.5–MS6.6 backlog
+
+Milestone 6 is **PARTIALLY COMPLETE** as of 2026-10-10. Full closure is deferred
+by the user until MS8 is fully complete and the first test game exists in `Game`.
+Finish current fixes and bounded regressions, then stop. The comprehensive
+manual qualification and independent audit remain pending; neither CI nor
+fixture success replaces mandatory physical or Game acceptance.
+
+As directed on 2026-10-10, implement MS6.7–MS6.9 as one integrated capability
+package after agreement on the interfaces below. Use compilation, grouped
+focused regressions and targeted integration smoke tests during development.
+Do not repeat the four-profile engine matrix or the full Auditor Self-Test at
+each intermediate milestone. Comprehensive coverage/integration qualification
+and an independent agent audit follow the MS6.9 implementation, on explicit
+request. This cadence does not permit fabricated PASS/COMPLETE or weaker evidence.
+
+The 2026-10-09 SRC-171–298 matrix was an observation of that version, not a
+current acceptance certificate. Its remaining gaps are development backlog:
+
+| SRC | Backlog / acceptance work |
+|---|---|
+| 186–187 | PARTIAL: physical production engine assert/contract paths, beyond controlled exception-code fixtures. |
+| 196 | PARTIAL: allocations in concrete production pickup/combat Actions. |
+| 197 | PARTIAL: whole-process peak heap; observed allocator peak is insufficient. |
+| 216 | PARTIAL: current physical disk-latency capture; API-entry timing is insufficient. |
+| 221–222 | PARTIAL: dedicated observed synchronization/thread API calls; async IO does not call SetEvent/CreateThread. |
+| 234 | PARTIAL: physical source-bound FindingId linked into a production causal graph. |
+| 249, 276, 294 | PARTIAL: exception-unwind call trees lose EXIT; preserve INCOMPLETE, never manufacture durations. |
+| 263 | PARTIAL: current physical static-analysis provenance record. |
+| 269, 292, 296 | DEFERRED/BLOCKED by the user until a Game prototype exists: whole-Game scope and production menu; fixtures are not substitutes. |
+| 270 | Previous PARTIAL from Tcl callback errors: lifecycle regression and widget/backend smoke PASS on 2026-10-10; broader integrated GUI coverage remains for final acceptance. |
+| 198, 204, 220 | Previous FAIL dependency on Verifier ordering and misplaced Virtual API assertion: all four Heaps/Leak controls plus a dedicated VirtualAlloc/VirtualFree physical test PASS on 2026-10-10; integrate into final coverage review. |
+| 205–215, 245 | Previous FAIL dependency on an incorrect async IO assertion: physical async/cancel IO, authoritative status and causal terminals PASS on 2026-10-10; integrate with final IO coverage, without treating those old test failures as independent product defects. |
+
+Previously failing broad Verify-Changed Fast/Deep consumers also remain backlog;
+successful focused native checks do not certify a full static-analysis gate.
+Record actual focused results separately from this backlog. Do not silently
+turn deferred or partially observed requirements into qualified requirements.
+
+## Integrated MS6.7–MS6.9 implementation
+
+The 2026-10-10 decision preserves the existing backend, collectors, analyzers,
+GUI and agent boundaries. The entries below describe extensions of existing
+operations, not new architectural layers. Implement the three stages together;
+perform the comprehensive qualification only after the integrated functionality.
+
+Reuse `RunStorage`, `RawEvidence`, `EvidenceLineage`, `authoritative_run`,
+`core.operations` and `RunManager`; keep GUI, CLI and agent as consumers of the
+same backend. Keep native observation/ETW privilege boundaries unchanged.
+No parallel Run database, development receipts or additional acceptance framework.
+
+### Shared interfaces
+
+- `analyzers.summary.query_run_view(run_directory, view, scope, cursor, limit)`: verified read-only projections
+  for dashboard and required tabs/graphs. Resolve stable Finding/Test/Scenario/
+  Action/Trace/Function/Module IDs through existing run storage and evidence.
+  Responses carry RunId, schema, provenance, completeness/availability,
+  raw/source references, `truncated` and a snapshot/scope-bound continuation token.
+  Missing telemetry is UNKNOWN, not zero. Missing/corrupt mandatory evidence is
+  rejected, not displayed as a successful empty result. Reuse existing Action
+  and event-log queries; bounded views must not materialize whole traces.
+- `analyzers.summary.publish_findings(run_directory)` and the scoped Findings view: one normalized
+  finding representation shared by UI/headless/agent. Fields: FindingId, RunId,
+  rule/category, severity, confidence, provenance, summary, evidence/source refs,
+  reproduction inputs, first/last seen and baseline state. Stable issue identity
+  is separate from its Run occurrence. Reproduction is emitted only when verified
+  rerun inputs exist; heuristic findings do not become correctness failures.
+- `analyzers.compare.compare_runs(baseline_directory, current_directory, cursor, limit)`: verify both runs and compatibility
+  of capture profile, target/build configuration, schemas, clocks/units and
+  symbol identity mapping. Preserve both source/binary identities; different
+  revisions alone are not silently treated as equivalent builds. Incompatible
+  observations return INCOMPATIBLE; missing metrics return UNKNOWN. Compare
+  functions/edges, CPU/RAM/allocations, p95/p99, exceptions/waits/locks and coverage.
+  Missing and nonfinite metrics stay UNKNOWN; measured candidates remain heuristic.
+- `export_investigation(run_id, kind, stable_id, limits, cursor)`: extend the
+  existing agent/export modules. Defaults: 200 events, 50 frames, 20 related
+  findings and 20 graph neighbors. Truncation is explicit and resumable. Generate
+  the source-required named Markdown/JSON/JSONL/CSV product outputs from these
+  same verified projections, with no alternate findings or status calculation.
+- `RunManager.execute('stress', mode)`, `RunManager.stop()` and
+  `query_run_view(run_directory, 'Stress')`: existing admitted operations and
+  verified views, with an explicit owned target/workspace,
+  injector parameters, finite duration/iterations and resource budget. Injection
+  records retain InjectorId/type/scope, requested/observed intervals, measured
+  effect, evidence refs and cleanup result. ACK is not proof of effect.
+  CPU/memory/worker pressure helpers belong to the owned process tree. Disk delay
+  and allocation-failure adapters are explicitly scoped; no global storage
+  filters or silent changes to ordinary engine behavior. Unavailable observation
+  or adapter means BLOCKED/UNKNOWN. Keep existing memory reserves/job limits.
+- MS6.9 exercises the existing build/test/run/stress operations and the same
+  query/compare/export functions through integration tests. There is no separate
+  acceptance operation or qualification framework. The integrated checks include
+  production persistence, physical regression controls, stable-ID GUI/agent
+  parity, corrupt evidence rejection and deceptive target PASS/nonzero exit.
+  One overall stabilization, full matrix and independent audit follow completion
+  of the functional package. Future milestone campaigns and Game remain deferred.
+
+### Integrated implementation blocks
+
+1. Verified projections, finding identity, compatibility-aware comparison and
+   bounded agent exports; GUI/CLI parity with the same IDs and missing-data rules.
+2. Owned injection/campaign lifecycle and real measured good/bad controls;
+   save/restore, cancellation and degradation use existing production components.
+3. Integrated smoke flow through existing operations: workload/capture -> finding
+   -> compare -> GUI/agent navigation -> export -> cancellation/cleanup. Reject
+   false internal PASS, incomplete captures and incompatible comparisons.
+
+Each block gets only its changed-source compilation and focused smoke/regression
+checks. Product raw/manifests remain under `.ai/`; compiler products stay under
+`build/`. Do not implement Game or launch an independent audit in these blocks.
+
+Current integrated checks (2026-10-10) are focused regressions, not milestone
+qualification. Shared views/compare/GUI/export tests pass; ETW decoder replay
+rejects forged projections, including view reads after incomplete telemetry.
+Dashboard panels reuse bounded verified views and label page counts as lower
+bounds; missing detectors/baselines remain UNKNOWN. Findings expose verified
+captured launch inputs separately from an unexecuted reproduction.
+
+Owned rolling capture under CPU pressure passed with retained original probe
+bytes; absent compiler instrumentation remains UNKNOWN. The authorized narrow
+broker repair completed, and the real WPR smoke passed with sealed raw evidence,
+independent zero-loss verification and a truncated-ETL negative control. The
+streamed event dump uses the existing 2 GiB raw bound; analytical text remains
+bounded to 512 MiB, and overflow remains an explicit failure. Physical Verifier
+Heaps/Leak controls also passed. These are focused results, not full milestone
+qualification. No disabled guard or synthetic ETL substitution is accepted.
+Full stabilization and independent audit remain pending; Game remains DEFERRED.
+
+The existing native module snapshot now supplies the Modules view and bounded
+ModuleId investigation. Its original stdout/helper binding is verified; IDs
+identify captured disk binaries, not hashes of loaded memory. Physical lookup,
+unknown-ID and raw-corruption controls passed. Existing function history is
+available in GUI and the headless `history FunctionId --limit 200` command;
+continuations bind the scope and capture snapshot, and function facts replay
+their original trace even after a disposable-index update. Compatible measured
+history and a reindexed forged metric were tested with native captures.
+
+Agent pack publication rejects a changing run snapshot. Failed stress attempts
+retain owned child references, including post-capture quota failures; an absent
+observer produces parent FAIL with a retained INCOMPLETE child and an incomplete
+view. These focused controls passed. Persistent pressure has an explicit Memory
+capture scope: sanitizer stdio, external resources and retained owned files;
+exact/diagnostic/causal streams are NOT_CAPTURED, not silently marked complete.
+The default capture policy is unchanged. The small physical scenario and three
+1000-cycle production Save/Restore pressure controls passed (439.42 seconds),
+including retained file count/bytes, structured state checks and raw validation.
+This scope does not qualify omitted exact/diagnostic/causal telemetry.
+Focused native static checks passed after local fixes; a passing broad Deep gate
+has not been established. GitHub CI now builds the native Auditor in Debug and
+Release and runs bounded backend/evidence/GUI regressions. Privileged WPR/Verifier,
+long stress and whole-Game acceptance are outside that CI subset.

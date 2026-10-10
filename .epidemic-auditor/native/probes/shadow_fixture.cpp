@@ -14,6 +14,7 @@
 #endif
 #include <thread>
 #include <cstring>
+#include <cstdio>
 #include <memory>
 #include <cstdlib>
 #include <filesystem>
@@ -180,15 +181,19 @@ __declspec(noinline) int memory_case(const char *mode) {
     volatile char *observed = memory;
     if (std::strcmp(mode, "uaf") == 0) {
         std::free(memory);
-        return observed[0];
+        // Deliberate ASan negative control: the external observer must report UAF.
+        return observed[0]; // NOLINT(clang-analyzer-unix.Malloc)
     }
     if (std::strcmp(mode, "double-free") == 0) {
         std::free(memory);
-        std::free(const_cast<char*>(observed));
+        // Deliberate ASan negative control; never used by normal engine allocation.
+        std::free(const_cast<char*>(observed)); // NOLINT(clang-analyzer-unix.Malloc)
         return 0;
     }
-    if (std::strcmp(mode, "oob") == 0) observed[16] = 1;
-    if (std::strcmp(mode, "heap-corruption") == 0) observed[-1] = 1;
+    // Deliberate bounds violations prove actual sanitizer detection, not collector ACK.
+    // cppcheck-suppress arrayIndexOutOfBounds
+    if (std::strcmp(mode, "oob") == 0) observed[16] = 1; // NOLINT(clang-analyzer-security.ArrayBound)
+    if (std::strcmp(mode, "heap-corruption") == 0) observed[-1] = 1; // NOLINT(clang-analyzer-security.ArrayBound)
     if (std::strcmp(mode, "leak") == 0) {
         epidemic::auditor::shadow::allocation("allocation", reinterpret_cast<std::uintptr_t>(memory), 16);
         return 0; // Windows ASan has no LeakSanitizer; this remains a scoped probe candidate.
@@ -198,8 +203,20 @@ __declspec(noinline) int memory_case(const char *mode) {
 }
 #endif
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) try {
     using namespace epidemic::auditor::shadow;
+    if (argc == 2 && std::strcmp(argv[1], "allocation-control") == 0) {
+        epidemic::memory::DefaultAllocator allocator;
+        unsigned failures = 0;
+        for (unsigned index = 0; index < 3; ++index) {
+            try {
+                auto* block = allocator.Allocate(512);
+                allocator.Deallocate(block, 512);
+            } catch (const std::bad_alloc&) { ++failures; }
+        }
+        // External exit is checked by the caller against the requested control.
+        return static_cast<int>(failures);
+    }
 #if defined(EP_AUDITOR_ASAN_FIXTURE)
     if (argc == 2) return memory_case(argv[1]);
 #endif
@@ -210,6 +227,17 @@ int main(int argc, char** argv) {
     if (argc == 2 && std::strcmp(argv[1], "disk-io") == 0) return disk_io_case() ? 0 : 14;
     if (argc == 2 && std::strcmp(argv[1], "async-io") == 0) return asynchronous_io_case(false) ? 0 : 16;
     if (argc == 2 && std::strcmp(argv[1], "cancel-io") == 0) return asynchronous_io_case(true) ? 0 : 16;
+    if (argc == 3 && std::strcmp(argv[1], "cancel-storm") == 0) {
+        char* end = nullptr;
+        const auto count = std::strtoul(argv[2], &end, 10);
+        if (!end || *end || count == 0 || count > 10000) return 2;
+        for (unsigned long index = 0; index < count; ++index) {
+            if (!asynchronous_io_case(true) || !asynchronous_io_case(false)) return 16;
+        }
+        std::printf("{\"scenario\":\"native-async-cancel-control\",\"requests\":%lu,\"cancelled\":%lu,\"completed\":%lu,\"orphaned\":0}\n",
+                    count * 2, count, count);
+        return 0;
+    }
     if (argc == 2 && std::strcmp(argv[1], "leak-good") == 0) return leak_module_case(false) ? 0 : 15;
     if (argc == 2 && std::strcmp(argv[1], "leak-bad") == 0) return leak_module_case(true) ? 0 : 15;
     if (argc == 2 && std::strcmp(argv[1], "background-io") != 0) {
@@ -320,4 +348,8 @@ int main(int argc, char** argv) {
     scenario("scenario.end", "fixture-s1");
     action("action.end", "fixture-a1");
     return 0;
+} catch (const std::exception& error) {
+    // Unexpected fixture setup failures must remain externally visible nonzero exits.
+    std::fprintf(stderr, "shadow fixture failed: %s\n", error.what());
+    return 10;
 }

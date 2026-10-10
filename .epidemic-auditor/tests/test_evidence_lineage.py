@@ -46,6 +46,19 @@ class EvidenceLineageTests(unittest.TestCase):
         self.assertEqual(rows[0]["eventId"], envelope["records"][0]["eventId"])
         self.assertNotEqual(rows[0]["eventId"], normalized_record(self.row(), {"fixture.observation"}, self.ref, 1)["eventId"])
 
+    def test_reused_validation_still_checks_transitive_bytes_and_completeness(self):
+        import stat
+        self.seal()
+        self.normalize()
+        first = self.lineage.reference('normalized', 'v1.json')
+        self.assertEqual(first, self.lineage.reference('normalized', 'v1.json'))
+        self.assertTrue(self.lineage._validated_inputs)
+        source = self.root / 'raw/events.jsonl'
+        source.chmod(stat.S_IREAD | stat.S_IWRITE)
+        source.write_bytes(b'{"value":8}\n')
+        with self.assertRaises(EvidenceError):
+            self.lineage.reference('normalized', 'v1.json')
+
     def test_unknown_required_type_explicit_failure_optional_retained(self):
         self.seal()
         self.normalize()

@@ -139,9 +139,31 @@ class RunStorage:
             result.append(item)
         return result
 
-    def history_for_function(self, function_id: str) -> dict:
+    def history_for_function(self, function_id: str, *, cursor=None, limit=200) -> dict:
         """History from verified existing function facts, scoped to a binary-bound FunctionId."""
-        samples, tests, seen = [], set(), set()
+        import base64
+        import hashlib
+        from .evidence import digest, load_json
+        if not isinstance(function_id, str) or not function_id or len(function_id) > 512:
+            raise EvidenceError('history requires a bounded FunctionId')
+        if type(limit) is not int or not 1 <= limit <= 200:
+            raise EvidenceError('history page limit must be between 1 and 200')
+        offset, expected_snapshot = 0, None
+        if cursor is not None:
+            try:
+                if not isinstance(cursor, str) or len(cursor) > 4096:
+                    raise ValueError('cursor capacity exceeded')
+                token = json.loads(base64.urlsafe_b64decode(cursor))
+                if (token['function_id'] != function_id or token['limit'] != limit or
+                        type(token['offset']) is not int or token['offset'] < 0):
+                    raise ValueError('history scope/bounds changed')
+                offset, expected_snapshot = token['offset'], token['snapshot']
+            except (ValueError, TypeError, KeyError, UnicodeError) as error:
+                raise EvidenceError('invalid history continuation') from error
+        samples, tests, seen, runs, latest = [], set(), set(), set(), []
+        total, count = 0, 0
+        signature = hashlib.sha256()
+        directories = []
         for directory in sorted(self.config.runs_dir.iterdir()):
             if not (directory / 'run.json').is_file():
                 continue
@@ -151,7 +173,21 @@ class RunStorage:
             run = authoritative_run(directory)
             if run['kind'] == 'tests':
                 continue  # Group/suite projections must not double-count child execution.
-            for item in self.evidence_index.query(directory, 'functions'):
+            directories.append((run['started_utc'], run['run_id'], directory, run))
+        for _, _, directory, run in sorted(directories):
+            signature.update(json.dumps([run['run_id'], digest(directory / 'manifest.json')]).encode())
+            environment = load_json(directory / 'environment.json')
+            compatibility = {key: environment.get(key) for key in
+                ('schemaVersion', 'instrumentation_profile', 'capture_configuration', 'metric_units',
+                 'hostname', 'machine', 'platform', 'processor', 'logical_cpu_count', 'build_config', 'compiler_toolchain')}
+            entries = self.evidence_index.query(directory, 'functions')
+            if entries:
+                from ep_auditor.collectors.exact_trace import publish_capture
+                proof = publish_capture(directory, verify_only=True)
+                if any(proof.get(item['layer'] + '/' + item['artifact_path']) != item['artifact_sha256']
+                       for item in entries):
+                    raise EvidenceError('function history differs from replay of original capture')
+            for item in entries:
                 row = item['fact']
                 if not item['complete'] or row.get('functionId') != function_id:
                     continue
@@ -159,37 +195,93 @@ class RunStorage:
                 if capture_key in seen:
                     continue
                 seen.add(capture_key)
-                samples.append({'run_id': run['run_id'], 'started_utc': run['started_utc'],
+                sample = {'run_id': run['run_id'], 'started_utc': run['started_utc'],
                     'calls': row['calls'], 'mean_ns': row['mean_ns'], 'p95_ns': row['p95_ns'],
                     'cpu_self_100ns': row['cpu_self_100ns'], 'evidence': {
-                        'layer': item['layer'], 'path': item['artifact_path'], 'sha256': item['artifact_sha256']}})
+                        'layer': item['layer'], 'path': item['artifact_path'], 'sha256': item['artifact_sha256']},
+                    'compatibility': compatibility, 'provenance': 'compiler_instrumentation'}
+                previous = latest[-1] if latest else None
+                comparable = (previous is not None and previous['compatibility'] == compatibility and
+                    all(value is not None for value in compatibility.values()) and
+                    compatibility['compiler_toolchain'].get('availability') == 'observed')
+                sample['regression'] = {
+                    'baseline_run_id': previous['run_id'] if previous else None,
+                    'baseline_evidence': previous['evidence'] if previous else None,
+                    'delta_ns': sample['mean_ns'] - previous['mean_ns'] if comparable else None,
+                    'candidate': sample['mean_ns'] > 1.2 * previous['mean_ns'] if comparable else None,
+                    'availability': 'observed' if comparable else 'UNKNOWN',
+                    'confidence': 'heuristic', 'policy': '>20% mean increase; not causal proof'}
+                if offset <= count < offset + limit:
+                    samples.append(sample)
+                count += 1
+                total += row['calls']
+                runs.add(run['run_id'])
+                latest = (latest + [sample])[-2:]
                 if run['kind'] == 'test':
                     tests.add(run['title'])
-        samples.sort(key=lambda row: row['started_utc'])
-        total = sum(row['calls'] for row in samples)
-        return {'functionId': function_id, 'observed_runs': len({row['run_id'] for row in samples}),
+        snapshot = signature.hexdigest()
+        if expected_snapshot is not None and expected_snapshot != snapshot:
+            raise EvidenceError('history snapshot changed; restart the query')
+        compatible = (len(latest) >= 2 and latest[0]['compatibility'] == latest[1]['compatibility'] and
+            all(value is not None for value in latest[0]['compatibility'].values()) and
+            latest[0]['compatibility']['compiler_toolchain'].get('availability') == 'observed')
+        continuation = base64.urlsafe_b64encode(json.dumps({'function_id': function_id,
+            'limit': limit, 'offset': offset + limit, 'snapshot': snapshot}).encode()).decode() if offset + limit < count else None
+        return {'functionId': function_id, 'observed_runs': len(runs),
             'observed_tests': len(tests), 'total_calls': total, 'history': samples,
+            'items': samples, 'snapshot': snapshot, 'continuation': continuation, 'truncated': continuation is not None,
+            'availability': 'observed' if count else 'UNKNOWN', 'complete': count > 0,
             'once_candidate': total == 1,
-            'performance_regression': (samples[-1]['mean_ns'] > 1.2 * samples[-2]['mean_ns']) if len(samples) >= 2 else None,
-            'comparison_availability': 'observed' if len(samples) >= 2 else 'insufficient_samples',
+            'performance_regression': (latest[-1]['mean_ns'] > 1.2 * latest[-2]['mean_ns']) if compatible else None,
+            'comparison_availability': 'observed' if compatible else 'incompatible' if len(latest) >= 2 else 'insufficient_samples',
             'comparison_policy': 'heuristic >20% mean increase for the same binary-bound function; not causal proof',
             'scope': 'verified complete captures only; absence is not proof of never executing outside these runs'}
 
-    def history_for_test(self, test_id: str, compatibility_id: str) -> dict:
+    def history_for_regression(self, function_id: str, *, cursor=None, limit=200) -> dict:
+        """Measured candidate history, with each comparison bound to both captures."""
+        result = self.history_for_function(function_id, cursor=cursor, limit=limit)
+        result['history_kind'] = 'regression'
+        return result
+
+    def history_for_test(self, test_id: str, compatibility_id: str | None = None, *, cursor=None, limit=200) -> dict:
         from .evidence import RawEvidence
         from .test_observation import junit_result, observed_cancellation
+        from .evidence import digest
+        import base64
         import hashlib
+        if not isinstance(test_id, str) or not test_id or len(test_id) > 512:
+            raise EvidenceError('history requires a bounded TestId')
+        if type(limit) is not int or not 1 <= limit <= 200:
+            raise EvidenceError('history page limit must be between 1 and 200')
+        offset, expected_snapshot = 0, None
+        if cursor is not None:
+            try:
+                if not isinstance(cursor, str) or len(cursor) > 4096:
+                    raise ValueError('cursor capacity exceeded')
+                token = json.loads(base64.urlsafe_b64decode(cursor))
+                if (token['test_id'] != test_id or token['compatibility_id'] != compatibility_id or
+                        token['limit'] != limit or type(token['offset']) is not int or token['offset'] < 0):
+                    raise ValueError('history scope/bounds changed')
+                offset, expected_snapshot = token['offset'], token['snapshot']
+            except (ValueError, TypeError, KeyError, UnicodeError) as error:
+                raise EvidenceError('invalid history continuation') from error
         results = []
+        count, passed, failed = 0, 0, 0
+        signature = hashlib.sha256()
         # Enumerate filesystem authority, then verify the disposable SQLite facts.
-        for directory in sorted(self.config.runs_dir.iterdir()):
+        directories = []
+        for directory in self.config.runs_dir.iterdir():
             if not (directory / "run.json").is_file():
                 continue
             header = json.loads((directory / "run.json").read_text(encoding="utf-8"))
             if header.get("kind") != "test":
                 continue
+            directories.append((header['started_utc'], header['run_id'], directory))
+        for _, _, directory in sorted(directories):
             run = authoritative_run(directory)
             if run.get("metadata", {}).get("finalization", {}).get("state") != "committed":
                 raise EvidenceError("test history contains an interrupted uncommitted observation")
+            signature.update(json.dumps([run['run_id'], digest(directory / 'manifest.json')]).encode())
             facts = self.evidence_index.query(directory, "tests")
             if len(facts) != 1:
                 raise EvidenceError("test history requires exactly one indexed result")
@@ -203,7 +295,7 @@ class RunStorage:
                 if (fact["compatibility_id"] != build_id or fact["test_run_id"] != run["run_id"]
                         or fact["test_id"] != json.loads(descriptor)["test_id"]):
                     raise EvidenceError("test result identity disagrees with capture")
-                if fact["test_id"] != test_id or build_id != compatibility_id:
+                if fact["test_id"] != test_id or (compatibility_id is not None and build_id != compatibility_id):
                     continue
                 lifecycle = json.loads(raw.read_bytes("process/lifecycle.json"))
                 try:
@@ -213,11 +305,27 @@ class RunStorage:
                     observed, duration = "INCOMPLETE", None
                 if observed != fact["status"] or duration != fact["test_seconds"]:
                     raise EvidenceError("test result disagrees with original CTest observation")
-                results.append({**fact, "status": run["status"]})
-        passed = sum(row["status"] == "PASS" for row in results)
-        failed = sum(row["status"] == "FAIL" for row in results)
-        return {"results": results, "stability": {"passed": passed, "failed": failed,
-                "incomplete": len(results) - passed - failed,
+                if offset <= count < offset + limit:
+                    results.append({**fact, 'run_id': run['run_id'], 'started_utc': run['started_utc'],
+                        'wall_seconds': duration, 'provenance': 'external_ctest_observation',
+                        'evidence': {'path': 'raw/ctest/junit.xml', 'sha256': digest(directory / 'raw/ctest/junit.xml')}
+                            if duration is not None else None,
+                        "status": run["status"]})
+                count += 1
+                passed += run['status'] == 'PASS'
+                failed += run['status'] == 'FAIL'
+        snapshot = signature.hexdigest()
+        if expected_snapshot is not None and expected_snapshot != snapshot:
+            raise EvidenceError('history snapshot changed; restart the query')
+        continuation = base64.urlsafe_b64encode(json.dumps({'test_id': test_id,
+            'compatibility_id': compatibility_id, 'limit': limit, 'offset': offset + limit,
+            'snapshot': snapshot}).encode()).decode() if offset + limit < count else None
+        return {'test_id': test_id, 'results': results, 'items': results, 'history_kind': 'test',
+                'snapshot': snapshot, 'continuation': continuation, 'truncated': continuation is not None,
+                'availability': 'observed' if count else 'UNKNOWN', 'complete': count > 0 and count == passed + failed,
+                'comparison_availability': 'not_compared',
+                "stability": {"passed": passed, "failed": failed,
+                "incomplete": count - passed - failed,
                 "pass_rate": passed / (passed + failed) if passed + failed else None}}
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
