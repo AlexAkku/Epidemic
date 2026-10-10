@@ -247,3 +247,12 @@ class KnowledgeNarrativeAdapter
         std::span<const std::byte> payload);
 };
 } // namespace epidemic::gameplay::narrative_integration
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Narrative/narrative.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNarrativeServiceSaveParticipant(epidemic::gameplay::narrative::NarrativeService& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

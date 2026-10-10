@@ -311,6 +311,8 @@ struct RolesJobsDiagnostics
 
 class RolesJobsService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<RolesJobsService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

@@ -1234,8 +1234,12 @@ bool TestFullTickAndTerminalShutdown()
 }
 }
 
-int main()
+void TestRuntimeDurablePackages();
+int RuntimePackageProcessMode(int argc, char** argv);
+int main(int argc, char** argv)
 {
+    if (argc > 1) return RuntimePackageProcessMode(argc, argv);
+    TestRuntimeDurablePackages();
     bool ok = true;
     ok &= Expect(TestRenderLeaseRollbackAndCompositeRetry(), "render lease transaction regression failed");
     ok &= Expect(TestStreamingPublicationDuplicateAndPlanAtomicity(), "streaming publication/plan regression failed");

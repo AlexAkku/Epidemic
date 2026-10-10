@@ -15,3 +15,8 @@ target_link_libraries(EpidemicGameFrameworkTraversalNavigationConstructionIntegr
 )
 
 epidemic_configure_target(EpidemicGameFrameworkTraversalNavigationConstructionIntegration)
+
+# M5.2 ownership-local save bindings; SaveGame never links back to owners.
+target_sources(EpidemicGameFrameworkTraversalNavigationConstructionIntegration PRIVATE src/save_participants.cpp)
+target_link_libraries(EpidemicGameFrameworkTraversalNavigationConstructionIntegration PUBLIC EpidemicGameFrameworkSaveGame)
+target_include_directories(EpidemicGameFrameworkTraversalNavigationConstructionIntegration PRIVATE "${EpidemicEngine_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")

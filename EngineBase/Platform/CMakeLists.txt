@@ -4,6 +4,7 @@ endif()
 
 add_library(EpidemicPlatform STATIC
     src/Windows/windows_platform_runtime.cpp
+    src/Windows/windows_file_package.cpp
 )
 
 target_include_directories(EpidemicPlatform PUBLIC

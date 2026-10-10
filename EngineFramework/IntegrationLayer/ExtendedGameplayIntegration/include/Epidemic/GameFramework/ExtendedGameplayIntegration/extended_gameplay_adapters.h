@@ -167,6 +167,8 @@ struct TradeCoordinatorSnapshot
 
 class TradeCoordinator
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<TradeCoordinator>;
+
 public:
     TradeCoordinator(economy::EconomyService& economy, items::ItemsInventoryService& items, ownership::OwnershipService& ownership)
         : economy_(economy), items_(items), ownership_(ownership) {}
@@ -188,3 +190,19 @@ private:
     std::unordered_map<TradeExecutionId, CoordinatedTradeExecution, TradeExecutionIdHash> executions_;
 };
 }
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Dialogue/dialogue.h"
+#include "Epidemic/GameFramework/Economy/economy.h"
+#include "Epidemic/GameFramework/Equipment/equipment.h"
+#include "Epidemic/GameFramework/ItemsInventory/items_inventory.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateDialogueServiceSaveParticipant(epidemic::gameplay::dialogue::DialogueService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEconomyServiceSaveParticipant(epidemic::gameplay::economy::EconomyService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEquipmentServiceSaveParticipant(epidemic::gameplay::equipment::EquipmentService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateItemsInventoryServiceSaveParticipant(epidemic::gameplay::items::ItemsInventoryService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateTradeCoordinatorSaveParticipant(epidemic::gameplay::integration::TradeCoordinator& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

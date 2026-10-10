@@ -55,6 +55,8 @@ struct PopulationBackedSpawnResult
 
 class PopulationEncounterAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<PopulationEncounterAdapter>;
+
 public:
     [[nodiscard]] foundation::Result<PopulationBackedSpawnResult> SpawnFromPopulation(
         population::PopulationService& population_service,
@@ -126,6 +128,8 @@ struct PopulationLifecycleAdapterSnapshot
 
 class PopulationLifecycleAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<PopulationLifecycleAdapter>;
+
 public:
     [[nodiscard]] foundation::Result<void> MarkResidentDead(
         population::PopulationService& population_service,
@@ -164,3 +168,20 @@ public:
         GameplayContext context) const;
 };
 }
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Encounters/encounters.h"
+#include "Epidemic/GameFramework/NeedsLife/needs_life.h"
+#include "Epidemic/GameFramework/Population/population.h"
+#include "Epidemic/GameFramework/RolesJobs/roles_jobs.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEncountersServiceSaveParticipant(epidemic::gameplay::encounters::EncountersService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNeedsLifeServiceSaveParticipant(epidemic::gameplay::needs_life::NeedsLifeService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePopulationServiceSaveParticipant(epidemic::gameplay::population::PopulationService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateRolesJobsServiceSaveParticipant(epidemic::gameplay::roles_jobs::RolesJobsService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePopulationEncounterAdapterSaveParticipant(epidemic::gameplay::population_simulation::PopulationEncounterAdapter& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreatePopulationLifecycleAdapterSaveParticipant(epidemic::gameplay::population_simulation::PopulationLifecycleAdapter& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

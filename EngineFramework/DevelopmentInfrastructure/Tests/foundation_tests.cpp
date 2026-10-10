@@ -60,7 +60,7 @@ std::filesystem::path FindRepositoryRootForDocumentationTest()
         while (!current.empty())
         {
             if (std::filesystem::is_regular_file(current / "EngineFramework" / "README.md", ec) &&
-                std::filesystem::is_directory(current / "docs", ec))
+                std::filesystem::is_directory(current / "Documentation", ec))
             {
                 return current;
             }
@@ -87,7 +87,7 @@ void TestFrameworkDocumentationRoot()
     Check(!root.empty(), 935);
 
     const auto framework_readme = root / "EngineFramework" / "README.md";
-    const auto docs_root = root / "docs" / "EngineFramework" / "README.md";
+    const auto docs_root = root / "Documentation" / "EngineFramework" / "README.md";
     Check(std::filesystem::is_regular_file(framework_readme), 936);
     Check(std::filesystem::is_regular_file(docs_root), 937);
 
@@ -96,13 +96,13 @@ void TestFrameworkDocumentationRoot()
     std::ostringstream content;
     content << input.rdbuf();
     const auto text = content.str();
-    Check(text.find("docs/EngineFramework/README.md") != std::string::npos, 939);
-    Check(text.find("docs/GameFramework/README.md") == std::string::npos, 940);
+    Check(text.find("Documentation/EngineFramework/README.md") != std::string::npos, 939);
+    Check(text.find("Documentation/GameFramework/README.md") == std::string::npos, 940);
 
     for (const auto* module_doc : {"foundation.md", "support_random.md", "queries.md", "facts.md", "time.md",
                                    "runtime_bridge.md"})
     {
-        Check(std::filesystem::is_regular_file(root / "docs" / "EngineFramework" / "modules" / module_doc), 941);
+        Check(std::filesystem::is_regular_file(root / "Documentation" / "EngineFramework" / "modules" / module_doc), 941);
     }
 }
 } // namespace

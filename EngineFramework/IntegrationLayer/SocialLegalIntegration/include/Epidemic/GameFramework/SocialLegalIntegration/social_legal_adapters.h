@@ -160,6 +160,8 @@ private:
 
 class CrimeSocietyAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<CrimeSocietyAdapter>;
+
 public:
     CrimeSocietyAdapter(crime::CrimeService& crime, society::SocietyService& society,
                         const SocialLegalMappings& mappings) noexcept;
@@ -202,3 +204,17 @@ template <> struct hash<epidemic::gameplay::social_legal_integration::SocialLega
     }
 };
 } // namespace std
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Crime/crime.h"
+#include "Epidemic/GameFramework/Ownership/ownership.h"
+#include "Epidemic/GameFramework/Society/society.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCrimeServiceSaveParticipant(epidemic::gameplay::crime::CrimeService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateOwnershipServiceSaveParticipant(epidemic::gameplay::ownership::OwnershipService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateSocietyServiceSaveParticipant(epidemic::gameplay::society::SocietyService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCrimeSocietyAdapterSaveParticipant(epidemic::gameplay::social_legal_integration::CrimeSocietyAdapter& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

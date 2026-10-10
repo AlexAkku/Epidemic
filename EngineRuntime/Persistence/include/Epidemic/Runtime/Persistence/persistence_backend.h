@@ -21,6 +21,9 @@ struct PersistenceSnapshot
     std::vector<ZoneOverrideSnapshot> zone_overrides;
 };
 
+// Semantic validation shared by service composition and durable backend adapters.
+[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot& snapshot);
+
 // Closed enum domain. Callers must use one of these three durability levels.
 enum class PersistenceDurability
 {

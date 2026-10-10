@@ -86,6 +86,8 @@ class ILogger
         }
         catch (...)
         {
+            // Logging must contain sink failures without replacing an authoritative error.
+            return;
         }
     }
 
@@ -104,6 +106,8 @@ class ILogger
         }
         catch (...)
         {
+            // Message construction failure follows the same containment contract.
+            return;
         }
     }
 

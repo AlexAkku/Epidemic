@@ -1,4 +1,7 @@
 #include "world_runtime_impl.h"
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 #include "Epidemic/Foundation/string_id.h"
 #include "Epidemic/Runtime/Foundation/runtime_budget.h"
 #include "Epidemic/Runtime/Foundation/runtime_states.h"
@@ -1336,8 +1339,21 @@ bool TestPublicApiEvidenceCoverage()
 } // namespace
 
 // Runs the local test suite and maps failures to stable exit codes.
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-command") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "command-action");
+        scenario("scenario.start", "command-scenario");
+        const bool success = TestFactoryCreatesSharedWorldServices();
+        scenario("scenario.end", "command-scenario");
+        action("action.end", "command-action");
+        return success ? 0 : 2;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     static_assert(std::is_trivially_copyable_v<ChunkDescriptor>);
     static_assert(std::is_trivially_copyable_v<RegionDescriptor>);
     static_assert(std::is_trivially_copyable_v<WorldLocation>);

@@ -313,6 +313,8 @@ struct FactsPersistenceSnapshot
 
 class GameplayFactsService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<GameplayFactsService>;
+
   public:
     GameplayFactsService();
 

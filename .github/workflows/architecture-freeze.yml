@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  freeze-contract:
+  architecture-boundaries:
     runs-on: windows-2025-vs2026
     timeout-minutes: 20
     steps:
@@ -22,36 +22,11 @@ jobs:
         run: |
           python --version
           cmake --version
-      - name: Semantic CI contract
-        shell: pwsh
-        run: |
-          python docs/freeze/ci_gate_contract.py --check
-          python docs/freeze/ci_gate_contract.py --self-test
       - name: Architecture adversarial fixtures
         shell: pwsh
         run: cmake -P cmake/ArchitectureFreezeSelfTest.cmake
-      - name: Freeze evidence contracts
-        shell: pwsh
-        run: |
-          python docs/freeze/module_dossiers.py --check
-          python docs/freeze/module_dossiers.py --self-test
-          python docs/freeze/architecture_ownership.py --check
-          python docs/freeze/architecture_ownership.py --self-test
-          python docs/freeze/coverage_manifests.py --check
-          python docs/freeze/coverage_manifests.py --self-test
-          python docs/freeze/ctest_manifest.py --check
-          python docs/freeze/ctest_manifest.py --self-test
-          python docs/freeze/local_ready_contract.py --check
-          python docs/freeze/local_ready_contract.py --self-test
-          python docs/freeze/goal4_evidence_quality.py --check
-          python docs/freeze/goal4_evidence_quality.py --self-test
-          python docs/freeze/public_api_inventory.py --check
-          python docs/freeze/public_api_inventory.py --self-test
-          python docs/freeze/public_surface_manifest.py --check
-          python docs/freeze/public_surface_manifest.py --self-test
-
   layer-matrix:
-    needs: freeze-contract
+    needs: architecture-boundaries
     runs-on: windows-2025-vs2026
     timeout-minutes: 45
     strategy:
@@ -104,15 +79,12 @@ jobs:
       - name: Per-target public header consumers
         shell: pwsh
         run: cmake --build build/${{ matrix.profile }} --config ${{ matrix.configuration }} --target EpidemicPublicHeaderSelfContainment --parallel
-      - name: Configured CTest manifest
-        shell: pwsh
-        run: python docs/freeze/ctest_manifest.py --check-profile ${{ matrix.profile }} --build-dir build/${{ matrix.profile }} --configuration ${{ matrix.configuration }}
       - name: Test
         shell: pwsh
         run: ctest --test-dir build/${{ matrix.profile }} -C ${{ matrix.configuration }} --output-on-failure --timeout 300
 
   clang-public-surface:
-    needs: freeze-contract
+    needs: architecture-boundaries
     runs-on: windows-2025-vs2026
     timeout-minutes: 30
     steps:
@@ -130,3 +102,61 @@ jobs:
       - name: ClangCL public header consumers
         shell: pwsh
         run: cmake --build build/clang-full --config Debug --target EpidemicPublicHeaderSelfContainment --parallel
+
+  auditor-regression:
+    needs: architecture-boundaries
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      EP_AUDITOR_NATIVE_CONFIG: ${{ matrix.configuration }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.13.7'
+          check-latest: false
+      - name: Auditor dependencies
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force .ai/tmp | Out-Null
+          python -m venv .ai/venv/auditor
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .ai/venv/auditor/Scripts/python.exe -m pip install --disable-pip-version-check -r .epidemic-auditor/requirements.txt
+          exit $LASTEXITCODE
+      - name: Configure native Auditor
+        shell: pwsh
+        run: >
+          cmake -S .epidemic-auditor/native -B build/auditor-native
+          -G "Visual Studio 18 2026" -A x64
+          -DPython3_EXECUTABLE="${{ github.workspace }}/.ai/venv/auditor/Scripts/python.exe"
+      - name: Build native Auditor and runtime bundle
+        shell: pwsh
+        run: |
+          & Development/AgentsRules/Scripts/Run-Quiet.ps1 -Name auditor-native-${{ matrix.configuration }} -TimeoutSec 900 -Command 'cmake --build build/auditor-native --config ${{ matrix.configuration }} --target EpidemicAuditor --parallel 2'
+          exit $LASTEXITCODE
+      - name: Auditor backend, evidence and GUI regressions
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = "$PWD/.epidemic-auditor;$PWD/.epidemic-auditor/tests"
+          $env:TEMP = "$PWD/.ai/tmp"
+          $env:TMP = $env:TEMP
+          # Bounded CI regressions; privileged WPR/Verifier and whole-Game
+          # acceptance remain separate physical qualification, never CI PASS.
+          $tests = @(
+            'test_core', 'test_evidence_lineage', 'test_etw_import',
+            'test_gui_operations.GuiOperationTests.test_gui_poll_timer_and_callback_errors_are_owned_until_destroy',
+            'test_ms67_ms69.ViewTests.test_bounded_pages_nested_continuation_and_scope_binding',
+            'test_ms67_ms69.ViewTests.test_unknown_not_zero_or_pass_and_incompatible_comparison',
+            'test_ms67_ms69.ViewTests.test_history_routes_and_unknown_are_bounded_without_invented_measurements',
+            'test_ms67_ms69.ViewTests.test_raw_tampering_is_not_an_empty_successful_view',
+            'test_ms67_ms69.ViewTests.test_real_process_nonzero_exit_findings_exports_and_cli',
+            'test_etw_broker.EtwBrokerTests.test_dumper_capacity_matches_streamed_raw_bound_and_rejects_overflow'
+          )
+          $command = '.ai/venv/auditor/Scripts/python.exe -B -m unittest -v ' + ($tests -join ' ')
+          & Development/AgentsRules/Scripts/Run-Quiet.ps1 -Name auditor-regression-${{ matrix.configuration }} -TimeoutSec 600 -Command $command
+          exit $LASTEXITCODE

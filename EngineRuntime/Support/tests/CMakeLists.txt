@@ -1,5 +1,6 @@
 add_executable(EpidemicRuntimeSupportTests
     runtime_support_tests.cpp
+    runtime_package_tests.cpp
 )
 
 target_link_libraries(EpidemicRuntimeSupportTests
@@ -8,3 +9,11 @@ target_link_libraries(EpidemicRuntimeSupportTests
 
 epidemic_configure_target(EpidemicRuntimeSupportTests)
 epidemic_add_test(EpidemicRuntimeSupportTests)
+target_compile_definitions(EpidemicRuntimeSupportTests PRIVATE EPIDEMIC_RUNTIME_FIXTURES="${PROJECT_SOURCE_DIR}/Tests/Fixtures/RuntimePersistence")
+set_tests_properties(EpidemicRuntimeSupportTests PROPERTIES LABELS "persistence-schema;persistence-wire;persistence-storage")
+
+add_executable(EpidemicRuntimeSaveGenerationPackageTests runtime_generation_package_tests.cpp)
+target_link_libraries(EpidemicRuntimeSaveGenerationPackageTests PRIVATE EpidemicRuntimeSupport)
+epidemic_configure_target(EpidemicRuntimeSaveGenerationPackageTests)
+epidemic_add_test(EpidemicRuntimeSaveGenerationPackageTests)
+set_tests_properties(EpidemicRuntimeSaveGenerationPackageTests PROPERTIES LABELS "unit;persistence-generation;goal5-regression")

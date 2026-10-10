@@ -248,6 +248,8 @@ struct CombatDiagnostics
 
 class CombatService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<CombatService>;
+
   public:
     CombatService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept { return GameplayDomainId::FromString("framework.combat"); }

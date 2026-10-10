@@ -859,6 +859,12 @@ foundation::Result<std::vector<BackendContactEvent>> PhysicsRuntime::ConsumeCont
         if (left != nullptr && right != nullptr)
         {
             consumed.push_back(BackendContactEvent{left->backend_handle, right->backend_handle, contact.point, contact.normal, contact.impulse, contact.state});
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            if (contact.auditor_correlation[0]) {
+                const auditor::shadow::ContextScope scope(contact.auditor_context);
+                auditor::shadow::flow("physics.callback", contact.auditor_correlation.data());
+            }
+#endif
         }
     }
     contacts_.clear();
@@ -912,9 +918,11 @@ foundation::Result<RaycastHit> PhysicsRuntime::Raycast(const RaycastQuery& query
     best.distance = std::numeric_limits<float>::max();
     for (const auto& [body_id, body] : bodies_)
     {
-        (void)body_id;
         float distance = 0.0f;
-        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance && distance < best.distance)
+        // Equal-distance hits use the explicit local body identity, never hash traversal order.
+        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance &&
+            (distance < best.distance ||
+             (distance == best.distance && (!best.hit || body_id.value < best.body.id.value))))
         {
             best = RaycastHit{
                 true,
@@ -948,12 +956,15 @@ foundation::Result<BackendRaycastHit> PhysicsRuntime::RaycastBackend(const Rayca
 
     BackendRaycastHit best{};
     best.distance = std::numeric_limits<float>::max();
+    std::uint64_t best_body_value = std::numeric_limits<std::uint64_t>::max();
     for (const auto& [body_id, body] : bodies_)
     {
-        (void)body_id;
         float distance = 0.0f;
-        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance && distance < best.distance)
+        if (RayIntersectsAabb(normalized, body.bounds, distance) && distance <= normalized.max_distance &&
+            (distance < best.distance ||
+             (distance == best.distance && (!best.hit || body_id.value < best_body_value))))
         {
+            best_body_value = body_id.value;
             best = BackendRaycastHit{
                 true,
                 body.backend_handle,
@@ -1006,6 +1017,12 @@ void PhysicsRuntime::Clear()
 void PhysicsRuntime::QueueContact(ContactEvent event)
 {
     contacts_.push_back(event);
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto& accepted = contacts_.back();
+    accepted.auditor_context = auditor::shadow::child_context();
+    accepted.auditor_correlation = auditor::shadow::identity();
+    accepted.auditor_context.cause = auditor::shadow::emit_causal("physics.dispatch", accepted.auditor_correlation.data());
+#endif
 }
 
 void PhysicsRuntime::SetTransformSource(IPhysicsTransformSource* source) noexcept
@@ -1488,6 +1505,14 @@ foundation::Result<PhysicsStepResult> PhysicsRuntime::CompleteFixedStep(RuntimeF
         }
     }
     contacts_.insert(contacts_.end(), mapped_contacts.begin(), mapped_contacts.end());
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    for (auto index = contacts_.size() - mapped_contacts.size(); index < contacts_.size(); ++index) {
+        auto& accepted = contacts_[index];
+        accepted.auditor_context = auditor::shadow::child_context();
+        accepted.auditor_correlation = auditor::shadow::identity();
+        accepted.auditor_context.cause = auditor::shadow::emit_causal("physics.dispatch", accepted.auditor_correlation.data());
+    }
+#endif
     invalid_backend_contact_count_ += invalid_contact_delta;
     pending_backend_contacts_.clear();
     backend_contacts_pending_sync_ = false;

@@ -1,6 +1,7 @@
 #include "Epidemic/GameFramework/Integration/core_adapters.h"
 
 #include <memory>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -556,13 +557,22 @@ int main()
         return 48;
     }
 
+    if (leg_dispatcher.PendingCount() != 1)
+    { std::cerr << "G5 dispatcher non-empty durable checkpoint\n"; return 907; }
+
     ScheduledTriggerDispatcherSaveParticipant leg_participant(leg_dispatcher);
+    if (leg_participant.Id() != SaveParticipantId::FromString("integration.scheduled_trigger_dispatcher") ||
+        leg_participant.SchemaVersion() != 1 || !leg_participant.Dependencies().empty() ||
+        leg_participant.Requirement() != SaveParticipantRequirement::Required)
+    { std::cerr << "G5 dispatcher identity/schema/dependencies\n"; return 901; }
     const auto leg_section_result = leg_participant.CaptureSnapshot(SaveContext{});
     if (!leg_section_result)
     {
         return 49;
     }
     const auto leg_section = leg_section_result.Value();
+    if (!leg_participant.ValidateSnapshot(leg_section, {}))
+    { std::cerr << "G5 dispatcher captured payload validates\n"; return 902; }
 
     ScheduledTriggerDispatcher restored_leg_dispatcher(leg_time, ScheduledTriggerDispatcherPolicy{8, 16});
     int restored_leg_observer_calls = 0;
@@ -585,16 +595,24 @@ int main()
     }
     ScheduledTriggerDispatcherSaveParticipant restored_leg_participant(restored_leg_dispatcher);
     const auto staged_leg = restored_leg_participant.StageRestore(leg_section, RestoreContext{});
+    if (restored_leg_dispatcher.PendingCount() != 0)
+    { std::cerr << "G5 dispatcher stage leaves live state unchanged\n"; return 904; }
     if (!staged_leg || !staged_leg.Value())
     {
         return 53;
     }
     restored_leg_participant.CommitRestore(*staged_leg.Value());
+    if (restored_leg_dispatcher.PendingCount() != 1)
+    { std::cerr << "G5 dispatcher changed-state publication\n"; return 903; }
     const auto leg_after_restore = restored_leg_dispatcher.DispatchPending();
     if (leg_after_restore.pending != 0 || restored_leg_observer_calls != 0 || restored_leg_action_calls != 1)
     {
         return 54;
     }
+
+    restored_leg_participant.CommitRestore(*staged_leg.Value());
+    if (restored_leg_dispatcher.PendingCount() != 0)
+    { std::cerr << "G5 dispatcher stage cannot publish twice\n"; return 905; }
 
     // The participant must reject an otherwise well-formed section whose completed-handler ID is
     // unknown to the frozen registry. With one completed handler it is the final U64 in schema v1.
@@ -614,6 +632,8 @@ int main()
     {
         return 56;
     }
+    if (restored_leg_dispatcher.PendingCount() != 0)
+    { std::cerr << "G5 dispatcher failed prepare preserves live state\n"; return 906; }
     if (restored_leg_dispatcher.PendingCount() != 0)
     {
         return 57;

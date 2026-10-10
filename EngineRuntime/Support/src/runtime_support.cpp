@@ -3250,6 +3250,17 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator
                     foundation::Result<void> published = foundation::Result<void>::Success();
                     try
                     {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+                        if (services_.physics && services_.physics->events) {
+                            for (const auto& contact : services_.physics->events->Contacts()) {
+                                if (contact.auditor_correlation[0]) {
+                                    const auditor::shadow::ContextScope scope(contact.auditor_context);
+                                    auditor::shadow::flow("physics.callback", contact.auditor_correlation.data());
+                                    // Entered the batch event-sink handoff, not successful commit.
+                                }
+                            }
+                        }
+#endif
                         published = integrations_->event_sink->Publish(events);
                     }
                     catch (const std::exception& exception)

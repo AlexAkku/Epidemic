@@ -378,6 +378,8 @@ struct AbilitiesDiagnostics
 
 class AbilityService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<AbilityService>;
+
   public:
     AbilityService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

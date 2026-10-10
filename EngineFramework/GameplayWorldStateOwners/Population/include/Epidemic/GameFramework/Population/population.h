@@ -335,6 +335,8 @@ struct PopulationDiagnostics
 
 class PopulationService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<PopulationService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

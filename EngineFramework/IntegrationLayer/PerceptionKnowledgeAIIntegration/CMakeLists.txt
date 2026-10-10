@@ -15,3 +15,8 @@ target_link_libraries(EpidemicGameFrameworkPerceptionKnowledgeAIIntegration
 )
 
 epidemic_configure_target(EpidemicGameFrameworkPerceptionKnowledgeAIIntegration)
+
+# M5.2 ownership-local save bindings; SaveGame never links back to owners.
+target_sources(EpidemicGameFrameworkPerceptionKnowledgeAIIntegration PRIVATE src/save_participants.cpp)
+target_link_libraries(EpidemicGameFrameworkPerceptionKnowledgeAIIntegration PUBLIC EpidemicGameFrameworkSaveGame)
+target_include_directories(EpidemicGameFrameworkPerceptionKnowledgeAIIntegration PRIVATE "${EpidemicEngine_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")

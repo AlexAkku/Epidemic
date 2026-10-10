@@ -1,5 +1,8 @@
 #include "Epidemic/GameFramework/RuntimeBridge/runtime_bridge.h"
 #include "engine_runtime_bridge_backend.h"
+#include <atomic>
+#include <exception>
+#include <new>
 #include "Epidemic/Foundation/string_id.h"
 #include "Epidemic/Runtime/World/world_commands.h"
 
@@ -10,6 +13,11 @@
 
 namespace epidemic::gameplay::runtime_bridge
 {
+namespace detail
+{
+thread_local bool fail_bridge_prepare = false;
+void SetRuntimeBridgePreparationFaultForTesting(bool fail) noexcept { fail_bridge_prepare = fail; }
+}
 namespace
 {
 foundation::Error E(std::string_view code, std::string_view message)
@@ -131,6 +139,41 @@ bool TakeCounter(std::uint64_t& next, std::uint64_t& value) noexcept
     return true;
 }
 
+// Opaque process-local capabilities, never durable identity or digest input.
+// A newly booted backend must not accept a capability issued by a dead backend.
+// Cross-process ingress must be rebound/disconnected by its owning composition.
+bool AllocateRuntimeCapability(std::uint64_t& value) noexcept
+{
+    static std::atomic<std::uint64_t> next{1};
+    auto current = next.load(std::memory_order_relaxed);
+    while (current != 0)
+    {
+        const auto successor = current == std::numeric_limits<std::uint64_t>::max() ? 0 : current + 1;
+        if (next.compare_exchange_weak(current, successor, std::memory_order_relaxed))
+        {
+            value = current;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AllocateBindingGeneration(std::uint32_t& value) noexcept
+{
+    static std::atomic<std::uint32_t> next{1};
+    auto current = next.load(std::memory_order_relaxed);
+    while (current != 0)
+    {
+        const auto successor = current == std::numeric_limits<std::uint32_t>::max() ? 0 : current + 1;
+        if (next.compare_exchange_weak(current, successor, std::memory_order_relaxed))
+        {
+            value = current;
+            return true;
+        }
+    }
+    return false;
+}
+
 RuntimeNavigationPathState ToBridge(runtime::navigation::PathQueryState state) noexcept
 {
     switch (state)
@@ -159,7 +202,7 @@ foundation::Result<void> ComputeVisibilityRayGeometry(
 RuntimePersistentObjectHandle EngineRuntimeBridgeBackend::ImportPersistentObjectId(runtime::PersistentObjectId id)
 {
     std::uint64_t value = 0;
-    if (!id.IsValid() || !TakeCounter(next_persistent_, value))
+    if (!id.IsValid() || !AllocateRuntimeCapability(value))
     {
         return {};
     }
@@ -180,7 +223,7 @@ RuntimePhysicsBodyHandle EngineRuntimeBridgeBackend::ImportPhysicsBody(runtime::
         return existing->second;
     }
     std::uint64_t value = 0;
-    if (!TakeCounter(next_body_, value))
+    if (!AllocateRuntimeCapability(value))
     {
         return {};
     }
@@ -193,7 +236,7 @@ RuntimePhysicsBodyHandle EngineRuntimeBridgeBackend::ImportPhysicsBody(runtime::
 RuntimeRegionHandle EngineRuntimeBridgeBackend::ImportRegion(runtime::RegionId region)
 {
     std::uint64_t value = 0;
-    if (!region.IsValid() || !TakeCounter(next_region_, value))
+    if (!region.IsValid() || !AllocateRuntimeCapability(value))
     {
         return {};
     }
@@ -245,11 +288,24 @@ foundation::Result<RuntimeMaterializationResult> EngineRuntimeBridgeBackend::Mat
         return foundation::Result<RuntimeMaterializationResult>::Failure(
             E("gameplay.runtime_bridge.world_unavailable", "runtime world materializer is unavailable"));
     }
-    if (next_object_ == 0)
+    std::uint64_t handle_value = 0;
+    if (!AllocateRuntimeCapability(handle_value))
     {
         return foundation::Result<RuntimeMaterializationResult>::Failure(
             E("gameplay.runtime_bridge.runtime_handle_exhausted", "runtime bridge object handle space is exhausted"));
     }
+    // Allocate both map nodes and bucket capacity before external acceptance.
+    // Publishing the resulting opaque mapping must not allocate after Runtime
+    // has materialized an object.
+    const RuntimeObjectHandle handle{handle_value};
+    decltype(runtime_objects_) staged_forward;
+    staged_forward.emplace(handle, runtime::RuntimeObjectId{});
+    auto forward = staged_forward.extract(handle);
+    decltype(runtime_object_reverse_) staged_reverse;
+    staged_reverse.emplace(runtime::RuntimeObjectId{}, handle);
+    auto reverse = staged_reverse.extract(runtime::RuntimeObjectId{});
+    runtime_objects_.reserve(runtime_objects_.size() + 1);
+    runtime_object_reverse_.reserve(runtime_object_reverse_.size() + 1);
     auto materialized = world_.materialization->Materialize(
         runtime::MaterializationRequest{persistent->second, runtime::ObjectRealityLevel::Physical});
     if (!materialized)
@@ -261,15 +317,10 @@ foundation::Result<RuntimeMaterializationResult> EngineRuntimeBridgeBackend::Mat
     {
         return foundation::Result<RuntimeMaterializationResult>::Success(RuntimeMaterializationResult{existing->second, false});
     }
-    std::uint64_t handle_value = 0;
-    if (!TakeCounter(next_object_, handle_value))
-    {
-        return foundation::Result<RuntimeMaterializationResult>::Failure(
-            E("gameplay.runtime_bridge.runtime_handle_exhausted", "runtime bridge object handle space is exhausted"));
-    }
-    const RuntimeObjectHandle handle{handle_value};
-    runtime_objects_.emplace(handle, materialized.Value());
-    runtime_object_reverse_.emplace(materialized.Value(), handle);
+    forward.mapped() = materialized.Value();
+    reverse.key() = materialized.Value();
+    runtime_objects_.insert(std::move(forward));
+    runtime_object_reverse_.insert(std::move(reverse));
     return foundation::Result<RuntimeMaterializationResult>::Success(RuntimeMaterializationResult{handle, true});
 }
 
@@ -608,7 +659,8 @@ foundation::Result<RuntimeNavigationQueryHandle> EngineRuntimeBridgeBackend::Req
     {
         return foundation::Result<RuntimeNavigationQueryHandle>::Failure(E("gameplay.runtime_bridge.region_unknown", "navigation region handle is unknown"));
     }
-    if (next_path_ == 0)
+    std::uint64_t handle_value = 0;
+    if (!AllocateRuntimeCapability(handle_value))
     {
         return foundation::Result<RuntimeNavigationQueryHandle>::Failure(
             E("gameplay.runtime_bridge.navigation_handle_exhausted", "navigation bridge handle space is exhausted"));
@@ -618,19 +670,18 @@ foundation::Result<RuntimeNavigationQueryHandle> EngineRuntimeBridgeBackend::Req
     request.target = ToRuntime(query.to);
     request.region = region->second;
     request.source_revision = query.source_revision;
+    decltype(paths_) staged_paths;
+    staged_paths.emplace(handle_value, runtime::navigation::PathQueryHandle{});
+    auto path_node = staged_paths.extract(handle_value);
+    paths_.reserve(paths_.size() + 1);
     const auto actual = navigation_.runtime->RequestPathHandle(request);
     if (!actual)
     {
         return foundation::Result<RuntimeNavigationQueryHandle>::Failure(actual.GetError());
     }
-    std::uint64_t handle_value = 0;
-    if (!TakeCounter(next_path_, handle_value))
-    {
-        return foundation::Result<RuntimeNavigationQueryHandle>::Failure(
-            E("gameplay.runtime_bridge.navigation_handle_exhausted", "navigation bridge handle space is exhausted"));
-    }
     const RuntimeNavigationQueryHandle handle{handle_value};
-    paths_.emplace(handle.value, actual.Value());
+    path_node.mapped() = actual.Value();
+    paths_.insert(std::move(path_node));
     return foundation::Result<RuntimeNavigationQueryHandle>::Success(handle);
 }
 
@@ -962,10 +1013,20 @@ foundation::Result<void> RuntimeBridgeService::ProcessOne(const RuntimeProjectio
                 }
 
                 auto& generation_value = generations_[value.object];
-                if (generation_value == std::numeric_limits<std::uint32_t>::max())
+                std::uint32_t prepared_generation = 0;
+                if (!AllocateBindingGeneration(prepared_generation))
                 {
                     return foundation::Result<void>::Failure(E("gameplay.runtime_bridge.generation_exhausted", "binding generation is exhausted"));
                 }
+                decltype(bindings_) staged_binding;
+                staged_binding.emplace(value.object, RuntimeBinding{});
+                auto binding_node = staged_binding.extract(value.object);
+                decltype(reverse_) staged_reverse;
+                staged_reverse.emplace(RuntimeObjectHandle{}, value.object);
+                auto reverse_node = staged_reverse.extract(RuntimeObjectHandle{});
+                bindings_.reserve(bindings_.size() + 1);
+                reverse_.reserve(reverse_.size() + 1);
+                if (detail::fail_bridge_prepare) { detail::fail_bridge_prepare = false; throw std::bad_alloc(); }
                 auto materialized = backend_.Materialize(value.persistent_id);
                 if (!materialized || !materialized.Value().object.IsValid())
                 {
@@ -988,7 +1049,7 @@ foundation::Result<void> RuntimeBridgeService::ProcessOne(const RuntimeProjectio
                     }
                     return foundation::Result<void>::Failure(E("gameplay.runtime_bridge.runtime_collision", "runtime object is already bound"));
                 }
-                ++generation_value;
+                generation_value = prepared_generation;
                 RuntimeBinding binding{value.object,
                                        value.persistent_id,
                                        materialized.Value().object,
@@ -996,8 +1057,10 @@ foundation::Result<void> RuntimeBridgeService::ProcessOne(const RuntimeProjectio
                                        RuntimeBindingGeneration{generation_value},
                                        RuntimeBindingState::Active,
                                        value.gameplay_revision};
-                bindings_.emplace(value.object, binding);
-                reverse_[binding.runtime_object] = value.object;
+                binding_node.mapped() = binding;
+                reverse_node.key() = binding.runtime_object;
+                bindings_.insert(std::move(binding_node));
+                reverse_.insert(std::move(reverse_node));
                 ++materializations_;
                 ++output.materialized;
                 return foundation::Result<void>::Success();
@@ -1109,6 +1172,8 @@ RuntimeBridgeProcessResult RuntimeBridgeService::Process(RuntimeBridgeBudget bud
     RuntimeBridgeProcessResult output;
     std::vector<Queued> remaining;
     remaining.reserve(queue_.size());
+    reconciliation_.reserve(reconciliation_.size() + std::min(queue_.size(),
+        queue_policy_.max_reconciliation_requests - std::min(reconciliation_.size(), queue_policy_.max_reconciliation_requests)));
     std::uint32_t materializations = 0;
     const auto max_attempts = std::max<std::uint32_t>(1, queue_policy_.max_projection_attempts);
     for (auto& queued : queue_)
@@ -1135,7 +1200,10 @@ RuntimeBridgeProcessResult RuntimeBridgeService::Process(RuntimeBridgeBudget bud
             ++output.deferred;
             continue;
         }
-        auto result = ProcessOne(queued.request, output);
+        auto result = foundation::Result<void>::Failure(E("gameplay.runtime_bridge.provider_exception", "projection provider threw"));
+        try { result = ProcessOne(queued.request, output); }
+        catch (const std::exception& error) { result = foundation::Result<void>::Failure(E("gameplay.runtime_bridge.provider_exception", error.what())); }
+        catch (...) { /* Keep the prepared controlled failure; preserve this request for retry. */ }
         ++output.processed;
         if (is_materialization)
         {

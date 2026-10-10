@@ -5,6 +5,9 @@
 
 #include <cstdint>
 #include <new>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::input
 {
@@ -216,6 +219,14 @@ void InputSystem::PublishSnapshot()
     current_snapshot_ = candidate_snapshot;
     next_update_index_ = candidate_next_update_index;
     pending_platform_events_.clear();
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    for (const auto& event : current_events_) {
+        if (event.type == InputEventType::KeyPressed || event.type == InputEventType::MouseButtonPressed) {
+            const auto accepted = auditor::shadow::identity();
+            auditor::shadow::input(accepted.data());
+        }
+    }
+#endif
 }
 
 // Clears all persistent and transient input state.

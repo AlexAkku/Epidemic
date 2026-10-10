@@ -104,6 +104,25 @@ foundation::Result<void> GameplayFactsService::SubmitBatch(GameplayEventBatch ba
     const auto event_count = batch.pending_.size();
     {
         std::scoped_lock lock(batch_mutex_);
+        // A producer/batch/tick/local-sequence tuple is the complete ordering
+        // key within one accepted wave. Completion timing cannot break a tie.
+        // Reject before queue publication; already accepted work stays intact.
+        for (const auto& accepted : submitted_batches_)
+        {
+            if (accepted.Producer() != batch.Producer() || accepted.BatchOrder() != batch.BatchOrder())
+                continue;
+            for (const auto& candidate : batch.pending_)
+            {
+                for (const auto& pending : accepted.pending_)
+                {
+                    if (candidate.context.tick == pending.context.tick && candidate.local_sequence == pending.local_sequence)
+                    {
+                        return foundation::Result<void>::Failure(foundation::Error::Create(
+                            "gameplay.event_batch_order_collision", "worker batch ordering key already accepted in this wave"));
+                    }
+                }
+            }
+        }
         submitted_batches_.push_back(std::move(batch));
     }
     published_events_.fetch_add(event_count, std::memory_order_relaxed);
@@ -554,6 +573,9 @@ foundation::Result<std::uint64_t> GameplayFactsService::ExpireDueFacts(GameplayT
     }
     if (due.empty())
         return foundation::Result<std::uint64_t>::Success(0);
+    std::sort(due.begin(), due.end(), [](const FactKey& left, const FactKey& right) {
+        return std::tie(left.type, left.subject, left.scope) < std::tie(right.type, right.subject, right.scope);
+    });
     if (fact_revision_.value == std::numeric_limits<std::uint64_t>::max())
     {
         return foundation::Result<std::uint64_t>::Failure(

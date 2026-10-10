@@ -7,6 +7,11 @@
 
 #include <stdexcept>
 #include <utility>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <atomic>
+#include <shadow_probe.h>
+namespace { std::atomic<std::uint64_t> next_auditor_event_id{1}; }
+#endif
 
 namespace epidemic::core::events
 {
@@ -54,8 +59,17 @@ void EventBus::PublishSyncImpl(std::type_index event_type, std::any event)
 void EventBus::EnqueueImpl(std::type_index event_type, std::any event)
 {
     std::scoped_lock lock(mutex_);
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    const auto correlation = next_auditor_event_id.fetch_add(1, std::memory_order_relaxed);
+    queued_events_.push(QueuedEvent{event_type, std::move(event), correlation, auditor::shadow::child_context()});
+#else
     queued_events_.push(QueuedEvent{event_type, std::move(event)});
+#endif
     diagnostics::GlobalCounters().Increment(diagnostics::CounterId::EventBusQueuedEvents);
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    // A publish event proves acceptance to the queued bus, not handler success.
+    queued_events_.back().auditor_context.cause = auditor::shadow::emit_causal("event.publish", correlation);
+#endif
 }
 
 // Drains queued events in FIFO order and returns the number dispatched.
@@ -99,8 +113,21 @@ std::size_t EventBus::DrainQueued()
 
         diagnostics::GlobalCounters().Decrement(diagnostics::CounterId::EventBusQueuedEvents);
         diagnostics::GlobalCounters().Increment(diagnostics::CounterId::EventBusDispatchedEvents);
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        // This edge means the queued item entered dispatch. It does not prove
+        // each subscriber succeeded or ran to completion.
+        const auditor::shadow::ContextScope auditor_scope(next_event.auditor_context);
+        auditor::shadow::flow("event.handle", next_event.auditor_correlation);
+#endif
         for (const auto &handler : handlers)
         {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            auto handler_context = auditor::shadow::child_context();
+            const auto handler_id = auditor::shadow::identity();
+            handler_context.cause = auditor::shadow::emit_causal("event.handler.submit", handler_id.data());
+            const auditor::shadow::ContextScope handler_scope(handler_context);
+            auditor::shadow::flow("event.handler.execute", handler_id.data());
+#endif
             handler(next_event.payload);
         }
         ++drained;
@@ -141,6 +168,13 @@ bool EventBus::Unsubscribe(HandlerToken token)
 // Copies synchronous subscribers and invokes them outside the lock.
 void EventBus::DispatchSync(std::type_index event_type, const std::any &event)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auto event_context = auditor::shadow::child_context();
+    const auto event_id = auditor::shadow::identity();
+    event_context.cause = auditor::shadow::emit_causal("event.publish", event_id.data());
+    const auditor::shadow::ContextScope event_scope(event_context);
+    auditor::shadow::flow("event.handle", event_id.data());
+#endif
     std::vector<AnyEventHandler> handlers;
     {
         std::scoped_lock lock(mutex_);
@@ -159,6 +193,13 @@ void EventBus::DispatchSync(std::type_index event_type, const std::any &event)
 
     for (const auto &handler : handlers)
     {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        auto handler_context = auditor::shadow::child_context();
+        const auto handler_id = auditor::shadow::identity();
+        handler_context.cause = auditor::shadow::emit_causal("event.handler.submit", handler_id.data());
+        const auditor::shadow::ContextScope handler_scope(handler_context);
+        auditor::shadow::flow("event.handler.execute", handler_id.data());
+#endif
         handler(event);
     }
 }

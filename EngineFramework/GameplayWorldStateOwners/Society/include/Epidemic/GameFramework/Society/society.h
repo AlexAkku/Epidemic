@@ -315,6 +315,8 @@ struct SocietyDiagnostics
 
 class SocietyService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<SocietyService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

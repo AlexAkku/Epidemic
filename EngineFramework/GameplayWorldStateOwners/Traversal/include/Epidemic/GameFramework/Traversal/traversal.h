@@ -369,6 +369,8 @@ struct TraversalDiagnostics
 
 class TraversalService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<TraversalService>;
+
   public:
     TraversalService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

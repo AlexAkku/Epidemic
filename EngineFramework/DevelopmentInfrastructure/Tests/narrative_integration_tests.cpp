@@ -321,6 +321,10 @@ int main()
           "narrative consequence is deferred while outbox is pending");
 
     NarrativeExternalConsequenceSaveParticipant save_participant(outbox);
+    Check(save_participant.Id() == savegame::SaveParticipantId::FromString("integration.narrative.external_consequence_delivery") &&
+              save_participant.SchemaVersion() == 1 && save_participant.Dependencies().empty() &&
+              save_participant.Requirement() == savegame::SaveParticipantRequirement::Required,
+          "G5 outbox identity/schema/dependencies");
     const auto captured_snapshot = outbox.CaptureSnapshot();
     auto captured = save_participant.CaptureSnapshot({});
     Check(static_cast<bool>(captured), "capture external consequence save participant");
@@ -355,6 +359,7 @@ int main()
     auto staged = restored_participant.StageRestore(captured.Value(), {});
     Check(static_cast<bool>(staged), "stage persisted outbox");
     auto stage = std::move(staged).Value();
+    Check(restored_outbox.PendingDeliveries().empty(), "G5 outbox staging leaves live state unchanged");
     restored_participant.CommitRestore(*stage);
     Check(restored_outbox.PendingDeliveries().size() == 1 &&
               restored_outbox.PendingDeliveries().front().execution == execution_id,
@@ -420,6 +425,8 @@ int main()
     auto empty = std::move(empty_stage).Value();
     restored_participant.CommitRestore(*empty);
     Check(restored_outbox.CaptureSnapshot().deliveries.empty(), "empty outbox restore publishes empty state");
+    restored_participant.CommitRestore(*stage);
+    Check(restored_outbox.CaptureSnapshot().deliveries.empty(), "G5 outbox stage cannot publish twice");
 
     const auto external_operation = pending.front().external_operation;
     Check(external_operation.IsValid(), "outbox exposes stable downstream operation id");

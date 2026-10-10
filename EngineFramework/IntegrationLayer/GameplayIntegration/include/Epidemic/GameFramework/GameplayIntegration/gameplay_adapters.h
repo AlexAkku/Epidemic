@@ -118,6 +118,8 @@ struct AbilityEffectsCheckpoint
 };
 class AbilityEffectsDispatcher
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<AbilityEffectsDispatcher>;
+
   public:
     explicit AbilityEffectsDispatcher(effects::EffectService& effects) : effects_(effects) {}
     [[nodiscard]] foundation::Result<void> Map(ActionTypeId action,effects::EffectDefinitionId definition);
@@ -153,6 +155,8 @@ struct ConditionProgressionCheckpoint
 };
 class ConditionProgressionAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ConditionProgressionAdapter>;
+
   public:
     ConditionProgressionAdapter(const conditions::ConditionService& conditions,progression::ProgressionService& progression) : conditions_(conditions),progression_(progression) {}
     [[nodiscard]] foundation::Result<void> AddMapping(ConditionProgressionMapping mapping);
@@ -190,6 +194,8 @@ struct AbilityTimeCheckpoint
 };
 class AbilityTimeAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<AbilityTimeAdapter>;
+
   public:
     AbilityTimeAdapter(time::GameplayTimeService& time,abilities::AbilityService& abilities,ClockId clock,ActionTypeId action) : time_(time),abilities_(abilities),clock_(clock),action_(action) {}
     [[nodiscard]] foundation::Result<ScheduleId> ScheduleExecution(abilities::AbilityExecutionId execution);
@@ -266,6 +272,8 @@ struct DeathRewardCheckpoint
 };
 class DeathRewardAdapter
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<DeathRewardAdapter>;
+
   public:
     DeathRewardAdapter(const combat::CombatService& combat,loot::LootService& loot) : combat_(combat),loot_(loot) {}
     [[nodiscard]] foundation::Result<void> SetTable(GameplayObjectRef subject,loot::LootTableId table);
@@ -288,3 +296,21 @@ class DeathRewardAdapter
 };
 } // namespace epidemic::gameplay::integration
 
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Abilities/abilities.h"
+#include "Epidemic/GameFramework/Combat/combat.h"
+#include "Epidemic/GameFramework/Loot/loot.h"
+#include "Epidemic/GameFramework/Progression/progression.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityServiceSaveParticipant(epidemic::gameplay::abilities::AbilityService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCombatServiceSaveParticipant(epidemic::gameplay::combat::CombatService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateLootServiceSaveParticipant(epidemic::gameplay::loot::LootService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProgressionServiceSaveParticipant(epidemic::gameplay::progression::ProgressionService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityEffectsDispatcherSaveParticipant(epidemic::gameplay::integration::AbilityEffectsDispatcher& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityTimeAdapterSaveParticipant(epidemic::gameplay::integration::AbilityTimeAdapter& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConditionProgressionAdapterSaveParticipant(epidemic::gameplay::integration::ConditionProgressionAdapter& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateDeathRewardAdapterSaveParticipant(epidemic::gameplay::integration::DeathRewardAdapter& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

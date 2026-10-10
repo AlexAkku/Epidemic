@@ -1,0 +1,1 @@
+{"schemaVersion":1,"domain":"memory","rules":[{"id":"no-observed-invalid-access","kind":"max_metric","metric":"invalid_accesses","maximum":0}]}

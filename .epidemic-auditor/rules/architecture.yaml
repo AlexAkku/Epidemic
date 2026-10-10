@@ -1,0 +1,8 @@
+{"schemaVersion":1,"domain":"architecture","rules":[
+ {"id":"base-no-runtime","kind":"forbidden_edge","source":"EngineBase/*","target":"EngineRuntime/*"},
+ {"id":"base-no-framework","kind":"forbidden_edge","source":"EngineBase/*","target":"EngineFramework/*"},
+ {"id":"base-no-game","kind":"forbidden_edge","source":"EngineBase/*","target":"Game/*"},
+ {"id":"runtime-no-framework","kind":"forbidden_edge","source":"EngineRuntime/*","target":"EngineFramework/*"},
+ {"id":"runtime-no-game","kind":"forbidden_edge","source":"EngineRuntime/*","target":"Game/*"},
+ {"id":"framework-no-game","kind":"forbidden_edge","source":"EngineFramework/*","target":"Game/*"}
+]}

@@ -471,6 +471,8 @@ struct CrimeDiagnostics
 
 class CrimeService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<CrimeService>;
+
   public:
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
     {

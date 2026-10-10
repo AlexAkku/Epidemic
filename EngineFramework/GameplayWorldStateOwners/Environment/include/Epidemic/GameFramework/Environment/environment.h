@@ -218,6 +218,8 @@ struct EnvironmentDiagnostics
 
 class EnvironmentService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<EnvironmentService>;
+
   public:
     EnvironmentService();
 

@@ -316,6 +316,8 @@ struct ItemsDiagnostics
 
 class ItemsInventoryService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ItemsInventoryService>;
+
   public:
     ItemsInventoryService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

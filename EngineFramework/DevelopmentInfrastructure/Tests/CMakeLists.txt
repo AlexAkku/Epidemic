@@ -1,3 +1,42 @@
+foreach(_participant_adapter IN ITEMS Integration StateIntegration GameplayIntegration ExtendedGameplayIntegration
+        WorldIntegration TraversalNavigationConstructionIntegration PerceptionKnowledgeAIIntegration
+        PopulationSimulationIntegration ProcessResourceSimulationIntegration SocialLegalIntegration NarrativeIntegration InteractionEffectsIntegration)
+    string(TOLOWER "${_participant_adapter}" _participant_source)
+    set(_participant_library "EpidemicGameFramework${_participant_adapter}")
+    if(_participant_adapter STREQUAL "Integration")
+        set(_participant_library EpidemicGameFrameworkCoreIntegration)
+    endif()
+    set(_participant_test "Epidemic${_participant_adapter}SaveParticipantTests")
+    add_executable(${_participant_test} "${_participant_source}_save_participant_tests.cpp")
+    target_link_libraries(${_participant_test} PRIVATE ${_participant_library})
+    target_include_directories(${_participant_test} PRIVATE "${EpidemicEngine_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")
+    epidemic_configure_target(${_participant_test})
+    epidemic_add_test(${_participant_test})
+endforeach()
+
+# The opt-in Auditor scenario exercises the production bounded file backend.
+# It does not add a dependency to ordinary participant code or public API.
+if(EP_AUDITOR_PROFILE STREQUAL "audit-deep" OR EP_AUDITOR_PROFILE STREQUAL "audit-memory")
+    target_link_libraries(EpidemicExtendedGameplayIntegrationSaveParticipantTests PRIVATE EpidemicPlatform)
+endif()
+
+add_executable(EpidemicFrameworkSaveCompositionTests framework_save_composition_tests.cpp)
+target_include_directories(EpidemicFrameworkSaveCompositionTests PRIVATE "${EpidemicEngine_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")
+target_compile_definitions(EpidemicFrameworkSaveCompositionTests PRIVATE EPIDEMIC_SAVE_FIXTURES="${PROJECT_SOURCE_DIR}/Tests/Fixtures/SaveGame")
+target_link_libraries(EpidemicFrameworkSaveCompositionTests PRIVATE
+    EpidemicGameFrameworkCoreIntegration EpidemicGameFrameworkStateIntegration
+    EpidemicGameFrameworkGameplayIntegration EpidemicGameFrameworkExtendedGameplayIntegration
+    EpidemicGameFrameworkWorldIntegration EpidemicGameFrameworkTraversalNavigationConstructionIntegration
+    EpidemicGameFrameworkPerceptionKnowledgeAIIntegration EpidemicGameFrameworkPopulationSimulationIntegration
+    EpidemicGameFrameworkProcessResourceSimulationIntegration EpidemicGameFrameworkSocialLegalIntegration
+    EpidemicGameFrameworkNarrativeIntegration EpidemicGameFrameworkInteractionEffectsIntegration)
+epidemic_configure_target(EpidemicFrameworkSaveCompositionTests)
+if(MSVC)
+    target_compile_options(EpidemicFrameworkSaveCompositionTests PRIVATE /bigobj)
+endif()
+epidemic_add_test(EpidemicFrameworkSaveCompositionTests)
+set_tests_properties(EpidemicFrameworkSaveCompositionTests PROPERTIES LABELS "unit;persistence-schema")
+
 add_executable(EpidemicGameFrameworkFoundationTests foundation_tests.cpp)
 target_link_libraries(EpidemicGameFrameworkFoundationTests PRIVATE EpidemicGameFrameworkFoundation)
 epidemic_configure_target(EpidemicGameFrameworkFoundationTests)
@@ -26,6 +65,18 @@ add_executable(EpidemicGameFrameworkCoreIntegrationTests core_integration_tests.
 target_link_libraries(EpidemicGameFrameworkCoreIntegrationTests PRIVATE EpidemicGameFrameworkCoreIntegration)
 epidemic_configure_target(EpidemicGameFrameworkCoreIntegrationTests)
 epidemic_add_test(EpidemicGameFrameworkCoreIntegrationTests)
+
+add_executable(EpidemicGameFrameworkSaveGenerationTests save_generation_tests.cpp)
+target_link_libraries(EpidemicGameFrameworkSaveGenerationTests PRIVATE EpidemicGameFrameworkCoreIntegration)
+epidemic_configure_target(EpidemicGameFrameworkSaveGenerationTests)
+epidemic_add_test(EpidemicGameFrameworkSaveGenerationTests)
+set_tests_properties(EpidemicGameFrameworkSaveGenerationTests PROPERTIES LABELS "unit;persistence-generation;goal5-regression")
+
+add_executable(EpidemicGameFrameworkRestoreCoordinationTests restore_coordination_tests.cpp)
+target_link_libraries(EpidemicGameFrameworkRestoreCoordinationTests PRIVATE EpidemicGameFrameworkCoreIntegration)
+epidemic_configure_target(EpidemicGameFrameworkRestoreCoordinationTests)
+epidemic_add_test(EpidemicGameFrameworkRestoreCoordinationTests)
+set_tests_properties(EpidemicGameFrameworkRestoreCoordinationTests PROPERTIES LABELS "unit;persistence-local;goal5-regression")
 
 add_executable(EpidemicGameFrameworkEntitiesTests entities_tests.cpp)
 target_link_libraries(EpidemicGameFrameworkEntitiesTests PRIVATE EpidemicGameFrameworkEntities)
@@ -252,10 +303,13 @@ target_link_libraries(EpidemicGameFrameworkEconomyTests PRIVATE EpidemicGameFram
 epidemic_configure_target(EpidemicGameFrameworkEconomyTests)
 epidemic_add_test(EpidemicGameFrameworkEconomyTests)
 
-add_executable(EpidemicGameFrameworkSaveGameTests save_game_tests.cpp)
+add_executable(EpidemicGameFrameworkSaveGameTests save_game_tests.cpp save_participant_mechanics_tests.cpp save_wire_tests.cpp)
+target_compile_definitions(EpidemicGameFrameworkSaveGameTests PRIVATE EPIDEMIC_SAVE_FIXTURES="${PROJECT_SOURCE_DIR}/Tests/Fixtures/SaveGame")
 target_link_libraries(EpidemicGameFrameworkSaveGameTests PRIVATE EpidemicGameFrameworkSaveGame)
+target_include_directories(EpidemicGameFrameworkSaveGameTests PRIVATE "${EpidemicEngine_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners/SaveGame/internal")
 epidemic_configure_target(EpidemicGameFrameworkSaveGameTests)
 epidemic_add_test(EpidemicGameFrameworkSaveGameTests)
+set_tests_properties(EpidemicGameFrameworkSaveGameTests PROPERTIES LABELS "unit;persistence-schema;persistence-wire")
 
 add_executable(EpidemicGameFrameworkResourcesProductionSeparationTests resources_production_separation_tests.cpp)
 target_link_libraries(EpidemicGameFrameworkResourcesProductionSeparationTests PRIVATE EpidemicGameFrameworkResourcesProduction)

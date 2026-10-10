@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <string_view>
+#include <thread>
 
 namespace
 {
@@ -466,6 +468,34 @@ bool TestRaycastRespectsDirectionAndMaxDistance()
     return body && hit && hit.Value().hit && hit.Value().body == body.Value() &&
            miss_direction && !miss_direction.Value().hit &&
            miss_distance && !miss_distance.Value().hit;
+}
+
+bool TestEqualDistanceRaycastUsesStableBodyOrder()
+{
+    PhysicsRuntime runtime;
+    const CollisionShapeId shape{404};
+    if (!RegisterDefaultShape(runtime, shape, 2.0f)) return false;
+    runtime.SetAllocatorStateForTesting(1001, 1, 9001);
+    const auto first = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+    runtime.SetAllocatorStateForTesting(1, 2, 9002);
+    const auto second = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+    if (!first || !second) return false;
+    const RaycastQuery ray{Vec3{-5.0f, 1.0f, 1.0f}, Vec3{1.0f, 0.0f, 0.0f}, 10.0f};
+    const auto verify = [&] {
+        const auto native = runtime.Raycast(ray);
+        const auto backend = runtime.RaycastBackend(ray);
+        return native && backend && native.Value().hit && backend.Value().hit &&
+               native.Value().body == second.Value() &&
+               backend.Value().body == BackendBodyHandle{9002};
+    };
+    if (!verify()) return false;
+    for (std::uint64_t i = 0; i != 128; ++i)
+    {
+        auto desc = MakeBodyDesc(shape, PhysicsBodyType::Static);
+        if (!runtime.CreateBody(desc)) return false;
+        if (!verify()) return false;
+    }
+    return verify();
 }
 
 bool TestExternalBackendLifecycleAndSynchronization()
@@ -1254,8 +1284,40 @@ struct HasBackendSnapshotBody<T, std::void_t<decltype(std::declval<T>().body)>> 
 };
 } // namespace
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-physics") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "physics-action");
+        scenario("scenario.start", "physics-scenario");
+        PhysicsRuntime owner;
+          const CollisionShapeId shape{1};
+          if (!RegisterDefaultShape(owner, shape)) return 2;
+          const auto left = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
+          const auto right = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+          if (!left || !right) return 3;
+        const auto inherited = child_context();
+        std::thread producer([&] {
+            const ContextScope scope(inherited);
+            ContactEvent contact{};
+              contact.a = left.Value();
+              contact.b = right.Value();
+            contact.state = epidemic::runtime::physics::PhysicsEventState::Begin;
+            owner.QueueContact(contact);
+        });
+        producer.join();
+          const auto consumed = owner.ConsumeContactEvents();
+          const bool delivered = consumed && consumed.Value().size() == 1
+              && consumed.Value()[0].state == epidemic::runtime::physics::PhysicsEventState::Begin;
+        owner.Clear();
+        scenario("scenario.end", "physics-scenario");
+        action("action.end", "physics-action");
+          return delivered ? 0 : 4;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     static_assert(std::is_abstract_v<ICollisionShapeRegistry>);
     static_assert(std::is_abstract_v<IPhysicsScene>);
     static_assert(std::is_abstract_v<IPhysicsStepper>);
@@ -1278,6 +1340,7 @@ int main()
     if (!TestTransformSourceAndSinkSynchronization()) return 5;
     if (!TestContactBufferStoresExplicitBeginPersistEnd()) return 6;
     if (!TestRaycastRespectsDirectionAndMaxDistance()) return 7;
+    if (!TestEqualDistanceRaycastUsesStableBodyOrder()) return 67;
     if (!TestExternalBackendLifecycleAndSynchronization()) return 8;
     if (!TestExternalBackendContactsArePublished()) return 15;
     if (!TestExternalBackendInvalidContactIsDroppedAtomically()) return 16;

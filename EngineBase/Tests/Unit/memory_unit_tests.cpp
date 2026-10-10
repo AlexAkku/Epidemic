@@ -10,6 +10,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <limits>
 #include <new>
 #include <stdexcept>
@@ -27,6 +28,8 @@ using epidemic::memory::TrackingAllocator;
 class ProbeAllocator final : public IAllocator
 {
   public:
+    // This override must preserve the IAllocator bytes/alignment/tag contract.
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void *Allocate(std::size_t bytes, std::size_t alignment, AllocationTag tag) override
     {
         ++allocate_calls;
@@ -44,6 +47,8 @@ class ProbeAllocator final : public IAllocator
         return storage.data();
     }
 
+    // This override must preserve the same positional IAllocator contract.
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment, AllocationTag tag) noexcept override
     {
         ++deallocate_calls;
@@ -240,7 +245,8 @@ void TestAllocationTagIsolationAndInvalidTag()
     Assert(tracker.GetUsage(AllocationTag::Platform) == 13, "Platform accounting must remain isolated by tag");
     Assert(tracker.GetUsage(AllocationTag::Tests) == 21, "Tests accounting must remain isolated by tag");
 
-    const auto invalid_tag = static_cast<AllocationTag>(255);
+    // Invalid tag is the negative control for safe normalization/accounting.
+    const auto invalid_tag = static_cast<AllocationTag>(255); // NOLINT(clang-analyzer-optin.core.EnumCastOutOfRange)
     Assert(!epidemic::memory::IsKnownAllocationTag(invalid_tag), "Out-of-range allocation tag must be unknown");
     Assert(epidemic::memory::NormalizeAllocationTag(invalid_tag) == AllocationTag::Unknown,
            "Out-of-range allocation tag must normalize to Unknown");
@@ -296,7 +302,7 @@ void TestTrackingEnableDisableAndFrameResetContract()
 }
 } // namespace
 
-int main()
+int main() try
 {
     return epidemic::tests::RunNamedTests({
         {"AllocationContractAndAlignment", &TestAllocationContractAndAlignment},
@@ -308,4 +314,7 @@ int main()
         {"CounterOverflowDoesNotWrap", &TestCounterOverflowDoesNotWrap},
         {"TrackingEnableDisableAndFrameResetContract", &TestTrackingEnableDisableAndFrameResetContract},
     });
+} catch (const std::exception& error) {
+    std::fprintf(stderr, "[FAIL] Memory test setup: %s\n", error.what());
+    return 1;
 }

@@ -55,28 +55,28 @@ struct RuntimeFrameDuration
 
         const std::uint64_t mask = 0xffffffffULL;
         const std::uint64_t a0 = integer & mask;
-        const std::uint64_t a1 = integer >> 32;
+        const std::uint64_t a1 = integer >> 32u;
         const std::uint64_t b0 = significand & mask;
-        const std::uint64_t b1 = significand >> 32;
+        const std::uint64_t b1 = significand >> 32u;
         const std::uint64_t p00 = a0 * b0;
         const std::uint64_t p01 = a0 * b1;
         const std::uint64_t p10 = a1 * b0;
         const std::uint64_t p11 = a1 * b1;
-        const std::uint64_t middle = (p00 >> 32) + (p01 & mask) + (p10 & mask);
-        const std::uint64_t low = (middle << 32) | (p00 & mask);
-        const std::uint64_t high = p11 + (p01 >> 32) + (p10 >> 32) + (middle >> 32);
+        const std::uint64_t middle = (p00 >> 32u) + (p01 & mask) + (p10 & mask);
+        const std::uint64_t low = (middle << 32u) | (p00 & mask);
+        const std::uint64_t high = p11 + (p01 >> 32u) + (p10 >> 32u) + (middle >> 32u);
         constexpr std::uint64_t maximum = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
 
         if (binary_exponent >= 0)
         {
-            if (high != 0 || binary_exponent >= 63 || low > (maximum >> binary_exponent))
+            if (high != 0 || binary_exponent >= 63 || low > (maximum >> static_cast<unsigned>(binary_exponent)))
             {
                 return std::nullopt;
             }
-            return static_cast<std::int64_t>(low << binary_exponent);
+            return static_cast<std::int64_t>(low << static_cast<unsigned>(binary_exponent));
         }
 
-        const int shift = -binary_exponent;
+        const auto shift = static_cast<unsigned>(-binary_exponent);
         std::uint64_t truncated = 0;
         if (shift < 64)
         {
@@ -84,11 +84,11 @@ struct RuntimeFrameDuration
             {
                 return std::nullopt;
             }
-            truncated = (high << (64 - shift)) | (low >> shift);
+            truncated = (high << (64u - shift)) | (low >> shift);
         }
         else if (shift < 128)
         {
-            truncated = high >> (shift - 64);
+            truncated = high >> (shift - 64u);
         }
 
         if (truncated > maximum)

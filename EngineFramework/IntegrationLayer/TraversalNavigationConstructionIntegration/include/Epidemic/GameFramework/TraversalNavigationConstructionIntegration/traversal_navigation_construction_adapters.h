@@ -105,3 +105,16 @@ class ConstructionTraversalAdapter
         GameplayContext context = {}) const;
 };
 } // namespace epidemic::gameplay::traversal_navigation_construction
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Construction/construction.h"
+#include "Epidemic/GameFramework/NavigationSemantics/navigation_semantics.h"
+#include "Epidemic/GameFramework/Traversal/traversal.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConstructionServiceSaveParticipant(epidemic::gameplay::construction::ConstructionService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNavigationSemanticsServiceSaveParticipant(epidemic::gameplay::navigation_semantics::NavigationSemanticsService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateTraversalServiceSaveParticipant(epidemic::gameplay::traversal::TraversalService& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS

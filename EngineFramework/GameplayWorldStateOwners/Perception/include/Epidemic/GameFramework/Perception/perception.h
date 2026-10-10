@@ -412,6 +412,8 @@ struct PendingKey
 
 class PerceptionService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<PerceptionService>;
+
   public:
     PerceptionService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

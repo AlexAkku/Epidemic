@@ -1,11 +1,37 @@
 #include "Epidemic/GameFramework/Entities/entities.h"
 #include "../../GameplayWorldStateOwners/Entities/src/entities_test_seam.h"
+#include <string_view>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::entities;
 
-int main()
+int main(int argc, char** argv)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-entity") {
+        using namespace epidemic::auditor::shadow;
+        action("action.start", "entity-action");
+        scenario("scenario.start", "entity-scenario");
+        EntityService owner;
+        EntityArchetypeDefinition archetype;
+        archetype.canonical_name = "auditor.entity.actor";
+        const auto registered = owner.RegisterArchetype(archetype);
+        if (!registered) return 2;
+        owner.Freeze();
+        CreateEntityRequest request;
+        request.archetype = registered.Value();
+        const auto created = owner.Create(request);
+        if (!created || !owner.Deactivate(created.Value().id) || !owner.Activate(created.Value().id)) return 3;
+        scenario("scenario.end", "entity-scenario");
+        action("action.end", "entity-action");
+        return owner.Find(created.Value().id)->lifecycle == EntityLifecycleState::Alive ? 0 : 4;
+    }
+#else
+    (void)argc; (void)argv;
+#endif
     EntityService service;
     EntityArchetypeDefinition actor;
     actor.canonical_name = "test.entity.actor";
@@ -44,6 +70,18 @@ int main()
     const auto first_handle = created.Value().handle;
     const auto first_id = created.Value().id;
     if (!service.Resolve(first_handle).has_value() || service.HandleOf(first_id) != first_handle) return 5;
+    {
+        EntityService replacement;
+        if (!replacement.RegisterArchetype(actor)) return 174;
+        replacement.Freeze();
+        const auto replacement_entity = replacement.Create(create);
+        if (!replacement_entity || replacement_entity.Value().handle == first_handle ||
+            replacement.Resolve(first_handle)) return 175;
+        const auto replaced_handle = replacement_entity.Value().handle;
+        if (!replacement.RestoreSnapshot(service.CaptureSnapshot()) ||
+            replacement.Resolve(first_handle) || replacement.Resolve(replaced_handle) ||
+            !replacement.Resolve(replacement.HandleOf(first_id))) return 176;
+    }
     if (!service.RequiresMaterialization(first_id) || service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::RequireMaterialized) return 53;
     const auto hand = service.GetPart(first_id, hand_part.id);
     const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};

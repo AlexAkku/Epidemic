@@ -291,6 +291,8 @@ class IConditionSubjectStateProvider
 
 class ConditionService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ConditionService>;
+
   public:
     using PayloadValidator = std::function<bool(std::span<const std::byte>)>;
 

@@ -283,6 +283,8 @@ class ISimulationLayerExecutor
 
 class SimulationService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<SimulationService>;
+
   public:
     SimulationService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

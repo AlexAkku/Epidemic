@@ -1,0 +1,1 @@
+{"schemaVersion":1,"domain":"io","rules":[{"id":"no-observed-io-errors","kind":"max_metric","metric":"errors","maximum":0}]}

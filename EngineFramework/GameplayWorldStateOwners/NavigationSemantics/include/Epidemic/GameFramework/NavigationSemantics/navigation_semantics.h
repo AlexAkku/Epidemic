@@ -335,6 +335,8 @@ struct NavigationDiagnostics
 
 class NavigationSemanticsService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<NavigationSemanticsService>;
+
   public:
     NavigationSemanticsService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Epidemic/Foundation/result.h"
+#include "Epidemic/Foundation/path.h"
 #include "Epidemic/Runtime/Animation/animation_runtime.h"
 #include "Epidemic/Runtime/Assets/asset_services.h"
 #include "Epidemic/Runtime/Audio/audio_runtime.h"
@@ -29,6 +30,15 @@
 
 namespace epidemic::runtime
 {
+// Independent version-1 Runtime durable boundaries. Externally synchronized,
+// single writer per path. Missing files are errors: initialize a backend explicitly
+// with CommitSnapshot(empty, SaveAndFlushRequired) before composing a new store.
+// These operations do not establish a cross-plane consistent save point (M5.3).
+[[nodiscard]] foundation::Result<void> CommitRuntimeTimeCheckpoint(
+    const foundation::Path& path, const TimeCheckpoint& checkpoint);
+[[nodiscard]] foundation::Result<TimeCheckpoint> LoadRuntimeTimeCheckpoint(const foundation::Path& path);
+[[nodiscard]] foundation::Result<std::shared_ptr<IPersistenceBackend>> CreateFilePersistenceBackend(const foundation::Path& path);
+
 struct RuntimeFoundationRegistration
 {
     std::string name = "RuntimeFoundation";
@@ -422,3 +432,24 @@ struct PreparedEngineRuntime
 [[nodiscard]] std::vector<RuntimeUpdateStep> GetRuntimeUpdateOrder();
 [[nodiscard]] std::vector<RuntimeShutdownStep> GetRuntimeShutdownOrder();
 } // namespace epidemic::runtime
+
+// BEGIN GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES
+namespace epidemic::runtime
+{
+// These functions use exactly the same reviewed v1 wire representation as the
+// file-backed helpers. They let an upper-layer composition embed Runtime planes
+// in one outer atomic save generation without intermediate authoritative files.
+[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimeTimeCheckpointPackage(
+    const TimeCheckpoint& checkpoint);
+[[nodiscard]] foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(
+    std::span<const std::byte> package);
+[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimePersistencePackage(
+    const PersistenceSnapshot& snapshot);
+[[nodiscard]] foundation::Result<PersistenceSnapshot> DecodeRuntimePersistencePackage(
+    std::span<const std::byte> package);
+// Externally synchronized capture. The caller must hold the same Runtime
+// quiescence used by the surrounding whole-engine generation.
+[[nodiscard]] foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(
+    const IPersistenceQuery& query);
+} // namespace epidemic::runtime
+// END GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES

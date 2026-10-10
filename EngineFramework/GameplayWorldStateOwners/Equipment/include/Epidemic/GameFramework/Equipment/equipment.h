@@ -243,6 +243,8 @@ class IEquipmentItemProvider
 
 class EquipmentService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<EquipmentService>;
+
   public:
     explicit EquipmentService(std::size_t change_capacity = 2048);
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

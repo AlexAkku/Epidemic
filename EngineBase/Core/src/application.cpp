@@ -440,6 +440,9 @@ std::shared_ptr<diagnostics::ILogger> Application::Logger() const
 
 void Application::ExecuteFrame()
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    const auditor::shadow::ContextScope auditor_frame_scope(auditor::shadow::child_context());
+#endif
     EPIDEMIC_PROFILE_SCOPE("Application::Tick");
     const auto tick_start = std::chrono::steady_clock::now();
     auto logger = Logger();
@@ -473,6 +476,10 @@ void Application::ExecuteFrame()
     const auto frame_time_micros =
         std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - tick_start).count();
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::FrameTimeMicros, frame_time_micros);
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::frame(static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now() - tick_start).count()));
+#endif
 
     logger->Debug("Application", "Frame",
                   "Frame " + std::to_string(frame_context.frame_index.Value()) + " finished in " +

@@ -420,6 +420,8 @@ struct ResourcesDiagnostics
 
 class ResourcesProductionService
 {
+    friend struct epidemic::gameplay::SnapshotRestoreAccess<ResourcesProductionService>;
+
   public:
     ResourcesProductionService();
     [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept

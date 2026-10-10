@@ -240,12 +240,12 @@ void SortPersistenceSnapshot(PersistenceSnapshot& snapshot)
 size_t PersistenceLocationHash::operator()(const PersistenceLocation& location) const noexcept
 {
     size_t seed = std::hash<RegionId>{}(location.region_id);
-    seed ^= std::hash<ChunkId>{}(location.chunk_id) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    seed ^= std::hash<std::uint64_t>{}(location.location_tag.Raw()) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<ChunkId>{}(location.chunk_id) + 0x9e3779b9u + (seed << 6u) + (seed >> 2u);
+    seed ^= std::hash<std::uint64_t>{}(location.location_tag.Raw()) + 0x9e3779b9u + (seed << 6u) + (seed >> 2u);
     return seed;
 }
 
-InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot)
+InMemoryPersistenceStore::InMemoryPersistenceStore(const PersistenceSnapshot& snapshot)
 {
     const auto valid = ValidatePersistenceSnapshot(snapshot);
     if (!valid)
@@ -271,9 +271,9 @@ InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot)
     }
 }
 
-InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot, std::shared_ptr<IPersistenceBackend> backend,
+InMemoryPersistenceStore::InMemoryPersistenceStore(const PersistenceSnapshot& snapshot, std::shared_ptr<IPersistenceBackend> backend,
                                                    PersistenceDurability durability)
-    : InMemoryPersistenceStore(std::move(snapshot))
+    : InMemoryPersistenceStore(snapshot)
 {
     backend_ = std::move(backend);
     durability_ = durability;
@@ -282,6 +282,11 @@ InMemoryPersistenceStore::InMemoryPersistenceStore(PersistenceSnapshot snapshot,
 InMemorySaveTransaction::InMemorySaveTransaction(InMemoryPersistenceStore& store, PersistenceRevision base_revision)
     : store_(store), base_revision_(base_revision)
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor_context_ = auditor::shadow::child_context();
+    auditor_transaction_ = auditor::shadow::identity();
+    auditor_context_.cause = auditor::shadow::emit_causal("persistence.begin", auditor_transaction_.data());
+#endif
 }
 
 SaveTransactionState InMemorySaveTransaction::GetState() const
@@ -464,6 +469,9 @@ foundation::Result<void> InMemorySaveTransaction::Commit()
         return PersistenceFailure("persistence.transaction_invalid_state", "transaction can commit only while open");
     }
 
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    const auditor::shadow::ContextScope auditor_scope(auditor_context_);
+#endif
     state_ = SaveTransactionState::Committing;
     try
     {
@@ -471,6 +479,9 @@ foundation::Result<void> InMemorySaveTransaction::Commit()
         if (!candidate)
         {
             state_ = SaveTransactionState::Failed;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            auditor::shadow::flow("persistence.fail", auditor_transaction_.data());
+#endif
             return foundation::Result<void>::Failure(candidate.GetError());
         }
 
@@ -478,21 +489,33 @@ foundation::Result<void> InMemorySaveTransaction::Commit()
         if (!published)
         {
             state_ = SaveTransactionState::Failed;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+            auditor::shadow::flow("persistence.fail", auditor_transaction_.data());
+#endif
             return published;
         }
     }
     catch (const std::bad_alloc&)
     {
         state_ = SaveTransactionState::Failed;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        auditor::shadow::flow("persistence.fail", auditor_transaction_.data());
+#endif
         return PersistenceFailure("persistence.allocation_failed", "persistence commit allocation failed");
     }
     catch (...)
     {
         state_ = SaveTransactionState::Failed;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        auditor::shadow::flow("persistence.fail", auditor_transaction_.data());
+#endif
         return PersistenceFailure("persistence.backend_exception", "persistence commit dependency threw an exception");
     }
 
     state_ = SaveTransactionState::Committed;
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::flow("persistence.commit", auditor_transaction_.data());
+#endif
     return foundation::Result<void>::Success();
 }
 
@@ -500,6 +523,12 @@ void InMemorySaveTransaction::Rollback()
 {
     if (state_ == SaveTransactionState::Open || state_ == SaveTransactionState::Failed)
     {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        if (state_ == SaveTransactionState::Open) {
+            const auditor::shadow::ContextScope auditor_scope(auditor_context_);
+            auditor::shadow::flow("persistence.rollback", auditor_transaction_.data());
+        }
+#endif
         operations_.clear();
         state_ = SaveTransactionState::RolledBack;
     }

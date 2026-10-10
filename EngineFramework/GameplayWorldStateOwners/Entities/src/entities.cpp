@@ -3,13 +3,33 @@
 
 #include "Epidemic/Foundation/error.h"
 
+#include <atomic>
 #include <limits>
 #include <unordered_set>
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+#include <shadow_probe.h>
+#endif
 
 namespace epidemic::gameplay::entities
 {
 namespace
 {
+// Handles are process-local capabilities. A replacement owner must never issue
+// an already observed slot/generation pair, even when its slot table is empty.
+std::atomic<std::uint64_t> next_handle_generation{1};
+
+[[nodiscard]] std::optional<std::uint32_t> ReserveHandleGeneration(std::uint32_t floor = 0) noexcept
+{
+    auto next = next_handle_generation.load(std::memory_order_relaxed);
+    for (;;)
+    {
+        const auto candidate = std::max(next, static_cast<std::uint64_t>(floor) + 1);
+        if (candidate > std::numeric_limits<std::uint32_t>::max()) return std::nullopt;
+        if (next_handle_generation.compare_exchange_weak(next, candidate + 1, std::memory_order_relaxed))
+            return static_cast<std::uint32_t>(candidate);
+    }
+}
+
 [[nodiscard]] constexpr std::uint64_t EntityInstanceIdScope() noexcept
 {
     return GameplayObjectId::FromString("framework.entities.instances").High();
@@ -197,6 +217,10 @@ bool EntityService::CanRecordChanges(std::size_t count) const noexcept
 
 void EntityService::RecordChange(EntityChange change) noexcept
 {
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+    auditor::shadow::entity_change(change.entity.High(), change.entity.Low(), static_cast<unsigned>(change.kind),
+        static_cast<unsigned>(change.previous_lifecycle), static_cast<unsigned>(change.lifecycle));
+#endif
     if (next_change_sequence_ == 0) return;
     const auto sequence = next_change_sequence_;
     change.sequence = sequence;
@@ -266,13 +290,16 @@ foundation::Result<CreateEntityResult> EntityService::Create(CreateEntityRequest
     record.revision = next_revision.Value();
 
     const bool reusing_slot = !free_slots_.empty();
+    const auto generation = ReserveHandleGeneration(reusing_slot ? slots_[free_slots_.back()].generation : 0);
+    if (!generation) return foundation::Result<CreateEntityResult>::Failure(
+        Error("gameplay.entity_handle_generation_exhausted", "entity handle generation space is exhausted"));
     try { id_to_slot_.reserve(id_to_slot_.size() + 1); }
     catch (...) { return foundation::Result<CreateEntityResult>::Failure(Error("gameplay.entity_storage_failed", "unable to reserve entity index storage")); }
     auto slot_result = AllocateSlot();
     if (!slot_result) return foundation::Result<CreateEntityResult>::Failure(slot_result.GetError());
     const auto slot_index = slot_result.Value();
     auto& slot = slots_[slot_index];
-    if (slot.generation == 0) slot.generation = 1;
+    slot.generation = *generation;
     slot.record = std::move(record);
     slot.occupied = true;
     try
@@ -671,9 +698,9 @@ foundation::Result<void> EntityService::RestoreSnapshot(EntitySnapshot snapshot)
     std::uint64_t max_generated_low = 0;
     std::uint32_t max_old_generation = 0;
     for (const auto& slot : slots_) if (slot.generation > max_old_generation) max_old_generation = slot.generation;
-    if (max_old_generation == std::numeric_limits<std::uint32_t>::max())
+    const auto restored_generation = ReserveHandleGeneration(max_old_generation);
+    if (!restored_generation)
         return foundation::Result<void>::Failure(Error("gameplay.entity_handle_generation_exhausted", "cannot invalidate all pre-restore entity handles"));
-    const auto restored_generation = static_cast<std::uint32_t>(max_old_generation + 1);
 
     for (const auto& record : snapshot.records)
     {
@@ -709,7 +736,7 @@ foundation::Result<void> EntityService::RestoreSnapshot(EntitySnapshot snapshot)
     {
         const auto slot_index = static_cast<std::uint32_t>(rebuilt_slots.size());
         record.materialization = EntityMaterializationState::Abstract;
-        Slot slot; slot.record = std::move(record); slot.generation = restored_generation; slot.occupied = true;
+        Slot slot; slot.record = std::move(record); slot.generation = *restored_generation; slot.occupied = true;
         if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
             return foundation::Result<void>::Failure(
                 Error("gameplay.entity_storage_failed", "failed while constructing entity snapshot candidates"));

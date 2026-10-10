@@ -1,15 +1,15 @@
 # Epidemic Engine
 
-Epidemic Engine — Windows-only C++23 движок, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и никогда не протягивают зависимости обратно вниз.
+Epidemic Engine — Windows-only C++23 движок, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и зависят только от разрешённых нижних слоёв.
 
-Текущая структура проекта:
+Порядок слоёв от нижнего к верхнему; разрешённые зависимости направлены сверху вниз (`Game → EngineFramework → EngineRuntime → EngineBase`):
 
 ```text
 EngineBase
     ↓
 EngineRuntime
     ↓
-GameFramework
+EngineFramework (GameFramework)
     ↓
 Game
 ```
@@ -18,7 +18,7 @@ Game
 
 `GameFramework` должен содержать переиспользуемые gameplay-системы, а `Game` — конкретные правила, контент и конечный composition root.
 
-Подробное устройство слоев описано в [`docs/architecture.md`](docs/architecture.md). Документация EngineBase находится в [`docs/EngineBase/README.md`](docs/EngineBase/README.md), практическое использование — в [`docs/EngineBase/using_enginebase.md`](docs/EngineBase/using_enginebase.md). Для Runtime аналогичные документы находятся в [`docs/EngineRuntime/README.md`](docs/EngineRuntime/README.md) и [`docs/EngineRuntime/using_engineruntime.md`](docs/EngineRuntime/using_engineruntime.md).
+Подробное устройство слоев описано в [`Documentation/architecture.md`](Documentation/architecture.md). Документация EngineBase находится в [`Documentation/EngineBase/README.md`](Documentation/EngineBase/README.md), практическое использование — в [`Documentation/EngineBase/using_enginebase.md`](Documentation/EngineBase/using_enginebase.md). Для Runtime аналогичные документы находятся в [`Documentation/EngineRuntime/README.md`](Documentation/EngineRuntime/README.md) и [`Documentation/EngineRuntime/using_engineruntime.md`](Documentation/EngineRuntime/using_engineruntime.md).
 
 ## Сборка
 
@@ -33,26 +33,6 @@ cmake --build build --config Debug
 
 ```powershell
 ctest --test-dir build -C Debug --output-on-failure
-
-### Единый локальный CI и отладка
-
-Проект использует адаптированную архитектуру
-[AgentEnforcer2](https://github.com/Artemonim/AgentEnforcer2). Главная точка входа:
-
-```powershell
-./run.ps1                                      # все Full Debug+Release тесты
-./run.ps1 -Mode Matrix                         # вся Base/Runtime/Full матрица
-./run.ps1 -Mode Module -Module Simulation      # тесты одного модуля
-./run.ps1 -Mode Debug -Module Combat           # подробный Debug-прогон
-./run.ps1 -Mode ListTests                      # список зарегистрированных тестов
-```
-
-Новые CTest-тесты обнаруживаются автоматически. Если меняется ожидаемый состав матрицы,
-необходимо также осознанно обновить `docs/freeze/ctest_manifest.json`.
-
-Краткий итог последнего прогона находится в `.enforcer/Enforcer_last_check.md`,
-структурированный отчёт — в `.ci_cache/report.json`, полные выводы команд — в
-`.ci_cache/logs/`.
 ```
 
 Только Runtime:
@@ -72,7 +52,18 @@ ctest --test-dir build -C Debug -R EpidemicRuntime --output-on-failure
 .\build\EngineBase\Apps\RhiClearScreenApp\EpidemicRhiClearScreenApp.exe
 ```
 
-Логи записываются в `logs/epidemic.log`.
+Логи запускаемых вручную smoke-приложений зависят от рабочего каталога; для разработки запускайте их с рабочим каталогом `.ai/`, чтобы логи оставались в `.ai/logs/`.
+
+## Подготовка рабочего пространства
+
+Единый контракт работы агента: [`Development/AgentsRules/AGENT_RULES.md`](Development/AgentsRules/AGENT_RULES.md). Подробное описание процесса: [`Development/AgentsRules/WORKFLOW.ru.md`](Development/AgentsRules/WORKFLOW.ru.md).
+
+```powershell
+Development/AgentsRules/Scripts/Setup-AgentTools.ps1
+Development/AgentsRules/Scripts/Invoke-Dev.ps1 -Action Build -Profile full -Configuration Debug
+```
+
+C++ сборки находятся в `build/`. Все остальные создаваемые инструменты, виртуальные окружения, индексы, модели, временные файлы и логи находятся в `.ai/`. Исходники и настройки инструментов хранятся в `Development/AgentsRules/`.
 
 ## Главное правило зависимостей
 
@@ -87,22 +78,20 @@ ctest --test-dir build -C Debug -R EpidemicRuntime --output-on-failure
   - [x] Цель 1. Проверяемый baseline и единый freeze contract
   - [x] Цель 2. Полный локальный freeze-аудит EngineBase
   - [x] Цель 3. Полный локальный freeze-аудит EngineRuntime
-  - [ ] Цель 4. Полный локальный freeze-аудит EngineFramework
-  - [ ] Цель 5. Доказать persistence и determinism всего движка
-  - [ ] Цель 6. Доказать memory/lifetime и concurrency/async safety
-  - [ ] Цель 7. Второй круг: проверить смысловые кластеры и причинные цепочки
-  - [ ] Цель 8. Провести failure, regression, load, scale и degradation qualification
-  - [ ] Цель 9. Финальная test saturation, whole-engine qualification и окончательный freeze
-- [ ] Framework Documentation
+  - [x] Цель 4. Полный локальный freeze-аудит EngineFramework
+  - [x] Цель 5. Доказать persistence и determinism всего движка
+  - [ ] Цель 6. Build independent observer — частично завершена; полное закрытие отложено до завершения MS8 и появления первой тестовой игры в `Game`.
+  - [ ] Цель 7. Hardering
+  - [ ] Цель 8. Integration qualification
+  - [ ] Цель 9. Destructive/stress/fault qualification
+- [ ] Framework Documentation cleanup, freeze
 - [ ] Base and Runtime docs checkup
 - [ ] Комментарии
   -   [ ] Base перевод комментариев на русский
   -   [ ] Runtime добавить комментарии в код на английском и русском
   -   [ ] Framework добавить комментарии в код на английском и русском
-  -   [ ] Переписать документацию из ии-слопа в нормальный текст
 - [ ] Добавление заготовки под DX11/12/Vulacan/Metal для мультиплатформенности
 - [ ] Интеграция Angel Script
-- [ ] Добавление инструментов мониторинга и контроля ресурсов приложения
 - [ ] Добавление дефолтного проекта
 - [ ] Полноценная мультиплатформенность Win/Mac/Android
 - [ ] Переход на С++ 26 после выхода stable версии языка
