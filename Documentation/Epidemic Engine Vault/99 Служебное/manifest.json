@@ -1,0 +1,23 @@
+{
+  "vault_version": "1.0",
+  "source_file": "Epidemic(1).zip",
+  "source_sha256": "116094bf0244e0d10e54e69a70b35551a12055da0e72e04c1d7c70b34bcc7791",
+  "snapshot_date": "2026-10-10",
+  "git_head": "8968365",
+  "dirty_worktree_in_archive": true,
+  "source_doc_count": 145,
+  "public_headers": 232,
+  "module_pages": 78,
+  "generated_pages": 359,
+  "compile_tests_performed": false,
+  "code_semantics_validation": "read only/source index",
+  "scope": [
+    "EngineBase",
+    "EngineRuntime",
+    "EngineFramework",
+    ".epidemic-auditor",
+    "Development/AgentsRules",
+    "Documentation"
+  ],
+  "notes": "Generated cards are not live synchronized with the original repository. Python header index is lexical, not clang AST."
+}

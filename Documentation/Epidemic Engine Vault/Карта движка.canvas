@@ -1,0 +1,152 @@
+{
+  "nodes": [
+    {
+      "id": "base",
+      "type": "file",
+      "file": "04 EngineBase/Обзор EngineBase.md",
+      "x": 0,
+      "y": 400,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "runtime",
+      "type": "file",
+      "file": "05 EngineRuntime/Обзор EngineRuntime.md",
+      "x": 440,
+      "y": 400,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "framework",
+      "type": "file",
+      "file": "06 EngineFramework/Обзор EngineFramework.md",
+      "x": 880,
+      "y": 400,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "arch",
+      "type": "file",
+      "file": "02 Архитектура/Слои и направления зависимостей.md",
+      "x": 440,
+      "y": 20,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "startup",
+      "type": "file",
+      "file": "03 Работа с движком/Сборка и конфигурации.md",
+      "x": 0,
+      "y": 800,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "support",
+      "type": "file",
+      "file": "05 EngineRuntime/Модуль Support.md",
+      "x": 440,
+      "y": 800,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "integration",
+      "type": "file",
+      "file": "07 Сценарии/Подключение движка к приложению.md",
+      "x": 880,
+      "y": 800,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "auditor",
+      "type": "file",
+      "file": "08 Auditor/Обзор Auditor.md",
+      "x": 0,
+      "y": 1180,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "tests",
+      "type": "file",
+      "file": "09 Качество и статус/Матрица проверок.md",
+      "x": 440,
+      "y": 1180,
+      "width": 360,
+      "height": 200
+    },
+    {
+      "id": "status",
+      "type": "file",
+      "file": "09 Качество и статус/Текущее состояние и границы достоверности.md",
+      "x": 880,
+      "y": 1180,
+      "width": 360,
+      "height": 200
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "fromNode": "base",
+      "fromSide": "right",
+      "toNode": "runtime",
+      "toSide": "left"
+    },
+    {
+      "id": "e1",
+      "fromNode": "runtime",
+      "fromSide": "right",
+      "toNode": "framework",
+      "toSide": "left"
+    },
+    {
+      "id": "e2",
+      "fromNode": "arch",
+      "fromSide": "bottom",
+      "toNode": "runtime",
+      "toSide": "left"
+    },
+    {
+      "id": "e3",
+      "fromNode": "startup",
+      "fromSide": "right",
+      "toNode": "base",
+      "toSide": "top"
+    },
+    {
+      "id": "e4",
+      "fromNode": "support",
+      "fromSide": "right",
+      "toNode": "runtime",
+      "toSide": "left"
+    },
+    {
+      "id": "e5",
+      "fromNode": "framework",
+      "fromSide": "right",
+      "toNode": "integration",
+      "toSide": "left"
+    },
+    {
+      "id": "e6",
+      "fromNode": "auditor",
+      "fromSide": "right",
+      "toNode": "tests",
+      "toSide": "left"
+    },
+    {
+      "id": "e7",
+      "fromNode": "tests",
+      "fromSide": "right",
+      "toNode": "status",
+      "toSide": "left"
+    }
+  ]
+}

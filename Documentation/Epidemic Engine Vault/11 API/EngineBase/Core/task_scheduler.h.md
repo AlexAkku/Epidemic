@@ -1,0 +1,215 @@
+---
+aliases: []
+type: "api-header"
+source_snapshot: "2026-10-10"
+tags: ["api", "enginebase"]
+source_path: "EngineBase/Core/include/Epidemic/Core/task_scheduler.h"
+---
+
+# Core: task_scheduler.h
+
+Этот файл является точным текстовым снимком публичного заголовка из `Epidemic(1).zip`. Исходный путь: `EngineBase/Core/include/Epidemic/Core/task_scheduler.h`.
+
+**Модуль:** [[04 EngineBase/Модуль Core|Core]].
+**Размер исходного файла:** 6725 байт.
+**Подключение:** `#include <Epidemic/Core/task_scheduler.h>`.
+
+## Объявления типов (лексический индекс)
+`TaskDiagnostics`, `TaskHandle`, `State`, `TaskGroup`, `ITaskScheduler`, `SimpleTaskScheduler`, `SharedState`, `QueuedTask`
+
+> [!note] Навигация API
+> Список выше получен лексическим сканированием, не является полноценным C++ AST: вложенные/templated декларации и нераспознанные функции требуют просмотра полного заголовка или clangd.
+
+## Точный текст заголовка
+
+```cpp
+#pragma once
+
+#include <condition_variable>
+#include <cstddef>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <stop_token>
+#include <string>
+#include <thread>
+#include <vector>
+
+namespace epidemic::core::tasks
+{
+// This file defines the baseline worker-thread scheduler used by EngineBase.
+// The scheduler supports individual task waiting, grouped task waiting, diagnostics snapshots,
+// and shutdown-aware queuing without introducing job graphs or task stealing yet.
+
+struct TaskDiagnostics
+{
+    std::size_t pending_tasks{};
+    std::size_t active_tasks{};
+    std::size_t completed_tasks{};
+    std::size_t worker_count{};
+};
+
+class TaskHandle
+{
+  public:
+    TaskHandle() = default;
+
+    // Returns whether this handle references a scheduled task state.
+    [[nodiscard]] bool IsValid() const noexcept;
+
+  private:
+    struct State;
+
+    // Binds the public handle to the scheduler-owned shared state.
+    explicit TaskHandle(std::shared_ptr<State> state) noexcept;
+
+    std::shared_ptr<State> state_;
+
+    friend class SimpleTaskScheduler;
+};
+
+class TaskGroup
+{
+  public:
+    // Creates an empty task group that can aggregate multiple scheduled tasks.
+    TaskGroup();
+
+    // Defaulted because group state is shared and self-managing.
+    ~TaskGroup();
+
+    TaskGroup(const TaskGroup &) = default;
+    TaskGroup(TaskGroup &&) noexcept = default;
+    TaskGroup &operator=(const TaskGroup &) = default;
+    TaskGroup &operator=(TaskGroup &&) noexcept = default;
+
+    // Returns whether this group references valid shared state.
+    [[nodiscard]] bool IsValid() const noexcept;
+
+  private:
+    struct State;
+
+    std::shared_ptr<State> state_;
+
+    friend class SimpleTaskScheduler;
+};
+
+class ITaskScheduler
+{
+  public:
+    using Task = std::function<void()>;
+
+    virtual ~ITaskScheduler() = default;
+
+    // Queues a task and returns a handle for direct waiting.
+    [[nodiscard]] virtual TaskHandle Schedule(Task task, std::string debug_name = {}) = 0;
+
+    // Queues a task into a group and returns a handle for optional direct waiting.
+    [[nodiscard]] virtual TaskHandle Schedule(Task task, TaskGroup &group, std::string debug_name = {}) = 0;
+
+    // Attempts to cancel a task that is still queued. Returns false for invalid, foreign, running, or completed handles.
+    [[nodiscard]] virtual bool Cancel(const TaskHandle &handle) = 0;
+
+    // Blocks until the specified task finishes or is cancelled and rethrows its exception, if any.
+    // A handle created by a different scheduler is rejected.
+    virtual void Wait(const TaskHandle &handle) = 0;
+
+    // Blocks until every task in the group finishes and rethrows the first captured exception, if any.
+    virtual void Wait(const TaskGroup &group) = 0;
+
+    // Blocks until the scheduler has no queued or active tasks.
+    virtual void WaitIdle() = 0;
+
+    // Requests worker shutdown without joining worker threads. Safe from scheduler workers.
+    virtual void RequestStop() noexcept = 0;
+
+    // Joins worker threads after stop was requested. Must not be called from a scheduler worker.
+    virtual void Join() = 0;
+
+    // Stops accepting new work, requests worker shutdown, and joins worker threads.
+    virtual void Shutdown() = 0;
+
+    // Returns the number of worker threads owned by the scheduler.
+    [[nodiscard]] virtual std::size_t WorkerCount() const noexcept = 0;
+
+    // Returns a snapshot of scheduler queue and activity counters.
+    [[nodiscard]] virtual TaskDiagnostics GetDiagnostics() const noexcept = 0;
+
+    // Returns the configured worker thread names.
+    [[nodiscard]] virtual std::vector<std::string> WorkerThreadNames() const = 0;
+};
+
+class SimpleTaskScheduler final : public ITaskScheduler
+{
+  public:
+    // Starts the requested number of worker threads, normalizing zero to one worker.
+    explicit SimpleTaskScheduler(std::size_t worker_count = 1);
+
+    // Requests shutdown so worker threads are released with the scheduler.
+    ~SimpleTaskScheduler() override;
+
+    // Queues one task outside of any group.
+    [[nodiscard]] TaskHandle Schedule(Task task, std::string debug_name = {}) override;
+
+    // Queues one task into a group.
+    [[nodiscard]] TaskHandle Schedule(Task task, TaskGroup &group, std::string debug_name = {}) override;
+
+    // Cancels one queued task if it still belongs to this scheduler and has not started.
+    [[nodiscard]] bool Cancel(const TaskHandle &handle) override;
+
+    // Waits for one task and propagates its failure.
+    void Wait(const TaskHandle &handle) override;
+
+    // Waits for a task group and propagates the first task failure.
+    void Wait(const TaskGroup &group) override;
+
+    // Waits for all currently queued and active tasks and then rethrows the first scheduler-level failure.
+    void WaitIdle() override;
+
+    // Requests worker stop without joining.
+    void RequestStop() noexcept override;
+
+    // Joins worker threads. Throws if called from one of the worker threads.
+    void Join() override;
+
+    // Prevents new scheduling and joins worker threads.
+    void Shutdown() override;
+
+    // Returns the number of worker threads.
+    [[nodiscard]] std::size_t WorkerCount() const noexcept override;
+
+    // Returns a snapshot of queue depth and completion counters.
+    [[nodiscard]] TaskDiagnostics GetDiagnostics() const noexcept override;
+
+    // Returns the names assigned to worker threads.
+    [[nodiscard]] std::vector<std::string> WorkerThreadNames() const override;
+
+  private:
+    struct SharedState;
+
+    struct QueuedTask
+    {
+        Task task;
+        std::shared_ptr<TaskHandle::State> handle_state;
+        std::shared_ptr<TaskGroup::State> group_state;
+    };
+
+    // Shared implementation for grouped and ungrouped scheduling requests.
+    [[nodiscard]] TaskHandle ScheduleImpl(Task task, std::shared_ptr<TaskGroup::State> group_state, std::string debug_name);
+
+    // Worker-thread loop owns shared state independently from the scheduler facade lifetime.
+    static void WorkerLoop(std::shared_ptr<SharedState> state, std::stop_token stop_token);
+
+    // Detaches the calling worker and joins all remaining workers during worker-owned destruction.
+    void DetachCurrentWorkerAndJoinOthers() noexcept;
+
+    std::shared_ptr<SharedState> state_;
+    std::vector<std::jthread> workers_;
+    std::vector<std::thread::id> worker_thread_ids_;
+    std::vector<std::string> worker_names_;
+
+    [[nodiscard]] bool IsWorkerThread(std::thread::id thread_id) const noexcept;
+};
+} // namespace epidemic::core::tasks
+```

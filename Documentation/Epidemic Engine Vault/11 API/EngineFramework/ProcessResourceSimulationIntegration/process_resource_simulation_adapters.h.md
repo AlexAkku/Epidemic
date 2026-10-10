@@ -1,0 +1,116 @@
+---
+aliases: []
+type: "api-header"
+source_snapshot: "2026-10-10"
+tags: ["api", "engineframework"]
+source_path: "EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/include/Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h"
+---
+
+# ProcessResourceSimulationIntegration: process_resource_simulation_adapters.h
+
+Этот файл является точным текстовым снимком публичного заголовка из `Epidemic(1).zip`. Исходный путь: `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/include/Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h`.
+
+**Модуль:** [[06 EngineFramework/Модуль ProcessResourceSimulationIntegration|ProcessResourceSimulationIntegration]].
+**Размер исходного файла:** 5650 байт.
+**Подключение:** `#include <Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h>`.
+
+## Объявления типов (лексический индекс)
+`ProcessResourcePayload`, `ProcessResourceReservationPayload`, `PreparedProcessResourceOutputPayload`, `ResourceProcessInputProvider`, `ResourceProcessOutputHandler`, `ProcessesSimulationLayer`
+
+> [!note] Навигация API
+> Список выше получен лексическим сканированием, не является полноценным C++ AST: вложенные/templated декларации и нераспознанные функции требуют просмотра полного заголовка или clangd.
+
+## Точный текст заголовка
+
+```cpp
+#pragma once
+
+#include "Epidemic/GameFramework/Processes/processes.h"
+#include "Epidemic/GameFramework/ResourcesProduction/resources_production.h"
+#include "Epidemic/GameFramework/Simulation/simulation.h"
+
+#include <optional>
+#include <vector>
+
+namespace epidemic::gameplay::integration
+{
+struct ProcessResourcePayload
+{
+    resources::ResourceStockpileId stockpile{};
+    resources::ResourceTypeId resource{};
+};
+struct ProcessResourceReservationPayload
+{
+    resources::ResourceReservationId reservation{};
+};
+struct PreparedProcessResourceOutputPayload
+{
+    resources::ResourceStockpileId stockpile{};
+    resources::ResourceTypeId resource{};
+    processes::Fixed amount = 0;
+};
+
+[[nodiscard]] processes::RegisteredPayload EncodeProcessResourcePayload(ProcessResourcePayload payload);
+[[nodiscard]] std::optional<ProcessResourcePayload> DecodeProcessResourcePayload(
+    const processes::RegisteredPayload &payload);
+[[nodiscard]] processes::RegisteredPayload EncodeProcessResourceReservationPayload(
+    ProcessResourceReservationPayload payload);
+[[nodiscard]] std::optional<ProcessResourceReservationPayload> DecodeProcessResourceReservationPayload(
+    const processes::RegisteredPayload &payload);
+
+class ResourceProcessInputProvider final : public processes::IProcessInputProvider
+{
+public:
+    explicit ResourceProcessInputProvider(resources::ResourcesProductionService& resources) : resources_(resources) {}
+    [[nodiscard]] static constexpr TypeId PayloadType() noexcept { return TypeId::FromString("framework.process.resource.payload"); }
+    [[nodiscard]] static constexpr TypeId ReservationPayloadType() noexcept { return TypeId::FromString("framework.process.resource.reservation"); }
+    [[nodiscard]] foundation::Result<void> Validate(const processes::ProcessInputDefinition& input, const processes::StartProcessRequest& request, processes::ProcessInstanceId instance) override;
+    [[nodiscard]] foundation::Result<processes::ReservedProcessInput> Reserve(const processes::ProcessInputDefinition& input, const processes::StartProcessRequest& request, processes::ProcessInstanceId instance) override;
+    [[nodiscard]] foundation::Result<void> Consume(const processes::ReservedProcessInput& reservation, GameplayContext context) override;
+    [[nodiscard]] foundation::Result<void> Release(const processes::ReservedProcessInput& reservation, GameplayContext context) override;
+private:
+    resources::ResourcesProductionService& resources_;
+};
+
+class ResourceProcessOutputHandler final : public processes::IProcessOutputHandler
+{
+public:
+    explicit ResourceProcessOutputHandler(resources::ResourcesProductionService& resources) : resources_(resources) {}
+    [[nodiscard]] static constexpr processes::ProcessOutputTypeId OutputType() noexcept { return processes::ProcessOutputTypeId::FromString("framework.output.resource"); }
+    [[nodiscard]] bool Supports(processes::ProcessOutputTypeId type) const noexcept override { return type == OutputType(); }
+    [[nodiscard]] foundation::Result<processes::PreparedProcessOutput> Prepare(const processes::ProcessOutputDefinition& output, const processes::ProcessInstance& instance, GameplayContext context) override;
+    [[nodiscard]] foundation::Result<void> Commit(const processes::PreparedProcessOutput& output, const processes::ProcessInstance& instance, GameplayContext context) override;
+    [[nodiscard]] foundation::Result<void> Cancel(const processes::PreparedProcessOutput& output, const processes::ProcessInstance& instance, GameplayContext context) override;
+private:
+    resources::ResourcesProductionService& resources_;
+};
+
+// Timed production recipes execute through Processes. ResourcesProduction remains the
+// authoritative ledger/capability/plan owner; this integration intentionally exposes no
+// second aggregate timed-production executor.
+class ProcessesSimulationLayer final : public simulation::ISimulationLayerExecutor
+{
+public:
+    explicit ProcessesSimulationLayer(processes::ProcessesService& processes) : processes_(processes) {}
+    [[nodiscard]] static constexpr simulation::SimulationLayerId StaticLayer() noexcept { return simulation::SimulationLayerId::FromString("framework.layer.processes"); }
+    [[nodiscard]] simulation::SimulationLayerId Layer() const noexcept override { return StaticLayer(); }
+    [[nodiscard]] foundation::Result<simulation::SimulationLayerSummary> Prepare(const simulation::SimulationTask& task) override;
+    [[nodiscard]] foundation::Result<void> Commit(const simulation::SimulationTask& task, const simulation::SimulationLayerSummary& summary) override;
+private:
+    processes::ProcessesService& processes_;
+};
+}
+
+// BEGIN GENERATED GOAL5 PARTICIPANTS
+#include "Epidemic/GameFramework/SaveGame/save_game.h"
+#include "Epidemic/GameFramework/Processes/processes.h"
+#include "Epidemic/GameFramework/ResourcesProduction/resources_production.h"
+#include "Epidemic/GameFramework/Simulation/simulation.h"
+namespace epidemic::gameplay::savegame
+{
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateResourcesProductionServiceSaveParticipant(epidemic::gameplay::resources::ResourcesProductionService& owner, SaveRestoreWorkspace& workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateSimulationServiceSaveParticipant(epidemic::gameplay::simulation::SimulationService& owner, SaveRestoreWorkspace& workspace);
+}
+// END GENERATED GOAL5 PARTICIPANTS
+```

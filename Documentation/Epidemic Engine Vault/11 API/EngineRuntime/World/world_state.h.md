@@ -1,0 +1,39 @@
+---
+aliases: []
+type: "api-header"
+source_snapshot: "2026-10-10"
+tags: ["api", "engineruntime"]
+source_path: "EngineRuntime/World/include/Epidemic/Runtime/World/world_state.h"
+---
+
+# World: world_state.h
+
+Этот файл является точным текстовым снимком публичного заголовка из `Epidemic(1).zip`. Исходный путь: `EngineRuntime/World/include/Epidemic/Runtime/World/world_state.h`.
+
+**Модуль:** [[05 EngineRuntime/Модуль World|World]].
+**Размер исходного файла:** 168 байт.
+**Подключение:** `#include <Epidemic/Runtime/World/world_state.h>`.
+
+## Объявления типов (лексический индекс)
+`ChunkState`
+
+> [!note] Навигация API
+> Список выше получен лексическим сканированием, не является полноценным C++ AST: вложенные/templated декларации и нераспознанные функции требуют просмотра полного заголовка или clangd.
+
+## Точный текст заголовка
+
+```cpp
+#pragma once
+namespace epidemic::runtime
+{
+enum class ChunkState
+{
+    Unloaded,
+    Loading,
+    Resident,
+    Active,
+    Sleeping,
+    Unloading,
+};
+}
+```
