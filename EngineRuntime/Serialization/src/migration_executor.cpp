@@ -13,208 +13,158 @@
 #include <string_view>
 #include <vector>
 
-namespace epidemic::runtime
-{
-namespace
-{
+namespace epidemic::runtime {
+namespace {
 template <typename TValue>
-[[nodiscard]] foundation::Result<TValue> MigrationExecutorFailure(std::string_view code, std::string_view message)
-{
+[[nodiscard]] foundation::Result<TValue> MigrationExecutorFailure(std::string_view code, std::string_view message) {
     return foundation::Result<TValue>::Failure(CreateSerializationError(code, message));
 }
 
-[[nodiscard]] foundation::Result<void> ValidateMigrationOutput(const SerializedDocument& document, const MigrationKey& key)
-{
-    if (!document.IsValid())
-    {
-        return foundation::Result<void>::Failure(
-            CreateSerializationError("serialization.migration.invalid_output", "migration produced an invalid document"));
+[[nodiscard]] foundation::Result<void> ValidateMigrationOutput(const SerializedDocument &document,
+                                                               const MigrationKey &key) {
+    if (!document.IsValid()) {
+        return foundation::Result<void>::Failure(CreateSerializationError("serialization.migration.invalid_output",
+                                                                          "migration produced an invalid document"));
     }
-    if (document.GetTypeId() != key.type_id)
-    {
+    if (document.GetTypeId() != key.type_id) {
         return foundation::Result<void>::Failure(
             CreateSerializationError("serialization.migration.type_changed", "migration changed the document type id"));
     }
-    if (!(document.GetSchemaVersion() == key.to))
-    {
-        return foundation::Result<void>::Failure(
-            CreateSerializationError("serialization.migration.version_mismatch", "migration produced an unexpected schema version"));
+    if (!(document.GetSchemaVersion() == key.to)) {
+        return foundation::Result<void>::Failure(CreateSerializationError(
+            "serialization.migration.version_mismatch", "migration produced an unexpected schema version"));
     }
-    if (document.GetFormatVersion() != 1u)
-    {
-        return foundation::Result<void>::Failure(
-            CreateSerializationError("serialization.migration.invalid_format", "migration produced an unsupported archive format version"));
+    if (document.GetFormatVersion() != 1u) {
+        return foundation::Result<void>::Failure(CreateSerializationError(
+            "serialization.migration.invalid_format", "migration produced an unsupported archive format version"));
     }
     return foundation::Result<void>::Success();
 }
 } // namespace
 
-foundation::Result<SerializedDocument> ApplyMigrations(
-    const SerializedDocument& document,
-    SchemaVersion target,
-    const IMigrationRegistry& migrations,
-    const IArchiveFactory& archives)
-{
-    if (!document.IsValid() || !document.GetTypeId().IsValid())
-    {
+foundation::Result<SerializedDocument> ApplyMigrations(const SerializedDocument &document, SchemaVersion target,
+                                                       const IMigrationRegistry &migrations,
+                                                       const IArchiveFactory &archives) {
+    if (!document.IsValid() || !document.GetTypeId().IsValid()) {
         return MigrationExecutorFailure<SerializedDocument>("serialization.invalid_document",
                                                             "migration input document must be valid and typed");
     }
-    if (target == SchemaVersion{})
-    {
+    if (target == SchemaVersion{}) {
         return MigrationExecutorFailure<SerializedDocument>("serialization.migration.invalid_version",
                                                             "migration target schema version must be non-zero");
     }
-    if (document.GetSchemaVersion() == target)
-    {
+    if (document.GetSchemaVersion() == target) {
         return foundation::Result<SerializedDocument>::Success(document);
     }
 
-    const auto path = [&]() -> foundation::Result<std::vector<std::shared_ptr<const IMigration>>>
-    {
-        try
-        {
+    const auto path = [&]() -> foundation::Result<std::vector<std::shared_ptr<const IMigration>>> {
+        try {
             return migrations.FindMigrationPath(document.GetTypeId(), document.GetSchemaVersion(), target);
-        }
-        catch (const std::bad_alloc&)
-        {
+        } catch (const std::bad_alloc &) {
             return MigrationExecutorFailure<std::vector<std::shared_ptr<const IMigration>>>(
                 "serialization.out_of_memory", "migration path lookup could not allocate state");
-        }
-        catch (const std::exception& error)
-        {
+        } catch (const std::exception &error) {
             return MigrationExecutorFailure<std::vector<std::shared_ptr<const IMigration>>>(
                 "serialization.migration_registry_exception", error.what());
-        }
-        catch (...)
-        {
+        } catch (...) {
             return MigrationExecutorFailure<std::vector<std::shared_ptr<const IMigration>>>(
                 "serialization.migration_registry_exception", "migration registry threw an unknown exception");
         }
     }();
-    if (!path)
-    {
+    if (!path) {
         return foundation::Result<SerializedDocument>::Failure(path.GetError());
     }
 
     SerializedDocument current = document;
     SchemaVersion current_version = document.GetSchemaVersion();
-    for (const std::shared_ptr<const IMigration>& migration : path.Value())
-    {
-        if (!migration)
-        {
+    for (const std::shared_ptr<const IMigration> &migration : path.Value()) {
+        if (!migration) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.migration.null",
                                                                 "migration path contains a null migration");
         }
 
         MigrationKey key{};
-        try
-        {
+        try {
             key = migration->GetKey();
-        }
-        catch (const std::exception& error)
-        {
+        } catch (const std::exception &error) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.migration.exception", error.what());
-        }
-        catch (...)
-        {
-            return MigrationExecutorFailure<SerializedDocument>("serialization.migration.exception",
-                                                                "migration metadata callback threw an unknown exception");
+        } catch (...) {
+            return MigrationExecutorFailure<SerializedDocument>(
+                "serialization.migration.exception", "migration metadata callback threw an unknown exception");
         }
 
-        if (key.type_id != document.GetTypeId() || !(key.from == current_version))
-        {
-            return MigrationExecutorFailure<SerializedDocument>("serialization.migration.metadata_mismatch",
-                                                                "migration metadata does not match the current document");
+        if (key.type_id != document.GetTypeId() || !(key.from == current_version)) {
+            return MigrationExecutorFailure<SerializedDocument>(
+                "serialization.migration.metadata_mismatch", "migration metadata does not match the current document");
         }
 
         foundation::Result<std::unique_ptr<IArchiveReader>> reader =
-            foundation::Result<std::unique_ptr<IArchiveReader>>::Failure(CreateSerializationError("serialization.internal", "uninitialized reader"));
-        try
-        {
+            foundation::Result<std::unique_ptr<IArchiveReader>>::Failure(
+                CreateSerializationError("serialization.internal", "uninitialized reader"));
+        try {
             reader = archives.CreateReader(current);
-        }
-        catch (const std::exception& error)
-        {
-            return MigrationExecutorFailure<SerializedDocument>("serialization.archive_factory_exception", error.what());
-        }
-        catch (...)
-        {
+        } catch (const std::exception &error) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.archive_factory_exception",
-                                                                "archive factory threw an unknown exception creating a reader");
+                                                                error.what());
+        } catch (...) {
+            return MigrationExecutorFailure<SerializedDocument>(
+                "serialization.archive_factory_exception",
+                "archive factory threw an unknown exception creating a reader");
         }
-        if (!reader)
-        {
+        if (!reader) {
             return foundation::Result<SerializedDocument>::Failure(reader.GetError());
         }
 
         std::unique_ptr<IArchiveWriter> writer;
-        try
-        {
+        try {
             writer = archives.CreateWriter();
-        }
-        catch (const std::exception& error)
-        {
-            return MigrationExecutorFailure<SerializedDocument>("serialization.archive_factory_exception", error.what());
-        }
-        catch (...)
-        {
+        } catch (const std::exception &error) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.archive_factory_exception",
-                                                                "archive factory threw an unknown exception creating a writer");
+                                                                error.what());
+        } catch (...) {
+            return MigrationExecutorFailure<SerializedDocument>(
+                "serialization.archive_factory_exception",
+                "archive factory threw an unknown exception creating a writer");
         }
-        if (!writer)
-        {
+        if (!writer) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.archive_factory_failed",
                                                                 "archive factory returned a null writer");
         }
 
-        foundation::Result<void> applied = foundation::Result<void>::Failure(CreateSerializationError("serialization.internal", "uninitialized migration result"));
-        try
-        {
+        foundation::Result<void> applied = foundation::Result<void>::Failure(
+            CreateSerializationError("serialization.internal", "uninitialized migration result"));
+        try {
             applied = migration->Apply(*reader.Value(), *writer);
-        }
-        catch (const std::exception& error)
-        {
+        } catch (const std::exception &error) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.migration.exception", error.what());
-        }
-        catch (...)
-        {
+        } catch (...) {
             return MigrationExecutorFailure<SerializedDocument>("serialization.migration.exception",
                                                                 "migration body threw an unknown exception");
         }
-        if (!applied)
-        {
+        if (!applied) {
             return foundation::Result<SerializedDocument>::Failure(applied.GetError());
         }
 
-        const auto finalized = [&]() -> foundation::Result<SerializedDocument>
-        {
-            try
-            {
+        const auto finalized = [&]() -> foundation::Result<SerializedDocument> {
+            try {
                 return writer->Finalize(key.type_id, key.to);
-            }
-            catch (const std::bad_alloc&)
-            {
-                return MigrationExecutorFailure<SerializedDocument>("serialization.out_of_memory",
-                                                                    "migration output finalization could not allocate state");
-            }
-            catch (const std::exception& error)
-            {
-                return MigrationExecutorFailure<SerializedDocument>("serialization.archive_writer_exception", error.what());
-            }
-            catch (...)
-            {
+            } catch (const std::bad_alloc &) {
                 return MigrationExecutorFailure<SerializedDocument>(
-                    "serialization.archive_writer_exception", "archive writer threw an unknown exception during finalization");
+                    "serialization.out_of_memory", "migration output finalization could not allocate state");
+            } catch (const std::exception &error) {
+                return MigrationExecutorFailure<SerializedDocument>("serialization.archive_writer_exception",
+                                                                    error.what());
+            } catch (...) {
+                return MigrationExecutorFailure<SerializedDocument>(
+                    "serialization.archive_writer_exception",
+                    "archive writer threw an unknown exception during finalization");
             }
         }();
-        if (!finalized)
-        {
+        if (!finalized) {
             return foundation::Result<SerializedDocument>::Failure(finalized.GetError());
         }
         const auto valid_output = ValidateMigrationOutput(finalized.Value(), key);
-        if (!valid_output)
-        {
+        if (!valid_output) {
             return foundation::Result<SerializedDocument>::Failure(valid_output.GetError());
         }
 
@@ -222,10 +172,9 @@ foundation::Result<SerializedDocument> ApplyMigrations(
         current_version = key.to;
     }
 
-    if (!(current_version == target))
-    {
-        return MigrationExecutorFailure<SerializedDocument>("serialization.migration.metadata_mismatch",
-                                                            "migration path did not produce the requested target version");
+    if (!(current_version == target)) {
+        return MigrationExecutorFailure<SerializedDocument>(
+            "serialization.migration.metadata_mismatch", "migration path did not produce the requested target version");
     }
     return foundation::Result<SerializedDocument>::Success(current);
 }

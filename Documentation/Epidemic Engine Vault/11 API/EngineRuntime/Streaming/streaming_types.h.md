@@ -278,3 +278,190 @@ struct std::hash<epidemic::runtime::streaming::StreamingDemandId>
     }
 };
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Runtime/Foundation/runtime_budget.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Foundation/string_id.h`.
+
+### Перечисления и допустимые категории
+
+- `StreamingState`: `NotRequested`, `Requested`, `Queued`, `Loading`, `Loaded`, `Activating`, `Active`, `Resident`, `Deactivating`, `Unloading`, `WaitingForPredecessor`, `Unloaded`, `Cancelled`, `Failed`, `RollbackFailed`
+- `StreamingPriorityClass`: `Critical`, `High`, `Normal`, `Low`, `Background`
+- `StreamingPlanStep`: `ResolveTarget`, `PrepareData`, `PrepareResources`, `Commit`, `Rollback`, `Release`
+
+### Состав типов и операции
+
+#### `StreamingRequestId` (строка заголовка 48)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] friend constexpr bool operator==(StreamingRequestId, StreamingRequestId) noexcept = default;
+```
+
+#### `StreamingRequestHandle` (строка заголовка 60)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] friend constexpr bool operator==(StreamingRequestHandle, StreamingRequestHandle) noexcept = default;
+```
+
+#### `StreamingDemandId` (строка заголовка 73)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] friend constexpr bool operator==(StreamingDemandId, StreamingDemandId) noexcept = default;
+```
+
+#### `StreamingDemandHandle` (строка заголовка 85)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] friend constexpr bool operator==(StreamingDemandHandle, StreamingDemandHandle) noexcept = default;
+```
+
+#### `StreamingPlanStepRecord` (строка заголовка 141)
+
+Публичные поля и значения по умолчанию:
+
+- `StreamingPlanStep step = StreamingPlanStep::ResolveTarget`
+- `std::size_t estimated_bytes = 0`
+- `std::size_t processed_bytes = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+constexpr StreamingPlanStepRecord() = default;
+constexpr StreamingPlanStepRecord(StreamingPlanStep value) noexcept : step(value);
+constexpr StreamingPlanStepRecord(StreamingPlanStep value, std::size_t estimated, std::size_t processed = 0) noexcept : step(value), estimated_bytes(estimated), processed_bytes(processed);
+constexpr operator StreamingPlanStep() const noexcept;
+```
+
+#### `StreamingStepResult` (строка заголовка 156)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t processed_bytes = 0`
+- `bool completed = true`
+
+#### `ProgressiveLoadPlan` (строка заголовка 164)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t cursor = 0`
+
+#### `StreamingCancellationToken` (строка заголовка 170)
+
+Публичные поля и значения по умолчанию:
+
+- `bool requested = false`
+- `std::uint32_t generation = 0`
+
+#### `StreamingRequest` (строка заголовка 176)
+
+Публичные поля и значения по умолчанию:
+
+- `StreamingPriorityClass priority = StreamingPriorityClass::Normal`
+- `std::uint32_t demand_count = 1`
+
+#### `StreamingBudget` (строка заголовка 187)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_requests = 0`
+- `std::size_t max_bytes = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsUnlimited() const noexcept;
+```
+
+#### `StreamingProgress` (строка заголовка 199)
+
+Публичные поля и значения по умолчанию:
+
+- `StreamingState state = StreamingState::NotRequested`
+- `float progress = 0.0f`
+- `std::uint32_t demand_count = 0`
+- `std::uint64_t revision = 0`
+- `std::size_t processed_bytes = 0`
+
+#### `StreamingTickResult` (строка заголовка 218)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t processed_requests = 0`
+- `std::size_t processed_bytes = 0`
+- `std::vector<StreamingTickFailure> failures`
+
+#### `StreamingStatistics` (строка заголовка 225)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t requested = 0`
+- `std::uint64_t cancelled = 0`
+- `std::uint64_t committed = 0`
+- `std::uint64_t rolled_back = 0`
+- `std::uint64_t unloaded = 0`
+- `std::uint64_t rollback_failed = 0`
+- `std::uint64_t budget_violations = 0`
+- `std::uint64_t failed = 0`
+
+#### `std` (строка заголовка 239)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(epidemic::runtime::streaming::StreamingRequestId id) const noexcept;
+```
+
+#### `std` (строка заголовка 248)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(epidemic::runtime::streaming::StreamingDemandId id) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `IsUnlimited`: `EngineRuntime/Streaming/tests/streaming_tests.cpp:1640`
+

@@ -5,13 +5,11 @@
 
 #include <cstdint>
 
-namespace epidemic::input
-{
+namespace epidemic::input {
 // This file defines the transient input events emitted during one PublishSnapshot() call.
 // InputEvent complements InputSnapshot by preserving per-event details such as repeat and wheel deltas.
 
-enum class InputEventType : std::uint8_t
-{
+enum class InputEventType : std::uint8_t {
     None,
     KeyPressed,
     KeyReleased,
@@ -23,8 +21,7 @@ enum class InputEventType : std::uint8_t
     CaptureChanged,
 };
 
-struct InputEvent
-{
+struct InputEvent {
     InputEventType type{InputEventType::None};
     KeyCode key_code{KeyCode::Unknown};
     MouseButton mouse_button{MouseButton::Left};
@@ -37,4 +34,4 @@ struct InputEvent
     std::int32_t mouse_delta_y{};
     std::int32_t wheel_delta{};
 };
-} 
+}

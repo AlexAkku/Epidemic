@@ -11,16 +11,13 @@
 
 using namespace epidemic::gameplay;
 
-namespace epidemic::gameplay::detail
-{
+namespace epidemic::gameplay::detail {
 void SetFoundationFaultPointForTesting(std::string_view point) noexcept;
 void ClearFoundationFaultPointForTesting() noexcept;
 }
 
-namespace
-{
-struct PreStateFixture
-{
+namespace {
+struct PreStateFixture {
     int primary_record{0};
     int secondary_index{0};
     int generator_next{0};
@@ -31,42 +28,33 @@ struct PreStateFixture
     [[nodiscard]] bool operator==(const PreStateFixture &) const = default;
 };
 
-void Check(bool condition, int code)
-{
-    if (!condition)
-    {
+void Check(bool condition, int code) {
+    if (!condition) {
         std::exit(code);
     }
 }
 
-GameplayObjectRef MakeRef(std::string_view domain, std::string_view id)
-{
+GameplayObjectRef MakeRef(std::string_view domain, std::string_view id) {
     return GameplayObjectRef{GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 
-std::filesystem::path FindRepositoryRootForDocumentationTest()
-{
+std::filesystem::path FindRepositoryRootForDocumentationTest() {
     const auto find_from = [](std::filesystem::path current) -> std::filesystem::path {
         std::error_code ec;
         current = std::filesystem::absolute(std::move(current), ec);
-        if (ec)
-        {
+        if (ec) {
             return {};
         }
-        if (!std::filesystem::is_directory(current, ec))
-        {
+        if (!std::filesystem::is_directory(current, ec)) {
             current = current.parent_path();
         }
-        while (!current.empty())
-        {
+        while (!current.empty()) {
             if (std::filesystem::is_regular_file(current / "EngineFramework" / "README.md", ec) &&
-                std::filesystem::is_directory(current / "Documentation", ec))
-            {
+                std::filesystem::is_directory(current / "Documentation", ec)) {
                 return current;
             }
             const auto parent = current.parent_path();
-            if (parent == current)
-            {
+            if (parent == current) {
                 break;
             }
             current = parent;
@@ -74,15 +62,13 @@ std::filesystem::path FindRepositoryRootForDocumentationTest()
         return {};
     };
 
-    if (const auto from_source = find_from(std::filesystem::path(__FILE__)); !from_source.empty())
-    {
+    if (const auto from_source = find_from(std::filesystem::path(__FILE__)); !from_source.empty()) {
         return from_source;
     }
     return find_from(std::filesystem::current_path());
 }
 
-void TestFrameworkDocumentationRoot()
-{
+void TestFrameworkDocumentationRoot() {
     const auto root = FindRepositoryRootForDocumentationTest();
     Check(!root.empty(), 935);
 
@@ -99,16 +85,15 @@ void TestFrameworkDocumentationRoot()
     Check(text.find("Documentation/EngineFramework/README.md") != std::string::npos, 939);
     Check(text.find("Documentation/GameFramework/README.md") == std::string::npos, 940);
 
-    for (const auto* module_doc : {"foundation.md", "support_random.md", "queries.md", "facts.md", "time.md",
-                                   "runtime_bridge.md"})
-    {
-        Check(std::filesystem::is_regular_file(root / "Documentation" / "EngineFramework" / "modules" / module_doc), 941);
+    for (const auto *module_doc :
+         {"foundation.md", "support_random.md", "queries.md", "facts.md", "time.md", "runtime_bridge.md"}) {
+        Check(std::filesystem::is_regular_file(root / "Documentation" / "EngineFramework" / "modules" / module_doc),
+              941);
     }
 }
 } // namespace
 
-int main()
-{
+int main() {
     TestFrameworkDocumentationRoot();
 
     static_assert(!std::is_same_v<GameplayObjectId, EventId>);
@@ -206,52 +191,42 @@ int main()
 
         const PreStateFixture before{1, 2, 3, 4, 5, 6};
         const PreStateFixture after = before;
-        const auto report = StateComparator("foundation.test.full_pre_state")
-                                .RequireEqual(StateFacet::PrimaryRecords, before.primary_record, after.primary_record,
-                                              "primary records")
-                                .RequireEqual(StateFacet::RecordPayloads, before, after, "record payloads")
-                                .RequireEqual(StateFacet::SecondaryIndexes, before.secondary_index,
-                                              after.secondary_index, "secondary indexes")
-                                .RequireEqual(StateFacet::IdGenerators, before.generator_next, after.generator_next,
-                                              "id generators")
-                                .RequireEqual(StateFacet::Revisions, before.revision, after.revision, "revisions")
-                                .RequireEqual(StateFacet::Journal, before.journal_sequence, after.journal_sequence,
-                                              "journal")
-                                .RequireEqual(StateFacet::JournalEpoch, before.journal_sequence,
-                                              after.journal_sequence, "journal epoch")
-                                .RequireEqual(StateFacet::JournalSequence, before.journal_sequence,
-                                              after.journal_sequence, "journal sequence")
-                                .RequireEqual(StateFacet::JournalRetainedRecords, before.journal_sequence,
-                                              after.journal_sequence, "journal retained records")
-                                .RequireEqual(StateFacet::JournalLatestCursor, before.journal_sequence,
-                                              after.journal_sequence, "journal latest cursor")
-                                .RequireEqual(StateFacet::ExternalCallbacks, before.callback_count, after.callback_count,
-                                              "external callbacks")
-                                .RequireEqual(StateFacet::PublicReadModels, before, after, "public read models")
-                                .Finish();
-        Check(report.PassedAndCovers({StateFacet::PrimaryRecords,
-                                      StateFacet::RecordPayloads,
-                                      StateFacet::SecondaryIndexes,
-                                      StateFacet::IdGenerators,
-                                      StateFacet::Revisions,
-                                      StateFacet::Journal,
-                                      StateFacet::JournalEpoch,
-                                      StateFacet::JournalSequence,
-                                      StateFacet::JournalRetainedRecords,
-                                      StateFacet::JournalLatestCursor,
-                                      StateFacet::ExternalCallbacks,
-                                      StateFacet::PublicReadModels}),
+        const auto report =
+            StateComparator("foundation.test.full_pre_state")
+                .RequireEqual(StateFacet::PrimaryRecords, before.primary_record, after.primary_record,
+                              "primary records")
+                .RequireEqual(StateFacet::RecordPayloads, before, after, "record payloads")
+                .RequireEqual(StateFacet::SecondaryIndexes, before.secondary_index, after.secondary_index,
+                              "secondary indexes")
+                .RequireEqual(StateFacet::IdGenerators, before.generator_next, after.generator_next, "id generators")
+                .RequireEqual(StateFacet::Revisions, before.revision, after.revision, "revisions")
+                .RequireEqual(StateFacet::Journal, before.journal_sequence, after.journal_sequence, "journal")
+                .RequireEqual(StateFacet::JournalEpoch, before.journal_sequence, after.journal_sequence,
+                              "journal epoch")
+                .RequireEqual(StateFacet::JournalSequence, before.journal_sequence, after.journal_sequence,
+                              "journal sequence")
+                .RequireEqual(StateFacet::JournalRetainedRecords, before.journal_sequence, after.journal_sequence,
+                              "journal retained records")
+                .RequireEqual(StateFacet::JournalLatestCursor, before.journal_sequence, after.journal_sequence,
+                              "journal latest cursor")
+                .RequireEqual(StateFacet::ExternalCallbacks, before.callback_count, after.callback_count,
+                              "external callbacks")
+                .RequireEqual(StateFacet::PublicReadModels, before, after, "public read models")
+                .Finish();
+        Check(report.PassedAndCovers({StateFacet::PrimaryRecords, StateFacet::RecordPayloads,
+                                      StateFacet::SecondaryIndexes, StateFacet::IdGenerators, StateFacet::Revisions,
+                                      StateFacet::Journal, StateFacet::JournalEpoch, StateFacet::JournalSequence,
+                                      StateFacet::JournalRetainedRecords, StateFacet::JournalLatestCursor,
+                                      StateFacet::ExternalCallbacks, StateFacet::PublicReadModels}),
               928);
         Check(report.PassedAndCovers(RequiredJournaledMutationFacets), 934);
 
-        const auto revision_only = StateComparator("foundation.test.revision_only")
-                                       .RequireEqual(StateFacet::Revisions, before.revision, after.revision,
-                                                     "revisions")
-                                       .Finish();
-        Check(!revision_only.PassedAndCovers({StateFacet::PrimaryRecords,
-                                              StateFacet::RecordPayloads,
-                                              StateFacet::SecondaryIndexes,
-                                              StateFacet::Revisions,
+        const auto revision_only =
+            StateComparator("foundation.test.revision_only")
+                .RequireEqual(StateFacet::Revisions, before.revision, after.revision, "revisions")
+                .Finish();
+        Check(!revision_only.PassedAndCovers({StateFacet::PrimaryRecords, StateFacet::RecordPayloads,
+                                              StateFacet::SecondaryIndexes, StateFacet::Revisions,
                                               StateFacet::JournalLatestCursor}),
               929);
 
@@ -270,12 +245,9 @@ int main()
         const auto size_before = fault_registry.Size();
         bool threw = false;
         epidemic::gameplay::detail::SetFoundationFaultPointForTesting("type_registry.publish");
-        try
-        {
+        try {
             (void)fault_registry.Register("framework.fault.target");
-        }
-        catch (const std::bad_alloc&)
-        {
+        } catch (const std::bad_alloc &) {
             threw = true;
         }
         epidemic::gameplay::detail::ClearFoundationFaultPointForTesting();
@@ -289,12 +261,9 @@ int main()
         const auto size_before = fault_tags.Size();
         bool threw = false;
         epidemic::gameplay::detail::SetFoundationFaultPointForTesting("tag_registry.publish");
-        try
-        {
+        try {
             (void)fault_tags.Register("fault.deep.hierarchy.leaf");
-        }
-        catch (const std::bad_alloc&)
-        {
+        } catch (const std::bad_alloc &) {
             threw = true;
         }
         epidemic::gameplay::detail::ClearFoundationFaultPointForTesting();

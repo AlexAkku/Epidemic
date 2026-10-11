@@ -513,3 +513,333 @@ class EconomyService
 };
 } // namespace epidemic::gameplay::economy
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `AccountState`: `Active`, `Frozen`, `Closed`
+- `FundsReservationState`: `Active`, `Committed`, `Released`
+- `OfferState`: `Active`, `Accepted`, `Expired`, `Cancelled`
+- `TradeTransactionState`: `Prepared`, `Reserved`, `Committing`, `Committed`, `Compensating`, `Cancelled`, `Failed`
+- `DebtState`: `Active`, `Paid`, `Forgiven`, `Defaulted`, `Expired`
+- `ContractState`: `Draft`, `Active`, `Fulfilled`, `Breached`, `Cancelled`, `Expired`
+- `EconomyChangeKind`: `AccountCreated`, `AccountStateChanged`, `BalanceChanged`, `FundsReserved`, `FundsReleased`, `FundsCommitted`, `MarketCreated`, `MarketChanged`, `OfferCreated`, `OfferChanged`, `TradeChanged`, `DebtChanged`, `ContractChanged`, `DebtCompacted`, `ContractCompacted`
+
+### Состав типов и операции
+
+#### `name` (строка заголовка 17)
+
+Публичные сигнатуры операций:
+
+```cpp
+\ static constexpr name FromString(std::string_view s) noexcept \;
+\ [[nodiscard]] constexpr bool IsValid() const noexcept \;
+\ [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;
+\ [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;
+```
+
+#### `name` (строка заголовка 32)
+
+Публичные сигнатуры операций:
+
+```cpp
+\ static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept \;
+\ [[nodiscard]] constexpr bool IsValid() const noexcept \;
+\ [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;
+\ [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 62)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 64)
+
+#### `CurrencyDefinition` (строка заголовка 134)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `Fixed smallest_unit = 1`
+- `GameplayTagSet tags`
+
+#### `EconomicAccount` (строка заголовка 142)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed balance = 0`
+- `AccountState state = AccountState::Active`
+
+#### `FundsReservation` (строка заголовка 151)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed amount = 0`
+- `FundsReservationState state = FundsReservationState::Active`
+
+#### `MarketState` (строка заголовка 161)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+
+#### `MarketIndicator` (строка заголовка 168)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed supply = 0`
+- `Fixed demand = 0`
+- `Fixed price_index_micro = 1'000'000`
+
+#### `PriceQuote` (строка заголовка 184)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed quantity = 1`
+- `Fixed unit_amount = 0`
+
+#### `PriceQuoteRequest` (строка заголовка 195)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed quantity = 1`
+
+#### `EconomicOffer` (строка заголовка 205)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed quantity = 0`
+- `Fixed unit_price = 0`
+- `OfferState state = OfferState::Active`
+
+#### `MonetaryTransfer` (строка заголовка 219)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed amount = 0`
+
+#### `TradePlan` (строка заголовка 226)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<MonetaryTransfer> monetary_transfers`
+
+#### `TradeTransaction` (строка заголовка 235)
+
+Публичные поля и значения по умолчанию:
+
+- `TradePlan plan`
+- `std::vector<FundsReservationId> reservations`
+- `Fixed accepted_quantity = 0`
+- `TradeTransactionState state = TradeTransactionState::Prepared`
+
+#### `OfferAcceptanceRequest` (строка заголовка 247)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed accepted_quantity = 0`
+
+#### `DebtRecord` (строка заголовка 257)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed principal = 0`
+- `DebtState state = DebtState::Active`
+
+#### `ContractTermsSchema` (строка заголовка 268)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_payload_bytes = 0`
+
+#### `EconomicContract` (строка заголовка 274)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<GameplayObjectRef> parties`
+- `Fixed amount = 0`
+- `std::vector<std::byte> terms_payload`
+- `ContractState state = ContractState::Draft`
+
+#### `EconomyChange` (строка заголовка 287)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `EconomyChangeKind kind = EconomyChangeKind::BalanceChanged`
+- `Fixed amount = 0`
+- `AccountState old_account_state = AccountState::Active`
+- `AccountState new_account_state = AccountState::Active`
+
+#### `EconomySnapshot` (строка заголовка 309)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EconomicAccount> accounts`
+- `std::vector<FundsReservation> reservations`
+- `std::vector<MarketState> markets`
+- `std::vector<MarketIndicator> indicators`
+- `std::vector<EconomicOffer> offers`
+- `std::vector<TradeTransaction> transactions`
+- `std::vector<DebtRecord> debts`
+- `std::vector<EconomicContract> contracts`
+- `std::uint64_t change_epoch = 1`
+
+#### `EconomyDiagnostics` (строка заголовка 325)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t accounts = 0`
+- `std::uint64_t active_reservations = 0`
+- `std::uint64_t markets = 0`
+- `std::uint64_t offers = 0`
+- `std::uint64_t transactions = 0`
+- `std::uint64_t debts = 0`
+
+#### `EconomyChangeBatch` (строка заголовка 334)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EconomyChange> changes`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `bool snapshot_required = false`
+
+#### `IPriceProvider` (строка заголовка 345)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IPriceProvider() = default;
+[[nodiscard]] virtual std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `EconomyService` (строка заголовка 351)
+
+Публичные поля и значения по умолчанию:
+
+- `, OfferState state = OfferState::Active) const`
+
+Внутреннее состояние (не часть публичного API): `bool frozen_ = false`, `std::unordered_map<CurrencyId, CurrencyDefinition, IdHash> currencies_`, `std::unordered_map<EconomicAccountId, EconomicAccount, IdHash> accounts_`, `std::unordered_map<FundsReservationId, FundsReservation, IdHash> reservations_`, `std::unordered_map<MarketId, MarketState, IdHash> markets_`, `std::unordered_map<IndicatorKey, MarketIndicator, IndicatorKeyHash> indicators_`, `std::unordered_map<OfferId, EconomicOffer, IdHash> offers_`, `std::unordered_map<TradeTransactionId, TradeTransaction, IdHash> transactions_`, `std::unordered_map<DebtId, DebtRecord, IdHash> debts_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+EconomyService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<CurrencyId> RegisterCurrency(CurrencyDefinition definition);
+void Freeze() noexcept;
+[[nodiscard]] foundation::Result<void> AddPriceProvider(PriceProviderId id, std::int32_t priority, const IPriceProvider *provider);
+[[nodiscard]] foundation::Result<void> RegisterContractTermsSchema(ContractTermsSchema schema);
+[[nodiscard]] foundation::Result<EconomicAccountId> CreateAccount(EconomicAccount account);
+[[nodiscard]] const EconomicAccount *FindAccount(EconomicAccountId id) const noexcept;
+[[nodiscard]] std::optional<EconomicAccount> FindAccountCopy(EconomicAccountId id) const noexcept;
+[[nodiscard]] Fixed GetBalance(EconomicAccountId id) const noexcept;
+[[nodiscard]] Fixed GetAvailableBalance(EconomicAccountId id) const noexcept;
+[[nodiscard]] foundation::Result<MarketId> CreateMarket(MarketState market);
+[[nodiscard]] foundation::Result<void> SetMarketIndicator(MarketIndicator indicator);
+[[nodiscard]] std::optional<MarketIndicator> GetMarketIndicator(MarketId market, EconomicCommodityId commodity) const;
+[[nodiscard]] std::optional<PriceQuote> GetPriceQuote(const PriceQuoteRequest &request) const;
+[[nodiscard]] foundation::Result<OfferId> CreateOffer(EconomicOffer offer);
+[[nodiscard]] foundation::Result<TradeTransactionId> AcceptOffer(OfferAcceptanceRequest request);
+[[nodiscard]] foundation::Result<TradeTransactionId> PrepareTrade(TradePlan plan);
+[[nodiscard]] foundation::Result<void> ReserveTrade(TradeTransactionId transaction);
+[[nodiscard]] foundation::Result<void> CommitTrade(TradeTransactionId transaction);
+[[nodiscard]] foundation::Result<void> CancelTrade(TradeTransactionId transaction);
+[[nodiscard]] const TradeTransaction *FindTransaction(TradeTransactionId id) const noexcept;
+[[nodiscard]] std::optional<TradeTransaction> FindTransactionCopy(TradeTransactionId id) const noexcept;
+[[nodiscard]] std::vector<EconomicAccount> FindAccounts(GameplayObjectRef owner, std::optional<CurrencyId> currency = std::nullopt) const;
+[[nodiscard]] foundation::Result<DebtId> CreateDebt(DebtRecord debt);
+[[nodiscard]] std::vector<DebtRecord> FindDebts(GameplayObjectRef subject) const;
+[[nodiscard]] foundation::Result<EconomicContractId> CreateContract(EconomicContract contract);
+[[nodiscard]] EconomyChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] EconomySnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(EconomySnapshot snapshot);
+[[nodiscard]] EconomyDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `IndicatorKey` (строка заголовка 442)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const IndicatorKey &) const noexcept = default;
+```
+
+#### `IndicatorKeyHash` (строка заголовка 448)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const IndicatorKey &k) const noexcept;
+```
+
+#### `PriceProviderRegistration` (строка заголовка 474)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int32_t priority = 0`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `EconomyService` | `EconomyService::EconomyService` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:102` |
+| `Freeze` | `EconomyService::Freeze` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:108` |
+| `AddPriceProvider` | `EconomyService::AddPriceProvider` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:115` |
+| `RegisterContractTermsSchema` | `EconomyService::RegisterContractTermsSchema` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:123` |
+| `RegisterCurrency` | `EconomyService::RegisterCurrency` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:131` |
+| `CreateAccount` | `EconomyService::CreateAccount` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:148` |
+| `FindAccount` | `EconomyService::FindAccount` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:186` |
+| `FindAccountCopy` | `EconomyService::FindAccountCopy` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:191` |
+| `GetBalance` | `EconomyService::GetBalance` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:223` |
+| `GetAvailableBalance` | `EconomyService::GetAvailableBalance` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:228` |
+| `CreateMarket` | `EconomyService::CreateMarket` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:385` |
+| `SetMarketIndicator` | `EconomyService::SetMarketIndicator` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:424` |
+| `GetMarketIndicator` | `EconomyService::GetMarketIndicator` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:461` |
+| `GetPriceQuote` | `EconomyService::GetPriceQuote` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:466` |
+| `CreateOffer` | `EconomyService::CreateOffer` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:493` |
+| `AcceptOffer` | `EconomyService::AcceptOffer` | `EngineFramework/GameplayWorldStateOwners/Economy/src/economy.cpp:553` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterCurrency`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:59`
+- `AddPriceProvider`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:63`
+- `RegisterContractTermsSchema`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:70`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:71`
+- `CreateAccount`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:76`
+- `GetAvailableBalance`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:86`
+- `GetBalance`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:88`
+- `PrepareTrade`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:93`
+- `CurrentRevision`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:100`
+- `CancelTrade`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:103`
+- `ReserveTrade`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:105`
+- `CommitTrade`: `EngineFramework/DevelopmentInfrastructure/Tests/economy_tests.cpp:110`
+

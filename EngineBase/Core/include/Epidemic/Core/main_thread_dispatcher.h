@@ -9,14 +9,12 @@
 #include <shadow_probe.h>
 #endif
 
-namespace epidemic::core
-{
+namespace epidemic::core {
 // This file defines the main-thread task queue used by Application.
 // The dispatcher lets background code request work back on the owning thread without knowing
 // anything about the frame loop implementation.
 
-class IMainThreadDispatcher
-{
+class IMainThreadDispatcher {
   public:
     virtual ~IMainThreadDispatcher() = default;
 
@@ -30,8 +28,7 @@ class IMainThreadDispatcher
     [[nodiscard]] virtual bool IsMainThread() const noexcept = 0;
 };
 
-class MainThreadDispatcher final : public IMainThreadDispatcher
-{
+class MainThreadDispatcher final : public IMainThreadDispatcher {
   public:
     // Captures the constructing thread as the owning main thread.
     MainThreadDispatcher();
@@ -46,8 +43,7 @@ class MainThreadDispatcher final : public IMainThreadDispatcher
     [[nodiscard]] bool IsMainThread() const noexcept override;
 
   private:
-    struct PendingTask
-    {
+    struct PendingTask {
         std::function<void()> task;
         std::string debug_name;
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES

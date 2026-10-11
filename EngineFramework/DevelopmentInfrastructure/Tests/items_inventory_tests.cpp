@@ -10,23 +10,18 @@
 #endif
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::items;
-namespace
-{
-void Check(bool v, const char *m)
-{
-    if (!v)
-    {
+namespace {
+void Check(bool v, const char *m) {
+    if (!v) {
         std::cerr << m << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char *d, const char *i)
-{
+GameplayObjectRef Ref(const char *d, const char *i) {
     return {GameplayDomainId::FromString(d), GameplayObjectId::FromString(i)};
 }
 } // namespace
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     if (argc == 2 && std::string_view(argv[1]) == "--auditor-pickup") {
         using namespace epidemic::auditor::shadow;
@@ -36,25 +31,29 @@ int main(int argc, char** argv)
         ItemDefinition definition;
         definition.canonical_name = "auditor.pickup.item";
         const auto registered = owner.RegisterDefinition(definition);
-        if (!registered) return 2;
+        if (!registered)
+            return 2;
         owner.Freeze();
         ContainerRecord bag;
         bag.owner_object = Ref("actor", "auditor.player");
         const auto container = owner.CreateContainer(bag);
-        if (!container) return 3;
+        if (!container)
+            return 3;
         ItemInstance item;
         item.definition = registered.Value();
         item.location.kind = ItemLocationKind::World;
         item.location.world_object = Ref("world", "auditor.pickup");
         const auto created = owner.CreateItem(item);
-        if (!created) return 4;
+        if (!created)
+            return 4;
         ItemLocation target;
         target.kind = ItemLocationKind::Container;
         target.container = container.Value();
         const auto transition = identity();
         flow("state.request", transition.data());
         const auto plan = owner.PrepareTransfer(created.Value(), target, 1);
-        if (!plan || !owner.CommitTransfer(plan.Value())) return 5;
+        if (!plan || !owner.CommitTransfer(plan.Value()))
+            return 5;
         flow("state.change", transition.data());
         const bool success = owner.FindItem(created.Value())->location.container == container.Value();
         scenario("scenario.end", "pickup-scenario");
@@ -62,7 +61,8 @@ int main(int argc, char** argv)
         return success ? 0 : 6;
     }
 #else
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 #endif
     ItemsInventoryService s;
     ItemDefinition apple;
@@ -138,7 +138,7 @@ int main(int argc, char** argv)
     Check(static_cast<bool>(old_equipment_reservation), "reserve old equipment item");
     const auto before_exchange_revision = s.CurrentRevision();
     auto exchanged = s.ExchangeReservations({&old_equipment_reservation.Value(), 1}, replacement_id.Value(), 1,
-                                             equipment_owner, equipment_reason);
+                                            equipment_owner, equipment_reason);
     Check(static_cast<bool>(exchanged), "atomic reservation exchange");
     Check(s.CurrentRevision().value == before_exchange_revision.value + 1, "exchange uses one revision");
     Check(s.FindReservations(swid.Value()).empty(), "old equipment reservation released");
@@ -172,7 +172,8 @@ int main(int argc, char** argv)
     too_heavy.location = {ItemLocationKind::Container, tinyid.Value(), {}, {}, {}};
     Check(!restored.CreateItem(too_heavy), "capacity checked on create");
 
-    Check(static_cast<bool>(restored.SetContainerState(chest_id.Value(), ContainerState::Disabled)), "disable container");
+    Check(static_cast<bool>(restored.SetContainerState(chest_id.Value(), ContainerState::Disabled)),
+          "disable container");
     ItemInstance blocked_insert;
     blocked_insert.definition = apple_id.Value();
     blocked_insert.quantity = 1;
@@ -209,10 +210,9 @@ int main(int argc, char** argv)
     Check(static_cast<bool>(restored.CommitTransfer(world_transfer.Value())), "commit explicit world split transfer");
     Check(restored.FindItem(world_stack_id.Value())->quantity == 3, "source world stack keeps remaining quantity");
     bool found_piece = false;
-    for (const auto& item : restored.FindItemsByDefinition(apple_id.Value()))
-    {
-        if (item.location.kind == ItemLocationKind::World && item.location.world_object == explicit_world_target.world_object && item.quantity == 2)
-        {
+    for (const auto &item : restored.FindItemsByDefinition(apple_id.Value())) {
+        if (item.location.kind == ItemLocationKind::World &&
+            item.location.world_object == explicit_world_target.world_object && item.quantity == 2) {
             found_piece = true;
         }
     }
@@ -225,25 +225,26 @@ int main(int argc, char** argv)
     Check(static_cast<bool>(invalid_generator_restore.RegisterDefinition(apple)), "bad restore apple def");
     Check(static_cast<bool>(invalid_generator_restore.RegisterDefinition(sword)), "bad restore sword def");
     invalid_generator_restore.Freeze();
-    Check(!invalid_generator_restore.RestoreSnapshot(invalid_generator_snapshot), "restore rejects item generator behind restored ids");
+    Check(!invalid_generator_restore.RestoreSnapshot(invalid_generator_snapshot),
+          "restore rejects item generator behind restored ids");
 
     auto duplicate_world_snapshot = restored.CaptureSnapshot();
-    auto duplicate_record = *std::find_if(duplicate_world_snapshot.items.begin(), duplicate_world_snapshot.items.end(), [](const ItemInstance& item) {
-        return item.location.kind == ItemLocationKind::World;
-    });
+    auto duplicate_record = *std::find_if(duplicate_world_snapshot.items.begin(), duplicate_world_snapshot.items.end(),
+                                          [](const ItemInstance &item) {
+                                              return item.location.kind == ItemLocationKind::World;
+                                          });
     duplicate_record.id = ItemInstanceId::FromRaw(0x9999, 1);
     duplicate_world_snapshot.items.push_back(duplicate_record);
     ItemsInventoryService duplicate_world_restore;
     Check(static_cast<bool>(duplicate_world_restore.RegisterDefinition(apple)), "duplicate world restore apple def");
     Check(static_cast<bool>(duplicate_world_restore.RegisterDefinition(sword)), "duplicate world restore sword def");
     duplicate_world_restore.Freeze();
-    Check(!duplicate_world_restore.RestoreSnapshot(duplicate_world_snapshot), "restore rejects duplicate world object binding");
+    Check(!duplicate_world_restore.RestoreSnapshot(duplicate_world_snapshot),
+          "restore rejects duplicate world object binding");
 
     auto over_capacity_snapshot = restored.CaptureSnapshot();
-    for (auto& container : over_capacity_snapshot.containers)
-    {
-        if (container.id == chest_id.Value())
-        {
+    for (auto &container : over_capacity_snapshot.containers) {
+        if (container.id == chest_id.Value()) {
             container.max_slots = 0;
             container.max_weight = 1;
         }
@@ -252,13 +253,13 @@ int main(int argc, char** argv)
     Check(static_cast<bool>(over_capacity_restore.RegisterDefinition(apple)), "over capacity restore apple def");
     Check(static_cast<bool>(over_capacity_restore.RegisterDefinition(sword)), "over capacity restore sword def");
     over_capacity_restore.Freeze();
-    Check(!over_capacity_restore.RestoreSnapshot(over_capacity_snapshot), "restore rejects capacity violating container");
+    Check(!over_capacity_restore.RestoreSnapshot(over_capacity_snapshot),
+          "restore rejects capacity violating container");
 
     ItemsInventoryService journal_service;
     Check(static_cast<bool>(journal_service.RegisterDefinition(apple)), "journal apple def");
     journal_service.Freeze();
-    for (int i = 0; i < 8300; ++i)
-    {
+    for (int i = 0; i < 8300; ++i) {
         ContainerRecord c;
         c.owner_object = Ref("actor", "journal_owner");
         Check(static_cast<bool>(journal_service.CreateContainer(c)), "journal container create");
@@ -268,10 +269,9 @@ int main(int argc, char** argv)
 
     // Goal 4: module-local deterministic allocation publication seams replace process-global operator new hooks.
     const auto allocation_before = restored.CaptureSnapshot();
-    for (const auto point : {internal_test::AllocationFaultPoint::RestoreContainers,
-                             internal_test::AllocationFaultPoint::RestoreItems,
-                             internal_test::AllocationFaultPoint::RestoreReservations})
-    {
+    for (const auto point :
+         {internal_test::AllocationFaultPoint::RestoreContainers, internal_test::AllocationFaultPoint::RestoreItems,
+          internal_test::AllocationFaultPoint::RestoreReservations}) {
         auto allocation_target = allocation_before;
         internal_test::ArmAllocationFault(point);
         const auto restored_under_fault = restored.RestoreSnapshot(std::move(allocation_target));

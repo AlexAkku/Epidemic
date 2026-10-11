@@ -53,3 +53,32 @@ struct ChangeCursor
 }
 } // namespace epidemic::gameplay
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `ChangeCursor` (строка заголовка 10)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t epoch = 0`
+- `std::uint64_t sequence = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr ChangeCursor AtSequence(std::uint64_t value) const noexcept;
+[[nodiscard]] constexpr bool operator==(const ChangeCursor&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ChangeCursor&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+

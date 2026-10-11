@@ -5,33 +5,30 @@
 #include <fstream>
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
 
-namespace epidemic::gameplay::savegame::detail
-{
+namespace epidemic::gameplay::savegame::detail {
 void SetSaveGameFaultPointForTesting(std::string_view) noexcept;
 void ClearSaveGameFaultPointForTesting() noexcept;
 }
-namespace epidemic::gameplay::runtime_bridge::detail
-{
+namespace epidemic::gameplay::runtime_bridge::detail {
 void SetRuntimeBridgePreparationFaultForTesting(bool) noexcept;
 }
 
 using namespace goal5_test_utility;
-namespace
-{
-struct OwnedDirectory
-{
+namespace {
+struct OwnedDirectory {
     std::filesystem::path path;
     OwnedDirectory()
         : path(std::filesystem::temp_directory_path() /
-            ("epidemic_ms54_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())))
-    {
+               ("epidemic_ms54_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()))) {
         TRUTH_REQUIRE(std::filesystem::create_directory(path));
     }
-    ~OwnedDirectory() { std::error_code error; std::filesystem::remove_all(path, error); }
+    ~OwnedDirectory() {
+        std::error_code error;
+        std::filesystem::remove_all(path, error);
+    }
 };
 
-void FreshBackendsRejectRetiredOpaqueCapabilities()
-{
+void FreshBackendsRejectRetiredOpaqueCapabilities() {
     const rt::PersistentObjectId semantic_id{19};
     rb::RuntimePersistentObjectHandle retired;
     {
@@ -46,49 +43,61 @@ void FreshBackendsRejectRetiredOpaqueCapabilities()
     TRUTH_REQUIRE(!stale && stale.GetError().code == "gameplay.runtime_bridge.persistent_object_unknown");
 }
 
-void RetainedConditionJournalReconcilesWithoutChangingProgression()
-{
+void RetainedConditionJournalReconcilesWithoutChangingProgression() {
     fw::progression::ProgressionService progression;
     fw::progression::AttributeDefinition attribute;
-    attribute.canonical_name = "whole.reconcile.attribute"; attribute.max_micro = 100'000'000;
+    attribute.canonical_name = "whole.reconcile.attribute";
+    attribute.max_micro = 100'000'000;
     const auto attribute_id = progression.RegisterAttribute(attribute);
     TRUTH_REQUIRE(attribute_id && progression.Freeze());
-    const fw::GameplayObjectRef actor{fw::entities::EntityService::Domain(), fw::GameplayObjectId::FromString("whole.reconcile.actor")};
+    const fw::GameplayObjectRef actor{fw::entities::EntityService::Domain(),
+                                      fw::GameplayObjectId::FromString("whole.reconcile.actor")};
     TRUTH_REQUIRE(progression.EnsureProfile(actor));
     fw::conditions::ConditionService conditions;
-    fw::conditions::ConditionDefinition definition; definition.canonical_name = "whole.reconcile.condition";
+    fw::conditions::ConditionDefinition definition;
+    definition.canonical_name = "whole.reconcile.condition";
     definition.persistence = fw::conditions::ConditionPersistencePolicy::Persistent;
-    const auto condition_id = conditions.RegisterCondition(definition); TRUTH_REQUIRE(condition_id);
+    const auto condition_id = conditions.RegisterCondition(definition);
+    TRUTH_REQUIRE(condition_id);
     conditions.Freeze();
     ig::ConditionProgressionAdapter adapter(conditions, progression);
-    TRUTH_REQUIRE(adapter.AddMapping({condition_id.Value(), attribute_id.Value(), fw::progression::ModifierOperation::FinalAdd,
-                                     fw::TypeId::FromString("whole.reconcile.modifier"), 0, 1'000'000}));
+    TRUTH_REQUIRE(
+        adapter.AddMapping({condition_id.Value(), attribute_id.Value(), fw::progression::ModifierOperation::FinalAdd,
+                            fw::TypeId::FromString("whole.reconcile.modifier"), 0, 1'000'000}));
     TRUTH_REQUIRE(adapter.FreezeMappings());
-    fw::conditions::ApplyConditionRequest request; request.type = condition_id.Value(); request.subject = actor; request.magnitude_micro = 2'000'000;
+    fw::conditions::ApplyConditionRequest request;
+    request.type = condition_id.Value();
+    request.subject = actor;
+    request.magnitude_micro = 2'000'000;
     TRUTH_REQUIRE(conditions.Apply(request) && adapter.ProcessChanges());
-    SemanticContributions before; before.AddSnapshot("progression", progression.CaptureSnapshot());
+    SemanticContributions before;
+    before.AddSnapshot("progression", progression.CaptureSnapshot());
     const auto checkpoint = adapter.CaptureCheckpoint();
     TRUTH_REQUIRE(conditions.RestoreSnapshot(conditions.CaptureSnapshot()) && adapter.RestoreCheckpoint(checkpoint));
     TRUTH_REQUIRE(adapter.ProcessChanges() && adapter.Cursor().epoch == conditions.LatestChangeCursor().epoch);
-    SemanticContributions after; after.AddSnapshot("progression", progression.CaptureSnapshot());
+    SemanticContributions after;
+    after.AddSnapshot("progression", progression.CaptureSnapshot());
     TRUTH_REQUIRE(after.CanonicalBytes() == before.CanonicalBytes());
     TRUTH_REQUIRE(adapter.ProcessChanges());
-    SemanticContributions retry; retry.AddSnapshot("progression", progression.CaptureSnapshot());
+    SemanticContributions retry;
+    retry.AddSnapshot("progression", progression.CaptureSnapshot());
     TRUTH_REQUIRE(retry.CanonicalBytes() == before.CanonicalBytes());
 }
 
-void NonemptyCrossOwnerRestoreUsesSavedDependencies()
-{
+void NonemptyCrossOwnerRestoreUsesSavedDependencies() {
     OwnedDirectory directory;
     const auto path = directory.path / "cross-owner.package";
     std::vector<std::byte> saved;
-    WithWholeComposition(path, [&](WholeComposition& engine) {
-        engine.Seed(); engine.SeedCrossOwnerReward();
+    WithWholeComposition(path, [&](WholeComposition &engine) {
+        engine.Seed();
+        engine.SeedCrossOwnerReward();
         saved = engine.SemanticPackage();
         const auto captured = engine.saver.CaptureAndCommit({});
-        if (!captured) throw std::runtime_error("cross-owner capture: " + captured.GetError().code + ": " + captured.GetError().message);
+        if (!captured)
+            throw std::runtime_error("cross-owner capture: " + captured.GetError().code + ": " +
+                                     captured.GetError().message);
     });
-    WithWholeComposition(path, [&](WholeComposition& engine) {
+    WithWholeComposition(path, [&](WholeComposition &engine) {
         TRUTH_REQUIRE(engine.framework.loot.GetDiagnostics().bundles == 0);
         const auto before = engine.DurablePackage();
         fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.pre_commit");
@@ -103,11 +112,11 @@ void NonemptyCrossOwnerRestoreUsesSavedDependencies()
     });
 }
 
-void DeathRewardRejectsUnknownDeliveryStateAtomically()
-{
+void DeathRewardRejectsUnknownDeliveryStateAtomically() {
     OwnedDirectory directory;
-    WithWholeComposition(directory.path / "delivery-state.package", [&](WholeComposition& engine) {
-        engine.Seed(); engine.SeedCrossOwnerReward();
+    WithWholeComposition(directory.path / "delivery-state.package", [&](WholeComposition &engine) {
+        engine.Seed();
+        engine.SeedCrossOwnerReward();
         const auto before = engine.framework.death_reward.CaptureCheckpoint();
         auto invalid = before;
         TRUTH_REQUIRE(!invalid.deliveries.empty());
@@ -120,37 +129,46 @@ void DeathRewardRejectsUnknownDeliveryStateAtomically()
     });
 }
 
-void SocialLifecycleCursorExcludesRebuiltJournalIdentity()
-{
+void SocialLifecycleCursorExcludesRebuiltJournalIdentity() {
     fw::social_legal_integration::SocialLegalCheckpoint before;
-    before.mapping_revision = fw::Revision{23}; before.crime_cursor = {5, 9};
+    before.mapping_revision = fw::Revision{23};
+    before.crime_cursor = {5, 9};
     fw::social_legal_integration::RelationshipPenaltyDelivery delivery;
     delivery.crime.value = fw::GameplayObjectId::FromString("policy.crime");
     delivery.mapping = fw::social_legal_integration::SocialLegalMappingId::FromString("policy.mapping");
     before.applied_relationship_penalties.push_back(delivery);
     const auto bytes = [](auto checkpoint) {
-        SemanticContributions state; state.AddSnapshot("social_legal", checkpoint); return state.CanonicalBytes();
+        SemanticContributions state;
+        state.AddSnapshot("social_legal", checkpoint);
+        return state.CanonicalBytes();
     };
-    auto rebound = before; rebound.crime_cursor = {6, 0};
+    auto rebound = before;
+    rebound.crime_cursor = {6, 0};
     TRUTH_REQUIRE(bytes(before) == bytes(rebound));
-    ++rebound.mapping_revision.value; TRUTH_REQUIRE(bytes(before) != bytes(rebound));
-    rebound = before; rebound.applied_relationship_penalties.clear();
+    ++rebound.mapping_revision.value;
     TRUTH_REQUIRE(bytes(before) != bytes(rebound));
-    rebound = before; rebound.crime_cursor = {};
+    rebound = before;
+    rebound.applied_relationship_penalties.clear();
+    TRUTH_REQUIRE(bytes(before) != bytes(rebound));
+    rebound = before;
+    rebound.crime_cursor = {};
     TRUTH_REQUIRE(bytes(before) != bytes(rebound));
 }
 
-void SemanticObservationPoliciesPreserveDurableFields()
-{
+void SemanticObservationPoliciesPreserveDurableFields() {
     const auto bytes = [](auto snapshot) {
-        SemanticContributions state; state.AddSnapshot("policy", snapshot); return state.CanonicalBytes();
+        SemanticContributions state;
+        state.AddSnapshot("policy", snapshot);
+        return state.CanonicalBytes();
     };
     fw::entities::EntitySnapshot before;
-    auto rebound = before; ++rebound.change_epoch;
+    auto rebound = before;
+    ++rebound.change_epoch;
     TRUTH_REQUIRE(bytes(before) == bytes(rebound));
     ++rebound.id_generator.next;
     TRUTH_REQUIRE(bytes(before) != bytes(rebound));
-    rebound = before; ++rebound.revision.value;
+    rebound = before;
+    ++rebound.revision.value;
     TRUTH_REQUIRE(bytes(before) != bytes(rebound));
     fw::state_integration::StateIntegrationCheckpoint cursors;
     cursors.facts.entity_cursor = cursors.facts.entity_latest = {1, 3};
@@ -176,8 +194,7 @@ void SemanticObservationPoliciesPreserveDurableFields()
     TRUTH_REQUIRE(reader.Remaining() == 0 && decoded_cursor == saved_cursor);
 }
 
-void FreshWholeEngineRestoresAllPlanesAndContinuesCausally()
-{
+void FreshWholeEngineRestoresAllPlanesAndContinuesCausally() {
     OwnedDirectory directory;
     const auto path = directory.path / "generation.bin";
     std::vector<std::byte> before, expected_continuation;
@@ -189,7 +206,7 @@ void FreshWholeEngineRestoresAllPlanesAndContinuesCausally()
     fw::ChangeCursor retired_entity_cursor;
     fw::entities::EntitySnapshot saved_entities;
     rt::TimeCheckpoint saved_time;
-    WithWholeComposition(path, [&](WholeComposition& engine) {
+    WithWholeComposition(path, [&](WholeComposition &engine) {
         engine.Seed();
         auto records = rt::CaptureRuntimePersistenceSnapshot(*engine.runtime->services.persistence->query);
         TRUTH_REQUIRE(records && records.Value().objects.size() == 1);
@@ -215,7 +232,7 @@ void FreshWholeEngineRestoresAllPlanesAndContinuesCausally()
         TRUTH_REQUIRE(before != expected_continuation);
     });
     TRUTH_REQUIRE(retired_clock.expired());
-    WithWholeComposition(path, [&](WholeComposition& engine) {
+    WithWholeComposition(path, [&](WholeComposition &engine) {
         TRUTH_REQUIRE(engine.framework.entities.AllEntities().empty());
         TRUTH_REQUIRE(engine.runtime->services.persistence->query->GetRevision() == 0);
         TRUTH_REQUIRE(!engine.restorer.CanResume());
@@ -225,11 +242,11 @@ void FreshWholeEngineRestoresAllPlanesAndContinuesCausally()
         TRUTH_REQUIRE(!engine.framework.entities.Resolve(retired_entity_handle));
         TRUTH_REQUIRE(engine.framework.entities.ReadChangesSince(retired_entity_cursor).snapshot_required);
         engine.VerifyObservationBindings();
-        TRUTH_REQUIRE(restored_entities.records.size() == 3 && restored_entities.id_generator.scope == saved_entities.id_generator.scope);
+        TRUTH_REQUIRE(restored_entities.records.size() == 3 &&
+                      restored_entities.id_generator.scope == saved_entities.id_generator.scope);
         TRUTH_REQUIRE(restored_entities.id_generator.next == saved_entities.id_generator.next);
         TRUTH_REQUIRE(restored_entities.revision == saved_entities.revision);
-        for (std::size_t index = 0; index != saved_entities.records.size(); ++index)
-        {
+        for (std::size_t index = 0; index != saved_entities.records.size(); ++index) {
             TRUTH_REQUIRE(restored_entities.records[index].id == saved_entities.records[index].id);
             TRUTH_REQUIRE(restored_entities.records[index].revision == saved_entities.records[index].revision);
         }
@@ -243,12 +260,14 @@ void FreshWholeEngineRestoresAllPlanesAndContinuesCausally()
         TRUTH_REQUIRE(binding->gameplay_revision == retired_binding.gameplay_revision);
         TRUTH_REQUIRE(!engine.bridge->GetBinding(retired_binding.runtime_object));
         TRUTH_REQUIRE(!engine.backend->ObserveTransform(retired_binding.runtime_object));
-        TRUTH_REQUIRE(!engine.bridge->AttachPhysicsBody(retired_binding.gameplay_object, retired_binding.generation, rb::RuntimePhysicsBodyHandle{91}));
+        TRUTH_REQUIRE(!engine.bridge->AttachPhysicsBody(retired_binding.gameplay_object, retired_binding.generation,
+                                                        rb::RuntimePhysicsBodyHandle{91}));
         const auto reverse_binding = engine.bridge->GetBinding(binding->runtime_object);
         TRUTH_REQUIRE(reverse_binding && reverse_binding->gameplay_object == retired_binding.gameplay_object);
         const auto restored_contributions = engine.SemanticState();
-        TRUTH_REQUIRE(restored_contributions.ObservationEpochs().size() == saved_contributions.ObservationEpochs().size());
-        for (const auto& [owner, epoch] : saved_contributions.ObservationEpochs())
+        TRUTH_REQUIRE(restored_contributions.ObservationEpochs().size() ==
+                      saved_contributions.ObservationEpochs().size());
+        for (const auto &[owner, epoch] : saved_contributions.ObservationEpochs())
             TRUTH_REQUIRE(restored_contributions.ObservationEpochs().at(owner) > epoch);
         TRUTH_REQUIRE(engine.SemanticPackage() == before);
         TRUTH_REQUIRE(engine.SemanticState().Digest() == saved_semantic_digest);
@@ -258,25 +277,26 @@ void FreshWholeEngineRestoresAllPlanesAndContinuesCausally()
     });
 }
 
-void WholeLoadAndPrecommitFailuresAreAtomic()
-{
+void WholeLoadAndPrecommitFailuresAreAtomic() {
     OwnedDirectory directory;
     const auto path = directory.path / "generation.bin";
     std::vector<std::byte> valid;
-    WithWholeComposition(path, [&](WholeComposition& engine) {
-        engine.Seed(); TRUTH_REQUIRE(engine.saver.CaptureAndCommit({}));
+    WithWholeComposition(path, [&](WholeComposition &engine) {
+        engine.Seed();
+        TRUTH_REQUIRE(engine.saver.CaptureAndCommit({}));
         valid = *engine.store.LoadCurrent().Value();
     });
-    for (const auto point : {"missing", "corrupt", "truncated", "future", "validate", "stage", "prepare", "precommit"})
-    {
-        if (point == std::string_view{"missing"}) TRUTH_REQUIRE(std::filesystem::remove(path));
-        else
-        {
+    for (const auto point :
+         {"missing", "corrupt", "truncated", "future", "validate", "stage", "prepare", "precommit"}) {
+        if (point == std::string_view{"missing"})
+            TRUTH_REQUIRE(std::filesystem::remove(path));
+        else {
             auto bytes = valid;
-            if (point == std::string_view{"corrupt"}) bytes.back() ^= std::byte{1};
-            if (point == std::string_view{"truncated"}) bytes.resize(bytes.size() / 2);
-            if (point == std::string_view{"future"})
-            {
+            if (point == std::string_view{"corrupt"})
+                bytes.back() ^= std::byte{1};
+            if (point == std::string_view{"truncated"})
+                bytes.resize(bytes.size() / 2);
+            if (point == std::string_view{"future"}) {
                 bytes[8] = std::byte{255};
                 const auto checksum = fw::savegame::SaveGameOrchestrator::HashBytes(
                     std::span<const std::byte>{bytes}.first(bytes.size() - 8));
@@ -284,60 +304,73 @@ void WholeLoadAndPrecommitFailuresAreAtomic()
                     bytes[bytes.size() - 8 + index] = static_cast<std::byte>((checksum >> (8 * index)) & 255);
             }
             std::ofstream output(path, std::ios::binary | std::ios::trunc);
-            output.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+            output.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
             TRUTH_REQUIRE(output);
         }
-        WithWholeComposition(path, [&](WholeComposition& engine) {
-            engine.Seed(); engine.Continue();
+        WithWholeComposition(path, [&](WholeComposition &engine) {
+            engine.Seed();
+            engine.Continue();
             const auto before = engine.DurablePackage();
             const auto old_clock = engine.runtime->services.time->clock;
             const auto old_binding_count = engine.bridge->GetDiagnostics().active_bindings;
-            struct ClearFault
-            {
-                ~ClearFault() { fw::savegame::detail::ClearSaveGameFaultPointForTesting(); }
+            struct ClearFault {
+                ~ClearFault() {
+                    fw::savegame::detail::ClearSaveGameFaultPointForTesting();
+                }
             } clear;
-            if (point == std::string_view{"validate"}) fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.validate");
-            if (point == std::string_view{"stage"}) fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.stage");
-            if (point == std::string_view{"precommit"}) fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.pre_commit");
+            if (point == std::string_view{"validate"})
+                fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.validate");
+            if (point == std::string_view{"stage"})
+                fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.stage");
+            if (point == std::string_view{"precommit"})
+                fw::savegame::detail::SetSaveGameFaultPointForTesting("restore.pre_commit");
             engine.restore_port.fail_prepare = point == std::string_view{"prepare"};
             const auto failure = engine.Restore();
             TRUTH_REQUIRE(!failure);
-            if (point == std::string_view{"missing"}) TRUTH_REQUIRE(failure.GetError().code == "gameplay.restore.missing_package");
-            if (point == std::string_view{"future"}) TRUTH_REQUIRE(failure.GetError().code == "gameplay.save_generation.version");
+            if (point == std::string_view{"missing"})
+                TRUTH_REQUIRE(failure.GetError().code == "gameplay.restore.missing_package");
+            if (point == std::string_view{"future"})
+                TRUTH_REQUIRE(failure.GetError().code == "gameplay.save_generation.version");
             fw::savegame::detail::ClearSaveGameFaultPointForTesting();
             TRUTH_REQUIRE(engine.restorer.Phase() == ig::WholeRestorePhase::AwaitLoad);
             TRUTH_REQUIRE(!engine.quiesced && !engine.restorer.CanResume());
             TRUTH_REQUIRE(!engine.Advance(std::chrono::microseconds{1}));
             TRUTH_REQUIRE(engine.runtime->services.time->clock == old_clock);
             TRUTH_REQUIRE(engine.restore_port.prepared_clock.expired());
-            if (point == std::string_view{"validate"} || point == std::string_view{"stage"} || point == std::string_view{"precommit"})
+            if (point == std::string_view{"validate"} || point == std::string_view{"stage"} ||
+                point == std::string_view{"precommit"})
                 TRUTH_REQUIRE(engine.restore_port.prepared_count == 1);
-            else TRUTH_REQUIRE(engine.restore_port.prepared_count == 0);
+            else
+                TRUTH_REQUIRE(engine.restore_port.prepared_count == 0);
             TRUTH_REQUIRE(engine.bridge->GetDiagnostics().active_bindings == old_binding_count);
             TRUTH_REQUIRE(engine.DurablePackage() == before);
         });
         // Repair only the owned test package, not the live composition.
         std::ofstream output(path, std::ios::binary | std::ios::trunc);
-        output.write(reinterpret_cast<const char*>(valid.data()), static_cast<std::streamsize>(valid.size()));
+        output.write(reinterpret_cast<const char *>(valid.data()), static_cast<std::streamsize>(valid.size()));
         TRUTH_REQUIRE(output);
     }
 }
 
-void WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject()
-{
+void WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject() {
     OwnedDirectory directory;
     const auto path = directory.path / "generation.bin";
     std::vector<std::byte> saved, continued;
-    WithWholeComposition(path, [&](WholeComposition& engine) {
-        engine.Seed(); saved = engine.SemanticPackage(); TRUTH_REQUIRE(engine.saver.CaptureAndCommit({}));
-        engine.Continue(); continued = engine.SemanticPackage();
+    WithWholeComposition(path, [&](WholeComposition &engine) {
+        engine.Seed();
+        saved = engine.SemanticPackage();
+        TRUTH_REQUIRE(engine.saver.CaptureAndCommit({}));
+        engine.Continue();
+        continued = engine.SemanticPackage();
     });
-    for (const auto point : {"rebuild", "reconcile.accepted", "materialize.world_accepted", "materialize.queued", "materialize.accepted", "bridge.prepare"})
-        WithWholeComposition(path, [&](WholeComposition& engine) {
+    for (const auto point : {"rebuild", "reconcile.accepted", "materialize.world_accepted", "materialize.queued",
+                             "materialize.accepted", "bridge.prepare"})
+        WithWholeComposition(path, [&](WholeComposition &engine) {
             engine.fault_once = point;
-            struct ClearBridgeFault
-            {
-                ~ClearBridgeFault() { rb::detail::SetRuntimeBridgePreparationFaultForTesting(false); }
+            struct ClearBridgeFault {
+                ~ClearBridgeFault() {
+                    rb::detail::SetRuntimeBridgePreparationFaultForTesting(false);
+                }
             } clear;
             rb::detail::SetRuntimeBridgePreparationFaultForTesting(point == std::string_view{"bridge.prepare"});
             TRUTH_REQUIRE(!engine.Restore());
@@ -349,7 +382,9 @@ void WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject()
             TRUTH_REQUIRE(engine.framework.entities.CaptureSnapshot().records.size() == 3);
             TRUTH_REQUIRE(engine.runtime->services.persistence->query->GetRevision() > 0);
             const auto retried = engine.restorer.RetryReconciliation();
-            if (!retried) std::cerr << "retry " << point << ": " << retried.GetError().code << ": " << retried.GetError().message << '\n';
+            if (!retried)
+                std::cerr << "retry " << point << ": " << retried.GetError().code << ": " << retried.GetError().message
+                          << '\n';
             TRUTH_REQUIRE(retried);
             TRUTH_REQUIRE(engine.restorer.CanResume() && !engine.quiesced);
             TRUTH_REQUIRE(!engine.restorer.RetryReconciliation());
@@ -357,47 +392,60 @@ void WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject()
             TRUTH_REQUIRE(engine.bridge->GetDiagnostics().materializations == 1);
             TRUTH_REQUIRE(engine.runtime->services.world->query->FindObjectsInRegion(rt::RegionId{1}).size() == 1);
             TRUTH_REQUIRE(engine.SemanticPackage() == saved);
-            engine.Continue(); TRUTH_REQUIRE(engine.SemanticPackage() == continued);
+            engine.Continue();
+            TRUTH_REQUIRE(engine.SemanticPackage() == continued);
         });
 }
 
-std::uint64_t RepresentativeFingerprint(const std::vector<std::byte>& bytes)
-{
+std::uint64_t RepresentativeFingerprint(const std::vector<std::byte> &bytes) {
     std::uint64_t hash = 14695981039346656037ull;
-    for (auto byte : bytes) { hash ^= std::to_integer<std::uint8_t>(byte); hash *= 1099511628211ull; }
+    for (auto byte : bytes) {
+        hash ^= std::to_integer<std::uint8_t>(byte);
+        hash *= 1099511628211ull;
+    }
     return hash;
 }
 } // namespace
 
-int main(int argc, char** argv)
-{
-    if (argc == 3)
-    {
-        try
-        {
+int main(int argc, char **argv) {
+    if (argc == 3) {
+        try {
             const std::string_view mode = argv[1];
             TRUTH_REQUIRE(mode == "--write" || mode == "--read");
-            WithWholeComposition(argv[2], [&](WholeComposition& engine) {
-                if (mode == "--write") { engine.Seed(); TRUTH_REQUIRE(engine.saver.CaptureAndCommit({})); }
-                else TRUTH_REQUIRE(engine.Restore());
+            WithWholeComposition(argv[2], [&](WholeComposition &engine) {
+                if (mode == "--write") {
+                    engine.Seed();
+                    TRUTH_REQUIRE(engine.saver.CaptureAndCommit({}));
+                } else
+                    TRUTH_REQUIRE(engine.Restore());
                 engine.Continue();
                 std::cout << "WHOLE_FINGERPRINT " << RepresentativeFingerprint(engine.SemanticPackage()) << '\n';
             });
             return 0;
+        } catch (const std::exception &error) {
+            std::cerr << error.what() << '\n';
+            return 1;
         }
-        catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     }
-    if (argc != 1) return 2;
-    return epidemic::truth_tests::Run("Goal5 whole-engine restore", {
-        {"social lifecycle cursor excludes rebuilt journal identity", SocialLifecycleCursorExcludesRebuiltJournalIdentity},
-        {"unknown death delivery state is rejected atomically", DeathRewardRejectsUnknownDeliveryStateAtomically},
-        {"nonempty cross-owner restore uses saved dependencies", NonemptyCrossOwnerRestoreUsesSavedDependencies},
-        {"retained condition journal reconciliation is idempotent", RetainedConditionJournalReconcilesWithoutChangingProgression},
-        {"observation identity policy preserves durable fields", SemanticObservationPoliciesPreserveDurableFields},
-        {"fresh production backend rejects retired capability", FreshBackendsRejectRetiredOpaqueCapabilities},
-        {"fresh Base Runtime Framework restore and causal continuation", FreshWholeEngineRestoresAllPlanesAndContinuesCausally},
-        {"whole LOAD and precommit failures leave all planes unchanged", WholeLoadAndPrecommitFailuresAreAtomic},
-        {"whole postcommit recovery blocks resume and materializes exactly once", WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject},
-        {"canonical runner rejects adversarial policies and detects divergence", CanonicalScenarioRunnerRejectsAdversarialInputs},
-    });
+    if (argc != 1)
+        return 2;
+    return epidemic::truth_tests::Run(
+        "Goal5 whole-engine restore",
+        {
+            {"social lifecycle cursor excludes rebuilt journal identity",
+             SocialLifecycleCursorExcludesRebuiltJournalIdentity},
+            {"unknown death delivery state is rejected atomically", DeathRewardRejectsUnknownDeliveryStateAtomically},
+            {"nonempty cross-owner restore uses saved dependencies", NonemptyCrossOwnerRestoreUsesSavedDependencies},
+            {"retained condition journal reconciliation is idempotent",
+             RetainedConditionJournalReconcilesWithoutChangingProgression},
+            {"observation identity policy preserves durable fields", SemanticObservationPoliciesPreserveDurableFields},
+            {"fresh production backend rejects retired capability", FreshBackendsRejectRetiredOpaqueCapabilities},
+            {"fresh Base Runtime Framework restore and causal continuation",
+             FreshWholeEngineRestoresAllPlanesAndContinuesCausally},
+            {"whole LOAD and precommit failures leave all planes unchanged", WholeLoadAndPrecommitFailuresAreAtomic},
+            {"whole postcommit recovery blocks resume and materializes exactly once",
+             WholePostcommitRecoveryRetainsSemanticsAndNoDuplicateRuntimeObject},
+            {"canonical runner rejects adversarial policies and detects divergence",
+             CanonicalScenarioRunnerRejectsAdversarialInputs},
+        });
 }

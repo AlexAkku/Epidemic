@@ -417,3 +417,285 @@ class NeedsLifeService
 };
 } // namespace epidemic::gameplay::needs_life
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `NeedThreshold`: `Satisfied`, `Low`, `Medium`, `High`, `Critical`
+- `NeedMaterializationPolicy`: `AbstractCapable`, `MaterializedOnly`, `DisabledWhenAbstract`
+- `LifePressureState`: `Active`, `Resolved`, `Expired`
+- `NeedsLifeChangeKind`: `NeedProfileCreated`, `NeedProfileChanged`, `NeedChanged`, `NeedThresholdCrossed`, `NeedSatisfied`, `NeedPressureAdded`, `LifePressureCreated`, `LifePressureChanged`, `LifePressureResolved`, `LifePressureExpired`, `RoutineChanged`, `LifeSimulationStepCompleted`
+
+### Состав типов и операции
+
+#### `NeedTypeId` (строка заголовка 17)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NeedTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NeedTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NeedTypeId &) const noexcept = default;
+```
+
+#### `NeedProfileId` (строка заголовка 25)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NeedProfileId FromString(std::string_view s) noexcept;
+static constexpr NeedProfileId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NeedProfileId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NeedProfileId &) const noexcept = default;
+```
+
+#### `LifeRoutineId` (строка заголовка 34)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr LifeRoutineId FromString(std::string_view s) noexcept;
+static constexpr LifeRoutineId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const LifeRoutineId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const LifeRoutineId &) const noexcept = default;
+```
+
+#### `LifePressureId` (строка заголовка 43)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr LifePressureId FromString(std::string_view s) noexcept;
+static constexpr LifePressureId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const LifePressureId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const LifePressureId &) const noexcept = default;
+```
+
+#### `NeedDecayRuleId` (строка заголовка 52)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NeedDecayRuleId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NeedDecayRuleId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NeedDecayRuleId &) const noexcept = default;
+```
+
+#### `LifeSimulationProfileId` (строка заголовка 60)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr LifeSimulationProfileId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const LifeSimulationProfileId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const LifeSimulationProfileId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 68)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 70)
+
+#### `NeedStateKey` (строка заголовка 75)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const NeedStateKey &) const noexcept = default;
+```
+
+#### `NeedStateKeyHash` (строка заголовка 81)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const NeedStateKey &key) const noexcept;
+```
+
+#### `LifeSimulationProfile` (строка заголовка 117)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t abstract_rate_multiplier_micro = 1'000'000`
+- `std::int64_t materialized_rate_multiplier_micro = 1'000'000`
+
+#### `NeedProfile` (строка заголовка 141)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NeedTypeId> active_needs`
+- `NeedMaterializationPolicy materialization_policy = NeedMaterializationPolicy::AbstractCapable`
+
+#### `NeedState` (строка заголовка 151)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t value = 0`
+- `NeedThreshold threshold = NeedThreshold::Satisfied`
+
+#### `LifePressure` (строка заголовка 160)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t urgency = 0`
+- `LifePressureState state = LifePressureState::Active`
+- `std::optional<GameplayTimePoint> expires_at`
+- `std::vector<std::byte> payload`
+
+#### `RoutineEntry` (строка заголовка 172)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> payload`
+
+#### `LifeRoutine` (строка заголовка 181)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<RoutineEntry> entries`
+
+#### `SatisfyNeedRequest` (строка заголовка 189)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t amount = 0`
+
+#### `AddNeedPressureRequest` (строка заголовка 197)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t amount = 0`
+
+#### `LifeSimulationRequest` (строка заголовка 205)
+
+Публичные поля и значения по умолчанию:
+
+- `bool materialized = false`
+
+#### `LifeRoutineOccurrence` (строка заголовка 213)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t entry_index = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const LifeRoutineOccurrence &other) const noexcept;
+```
+
+#### `NeedsLifeChange` (строка заголовка 224)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `NeedsLifeChangeKind kind = NeedsLifeChangeKind::NeedChanged`
+- `NeedThreshold threshold = NeedThreshold::Satisfied`
+
+#### `NeedsLifeChangeBatch` (строка заголовка 235)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NeedsLifeChange> changes`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `bool snapshot_required = false`
+
+#### `NeedsLifeSnapshot` (строка заголовка 245)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NeedDecayRule> decay_rules`
+- `std::vector<LifeSimulationProfile> simulation_profiles`
+- `std::vector<NeedDefinition> definitions`
+- `std::vector<NeedProfile> profiles`
+- `std::vector<NeedState> states`
+- `std::vector<LifePressure> pressures`
+- `std::vector<LifeRoutine> routines`
+- `std::uint64_t change_epoch = 1`
+
+#### `NeedsLifeService` (строка заголовка 268)
+
+Внутреннее состояние (не часть публичного API): `bool definitions_frozen_ = false`, `std::unordered_map<NeedDecayRuleId, NeedDecayRule, IdHash> decay_rules_`, `std::unordered_map<LifeSimulationProfileId, LifeSimulationProfile, IdHash> simulation_profiles_`, `std::unordered_map<NeedTypeId, NeedDefinition, IdHash> definitions_`, `std::unordered_map<NeedProfileId, NeedProfile, IdHash> profiles_`, `std::unordered_map<GameplayObjectRef, NeedProfileId> profile_by_subject_`, `std::unordered_map<NeedStateKey, NeedState, NeedStateKeyHash> states_`, `std::unordered_map<LifePressureId, LifePressure, IdHash> pressures_`, `std::unordered_multimap<GameplayObjectRef, LifePressureId> pressures_by_subject_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterDecayRule(NeedDecayRule rule);
+[[nodiscard]] foundation::Result<void> RegisterSimulationProfile(LifeSimulationProfile profile);
+[[nodiscard]] foundation::Result<void> RegisterNeedDefinition(NeedDefinition definition);
+[[nodiscard]] foundation::Result<void> FreezeDefinitions();
+[[nodiscard]] bool DefinitionsFrozen() const noexcept;
+[[nodiscard]] NeedState EvaluateNeed(GameplayObjectRef subject, NeedTypeId need, GameplayTimePoint now) const;
+[[nodiscard]] foundation::Result<void> SatisfyNeed(SatisfyNeedRequest request);
+[[nodiscard]] foundation::Result<void> AddNeedPressure(AddNeedPressureRequest request);
+[[nodiscard]] std::vector<LifeRoutineOccurrence> FindRoutineEntriesInInterval(GameplayObjectRef subject, GameplayTimePoint from, GameplayTimePoint to) const;
+[[nodiscard]] const NeedProfile *GetNeedProfile(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] const NeedState *GetCommittedNeedState(GameplayObjectRef subject, NeedTypeId need) const noexcept;
+[[nodiscard]] std::int64_t GetNeedUrgency(GameplayObjectRef subject, NeedTypeId need, GameplayTimePoint now) const;
+[[nodiscard]] std::vector<NeedState> FindCriticalNeeds(GameplayTimePoint now) const;
+[[nodiscard]] std::vector<NeedState> FindCriticalNeeds(GameplayObjectRef subject, GameplayTimePoint now) const;
+[[nodiscard]] std::vector<LifePressure> FindLifePressures(GameplayObjectRef subject) const;
+[[nodiscard]] const LifeRoutine *GetRoutine(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] NeedsLifeChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesThrough(std::uint64_t sequence) noexcept;
+void SetChangeJournalCapacity(std::size_t capacity) noexcept;
+[[nodiscard]] NeedsLifeSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(NeedsLifeSnapshot snapshot);
+[[nodiscard]] NeedsLifeDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterDecayRule` | `NeedsLifeService::RegisterDecayRule` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:107` |
+| `RegisterSimulationProfile` | `NeedsLifeService::RegisterSimulationProfile` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:124` |
+| `RegisterNeedDefinition` | `NeedsLifeService::RegisterNeedDefinition` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:159` |
+| `FreezeDefinitions` | `NeedsLifeService::FreezeDefinitions` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:178` |
+| `EvaluateNeed` | `NeedsLifeService::EvaluateNeed` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:297` |
+| `SatisfyNeed` | `NeedsLifeService::SatisfyNeed` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:346` |
+| `AddNeedPressure` | `NeedsLifeService::AddNeedPressure` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:374` |
+| `FindRoutineEntriesInInterval` | `NeedsLifeService::FindRoutineEntriesInInterval` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:491` |
+| `GetNeedProfile` | `NeedsLifeService::GetNeedProfile` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:616` |
+| `GetCommittedNeedState` | `NeedsLifeService::GetCommittedNeedState` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:625` |
+| `GetNeedUrgency` | `NeedsLifeService::GetNeedUrgency` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:631` |
+| `FindCriticalNeeds` | `NeedsLifeService::FindCriticalNeeds` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:640` |
+| `FindLifePressures` | `NeedsLifeService::FindLifePressures` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:674` |
+| `GetRoutine` | `NeedsLifeService::GetRoutine` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:692` |
+| `PruneChangesThrough` | `NeedsLifeService::PruneChangesThrough` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:733` |
+| `SetChangeJournalCapacity` | `NeedsLifeService::SetChangeJournalCapacity` | `EngineFramework/GameplayWorldStateOwners/NeedsLife/src/needs_life.cpp:739` |
+

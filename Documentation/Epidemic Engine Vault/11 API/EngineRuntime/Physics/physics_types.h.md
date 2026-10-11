@@ -291,3 +291,214 @@ template <> struct hash<epidemic::runtime::physics::BackendBodyHandle>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/spatial.h`, `Epidemic/Runtime/Foundation/runtime_time.h`.
+
+### Перечисления и допустимые категории
+
+- `PhysicsBodyType`: `Static`, `Dynamic`, `Kinematic`
+- `PhysicsActivityState`: `Static`, `Awake`, `Sleeping`, `Disabled`
+- `PhysicsEventState`: `Begin`, `Persist`, `End`
+- `PhysicsDirtyFlags`: `None`, `Transform`, `Shape`, `Material`, `Activity`
+
+### Состав типов и операции
+
+#### `PhysicsBodyId` (строка заголовка 19)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PhysicsBodyId&) const noexcept = default;
+```
+
+#### `PhysicsBodyHandle` (строка заголовка 27)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PhysicsBodyHandle&) const noexcept = default;
+```
+
+#### `CollisionShapeId` (строка заголовка 36)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const CollisionShapeId&) const noexcept = default;
+```
+
+#### `BackendShapeHandle` (строка заголовка 44)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const BackendShapeHandle&) const noexcept = default;
+```
+
+#### `BackendBodyHandle` (строка заголовка 52)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const BackendBodyHandle&) const noexcept = default;
+```
+
+#### `PhysicsBodyDesc` (строка заголовка 104)
+
+Публичные поля и значения по умолчанию:
+
+- `PhysicsBodyType type = PhysicsBodyType::Static`
+- `float mass = 0.0f`
+
+#### `PhysicsOptions` (строка заголовка 119)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t max_substeps = 4`
+
+#### `PhysicsMaterial` (строка заголовка 131)
+
+Публичные поля и значения по умолчанию:
+
+- `float friction = 0.5f`
+- `float restitution = 0.0f`
+
+#### `ContactEvent` (строка заголовка 137)
+
+Публичные поля и значения по умолчанию:
+
+- `float impulse = 0.0f`
+- `PhysicsEventState state = PhysicsEventState::Begin`
+
+Публичные сигнатуры операций:
+
+```cpp
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES auditor::shadow::Context auditor_context;
+```
+
+#### `BackendContactEvent` (строка заголовка 151)
+
+Публичные поля и значения по умолчанию:
+
+- `float impulse = 0.0f`
+- `PhysicsEventState state = PhysicsEventState::Begin`
+
+#### `RaycastQuery` (строка заголовка 161)
+
+Публичные поля и значения по умолчанию:
+
+- `float max_distance = 0.0f`
+
+#### `RaycastHit` (строка заголовка 168)
+
+Публичные поля и значения по умолчанию:
+
+- `bool hit = false`
+- `float distance = 0.0f`
+
+#### `BackendRaycastHit` (строка заголовка 177)
+
+Публичные поля и значения по умолчанию:
+
+- `bool hit = false`
+- `float distance = 0.0f`
+
+#### `OverlapResult` (строка заголовка 191)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PhysicsBodyHandle> bodies`
+
+#### `PhysicsStepResult` (строка заголовка 196)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t step_index = 0`
+- `std::uint32_t substeps = 0`
+- `std::uint64_t revision = 0`
+
+#### `PhysicsBodySnapshot` (строка заголовка 210)
+
+Публичные поля и значения по умолчанию:
+
+- `PhysicsBodyType type = PhysicsBodyType::Static`
+- `PhysicsActivityState activity = PhysicsActivityState::Disabled`
+- `PhysicsDirtyFlags dirty = PhysicsDirtyFlags::None`
+- `float mass = 0.0f`
+- `std::uint64_t revision = 0`
+
+#### `BackendBodySnapshot` (строка заголовка 225)
+
+Публичные поля и значения по умолчанию:
+
+- `PhysicsActivityState activity = PhysicsActivityState::Disabled`
+
+#### `hash` (строка заголовка 236)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::physics::PhysicsBodyId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 244)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::physics::PhysicsBodyHandle value) const noexcept;
+```
+
+#### `hash` (строка заголовка 252)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::physics::CollisionShapeId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 260)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::physics::BackendBodyHandle value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

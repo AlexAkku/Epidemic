@@ -229,3 +229,52 @@ template <> struct hash<epidemic::foundation::FrameIndex>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `FrameTime` (строка заголовка 24)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Wraps an engine-native Duration into FrameTime. [[nodiscard]] static constexpr FrameTime FromDuration(Duration duration) noexcept;
+// Converts any std::chrono duration into the engine-native duration domain. // Non-finite floating inputs and values outside Duration's representable range are rejected. template <typename Rep, typename Period> [[nodiscard]] static constexpr FrameTime FromChrono(std::chrono::duration<Rep, Period> duration);
+// Builds a FrameTime from seconds. [[nodiscard]] static FrameTime FromSeconds(double seconds);
+// Builds a FrameTime from milliseconds. [[nodiscard]] static FrameTime FromMilliseconds(double milliseconds);
+// Returns the underlying engine-native duration. [[nodiscard]] constexpr Duration Raw() const noexcept;
+// Returns the duration in seconds as a floating-point value. [[nodiscard]] double Seconds() const noexcept;
+// Returns the duration in milliseconds as a floating-point value. [[nodiscard]] double Milliseconds() const noexcept;
+// Returns true when the wrapped duration is zero. [[nodiscard]] constexpr bool IsZero() const noexcept;
+// Explicit conversion back to the raw duration type. [[nodiscard]] constexpr explicit operator Duration() const noexcept;
+```
+
+#### `FrameIndex` (строка заголовка 138)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Builds a frame index from an explicit raw value. explicit constexpr FrameIndex(std::uint64_t value) noexcept : value_(value);
+// Returns the raw frame number. [[nodiscard]] constexpr std::uint64_t Value() const noexcept;
+// Returns the next frame index without mutating the current instance. // Throws when UINT64_MAX has no representable successor. [[nodiscard]] constexpr FrameIndex Next() const;
+// Prefix increment advances the frame index in place. // Throws without modifying the value when UINT64_MAX is reached. constexpr FrameIndex &operator++();
+// Postfix increment returns the previous value and then advances the index. // Throws without modifying the value when UINT64_MAX is reached. constexpr FrameIndex operator++(int);
+```
+
+#### `hash` (строка заголовка 197)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Hashes the raw frame index value for unordered container support. [[nodiscard]] size_t operator()(const epidemic::foundation::FrameIndex &value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

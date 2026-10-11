@@ -22,16 +22,13 @@
 #include <utility>
 #include <vector>
 
-namespace epidemic::tests
-{
+namespace epidemic::tests {
 // This file provides small shared helpers for Core-heavy unit, integration, and regression tests.
 // It intentionally avoids production-only composition helpers so tests can exercise lower-level contracts directly.
 
-class RecordingLogger final : public epidemic::diagnostics::ILogger
-{
+class RecordingLogger final : public epidemic::diagnostics::ILogger {
   public:
-    struct Entry
-    {
+    struct Entry {
         epidemic::diagnostics::LogLevel level{};
         std::string module_name;
         std::string category;
@@ -39,73 +36,58 @@ class RecordingLogger final : public epidemic::diagnostics::ILogger
     };
 
     // Records the structured log entry in memory for later test assertions.
-    void Write(const epidemic::diagnostics::LogMessage &message) override
-    {
-        records.push_back(
-            Entry{message.level, std::string(message.module_name), std::string(message.category), std::string(message.message)});
+    void Write(const epidemic::diagnostics::LogMessage &message) override {
+        records.push_back(Entry{message.level, std::string(message.module_name), std::string(message.category),
+                                std::string(message.message)});
     }
 
     std::vector<Entry> records;
 };
 
-class ProbeModule final : public epidemic::core::IModule
-{
+class ProbeModule final : public epidemic::core::IModule {
   public:
     // Creates a module probe that appends lifecycle markers into trace and can fail selected phases on demand.
     ProbeModule(std::string id, std::vector<std::string> dependencies, std::vector<std::string> &trace,
                 bool throw_on_bootstrap = false, bool throw_on_initialize = false, bool throw_on_tick = false,
                 bool throw_on_shutdown = false)
-        : manifest_{std::move(id), "ProbeModule", std::move(dependencies)},
-          trace_(trace),
-          throw_on_bootstrap_(throw_on_bootstrap),
-          throw_on_initialize_(throw_on_initialize),
-          throw_on_tick_(throw_on_tick),
-          throw_on_shutdown_(throw_on_shutdown)
-    {
+        : manifest_{std::move(id), "ProbeModule", std::move(dependencies)}, trace_(trace),
+          throw_on_bootstrap_(throw_on_bootstrap), throw_on_initialize_(throw_on_initialize),
+          throw_on_tick_(throw_on_tick), throw_on_shutdown_(throw_on_shutdown) {
     }
 
     // Returns the static manifest used by ModuleRegistry.
-    [[nodiscard]] const epidemic::core::ModuleManifest &Manifest() const override
-    {
+    [[nodiscard]] const epidemic::core::ModuleManifest &Manifest() const override {
         return manifest_;
     }
 
     // Appends a bootstrap trace marker and optionally throws.
-    void Bootstrap(epidemic::core::ServiceContainer &) override
-    {
+    void Bootstrap(epidemic::core::ServiceContainer &) override {
         trace_.push_back(manifest_.id + ":bootstrap");
-        if (throw_on_bootstrap_)
-        {
+        if (throw_on_bootstrap_) {
             throw std::runtime_error("bootstrap failure");
         }
     }
 
     // Appends an initialize trace marker and optionally throws.
-    void Initialize(epidemic::core::ServiceContainer &) override
-    {
+    void Initialize(epidemic::core::ServiceContainer &) override {
         trace_.push_back(manifest_.id + ":initialize");
-        if (throw_on_initialize_)
-        {
+        if (throw_on_initialize_) {
             throw std::runtime_error("initialize failure");
         }
     }
 
     // Appends a tick trace marker and optionally throws.
-    void Tick(epidemic::core::ServiceContainer &, const epidemic::core::FrameContext &) override
-    {
+    void Tick(epidemic::core::ServiceContainer &, const epidemic::core::FrameContext &) override {
         trace_.push_back(manifest_.id + ":tick");
-        if (throw_on_tick_)
-        {
+        if (throw_on_tick_) {
             throw std::runtime_error("tick failure");
         }
     }
 
     // Appends a shutdown trace marker and optionally throws.
-    void Shutdown(epidemic::core::ServiceContainer &) override
-    {
+    void Shutdown(epidemic::core::ServiceContainer &) override {
         trace_.push_back(manifest_.id + ":shutdown");
-        if (throw_on_shutdown_)
-        {
+        if (throw_on_shutdown_) {
             throw std::runtime_error("shutdown failure");
         }
     }
@@ -122,8 +104,7 @@ class ProbeModule final : public epidemic::core::IModule
 // Registers the minimal core services directly into a standalone ServiceContainer for low-level tests.
 inline std::shared_ptr<RecordingLogger> RegisterCoreServices(epidemic::core::ServiceContainer &services,
                                                              std::size_t worker_count = 1,
-                                                             std::optional<std::string> runtime_name = std::nullopt)
-{
+                                                             std::optional<std::string> runtime_name = std::nullopt) {
     auto logger = std::make_shared<RecordingLogger>();
     services.RegisterInstance<epidemic::diagnostics::ILogger>(logger);
 
@@ -144,10 +125,9 @@ inline std::shared_ptr<RecordingLogger> RegisterCoreServices(epidemic::core::Ser
 }
 
 // Registers the minimal core services into an Application's service container.
-inline std::shared_ptr<RecordingLogger> RegisterApplicationCoreServices(epidemic::core::Application &application,
-                                                                        std::size_t worker_count = 1,
-                                                                        std::optional<std::string> runtime_name = std::nullopt)
-{
+inline std::shared_ptr<RecordingLogger>
+RegisterApplicationCoreServices(epidemic::core::Application &application, std::size_t worker_count = 1,
+                                std::optional<std::string> runtime_name = std::nullopt) {
     return RegisterCoreServices(application.Services(), worker_count, std::move(runtime_name));
 }
 } // namespace epidemic::tests

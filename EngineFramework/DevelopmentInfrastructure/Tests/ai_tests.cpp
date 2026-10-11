@@ -8,15 +8,12 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::ai;
 
-namespace
-{
-GameplayObjectRef Ref(const char *name)
-{
+namespace {
+GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
 }
 
-AIInputValue FixedInput(AIInputKeyId key, Fixed value, AIAccessFlag access)
-{
+AIInputValue FixedInput(AIInputKeyId key, Fixed value, AIAccessFlag access) {
     AIInputValue input;
     input.key = key;
     input.kind = AIInputValueKind::Fixed;
@@ -25,19 +22,15 @@ AIInputValue FixedInput(AIInputKeyId key, Fixed value, AIAccessFlag access)
     return input;
 }
 
-
-class FlakyEvaluator final : public IAIConsiderationEvaluator
-{
+class FlakyEvaluator final : public IAIConsiderationEvaluator {
   public:
     mutable std::uint32_t calls = 0;
     mutable bool fail_next = true;
 
     epidemic::foundation::Result<Fixed> Evaluate(const AIConsideration &, const AIContextSnapshot &,
-                                                 const AITargetCandidate *) const override
-    {
+                                                 const AITargetCandidate *) const override {
         ++calls;
-        if (fail_next)
-        {
+        if (fail_next) {
             fail_next = false;
             return epidemic::foundation::Result<Fixed>::Failure(
                 epidemic::foundation::Error::Create("test.flaky", "forced evaluator failure"));
@@ -46,22 +39,19 @@ class FlakyEvaluator final : public IAIConsiderationEvaluator
     }
 };
 
-class ThrowingEvaluator final : public IAIConsiderationEvaluator
-{
+class ThrowingEvaluator final : public IAIConsiderationEvaluator {
   public:
     epidemic::foundation::Result<Fixed> Evaluate(const AIConsideration &, const AIContextSnapshot &,
-                                       const AITargetCandidate *) const override
-    {
+                                                 const AITargetCandidate *) const override {
         throw std::runtime_error("boom");
     }
 };
 
-epidemic::foundation::Result<void> RegisterCoreDefinitions(AIService &service, AIProfileId profile_id, AIGoalId goal_id,
-                                                 AIIntentTypeId intent_type, AIInputKeyId score_key,
-                                                 AIMaterializationPolicy materialization =
-                                                     AIMaterializationPolicy::AbstractCapable,
-                                                 GameplayDuration repeat_cooldown = {})
-{
+epidemic::foundation::Result<void>
+RegisterCoreDefinitions(AIService &service, AIProfileId profile_id, AIGoalId goal_id, AIIntentTypeId intent_type,
+                        AIInputKeyId score_key,
+                        AIMaterializationPolicy materialization = AIMaterializationPolicy::AbstractCapable,
+                        GameplayDuration repeat_cooldown = {}) {
     AIGoalDefinition goal;
     goal.id = goal_id;
     goal.canonical_name = "game.attack_target";
@@ -90,8 +80,7 @@ epidemic::foundation::Result<void> RegisterCoreDefinitions(AIService &service, A
 }
 } // namespace
 
-int main()
-{
+int main() {
     const auto profile_id = AIProfileId::FromString("game.guard");
     const auto goal_id = AIGoalId::FromString("game.attack_target");
     const auto intent_type = AIIntentTypeId::FromString("game.attack");
@@ -101,8 +90,8 @@ int main()
     const auto target_b = Ref("target_b");
 
     AIService ai;
-    if (!RegisterCoreDefinitions(ai, profile_id, goal_id, intent_type, score_key, AIMaterializationPolicy::AbstractCapable,
-                                 GameplayDuration{5}))
+    if (!RegisterCoreDefinitions(ai, profile_id, goal_id, intent_type, score_key,
+                                 AIMaterializationPolicy::AbstractCapable, GameplayDuration{5}))
         return 1;
     if (ai.RegisterAgent(guard, profile_id))
         return 2;
@@ -133,10 +122,9 @@ int main()
     context.now = {5};
     context.materialized = true;
     context.runtime_projection_available = true;
-    context.targets = {{target_b, AITargetSource::Perceived,
-                        {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}},
-                       {target_a, AITargetSource::Perceived,
-                        {FixedInput(score_key, 400'000, AIAccessFlag::PerceivedState)}}};
+    context.targets = {
+        {target_b, AITargetSource::Perceived, {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}},
+        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 400'000, AIAccessFlag::PerceivedState)}}};
     GameplayContext tick1;
     tick1.tick = {1};
     tick1.time = {5};
@@ -176,7 +164,8 @@ int main()
     if (!repeat_blocked || repeat_blocked.Value().intent || ai.FindAgent(guard)->next_think_at.ticks != 13)
         return 16;
 
-    if (!ai.SetBlackboard(guard, persistent_key.key, persistent_key.value_type, {std::byte{1}, std::byte{2}}, {12}, t12))
+    if (!ai.SetBlackboard(guard, persistent_key.key, persistent_key.value_type, {std::byte{1}, std::byte{2}}, {12},
+                          t12))
         return 17;
     if (!ai.SetBlackboard(guard, session_key.key, session_key.value_type, {std::byte{3}}, {12}, t12))
         return 18;
@@ -189,8 +178,8 @@ int main()
         return 20;
 
     AIService restored;
-    if (!RegisterCoreDefinitions(restored, profile_id, goal_id, intent_type, score_key, AIMaterializationPolicy::AbstractCapable,
-                                 GameplayDuration{5}) ||
+    if (!RegisterCoreDefinitions(restored, profile_id, goal_id, intent_type, score_key,
+                                 AIMaterializationPolicy::AbstractCapable, GameplayDuration{5}) ||
         !restored.RegisterBlackboardKey(persistent_key) || !restored.RegisterBlackboardKey(session_key) ||
         !restored.Freeze())
         return 21;
@@ -231,7 +220,8 @@ int main()
     budget_tick.tick = {100};
     auto budget_result = budgeted.Think(guard, many_targets, budget_tick);
     if (!budget_result || !budget_result.Value().deferred ||
-        budget_result.Value().defer_reason != AIThinkDeferReason::BudgetExceeded || budgeted.FindAgent(guard)->current_intent)
+        budget_result.Value().defer_reason != AIThinkDeferReason::BudgetExceeded ||
+        budgeted.FindAgent(guard)->current_intent)
         return 28;
 
     ThrowingEvaluator throwing;
@@ -255,7 +245,8 @@ int main()
     throwing_profile.id = AIProfileId::FromString("game.throwing_profile");
     throwing_profile.canonical_name = "game.throwing_profile";
     throwing_profile.default_goals = {throwing_goal.id};
-    if (!guarded.RegisterProfile(throwing_profile) || !guarded.Freeze() || !guarded.RegisterAgent(guard, throwing_profile.id))
+    if (!guarded.RegisterProfile(throwing_profile) || !guarded.Freeze() ||
+        !guarded.RegisterAgent(guard, throwing_profile.id))
         return 31;
     AIContextSnapshot throwing_context;
     throwing_context.now = {0};
@@ -276,15 +267,16 @@ int main()
         !lifecycle.ScheduleThink(guard, {3}) || !lifecycle.ScheduleThink(guard, {4}))
         return 35;
     auto batch = lifecycle.ReadChangesSince(ChangeCursor{});
-    if (!batch.snapshot_required || batch.oldest_available_sequence == 0 || batch.latest_sequence < batch.oldest_available_sequence)
+    if (!batch.snapshot_required || batch.oldest_available_sequence == 0 ||
+        batch.latest_sequence < batch.oldest_available_sequence)
         return 36;
 
     AIService access_filtered;
     AIAccessPolicy known_only;
     known_only.id = AIAccessPolicyId::FromString("game.known_only");
     known_only.canonical_name = "game.known_only";
-    known_only.flags = static_cast<std::uint32_t>(AIAccessFlag::SelfState) |
-                       static_cast<std::uint32_t>(AIAccessFlag::KnownState);
+    known_only.flags =
+        static_cast<std::uint32_t>(AIAccessFlag::SelfState) | static_cast<std::uint32_t>(AIAccessFlag::KnownState);
     if (!access_filtered.RegisterAccessPolicy(known_only))
         return 37;
     AIGoalDefinition access_goal;
@@ -310,8 +302,8 @@ int main()
         return 39;
     AIContextSnapshot perceived_only;
     perceived_only.now = {0};
-    perceived_only.targets = {{target_a, AITargetSource::Perceived,
-                               {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}}};
+    perceived_only.targets = {
+        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}}};
     auto filtered_out = access_filtered.Think(guard, perceived_only, {});
     if (!filtered_out || filtered_out.Value().intent)
         return 40;
@@ -319,8 +311,8 @@ int main()
         return 41;
     AIContextSnapshot known_context;
     known_context.now = {1};
-    known_context.targets = {{target_b, AITargetSource::Known,
-                              {FixedInput(score_key, 900'000, AIAccessFlag::KnownState)}}};
+    known_context.targets = {
+        {target_b, AITargetSource::Known, {FixedInput(score_key, 900'000, AIAccessFlag::KnownState)}}};
     auto known_selected = access_filtered.Think(guard, known_context, {});
     if (!known_selected || !known_selected.Value().intent || known_selected.Value().intent->target != target_b)
         return 42;
@@ -366,7 +358,8 @@ int main()
         resumed_changes.changes.front().sequence <= restored_change_cursor.sequence)
         return 51;
     if (restored_change_cursor.sequence > 0 &&
-        !sequence_restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1)).snapshot_required)
+        !sequence_restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
+             .snapshot_required)
         return 52;
     const auto restored_latest = resumed_changes.latest_cursor;
     if (restored_latest.sequence != std::numeric_limits<std::uint64_t>::max() &&
@@ -380,7 +373,8 @@ int main()
         return 53;
     if (!exhausted_sequence.RegisterAgent(Ref("sequence.max"), profile_id))
         return 54;
-    auto max_batch = exhausted_sequence.ReadChangesSince(exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
+    auto max_batch = exhausted_sequence.ReadChangesSince(
+        exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
     if (max_batch.snapshot_required || max_batch.changes.size() != 1 ||
         max_batch.changes.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 55;
@@ -506,8 +500,7 @@ int main()
 
     // AI-06/09: module-local decision publication seams leave agent/index/ID/revision unchanged.
     using AIFaultPoint = epidemic::gameplay::ai::internal_test::AllocationFaultPoint;
-    for (const auto point : {AIFaultPoint::ThinkDecisionStaging, AIFaultPoint::ThinkIntentIndex})
-    {
+    for (const auto point : {AIFaultPoint::ThinkDecisionStaging, AIFaultPoint::ThinkIntentIndex}) {
         AIService decision_atomic;
         if (!RegisterCoreDefinitions(decision_atomic, profile_id, goal_id, intent_type, score_key) ||
             !decision_atomic.Freeze() || !decision_atomic.RegisterAgent(guard, profile_id))
@@ -548,7 +541,6 @@ int main()
         revision_target.CurrentRevision().value != std::numeric_limits<std::uint64_t>::max() ||
         revision_target.FindAgent(guard)->next_think_at != exhausted_time)
         return 79;
-
 
     // Goal 4 exact public-API evidence: virtual evaluator destruction through the public interface.
     IAIConsiderationEvaluator *ai_destructor_probe = new FlakyEvaluator{};

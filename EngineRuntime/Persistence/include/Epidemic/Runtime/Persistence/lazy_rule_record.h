@@ -5,17 +5,14 @@
 
 #include <cstdint>
 
-namespace epidemic::runtime
-{
-enum class LazyRuleKind
-{
+namespace epidemic::runtime {
+enum class LazyRuleKind {
     Decay,
     Theft,
     Cleanup,
 };
 
-enum class LazyRuleState
-{
+enum class LazyRuleState {
     Pending,
     Evaluated,
     Applied,
@@ -23,8 +20,7 @@ enum class LazyRuleState
     Expired,
 };
 
-struct LazyRuleRecord
-{
+struct LazyRuleRecord {
     LazyRuleId rule_id{};
     PersistentObjectId target_id{};
     LazyRuleKind kind = LazyRuleKind::Decay;

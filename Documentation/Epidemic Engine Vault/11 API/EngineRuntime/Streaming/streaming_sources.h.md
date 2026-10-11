@@ -101,3 +101,103 @@ class IStreamingPriorityProvider
 };
 } // namespace epidemic::runtime::streaming
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Streaming/streaming_types.h`.
+
+### Состав типов и операции
+
+#### `IStreamingWorldSource` (строка заголовка 12)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IStreamingWorldSource() = default;
+[[nodiscard]] virtual std::optional<RegionId> ResolveRegion(ChunkId chunk) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IStreamingPersistenceSource` (строка заголовка 20)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IStreamingPersistenceSource() = default;
+[[nodiscard]] virtual foundation::Result<void> PrepareChunkData(const StreamingRequest& request) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IStreamingResourceSource` (строка заголовка 28)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] virtual foundation::Result<void> PrepareChunkResources(const StreamingRequest& request) = 0;
+[[nodiscard]] virtual foundation::Result<void> ReleaseChunkResources(ChunkId chunk) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IStreamingDataSource` (строка заголовка 39)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] virtual foundation::Result<ProgressiveLoadPlan> BuildLoadPlan(const StreamingRequest& request) = 0;
+[[nodiscard]] virtual foundation::Result<StreamingStepResult> ExecuteStep( const StreamingRequest& request, StreamingPlanStepRecord step, const RuntimeBudget& available_budget) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IStreamingCommitTarget` (строка заголовка 58)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] virtual foundation::Result<void> Commit(const StreamingRequest& request) = 0;
+[[nodiscard]] virtual foundation::Result<void> Rollback(const StreamingRequest& request) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IStreamingPriorityProvider` (строка заголовка 70)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IStreamingPriorityProvider() = default;
+[[nodiscard]] virtual StreamingPriorityClass GetPriority(const StreamingTarget& target) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Rollback` | `StreamingRuntime::Rollback` | `EngineRuntime/Streaming/src/streaming_runtime_impl.cpp:1473` |
+

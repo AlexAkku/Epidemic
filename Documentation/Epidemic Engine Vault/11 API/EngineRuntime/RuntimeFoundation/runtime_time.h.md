@@ -268,3 +268,63 @@ struct GameTimePoint
 }
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `RuntimeFrameDuration` (строка заголовка 12)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsZero() const noexcept;
+[[nodiscard]] constexpr bool IsNegative() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimeFrameDuration&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RuntimeFrameDuration&) const noexcept = default;
+```
+
+#### `GameDuration` (строка заголовка 138)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t ticks = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsZero() const noexcept;
+[[nodiscard]] constexpr bool operator==(const GameDuration&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const GameDuration&) const noexcept = default;
+```
+
+#### `GameTimePoint` (строка заголовка 151)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t ticks = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const GameTimePoint&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const GameTimePoint&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `IsZero`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:157`
+- `IsNegative`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:158`
+

@@ -109,3 +109,21 @@ inline constexpr std::array<FramePhase, FramePhaseCount()> kFramePhaseOrder{
 }
 } // namespace epidemic::core
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Перечисления и допустимые категории
+
+- `FramePhase`: `BeginFrame`, `PumpPlatformEvents`, `UpdateInput`, `DrainEvents`, `RunScheduledMainThreadTasks`, `TickModules`, `RhiBeginFrame`, `RhiEndFrame`, `Present`, `EndFrame`, `Count`
+
+### Состав типов и операции
+
+### Интеграция и безопасность вызовов
+
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

@@ -13,137 +13,109 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::world
-{
-struct WorldRegionId
-{
+namespace epidemic::gameplay::world {
+struct WorldRegionId {
     GameplayObjectId value{};
-    static constexpr WorldRegionId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorldRegionId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorldRegionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldRegionId &) const noexcept = default;
 };
-struct WorldAreaId
-{
+struct WorldAreaId {
     GameplayObjectId value{};
-    static constexpr WorldAreaId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorldAreaId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorldAreaId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldAreaId &) const noexcept = default;
 };
-struct LocationId
-{
+struct LocationId {
     GameplayObjectId value{};
-    static constexpr LocationId FromString(std::string_view s) noexcept
-    {
+    static constexpr LocationId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const LocationId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LocationId &) const noexcept = default;
 };
-struct WorldFeatureId
-{
+struct WorldFeatureId {
     GameplayObjectId value{};
-    static constexpr WorldFeatureId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorldFeatureId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorldFeatureId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldFeatureId &) const noexcept = default;
 };
-struct WorldAlterationId
-{
+struct WorldAlterationId {
     GameplayObjectId value{};
-    static constexpr WorldAlterationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr WorldAlterationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorldAlterationId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldAlterationId &) const noexcept = default;
 };
-struct WorldAlterationTypeId
-{
+struct WorldAlterationTypeId {
     TypeId value{};
-    static constexpr WorldAlterationTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorldAlterationTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorldAlterationTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldAlterationTypeId &) const noexcept = default;
 };
-struct WorldFeatureTypeId
-{
+struct WorldFeatureTypeId {
     TypeId value{};
-    static constexpr WorldFeatureTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorldFeatureTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorldFeatureTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldFeatureTypeId &) const noexcept = default;
 };
 
-struct WorldPosition
-{
+struct WorldPosition {
     std::int64_t x_mm = 0, y_mm = 0, z_mm = 0;
     [[nodiscard]] constexpr bool operator==(const WorldPosition &) const noexcept = default;
 };
-struct WorldAabb
-{
+struct WorldAabb {
     WorldPosition min{};
     WorldPosition max{};
-    [[nodiscard]] constexpr bool Contains(WorldPosition p) const noexcept
-    {
+    [[nodiscard]] constexpr bool Contains(WorldPosition p) const noexcept {
         return p.x_mm >= min.x_mm && p.x_mm <= max.x_mm && p.y_mm >= min.y_mm && p.y_mm <= max.y_mm &&
                p.z_mm >= min.z_mm && p.z_mm <= max.z_mm;
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return min.x_mm <= max.x_mm && min.y_mm <= max.y_mm && min.z_mm <= max.z_mm;
     }
     [[nodiscard]] constexpr bool operator==(const WorldAabb &) const noexcept = default;
 };
 
-struct WorldRegionDefinition
-{
+struct WorldRegionDefinition {
     WorldRegionId id{};
     std::string canonical_name;
     GameplayTagSet tags;
     Revision revision{};
 };
-struct WorldAreaDefinition
-{
+struct WorldAreaDefinition {
     WorldAreaId id{};
     std::string canonical_name;
     WorldAabb bounds{};
@@ -152,8 +124,7 @@ struct WorldAreaDefinition
     GameplayTagSet tags;
     Revision revision{};
 };
-struct LocationDefinition
-{
+struct LocationDefinition {
     LocationId id{};
     std::string canonical_name;
     WorldPosition position{};
@@ -163,8 +134,7 @@ struct LocationDefinition
     GameplayTagSet tags;
     Revision revision{};
 };
-struct ObjectPlacementRecord
-{
+struct ObjectPlacementRecord {
     GameplayObjectRef object{};
     std::optional<LocationId> location{};
     std::optional<WorldAreaId> area{};
@@ -172,8 +142,7 @@ struct ObjectPlacementRecord
     GameplayContext context{};
     Revision revision{};
 };
-struct WorldFeatureRecord
-{
+struct WorldFeatureRecord {
     WorldFeatureId id{};
     WorldFeatureTypeId type{};
     WorldAabb bounds{};
@@ -182,22 +151,19 @@ struct WorldFeatureRecord
     bool dynamic = false;
 };
 
-enum class WorldAlterationState
-{
+enum class WorldAlterationState {
     Active,
     Superseded,
     Expired,
     Removed,
     Compacted
 };
-enum class WorldAlterationPersistence
-{
+enum class WorldAlterationPersistence {
     Transient,
     Session,
     Persistent
 };
-struct WorldAlterationRecord
-{
+struct WorldAlterationRecord {
     WorldAlterationId id{};
     WorldAlterationTypeId type{};
     GameplayObjectRef subject{};
@@ -211,8 +177,7 @@ struct WorldAlterationRecord
     Revision revision{};
 };
 
-struct WorldAlterationUpdate
-{
+struct WorldAlterationUpdate {
     std::optional<WorldAabb> affected_area{};
     bool update_expires_at = false;
     std::optional<GameplayTimePoint> expires_at{};
@@ -221,8 +186,7 @@ struct WorldAlterationUpdate
     std::optional<GameplayContext> context{};
 };
 
-struct WorldSnapshot
-{
+struct WorldSnapshot {
     std::vector<WorldFeatureRecord> dynamic_features;
     std::vector<ObjectPlacementRecord> object_placements;
     std::vector<WorldAlterationRecord> alterations;
@@ -232,8 +196,7 @@ struct WorldSnapshot
     std::uint64_t change_epoch = 1;
 };
 
-enum class WorldChangeKind
-{
+enum class WorldChangeKind {
     AlterationCreated,
     AlterationUpdated,
     AlterationExpired,
@@ -244,8 +207,7 @@ enum class WorldChangeKind
     ObjectPlaced,
     ObjectPlacementRemoved
 };
-struct WorldChange
-{
+struct WorldChange {
     std::uint64_t sequence = 0;
     WorldChangeKind kind = WorldChangeKind::AlterationCreated;
     WorldAlterationId alteration{};
@@ -254,8 +216,7 @@ struct WorldChange
     Revision revision{};
     GameplayContext context{};
 };
-struct WorldChangeBatch
-{
+struct WorldChangeBatch {
     std::vector<WorldChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     bool snapshot_required = false;
@@ -264,35 +225,30 @@ struct WorldChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct WorldDiagnostics
-{
+struct WorldDiagnostics {
     std::uint64_t regions = 0, areas = 0, locations = 0, features = 0, active_alterations = 0,
                   persistent_alterations = 0, transactions = 0;
 };
 
 class WorldService;
-class WorldTransaction
-{
+class WorldTransaction {
   public:
     WorldTransaction(WorldService &owner, GameplayContext context);
     [[nodiscard]] foundation::Result<WorldAlterationId> Create(WorldAlterationRecord record);
     [[nodiscard]] foundation::Result<void> Update(WorldAlterationId id, WorldAlterationUpdate update);
     [[nodiscard]] foundation::Result<void> Remove(WorldAlterationId id);
     [[nodiscard]] foundation::Result<void> Commit();
-    void Cancel() noexcept
-    {
+    void Cancel() noexcept {
         cancelled_ = true;
     }
 
   public:
-    enum class Kind
-    {
+    enum class Kind {
         Create,
         Update,
         Remove
     };
-    struct Mutation
-    {
+    struct Mutation {
         Kind kind;
         WorldAlterationRecord record{};
         WorldAlterationUpdate update{};
@@ -307,14 +263,12 @@ class WorldTransaction
     bool committed_ = false, cancelled_ = false;
 };
 
-class WorldService
-{
+class WorldService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<WorldService>;
 
   public:
     WorldService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.world");
     }
     [[nodiscard]] foundation::Result<void> RegisterRegion(WorldRegionDefinition definition);
@@ -324,8 +278,7 @@ class WorldService
     [[nodiscard]] foundation::Result<void> RegisterAlterationType(WorldAlterationTypeId id, std::string canonical_name);
     [[nodiscard]] foundation::Result<void> AddStaticFeature(WorldFeatureRecord feature);
     [[nodiscard]] foundation::Result<void> Freeze();
-    [[nodiscard]] bool IsFrozen() const noexcept
-    {
+    [[nodiscard]] bool IsFrozen() const noexcept {
         return frozen_;
     }
 
@@ -335,16 +288,15 @@ class WorldService
     [[nodiscard]] std::optional<WorldFeatureRecord> FindFeature(WorldFeatureId id) const;
     [[nodiscard]] std::optional<WorldAlterationRecord> FindAlteration(WorldAlterationId id) const;
     [[nodiscard]] std::optional<ObjectPlacementRecord> FindObjectPlacement(GameplayObjectRef object) const noexcept;
-    [[nodiscard]] bool IsAlterationTypeRegistered(WorldAlterationTypeId id) const noexcept
-    {
+    [[nodiscard]] bool IsAlterationTypeRegistered(WorldAlterationTypeId id) const noexcept {
         return alteration_types_.contains(id);
     }
 
     [[nodiscard]] std::vector<WorldAreaDefinition> FindAreasAt(WorldPosition position) const;
     [[nodiscard]] std::vector<LocationDefinition> FindLocationsInArea(WorldAreaId area) const;
     [[nodiscard]] std::vector<LocationDefinition> FindChildLocations(LocationId parent) const;
-    [[nodiscard]] std::vector<WorldAlterationRecord> FindAlterations(
-        const WorldAabb &bounds, std::optional<WorldAlterationTypeId> type = std::nullopt) const;
+    [[nodiscard]] std::vector<WorldAlterationRecord>
+    FindAlterations(const WorldAabb &bounds, std::optional<WorldAlterationTypeId> type = std::nullopt) const;
 
     [[nodiscard]] foundation::Result<WorldFeatureId> AddDynamicFeature(WorldFeatureRecord feature);
     [[nodiscard]] foundation::Result<void> UpdateDynamicFeature(WorldFeatureId id, WorldAabb bounds,
@@ -355,8 +307,7 @@ class WorldService
                                                                  GameplayContext context = {});
     [[nodiscard]] std::vector<ObjectPlacementRecord> FindObjectsInArea(WorldAreaId area) const;
     [[nodiscard]] std::vector<ObjectPlacementRecord> FindObjectsInLocation(LocationId location) const;
-    [[nodiscard]] WorldTransaction BeginTransaction(GameplayContext context = {})
-    {
+    [[nodiscard]] WorldTransaction BeginTransaction(GameplayContext context = {}) {
         return WorldTransaction(*this, context);
     }
     [[nodiscard]] foundation::Result<void> ExpireAlteration(WorldAlterationId id, GameplayTimePoint now,
@@ -372,27 +323,23 @@ class WorldService
     [[nodiscard]] WorldChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
 
   public:
-    [[nodiscard]] WorldChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+    [[nodiscard]] WorldChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
                                                                           : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
         return {journal_epoch_,
                 next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     void PruneChangesBefore(std::uint64_t sequence);
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
     [[nodiscard]] WorldDiagnostics GetDiagnostics() const noexcept;
@@ -406,20 +353,17 @@ class WorldService
     [[nodiscard]] bool CanRecordChanges(std::size_t count) const noexcept;
     [[nodiscard]] foundation::Result<void> ValidateTopology() const;
     [[nodiscard]] foundation::Result<void> ValidateAlteration(const WorldAlterationRecord &record) const;
-    [[nodiscard]] foundation::Result<WorldAlterationRecord> ApplyAlterationUpdate(
-        const WorldAlterationRecord &current, const WorldAlterationUpdate &update) const;
+    [[nodiscard]] foundation::Result<WorldAlterationRecord>
+    ApplyAlterationUpdate(const WorldAlterationRecord &current, const WorldAlterationUpdate &update) const;
     [[nodiscard]] foundation::Result<void> SynchronizeRequestedAlterationId(WorldAlterationId id);
     void RebuildTopologyIndexes();
 
-    struct CellKey
-    {
+    struct CellKey {
         std::int64_t x = 0, y = 0, z = 0;
         [[nodiscard]] bool operator==(const CellKey &) const noexcept = default;
     };
-    struct CellHash
-    {
-        std::size_t operator()(const CellKey &c) const noexcept
-        {
+    struct CellHash {
+        std::size_t operator()(const CellKey &c) const noexcept {
             const auto a = std::hash<std::int64_t>{}(c.x);
             const auto b = std::hash<std::int64_t>{}(c.y);
             const auto d = std::hash<std::int64_t>{}(c.z);
@@ -438,17 +382,13 @@ class WorldService
     void UnindexAlteration(const WorldAlterationRecord &alteration);
     [[nodiscard]] std::vector<CellKey> CellsFor(const WorldAabb &bounds) const;
     [[nodiscard]] CellKey CellFor(WorldPosition position) const noexcept;
-    struct IdHash
-    {
-        template <class T> std::size_t operator()(const T &id) const noexcept
-        {
+    struct IdHash {
+        template <class T> std::size_t operator()(const T &id) const noexcept {
             return std::hash<GameplayObjectId>{}(id.value);
         }
     };
-    struct TypeHash
-    {
-        template <class T> std::size_t operator()(const T &id) const noexcept
-        {
+    struct TypeHash {
+        template <class T> std::size_t operator()(const T &id) const noexcept {
             return std::hash<TypeId>{}(id.value);
         }
     };

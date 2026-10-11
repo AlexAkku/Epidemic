@@ -463,3 +463,256 @@ class ConditionService
 };
 } // namespace epidemic::gameplay::conditions
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `ConditionStackingPolicy`: `Independent`, `UniquePerSubject`, `UniquePerSource`, `RefreshDuration`, `ExtendDuration`, `AddStacks`, `ReplaceIfStronger`, `ReplaceExisting`
+- `ConditionPersistencePolicy`: `Transient`, `Session`, `Persistent`
+- `ConditionMaterializationPolicy`: `Always`, `AbstractCapable`, `MaterializedOnly`
+- `ConditionDematerializationPolicy`: `Pause`, `Remove`, `RejectDematerialization`
+- `PeriodicCatchUpPolicy`: `FireEach`, `FireOnce`, `Aggregate`, `Skip`
+- `ConditionApplyDisposition`: `Added`, `Refreshed`, `Stacked`, `Replaced`, `Rejected`, `NoOp`
+- `ConditionRemovalReason`: `Expired`, `Dispelled`, `RemovedByEffect`, `SubjectDestroyed`, `Replaced`, `SystemCleanup`
+- `ConditionChangeKind`: `Added`, `Refreshed`, `DurationExtended`, `StackChanged`, `Removed`, `Expired`, `PeriodicDue`, `ScheduleLinksChanged`, `MaterializationPauseChanged`
+- `ConditionSubjectMaterializationState`: `Unavailable`, `Abstract`, `Materialized`
+
+### Состав типов и операции
+
+#### `ConditionTypeId` (строка заголовка 22)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr ConditionTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ConditionTypeId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ConditionTypeId&) const noexcept = default;
+```
+
+#### `ConditionInstanceId` (строка заголовка 32)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr ConditionInstanceId FromRaw(std::uint64_t high, std::uint64_t low) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t High() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Low() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ConditionInstanceId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ConditionInstanceId&) const noexcept = default;
+```
+
+#### `ConditionTypeIdHash` (строка заголовка 46)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(ConditionTypeId id) const noexcept;
+```
+
+#### `ConditionInstanceIdHash` (строка заголовка 51)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const ConditionInstanceId& id) const noexcept;
+```
+
+#### `RegisteredConditionPayload` (строка заголовка 59)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t schema_version = 1`
+- `std::vector<std::byte> bytes`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool Empty() const noexcept;
+template <typename T> [[nodiscard]] static RegisteredConditionPayload FromTrivial(TypeId type_id, const T& value);
+template <typename T> [[nodiscard]] std::optional<T> AsTrivial(TypeId expected_type) const;
+```
+
+#### `ConditionDefinition` (строка заголовка 133)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `ConditionStackingPolicy stacking = ConditionStackingPolicy::Independent`
+- `std::uint32_t max_stacks = 1`
+- `ConditionPersistencePolicy persistence = ConditionPersistencePolicy::Session`
+- `std::uint32_t payload_schema_version = 1`
+- `std::size_t max_payload_bytes = 0`
+- `bool publish_fact = false`
+- `ConditionMaterializationPolicy materialization = ConditionMaterializationPolicy::AbstractCapable`
+- `ConditionDematerializationPolicy dematerialization = ConditionDematerializationPolicy::Pause`
+- `PeriodicCatchUpPolicy periodic_catch_up = PeriodicCatchUpPolicy::Aggregate`
+
+#### `ConditionInstance` (строка заголовка 156)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t magnitude_micro = 0`
+- `std::uint32_t stacks = 1`
+- `RegisteredConditionPayload payload`
+- `bool paused_for_materialization = false`
+
+#### `ApplyConditionRequest` (строка заголовка 175)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t magnitude_micro = 0`
+- `RegisteredConditionPayload payload`
+
+#### `ApplyConditionResult` (строка заголовка 197)
+
+Публичные поля и значения по умолчанию:
+
+- `ConditionApplyDisposition disposition = ConditionApplyDisposition::Rejected`
+
+#### `ConditionChange` (строка заголовка 227)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `ConditionChangeKind kind = ConditionChangeKind::Added`
+- `ConditionRemovalReason removal_reason = ConditionRemovalReason::SystemCleanup`
+- `std::uint64_t occurrence_count = 1`
+- `std::int64_t magnitude_micro = 0`
+- `std::uint32_t stacks = 0`
+
+#### `ConditionChangeBatch` (строка заголовка 246)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<ConditionChange> changes`
+
+#### `ConditionsSnapshot` (строка заголовка 256)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ConditionInstance> instances`
+- `std::vector<ConditionChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `ConditionsDiagnostics` (строка заголовка 267)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t active_conditions = 0`
+- `std::uint64_t applied = 0`
+- `std::uint64_t expired = 0`
+- `std::uint64_t removed = 0`
+- `std::uint64_t periodic_triggers = 0`
+- `std::uint64_t stack_merges = 0`
+- `std::uint64_t paused_for_materialization = 0`
+
+#### `IConditionSubjectStateProvider` (строка заголовка 285)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IConditionSubjectStateProvider() = default;
+[[nodiscard]] virtual ConditionSubjectMaterializationState GetMaterializationState(GameplayObjectRef subject) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ConditionService` (строка заголовка 292)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::size_t kChangeJournalCapacity = 4096`, `std::unordered_map<ConditionTypeId, DefinitionEntry, ConditionTypeIdHash> definitions_`, `const IConditionSubjectStateProvider* subject_state_provider_ = nullptr`, `std::vector<ConditionInstance> instances_`, `std::unordered_map<ConditionInstanceId, std::size_t, ConditionInstanceIdHash> id_to_index_`, `std::unordered_map<GameplayObjectRef, std::vector<ConditionInstanceId>> subject_index_`, `MonotonicIdGenerator<GameplayObjectId> ids_`, `bool frozen_ = false`, `std::deque<ConditionChange> changes_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+ConditionService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> SetSubjectStateProvider(const IConditionSubjectStateProvider* provider);
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] const ConditionDefinition* FindDefinition(ConditionTypeId id) const noexcept;
+[[nodiscard]] foundation::Result<ApplyConditionResult> Apply(ApplyConditionRequest request);
+[[nodiscard]] const ConditionInstance* Find(ConditionInstanceId id) const noexcept;
+[[nodiscard]] std::optional<ConditionInstance> FindCopy(ConditionInstanceId id) const noexcept;
+[[nodiscard]] std::vector<ConditionInstance> GetConditions(GameplayObjectRef subject) const;
+[[nodiscard]] std::vector<ConditionInstance> AllConditions() const;
+[[nodiscard]] bool HasCondition(GameplayObjectRef subject, ConditionTypeId type) const;
+[[nodiscard]] bool HasConditionTag(GameplayObjectRef subject, TagId tag, const GameplayTagRegistry& tags) const;
+[[nodiscard]] std::vector<ConditionInstance> FindByType(ConditionTypeId type) const;
+[[nodiscard]] std::vector<ConditionInstance> FindBySource(GameplayObjectRef source) const;
+[[nodiscard]] ConditionChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesBefore(std::uint64_t sequence);
+[[nodiscard]] ConditionsSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(ConditionsSnapshot snapshot);
+[[nodiscard]] ConditionsDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `DefinitionEntry` (строка заголовка 403)
+
+Публичные поля и значения по умолчанию:
+
+- `ConditionDefinition definition`
+- `PayloadValidator validator`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `ConditionService` | `ConditionService::ConditionService` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:20` |
+| `SetSubjectStateProvider` | `ConditionService::SetSubjectStateProvider` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:72` |
+| `FindDefinition` | `ConditionService::FindDefinition` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:82` |
+| `Apply` | `ConditionService::Apply` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:300` |
+| `Find` | `ConditionService::Find` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:945` |
+| `FindCopy` | `ConditionService::FindCopy` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:951` |
+| `GetConditions` | `ConditionService::GetConditions` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:957` |
+| `AllConditions` | `ConditionService::AllConditions` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:977` |
+| `HasCondition` | `ConditionService::HasCondition` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:984` |
+| `HasConditionTag` | `ConditionService::HasConditionTag` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:990` |
+| `FindByType` | `ConditionService::FindByType` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:1004` |
+| `FindBySource` | `ConditionService::FindBySource` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:1018` |
+| `PruneChangesBefore` | `ConditionService::PruneChangesBefore` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:1086` |
+| `CaptureSnapshot` | `ConditionService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:1094` |
+| `RestoreSnapshot` | `ConditionService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:1117` |
+| `GetDiagnostics` | `ConditionService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Conditions/src/conditions.cpp:1219` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:41`
+- `SetSubjectStateProvider`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:45`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:93`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:94`
+- `Apply`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:112`
+- `Find`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:119`
+- `AllConditions`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:131`
+- `CurrentRevision`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:221`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:229`
+- `FindCopy`: `EngineFramework/DevelopmentInfrastructure/Tests/conditions_tests.cpp:286`
+

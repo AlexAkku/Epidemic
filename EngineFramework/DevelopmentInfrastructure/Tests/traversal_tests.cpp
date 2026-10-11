@@ -7,55 +7,45 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::traversal;
 
-namespace
-{
-template <class T, class Pred>
-bool SameVector(const std::vector<T>& a, const std::vector<T>& b, Pred pred)
-{
+namespace {
+template <class T, class Pred> bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
     return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), pred);
 }
 
-bool SameState(const TraversalState& a, const TraversalState& b)
-{
+bool SameState(const TraversalState &a, const TraversalState &b) {
     return a.subject == b.subject && a.current_mode == b.current_mode && a.profile == b.profile &&
            a.active_session == b.active_session && a.revision == b.revision;
 }
 
-bool SameSession(const TraversalSession& a, const TraversalSession& b)
-{
-    return a.id == b.id && a.subject == b.subject && a.mode == b.mode && a.route == b.route &&
-           a.state == b.state && a.started_at == b.started_at && a.revision == b.revision;
+bool SameSession(const TraversalSession &a, const TraversalSession &b) {
+    return a.id == b.id && a.subject == b.subject && a.mode == b.mode && a.route == b.route && a.state == b.state &&
+           a.started_at == b.started_at && a.revision == b.revision;
 }
 
-bool SameRoute(const TraversalRoute& a, const TraversalRoute& b)
-{
+bool SameRoute(const TraversalRoute &a, const TraversalRoute &b) {
     return a.id == b.id && a.subject == b.subject && a.from_area == b.from_area && a.to_area == b.to_area &&
            a.mode == b.mode && a.lifetime == b.lifetime && a.source == b.source && a.payload == b.payload &&
            a.revision == b.revision;
 }
 
-bool SameGrant(const TraversalCapabilityGrant& a, const TraversalCapabilityGrant& b)
-{
+bool SameGrant(const TraversalCapabilityGrant &a, const TraversalCapabilityGrant &b) {
     return a.id == b.id && a.subject == b.subject && a.capability == b.capability && a.source == b.source &&
            a.parameter_micro == b.parameter_micro && a.expires_at == b.expires_at && a.persistent == b.persistent &&
            a.revision == b.revision;
 }
 
-bool SameBinding(const TraversalCarrierBinding& a, const TraversalCarrierBinding& b)
-{
+bool SameBinding(const TraversalCarrierBinding &a, const TraversalCarrierBinding &b) {
     return a.passenger == b.passenger && a.carrier == b.carrier && a.carrier_mode == b.carrier_mode &&
            a.previous_mode == b.previous_mode && a.role == b.role && a.revision == b.revision;
 }
 
-bool SameChange(const TraversalChange& a, const TraversalChange& b)
-{
+bool SameChange(const TraversalChange &a, const TraversalChange &b) {
     return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject && a.mode == b.mode &&
            a.session == b.session && a.carrier == b.carrier && a.reason == b.reason && a.context == b.context &&
            a.revision == b.revision && a.capability == b.capability && a.capability_grant == b.capability_grant;
 }
 
-bool SameSnapshot(const TraversalSnapshot& a, const TraversalSnapshot& b)
-{
+bool SameSnapshot(const TraversalSnapshot &a, const TraversalSnapshot &b) {
     return SameVector(a.states, b.states, SameState) && SameVector(a.sessions, b.sessions, SameSession) &&
            SameVector(a.routes, b.routes, SameRoute) &&
            SameVector(a.capability_grants, b.capability_grants, SameGrant) &&
@@ -68,15 +58,13 @@ bool SameSnapshot(const TraversalSnapshot& a, const TraversalSnapshot& b)
            a.change_epoch == b.change_epoch;
 }
 
-GameplayObjectRef Ref(const char* name)
-{
+GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
 }
 
 TraversalService BuildService(TraversalModeId walk, TraversalModeId swim, TraversalModeId ride,
                               TraversalCapabilityId swim_cap, TraversalCapabilityId ride_cap,
-                              TraversalProfileId profile)
-{
+                              TraversalProfileId profile) {
     TraversalService s;
     TraversalModeDefinition w;
     w.id = walk;
@@ -112,8 +100,7 @@ TraversalService BuildService(TraversalModeId walk, TraversalModeId swim, Traver
 }
 }
 
-int main()
-{
+int main() {
     const auto walk = TraversalModeId::FromString("game.walk");
     const auto swim = TraversalModeId::FromString("game.swim");
     const auto ride = TraversalModeId::FromString("game.ride");
@@ -136,7 +123,7 @@ int main()
     strong_swim.subject = actor;
     strong_swim.capability = swim_cap;
     strong_swim.parameter_micro = 3'000'000;
-    strong_swim.source = Ref("spell" );
+    strong_swim.source = Ref("spell");
     strong_swim.persistent = false;
     auto grant = s.GrantCapability(strong_swim);
     if (!grant || s.CanUseMode(actor, swim).kind != TraversalResultKind::Accepted)
@@ -214,8 +201,7 @@ int main()
     auto snap = s.CaptureSnapshot();
     bool saw_persistent = false;
     bool saw_transient = false;
-    for (const auto& r : snap.routes)
-    {
+    for (const auto &r : snap.routes) {
         if (r.id == route.Value())
             saw_persistent = true;
         if (r.id == transient.Value())
@@ -259,7 +245,8 @@ int main()
     if (s.RegisterRoute(exhausted_route))
         return 35;
 
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 38;
     auto traversal_journal_seed = restored.CaptureSnapshot();
     traversal_journal_seed.journal.clear();
@@ -272,7 +259,8 @@ int main()
     if (traversal_exhausted.next_change_sequence != 0 || traversal_exhausted.journal.size() != 1 ||
         traversal_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 41;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 42;
     TraversalService traversal_exhausted_restore = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!traversal_exhausted_restore.RestoreSnapshot(traversal_exhausted))
@@ -284,7 +272,9 @@ int main()
         return 37;
 
     TraversalService empty_journal = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
-    if (!empty_journal.ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!empty_journal
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 44;
 
     // Goal 4 G4-INFRA-001 / G4-TRAV-002: every named failure seam starts from a fresh fixture and preserves the full snapshot.
@@ -353,8 +343,8 @@ int main()
         if (!seeded.RegisterRoute(seam_route))
             return 977;
         const auto restore_seed = seeded.CaptureSnapshot();
-        for (const auto point : {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit})
-        {
+        for (const auto point :
+             {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
             auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
             const auto before = service.CaptureSnapshot();
             auto target = restore_seed;
@@ -412,7 +402,8 @@ int main()
     if (max_guard.GrantCapability(extra) || max_guard.RevokeCapability(guard_grant_id.Value()) ||
         max_guard.ChangeMode({guard_actor, swim, {}}) || max_guard.RegisterRoute(extra_route) ||
         max_guard.RemoveRoute(guard_route_id.Value()) || max_guard.StartSession(guard_actor, walk, {}, {}, {}) ||
-        max_guard.BoardCarrier(guard_actor, Ref("guard-carrier"), ride, TraversalCarrierRoleId::FromString("guard.role")))
+        max_guard.BoardCarrier(guard_actor, Ref("guard-carrier"), ride,
+                               TraversalCarrierRoleId::FromString("guard.role")))
         return 961;
     const auto stable_after = max_guard.CaptureSnapshot();
     if (stable_after.revision != stable.revision || stable_after.states.size() != stable.states.size() ||
@@ -446,13 +437,15 @@ int main()
     auto suspended_max = suspended_guard.CaptureSnapshot();
     suspended_max.revision.value = std::numeric_limits<std::uint64_t>::max();
     TraversalService suspended_max_guard = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
-    if (!suspended_max_guard.RestoreSnapshot(suspended_max) || suspended_max_guard.ResumeSession(suspended_session.Value()))
+    if (!suspended_max_guard.RestoreSnapshot(suspended_max) ||
+        suspended_max_guard.ResumeSession(suspended_session.Value()))
         return 969;
 
     // Disembark is destructive only after revision preflight.
     TraversalService carrier_guard = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!carrier_guard.AssignProfile(guard_actor, profile) ||
-        !carrier_guard.BoardCarrier(guard_actor, Ref("guard-carrier"), ride, TraversalCarrierRoleId::FromString("guard.role")))
+        !carrier_guard.BoardCarrier(guard_actor, Ref("guard-carrier"), ride,
+                                    TraversalCarrierRoleId::FromString("guard.role")))
         return 970;
     auto carrier_max = carrier_guard.CaptureSnapshot();
     carrier_max.revision.value = std::numeric_limits<std::uint64_t>::max();

@@ -16,78 +16,60 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::abilities
-{
-struct AbilityDefinitionId
-{
+namespace epidemic::gameplay::abilities {
+struct AbilityDefinitionId {
     TypeId value{};
-    [[nodiscard]] static constexpr AbilityDefinitionId FromString(std::string_view n) noexcept
-    {
+    [[nodiscard]] static constexpr AbilityDefinitionId FromString(std::string_view n) noexcept {
         return {TypeId::FromString(n)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr auto operator<=>(const AbilityDefinitionId &) const noexcept = default;
 };
-struct AbilityInstanceId
-{
+struct AbilityInstanceId {
     GameplayObjectId value{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr auto operator<=>(const AbilityInstanceId &) const noexcept = default;
 };
-struct AbilityExecutionId
-{
+struct AbilityExecutionId {
     GameplayObjectId value{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr auto operator<=>(const AbilityExecutionId &) const noexcept = default;
 };
-struct CooldownGroupId
-{
+struct CooldownGroupId {
     TypeId value{};
-    [[nodiscard]] static constexpr CooldownGroupId FromString(std::string_view n) noexcept
-    {
+    [[nodiscard]] static constexpr CooldownGroupId FromString(std::string_view n) noexcept {
         return {TypeId::FromString(n)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr auto operator<=>(const CooldownGroupId &) const noexcept = default;
 };
-struct AbilityResourceTypeId
-{
+struct AbilityResourceTypeId {
     TypeId value{};
-    [[nodiscard]] static constexpr AbilityResourceTypeId FromString(std::string_view n) noexcept
-    {
+    [[nodiscard]] static constexpr AbilityResourceTypeId FromString(std::string_view n) noexcept {
         return {TypeId::FromString(n)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr auto operator<=>(const AbilityResourceTypeId &) const noexcept = default;
 };
-struct AbilityReservationId
-{
+struct AbilityReservationId {
     GameplayObjectId value{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr auto operator<=>(const AbilityReservationId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         if constexpr (requires { id.value.Raw(); })
             return std::hash<TypeId>{}(id.value);
         else
@@ -95,12 +77,10 @@ struct IdHash
     }
 };
 
-struct RegisteredAbilityPayload
-{
+struct RegisteredAbilityPayload {
     TypeId type{};
     std::vector<std::byte> bytes;
-    template <class T> [[nodiscard]] static RegisteredAbilityPayload FromTrivial(TypeId t, const T &v)
-    {
+    template <class T> [[nodiscard]] static RegisteredAbilityPayload FromTrivial(TypeId t, const T &v) {
         static_assert(std::is_trivially_copyable_v<T>);
         RegisteredAbilityPayload p;
         p.type = t;
@@ -108,8 +88,7 @@ struct RegisteredAbilityPayload
         std::memcpy(p.bytes.data(), &v, sizeof(T));
         return p;
     }
-    template <class T> [[nodiscard]] std::optional<T> AsTrivial(TypeId t) const
-    {
+    template <class T> [[nodiscard]] std::optional<T> AsTrivial(TypeId t) const {
         static_assert(std::is_trivially_copyable_v<T>);
         if (type != t || bytes.size() != sizeof(T))
             return std::nullopt;
@@ -119,8 +98,7 @@ struct RegisteredAbilityPayload
     }
 };
 
-enum class AbilityTargetPolicy
-{
+enum class AbilityTargetPolicy {
     Self,
     SingleTarget,
     MultipleTargets,
@@ -129,60 +107,51 @@ enum class AbilityTargetPolicy
     Direction,
     None
 };
-enum class AbilityTimingKind
-{
+enum class AbilityTimingKind {
     Instant,
     CastTime,
     Channel,
     DelayedExecution
 };
-enum class AbilityCostPolicy
-{
+enum class AbilityCostPolicy {
     PayOnStart,
     ReserveThenCommit,
     PayOnExecute,
     PayPerChannelTick
 };
-enum class AbilityGrantPersistence
-{
+enum class AbilityGrantPersistence {
     Permanent,
     Temporary,
     SourceBound
 };
-enum class AbilityContinuityPolicy
-{
+enum class AbilityContinuityPolicy {
     ActivationOnly,
     UntilExecute,
     ThroughoutExecution
 };
 
-struct AbilityCostDefinition
-{
+struct AbilityCostDefinition {
     AbilityResourceTypeId resource{};
     std::int64_t amount_micro = 0;
     AbilityCostPolicy policy = AbilityCostPolicy::ReserveThenCommit;
 };
-struct AbilityCooldownDefinition
-{
+struct AbilityCooldownDefinition {
     GameplayDuration duration{};
     CooldownGroupId group{};
     bool starts_on_begin = false;
 };
-struct AbilityTimingDefinition
-{
+struct AbilityTimingDefinition {
     AbilityTimingKind kind = AbilityTimingKind::Instant;
     GameplayDuration cast_duration{};
     GameplayDuration channel_interval{};
     GameplayDuration max_channel_duration{};
 };
-struct AbilityOutputDefinition
-{
+struct AbilityOutputDefinition {
     ActionTypeId action{};
     std::int64_t magnitude_micro = 0;
     RegisteredAbilityPayload payload;
 };
-struct AbilityDefinition
-{
+struct AbilityDefinition {
     AbilityDefinitionId id{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -196,8 +165,7 @@ struct AbilityDefinition
     AbilityContinuityPolicy continuity = AbilityContinuityPolicy::ActivationOnly;
 };
 
-struct AbilityTargetSet
-{
+struct AbilityTargetSet {
     GameplayObjectRef primary{};
     std::vector<GameplayObjectRef> targets;
     std::optional<std::array<std::int64_t, 3>> point_micro{};
@@ -205,8 +173,7 @@ struct AbilityTargetSet
     std::int64_t area_radius_micro = 0;
 };
 
-struct AbilityInstance
-{
+struct AbilityInstance {
     AbilityInstanceId id{};
     AbilityDefinitionId definition{};
     GameplayObjectRef owner{};
@@ -216,8 +183,7 @@ struct AbilityInstance
     Revision revision{};
 };
 
-enum class AbilityExecutionState
-{
+enum class AbilityExecutionState {
     Casting,
     Channeling,
     Executing,
@@ -226,14 +192,12 @@ enum class AbilityExecutionState
     Interrupted,
     Failed
 };
-struct AbilityResourceReservation
-{
+struct AbilityResourceReservation {
     AbilityReservationId id{};
     AbilityResourceTypeId resource{};
     RegisteredAbilityPayload provider_token;
 };
-struct AbilityExecution
-{
+struct AbilityExecution {
     AbilityExecutionId id{};
     AbilityInstanceId ability{};
     GameplayObjectRef owner{};
@@ -248,26 +212,22 @@ struct AbilityExecution
     Revision revision{};
 };
 
-struct AbilityActivationRequest
-{
+struct AbilityActivationRequest {
     AbilityInstanceId ability{};
     AbilityTargetSet targets;
     GameplayTimePoint now{};
     GameplayContext context{};
 };
-enum class AbilityAvailability
-{
+enum class AbilityAvailability {
     Available,
     Unavailable
 };
-struct AbilityAvailabilityResult
-{
+struct AbilityAvailabilityResult {
     AbilityAvailability availability = AbilityAvailability::Unavailable;
     TypeId reason{};
 };
 
-class IAbilityRequirementProvider
-{
+class IAbilityRequirementProvider {
   public:
     virtual ~IAbilityRequirementProvider() = default;
     [[nodiscard]] virtual AbilityAvailabilityResult Check(const AbilityDefinition &definition,
@@ -275,14 +235,12 @@ class IAbilityRequirementProvider
                                                           const AbilityTargetSet &targets,
                                                           GameplayTimePoint now) const = 0;
 };
-class IAbilityMaterializationProvider
-{
+class IAbilityMaterializationProvider {
   public:
     virtual ~IAbilityMaterializationProvider() = default;
     [[nodiscard]] virtual bool IsMaterialized(GameplayObjectRef subject) const noexcept = 0;
 };
-class IAbilityResourceProvider
-{
+class IAbilityResourceProvider {
   public:
     virtual ~IAbilityResourceProvider() = default;
     [[nodiscard]] virtual bool CanAfford(GameplayObjectRef owner, AbilityResourceTypeId type,
@@ -295,8 +253,7 @@ class IAbilityResourceProvider
     virtual void Release(const AbilityResourceReservation &reservation, GameplayContext context) noexcept = 0;
     [[nodiscard]] virtual foundation::Result<void> ReconcileReservation(const AbilityResourceReservation &reservation,
                                                                         GameplayObjectRef owner,
-                                                                        GameplayContext context)
-    {
+                                                                        GameplayContext context) {
         (void)reservation;
         (void)owner;
         (void)context;
@@ -306,8 +263,7 @@ class IAbilityResourceProvider
     }
 };
 
-struct AbilityOutput
-{
+struct AbilityOutput {
     AbilityExecutionId execution{};
     GameplayTimePoint occurrence_at{};
     std::uint32_t output_index = 0;
@@ -319,8 +275,7 @@ struct AbilityOutput
     GameplayContext context{};
 };
 
-enum class AbilityChangeKind
-{
+enum class AbilityChangeKind {
     Granted,
     Revoked,
     Started,
@@ -332,8 +287,7 @@ enum class AbilityChangeKind
     CooldownFinished,
     EnabledChanged
 };
-struct AbilityChange
-{
+struct AbilityChange {
     std::uint64_t sequence = 0;
     AbilityChangeKind kind = AbilityChangeKind::Granted;
     GameplayObjectRef owner{};
@@ -343,14 +297,12 @@ struct AbilityChange
     GameplayContext context{};
     TypeId reason{};
 };
-struct AbilityCooldownState
-{
+struct AbilityCooldownState {
     GameplayObjectRef owner{};
     CooldownGroupId group{};
     GameplayTimePoint ends_at{};
 };
-struct AbilityChangeBatch
-{
+struct AbilityChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::vector<AbilityChange> changes;
@@ -358,8 +310,7 @@ struct AbilityChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct AbilitiesSnapshot
-{
+struct AbilitiesSnapshot {
     std::vector<AbilityInstance> instances;
     std::vector<AbilityExecution> executions;
     std::vector<AbilityCooldownState> cooldowns;
@@ -370,44 +321,37 @@ struct AbilitiesSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct AbilitiesDiagnostics
-{
+struct AbilitiesDiagnostics {
     std::uint64_t instances = 0, activation_attempts = 0, activations = 0, failed = 0, interrupts = 0, cooldowns = 0,
                   outputs = 0;
 };
 
-class AbilityService
-{
+class AbilityService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<AbilityService>;
 
   public:
     AbilityService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.abilities");
     }
     [[nodiscard]] foundation::Result<AbilityDefinitionId> RegisterDefinition(AbilityDefinition definition);
-    void Freeze() noexcept
-    {
+    void Freeze() noexcept {
         frozen_ = true;
     }
     [[nodiscard]] const AbilityDefinition *FindDefinition(AbilityDefinitionId id) const noexcept;
-    void SetRequirementProvider(const IAbilityRequirementProvider *provider) noexcept
-    {
+    void SetRequirementProvider(const IAbilityRequirementProvider *provider) noexcept {
         requirements_ = provider;
     }
-    void SetResourceProvider(IAbilityResourceProvider *provider) noexcept
-    {
+    void SetResourceProvider(IAbilityResourceProvider *provider) noexcept {
         resources_ = provider;
     }
-    void SetMaterializationProvider(const IAbilityMaterializationProvider *provider) noexcept
-    {
+    void SetMaterializationProvider(const IAbilityMaterializationProvider *provider) noexcept {
         materialization_ = provider;
     }
 
-    [[nodiscard]] foundation::Result<AbilityInstanceId> Grant(
-        GameplayObjectRef owner, AbilityDefinitionId definition, GameplayObjectRef source = {},
-        AbilityGrantPersistence persistence = AbilityGrantPersistence::Permanent, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<AbilityInstanceId>
+    Grant(GameplayObjectRef owner, AbilityDefinitionId definition, GameplayObjectRef source = {},
+          AbilityGrantPersistence persistence = AbilityGrantPersistence::Permanent, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> Revoke(AbilityInstanceId instance, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> SetAbilityEnabled(AbilityInstanceId instance, bool enabled,
                                                              GameplayContext context = {});
@@ -421,9 +365,8 @@ class AbilityService
     [[nodiscard]] foundation::Result<AbilityExecutionId> BeginActivation(AbilityActivationRequest request);
     [[nodiscard]] foundation::Result<std::vector<AbilityOutput>> CompleteExecution(AbilityExecutionId execution,
                                                                                    GameplayTimePoint now);
-    [[nodiscard]] foundation::Result<std::vector<AbilityOutput>> ChannelTick(AbilityExecutionId execution,
-                                                                             GameplayTimePoint now,
-                                                                             std::uint64_t occurrences = 1);
+    [[nodiscard]] foundation::Result<std::vector<AbilityOutput>>
+    ChannelTick(AbilityExecutionId execution, GameplayTimePoint now, std::uint64_t occurrences = 1);
     [[nodiscard]] foundation::Result<void> Cancel(AbilityExecutionId execution, GameplayTimePoint now,
                                                   GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> Interrupt(AbilityExecutionId execution, TypeId reason, GameplayTimePoint now,
@@ -435,33 +378,31 @@ class AbilityService
     [[nodiscard]] GameplayDuration CooldownRemaining(GameplayObjectRef owner, CooldownGroupId group,
                                                      GameplayTimePoint now) const noexcept;
     void SweepCooldowns(GameplayTimePoint now, GameplayContext context = {});
-    [[nodiscard]] bool NeedsResourceReconciliation() const noexcept
-    {
+    [[nodiscard]] bool NeedsResourceReconciliation() const noexcept {
         return resource_reconciliation_required_;
     }
     [[nodiscard]] foundation::Result<void> ReconcileRestoredReservations(GameplayContext context = {});
     [[nodiscard]] const AbilityExecution *FindExecution(AbilityExecutionId id) const noexcept;
-    private:
-        [[nodiscard]] std::vector<AbilityChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] AbilityChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] AbilityChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<AbilityChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] AbilityChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] AbilityChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] AbilitiesSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(AbilitiesSnapshot snapshot);
@@ -469,22 +410,24 @@ class AbilityService
 
   private:
     [[nodiscard]] foundation::Result<void> AcquireStartCosts(const AbilityDefinition &def, AbilityExecution &execution,
-                                                               std::vector<AbilityResourceReservation> &pay_on_start);
+                                                             std::vector<AbilityResourceReservation> &pay_on_start);
     [[nodiscard]] foundation::Result<void> AcquireExecuteCosts(const AbilityDefinition &def,
                                                                AbilityExecution &execution,
                                                                std::vector<AbilityResourceReservation> &pay_on_execute);
     void CommitReservations(AbilityExecution &execution) noexcept;
-    [[nodiscard]] AbilityAvailabilityResult ValidateTargets(const AbilityDefinition &definition, const AbilityInstance &instance,
-                                                           const AbilityTargetSet &targets) const;
+    [[nodiscard]] AbilityAvailabilityResult ValidateTargets(const AbilityDefinition &definition,
+                                                            const AbilityInstance &instance,
+                                                            const AbilityTargetSet &targets) const;
     [[nodiscard]] static bool IsTerminal(AbilityExecutionState state) noexcept;
     [[nodiscard]] AbilityAvailabilityResult CheckContinuity(const AbilityDefinition &definition,
                                                             const AbilityInstance &instance,
                                                             const AbilityExecution &execution,
                                                             GameplayTimePoint now) const;
     void ReleaseReservations(AbilityExecution &execution, GameplayContext context) noexcept;
-    [[nodiscard]] foundation::Result<void> FinalizeExecution(AbilityExecutionId id, AbilityExecutionState terminal_state,
-                                                               AbilityChangeKind change_kind, GameplayTimePoint now,
-                                                               GameplayContext context, TypeId reason = {});
+    [[nodiscard]] foundation::Result<void> FinalizeExecution(AbilityExecutionId id,
+                                                             AbilityExecutionState terminal_state,
+                                                             AbilityChangeKind change_kind, GameplayTimePoint now,
+                                                             GameplayContext context, TypeId reason = {});
     void StartCooldown(const AbilityDefinition &def, GameplayObjectRef owner, GameplayTimePoint now,
                        GameplayContext context, AbilityInstanceId ability, AbilityExecutionId execution);
     [[nodiscard]] std::vector<AbilityOutput> BuildOutputs(const AbilityDefinition &def,

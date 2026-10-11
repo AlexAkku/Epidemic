@@ -8,14 +8,10 @@
 
 #include <memory>
 
-namespace epidemic::runtime
-{
-struct SceneOptions
-{
-};
+namespace epidemic::runtime {
+struct SceneOptions {};
 
-struct SceneServices
-{
+struct SceneServices {
     std::shared_ptr<ISceneNodeRegistry> nodes;
     std::shared_ptr<ITransformRegistry> transforms;
     std::shared_ptr<ISpatialIndex> spatial;
@@ -23,5 +19,5 @@ struct SceneServices
     std::shared_ptr<ISceneSnapshotProvider> snapshots;
 };
 
-[[nodiscard]] foundation::Result<SceneServices> CreateSceneServices(const SceneOptions& options = {});
+[[nodiscard]] foundation::Result<SceneServices> CreateSceneServices(const SceneOptions &options = {});
 } // namespace epidemic::runtime

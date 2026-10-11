@@ -14,135 +14,105 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::navigation_semantics
-{
-struct NavigationDomainId
-{
+namespace epidemic::gameplay::navigation_semantics {
+struct NavigationDomainId {
     TypeId value{};
-    static constexpr NavigationDomainId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationDomainId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationDomainId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationDomainId &) const noexcept = default;
 };
-struct NavigationRuleId
-{
+struct NavigationRuleId {
     TypeId value{};
-    static constexpr NavigationRuleId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationRuleId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationRuleId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationRuleId &) const noexcept = default;
 };
-struct NavigationLayerId
-{
+struct NavigationLayerId {
     GameplayObjectId value{};
-    static constexpr NavigationLayerId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NavigationLayerId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    static constexpr NavigationLayerId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationLayerId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationLayerId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationLayerId &) const noexcept = default;
 };
-struct NavigationLinkId
-{
+struct NavigationLinkId {
     GameplayObjectId value{};
-    static constexpr NavigationLinkId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationLinkId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationLinkId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationLinkId &) const noexcept = default;
 };
-struct NavigationLayerTypeId
-{
+struct NavigationLayerTypeId {
     TypeId value{};
-    static constexpr NavigationLayerTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationLayerTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationLayerTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationLayerTypeId &) const noexcept = default;
 };
-struct NavigationLinkTypeId
-{
+struct NavigationLinkTypeId {
     TypeId value{};
-    static constexpr NavigationLinkTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationLinkTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationLinkTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationLinkTypeId &) const noexcept = default;
 };
-struct TraversalModeSemanticId
-{
+struct TraversalModeSemanticId {
     TypeId value{};
-    static constexpr TraversalModeSemanticId FromString(std::string_view s) noexcept
-    {
+    static constexpr TraversalModeSemanticId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const TraversalModeSemanticId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const TraversalModeSemanticId &) const noexcept = default;
 };
-struct NavigationReasonId
-{
+struct NavigationReasonId {
     TypeId value{};
-    static constexpr NavigationReasonId FromString(std::string_view s) noexcept
-    {
+    static constexpr NavigationReasonId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NavigationReasonId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NavigationReasonId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
-struct RefHash
-{
-    [[nodiscard]] std::size_t operator()(GameplayObjectRef ref) const noexcept
-    {
+struct RefHash {
+    [[nodiscard]] std::size_t operator()(GameplayObjectRef ref) const noexcept {
         return std::hash<GameplayObjectRef>{}(ref);
     }
 };
@@ -150,8 +120,7 @@ using Fixed = std::int64_t;
 
 // Composition contract: Deny is terminal. Allow does not override a Deny; it means no additional restriction.
 // Avoid/Prefer/AddCost only modify semantic cost/availability and remain order-dependent by declared priority/id.
-enum class NavigationDecisionKind
-{
+enum class NavigationDecisionKind {
     Allow,
     Deny,
     AddCost,
@@ -160,8 +129,7 @@ enum class NavigationDecisionKind
     Avoid,
     Prefer
 };
-enum class NavigationAvailability
-{
+enum class NavigationAvailability {
     PhysicallyImpossible,
     TraversalUnsupported,
     Forbidden,
@@ -169,15 +137,13 @@ enum class NavigationAvailability
     TemporarilyBlocked,
     Available
 };
-enum class NavigationLayerLifetime
-{
+enum class NavigationLayerLifetime {
     Transient,
     Session,
     Persistent,
     Timed
 };
-enum class LinkState
-{
+enum class LinkState {
     Open,
     Closed,
     Locked,
@@ -186,8 +152,7 @@ enum class LinkState
     Disabled,
     Conditional
 };
-enum class NavigationChangeKind
-{
+enum class NavigationChangeKind {
     ProfileChanged,
     LayerAdded,
     LayerRemoved,
@@ -196,21 +161,18 @@ enum class NavigationChangeKind
     RuleRegistered
 };
 
-struct NavigationDomainDefinition
-{
+struct NavigationDomainDefinition {
     NavigationDomainId id{};
     std::string canonical_name;
     GameplayTagSet tags;
 };
-struct NavigationSemanticProfile
-{
+struct NavigationSemanticProfile {
     GameplayObjectRef subject{};
     NavigationDomainId domain{};
     GameplayTagSet navigation_tags;
     Revision revision{};
 };
-struct NavigationSemanticLayer
-{
+struct NavigationSemanticLayer {
     NavigationLayerId id{};
     GameplayObjectRef area{};
     GameplayObjectRef source{};
@@ -226,8 +188,7 @@ struct NavigationSemanticLayer
     std::optional<GameplayTimePoint> expires_at{};
     Revision revision{};
 };
-struct NavigationSemanticLink
-{
+struct NavigationSemanticLink {
     NavigationLinkId id{};
     GameplayObjectRef from_area{};
     GameplayObjectRef to_area{};
@@ -237,8 +198,7 @@ struct NavigationSemanticLink
     TypeId required_fact{};
     Revision revision{};
 };
-struct NavigationRuleDefinition
-{
+struct NavigationRuleDefinition {
     NavigationRuleId id{};
     NavigationDomainId domain{};
     std::int32_t priority = 0;
@@ -253,51 +213,46 @@ struct NavigationRuleDefinition
     TypeId requirement{};
     Fixed required_parameter_micro = 0;
 };
-struct NavigationSemanticCost
-{
+struct NavigationSemanticCost {
     Fixed base_multiplier_micro = 1'000'000;
     Fixed additive_cost_micro = 0;
     GameplayTagSet reason_tags;
 };
-struct NavigationReason
-{
+struct NavigationReason {
     NavigationReasonId id{};
     NavigationRuleId rule{};
     NavigationLayerId layer{};
     NavigationLinkId link{};
     NavigationDecisionKind decision = NavigationDecisionKind::Allow;
 };
-class INavigationCapabilityProvider
-{
+class INavigationCapabilityProvider {
   public:
     virtual ~INavigationCapabilityProvider() = default;
-    [[nodiscard]] virtual bool HasCapability(GameplayObjectRef subject, TypeId capability, Fixed min_parameter_micro) const noexcept = 0;
+    [[nodiscard]] virtual bool HasCapability(GameplayObjectRef subject, TypeId capability,
+                                             Fixed min_parameter_micro) const noexcept = 0;
 };
-class INavigationFactProvider
-{
+class INavigationFactProvider {
   public:
     virtual ~INavigationFactProvider() = default;
-    [[nodiscard]] virtual bool HasFact(GameplayObjectRef subject, TypeId fact, const GameplayContext &context) const noexcept = 0;
+    [[nodiscard]] virtual bool HasFact(GameplayObjectRef subject, TypeId fact,
+                                       const GameplayContext &context) const noexcept = 0;
 };
 
-struct NavigationPermissionQuery
-{
+struct NavigationPermissionQuery {
     GameplayObjectRef subject{};
     GameplayObjectRef from_area{};
     GameplayObjectRef to_area{};
     TraversalModeSemanticId traversal_mode{};
     GameplayContext context{};
 };
-struct NavigationPermissionResult
-{
+struct NavigationPermissionResult {
     NavigationDecisionKind decision = NavigationDecisionKind::Allow;
     NavigationAvailability availability = NavigationAvailability::Available;
     NavigationSemanticCost cost{};
     std::vector<NavigationReason> reasons;
     Revision revision{};
 };
-struct NavigationChange
-{
+struct NavigationChange {
     std::uint64_t sequence = 0;
     NavigationChangeKind kind = NavigationChangeKind::LayerAdded;
     GameplayObjectRef subject{};
@@ -306,8 +261,7 @@ struct NavigationChange
     Revision revision{};
     GameplayContext context{};
 };
-struct NavigationChangeBatch
-{
+struct NavigationChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::vector<NavigationChange> changes;
@@ -315,8 +269,7 @@ struct NavigationChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct NavigationSnapshot
-{
+struct NavigationSnapshot {
     std::vector<NavigationSemanticProfile> profiles;
     std::vector<NavigationSemanticLayer> layers;
     std::vector<NavigationSemanticLink> links;
@@ -327,34 +280,33 @@ struct NavigationSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct NavigationDiagnostics
-{
+struct NavigationDiagnostics {
     std::uint64_t domains = 0, rules = 0, layers = 0, links = 0, permission_queries = 0, denied_queries = 0,
                   cost_modified_queries = 0, dynamic_updates = 0;
 };
 
-class NavigationSemanticsService
-{
+class NavigationSemanticsService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<NavigationSemanticsService>;
 
   public:
     NavigationSemanticsService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.navigation_semantics");
     }
     [[nodiscard]] foundation::Result<void> RegisterDomain(NavigationDomainDefinition definition);
     [[nodiscard]] foundation::Result<void> RegisterRule(NavigationRuleDefinition rule);
-    void Freeze() noexcept
-    {
+    void Freeze() noexcept {
         frozen_ = true;
     }
-    [[nodiscard]] bool IsFrozen() const noexcept
-    {
+    [[nodiscard]] bool IsFrozen() const noexcept {
         return frozen_;
     }
-    void SetCapabilityProvider(const INavigationCapabilityProvider *provider) noexcept { capabilities_ = provider; }
-    void SetFactProvider(const INavigationFactProvider *provider) noexcept { facts_ = provider; }
+    void SetCapabilityProvider(const INavigationCapabilityProvider *provider) noexcept {
+        capabilities_ = provider;
+    }
+    void SetFactProvider(const INavigationFactProvider *provider) noexcept {
+        facts_ = provider;
+    }
     [[nodiscard]] foundation::Result<void> SetProfile(NavigationSemanticProfile profile, GameplayContext context = {});
     [[nodiscard]] foundation::Result<NavigationLayerId> AddLayer(NavigationSemanticLayer layer,
                                                                  GameplayContext context = {});
@@ -368,8 +320,8 @@ class NavigationSemanticsService
     [[nodiscard]] foundation::Result<void> SetLinkState(NavigationLinkId id, LinkState state,
                                                         GameplayContext context = {});
     [[nodiscard]] NavigationPermissionResult CanEnterArea(GameplayObjectRef subject, GameplayObjectRef area,
-                                                            TraversalModeSemanticId traversal_mode,
-                                                            const GameplayContext &context) const;
+                                                          TraversalModeSemanticId traversal_mode,
+                                                          const GameplayContext &context) const;
     [[nodiscard]] NavigationPermissionResult CanUseLink(GameplayObjectRef subject, NavigationLinkId link,
                                                         TraversalModeSemanticId traversal_mode,
                                                         const GameplayContext &context) const;
@@ -382,31 +334,29 @@ class NavigationSemanticsService
     [[nodiscard]] const NavigationSemanticLayer *FindLayer(NavigationLayerId id) const noexcept;
     [[nodiscard]] NavigationSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(NavigationSnapshot snapshot);
-    private:
-        [[nodiscard]] std::vector<NavigationChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] NavigationChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] NavigationChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<NavigationChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] NavigationChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] NavigationChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] NavigationDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
@@ -415,7 +365,7 @@ class NavigationSemanticsService
     [[nodiscard]] bool CanAdvanceRevisionBy(std::size_t count) const noexcept;
     void Record(NavigationChange change) noexcept;
     [[nodiscard]] NavigationPermissionResult EvaluatePermission(const NavigationPermissionQuery &query,
-                                                                  std::optional<NavigationLinkId> required_link) const;
+                                                                std::optional<NavigationLinkId> required_link) const;
     [[nodiscard]] NavigationPermissionResult EvaluateAreaForProfile(const NavigationSemanticProfile *profile,
                                                                     GameplayObjectRef from_area, GameplayObjectRef area,
                                                                     TraversalModeSemanticId traversal_mode,
@@ -429,16 +379,13 @@ class NavigationSemanticsService
     std::unordered_map<NavigationDomainId, NavigationDomainDefinition, IdHash> domains_;
     std::vector<NavigationRuleDefinition> rules_;
     std::unordered_map<GameplayObjectRef, NavigationSemanticProfile, RefHash> profiles_;
-    struct LinkPairKey
-    {
+    struct LinkPairKey {
         GameplayObjectRef from{};
         GameplayObjectRef to{};
         [[nodiscard]] bool operator==(const LinkPairKey &) const noexcept = default;
     };
-    struct LinkPairHash
-    {
-        [[nodiscard]] std::size_t operator()(const LinkPairKey &key) const noexcept
-        {
+    struct LinkPairHash {
+        [[nodiscard]] std::size_t operator()(const LinkPairKey &key) const noexcept {
             const auto a = std::hash<GameplayObjectRef>{}(key.from);
             const auto b = std::hash<GameplayObjectRef>{}(key.to);
             return a ^ (b + 0x9e3779b97f4a7c15ULL + (a << 6U) + (a >> 2U));

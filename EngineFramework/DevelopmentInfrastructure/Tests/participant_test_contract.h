@@ -5,28 +5,27 @@
 #include <iostream>
 #include <string_view>
 
-namespace participant_tests
-{
-inline void Check(bool value, std::string_view assertion)
-{
-    if (!value) { std::cerr << assertion << '\n'; std::exit(1); }
-}
-template <typename Owner> void FreezeOwner(Owner& owner)
-{
-    if constexpr (requires { owner.Freeze(); })
-    {
-        if constexpr (std::is_void_v<decltype(owner.Freeze())>) owner.Freeze();
-        else Check(bool(owner.Freeze()), "owner bootstrap freeze succeeds");
+namespace participant_tests {
+inline void Check(bool value, std::string_view assertion) {
+    if (!value) {
+        std::cerr << assertion << '\n';
+        std::exit(1);
     }
-    else if constexpr (requires { owner.FreezeDefinitions(); })
+}
+template <typename Owner> void FreezeOwner(Owner &owner) {
+    if constexpr (requires { owner.Freeze(); }) {
+        if constexpr (std::is_void_v<decltype(owner.Freeze())>)
+            owner.Freeze();
+        else
+            Check(bool(owner.Freeze()), "owner bootstrap freeze succeeds");
+    } else if constexpr (requires { owner.FreezeDefinitions(); })
         Check(bool(owner.FreezeDefinitions()), "owner definitions freeze succeeds");
 }
 
 // Called for every concrete participant, never a mock participant substitute.
-inline void CheckParticipantContract(epidemic::gameplay::savegame::ISaveParticipant& participant,
+inline void CheckParticipantContract(epidemic::gameplay::savegame::ISaveParticipant &participant,
                                      std::string_view identity,
-                                     const std::vector<epidemic::gameplay::savegame::SaveParticipantId>& dependencies)
-{
+                                     const std::vector<epidemic::gameplay::savegame::SaveParticipantId> &dependencies) {
     using namespace epidemic::gameplay::savegame;
     Check(participant.Id() == SaveParticipantId::FromString(identity), "stable participant Id");
     Check(participant.SchemaVersion() == 1, "schema version 1");
@@ -40,15 +39,19 @@ inline void CheckParticipantContract(epidemic::gameplay::savegame::ISaveParticip
     auto corrupt = section;
     corrupt.payload.back() ^= std::byte{1};
     Check(!participant.ValidateSnapshot(corrupt, {}), "corrupt payload rejected");
-    corrupt = section; corrupt.payload.pop_back();
+    corrupt = section;
+    corrupt.payload.pop_back();
     corrupt.payload_hash = SaveGameOrchestrator::HashBytes(corrupt.payload);
     Check(!participant.ValidateSnapshot(corrupt, {}), "truncated payload rejected despite repaired checksum");
-    corrupt = section; corrupt.payload.push_back(std::byte{0});
+    corrupt = section;
+    corrupt.payload.push_back(std::byte{0});
     corrupt.payload_hash = SaveGameOrchestrator::HashBytes(corrupt.payload);
     Check(!participant.ValidateSnapshot(corrupt, {}), "trailing data rejected despite repaired checksum");
-    corrupt = section; ++corrupt.schema_version;
+    corrupt = section;
+    ++corrupt.schema_version;
     Check(!participant.ValidateSnapshot(corrupt, {}), "unsupported schema rejected");
-    corrupt = section; corrupt.participant = SaveParticipantId::FromString("wrong.owner");
+    corrupt = section;
+    corrupt.participant = SaveParticipantId::FromString("wrong.owner");
     Check(!participant.ValidateSnapshot(corrupt, {}), "wrong participant rejected");
     // No stage is active here: failure must come from the injected preparation
     // fault, not an unrelated duplicate-stage rejection.
@@ -67,18 +70,17 @@ inline void CheckParticipantContract(epidemic::gameplay::savegame::ISaveParticip
     Check(bool(live) && live.Value().payload == section.payload, "failure before commit preserves live state");
     participant.CommitRestore(*stage.Value());
     auto published = participant.CaptureSnapshot({});
-    Check(bool(published) && bool(participant.ValidateSnapshot(published.Value(), {})), "commit publishes valid staged state");
+    Check(bool(published) && bool(participant.ValidateSnapshot(published.Value(), {})),
+          "commit publishes valid staged state");
     participant.CommitRestore(*stage.Value());
     auto repeated = participant.CaptureSnapshot({});
     Check(bool(repeated) && repeated.Value().payload == published.Value().payload, "stage cannot publish twice");
 }
 } // namespace participant_tests
 
-namespace participant_tests
-{
+namespace participant_tests {
 template <typename Mutate>
-void CheckChangedStatePublication(epidemic::gameplay::savegame::ISaveParticipant& participant, Mutate mutate)
-{
+void CheckChangedStatePublication(epidemic::gameplay::savegame::ISaveParticipant &participant, Mutate mutate) {
     auto expected = participant.CaptureSnapshot({});
     Check(bool(expected), "capture expected participant state before changed-state publication test");
     const auto expected_payload = expected.Value().payload;
@@ -103,19 +105,21 @@ void CheckChangedStatePublication(epidemic::gameplay::savegame::ISaveParticipant
     Check(bool(newer_stage), "prepare a newer changed-state publication");
     participant.CommitRestore(*newer_stage.Value());
     auto after_mutation = participant.CaptureSnapshot({});
-    Check(bool(after_mutation) && after_mutation.Value().payload == changed_payload, "one-use fixture has a different live state");
+    Check(bool(after_mutation) && after_mutation.Value().payload == changed_payload,
+          "one-use fixture has a different live state");
     participant.CommitRestore(*stage.Value());
     auto repeated = participant.CaptureSnapshot({});
-    Check(bool(repeated) && repeated.Value().payload == after_mutation.Value().payload, "committed stage cannot replay over newer live state");
+    Check(bool(repeated) && repeated.Value().payload == after_mutation.Value().payload,
+          "committed stage cannot replay over newer live state");
 }
 
 template <typename Count, typename Reset>
-void CheckNonEmptyPublication(epidemic::gameplay::savegame::ISaveParticipant& participant, Count count, Reset reset)
-{
+void CheckNonEmptyPublication(epidemic::gameplay::savegame::ISaveParticipant &participant, Count count, Reset reset) {
     const auto expected = count();
     Check(expected > 0, "non-empty fixture contains actual durable domain records");
     auto section = participant.CaptureSnapshot({});
-    Check(bool(section) && bool(participant.ValidateSnapshot(section.Value(), {})), "actual non-empty payload validates");
+    Check(bool(section) && bool(participant.ValidateSnapshot(section.Value(), {})),
+          "actual non-empty payload validates");
     Check(bool(reset()) && count() == 0, "reset live records and derived diagnostic count");
     auto stage = participant.StageRestore(section.Value(), {});
     Check(bool(stage) && count() == 0, "stage of non-empty state leaves derived live diagnostics untouched");
@@ -123,17 +127,22 @@ void CheckNonEmptyPublication(epidemic::gameplay::savegame::ISaveParticipant& pa
     Check(count() == expected, "commit publishes restored records and derived diagnostic counts");
 }
 
-template <typename Snapshot> auto SnapshotCounters(Snapshot& snapshot)
-{
+template <typename Snapshot> auto SnapshotCounters(Snapshot &snapshot) {
     std::vector<std::uint64_t> counters;
-    epidemic::gameplay::savegame::detail::VisitSnapshotFields(snapshot, [&](auto&... fields) {
-        const auto inspect = [&](auto& field) {
+    epidemic::gameplay::savegame::detail::VisitSnapshotFields(snapshot, [&](auto &...fields) {
+        const auto inspect = [&](auto &field) {
             using Field = std::remove_cvref_t<decltype(field)>;
-            if constexpr (std::is_same_v<Field, epidemic::gameplay::Revision>) counters.push_back(field.value);
+            if constexpr (std::is_same_v<Field, epidemic::gameplay::Revision>)
+                counters.push_back(field.value);
             // These are unevaluated C++20 member requirements, not unused accesses.
             // cppcheck-suppress constStatement
-            else if constexpr (requires { field.scope; field.next; })
-            { counters.push_back(field.scope); counters.push_back(field.next); }
+            else if constexpr (requires {
+                                   field.scope;
+                                   field.next;
+                               }) {
+                counters.push_back(field.scope);
+                counters.push_back(field.next);
+            }
         };
         (inspect(fields), ...);
     });
@@ -141,18 +150,22 @@ template <typename Snapshot> auto SnapshotCounters(Snapshot& snapshot)
 }
 
 template <typename Owner, typename Capture, typename Restore>
-void CheckOwnerCounterContinuity(Owner& owner, epidemic::gameplay::savegame::ISaveParticipant& participant,
-                                 Capture capture, Restore restore)
-{
+void CheckOwnerCounterContinuity(Owner &owner, epidemic::gameplay::savegame::ISaveParticipant &participant,
+                                 Capture capture, Restore restore) {
     const auto baseline = capture();
     auto seeded = baseline;
-    epidemic::gameplay::savegame::detail::VisitSnapshotFields(seeded, [&](auto&... fields) {
-        const auto seed = [](auto& field) {
+    epidemic::gameplay::savegame::detail::VisitSnapshotFields(seeded, [&](auto &...fields) {
+        const auto seed = [](auto &field) {
             using Field = std::remove_cvref_t<decltype(field)>;
-            if constexpr (std::is_same_v<Field, epidemic::gameplay::Revision>) field.value += 7;
+            if constexpr (std::is_same_v<Field, epidemic::gameplay::Revision>)
+                field.value += 7;
             // Unevaluated member requirements select generator fields at compile time.
             // cppcheck-suppress constStatement
-            else if constexpr (requires { field.scope; field.next; }) field.next += 17;
+            else if constexpr (requires {
+                                   field.scope;
+                                   field.next;
+                               })
+                field.next += 17;
         };
         (seed(fields), ...);
     });
@@ -171,7 +184,8 @@ void CheckOwnerCounterContinuity(Owner& owner, epidemic::gameplay::savegame::ISa
     auto during = capture();
     Check(SnapshotCounters(during) == untouched, "stage preserves live revision and generator state");
     std::uint64_t old_epoch = 0;
-    if constexpr (requires { owner.LatestChangeCursor(); }) old_epoch = owner.LatestChangeCursor().epoch;
+    if constexpr (requires { owner.LatestChangeCursor(); })
+        old_epoch = owner.LatestChangeCursor().epoch;
     participant.CommitRestore(*stage.Value());
     auto after = capture();
     Check(SnapshotCounters(after) == expected, "commit preserves revision/generator continuity exactly");

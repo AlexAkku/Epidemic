@@ -80,3 +80,82 @@ class IPersistenceAdministrativeTransaction
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Persistence/lazy_rule_record.h`, `Epidemic/Runtime/Persistence/persistent_record.h`, `Epidemic/Runtime/Persistence/tombstone_store.h`, `Epidemic/Runtime/Persistence/zone_override_store.h`.
+
+### Перечисления и допустимые категории
+
+- `SaveTransactionState`: `NotStarted`, `Open`, `Committing`, `Committed`, `RolledBack`, `Failed`
+
+### Состав типов и операции
+
+#### `ISaveTransaction` (строка заголовка 25)
+
+Публичные поля и значения по умолчанию:
+
+- `it cannot be retried on the`
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISaveTransaction() = default;
+[[nodiscard]] virtual SaveTransactionState GetState() const = 0;
+[[nodiscard]] virtual PersistenceRevision GetBaseRevision() const = 0;
+[[nodiscard]] virtual foundation::Result<void> UpsertObject(PersistentObjectRecord record) = 0;
+[[nodiscard]] virtual foundation::Result<void> DeleteObject(TombstoneRecord tombstone) = 0;
+[[nodiscard]] virtual foundation::Result<void> UpsertLazyRule(LazyRuleRecord record) = 0;
+[[nodiscard]] virtual foundation::Result<void> UpdateLazyRule(LazyRuleRecord record) = 0;
+[[nodiscard]] virtual foundation::Result<void> RemoveLazyRule(LazyRuleId id) = 0;
+[[nodiscard]] virtual foundation::Result<void> UpsertZoneOverride(ZoneOverrideSnapshot snapshot) = 0;
+[[nodiscard]] virtual foundation::Result<void> RemoveZoneOverride(const PersistenceLocation& location) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IPersistenceAdministrativeTransaction` (строка заголовка 48)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IPersistenceAdministrativeTransaction() = default;
+[[nodiscard]] virtual foundation::Result<void> AdminRemoveObject(PersistentObjectId id) = 0;
+[[nodiscard]] virtual foundation::Result<void> AdminAddTombstone(TombstoneRecord tombstone) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- В заголовке задано ограничение потоков: Threading: mutation must occur on the runtime thread..
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `GetState` | `InMemorySaveTransaction::GetState` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:292` |
+| `GetBaseRevision` | `InMemorySaveTransaction::GetBaseRevision` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:297` |
+| `UpsertObject` | `InMemorySaveTransaction::UpsertObject` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:329` |
+| `AdminRemoveObject` | `InMemorySaveTransaction::AdminRemoveObject` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:344` |
+| `DeleteObject` | `InMemorySaveTransaction::DeleteObject` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:358` |
+| `UpsertLazyRule` | `InMemorySaveTransaction::UpsertLazyRule` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:373` |
+| `UpdateLazyRule` | `InMemorySaveTransaction::UpdateLazyRule` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:388` |
+| `RemoveLazyRule` | `InMemorySaveTransaction::RemoveLazyRule` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:403` |
+| `AdminAddTombstone` | `InMemorySaveTransaction::AdminAddTombstone` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:417` |
+| `UpsertZoneOverride` | `InMemorySaveTransaction::UpsertZoneOverride` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:432` |
+| `RemoveZoneOverride` | `InMemorySaveTransaction::RemoveZoneOverride` | `EngineRuntime/Persistence/src/in_memory_persistence_support.cpp:447` |
+

@@ -229,3 +229,28 @@ class ServiceContainer
 };
 } // namespace epidemic::core
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `ServiceContainer` (строка заголовка 19)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Registers an externally created service instance under the requested interface type. template <typename TService> void RegisterInstance(std::shared_ptr<TService> instance);
+// Returns the registered service instance for TService. // TODO: If optional lookup becomes common, consider a non-throwing TryGet instead of forcing exception control flow. template <typename TService> [[nodiscard]] std::shared_ptr<TService> Get() const;
+// Returns whether a service for TService is currently registered. template <typename TService> [[nodiscard]] bool Contains() const;
+// Prevents further service registration. void Seal() noexcept;
+// Returns whether the container has been sealed. [[nodiscard]] bool IsSealed() const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

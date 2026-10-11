@@ -4,12 +4,10 @@
 
 #include <unordered_map>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 struct SerializationRuntimeTestAccess;
 
-class SerializerRegistry final : public ISerializerRegistry
-{
+class SerializerRegistry final : public ISerializerRegistry {
   public:
     [[nodiscard]] foundation::Result<void> RegisterSerializer(std::shared_ptr<const ISerializer> serializer) override;
     [[nodiscard]] foundation::Result<void> Freeze() override;

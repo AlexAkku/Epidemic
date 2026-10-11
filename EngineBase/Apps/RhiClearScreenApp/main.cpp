@@ -21,14 +21,10 @@
 #include <string_view>
 #include <utility>
 
-namespace
-{
+namespace {
 // Unwraps a Result value for smoke-app code and throws with the contained error message on failure.
-template <typename TValue>
-TValue RequireValue(epidemic::foundation::Result<TValue> result)
-{
-    if (!result.HasValue())
-    {
+template <typename TValue> TValue RequireValue(epidemic::foundation::Result<TValue> result) {
+    if (!result.HasValue()) {
         throw std::runtime_error(result.GetError().message);
     }
 
@@ -36,20 +32,16 @@ TValue RequireValue(epidemic::foundation::Result<TValue> result)
 }
 
 // Throws when a Result<void> reports an expected runtime failure that this smoke app treats as fatal.
-void ThrowIfFailed(const epidemic::foundation::Result<void> &result)
-{
-    if (!result.HasValue())
-    {
+void ThrowIfFailed(const epidemic::foundation::Result<void> &result) {
+    if (!result.HasValue()) {
         throw std::runtime_error(result.GetError().message);
     }
 }
 } // namespace
 
 // Composes the D3D11 graphics runtime, creates the main swap chain, and runs the clear-screen demo until exit.
-int main(int argc, char **argv)
-{
-    try
-    {
+int main(int argc, char **argv) {
+    try {
         const bool smoke_mode = argc == 2 && std::string_view(argv[1]) == "--smoke";
         epidemic::core::Application application;
         static_cast<void>(epidemic::enginebase::RegisterEngineBase(
@@ -61,21 +53,19 @@ int main(int argc, char **argv)
         logger->Info("RhiClearScreenApp", "Platform", "Platform runtime: WindowsPlatformRuntime");
 
         auto graphics_runtime = RequireValue(epidemic::enginebase::RegisterGraphicsRuntime(
-            application,
-            {.backend = epidemic::enginebase::GraphicsBackend::D3D11,
-             .enable_debug_validation = configuration->GetRhiDebugEnabled().value_or(false),
-             .debug_name = "RhiClearScreenAppDevice"}));
+            application, {.backend = epidemic::enginebase::GraphicsBackend::D3D11,
+                          .enable_debug_validation = configuration->GetRhiDebugEnabled().value_or(false),
+                          .debug_name = "RhiClearScreenAppDevice"}));
         logger->Info("RhiClearScreenApp", "RHI", "Using D3D11 backend through EngineBase support composition");
 
         const auto window = RequireValue(epidemic::enginebase::CreateMainWindow(
             application,
-            epidemic::platform::WindowCreateInfo{"Epidemic RHI Clear Screen",
-                                                 static_cast<std::uint32_t>(configuration->GetDefaultWindowWidth().value_or(1280)),
-                                                 static_cast<std::uint32_t>(configuration->GetDefaultWindowHeight().value_or(720)),
-                                                 !smoke_mode}));
+            epidemic::platform::WindowCreateInfo{
+                "Epidemic RHI Clear Screen",
+                static_cast<std::uint32_t>(configuration->GetDefaultWindowWidth().value_or(1280)),
+                static_cast<std::uint32_t>(configuration->GetDefaultWindowHeight().value_or(720)), !smoke_mode}));
 
-        if (smoke_mode)
-        {
+        if (smoke_mode) {
             application.SetFrameLimit(1);
         }
 
@@ -90,7 +80,8 @@ int main(int argc, char **argv)
         swap_chain_desc.color_format = epidemic::rhi::RhiPixelFormat::B8G8R8A8_UNorm;
         swap_chain_desc.vsync = true;
         swap_chain_desc.debug_name = "RhiClearScreenAppSwapChain";
-        const auto swap_chain = RequireValue(epidemic::enginebase::RegisterMainSwapChain(application, window, swap_chain_desc));
+        const auto swap_chain =
+            RequireValue(epidemic::enginebase::RegisterMainSwapChain(application, window, swap_chain_desc));
 
         epidemic::enginebase::RegisterPlatformFrameLoop(application);
         epidemic::enginebase::RegisterFrameThrottle(application, std::chrono::milliseconds(16));
@@ -106,14 +97,12 @@ int main(int argc, char **argv)
 
         application.AddFramePhaseHandler(
             epidemic::core::FramePhase::PumpPlatformEvents,
-            [&application, frame_platform_events, logger, window, swap_chain, render_paused](const epidemic::core::FrameContext &) {
-                for (const auto &event : frame_platform_events->events)
-                {
-                    switch (event.type)
-                    {
+            [&application, frame_platform_events, logger, window, swap_chain,
+             render_paused](const epidemic::core::FrameContext &) {
+                for (const auto &event : frame_platform_events->events) {
+                    switch (event.type) {
                     case epidemic::platform::PlatformEventType::WindowCloseRequested:
-                        if (event.window_id == window->Id())
-                        {
+                        if (event.window_id == window->Id()) {
                             logger->Info("RhiClearScreenApp", "Window", "Close requested");
                             *render_paused = true;
                             window->Close();
@@ -121,27 +110,25 @@ int main(int argc, char **argv)
                         }
                         break;
                     case epidemic::platform::PlatformEventType::WindowMinimized:
-                        if (event.window_id == window->Id())
-                        {
+                        if (event.window_id == window->Id()) {
                             logger->Info("RhiClearScreenApp", "Window", "Window minimized, rendering paused");
                             *render_paused = true;
                         }
                         break;
                     case epidemic::platform::PlatformEventType::WindowRestored:
-                        if (event.window_id == window->Id())
-                        {
+                        if (event.window_id == window->Id()) {
                             logger->Info("RhiClearScreenApp", "Window", "Window restored");
                             *render_paused = false;
                         }
                         break;
                     case epidemic::platform::PlatformEventType::WindowResized:
-                        if (event.window_id == window->Id() && event.client_width > 0 && event.client_height > 0)
-                        {
+                        if (event.window_id == window->Id() && event.client_width > 0 && event.client_height > 0) {
                             logger->Info("RhiClearScreenApp", "Window",
                                          "Resize: " + std::to_string(event.client_width) + "x" +
                                              std::to_string(event.client_height));
                             ThrowIfFailed(swap_chain->Resize(event.client_width, event.client_height));
-                            epidemic::diagnostics::GlobalCounters().Increment(epidemic::diagnostics::CounterId::RhiResizeCount);
+                            epidemic::diagnostics::GlobalCounters().Increment(
+                                epidemic::diagnostics::CounterId::RhiResizeCount);
                             *render_paused = false;
                         }
                         break;
@@ -165,9 +152,7 @@ int main(int argc, char **argv)
         application.Run();
         application.Shutdown();
         return 0;
-    }
-    catch (const std::exception &exception)
-    {
+    } catch (const std::exception &exception) {
         std::cerr << "EpidemicRhiClearScreenApp failed: " << exception.what() << '\n';
         return 1;
     }

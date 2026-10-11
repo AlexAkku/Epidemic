@@ -5,32 +5,26 @@
 #include <cstdint>
 #include <functional>
 
-namespace epidemic::runtime
-{
-struct SceneNodeId
-{
+namespace epidemic::runtime {
+struct SceneNodeId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value != 0;
     }
 
-    [[nodiscard]] constexpr std::uint64_t Raw() const noexcept
-    {
+    [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value;
     }
 
-    [[nodiscard]] constexpr explicit operator bool() const noexcept
-    {
+    [[nodiscard]] constexpr explicit operator bool() const noexcept {
         return IsValid();
     }
 
-    [[nodiscard]] constexpr bool operator==(const SceneNodeId&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const SceneNodeId &) const noexcept = default;
 };
 
-struct SceneNode
-{
+struct SceneNode {
     SceneNodeId id{};
     SceneNodeId parent_id{};
     SceneAttachmentState attachment_state = SceneAttachmentState::Detached;
@@ -39,16 +33,13 @@ struct SceneNode
     SceneDirtyMask dirty_flags = 0;
     std::uint64_t revision = 0;
 
-    [[nodiscard]] constexpr bool operator==(const SceneNode&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const SceneNode &) const noexcept = default;
 };
 } // namespace epidemic::runtime
 
-namespace std
-{
-template <> struct hash<epidemic::runtime::SceneNodeId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::SceneNodeId value) const noexcept
-    {
+namespace std {
+template <> struct hash<epidemic::runtime::SceneNodeId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::SceneNodeId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
 };

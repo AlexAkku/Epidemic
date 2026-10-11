@@ -187,3 +187,45 @@ class IConfiguration
 };
 } // namespace epidemic::core::config
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `IConfiguration` (строка заголовка 14)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IConfiguration() = default;
+// Returns the canonical key for the runtime name. [[nodiscard]] static constexpr std::string_view RuntimeNameKey() noexcept;
+// Returns the canonical key for worker-thread count. [[nodiscard]] static constexpr std::string_view WorkerCountKey() noexcept;
+// Returns the canonical key for memory tracking enablement. [[nodiscard]] static constexpr std::string_view MemoryTrackingEnabledKey() noexcept;
+// Returns the canonical key for RHI debug validation enablement. [[nodiscard]] static constexpr std::string_view RhiDebugEnabledKey() noexcept;
+// Returns the canonical key for the default window width. [[nodiscard]] static constexpr std::string_view DefaultWindowWidthKey() noexcept;
+// Returns the canonical key for the default window height. [[nodiscard]] static constexpr std::string_view DefaultWindowHeightKey() noexcept;
+// Convenience accessor for the configured runtime name. [[nodiscard]] std::optional<std::string> GetRuntimeName() const;
+// Convenience mutator for the runtime name. void SetRuntimeName(std::string runtime_name);
+// Returns the configured worker count when present and non-negative. [[nodiscard]] std::optional<std::size_t> GetWorkerCount() const;
+// Convenience mutator for worker count. void SetWorkerCount(std::size_t worker_count);
+// Returns whether memory tracking is enabled when the key is present. [[nodiscard]] std::optional<bool> GetMemoryTrackingEnabled() const;
+// Convenience mutator for memory tracking enablement. void SetMemoryTrackingEnabled(bool enabled);
+// Returns whether RHI debug validation is enabled when the key is present. [[nodiscard]] std::optional<bool> GetRhiDebugEnabled() const;
+// Convenience mutator for RHI debug validation enablement. void SetRhiDebugEnabled(bool enabled);
+// Returns the configured default window width when present. [[nodiscard]] std::optional<std::int32_t> GetDefaultWindowWidth() const;
+// Convenience mutator for default window width. void SetDefaultWindowWidth(std::int32_t width);
+// Returns the configured default window height when present. [[nodiscard]] std::optional<std::int32_t> GetDefaultWindowHeight() const;
+// Convenience mutator for default window height. void SetDefaultWindowHeight(std::int32_t height);
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

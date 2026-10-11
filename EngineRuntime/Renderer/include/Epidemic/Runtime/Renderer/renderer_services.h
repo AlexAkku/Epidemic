@@ -8,25 +8,21 @@
 
 #include <memory>
 
-namespace epidemic::runtime::renderer
-{
-struct RendererOptions
-{
+namespace epidemic::runtime::renderer {
+struct RendererOptions {
     // Compatibility option only. CreateRendererServices is always strict and never injects mocks;
     // reference/mock behavior is available only through CreateMockRendererServices().
     bool enable_mock_dependencies = false;
 };
 
-struct RendererDependencies
-{
+struct RendererDependencies {
     std::shared_ptr<IRenderResourceBridge> resource_bridge;
     std::shared_ptr<IRenderSceneSource> scene_source;
     std::shared_ptr<IRenderPoseSource> pose_source;
     std::shared_ptr<IRenderCommandSink> command_sink;
 };
 
-struct RendererServices
-{
+struct RendererServices {
     std::shared_ptr<IRenderResourceBridge> resource_bridge;
     std::shared_ptr<IRenderSceneSource> scene_source;
     std::shared_ptr<IRenderPoseSource> pose_source;
@@ -36,6 +32,7 @@ struct RendererServices
     std::shared_ptr<IRendererRuntime> runtime;
 };
 
-[[nodiscard]] foundation::Result<RendererServices> CreateRendererServices(const RendererOptions& options, RendererDependencies dependencies = {});
+[[nodiscard]] foundation::Result<RendererServices> CreateRendererServices(const RendererOptions &options,
+                                                                          RendererDependencies dependencies = {});
 [[nodiscard]] foundation::Result<RendererServices> CreateMockRendererServices();
 } // namespace epidemic::runtime::renderer

@@ -10,196 +10,194 @@
 #include <type_traits>
 #include <unordered_set>
 
-namespace epidemic::gameplay::integration
-{
+namespace epidemic::gameplay::integration {
 
-namespace test_support
-{
-namespace
-{
+namespace test_support {
+namespace {
 bool g_fail_next_trade_publication = false;
 std::size_t g_fail_after_trade_goods_reservations = 0;
 }
 
-void FailNextTradePublicationForTest() noexcept
-{
+void FailNextTradePublicationForTest() noexcept {
     g_fail_next_trade_publication = true;
 }
 
-void FailAfterTradeGoodsReservationsForTest(std::size_t accepted_goods) noexcept
-{
+void FailAfterTradeGoodsReservationsForTest(std::size_t accepted_goods) noexcept {
     g_fail_after_trade_goods_reservations = accepted_goods;
 }
 
-void ResetTradeCoordinatorFailureSeamsForTest() noexcept
-{
+void ResetTradeCoordinatorFailureSeamsForTest() noexcept {
     g_fail_next_trade_publication = false;
     g_fail_after_trade_goods_reservations = 0;
 }
 
-[[nodiscard]] bool ConsumeTradePublicationFailure() noexcept
-{
-    if (!g_fail_next_trade_publication) return false;
+[[nodiscard]] bool ConsumeTradePublicationFailure() noexcept {
+    if (!g_fail_next_trade_publication)
+        return false;
     g_fail_next_trade_publication = false;
     return true;
 }
 
-[[nodiscard]] bool ConsumeTradeGoodsReservationFailure(std::size_t accepted_goods) noexcept
-{
-    if (g_fail_after_trade_goods_reservations == 0 || accepted_goods != g_fail_after_trade_goods_reservations) return false;
+[[nodiscard]] bool ConsumeTradeGoodsReservationFailure(std::size_t accepted_goods) noexcept {
+    if (g_fail_after_trade_goods_reservations == 0 || accepted_goods != g_fail_after_trade_goods_reservations)
+        return false;
     g_fail_after_trade_goods_reservations = 0;
     return true;
 }
 }
-namespace
-{
-foundation::Error Error(std::string_view code, std::string_view message)
-{
+namespace {
+foundation::Error Error(std::string_view code, std::string_view message) {
     return foundation::Error::Create(code, message);
 }
 
-template <class T> std::optional<T> ReadTrivial(const std::vector<std::byte>& bytes)
-{
+template <class T> std::optional<T> ReadTrivial(const std::vector<std::byte> &bytes) {
     static_assert(std::is_trivially_copyable_v<T>);
-    if (bytes.size() != sizeof(T)) return std::nullopt;
+    if (bytes.size() != sizeof(T))
+        return std::nullopt;
     T out{};
     std::memcpy(&out, bytes.data(), sizeof(T));
     return out;
 }
 
-void AppendU64(std::vector<std::byte>& out, std::uint64_t value)
-{
+void AppendU64(std::vector<std::byte> &out, std::uint64_t value) {
     for (unsigned shift = 0; shift < 64; shift += 8)
         out.push_back(static_cast<std::byte>((value >> shift) & 0xffu));
 }
-void AppendI64(std::vector<std::byte>& out, std::int64_t value)
-{
+void AppendI64(std::vector<std::byte> &out, std::int64_t value) {
     AppendU64(out, std::bit_cast<std::uint64_t>(value));
 }
-bool ReadU64(std::span<const std::byte> bytes, std::size_t& offset, std::uint64_t& value)
-{
-    if (offset + 8 > bytes.size()) return false;
+bool ReadU64(std::span<const std::byte> bytes, std::size_t &offset, std::uint64_t &value) {
+    if (offset + 8 > bytes.size())
+        return false;
     value = 0;
     for (unsigned i = 0; i < 8; ++i)
         value |= static_cast<std::uint64_t>(std::to_integer<unsigned char>(bytes[offset++])) << (i * 8);
     return true;
 }
-bool ReadI64(std::span<const std::byte> bytes, std::size_t& offset, std::int64_t& value)
-{
+bool ReadI64(std::span<const std::byte> bytes, std::size_t &offset, std::int64_t &value) {
     std::uint64_t encoded = 0;
-    if (!ReadU64(bytes, offset, encoded)) return false;
+    if (!ReadU64(bytes, offset, encoded))
+        return false;
     value = std::bit_cast<std::int64_t>(encoded);
     return true;
 }
-void AppendObjectId(std::vector<std::byte>& out, GameplayObjectId value)
-{
+void AppendObjectId(std::vector<std::byte> &out, GameplayObjectId value) {
     AppendU64(out, value.High());
     AppendU64(out, value.Low());
 }
-bool ReadObjectId(std::span<const std::byte> bytes, std::size_t& offset, GameplayObjectId& value)
-{
+bool ReadObjectId(std::span<const std::byte> bytes, std::size_t &offset, GameplayObjectId &value) {
     std::uint64_t high = 0, low = 0;
-    if (!ReadU64(bytes, offset, high) || !ReadU64(bytes, offset, low)) return false;
+    if (!ReadU64(bytes, offset, high) || !ReadU64(bytes, offset, low))
+        return false;
     value = GameplayObjectId::FromRaw(high, low);
     return true;
 }
 
-std::optional<ProcessItemInputPayload> DecodeProcessItemInput(const processes::RegisteredPayload& payload)
-{
-    if (payload.type != ItemProcessInputProvider::InputPayloadType() || !payload.portable || payload.schema_version != 1)
+std::optional<ProcessItemInputPayload> DecodeProcessItemInput(const processes::RegisteredPayload &payload) {
+    if (payload.type != ItemProcessInputProvider::InputPayloadType() || !payload.portable ||
+        payload.schema_version != 1)
         return std::nullopt;
     std::size_t offset = 0;
     GameplayObjectId id{};
-    if (!ReadObjectId(payload.bytes, offset, id) || offset != payload.bytes.size()) return std::nullopt;
+    if (!ReadObjectId(payload.bytes, offset, id) || offset != payload.bytes.size())
+        return std::nullopt;
     return ProcessItemInputPayload{items::ItemInstanceId{id}};
 }
-std::optional<ProcessItemOutputPayload> DecodeProcessItemOutput(const processes::RegisteredPayload& payload)
-{
-    if (payload.type != ItemProcessOutputHandler::OutputPayloadType() || !payload.portable || payload.schema_version != 1)
+std::optional<ProcessItemOutputPayload> DecodeProcessItemOutput(const processes::RegisteredPayload &payload) {
+    if (payload.type != ItemProcessOutputHandler::OutputPayloadType() || !payload.portable ||
+        payload.schema_version != 1)
         return std::nullopt;
     std::size_t offset = 0;
     std::uint64_t definition = 0;
     GameplayObjectId container{};
-    if (!ReadU64(payload.bytes, offset, definition) || !ReadObjectId(payload.bytes, offset, container) || offset != payload.bytes.size())
+    if (!ReadU64(payload.bytes, offset, definition) || !ReadObjectId(payload.bytes, offset, container) ||
+        offset != payload.bytes.size())
         return std::nullopt;
-    return ProcessItemOutputPayload{items::ItemDefinitionId{TypeId::FromRaw(definition)}, items::ContainerId{container}};
+    return ProcessItemOutputPayload{items::ItemDefinitionId{TypeId::FromRaw(definition)},
+                                    items::ContainerId{container}};
 }
-processes::RegisteredPayload EncodeReservationToken(ProcessItemReservationPayload payload)
-{
+processes::RegisteredPayload EncodeReservationToken(ProcessItemReservationPayload payload) {
     std::vector<std::byte> bytes;
     bytes.reserve(16);
     AppendObjectId(bytes, payload.reservation.value);
-    return processes::RegisteredPayload::FromVersioned(ItemProcessInputProvider::ReservationPayloadType(), 1, std::move(bytes));
+    return processes::RegisteredPayload::FromVersioned(ItemProcessInputProvider::ReservationPayloadType(), 1,
+                                                       std::move(bytes));
 }
-std::optional<ProcessItemReservationPayload> DecodeReservationToken(const processes::RegisteredPayload& payload)
-{
-    if (payload.type != ItemProcessInputProvider::ReservationPayloadType() || !payload.portable || payload.schema_version != 1)
+std::optional<ProcessItemReservationPayload> DecodeReservationToken(const processes::RegisteredPayload &payload) {
+    if (payload.type != ItemProcessInputProvider::ReservationPayloadType() || !payload.portable ||
+        payload.schema_version != 1)
         return std::nullopt;
     std::size_t offset = 0;
     GameplayObjectId reservation{};
-    if (!ReadObjectId(payload.bytes, offset, reservation) || offset != payload.bytes.size()) return std::nullopt;
+    if (!ReadObjectId(payload.bytes, offset, reservation) || offset != payload.bytes.size())
+        return std::nullopt;
     return ProcessItemReservationPayload{items::ItemReservationId{reservation}};
 }
-processes::RegisteredPayload EncodePreparedOutputToken(PreparedProcessItemOutputPayload payload)
-{
+processes::RegisteredPayload EncodePreparedOutputToken(PreparedProcessItemOutputPayload payload) {
     std::vector<std::byte> bytes;
     bytes.reserve(48);
     AppendU64(bytes, payload.definition.value.Raw());
     AppendObjectId(bytes, payload.container.value);
     AppendObjectId(bytes, payload.item.value);
     AppendI64(bytes, payload.amount);
-    return processes::RegisteredPayload::FromVersioned(ItemProcessOutputHandler::PreparedPayloadType(), 1, std::move(bytes));
+    return processes::RegisteredPayload::FromVersioned(ItemProcessOutputHandler::PreparedPayloadType(), 1,
+                                                       std::move(bytes));
 }
-std::optional<PreparedProcessItemOutputPayload> DecodePreparedOutputToken(const processes::RegisteredPayload& payload)
-{
-    if (payload.type != ItemProcessOutputHandler::PreparedPayloadType() || !payload.portable || payload.schema_version != 1)
+std::optional<PreparedProcessItemOutputPayload> DecodePreparedOutputToken(const processes::RegisteredPayload &payload) {
+    if (payload.type != ItemProcessOutputHandler::PreparedPayloadType() || !payload.portable ||
+        payload.schema_version != 1)
         return std::nullopt;
     std::size_t offset = 0;
     std::uint64_t definition = 0;
     GameplayObjectId container{}, item{};
     std::int64_t amount = 0;
     if (!ReadU64(payload.bytes, offset, definition) || !ReadObjectId(payload.bytes, offset, container) ||
-        !ReadObjectId(payload.bytes, offset, item) || !ReadI64(payload.bytes, offset, amount) || offset != payload.bytes.size())
+        !ReadObjectId(payload.bytes, offset, item) || !ReadI64(payload.bytes, offset, amount) ||
+        offset != payload.bytes.size())
         return std::nullopt;
-    return PreparedProcessItemOutputPayload{items::ItemDefinitionId{TypeId::FromRaw(definition)}, items::ContainerId{container},
-                                            items::ItemInstanceId{item}, amount};
+    return PreparedProcessItemOutputPayload{items::ItemDefinitionId{TypeId::FromRaw(definition)},
+                                            items::ContainerId{container}, items::ItemInstanceId{item}, amount};
 }
 
-items::ItemInstanceId ProcessOutputItemId(processes::ProcessInstanceId instance, processes::ProcessOutputId output) noexcept
-{
+items::ItemInstanceId ProcessOutputItemId(processes::ProcessInstanceId instance,
+                                          processes::ProcessOutputId output) noexcept {
     const auto salt = output.value.Raw();
     auto high = instance.value.High() ^ salt ^ 0x9e3779b97f4a7c15ull;
     auto low = instance.value.Low() ^ std::rotl(salt, 23) ^ 0xd1b54a32d192ed03ull;
-    if (high == 0 && low == 0) low = 1;
+    if (high == 0 && low == 0)
+        low = 1;
     return items::ItemInstanceId::FromRaw(high, low);
 }
 
-bool SameTradeParty(GameplayObjectRef a, GameplayObjectRef b) noexcept { return a == b && a.IsValid(); }
+bool SameTradeParty(GameplayObjectRef a, GameplayObjectRef b) noexcept {
+    return a == b && a.IsValid();
+}
 } // namespace
 
-processes::RegisteredPayload EncodeProcessItemInputPayload(ProcessItemInputPayload payload)
-{
+processes::RegisteredPayload EncodeProcessItemInputPayload(ProcessItemInputPayload payload) {
     std::vector<std::byte> bytes;
     bytes.reserve(16);
     AppendObjectId(bytes, payload.item.value);
-    return processes::RegisteredPayload::FromVersioned(ItemProcessInputProvider::InputPayloadType(), 1, std::move(bytes));
+    return processes::RegisteredPayload::FromVersioned(ItemProcessInputProvider::InputPayloadType(), 1,
+                                                       std::move(bytes));
 }
-processes::RegisteredPayload EncodeProcessItemOutputPayload(ProcessItemOutputPayload payload)
-{
+processes::RegisteredPayload EncodeProcessItemOutputPayload(ProcessItemOutputPayload payload) {
     std::vector<std::byte> bytes;
     bytes.reserve(24);
     AppendU64(bytes, payload.definition.value.Raw());
     AppendObjectId(bytes, payload.container.value);
-    return processes::RegisteredPayload::FromVersioned(ItemProcessOutputHandler::OutputPayloadType(), 1, std::move(bytes));
+    return processes::RegisteredPayload::FromVersioned(ItemProcessOutputHandler::OutputPayloadType(), 1,
+                                                       std::move(bytes));
 }
 
-std::optional<equipment::EquipmentItemDescriptor> EquipmentItemsAdapter::Describe(equipment::EquipmentItemId id) const
-{
+std::optional<equipment::EquipmentItemDescriptor> EquipmentItemsAdapter::Describe(equipment::EquipmentItemId id) const {
     const items::ItemInstanceId item{id.value};
-    const auto* instance = items_.FindItem(item);
-    if (!instance) return std::nullopt;
-    const auto* definition = items_.FindDefinition(instance->definition);
-    if (!definition) return std::nullopt;
+    const auto *instance = items_.FindItem(item);
+    if (!instance)
+        return std::nullopt;
+    const auto *definition = items_.FindDefinition(instance->definition);
+    if (!definition)
+        return std::nullopt;
     equipment::EquipmentItemDescriptor out;
     out.id = id;
     out.tags = definition->tags;
@@ -208,116 +206,123 @@ std::optional<equipment::EquipmentItemDescriptor> EquipmentItemsAdapter::Describ
     return out;
 }
 foundation::Result<void> EquipmentItemsAdapter::ReserveForEquipment(equipment::EquipmentItemId id,
-                                                                    GameplayObjectRef subject, GameplayContext context)
-{
+                                                                    GameplayObjectRef subject,
+                                                                    GameplayContext context) {
     const items::ItemInstanceId item{id.value};
-    const auto* instance = items_.FindItem(item);
+    const auto *instance = items_.FindItem(item);
     if (!instance || instance->quantity != 1)
         return foundation::Result<void>::Failure(
             Error("gameplay.integration.equipment_item_invalid", "equipment requires one concrete item instance"));
     auto reserved = items_.ReserveItem(item, 1, subject, TypeId::FromString("equipment.binding"), context);
-    if (!reserved) return foundation::Result<void>::Failure(reserved.GetError());
+    if (!reserved)
+        return foundation::Result<void>::Failure(reserved.GetError());
     return foundation::Result<void>::Success();
 }
 foundation::Result<void> EquipmentItemsAdapter::ReleaseFromEquipment(equipment::EquipmentItemId id,
-                                                                     GameplayObjectRef subject, GameplayContext context)
-{
+                                                                     GameplayObjectRef subject,
+                                                                     GameplayContext context) {
     const items::ItemInstanceId item{id.value};
     const auto reason = TypeId::FromString("equipment.binding");
     std::optional<items::ItemReservationId> match;
-    for (const auto& reservation : items_.FindReservations(item))
-    {
-        if (reservation.state != items::ReservationState::Active || reservation.owner != subject || reservation.reason != reason)
+    for (const auto &reservation : items_.FindReservations(item)) {
+        if (reservation.state != items::ReservationState::Active || reservation.owner != subject ||
+            reservation.reason != reason)
             continue;
         if (match.has_value())
-            return foundation::Result<void>::Failure(
-                Error("gameplay.integration.equipment_reservation_ambiguous", "multiple active reservations back one equipment binding"));
+            return foundation::Result<void>::Failure(Error("gameplay.integration.equipment_reservation_ambiguous",
+                                                           "multiple active reservations back one equipment binding"));
         match = reservation.id;
     }
     if (!match.has_value())
         return foundation::Result<void>::Failure(
-            Error("gameplay.integration.equipment_reservation_missing", "equipment binding exists without its backing item reservation"));
+            Error("gameplay.integration.equipment_reservation_missing",
+                  "equipment binding exists without its backing item reservation"));
     return items_.ReleaseReservation(*match, context);
 }
-foundation::Result<void> EquipmentItemsAdapter::ReconcileEquipmentReservation(
-    equipment::EquipmentItemId id, GameplayObjectRef subject, equipment::EquipmentBindingId, GameplayContext)
-{
+foundation::Result<void> EquipmentItemsAdapter::ReconcileEquipmentReservation(equipment::EquipmentItemId id,
+                                                                              GameplayObjectRef subject,
+                                                                              equipment::EquipmentBindingId,
+                                                                              GameplayContext) {
     const items::ItemInstanceId item{id.value};
-    const auto* instance = items_.FindItem(item);
+    const auto *instance = items_.FindItem(item);
     if (!instance || instance->quantity != 1)
         return foundation::Result<void>::Failure(
-            Error("gameplay.integration.equipment_item_missing", "restored equipment binding references a missing or non-concrete item"));
+            Error("gameplay.integration.equipment_item_missing",
+                  "restored equipment binding references a missing or non-concrete item"));
     const auto reason = TypeId::FromString("equipment.binding");
     std::size_t matches = 0;
-    for (const auto& reservation : items_.FindReservations(item))
+    for (const auto &reservation : items_.FindReservations(item))
         if (reservation.state == items::ReservationState::Active && reservation.owner == subject &&
             reservation.reason == reason && reservation.quantity == 1)
             ++matches;
     if (matches != 1)
         return foundation::Result<void>::Failure(
-            Error("gameplay.integration.equipment_reservation_mismatch", "restored equipment binding must match exactly one persisted item reservation"));
+            Error("gameplay.integration.equipment_reservation_mismatch",
+                  "restored equipment binding must match exactly one persisted item reservation"));
     return foundation::Result<void>::Success();
 }
-foundation::Result<void> EquipmentItemsAdapter::ExchangeEquipmentReservations(
-    std::span<const equipment::EquipmentItemId> release_items, std::optional<equipment::EquipmentItemId> reserve_item,
-    GameplayObjectRef subject, GameplayContext context)
-{
-    if (!reserve_item.has_value())
-    {
-        if (release_items.empty()) return foundation::Result<void>::Success();
-        return foundation::Result<void>::Failure(
-            Error("gameplay.integration.equipment_exchange_invalid", "equipment reservation exchange requires a replacement item"));
+foundation::Result<void>
+EquipmentItemsAdapter::ExchangeEquipmentReservations(std::span<const equipment::EquipmentItemId> release_items,
+                                                     std::optional<equipment::EquipmentItemId> reserve_item,
+                                                     GameplayObjectRef subject, GameplayContext context) {
+    if (!reserve_item.has_value()) {
+        if (release_items.empty())
+            return foundation::Result<void>::Success();
+        return foundation::Result<void>::Failure(Error("gameplay.integration.equipment_exchange_invalid",
+                                                       "equipment reservation exchange requires a replacement item"));
     }
     const items::ItemInstanceId replacement{reserve_item->value};
     const auto replacement_item = items_.FindItemCopy(replacement);
     if (!replacement_item || replacement_item->quantity != 1)
-        return foundation::Result<void>::Failure(
-            Error("gameplay.integration.equipment_item_invalid", "equipment requires one concrete replacement item instance"));
+        return foundation::Result<void>::Failure(Error("gameplay.integration.equipment_item_invalid",
+                                                       "equipment requires one concrete replacement item instance"));
     const auto reason = TypeId::FromString("equipment.binding");
     std::vector<items::ItemReservationId> releases;
     releases.reserve(release_items.size());
-    for (const auto release : release_items)
-    {
+    for (const auto release : release_items) {
         const items::ItemInstanceId item{release.value};
         std::optional<items::ItemReservationId> matching;
-        for (const auto& reservation : items_.FindReservations(item))
-        {
-            if (reservation.state != items::ReservationState::Active || reservation.owner != subject || reservation.reason != reason)
+        for (const auto &reservation : items_.FindReservations(item)) {
+            if (reservation.state != items::ReservationState::Active || reservation.owner != subject ||
+                reservation.reason != reason)
                 continue;
             if (matching.has_value())
-                return foundation::Result<void>::Failure(
-                    Error("gameplay.integration.equipment_reservation_ambiguous", "multiple equipment reservations match one binding"));
+                return foundation::Result<void>::Failure(Error("gameplay.integration.equipment_reservation_ambiguous",
+                                                               "multiple equipment reservations match one binding"));
             matching = reservation.id;
         }
         if (!matching.has_value())
-            return foundation::Result<void>::Failure(
-                Error("gameplay.integration.equipment_reservation_missing", "equipment binding reservation is missing"));
+            return foundation::Result<void>::Failure(Error("gameplay.integration.equipment_reservation_missing",
+                                                           "equipment binding reservation is missing"));
         releases.push_back(*matching);
     }
     const auto exchanged = items_.ExchangeReservations(releases, replacement, 1, subject, reason, context);
-    if (!exchanged) return foundation::Result<void>::Failure(exchanged.GetError());
+    if (!exchanged)
+        return foundation::Result<void>::Failure(exchanged.GetError());
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ItemProcessInputProvider::Validate(const processes::ProcessInputDefinition& input,
-                                                            const processes::StartProcessRequest&, processes::ProcessInstanceId)
-{
+foundation::Result<void> ItemProcessInputProvider::Validate(const processes::ProcessInputDefinition &input,
+                                                            const processes::StartProcessRequest &,
+                                                            processes::ProcessInstanceId) {
     const auto payload = DecodeProcessItemInput(input.payload);
     if (!payload || !items_.FindItem(payload->item))
         return foundation::Result<void>::Failure(
             Error("gameplay.integration.item_payload_invalid", "process item input payload references a missing item"));
     return foundation::Result<void>::Success();
 }
-foundation::Result<processes::ReservedProcessInput> ItemProcessInputProvider::Reserve(
-    const processes::ProcessInputDefinition& input, const processes::StartProcessRequest& request,
-    processes::ProcessInstanceId instance)
-{
+foundation::Result<processes::ReservedProcessInput>
+ItemProcessInputProvider::Reserve(const processes::ProcessInputDefinition &input,
+                                  const processes::StartProcessRequest &request,
+                                  processes::ProcessInstanceId instance) {
     const auto payload = DecodeProcessItemInput(input.payload);
     if (!payload)
-        return foundation::Result<processes::ReservedProcessInput>::Failure(
-            Error("gameplay.integration.item_payload_invalid", "process item input payload is not valid versioned data"));
-    auto reserved = items_.ReserveItem(payload->item, input.amount, request.actor, TypeId::FromString("process.input"), request.context);
-    if (!reserved) return foundation::Result<processes::ReservedProcessInput>::Failure(reserved.GetError());
+        return foundation::Result<processes::ReservedProcessInput>::Failure(Error(
+            "gameplay.integration.item_payload_invalid", "process item input payload is not valid versioned data"));
+    auto reserved = items_.ReserveItem(payload->item, input.amount, request.actor, TypeId::FromString("process.input"),
+                                       request.context);
+    if (!reserved)
+        return foundation::Result<processes::ReservedProcessInput>::Failure(reserved.GetError());
     processes::ReservedProcessInput out;
     out.id = processes::ProcessReservationId::FromRaw(instance.value.High(), input.id.value.Raw());
     out.input = input.id;
@@ -326,37 +331,38 @@ foundation::Result<processes::ReservedProcessInput> ItemProcessInputProvider::Re
     out.provider_token = EncodeReservationToken({reserved.Value()});
     return foundation::Result<processes::ReservedProcessInput>::Success(std::move(out));
 }
-foundation::Result<void> ItemProcessInputProvider::Consume(const processes::ReservedProcessInput& reservation, GameplayContext context)
-{
+foundation::Result<void> ItemProcessInputProvider::Consume(const processes::ReservedProcessInput &reservation,
+                                                           GameplayContext context) {
     const auto payload = DecodeReservationToken(reservation.provider_token);
     if (!payload)
         return foundation::Result<void>::Failure(
             Error("gameplay.integration.item_payload_invalid", "process item reservation token is invalid"));
     return items_.ConsumeReservation(payload->reservation, context);
 }
-foundation::Result<void> ItemProcessInputProvider::Release(const processes::ReservedProcessInput& reservation, GameplayContext context)
-{
+foundation::Result<void> ItemProcessInputProvider::Release(const processes::ReservedProcessInput &reservation,
+                                                           GameplayContext context) {
     const auto payload = DecodeReservationToken(reservation.provider_token);
     if (!payload)
         return foundation::Result<void>::Failure(
             Error("gameplay.integration.item_payload_invalid", "process item reservation token is invalid"));
-    const auto* current = items_.FindReservation(payload->reservation);
-    if (!current || current->state != items::ReservationState::Active) return foundation::Result<void>::Success();
+    const auto *current = items_.FindReservation(payload->reservation);
+    if (!current || current->state != items::ReservationState::Active)
+        return foundation::Result<void>::Success();
     return items_.ReleaseReservation(payload->reservation, context);
 }
-foundation::Result<processes::PreparedProcessOutput> ItemProcessOutputHandler::Prepare(
-    const processes::ProcessOutputDefinition& output, const processes::ProcessInstance& instance, GameplayContext)
-{
+foundation::Result<processes::PreparedProcessOutput>
+ItemProcessOutputHandler::Prepare(const processes::ProcessOutputDefinition &output,
+                                  const processes::ProcessInstance &instance, GameplayContext) {
     const auto payload = DecodeProcessItemOutput(output.payload);
     items::ItemLocation target;
-    if (payload)
-    {
+    if (payload) {
         target.kind = items::ItemLocationKind::Container;
         target.container = payload->container;
     }
     if (!payload || !items_.CanCreateItem(payload->definition, output.amount, target))
         return foundation::Result<processes::PreparedProcessOutput>::Failure(
-            Error("gameplay.integration.item_payload_invalid", "process item output definition, policy or destination capacity is invalid"));
+            Error("gameplay.integration.item_payload_invalid",
+                  "process item output definition, policy or destination capacity is invalid"));
     processes::PreparedProcessOutput prepared;
     prepared.output = output.id;
     prepared.type = output.type;
@@ -365,20 +371,20 @@ foundation::Result<processes::PreparedProcessOutput> ItemProcessOutputHandler::P
         {payload->definition, payload->container, ProcessOutputItemId(instance.id, output.id), output.amount});
     return foundation::Result<processes::PreparedProcessOutput>::Success(std::move(prepared));
 }
-foundation::Result<void> ItemProcessOutputHandler::Commit(const processes::PreparedProcessOutput& output,
-                                                          const processes::ProcessInstance&, GameplayContext context)
-{
+foundation::Result<void> ItemProcessOutputHandler::Commit(const processes::PreparedProcessOutput &output,
+                                                          const processes::ProcessInstance &, GameplayContext context) {
     const auto payload = DecodePreparedOutputToken(output.provider_token);
     if (!payload)
         return foundation::Result<void>::Failure(
             Error("gameplay.integration.item_payload_invalid", "prepared process item output token is invalid"));
-    if (const auto* existing = items_.FindItem(payload->item))
-    {
+    if (const auto *existing = items_.FindItem(payload->item)) {
         if (existing->definition == payload->definition && existing->quantity == payload->amount &&
-            existing->location.kind == items::ItemLocationKind::Container && existing->location.container == payload->container)
+            existing->location.kind == items::ItemLocationKind::Container &&
+            existing->location.container == payload->container)
             return foundation::Result<void>::Success();
         return foundation::Result<void>::Failure(
-            Error("gameplay.integration.item_output_id_conflict", "stable process output item id already belongs to different state"));
+            Error("gameplay.integration.item_output_id_conflict",
+                  "stable process output item id already belongs to different state"));
     }
     items::ItemInstance item;
     item.id = payload->item;
@@ -387,27 +393,27 @@ foundation::Result<void> ItemProcessOutputHandler::Commit(const processes::Prepa
     item.location.kind = items::ItemLocationKind::Container;
     item.location.container = payload->container;
     auto created = items_.CreateItem(std::move(item), context);
-    if (!created) return foundation::Result<void>::Failure(created.GetError());
+    if (!created)
+        return foundation::Result<void>::Failure(created.GetError());
     return foundation::Result<void>::Success();
 }
-foundation::Result<void> ItemProcessOutputHandler::Cancel(const processes::PreparedProcessOutput&,
-                                                          const processes::ProcessInstance&, GameplayContext)
-{
+foundation::Result<void> ItemProcessOutputHandler::Cancel(const processes::PreparedProcessOutput &,
+                                                          const processes::ProcessInstance &, GameplayContext) {
     return foundation::Result<void>::Success();
 }
 
-dialogue::DialogueConsequenceState DialogueKnowledgeConsequenceHandler::Execute(
-    const dialogue::DialogueConsequenceDefinition& definition, const dialogue::DialogueConsequenceExecution& execution,
-    const dialogue::ConversationSession& session) const
-{
-    if (definition.type == ShareType())
-    {
+dialogue::DialogueConsequenceState
+DialogueKnowledgeConsequenceHandler::Execute(const dialogue::DialogueConsequenceDefinition &definition,
+                                             const dialogue::DialogueConsequenceExecution &execution,
+                                             const dialogue::ConversationSession &session) const {
+    if (definition.type == ShareType()) {
         const auto payload = ReadTrivial<DialogueShareKnowledgePayload>(definition.payload);
-        if (!payload || payload->speaker_index >= session.participants.size() || payload->listener_index >= session.participants.size())
+        if (!payload || payload->speaker_index >= session.participants.size() ||
+            payload->listener_index >= session.participants.size())
             return dialogue::DialogueConsequenceState::Failed;
         const auto speaker = session.participants[payload->speaker_index];
         const auto listener = session.participants[payload->listener_index];
-        const auto* source = knowledge_.FindKnowledge(payload->record);
+        const auto *source = knowledge_.FindKnowledge(payload->record);
         if (!source || source->owner != speaker)
             return dialogue::DialogueConsequenceState::Failed;
         knowledge::ShareKnowledgeRequest request;
@@ -419,10 +425,10 @@ dialogue::DialogueConsequenceState DialogueKnowledgeConsequenceHandler::Execute(
         return knowledge_.Share(std::move(request)) ? dialogue::DialogueConsequenceState::Applied
                                                     : dialogue::DialogueConsequenceState::Failed;
     }
-    if (definition.type == AssertType())
-    {
+    if (definition.type == AssertType()) {
         const auto payload = ReadTrivial<DialogueAssertKnowledgePayload>(definition.payload);
-        if (!payload || payload->speaker_index >= session.participants.size() || payload->listener_index >= session.participants.size())
+        if (!payload || payload->speaker_index >= session.participants.size() ||
+            payload->listener_index >= session.participants.size())
             return dialogue::DialogueConsequenceState::Failed;
         knowledge::LearnKnowledgeRequest request;
         request.learner = session.participants[payload->listener_index];
@@ -441,14 +447,12 @@ dialogue::DialogueConsequenceState DialogueKnowledgeConsequenceHandler::Execute(
     return dialogue::DialogueConsequenceState::Failed;
 }
 
-const CoordinatedTradeExecution* TradeCoordinator::FindExecution(TradeExecutionId id) const noexcept
-{
+const CoordinatedTradeExecution *TradeCoordinator::FindExecution(TradeExecutionId id) const noexcept {
     const auto found = executions_.find(id);
     return found == executions_.end() ? nullptr : &found->second;
 }
 
-foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradePlan plan)
-{
+foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradePlan plan) {
     if (!plan.money.buyer.IsValid() || !plan.money.seller.IsValid() || plan.money.buyer == plan.money.seller)
         return foundation::Result<TradeExecutionId>::Failure(
             Error("gameplay.trade.parties_invalid", "coordinated trade requires distinct buyer and seller"));
@@ -459,29 +463,29 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
     staged_execution.context = plan.money.context;
     staged_execution.state = CoordinatedTradeState::ReconciliationRequired;
 
-    try
-    {
+    try {
         staged_execution.goods.reserve(plan.goods.size());
         std::unordered_set<items::ItemInstanceId, items::IdHash> seen_items;
         seen_items.reserve(plan.goods.size());
-        for (const auto& line : plan.goods)
-        {
+        for (const auto &line : plan.goods) {
             if (!SameTradeParty(line.from_owner, plan.money.seller) || !SameTradeParty(line.to_owner, plan.money.buyer))
-                return foundation::Result<TradeExecutionId>::Failure(
-                    Error("gameplay.trade.party_mismatch", "goods owner must be seller and destination owner must be buyer"));
+                return foundation::Result<TradeExecutionId>::Failure(Error(
+                    "gameplay.trade.party_mismatch", "goods owner must be seller and destination owner must be buyer"));
             if (!line.item.IsValid() || !line.destination.IsValid() || !seen_items.insert(line.item).second)
                 return foundation::Result<TradeExecutionId>::Failure(
-                    Error("gameplay.trade.goods_invalid", "trade goods must contain unique valid item instances and destinations"));
+                    Error("gameplay.trade.goods_invalid",
+                          "trade goods must contain unique valid item instances and destinations"));
             const auto item = items_.FindItemCopy(line.item);
             if (!item || item->quantity <= 0)
-                return foundation::Result<TradeExecutionId>::Failure(Error("gameplay.trade.item_missing", "trade item missing"));
+                return foundation::Result<TradeExecutionId>::Failure(
+                    Error("gameplay.trade.item_missing", "trade item missing"));
             items::ItemLocation target;
             target.kind = items::ItemLocationKind::Container;
             target.container = line.destination;
             if (!items_.CanTransfer(line.item, target, item->quantity))
                 return foundation::Result<TradeExecutionId>::Failure(
                     Error("gameplay.trade.item_unavailable", "trade item cannot be transferred to destination"));
-            const auto* owner = ownership_.GetOwner(ItemPropertyRef(line.item));
+            const auto *owner = ownership_.GetOwner(ItemPropertyRef(line.item));
             if (!owner || owner->owner != plan.money.seller)
                 return foundation::Result<TradeExecutionId>::Failure(
                     Error("gameplay.trade.owner_mismatch", "trade item is not owned by seller"));
@@ -493,9 +497,7 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
             prepared.ownership_domain = owner->domain;
             staged_execution.goods.push_back(std::move(prepared));
         }
-    }
-    catch (const std::bad_alloc&)
-    {
+    } catch (const std::bad_alloc &) {
         return foundation::Result<TradeExecutionId>::Failure(
             Error("gameplay.trade.allocation_failed", "failed to stage coordinated trade"));
     }
@@ -503,7 +505,8 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
     auto staged_execution_ids = execution_ids_;
     const TradeExecutionId id{staged_execution_ids.Next()};
     if (!id.IsValid())
-        return foundation::Result<TradeExecutionId>::Failure(Error("gameplay.trade.id_exhausted", "trade execution id exhausted"));
+        return foundation::Result<TradeExecutionId>::Failure(
+            Error("gameplay.trade.id_exhausted", "trade execution id exhausted"));
     staged_execution.id = id;
 
     if (test_support::ConsumeTradePublicationFailure())
@@ -511,40 +514,33 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
             Error("gameplay.trade.allocation_failed", "failed to publish coordinated trade execution"));
 
     decltype(executions_)::iterator execution_it;
-    try
-    {
+    try {
         auto [inserted_it, inserted] = executions_.emplace(id, std::move(staged_execution));
         if (!inserted)
             return foundation::Result<TradeExecutionId>::Failure(
                 Error("gameplay.trade.execution_duplicate", "generated coordinated trade execution already exists"));
         execution_it = inserted_it;
-    }
-    catch (const std::bad_alloc&)
-    {
+    } catch (const std::bad_alloc &) {
         return foundation::Result<TradeExecutionId>::Failure(
             Error("gameplay.trade.allocation_failed", "failed to publish coordinated trade execution"));
     }
 
     execution_ids_ = staged_execution_ids;
-    auto& execution = execution_it->second;
+    auto &execution = execution_it->second;
 
     std::size_t reserved_goods = 0;
-    for (auto& good : execution.goods)
-    {
+    for (auto &good : execution.goods) {
         auto reservation = items_.ReserveItem(good.line.item, good.quantity, execution.seller,
                                               TypeId::FromString("trade.goods"), execution.context);
-        if (!reservation)
-        {
+        if (!reservation) {
             bool rollback_ok = true;
-            for (std::size_t i = 0; i < reserved_goods; ++i)
-            {
+            for (std::size_t i = 0; i < reserved_goods; ++i) {
                 if (items_.ReleaseReservation(execution.goods[i].reservation, execution.context))
                     execution.goods[i].state = TradeGoodsLegState::Released;
                 else
                     rollback_ok = false;
             }
-            if (!rollback_ok)
-            {
+            if (!rollback_ok) {
                 execution.state = CoordinatedTradeState::ReconciliationRequired;
                 return foundation::Result<TradeExecutionId>::Success(id);
             }
@@ -555,8 +551,7 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
         good.state = TradeGoodsLegState::Reserved;
         ++reserved_goods;
 
-        if (test_support::ConsumeTradeGoodsReservationFailure(reserved_goods))
-        {
+        if (test_support::ConsumeTradeGoodsReservationFailure(reserved_goods)) {
             execution.state = CoordinatedTradeState::ReconciliationRequired;
             return foundation::Result<TradeExecutionId>::Success(id);
         }
@@ -564,19 +559,17 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
 
     plan.money.id = economy::TradeTransactionId{id.value};
     auto transaction = economy_.PrepareTrade(std::move(plan.money));
-    if (!transaction)
-    {
+    if (!transaction) {
         bool rollback_ok = true;
-        for (auto& good : execution.goods)
-        {
-            if (good.state != TradeGoodsLegState::Reserved) continue;
+        for (auto &good : execution.goods) {
+            if (good.state != TradeGoodsLegState::Reserved)
+                continue;
             if (items_.ReleaseReservation(good.reservation, execution.context))
                 good.state = TradeGoodsLegState::Released;
             else
                 rollback_ok = false;
         }
-        if (!rollback_ok)
-        {
+        if (!rollback_ok) {
             execution.state = CoordinatedTradeState::ReconciliationRequired;
             return foundation::Result<TradeExecutionId>::Success(id);
         }
@@ -586,22 +579,20 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
     execution.money_transaction = transaction.Value();
     execution.money_state = TradeMoneyLegState::Prepared;
     auto money_reserved = economy_.ReserveTrade(execution.money_transaction);
-    if (!money_reserved)
-    {
+    if (!money_reserved) {
         const auto money_cancelled = economy_.CancelTrade(execution.money_transaction);
         bool rollback_ok = static_cast<bool>(money_cancelled);
-        execution.money_state = money_cancelled ? TradeMoneyLegState::Cancelled
-                                                : TradeMoneyLegState::ReconciliationRequired;
-        for (auto& good : execution.goods)
-        {
-            if (good.state != TradeGoodsLegState::Reserved) continue;
+        execution.money_state =
+            money_cancelled ? TradeMoneyLegState::Cancelled : TradeMoneyLegState::ReconciliationRequired;
+        for (auto &good : execution.goods) {
+            if (good.state != TradeGoodsLegState::Reserved)
+                continue;
             if (items_.ReleaseReservation(good.reservation, execution.context))
                 good.state = TradeGoodsLegState::Released;
             else
                 rollback_ok = false;
         }
-        if (!rollback_ok)
-        {
+        if (!rollback_ok) {
             execution.state = CoordinatedTradeState::ReconciliationRequired;
             return foundation::Result<TradeExecutionId>::Success(id);
         }
@@ -614,36 +605,32 @@ foundation::Result<TradeExecutionId> TradeCoordinator::Prepare(CoordinatedTradeP
     return foundation::Result<TradeExecutionId>::Success(id);
 }
 
-foundation::Result<economy::TradeTransactionId> TradeCoordinator::Continue(TradeExecutionId id)
-{
+foundation::Result<economy::TradeTransactionId> TradeCoordinator::Continue(TradeExecutionId id) {
     auto found = executions_.find(id);
     if (found == executions_.end())
-        return foundation::Result<economy::TradeTransactionId>::Failure(Error("gameplay.trade.execution_missing", "trade execution missing"));
-    auto& execution = found->second;
+        return foundation::Result<economy::TradeTransactionId>::Failure(
+            Error("gameplay.trade.execution_missing", "trade execution missing"));
+    auto &execution = found->second;
     if (execution.state == CoordinatedTradeState::Completed)
         return foundation::Result<economy::TradeTransactionId>::Success(execution.money_transaction);
-    if (!execution.money_transaction.IsValid() || execution.money_state != TradeMoneyLegState::Reserved)
-    {
+    if (!execution.money_transaction.IsValid() || execution.money_state != TradeMoneyLegState::Reserved) {
         execution.state = CoordinatedTradeState::ReconciliationRequired;
-        return foundation::Result<economy::TradeTransactionId>::Failure(
-            Error("gameplay.trade.reconciliation_required", "trade preparation is incomplete and requires reconciliation"));
+        return foundation::Result<economy::TradeTransactionId>::Failure(Error(
+            "gameplay.trade.reconciliation_required", "trade preparation is incomplete and requires reconciliation"));
     }
 
-    if (std::any_of(execution.goods.begin(), execution.goods.end(),
-                    [](const auto& good) { return good.state != TradeGoodsLegState::Reserved; }))
-    {
+    if (std::any_of(execution.goods.begin(), execution.goods.end(), [](const auto &good) {
+            return good.state != TradeGoodsLegState::Reserved;
+        })) {
         execution.state = CoordinatedTradeState::ReconciliationRequired;
         return foundation::Result<economy::TradeTransactionId>::Failure(
             Error("gameplay.trade.reconciliation_required", "trade goods preparation is incomplete"));
     }
     execution.state = CoordinatedTradeState::Committing;
-    for (auto& good : execution.goods)
-    {
-        if (good.state == TradeGoodsLegState::Reserved)
-        {
-            const auto* owner = ownership_.GetOwner(ItemPropertyRef(good.line.item), good.ownership_domain);
-            if (!owner || owner->owner != execution.seller || owner->revision != good.ownership_revision)
-            {
+    for (auto &good : execution.goods) {
+        if (good.state == TradeGoodsLegState::Reserved) {
+            const auto *owner = ownership_.GetOwner(ItemPropertyRef(good.line.item), good.ownership_domain);
+            if (!owner || owner->owner != execution.seller || owner->revision != good.ownership_revision) {
                 execution.state = CoordinatedTradeState::ReconciliationRequired;
                 return foundation::Result<economy::TradeTransactionId>::Failure(
                     Error("gameplay.trade.reconciliation_required", "trade item ownership changed after preparation"));
@@ -652,19 +639,16 @@ foundation::Result<economy::TradeTransactionId> TradeCoordinator::Continue(Trade
             target.kind = items::ItemLocationKind::Container;
             target.container = good.line.destination;
             auto moved = items_.CommitReservedTransfer(good.reservation, target, execution.context);
-            if (!moved)
-            {
+            if (!moved) {
                 execution.state = CoordinatedTradeState::ReconciliationRequired;
                 return foundation::Result<economy::TradeTransactionId>::Failure(moved.GetError());
             }
             good.state = TradeGoodsLegState::ItemTransferred;
         }
 
-        if (good.state == TradeGoodsLegState::ItemTransferred)
-        {
-            const auto* owner = ownership_.GetOwner(ItemPropertyRef(good.line.item), good.ownership_domain);
-            if (owner && owner->owner == execution.buyer)
-            {
+        if (good.state == TradeGoodsLegState::ItemTransferred) {
+            const auto *owner = ownership_.GetOwner(ItemPropertyRef(good.line.item), good.ownership_domain);
+            if (owner && owner->owner == execution.buyer) {
                 good.state = TradeGoodsLegState::OwnershipTransferred;
                 continue;
             }
@@ -677,8 +661,7 @@ foundation::Result<economy::TradeTransactionId> TradeCoordinator::Continue(Trade
             request.domain = good.ownership_domain;
             request.expected_revision = good.ownership_revision;
             auto transferred = ownership_.TransferOwnership(std::move(request));
-            if (!transferred)
-            {
+            if (!transferred) {
                 execution.state = CoordinatedTradeState::ReconciliationRequired;
                 return foundation::Result<economy::TradeTransactionId>::Failure(transferred.GetError());
             }
@@ -687,8 +670,7 @@ foundation::Result<economy::TradeTransactionId> TradeCoordinator::Continue(Trade
     }
 
     auto money = economy_.CommitTrade(execution.money_transaction);
-    if (!money)
-    {
+    if (!money) {
         execution.money_state = TradeMoneyLegState::ReconciliationRequired;
         execution.state = CoordinatedTradeState::ReconciliationRequired;
         return foundation::Result<economy::TradeTransactionId>::Failure(money.GetError());
@@ -698,56 +680,53 @@ foundation::Result<economy::TradeTransactionId> TradeCoordinator::Continue(Trade
     return foundation::Result<economy::TradeTransactionId>::Success(execution.money_transaction);
 }
 
-foundation::Result<economy::TradeTransactionId> TradeCoordinator::Execute(CoordinatedTradePlan plan)
-{
+foundation::Result<economy::TradeTransactionId> TradeCoordinator::Execute(CoordinatedTradePlan plan) {
     auto prepared = Prepare(std::move(plan));
-    if (!prepared) return foundation::Result<economy::TradeTransactionId>::Failure(prepared.GetError());
+    if (!prepared)
+        return foundation::Result<economy::TradeTransactionId>::Failure(prepared.GetError());
     return Continue(prepared.Value());
 }
 
-foundation::Result<void> TradeCoordinator::Cancel(TradeExecutionId id)
-{
+foundation::Result<void> TradeCoordinator::Cancel(TradeExecutionId id) {
     auto found = executions_.find(id);
     if (found == executions_.end())
         return foundation::Result<void>::Failure(Error("gameplay.trade.execution_missing", "trade execution missing"));
-    auto& execution = found->second;
-    if (execution.state == CoordinatedTradeState::Cancelled) return foundation::Result<void>::Success();
+    auto &execution = found->second;
+    if (execution.state == CoordinatedTradeState::Cancelled)
+        return foundation::Result<void>::Success();
     if (execution.state == CoordinatedTradeState::Completed)
-        return foundation::Result<void>::Failure(Error("gameplay.trade.already_completed", "completed trade cannot be cancelled"));
-    if (std::any_of(execution.goods.begin(), execution.goods.end(),
-                    [](const auto& good) { return good.state == TradeGoodsLegState::ItemTransferred ||
-                                                   good.state == TradeGoodsLegState::OwnershipTransferred; }))
-    {
-        execution.state = CoordinatedTradeState::ReconciliationRequired;
         return foundation::Result<void>::Failure(
-            Error("gameplay.trade.reconciliation_required", "partially committed trade requires explicit reconciliation"));
+            Error("gameplay.trade.already_completed", "completed trade cannot be cancelled"));
+    if (std::any_of(execution.goods.begin(), execution.goods.end(), [](const auto &good) {
+            return good.state == TradeGoodsLegState::ItemTransferred ||
+                   good.state == TradeGoodsLegState::OwnershipTransferred;
+        })) {
+        execution.state = CoordinatedTradeState::ReconciliationRequired;
+        return foundation::Result<void>::Failure(Error("gameplay.trade.reconciliation_required",
+                                                       "partially committed trade requires explicit reconciliation"));
     }
 
     bool ok = true;
-    for (auto& good : execution.goods)
-    {
-        const auto* reservation = items_.FindReservation(good.reservation);
-        if (good.state == TradeGoodsLegState::Reserved && reservation && reservation->state == items::ReservationState::Active)
-        {
+    for (auto &good : execution.goods) {
+        const auto *reservation = items_.FindReservation(good.reservation);
+        if (good.state == TradeGoodsLegState::Reserved && reservation &&
+            reservation->state == items::ReservationState::Active) {
             if (items_.ReleaseReservation(good.reservation, execution.context))
                 good.state = TradeGoodsLegState::Released;
             else
                 ok = false;
         }
     }
-    if (execution.money_transaction.IsValid())
-    {
-        const auto* transaction = economy_.FindTransaction(execution.money_transaction);
-        if (transaction)
-        {
+    if (execution.money_transaction.IsValid()) {
+        const auto *transaction = economy_.FindTransaction(execution.money_transaction);
+        if (transaction) {
             if (economy_.CancelTrade(execution.money_transaction))
                 execution.money_state = TradeMoneyLegState::Cancelled;
             else
                 ok = false;
         }
     }
-    if (!ok)
-    {
+    if (!ok) {
         execution.state = CoordinatedTradeState::ReconciliationRequired;
         return foundation::Result<void>::Failure(
             Error("gameplay.trade.reconciliation_required", "trade cancellation was only partially applied"));
@@ -756,37 +735,34 @@ foundation::Result<void> TradeCoordinator::Cancel(TradeExecutionId id)
     return foundation::Result<void>::Success();
 }
 
-TradeCoordinatorSnapshot TradeCoordinator::CaptureSnapshot() const
-{
+TradeCoordinatorSnapshot TradeCoordinator::CaptureSnapshot() const {
     TradeCoordinatorSnapshot snapshot;
     snapshot.executions.reserve(executions_.size());
-    for (const auto& [id, execution] : executions_)
-    {
+    for (const auto &[id, execution] : executions_) {
         (void)id;
         snapshot.executions.push_back(execution);
     }
-    std::sort(snapshot.executions.begin(), snapshot.executions.end(), [](const auto& a, const auto& b) { return a.id < b.id; });
+    std::sort(snapshot.executions.begin(), snapshot.executions.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
     snapshot.execution_ids = execution_ids_.GetSnapshot();
     return snapshot;
 }
 
-foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnapshot snapshot)
-{
+foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnapshot snapshot) {
     std::unordered_map<TradeExecutionId, CoordinatedTradeExecution, TradeExecutionIdHash> restored;
     std::uint64_t max_low = 0;
-    for (auto& execution : snapshot.executions)
-    {
+    for (auto &execution : snapshot.executions) {
         if (!execution.id.IsValid() || !execution.buyer.IsValid() || !execution.seller.IsValid() ||
             execution.buyer == execution.seller || restored.contains(execution.id))
-            return foundation::Result<void>::Failure(Error("gameplay.trade.restore_invalid", "invalid trade execution snapshot"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.trade.restore_invalid", "invalid trade execution snapshot"));
         if (execution.id.value.High() == execution_ids_.Scope().Raw())
             max_low = std::max(max_low, execution.id.value.Low());
 
-        const auto* transaction = execution.money_transaction.IsValid()
-                                      ? economy_.FindTransaction(execution.money_transaction)
-                                      : nullptr;
-        switch (execution.money_state)
-        {
+        const auto *transaction =
+            execution.money_transaction.IsValid() ? economy_.FindTransaction(execution.money_transaction) : nullptr;
+        switch (execution.money_state) {
         case TradeMoneyLegState::NotPrepared:
             if (execution.money_transaction.IsValid())
                 return foundation::Result<void>::Failure(
@@ -821,21 +797,19 @@ foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnaps
         }
 
         std::unordered_set<items::ItemInstanceId, items::IdHash> seen;
-        for (const auto& good : execution.goods)
-        {
+        for (const auto &good : execution.goods) {
             if (!good.line.item.IsValid() || !good.line.destination.IsValid() || !seen.insert(good.line.item).second ||
                 !SameTradeParty(good.line.from_owner, execution.seller) ||
                 !SameTradeParty(good.line.to_owner, execution.buyer) || good.quantity <= 0)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.trade.restore_invalid", "invalid trade goods execution"));
 
-            const auto* reservation = good.reservation.IsValid() ? items_.FindReservation(good.reservation) : nullptr;
+            const auto *reservation = good.reservation.IsValid() ? items_.FindReservation(good.reservation) : nullptr;
             const auto item = items_.FindItemCopy(good.line.item);
             if (!item)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.trade.restore_invalid", "trade item is missing"));
-            switch (good.state)
-            {
+            switch (good.state) {
             case TradeGoodsLegState::NotReserved:
                 if (good.reservation.IsValid())
                     return foundation::Result<void>::Failure(
@@ -862,9 +836,8 @@ foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnaps
                 break;
             }
 
-            if (good.state == TradeGoodsLegState::OwnershipTransferred)
-            {
-                const auto* owner = ownership_.GetOwner(ItemPropertyRef(good.line.item), good.ownership_domain);
+            if (good.state == TradeGoodsLegState::OwnershipTransferred) {
+                const auto *owner = ownership_.GetOwner(ItemPropertyRef(good.line.item), good.ownership_domain);
                 if (!owner || owner->owner != execution.buyer)
                     return foundation::Result<void>::Failure(
                         Error("gameplay.trade.restore_invalid", "committed trade ownership leg is inconsistent"));
@@ -873,18 +846,20 @@ foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnaps
 
         if (execution.state == CoordinatedTradeState::Prepared &&
             (execution.money_state != TradeMoneyLegState::Reserved ||
-             std::any_of(execution.goods.begin(), execution.goods.end(),
-                         [](const auto& good) { return good.state != TradeGoodsLegState::Reserved; })))
+             std::any_of(execution.goods.begin(), execution.goods.end(), [](const auto &good) {
+                 return good.state != TradeGoodsLegState::Reserved;
+             })))
             return foundation::Result<void>::Failure(
                 Error("gameplay.trade.restore_invalid", "prepared trade does not have fully reserved legs"));
         if (execution.state == CoordinatedTradeState::Completed &&
             (execution.money_state != TradeMoneyLegState::Committed ||
-             std::any_of(execution.goods.begin(), execution.goods.end(),
-                         [](const auto& good) { return good.state != TradeGoodsLegState::OwnershipTransferred; })))
+             std::any_of(execution.goods.begin(), execution.goods.end(), [](const auto &good) {
+                 return good.state != TradeGoodsLegState::OwnershipTransferred;
+             })))
             return foundation::Result<void>::Failure(
                 Error("gameplay.trade.restore_invalid", "completed trade has incomplete legs"));
         if (execution.state == CoordinatedTradeState::Cancelled &&
-            std::any_of(execution.goods.begin(), execution.goods.end(), [](const auto& good) {
+            std::any_of(execution.goods.begin(), execution.goods.end(), [](const auto &good) {
                 return good.state != TradeGoodsLegState::NotReserved && good.state != TradeGoodsLegState::Released;
             }))
             return foundation::Result<void>::Failure(
@@ -893,8 +868,8 @@ foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnaps
         restored.emplace(execution.id, std::move(execution));
     }
 
-    const auto generator = ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(
-        snapshot.execution_ids, execution_ids_.Scope(), max_low);
+    const auto generator =
+        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.execution_ids, execution_ids_.Scope(), max_low);
     if (!generator)
         return foundation::Result<void>::Failure(
             Error("gameplay.trade.restore_invalid", "trade execution id generator snapshot is invalid"));
@@ -903,13 +878,15 @@ foundation::Result<void> TradeCoordinator::RestoreSnapshot(TradeCoordinatorSnaps
     return foundation::Result<void>::Success();
 }
 
-void TradeCoordinator::PruneCompleted(std::size_t keep_recent)
-{
+void TradeCoordinator::PruneCompleted(std::size_t keep_recent) {
     std::vector<TradeExecutionId> completed;
-    for (const auto& [id, execution] : executions_)
-        if (execution.state == CoordinatedTradeState::Completed || execution.state == CoordinatedTradeState::Cancelled) completed.push_back(id);
+    for (const auto &[id, execution] : executions_)
+        if (execution.state == CoordinatedTradeState::Completed || execution.state == CoordinatedTradeState::Cancelled)
+            completed.push_back(id);
     std::sort(completed.begin(), completed.end());
-    if (completed.size() <= keep_recent) return;
-    for (std::size_t i = 0; i < completed.size() - keep_recent; ++i) executions_.erase(completed[i]);
+    if (completed.size() <= keep_recent)
+        return;
+    for (std::size_t i = 0; i < completed.size() - keep_recent; ++i)
+        executions_.erase(completed[i]);
 }
 } // namespace epidemic::gameplay::integration

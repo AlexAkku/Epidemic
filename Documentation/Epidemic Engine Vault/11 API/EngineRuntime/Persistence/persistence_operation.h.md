@@ -91,3 +91,20 @@ using PersistenceOperation = std::variant<
     RemoveZoneOverrideOperation>;
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Persistence/lazy_rule_record.h`, `Epidemic/Runtime/Persistence/persistent_record.h`, `Epidemic/Runtime/Persistence/tombstone_store.h`, `Epidemic/Runtime/Persistence/zone_override_store.h`.
+
+### Состав типов и операции
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

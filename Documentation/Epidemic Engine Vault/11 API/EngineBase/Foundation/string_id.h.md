@@ -130,3 +130,34 @@ template <typename Tag> struct hash<epidemic::foundation::detail::BasicId<Tag>>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `BasicId` (строка заголовка 32)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Creates an id from a source string. // Input: source string view. // Output: hashed id, or 0 when the source is empty. Non-empty sources reserve 0 as invalid. [[nodiscard]] static constexpr BasicId FromString(std::string_view source) noexcept;
+// Returns true when the id is non-zero. [[nodiscard]] constexpr bool IsValid() const noexcept;
+// Returns the raw numeric id value. [[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+```
+
+#### `hash` (строка заголовка 98)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Hashes the raw id so typed ids can be used in unordered containers. [[nodiscard]] size_t operator()(const epidemic::foundation::detail::BasicId<Tag> &value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

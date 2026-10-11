@@ -10,22 +10,22 @@
 
 #include <stdexcept>
 
-namespace
-{
+namespace {
 using epidemic::tests::Assert;
 using epidemic::tests::ProbeModule;
 using epidemic::tests::RegisterApplicationCoreServices;
 using epidemic::tests::RegisterCoreServices;
 
 // Verifies previously fixed cross-cutting regressions across services, tasks, modules, diagnostics, and RHI paths.
-void TestRegressionContracts()
-{
+void TestRegressionContracts() {
     epidemic::core::Application app({"RegressionApp"});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         app, {.runtime_name = "RegressionApp", .log_module = "RegressionApp"}));
-    Assert(app.Services().Contains<epidemic::memory::IMemoryTracker>(), "RegisterEngineBase must register IMemoryTracker");
+    Assert(app.Services().Contains<epidemic::memory::IMemoryTracker>(),
+           "RegisterEngineBase must register IMemoryTracker");
     static_cast<void>(epidemic::enginebase::RegisterWindowsRuntime(app));
-    Assert(app.Services().Contains<epidemic::platform::IPlatformRuntime>(), "RegisterWindowsRuntime must register platform runtime");
+    Assert(app.Services().Contains<epidemic::platform::IPlatformRuntime>(),
+           "RegisterWindowsRuntime must register platform runtime");
     static_cast<void>(epidemic::enginebase::RegisterInputRuntime(app));
     Assert(app.Services().Contains<epidemic::input::IInputSystem>(), "RegisterInputRuntime must register input system");
     const auto graphics_runtime = epidemic::enginebase::RegisterGraphicsRuntime(
@@ -39,67 +39,68 @@ void TestRegressionContracts()
     auto logger = RegisterCoreServices(services);
 
     bool duplicate_service_failed = false;
-    try
-    {
+    try {
         services.RegisterInstance<epidemic::diagnostics::ILogger>(logger);
-    }
-    catch (const std::exception &)
-    {
+    } catch (const std::exception &) {
         duplicate_service_failed = true;
     }
     Assert(duplicate_service_failed, "Duplicate service registration must fail");
 
     bool missing_service_failed = false;
-    try
-    {
+    try {
         epidemic::core::Application missing_services_application;
         missing_services_application.Bootstrap();
-    }
-    catch (const std::exception &)
-    {
+    } catch (const std::exception &) {
         missing_service_failed = true;
     }
     Assert(missing_service_failed, "Missing service must fail");
 
     epidemic::core::events::EventBus event_bus;
     bool empty_handler_failed = false;
-    try
-    {
+    try {
         event_bus.SubscribeQueued<int>(std::function<void(const int &)>{});
-    }
-    catch (const std::invalid_argument &)
-    {
+    } catch (const std::invalid_argument &) {
         empty_handler_failed = true;
     }
     Assert(empty_handler_failed, "Empty event handler must fail");
     Assert(!event_bus.Unsubscribe(12345), "Unknown unsubscribe must return false");
 
     epidemic::core::tasks::SimpleTaskScheduler scheduler(1);
-    auto throwing_task = scheduler.Schedule([] { throw std::runtime_error("task failure"); }, "throwing");
+    auto throwing_task = scheduler.Schedule(
+        [] {
+            throw std::runtime_error("task failure");
+        },
+        "throwing");
     bool task_exception_propagated = false;
-    try
-    {
+    try {
         scheduler.Wait(throwing_task);
-    }
-    catch (const std::runtime_error &exception)
-    {
+    } catch (const std::runtime_error &exception) {
         task_exception_propagated = std::string(exception.what()) == "task failure";
     }
     Assert(task_exception_propagated, "Task exception must propagate");
 
     epidemic::core::MainThreadDispatcher dispatcher;
     std::vector<int> order;
-    dispatcher.Post([&order] { order.push_back(1); }, "one");
-    dispatcher.Post([&order] { order.push_back(2); }, "two");
+    dispatcher.Post(
+        [&order] {
+            order.push_back(1);
+        },
+        "one");
+    dispatcher.Post(
+        [&order] {
+            order.push_back(2);
+        },
+        "two");
     Assert(dispatcher.Drain() == 2 && order == std::vector<int>({1, 2}), "Dispatcher must execute FIFO");
     bool dispatcher_throw_propagated = false;
-    dispatcher.Post([] { throw std::runtime_error("dispatcher failure"); }, "throw");
-    try
-    {
+    dispatcher.Post(
+        [] {
+            throw std::runtime_error("dispatcher failure");
+        },
+        "throw");
+    try {
         static_cast<void>(dispatcher.Drain());
-    }
-    catch (const std::runtime_error &exception)
-    {
+    } catch (const std::runtime_error &exception) {
         dispatcher_throw_propagated = std::string(exception.what()) == "dispatcher failure";
     }
     Assert(dispatcher_throw_propagated, "Dispatcher exceptions must propagate");
@@ -119,7 +120,8 @@ void TestRegressionContracts()
     const auto invalid_device = epidemic::rhi::CreateNullRhiDevice(epidemic::rhi::RhiDeviceDesc{false, ""});
     Assert(!invalid_device.HasValue(), "Invalid RHI descriptor validation must fail");
 
-    const auto device = epidemic::rhi::CreateNullRhiDevice(epidemic::rhi::RhiDeviceDesc{false, "RegressionNullRhi"}).Value();
+    const auto device =
+        epidemic::rhi::CreateNullRhiDevice(epidemic::rhi::RhiDeviceDesc{false, "RegressionNullRhi"}).Value();
     epidemic::rhi::RhiSwapChainDesc swap_chain_desc;
     swap_chain_desc.surface_handle = epidemic::rhi::PresentationSurfaceHandle(reinterpret_cast<void *>(1));
     swap_chain_desc.width = 64;
@@ -133,17 +135,15 @@ void TestRegressionContracts()
     epidemic::core::Application initialize_failure_application({"InitializeFailureApplication"});
     RegisterApplicationCoreServices(initialize_failure_application, 1, std::nullopt);
     std::vector<std::string> trace;
-    initialize_failure_application.Modules().Register(std::make_unique<ProbeModule>("core", std::vector<std::string>{}, trace));
+    initialize_failure_application.Modules().Register(
+        std::make_unique<ProbeModule>("core", std::vector<std::string>{}, trace));
     initialize_failure_application.Modules().Register(
         std::make_unique<ProbeModule>("runtime", std::vector<std::string>{"core"}, trace, false, true));
     Assert(initialize_failure_application.Bootstrap() == 0, "Bootstrap before initialize failure must succeed");
     bool initialize_failed = false;
-    try
-    {
+    try {
         initialize_failure_application.Initialize();
-    }
-    catch (const std::exception &)
-    {
+    } catch (const std::exception &) {
         initialize_failed = true;
     }
     Assert(initialize_failed, "Partial initialization failure must propagate");
@@ -152,7 +152,6 @@ void TestRegressionContracts()
 }
 
 // Runs the regression-test group.
-int main()
-{
+int main() {
     return epidemic::tests::RunNamedTests({{"RegressionContracts", &TestRegressionContracts}});
 }

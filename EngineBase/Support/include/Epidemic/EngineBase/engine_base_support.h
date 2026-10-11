@@ -19,19 +19,16 @@
 #include <string>
 #include <vector>
 
-namespace epidemic::diagnostics
-{
+namespace epidemic::diagnostics {
 class ILogger;
 }
 
-namespace epidemic::enginebase
-{
+namespace epidemic::enginebase {
 // This file declares the convenience composition helpers used by EngineBase apps and tests.
 // The functions wire common baseline services into Application while keeping expected runtime setup
 // failures on Result-returning boundaries instead of requiring callers to catch exceptions.
 
-struct EngineBaseOptions
-{
+struct EngineBaseOptions {
     std::string runtime_name{"EpidemicApp"};
     std::string log_module{"App"};
     std::size_t worker_count{1};
@@ -41,22 +38,19 @@ struct EngineBaseOptions
     std::uint32_t default_window_height{720};
 };
 
-struct GraphicsRuntimeOptions
-{
+struct GraphicsRuntimeOptions {
     GraphicsBackend backend{GraphicsBackend::Null};
     bool enable_debug_validation{false};
     std::string debug_name{"EngineBaseGraphicsDevice"};
 };
 
-struct GraphicsRuntimeServices
-{
+struct GraphicsRuntimeServices {
     std::shared_ptr<rhi::IRhiDevice> device;
     std::shared_ptr<rhi::IRhiCommandContext> command_context;
 };
 
 // Shared per-frame storage for platform events between the platform and input frame phases.
-struct FramePlatformEvents
-{
+struct FramePlatformEvents {
     std::vector<platform::PlatformEvent> events;
 };
 
@@ -88,8 +82,7 @@ CreateMainWindow(core::Application &application, const platform::WindowCreateInf
 // Creates and registers the main swap chain for a window using the registered RHI device.
 // Contract: null/invalid windows and duplicate/sealed swap-chain ownership return controlled Result failures.
 [[nodiscard]] foundation::Result<std::shared_ptr<rhi::IRhiSwapChain>>
-RegisterMainSwapChain(core::Application &application,
-                      const std::shared_ptr<platform::IWindow> &window,
+RegisterMainSwapChain(core::Application &application, const std::shared_ptr<platform::IWindow> &window,
                       const rhi::RhiSwapChainDesc &desc);
 
 // Adds the frame-phase handler that pumps the platform runtime and drains window-system events.

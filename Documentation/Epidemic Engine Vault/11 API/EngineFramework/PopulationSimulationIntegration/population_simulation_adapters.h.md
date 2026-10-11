@@ -211,3 +211,140 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Encounters/encounters.h`, `Epidemic/GameFramework/NeedsLife/needs_life.h`, `Epidemic/GameFramework/Population/population.h`, `Epidemic/GameFramework/RolesJobs/roles_jobs.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Encounters/encounters.h`, `Epidemic/GameFramework/NeedsLife/needs_life.h`, `Epidemic/GameFramework/Population/population.h`, `Epidemic/GameFramework/RolesJobs/roles_jobs.h`.
+
+### Перечисления и допустимые категории
+
+- `PopulationEncounterPlanState`: `AwaitingEntityBindings`, `RollbackPending`, `Completed`, `Failed`
+
+### Состав типов и операции
+
+#### `PopulationBackedEncounterPlan` (строка заголовка 33)
+
+Публичные поля и значения по умолчанию:
+
+- `PopulationEncounterPlanState state = PopulationEncounterPlanState::AwaitingEntityBindings`
+- `std::vector<PopulationBackedEncounterSlot> slots`
+
+#### `PopulationEncounterAdapterSnapshot` (строка заголовка 45)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PopulationBackedEncounterPlan> plans`
+
+#### `PopulationBackedSpawnResult` (строка заголовка 50)
+
+Публичные поля и значения по умолчанию:
+
+- `encounters::SpawnResult spawn`
+- `std::vector<population::PopulationUnitId> allocated_units`
+
+#### `PopulationEncounterAdapter` (строка заголовка 56)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<PopulationBackedSpawnResult> SpawnFromPopulation( population::PopulationService& population_service, encounters::EncountersService& encounter_service, population::PopulationGroupId group, encounters::SpawnRequest request, std::size_t max_units);
+[[nodiscard]] const PopulationBackedEncounterPlan* FindPlan(encounters::SpawnRequestId request) const noexcept;
+[[nodiscard]] PopulationEncounterAdapterSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot( PopulationEncounterAdapterSnapshot snapshot, const population::PopulationService& population_service, const encounters::EncountersService& encounter_service);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `RolesNeedsAdapter` (строка заголовка 94)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<void> CreateWorkPressureForDuty( const roles_jobs::Duty& duty, needs_life::NeedsLifeService& needs_service, std::int64_t urgency, GameplayContext context) const;
+[[nodiscard]] foundation::Result<void> SatisfyWorkNeedFromDuty( const roles_jobs::Duty& duty, needs_life::NeedsLifeService& needs_service, needs_life::NeedTypeId work_need, std::int64_t amount, GameplayContext context) const;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `PopulationLifecycleReconciliation` (строка заголовка 111)
+
+Публичные поля и значения по умолчанию:
+
+- `bool roles_cleaned = false`
+- `bool needs_cleaned = false`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool Complete() const noexcept;
+```
+
+#### `PopulationLifecycleAdapterSnapshot` (строка заголовка 124)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PopulationLifecycleReconciliation> reconciliations`
+
+#### `PopulationLifecycleAdapter` (строка заголовка 129)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<void> MarkResidentDead( population::PopulationService& population_service, roles_jobs::RolesJobsService& roles_service, needs_life::NeedsLifeService& needs_service, population::PopulationUnitId unit, GameplayContext context);
+[[nodiscard]] PopulationLifecycleAdapterSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(PopulationLifecycleAdapterSnapshot snapshot);
+void PruneCompleted();
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `CityMorningResult` (строка заголовка 151)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<roles_jobs::DutyId> activated_duties`
+- `std::vector<population::PopulationUnit> materialization_candidates`
+- `std::vector<needs_life::NeedState> critical_needs`
+
+#### `CityLifeAdapter` (строка заголовка 158)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] CityMorningResult RunMorningStep( population::PopulationService& population_service, roles_jobs::RolesJobsService& roles_service, needs_life::NeedsLifeService& needs_service, GameplayObjectRef area, GameplayTimePoint now, std::size_t materialization_limit, GameplayContext context) const;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `FindPlan` | `PopulationEncounterAdapter::FindPlan` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:77` |
+| `SpawnFromPopulation` | `PopulationEncounterAdapter::SpawnFromPopulation` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:83` |
+| `CaptureSnapshot` | `PopulationEncounterAdapter::CaptureSnapshot` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:389` |
+| `RestoreSnapshot` | `PopulationEncounterAdapter::RestoreSnapshot` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:399` |
+| `CreateWorkPressureForDuty` | `RolesNeedsAdapter::CreateWorkPressureForDuty` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:491` |
+| `SatisfyWorkNeedFromDuty` | `RolesNeedsAdapter::SatisfyWorkNeedFromDuty` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:522` |
+| `MarkResidentDead` | `PopulationLifecycleAdapter::MarkResidentDead` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:549` |
+| `CaptureSnapshot` | `PopulationLifecycleAdapter::CaptureSnapshot` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:619` |
+| `RestoreSnapshot` | `PopulationLifecycleAdapter::RestoreSnapshot` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:635` |
+| `PruneCompleted` | `PopulationLifecycleAdapter::PruneCompleted` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:655` |
+| `RunMorningStep` | `CityLifeAdapter::RunMorningStep` | `EngineFramework/IntegrationLayer/PopulationSimulationIntegration/src/population_simulation_adapters.cpp:660` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:16`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:17`
+- `SpawnFromPopulation`: `EngineFramework/DevelopmentInfrastructure/Tests/populationsimulationintegration_save_participant_tests.cpp:114`
+

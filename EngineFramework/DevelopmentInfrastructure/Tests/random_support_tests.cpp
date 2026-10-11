@@ -10,24 +10,19 @@
 
 using namespace epidemic::gameplay::random;
 
-namespace
-{
-void Check(bool condition, int code)
-{
-    if (!condition)
-    {
+namespace {
+void Check(bool condition, int code) {
+    if (!condition) {
         std::exit(code);
     }
 }
 
-void CheckClose(double actual, double expected, double epsilon, int code)
-{
+void CheckClose(double actual, double expected, double epsilon, int code) {
     Check(std::fabs(actual - expected) <= epsilon, code);
 }
 } // namespace
 
-int main()
-{
+int main() {
     Check(RandomSeed{0} == RandomSeed{0}, 1);
     Check(RandomSeed{1} != RandomSeed{2}, 2);
 
@@ -59,8 +54,7 @@ int main()
 
     RandomSequence same_a({42}, combat);
     RandomSequence same_b({42}, combat);
-    for (int index = 0; index < 1000; ++index)
-    {
+    for (int index = 0; index < 1000; ++index) {
         Check(same_a.NextU64Unchecked() == same_b.NextU64Unchecked(), 19);
     }
 
@@ -72,8 +66,7 @@ int main()
     RandomSequence uniform({42}, combat);
     Check(uniform.UniformUnchecked(1) == 0, 22);
     Check(uniform.UniformUnchecked(10) == 5, 23);
-    for (int index = 0; index < 128; ++index)
-    {
+    for (int index = 0; index < 128; ++index) {
         Check(uniform.UniformUnchecked(17) < 17, 24);
     }
     Check(RandomSequence({42}, combat).UniformUnchecked(10) == RandomSequence({42}, combat).UniformUnchecked(10), 25);
@@ -83,18 +76,16 @@ int main()
 
     RandomSequence range({42}, RandomStream::FromString("range"));
     Check(range.UniformRangeUnchecked(5, 13) == 12, 27);
-    for (int index = 0; index < 128; ++index)
-    {
+    for (int index = 0; index < 128; ++index) {
         const auto value = range.UniformRangeUnchecked(100, 200);
         Check(value >= 100 && value < 200, 28);
     }
 
     RandomSequence real({42}, RandomStream::FromString("real"));
     CheckClose(real.Uniform01Unchecked(), 0.77932763623837287, 0.0000000000000002, 29);
-    CheckClose(RandomSequence({42}, RandomStream::FromString("real")).UniformRealUnchecked(10.0, 20.0), 17.79327636238373,
-               0.00000000000001, 30);
-    for (int index = 0; index < 128; ++index)
-    {
+    CheckClose(RandomSequence({42}, RandomStream::FromString("real")).UniformRealUnchecked(10.0, 20.0),
+               17.79327636238373, 0.00000000000001, 30);
+    for (int index = 0; index < 128; ++index) {
         const auto value = real.UniformRealUnchecked(-2.0, 3.0);
         Check(value >= -2.0 && value < 3.0, 31);
     }
@@ -161,7 +152,8 @@ int main()
               restored.CaptureSnapshot().sequence == preserved_snapshot.sequence,
           54);
 
-    RandomSequence exhausted_checked({1}, RandomStream::FromString("exhausted"), std::numeric_limits<std::uint64_t>::max());
+    RandomSequence exhausted_checked({1}, RandomStream::FromString("exhausted"),
+                                     std::numeric_limits<std::uint64_t>::max());
     Check(!exhausted_checked.TryNextU64().has_value(), 60);
     Check(!exhausted_checked.TryUniform(2).has_value(), 61);
     Check(!RandomSequence({1}, RandomStream::FromString("invalid.uniform")).TryUniform(0).has_value(), 62);
@@ -187,13 +179,10 @@ int main()
     Check(!exhausted_weighted.WeightedIndex(needs_entropy_weights).has_value(), 69);
     Check(!exhausted_checked.TryRollMicro(500'000).has_value(), 70);
     bool invalid_stream_rejected = false;
-    try
-    {
+    try {
         RandomSequence invalid_stream({1}, RandomStream{});
         (void)invalid_stream;
-    }
-    catch (const std::invalid_argument &)
-    {
+    } catch (const std::invalid_argument &) {
         invalid_stream_rejected = true;
     }
     Check(invalid_stream_rejected, 72);
@@ -201,8 +190,7 @@ int main()
     const double adjacent_min = 1.0;
     const double adjacent_max = std::nextafter(adjacent_min, 2.0);
     RandomSequence adjacent({123}, RandomStream::FromString("adjacent.real"));
-    for (int index = 0; index < 128; ++index)
-    {
+    for (int index = 0; index < 128; ++index) {
         const auto value = adjacent.TryUniformReal(adjacent_min, adjacent_max);
         Check(value.has_value() && *value >= adjacent_min && *value < adjacent_max, 73);
     }

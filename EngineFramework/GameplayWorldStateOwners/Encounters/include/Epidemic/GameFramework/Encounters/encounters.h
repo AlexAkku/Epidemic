@@ -12,150 +12,117 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::encounters
-{
-struct EncounterDefinitionId
-{
+namespace epidemic::gameplay::encounters {
+struct EncounterDefinitionId {
     TypeId value{};
-    static constexpr EncounterDefinitionId FromString(std::string_view s) noexcept
-    {
+    static constexpr EncounterDefinitionId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const EncounterDefinitionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const EncounterDefinitionId &) const noexcept = default;
 };
-struct EncounterInstanceId
-{
+struct EncounterInstanceId {
     GameplayObjectId value{};
-    static constexpr EncounterInstanceId FromString(std::string_view s) noexcept
-    {
+    static constexpr EncounterInstanceId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr EncounterInstanceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr EncounterInstanceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const EncounterInstanceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const EncounterInstanceId &) const noexcept = default;
 };
-struct SpawnTableId
-{
+struct SpawnTableId {
     TypeId value{};
-    static constexpr SpawnTableId FromString(std::string_view s) noexcept
-    {
+    static constexpr SpawnTableId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SpawnTableId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SpawnTableId &) const noexcept = default;
 };
-struct SpawnEntryId
-{
+struct SpawnEntryId {
     TypeId value{};
-    static constexpr SpawnEntryId FromString(std::string_view s) noexcept
-    {
+    static constexpr SpawnEntryId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SpawnEntryId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SpawnEntryId &) const noexcept = default;
 };
-struct SpawnPointId
-{
+struct SpawnPointId {
     GameplayObjectId value{};
-    static constexpr SpawnPointId FromString(std::string_view s) noexcept
-    {
+    static constexpr SpawnPointId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr SpawnPointId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr SpawnPointId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SpawnPointId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SpawnPointId &) const noexcept = default;
 };
-struct SpawnRequestId
-{
+struct SpawnRequestId {
     GameplayObjectId value{};
-    static constexpr SpawnRequestId FromString(std::string_view s) noexcept
-    {
+    static constexpr SpawnRequestId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr SpawnRequestId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr SpawnRequestId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SpawnRequestId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SpawnRequestId &) const noexcept = default;
 };
-struct SpawnedEntityRecordId
-{
+struct SpawnedEntityRecordId {
     GameplayObjectId value{};
-    static constexpr SpawnedEntityRecordId FromString(std::string_view s) noexcept
-    {
+    static constexpr SpawnedEntityRecordId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr SpawnedEntityRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr SpawnedEntityRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SpawnedEntityRecordId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SpawnedEntityRecordId &) const noexcept = default;
 };
-struct RespawnRuleId
-{
+struct RespawnRuleId {
     GameplayObjectId value{};
-    static constexpr RespawnRuleId FromString(std::string_view s) noexcept
-    {
+    static constexpr RespawnRuleId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr RespawnRuleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr RespawnRuleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const RespawnRuleId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const RespawnRuleId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class EncounterState
-{
+enum class EncounterState {
     AwaitingPopulationBinding,
     Active,
     Completed,
@@ -163,16 +130,14 @@ enum class EncounterState
     Despawning,
     Expired
 };
-enum class SpawnPointState
-{
+enum class SpawnPointState {
     Available,
     Reserved,
     Disabled,
     Occupied,
     Consumed
 };
-enum class SpawnRollPolicy
-{
+enum class SpawnRollPolicy {
     GuaranteedAll,
     WeightedOne,
     WeightedMany,
@@ -180,22 +145,19 @@ enum class SpawnRollPolicy
     PickNWithoutReplacement,
     PopulationBacked
 };
-enum class SpawnPersistencePolicy
-{
+enum class SpawnPersistencePolicy {
     Transient,
     Session,
     Persistent,
     PopulationBacked
 };
-enum class SpawnResultState
-{
+enum class SpawnResultState {
     Succeeded,
     Deferred,
     Rejected,
     Failed
 };
-enum class EncounterChangeKind
-{
+enum class EncounterChangeKind {
     EncounterCreated,
     EncounterActivated,
     EncounterCompleted,
@@ -211,8 +173,7 @@ enum class EncounterChangeKind
     SpawnPointAdded
 };
 
-struct SpawnEntry
-{
+struct SpawnEntry {
     SpawnEntryId id{};
     TypeId archetype{};
     std::uint64_t weight = 1;
@@ -224,8 +185,7 @@ struct SpawnEntry
     GameplayTagSet blocked_request_tags{};
     std::vector<std::byte> payload;
 };
-struct SpawnTable
-{
+struct SpawnTable {
     SpawnTableId id{};
     std::vector<SpawnEntry> entries;
     SpawnRollPolicy roll_policy = SpawnRollPolicy::GuaranteedAll;
@@ -234,8 +194,7 @@ struct SpawnTable
     std::uint32_t selection_min_count = 1;
     std::uint32_t selection_max_count = 1;
 };
-struct EncounterDefinition
-{
+struct EncounterDefinition {
     EncounterDefinitionId id{};
     GameplayTagSet tags{};
     SpawnTableId spawn_table{};
@@ -247,8 +206,7 @@ struct EncounterDefinition
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct SpawnPoint
-{
+struct SpawnPoint {
     SpawnPointId id{};
     GameplayObjectRef area{};
     GameplayObjectRef position{};
@@ -256,8 +214,7 @@ struct SpawnPoint
     SpawnPointState state = SpawnPointState::Available;
     Revision revision{};
 };
-struct SpawnedEntityRecord
-{
+struct SpawnedEntityRecord {
     SpawnedEntityRecordId id{};
     EncounterInstanceId encounter{};
     GameplayObjectRef entity{};
@@ -265,8 +222,7 @@ struct SpawnedEntityRecord
     GameplayObjectRef population_unit{};
     Revision revision{};
 };
-struct EncounterInstance
-{
+struct EncounterInstance {
     EncounterInstanceId id{};
     EncounterDefinitionId definition{};
     GameplayObjectRef area{};
@@ -279,8 +235,7 @@ struct EncounterInstance
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct RespawnRule
-{
+struct RespawnRule {
     RespawnRuleId id{};
     EncounterDefinitionId encounter{};
     GameplayDuration delay{};
@@ -293,8 +248,7 @@ struct RespawnRule
     std::uint32_t trigger_count = 0;
     Revision revision{};
 };
-struct SpawnRequest
-{
+struct SpawnRequest {
     SpawnRequestId id{};
     EncounterDefinitionId encounter{};
     GameplayObjectRef area{};
@@ -306,8 +260,7 @@ struct SpawnRequest
     GameplayTagSet request_tags{};
     GameplayContext context{};
 };
-struct SpawnResult
-{
+struct SpawnResult {
     SpawnRequestId request_id{};
     EncounterInstanceId encounter_instance{};
     std::vector<SpawnedEntityRecordId> spawned_records;
@@ -316,8 +269,7 @@ struct SpawnResult
     SpawnResultState state = SpawnResultState::Failed;
     Revision revision{};
 };
-struct EncounterChange
-{
+struct EncounterChange {
     std::uint64_t sequence = 0;
     EncounterChangeKind kind = EncounterChangeKind::EncounterCreated;
     EncounterInstanceId encounter{};
@@ -328,14 +280,12 @@ struct EncounterChange
     SpawnPointId spawn_point{};
 };
 
-struct SpawnRequestRecord
-{
+struct SpawnRequestRecord {
     SpawnRequest request{};
     SpawnResult result{};
     Revision revision{};
 };
-struct EncounterChangeBatch
-{
+struct EncounterChangeBatch {
     std::vector<EncounterChange> changes;
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
@@ -344,8 +294,7 @@ struct EncounterChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct EncountersSnapshot
-{
+struct EncountersSnapshot {
     std::vector<EncounterDefinition> definitions;
     std::vector<SpawnTable> tables;
     std::vector<SpawnPoint> points;
@@ -362,36 +311,33 @@ struct EncountersSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct EncounterBudgets
-{
+struct EncounterBudgets {
     std::uint32_t max_active_global = 1000;
     std::uint32_t max_active_per_area = 128;
     std::uint32_t max_spawn_operations_per_tick = 64;
     std::uint32_t max_spawned_entities_per_encounter = 256;
     std::size_t change_journal_capacity = 4096;
 };
-struct EncounterDiagnostics
-{
+struct EncounterDiagnostics {
     std::uint64_t definitions = 0, tables = 0, active_encounters = 0, spawn_requests = 0, spawn_successes = 0,
                   spawn_failures = 0, spawn_budget_rejects = 0, spawned_entities = 0, respawn_schedules = 0;
 };
 
-class EncountersService
-{
+class EncountersService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<EncountersService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.encounters");
     }
     [[nodiscard]] foundation::Result<void> RegisterSpawnTable(SpawnTable table);
     [[nodiscard]] foundation::Result<void> RegisterEncounterDefinition(EncounterDefinition definition);
     [[nodiscard]] foundation::Result<void> FreezeDefinitions();
-    [[nodiscard]] bool DefinitionsFrozen() const noexcept { return definitions_frozen_; }
+    [[nodiscard]] bool DefinitionsFrozen() const noexcept {
+        return definitions_frozen_;
+    }
     [[nodiscard]] foundation::Result<SpawnPointId> AddSpawnPoint(SpawnPoint point);
-    void SetBudgets(EncounterBudgets budgets) noexcept
-    {
+    void SetBudgets(EncounterBudgets budgets) noexcept {
         budgets_ = budgets;
     }
     [[nodiscard]] SpawnResult SpawnEncounter(SpawnRequest request);
@@ -404,7 +350,8 @@ class EncountersService
                                                                              GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> CompleteEncounter(EncounterInstanceId id, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> FailEncounter(EncounterInstanceId id, GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> BeginDespawningEncounter(EncounterInstanceId id, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> BeginDespawningEncounter(EncounterInstanceId id,
+                                                                    GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> ExpireEncounter(EncounterInstanceId id, GameplayContext context = {});
     [[nodiscard]] std::size_t PruneTerminalEncounters(std::size_t max_to_prune);
     [[nodiscard]] foundation::Result<RespawnRuleId> ScheduleRespawn(RespawnRule rule, GameplayContext context = {});
@@ -418,30 +365,29 @@ class EncountersService
     [[nodiscard]] std::vector<EncounterInstance> FindEncountersByState(EncounterState state) const;
     [[nodiscard]] std::vector<SpawnPoint> FindSpawnPointsInArea(GameplayObjectRef area) const;
     [[nodiscard]] bool CanSpawnEncounter(SpawnRequest request) const;
-    private:
-        [[nodiscard]] EncounterChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] EncounterChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] EncounterChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] EncounterChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
+
   private:
-    [[nodiscard]] std::vector<EncounterChange> ChangesSinceSequence(std::uint64_t sequence) const
-    {
+    [[nodiscard]] std::vector<EncounterChange> ChangesSinceSequence(std::uint64_t sequence) const {
         return ReadChangesSinceSequence(sequence).changes;
     }
 
@@ -449,8 +395,7 @@ class EncountersService
     [[nodiscard]] EncountersSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(EncountersSnapshot snapshot);
     [[nodiscard]] EncounterDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
@@ -458,7 +403,7 @@ class EncountersService
     [[nodiscard]] foundation::Result<Revision> PrepareRevision() const;
     void Record(EncounterChange change) noexcept;
     [[nodiscard]] foundation::Result<std::vector<SpawnEntry>> ResolveEntries(const SpawnTable &table,
-                                                                               const SpawnRequest &request) const;
+                                                                             const SpawnRequest &request) const;
     [[nodiscard]] bool EntryMatches(const SpawnEntry &entry, const SpawnRequest &request) const noexcept;
     [[nodiscard]] bool RequestMatches(const SpawnRequest &a, const SpawnRequest &b) const noexcept;
     void RebuildIndexes();

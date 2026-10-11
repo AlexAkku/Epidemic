@@ -41,3 +41,48 @@ class IPhysicsQuery
 };
 } // namespace epidemic::runtime::physics
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Physics/physics_types.h`.
+
+### Состав типов и операции
+
+#### `IPhysicsQuery` (строка заголовка 9)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IPhysicsQuery() = default;
+[[nodiscard]] virtual foundation::Result<RaycastHit> Raycast(const RaycastQuery& query) const = 0;
+[[nodiscard]] virtual foundation::Result<OverlapResult> Overlap(const OverlapQuery& query) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Raycast` | `PhysicsRuntime::Raycast` | `EngineRuntime/Physics/src/physics_runtime_impl.cpp:874` |
+| `Overlap` | `PhysicsRuntime::Overlap` | `EngineRuntime/Physics/src/physics_runtime_impl.cpp:986` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Raycast`: `EngineRuntime/Physics/tests/physics_tests.cpp:465`
+- `Overlap`: `EngineRuntime/Physics/tests/physics_tests.cpp:1230`
+

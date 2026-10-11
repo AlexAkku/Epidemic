@@ -221,3 +221,89 @@ template <> struct hash<epidemic::gameplay::GameplayTickId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `GameplayDuration` (строка заголовка 21)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t ticks = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsZero() const noexcept;
+[[nodiscard]] constexpr bool operator==(const GameplayDuration&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const GameplayDuration&) const noexcept = default;
+```
+
+#### `GameplayTimePoint` (строка заголовка 30)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t ticks = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const GameplayTimePoint&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const GameplayTimePoint&) const noexcept = default;
+```
+
+#### `GameplayTickId` (строка заголовка 142)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const GameplayTickId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const GameplayTickId&) const noexcept = default;
+```
+
+#### `Revision` (строка заголовка 153)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr bool operator==(const Revision&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const Revision&) const noexcept = default;
+```
+
+#### `hash` (строка заголовка 190)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::gameplay::GameplayTickId value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Raw`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:368`
+

@@ -8,21 +8,18 @@
 #include <memory>
 #include <optional>
 
-namespace epidemic::runtime::streaming
-{
+namespace epidemic::runtime::streaming {
 // Public Streaming runtime contract. The implementation coordinates chunk residency
 // requests and budgeted state transitions without owning world or renderer data.
-class IStreamingRuntime
-{
+class IStreamingRuntime {
   public:
     virtual ~IStreamingRuntime() = default;
 
-    [[nodiscard]] virtual foundation::Result<StreamingDemandHandle> Request(
-        const StreamingTarget& target,
-        StreamingPriorityClass priority) = 0;
+    [[nodiscard]] virtual foundation::Result<StreamingDemandHandle> Request(const StreamingTarget &target,
+                                                                            StreamingPriorityClass priority) = 0;
     [[nodiscard]] virtual foundation::Result<void> ReleaseDemand(StreamingDemandHandle demand) = 0;
     [[nodiscard]] virtual StreamingState GetChunkState(ChunkId chunk) const = 0;
-    virtual void SetBudget(const StreamingBudget& budget) = 0;
+    virtual void SetBudget(const StreamingBudget &budget) = 0;
     // Runtime-owned allocation failure during Tick preparation/staging is not converted
     // into a semantic request failure and may surface as std::bad_alloc. Preparation faults
     // happen before request mutation; an already accepted external step is retained in
@@ -32,8 +29,7 @@ class IStreamingRuntime
     [[nodiscard]] virtual StreamingStatistics GetStatistics() const = 0;
 };
 
-class IStreamingQuery
-{
+class IStreamingQuery {
   public:
     virtual ~IStreamingQuery() = default;
 
@@ -42,8 +38,7 @@ class IStreamingQuery
     [[nodiscard]] virtual StreamingStatistics GetStatistics() const = 0;
 };
 
-class IStreamingController
-{
+class IStreamingController {
   public:
     virtual ~IStreamingController() = default;
 
@@ -51,15 +46,13 @@ class IStreamingController
     [[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;
 };
 
-struct StreamingServices
-{
+struct StreamingServices {
     std::shared_ptr<IStreamingRuntime> runtime;
     std::shared_ptr<IStreamingQuery> query;
     std::shared_ptr<IStreamingController> controller;
 };
 
-struct StreamingDependencies
-{
+struct StreamingDependencies {
     std::shared_ptr<IStreamingDataSource> data_source;
     std::shared_ptr<IStreamingCommitTarget> commit_target;
     std::shared_ptr<IStreamingPriorityProvider> priority_provider;
@@ -69,5 +62,6 @@ struct StreamingDependencies
     std::shared_ptr<IStreamingResourceSource> resource_source;
 };
 
-[[nodiscard]] foundation::Result<StreamingServices> CreateStreamingServices(const StreamingDependencies& dependencies = {});
+[[nodiscard]] foundation::Result<StreamingServices>
+CreateStreamingServices(const StreamingDependencies &dependencies = {});
 } // namespace epidemic::runtime::streaming

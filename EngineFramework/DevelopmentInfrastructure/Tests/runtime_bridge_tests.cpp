@@ -7,8 +7,7 @@
 #include <vector>
 
 #define CHECK(expr)                                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
+    do {                                                                                                               \
         if (!(expr))                                                                                                   \
             std::abort();                                                                                              \
     } while (false)
@@ -17,16 +16,13 @@ using namespace epidemic;
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::runtime_bridge;
 
-namespace epidemic::gameplay::runtime_bridge::detail
-{
-foundation::Result<void> ComputeVisibilityRayGeometry(
-    RuntimeVector3 observer, RuntimeVector3 target, RuntimeVector3& direction, float& distance);
+namespace epidemic::gameplay::runtime_bridge::detail {
+foundation::Result<void> ComputeVisibilityRayGeometry(RuntimeVector3 observer, RuntimeVector3 target,
+                                                      RuntimeVector3 &direction, float &distance);
 }
 
-namespace
-{
-struct Backend final : IRuntimeBridgeBackend
-{
+namespace {
+struct Backend final : IRuntimeBridgeBackend {
     std::uint64_t next_object = 10;
     int materialize_calls = 0;
     int dematerialize_calls = 0;
@@ -43,61 +39,55 @@ struct Backend final : IRuntimeBridgeBackend
     std::unordered_set<std::uint64_t> dead_objects;
     RuntimeBridgeCapabilities capabilities{};
 
-    foundation::Result<RuntimeMaterializationResult> Materialize(RuntimePersistentObjectHandle) override
-    {
+    foundation::Result<RuntimeMaterializationResult> Materialize(RuntimePersistentObjectHandle) override {
         ++materialize_calls;
-        if (force_collision_object)
-        {
+        if (force_collision_object) {
             return foundation::Result<RuntimeMaterializationResult>::Success({collision_object, true});
         }
         return foundation::Result<RuntimeMaterializationResult>::Success({RuntimeObjectHandle{next_object++}, true});
     }
-    foundation::Result<void> Dematerialize(RuntimeObjectHandle) override
-    {
+    foundation::Result<void> Dematerialize(RuntimeObjectHandle) override {
         ++dematerialize_calls;
         return foundation::Result<void>::Success();
     }
-    foundation::Result<void> Destroy(RuntimeObjectHandle) override { return foundation::Result<void>::Success(); }
-    foundation::Result<void> ApplyImpulse(RuntimePhysicsBodyHandle body, RuntimeVector3) override
-    {
+    foundation::Result<void> Destroy(RuntimeObjectHandle) override {
+        return foundation::Result<void>::Success();
+    }
+    foundation::Result<void> ApplyImpulse(RuntimePhysicsBodyHandle body, RuntimeVector3) override {
         last_impulse_body = body;
         return foundation::Result<void>::Success();
     }
-    foundation::Result<void> ProjectEnvironment(RuntimeRegionHandle, const RuntimeEnvironmentValues&, Revision) override
-    {
+    foundation::Result<void> ProjectEnvironment(RuntimeRegionHandle, const RuntimeEnvironmentValues &,
+                                                Revision) override {
         ++env_calls;
-        if (environment_always_fails || environment_failures_remaining > 0)
-        {
-            if (environment_failures_remaining > 0) --environment_failures_remaining;
+        if (environment_always_fails || environment_failures_remaining > 0) {
+            if (environment_failures_remaining > 0)
+                --environment_failures_remaining;
             return foundation::Result<void>::Failure(
                 foundation::Error::Create("test.environment.transient", "simulated runtime projection failure"));
         }
         ++env_successes;
         return foundation::Result<void>::Success();
     }
-    RuntimeBridgeCapabilities GetCapabilities() const noexcept override { return capabilities; }
-    std::vector<RuntimeContactObservation> ConsumeContacts() override
-    {
+    RuntimeBridgeCapabilities GetCapabilities() const noexcept override {
+        return capabilities;
+    }
+    std::vector<RuntimeContactObservation> ConsumeContacts() override {
         auto result = contacts;
         contacts.clear();
         return result;
     }
-    foundation::Result<std::vector<RuntimeRayHit>> Raycast(const RuntimeRayQuery&) const override
-    {
+    foundation::Result<std::vector<RuntimeRayHit>> Raycast(const RuntimeRayQuery &) const override {
         return foundation::Result<std::vector<RuntimeRayHit>>::Success(ray_hits);
     }
-    foundation::Result<std::vector<RuntimePhysicsBodyHandle>> Overlap(const RuntimeOverlapQuery&) const override
-    {
+    foundation::Result<std::vector<RuntimePhysicsBodyHandle>> Overlap(const RuntimeOverlapQuery &) const override {
         return foundation::Result<std::vector<RuntimePhysicsBodyHandle>>::Success(overlap_hits);
     }
-    foundation::Result<bool> Visible(RuntimeObjectHandle left, RuntimeObjectHandle right) const override
-    {
+    foundation::Result<bool> Visible(RuntimeObjectHandle left, RuntimeObjectHandle right) const override {
         return foundation::Result<bool>::Success(left.IsValid() && right.IsValid());
     }
-    foundation::Result<RuntimeTransformObservation> ObserveTransform(RuntimeObjectHandle object) const override
-    {
-        if (!object.IsValid() || dead_objects.contains(object.value))
-        {
+    foundation::Result<RuntimeTransformObservation> ObserveTransform(RuntimeObjectHandle object) const override {
+        if (!object.IsValid() || dead_objects.contains(object.value)) {
             return foundation::Result<RuntimeTransformObservation>::Failure(
                 foundation::Error::Create("test.transform.missing", "runtime object is missing"));
         }
@@ -108,25 +98,20 @@ struct Backend final : IRuntimeBridgeBackend
         observed.region = RuntimeRegionHandle{1};
         return foundation::Result<RuntimeTransformObservation>::Success(observed);
     }
-    foundation::Result<bool> IsRepresentationAlive(RuntimeObjectHandle object) const override
-    {
+    foundation::Result<bool> IsRepresentationAlive(RuntimeObjectHandle object) const override {
         return foundation::Result<bool>::Success(object.IsValid() && !dead_objects.contains(object.value));
     }
-    foundation::Result<RuntimeNavigationQueryHandle> RequestPath(const RuntimeNavigationPathQuery&) override
-    {
+    foundation::Result<RuntimeNavigationQueryHandle> RequestPath(const RuntimeNavigationPathQuery &) override {
         return foundation::Result<RuntimeNavigationQueryHandle>::Success(RuntimeNavigationQueryHandle{91});
     }
-    foundation::Result<RuntimeNavigationPathState> GetPathState(RuntimeNavigationQueryHandle handle) const override
-    {
+    foundation::Result<RuntimeNavigationPathState> GetPathState(RuntimeNavigationQueryHandle handle) const override {
         return handle.value == 91
                    ? foundation::Result<RuntimeNavigationPathState>::Success(RuntimeNavigationPathState::Completed)
                    : foundation::Result<RuntimeNavigationPathState>::Failure(
                          foundation::Error::Create("test.navigation.unknown", "unknown navigation handle"));
     }
-    foundation::Result<RuntimeNavigationPath> GetPathResult(RuntimeNavigationQueryHandle handle) const override
-    {
-        if (handle.value != 91)
-        {
+    foundation::Result<RuntimeNavigationPath> GetPathResult(RuntimeNavigationQueryHandle handle) const override {
+        if (handle.value != 91) {
             return foundation::Result<RuntimeNavigationPath>::Failure(
                 foundation::Error::Create("test.navigation.unknown", "unknown navigation handle"));
         }
@@ -137,12 +122,14 @@ struct Backend final : IRuntimeBridgeBackend
         path.result_revision = 8;
         return foundation::Result<RuntimeNavigationPath>::Success(std::move(path));
     }
-    foundation::Result<void> CancelPath(RuntimeNavigationQueryHandle) override { return foundation::Result<void>::Success(); }
-    foundation::Result<void> ReleasePath(RuntimeNavigationQueryHandle) override { return foundation::Result<void>::Success(); }
-    foundation::Result<RuntimeEnvironmentSample> SampleEnvironment(RuntimeRegionHandle region) const override
-    {
-        if (!region.IsValid())
-        {
+    foundation::Result<void> CancelPath(RuntimeNavigationQueryHandle) override {
+        return foundation::Result<void>::Success();
+    }
+    foundation::Result<void> ReleasePath(RuntimeNavigationQueryHandle) override {
+        return foundation::Result<void>::Success();
+    }
+    foundation::Result<RuntimeEnvironmentSample> SampleEnvironment(RuntimeRegionHandle region) const override {
+        if (!region.IsValid()) {
             return foundation::Result<RuntimeEnvironmentSample>::Failure(
                 foundation::Error::Create("test.environment.invalid", "invalid region"));
         }
@@ -153,19 +140,18 @@ struct Backend final : IRuntimeBridgeBackend
     }
 };
 
-GameplayObjectRef Object(std::string_view name)
-{
+GameplayObjectRef Object(std::string_view name) {
     const auto domain = GameplayDomainId::FromString("framework.test.runtime_bridge");
     return GameplayObjectRef{domain, GameplayObjectId::FromString(name)};
 }
 } // namespace
 
-int main()
-{
+int main() {
     {
         RuntimeVector3 direction{};
         float distance = 0.0f;
-        const auto normal = epidemic::gameplay::runtime_bridge::detail::ComputeVisibilityRayGeometry({0.0f, 0.0f, 0.0f}, {3.0f, 4.0f, 0.0f}, direction, distance);
+        const auto normal = epidemic::gameplay::runtime_bridge::detail::ComputeVisibilityRayGeometry(
+            {0.0f, 0.0f, 0.0f}, {3.0f, 4.0f, 0.0f}, direction, distance);
         CHECK(normal && std::abs(distance - 5.0f) < 0.0001f);
         CHECK(std::abs(direction.x - 0.6f) < 0.0001f && std::abs(direction.y - 0.8f) < 0.0001f);
 
@@ -295,17 +281,21 @@ int main()
     backend.ray_hits = {{body, RuntimeVector3{std::numeric_limits<float>::quiet_NaN(), 0.0f, 0.0f},
                          RuntimeVector3{-1.0f, 0.0f, 0.0f}, 2.0f}};
     const auto invalid_ray_point = bridge.Raycast(RuntimeRayQuery{});
-    CHECK(!invalid_ray_point && invalid_ray_point.GetError().HasCode("gameplay.runtime_bridge.invalid_runtime_observation"));
+    CHECK(!invalid_ray_point &&
+          invalid_ray_point.GetError().HasCode("gameplay.runtime_bridge.invalid_runtime_observation"));
     backend.ray_hits = {{body, RuntimeVector3{2.0f, 0.0f, 0.0f}, RuntimeVector3{-1.0f, 0.0f, 0.0f},
                          std::numeric_limits<float>::infinity()}};
     const auto invalid_ray_distance = bridge.Raycast(RuntimeRayQuery{});
-    CHECK(!invalid_ray_distance && invalid_ray_distance.GetError().HasCode("gameplay.runtime_bridge.invalid_runtime_observation"));
+    CHECK(!invalid_ray_distance &&
+          invalid_ray_distance.GetError().HasCode("gameplay.runtime_bridge.invalid_runtime_observation"));
     backend.ray_hits = {{body, RuntimeVector3{2.0f, 0.0f, 0.0f}, RuntimeVector3{-1.0f, 0.0f, 0.0f}, 2.0f}};
     backend.overlap_hits = {body};
     const auto overlap = bridge.Overlap(RuntimeOverlapQuery{{{0, 0, 0}, {1, 1, 1}}});
-    CHECK(overlap && overlap.Value().size() == 1 && overlap.Value()[0].object == object && overlap.Value()[0].part == part);
+    CHECK(overlap && overlap.Value().size() == 1 && overlap.Value()[0].object == object &&
+          overlap.Value()[0].part == part);
 
-    const auto path_handle = bridge.RequestPath(RuntimeNavigationPathQuery{{0, 0, 0}, {1000, 0, 0}, RuntimeRegionHandle{1}, 6});
+    const auto path_handle =
+        bridge.RequestPath(RuntimeNavigationPathQuery{{0, 0, 0}, {1000, 0, 0}, RuntimeRegionHandle{1}, 6});
     CHECK(path_handle && path_handle.Value().IsValid());
     const auto path_state = bridge.GetPathState(path_handle.Value());
     CHECK(path_state && path_state.Value() == RuntimeNavigationPathState::Completed);
@@ -412,7 +402,8 @@ int main()
     CHECK(dead_bridge.Process().failed == 1);
     CHECK(dead_bridge.Process().failed == 1);
     auto dead_records = dead_bridge.ReconciliationRequests();
-    CHECK(dead_records.size() == 1 && dead_records.front().attempts == 2 && dead_records.front().last_error.has_value());
+    CHECK(dead_records.size() == 1 && dead_records.front().attempts == 2 &&
+          dead_records.front().last_error.has_value());
     CHECK(!dead_bridge.ForgetEnvironmentProjection(dead_environment.region));
 
     // A newer successful revision wins; retrying the older reconciliation record must not project stale state.

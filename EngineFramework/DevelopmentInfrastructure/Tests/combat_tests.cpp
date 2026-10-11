@@ -10,16 +10,13 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::combat;
 
-namespace
-{
-GameplayObjectRef Obj(const char* name)
-{
+namespace {
+GameplayObjectRef Obj(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
 }
 
 DamageRequest Request(GameplayObjectRef attacker, GameplayObjectRef target, DamageTypeId damage,
-                      DamageProfileId profile, std::int64_t amount, std::int64_t now)
-{
+                      DamageProfileId profile, std::int64_t amount, std::int64_t now) {
     DamageRequest req;
     req.source = attacker;
     req.instigator = attacker;
@@ -33,8 +30,7 @@ DamageRequest Request(GameplayObjectRef attacker, GameplayObjectRef target, Dama
 }
 } // namespace
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     if (argc == 2 && std::string_view(argv[1]) == "--auditor-combat") {
         using namespace epidemic::auditor::shadow;
@@ -46,29 +42,36 @@ int main(int argc, char** argv)
         health.default_maximum_micro = 100;
         const auto hp = owner.RegisterResource(health);
         const auto damage = owner.RegisterDamageType("auditor.damage");
-        if (!hp || !damage) return 2;
+        if (!hp || !damage)
+            return 2;
         DamageProfile profile;
         profile.canonical_name = "auditor.damage.health";
         profile.target_resource = hp.Value();
         profile.can_miss = profile.can_evade = profile.can_block = profile.can_critical = false;
         const auto registered = owner.RegisterDamageProfile(profile);
-        if (!registered) return 3;
+        if (!registered)
+            return 3;
         owner.Freeze();
         const auto target = Obj("auditor.target");
-        if (!owner.RegisterCombatant(target, {{hp.Value(), 100, 100}})) return 4;
+        if (!owner.RegisterCombatant(target, {{hp.Value(), 100, 100}}))
+            return 4;
         const auto transition = identity();
         flow("state.request", transition.data());
-        const auto plan = owner.PrepareDamage(Request(Obj("auditor.attacker"), target, damage.Value(), registered.Value(), 10, 1));
-        if (!plan) return 5;
+        const auto plan =
+            owner.PrepareDamage(Request(Obj("auditor.attacker"), target, damage.Value(), registered.Value(), 10, 1));
+        if (!plan)
+            return 5;
         const auto committed = owner.CommitDamage(plan.Value(), {1});
-        if (!committed || committed.Value().resource_after_micro != 90) return 6;
+        if (!committed || committed.Value().resource_after_micro != 90)
+            return 6;
         flow("state.change", transition.data());
         scenario("scenario.end", "combat-scenario");
         action("action.end", "combat-action");
         return 0;
     }
 #else
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 #endif
     CombatService s;
 
@@ -122,7 +125,8 @@ int main(int argc, char** argv)
 
     const auto attacker = Obj("a");
     const auto target = Obj("b");
-    if (!s.RegisterCombatant(target, {{hp.Value(), 100'000'000, 100'000'000}, {posture_id.Value(), 10'000'000, 10'000'000}}))
+    if (!s.RegisterCombatant(target,
+                             {{hp.Value(), 100'000'000, 100'000'000}, {posture_id.Value(), 10'000'000, 10'000'000}}))
         return 7;
 
     auto req = Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 10);
@@ -134,10 +138,12 @@ int main(int argc, char** argv)
     if (!result || result.Value().resource_after_micro != 80'000'000)
         return 9;
 
-    auto superseded_first = s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
+    auto superseded_first =
+        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
     if (!superseded_first)
         return 10;
-    auto superseding_second = s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
+    auto superseding_second =
+        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
     if (!superseding_second)
         return 11;
     auto superseded_commit = s.CommitDamage(superseded_first.Value(), {20});
@@ -147,7 +153,8 @@ int main(int argc, char** argv)
     if (!superseding_commit)
         return 13;
 
-    auto stale = s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 30));
+    auto stale =
+        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 30));
     if (!stale)
         return 14;
     if (!s.ModifyResource(target, hp.Value(), 1'000'000))
@@ -156,14 +163,16 @@ int main(int argc, char** argv)
     if (rejected || !rejected.GetError().HasCode("gameplay.stale_revision"))
         return 16;
 
-    auto expiring = s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 40));
+    auto expiring =
+        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 40));
     if (!expiring)
         return 17;
     auto expired_commit = s.CommitDamage(expiring.Value(), {45});
     if (expired_commit || !expired_commit.GetError().HasCode("gameplay.combat.plan_expired"))
         return 18;
 
-    auto cancellable = s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 50));
+    auto cancellable =
+        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 50));
     if (!cancellable || !s.CancelDamagePlan(cancellable.Value().id))
         return 19;
     auto cancelled_commit = s.CommitDamage(cancellable.Value(), {50});
@@ -174,8 +183,8 @@ int main(int argc, char** argv)
     if (!s.RegisterCombatant(downed_target,
                              {{hp.Value(), 100'000'000, 100'000'000}, {posture_id.Value(), 10'000'000, 10'000'000}}))
         return 21;
-    auto down_plan = s.PrepareDamage(
-        Request(attacker, downed_target, physical.Value(), posture_profile_id.Value(), 20'000'000, 60));
+    auto down_plan =
+        s.PrepareDamage(Request(attacker, downed_target, physical.Value(), posture_profile_id.Value(), 20'000'000, 60));
     if (!down_plan)
         return 22;
     auto down_result = s.CommitDamage(down_plan.Value(), {60});
@@ -191,8 +200,8 @@ int main(int argc, char** argv)
     if (!s.TransitionLifeState(downed_target, CombatLifeState::Alive))
         return 26;
 
-    auto kill_plan = s.PrepareDamage(
-        Request(attacker, downed_target, physical.Value(), health_profile_id.Value(), 100'000'000, 70));
+    auto kill_plan =
+        s.PrepareDamage(Request(attacker, downed_target, physical.Value(), health_profile_id.Value(), 100'000'000, 70));
     if (!kill_plan)
         return 27;
     auto kill_result = s.CommitDamage(kill_plan.Value(), {70});
@@ -205,8 +214,8 @@ int main(int argc, char** argv)
     const auto expiry_target = Obj("expiry");
     if (!s.RegisterCombatant(expiry_target, {{hp.Value(), 100'000'000, 100'000'000}}))
         return 30;
-    auto abandoned = s.PrepareDamage(
-        Request(attacker, expiry_target, physical.Value(), health_profile_id.Value(), 1'000'000, 80));
+    auto abandoned =
+        s.PrepareDamage(Request(attacker, expiry_target, physical.Value(), health_profile_id.Value(), 1'000'000, 80));
     if (!abandoned || s.ExpirePreparedPlans({84}) != 0 || s.ExpirePreparedPlans({85}) != 1)
         return 31;
 
@@ -236,7 +245,6 @@ int main(int argc, char** argv)
         before_invalid.Value().current_micro != after_invalid.Value().current_micro)
         return 36;
 
-
     // CMB-01/CMB-02/CMB-03: resource reservation is atomic, range-safe and release is idempotent.
     const auto reservation_before = restored.CaptureSnapshot();
     const auto resource_before_reservation = restored.GetResource(target, hp.Value());
@@ -245,16 +253,19 @@ int main(int argc, char** argv)
         return 37;
     const auto resource_after_reservation = restored.GetResource(target, hp.Value());
     if (!resource_before_reservation || !resource_after_reservation ||
-        resource_after_reservation.Value().current_micro != resource_before_reservation.Value().current_micro - 1'000'000)
+        resource_after_reservation.Value().current_micro !=
+            resource_before_reservation.Value().current_micro - 1'000'000)
         return 38;
     restored.ReleaseResourceReservation(resource_reservation.Value());
     const auto resource_after_release = restored.GetResource(target, hp.Value());
-    if (!resource_after_release || resource_after_release.Value().current_micro != resource_before_reservation.Value().current_micro ||
+    if (!resource_after_release ||
+        resource_after_release.Value().current_micro != resource_before_reservation.Value().current_micro ||
         restored.FindResourceReservation(resource_reservation.Value()) != nullptr)
         return 39;
     restored.ReleaseResourceReservation(resource_reservation.Value());
     const auto resource_after_second_release = restored.GetResource(target, hp.Value());
-    if (!resource_after_second_release || resource_after_second_release.Value().current_micro != resource_before_reservation.Value().current_micro)
+    if (!resource_after_second_release ||
+        resource_after_second_release.Value().current_micro != resource_before_reservation.Value().current_micro)
         return 40;
 
     const auto before_huge_reservation = restored.CaptureSnapshot();
@@ -267,11 +278,12 @@ int main(int argc, char** argv)
         return 42;
 
     // CMB-04/CMB-05: a failed replacement prepare cannot destroy the previously prepared plan.
-    auto preserved_plan = restored.PrepareDamage(
-        Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 150));
+    auto preserved_plan =
+        restored.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 150));
     if (!preserved_plan)
         return 43;
-    auto invalid_request = Request(attacker, target, physical.Value(), DamageProfileId::FromString("missing.profile"), 1'000'000, 150);
+    auto invalid_request =
+        Request(attacker, target, physical.Value(), DamageProfileId::FromString("missing.profile"), 1'000'000, 150);
     auto invalid_prepare = restored.PrepareDamage(invalid_request);
     if (invalid_prepare || !invalid_prepare.GetError().HasCode("gameplay.combat.damage_invalid"))
         return 44;
@@ -281,14 +293,17 @@ int main(int argc, char** argv)
     // CMB-07: revision exhaustion rejects the mutation without touching resource state.
     auto exhausted_snapshot = restored.CaptureSnapshot();
     auto exhausted_record = std::find_if(exhausted_snapshot.combatants.begin(), exhausted_snapshot.combatants.end(),
-                                         [&](const auto& record) { return record.subject == target; });
+                                         [&](const auto &record) {
+                                             return record.subject == target;
+                                         });
     if (exhausted_record == exhausted_snapshot.combatants.end())
         return 46;
     exhausted_record->revision = Revision{std::numeric_limits<std::uint64_t>::max()};
     CombatService revision_exhausted;
     if (!revision_exhausted.RegisterResource(health) || !revision_exhausted.RegisterResource(posture) ||
         !revision_exhausted.RegisterDamageType("game.damage.physical") ||
-        !revision_exhausted.RegisterDamageProfile(health_profile) || !revision_exhausted.RegisterDamageProfile(posture_profile) ||
+        !revision_exhausted.RegisterDamageProfile(health_profile) ||
+        !revision_exhausted.RegisterDamageProfile(posture_profile) ||
         !revision_exhausted.SetPreparePolicy({GameplayDuration{5}}))
         return 47;
     revision_exhausted.Freeze();
@@ -319,8 +334,7 @@ int main(int argc, char** argv)
     if (!ratio_service.SetResourceMaximum(ratio_subject, ratio_id.Value(), kMax - 1, true))
         return 52;
     const auto ratio_state = ratio_service.GetResource(ratio_subject, ratio_id.Value());
-    if (!ratio_state || ratio_state.Value().maximum_micro != kMax - 1 ||
-        ratio_state.Value().current_micro != kMax - 2)
+    if (!ratio_state || ratio_state.Value().maximum_micro != kMax - 1 || ratio_state.Value().current_micro != kMax - 2)
         return 53;
 
     // Cover normal, signed and zero-policy combinations allowed by the resource API.
@@ -400,7 +414,8 @@ int main(int argc, char** argv)
     if (!signed_ratio_service.SetResourceMaximum(monotonic_subject, signed_id.Value(), kMax - 1, true))
         return 69;
     const auto monotonic_after = signed_ratio_service.GetResource(monotonic_subject, signed_id.Value());
-    if (!monotonic_before || !monotonic_after || monotonic_after.Value().current_micro > monotonic_before.Value().current_micro)
+    if (!monotonic_before || !monotonic_after ||
+        monotonic_after.Value().current_micro > monotonic_before.Value().current_micro)
         return 70;
 
     (void)reservation_before;

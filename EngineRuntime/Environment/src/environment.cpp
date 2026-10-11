@@ -2,10 +2,8 @@
 
 #include "environment_runtime_impl.h"
 
-namespace epidemic::runtime
-{
-foundation::Result<EnvironmentServices> CreateEnvironmentServices(const EnvironmentOptions& options)
-{
+namespace epidemic::runtime {
+foundation::Result<EnvironmentServices> CreateEnvironmentServices(const EnvironmentOptions &options) {
     auto runtime = std::make_shared<EnvironmentRuntime>();
     runtime->SetUpdatePolicy(options.update_policy);
 

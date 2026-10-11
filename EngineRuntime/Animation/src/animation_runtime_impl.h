@@ -9,17 +9,15 @@
 #include <vector>
 #include <string_view>
 
-namespace epidemic::runtime::animation
-{
+namespace epidemic::runtime::animation {
 // Internal in-memory Animation runtime. It verifies resource/instance lifecycle and event flow without evaluating real poses.
 
 class AnimationRuntime final : public ISkeletonRegistry,
                                public IAnimationClipRegistry,
                                public IAnimationRuntime,
                                public IPoseProvider,
-                               public IAnimationEventBuffer
-{
-public:
+                               public IAnimationEventBuffer {
+  public:
     explicit AnimationRuntime(AnimationOptions options, AnimationDependencies dependencies = {});
 
     [[nodiscard]] foundation::Result<void> RegisterSkeleton(SkeletonDesc desc) override;
@@ -29,12 +27,13 @@ public:
     [[nodiscard]] foundation::Result<void> Freeze() override;
     [[nodiscard]] bool IsFrozen() const noexcept override;
 
-    [[nodiscard]] foundation::Result<AnimatorHandle> CreateAnimatorHandle(const AnimatorDesc& desc) override;
+    [[nodiscard]] foundation::Result<AnimatorHandle> CreateAnimatorHandle(const AnimatorDesc &desc) override;
     [[nodiscard]] foundation::Result<void> DestroyAnimator(AnimatorHandle handle) override;
-    [[nodiscard]] foundation::Result<void> Play(const AnimationPlaybackCommand& command) override;
+    [[nodiscard]] foundation::Result<void> Play(const AnimationPlaybackCommand &command) override;
     [[nodiscard]] foundation::Result<void> Pause(AnimatorHandle handle) override;
     [[nodiscard]] foundation::Result<void> Stop(AnimatorHandle handle) override;
-    [[nodiscard]] foundation::Result<void> Crossfade(AnimatorHandle handle, AnimationClipId clip, FrameDuration duration) override;
+    [[nodiscard]] foundation::Result<void> Crossfade(AnimatorHandle handle, AnimationClipId clip,
+                                                     FrameDuration duration) override;
     [[nodiscard]] foundation::Result<std::size_t> Tick(FrameDuration delta, std::size_t max_animators) override;
     [[nodiscard]] foundation::Result<AnimatorSnapshot> GetAnimatorSnapshot(AnimatorHandle handle) const override;
     [[nodiscard]] foundation::Result<void> SetLod(AnimatorHandle handle, AnimationLodLevel lod) override;
@@ -49,11 +48,11 @@ public:
     void SetFractionalMicrosecondsForTesting(AnimatorHandle handle, double fractional_microseconds) noexcept;
     [[nodiscard]] double FractionalMicrosecondsForTesting(AnimatorHandle handle) const noexcept;
     [[nodiscard]] bool HasExactFractionalMicrosecondsForTesting(AnimatorHandle handle) const noexcept;
-    [[nodiscard]] std::array<std::uint64_t, 17> ExactFractionalMicrosecondsForTesting(AnimatorHandle handle) const noexcept;
+    [[nodiscard]] std::array<std::uint64_t, 17>
+    ExactFractionalMicrosecondsForTesting(AnimatorHandle handle) const noexcept;
 
-private:
-    struct AnimatorRecord
-    {
+  private:
+    struct AnimatorRecord {
         AnimatorDesc desc{};
         AnimatorHandle handle{};
         AnimatorLifecycle lifecycle = AnimatorLifecycle::Ready;
@@ -69,19 +68,19 @@ private:
 
     [[nodiscard]] foundation::Result<SkeletonDesc> ResolveSkeleton(SkeletonId id);
     [[nodiscard]] foundation::Result<AnimationClipDesc> ResolveClip(AnimationClipId id);
-    [[nodiscard]] static AnimatorSnapshot ToSnapshot(const AnimatorRecord& animator) noexcept;
-    [[nodiscard]] AnimatorRecord* FindAnimator(AnimatorHandle handle);
-    [[nodiscard]] const AnimatorRecord* FindAnimator(AnimatorHandle handle) const;
+    [[nodiscard]] static AnimatorSnapshot ToSnapshot(const AnimatorRecord &animator) noexcept;
+    [[nodiscard]] AnimatorRecord *FindAnimator(AnimatorHandle handle);
+    [[nodiscard]] const AnimatorRecord *FindAnimator(AnimatorHandle handle) const;
     [[nodiscard]] std::vector<AnimatorInstanceId> BuildAnimatorWorkList() const;
-    [[nodiscard]] PoseBuffer BuildPoseBuffer(const AnimatorRecord& animator) const;
-    [[nodiscard]] foundation::Result<PoseBuffer> EvaluatePose(const AnimatorRecord& animator);
+    [[nodiscard]] PoseBuffer BuildPoseBuffer(const AnimatorRecord &animator) const;
+    [[nodiscard]] foundation::Result<PoseBuffer> EvaluatePose(const AnimatorRecord &animator);
     [[nodiscard]] foundation::Result<void> PublishPose(std::shared_ptr<const PoseBuffer> pose);
-    [[nodiscard]] foundation::Result<void> AdvancePlayback(AnimatorRecord& animator, FrameDuration delta);
-    [[nodiscard]] foundation::Result<void> AdvanceCrossfade(AnimatorRecord& animator, FrameDuration delta);
+    [[nodiscard]] foundation::Result<void> AdvancePlayback(AnimatorRecord &animator, FrameDuration delta);
+    [[nodiscard]] foundation::Result<void> AdvanceCrossfade(AnimatorRecord &animator, FrameDuration delta);
     void QueueEvent(AnimatorInstanceId animator, std::string_view name, float time) noexcept;
-    [[nodiscard]] foundation::Result<std::uint64_t> NextRevision(const AnimatorRecord& animator) const;
-    [[nodiscard]] foundation::Result<void> ValidateSkeleton(const SkeletonDesc& desc) const;
-    [[nodiscard]] foundation::Result<void> ValidateClip(const AnimationClipDesc& desc) const;
+    [[nodiscard]] foundation::Result<std::uint64_t> NextRevision(const AnimatorRecord &animator) const;
+    [[nodiscard]] foundation::Result<void> ValidateSkeleton(const SkeletonDesc &desc) const;
+    [[nodiscard]] foundation::Result<void> ValidateClip(const AnimationClipDesc &desc) const;
 
     AnimationOptions options_{};
     AnimationDependencies dependencies_{};

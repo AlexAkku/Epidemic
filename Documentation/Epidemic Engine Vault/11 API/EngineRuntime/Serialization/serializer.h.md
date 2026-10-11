@@ -187,3 +187,50 @@ template <typename TObject>
 
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Foundation/string_id.h`, `Epidemic/Runtime/Serialization/archive_reader.h`, `Epidemic/Runtime/Serialization/archive_writer.h`, `Epidemic/Runtime/Serialization/schema_version.h`, `Epidemic/Runtime/Serialization/serialization_error.h`.
+
+### Состав типов и операции
+
+#### `ISerializer` (строка заголовка 34)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISerializer() = default;
+[[nodiscard]] virtual foundation::StringId GetTypeId() const = 0;
+[[nodiscard]] virtual SchemaVersion GetSchemaVersion() const = 0;
+[[nodiscard]] virtual std::type_index GetCppType() const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `GetTypeId` | `InMemoryArchiveReader::GetTypeId` | `EngineRuntime/Serialization/src/in_memory_archive.cpp:423` |
+| `GetSchemaVersion` | `InMemoryArchiveReader::GetSchemaVersion` | `EngineRuntime/Serialization/src/in_memory_archive.cpp:424` |
+| `GetTypeId` | `SerializedDocument::GetTypeId` | `EngineRuntime/Serialization/src/serialization.cpp:16` |
+| `GetSchemaVersion` | `SerializedDocument::GetSchemaVersion` | `EngineRuntime/Serialization/src/serialization.cpp:21` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `GetTypeId`: `EngineRuntime/Serialization/tests/serialization_tests.cpp:258`
+- `GetSchemaVersion`: `EngineRuntime/Serialization/tests/serialization_tests.cpp:885`
+- `GetCppType`: `EngineRuntime/Serialization/tests/serialization_tests.cpp:1471`
+

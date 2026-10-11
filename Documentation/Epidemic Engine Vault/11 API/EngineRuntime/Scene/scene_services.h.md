@@ -51,3 +51,31 @@ struct SceneServices
 [[nodiscard]] foundation::Result<SceneServices> CreateSceneServices(const SceneOptions& options = {});
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Scene/scene_node_registry.h`, `Epidemic/Runtime/Scene/scene_query.h`, `Epidemic/Runtime/Scene/spatial_index.h`, `Epidemic/Runtime/Scene/transform_registry.h`.
+
+### Состав типов и операции
+
+#### `SceneServices` (строка заголовка 17)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<ISceneNodeRegistry> nodes`
+- `std::shared_ptr<ITransformRegistry> transforms`
+- `std::shared_ptr<ISpatialIndex> spatial`
+- `std::shared_ptr<ISceneQuery> queries`
+- `std::shared_ptr<ISceneSnapshotProvider> snapshots`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

@@ -232,3 +232,73 @@ struct Sphere
 }
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `Vec3` (строка заголовка 13)
+
+Публичные поля и значения по умолчанию:
+
+- `float x = 0.0f`
+- `float y = 0.0f`
+- `float z = 0.0f`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const Vec3&) const noexcept = default;
+```
+
+#### `Quat` (строка заголовка 22)
+
+Публичные поля и значения по умолчанию:
+
+- `float x = 0.0f`
+- `float y = 0.0f`
+- `float z = 0.0f`
+- `float w = 1.0f`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const Quat&) const noexcept = default;
+```
+
+#### `Transform` (строка заголовка 34)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const Transform&) const noexcept = default;
+```
+
+#### `Aabb` (строка заголовка 43)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const Aabb&) const noexcept = default;
+```
+
+#### `Sphere` (строка заголовка 51)
+
+Публичные поля и значения по умолчанию:
+
+- `float radius = 0.0f`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const Sphere&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

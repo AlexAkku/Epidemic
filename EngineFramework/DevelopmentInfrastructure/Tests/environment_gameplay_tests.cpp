@@ -6,19 +6,21 @@
 #include <limits>
 #include <stdexcept>
 
-#define CHECK(expr) do { if (!(expr)) std::abort(); } while (false)
+#define CHECK(expr)                                                                                                    \
+    do {                                                                                                               \
+        if (!(expr))                                                                                                   \
+            std::abort();                                                                                              \
+    } while (false)
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::environment;
 
-constexpr EnvironmentValueMask Field(EnvironmentValueField field)
-{
+constexpr EnvironmentValueMask Field(EnvironmentValueField field) {
     return static_cast<EnvironmentValueMask>(field);
 }
 
 static EnvironmentService MakeService(EnvironmentLayerTypeId weather, EnvironmentLayerTypeId fog,
-                                      EnvironmentHazardTypeId toxic)
-{
+                                      EnvironmentHazardTypeId toxic) {
     EnvironmentService environment;
     CHECK(environment.RegisterLayerType(weather, "game.weather"));
     CHECK(environment.RegisterLayerType(fog, "game.fog"));
@@ -26,8 +28,7 @@ static EnvironmentService MakeService(EnvironmentLayerTypeId weather, Environmen
     return environment;
 }
 
-int main()
-{
+int main() {
     const auto weather = EnvironmentLayerTypeId::FromString("game.weather");
     const auto fog = EnvironmentLayerTypeId::FromString("game.fog");
     const auto toxic = EnvironmentHazardTypeId::FromString("game.hazard.toxic");
@@ -102,10 +103,10 @@ int main()
     CHECK(at_expiration);
     CHECK(at_expiration.Value().values.precipitation == 0 && at_expiration.Value().values.humidity == 500);
 
-    const auto city = GameplayObjectRef{GameplayDomainId::FromString("framework.world"),
-                                        GameplayObjectId::FromString("scope.city")};
-    const auto room = GameplayObjectRef{GameplayDomainId::FromString("framework.world"),
-                                        GameplayObjectId::FromString("scope.room")};
+    const auto city =
+        GameplayObjectRef{GameplayDomainId::FromString("framework.world"), GameplayObjectId::FromString("scope.city")};
+    const auto room =
+        GameplayObjectRef{GameplayDomainId::FromString("framework.world"), GameplayObjectId::FromString("scope.room")};
     EnvironmentLayer city_layer;
     city_layer.type = weather;
     city_layer.area_ref = city;
@@ -211,13 +212,12 @@ int main()
     // Custom blend failures, invalid outputs and C++ exceptions are returned as controlled failures.
     const auto custom_id = EnvironmentBlendHandlerId::FromString("game.blend.custom");
     EnvironmentService custom = MakeService(weather, fog, toxic);
-    CHECK(custom.RegisterBlendHandler(
-        custom_id, "game.blend.custom",
-        [](const EnvironmentValues &, const EnvironmentValues &) {
-            EnvironmentValues values;
-            values.humidity = kEnvironmentOne + 1;
-            return epidemic::foundation::Result<EnvironmentValues>::Success(values);
-        }));
+    CHECK(custom.RegisterBlendHandler(custom_id, "game.blend.custom",
+                                      [](const EnvironmentValues &, const EnvironmentValues &) {
+                                          EnvironmentValues values;
+                                          values.humidity = kEnvironmentOne + 1;
+                                          return epidemic::foundation::Result<EnvironmentValues>::Success(values);
+                                      }));
     custom.Freeze();
     EnvironmentLayer custom_layer;
     custom_layer.type = weather;
@@ -253,7 +253,8 @@ int main()
     CHECK(restored.RestoreSnapshot(snapshot));
     CHECK(restored.GetLayer(base_id.Value()).has_value());
     CHECK(restored.ReadChangesSince(pre_restore_cursor).snapshot_required);
-    CHECK(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required);
+    CHECK(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required);
     EnvironmentLayer epoch_layer;
     epoch_layer.type = weather;
     CHECK(restored.AddLayer(epoch_layer));
@@ -278,8 +279,7 @@ int main()
     // Journal is bounded and reports when a consumer fell behind retention.
     EnvironmentService journal = MakeService(weather, fog, toxic);
     journal.Freeze();
-    for (std::size_t i = 0; i < 5000; ++i)
-    {
+    for (std::size_t i = 0; i < 5000; ++i) {
         EnvironmentLayer layer;
         layer.type = weather;
         const auto id = journal.AddLayer(layer);
@@ -290,15 +290,16 @@ int main()
     CHECK(diagnostics.changes <= 4096);
     const auto stale_batch = journal.ReadChangesSince(ChangeCursor{});
     CHECK(stale_batch.snapshot_required);
-    CHECK(journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required);
+    CHECK(journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required);
     const auto current_batch = journal.ReadChangesSince(journal.LatestChangeCursor());
     CHECK(!current_batch.snapshot_required && current_batch.changes.empty());
 
     // Goal 4: module-local restore fault seam replaces process-global allocation override.
     const auto restore_before = restored.CaptureSnapshot();
     const auto restore_before_diag = restored.GetDiagnostics();
-    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit})
-    {
+    for (const auto fault :
+         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         CHECK(!restored.RestoreSnapshot(restore_before));
         const auto restore_after = restored.CaptureSnapshot();

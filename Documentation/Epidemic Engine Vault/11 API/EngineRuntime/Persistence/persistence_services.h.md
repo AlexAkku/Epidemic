@@ -51,3 +51,34 @@ struct PersistenceServices
 [[nodiscard]] foundation::Result<PersistenceServices> CreatePersistenceServices(const PersistenceOptions& options = {});
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Persistence/persistence_backend.h`, `Epidemic/Runtime/Persistence/persistence_store.h`.
+
+### Состав типов и операции
+
+#### `PersistenceOptions` (строка заголовка 13)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<IPersistenceBackend> backend`
+
+#### `PersistenceServices` (строка заголовка 20)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<IPersistenceStore> store`
+- `std::shared_ptr<IPersistenceQuery> query`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

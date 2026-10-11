@@ -331,3 +331,321 @@ template <> struct hash<epidemic::gameplay::entities::EntityArchetypeId> { [[nod
 template <> struct hash<epidemic::gameplay::entities::EntityPartId> { [[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityPartId id) const noexcept { return epidemic::gameplay::entities::EntityPartIdHash{}(id); } };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `EntityPersistencePolicy`: `Transient`
+- `EntityMaterializationPolicy`: `AbstractAllowed`, `PreferMaterialized`, `RequireMaterialized`
+- `EntityLifecycleState`: `Creating`, `Alive`, `Dormant`, `PendingDestroy`, `Destroyed`, `Removed`
+- `EntityMaterializationState`: `Abstract`, `Materializing`, `Materialized`, `Dematerializing`
+- `EntityDestroyReason`: `Destroyed`, `Removed`, `Consumed`, `Expired`, `Converted`, `OwnerRequest`
+- `EntityChangeKind`: `Created`, `Activated`, `Deactivated`, `DestroyRequested`, `Destroyed`, `Removed`, `Converted`, `MaterializationChanged`, `TagAdded`, `TagRemoved`
+
+### Состав типов и операции
+
+#### `EntityId` (строка заголовка 16)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr EntityId FromRaw(std::uint64_t high, std::uint64_t low) noexcept;
+[[nodiscard]] static constexpr EntityId FromString(std::string_view value) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t High() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Low() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EntityId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EntityId&) const noexcept = default;
+```
+
+#### `EntityArchetypeId` (строка заголовка 29)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr EntityArchetypeId FromString(std::string_view value) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EntityArchetypeId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EntityArchetypeId&) const noexcept = default;
+```
+
+#### `EntityPartId` (строка заголовка 40)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr EntityPartId FromString(std::string_view value) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EntityPartId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EntityPartId&) const noexcept = default;
+```
+
+#### `EntityPartRef` (строка заголовка 51)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EntityPartRef&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EntityPartRef&) const noexcept = default;
+```
+
+#### `EntityIdHash` (строка заголовка 61)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const EntityId& id) const noexcept;
+```
+
+#### `EntityArchetypeIdHash` (строка заголовка 62)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(EntityArchetypeId id) const noexcept;
+```
+
+#### `EntityPartIdHash` (строка заголовка 63)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(EntityPartId id) const noexcept;
+```
+
+#### `EntityHandle` (строка заголовка 65)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t slot = 0`
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EntityHandle&) const noexcept = default;
+```
+
+#### `EntityPartDefinition` (строка заголовка 85)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+
+#### `EntityArchetypeDefinition` (строка заголовка 93)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `std::vector<EntityPartDefinition> parts`
+- `EntityPersistencePolicy persistence = EntityPersistencePolicy::Persistent`
+- `EntityMaterializationPolicy materialization = EntityMaterializationPolicy::AbstractAllowed`
+
+#### `EntityRecord` (строка заголовка 103)
+
+Публичные поля и значения по умолчанию:
+
+- `EntityLifecycleState lifecycle = EntityLifecycleState::Creating`
+- `EntityMaterializationState materialization = EntityMaterializationState::Abstract`
+- `GameplayTagSet instance_tags`
+- `EntityPersistencePolicy persistence = EntityPersistencePolicy::Persistent`
+
+#### `PendingEntityDestruction` (строка заголовка 114)
+
+Публичные поля и значения по умолчанию:
+
+- `EntityDestroyReason reason = EntityDestroyReason::Destroyed`
+
+#### `CreateEntityRequest` (строка заголовка 121)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet additional_tags`
+
+#### `EntityConversionPolicy` (строка заголовка 131)
+
+Публичные поля и значения по умолчанию:
+
+- `bool preserve_instance_tags = true`
+- `bool preserve_persistence = true`
+
+#### `EntityChange` (строка заголовка 147)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `EntityChangeKind kind = EntityChangeKind::Created`
+- `EntityLifecycleState previous_lifecycle = EntityLifecycleState::Creating`
+- `EntityLifecycleState lifecycle = EntityLifecycleState::Alive`
+- `EntityMaterializationState previous_materialization = EntityMaterializationState::Abstract`
+- `EntityMaterializationState materialization = EntityMaterializationState::Abstract`
+- `EntityDestroyReason destroy_reason = EntityDestroyReason::Destroyed`
+
+#### `EntityChangeBatch` (строка заголовка 164)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EntityChange> changes`
+- `bool snapshot_required = false`
+
+#### `EntitySnapshot` (строка заголовка 172)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EntityRecord> records`
+- `std::vector<PendingEntityDestruction> pending_destruction`
+- `std::uint64_t change_epoch = 1`
+
+#### `EntitiesDiagnostics` (строка заголовка 181)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t entity_count = 0`
+- `std::uint64_t persistent_entities = 0`
+- `std::uint64_t abstract_entities = 0`
+- `std::uint64_t materialized_entities = 0`
+- `std::uint64_t pending_destruction = 0`
+- `std::uint64_t creates = 0`
+- `std::uint64_t destroys = 0`
+- `std::uint64_t invalid_handle_lookups = 0`
+
+#### `EntityService` (строка заголовка 193)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<EntityArchetypeId, EntityArchetypeDefinition, EntityArchetypeIdHash> archety`, `std::vector<Slot> slots_`, `std::vector<std::uint32_t> free_slots_`, `std::unordered_map<EntityId, std::uint32_t, EntityIdHash> id_to_slot_`, `std::vector<EntityId> pending_destroy_`, `std::unordered_map<EntityId, EntityDestroyReason, EntityIdHash> pending_destroy_reasons_`, `std::unordered_map<EntityId, GameplayContext, EntityIdHash> pending_destroy_contexts_`, `MonotonicIdGenerator<GameplayObjectId> ids_`, `bool frozen_ = false`.
+
+Публичные сигнатуры операций:
+
+```cpp
+EntityService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] static constexpr GameplayObjectRef ToGameplayObjectRef(EntityId id) noexcept;
+[[nodiscard]] static constexpr EntityId FromGameplayObjectRef(GameplayObjectRef ref) noexcept;
+[[nodiscard]] static constexpr GameplayObjectPartRef ToGameplayObjectPartRef(EntityPartRef ref) noexcept;
+[[nodiscard]] static constexpr EntityPartRef FromGameplayObjectPartRef(GameplayObjectPartRef ref) noexcept;
+[[nodiscard]] foundation::Result<EntityArchetypeId> RegisterArchetype(EntityArchetypeDefinition definition);
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] const EntityArchetypeDefinition* FindArchetype(EntityArchetypeId id) const noexcept;
+[[nodiscard]] const EntityPartDefinition* FindPartDefinition(EntityArchetypeId archetype, EntityPartId part) const noexcept;
+runtime materialization is coordinated by RuntimeBridge/integration code. [[nodiscard]] std::optional<EntityMaterializationPolicy> MaterializationPolicyOf(EntityId id) const noexcept;
+[[nodiscard]] bool RequiresMaterialization(EntityId id) const noexcept;
+[[nodiscard]] std::optional<EntityPartRef> GetPart(EntityId entity, EntityPartId part) const;
+[[nodiscard]] std::vector<EntityPartRef> GetParts(EntityId entity) const;
+[[nodiscard]] std::vector<EntityPartRef> GetPartAncestors(EntityPartRef part) const;
+[[nodiscard]] foundation::Result<CreateEntityResult> Create(CreateEntityRequest request);
+[[nodiscard]] foundation::Result<std::vector<EntityRecord>> CommitPendingDestruction();
+[[nodiscard]] std::optional<EntityRecord> Find(EntityId id) const;
+[[nodiscard]] std::optional<EntityRecord> Resolve(EntityHandle handle) const;
+[[nodiscard]] EntityHandle HandleOf(EntityId id) const noexcept;
+[[nodiscard]] bool Exists(EntityId id) const noexcept;
+[[nodiscard]] std::vector<EntityRecord> AllEntities() const;
+[[nodiscard]] std::vector<EntityRecord> FindByArchetype(EntityArchetypeId archetype) const;
+[[nodiscard]] std::vector<EntityRecord> FindByTag(TagId tag, const GameplayTagRegistry& registry) const;
+[[nodiscard]] std::vector<EntityRecord> FindByLifecycle(EntityLifecycleState lifecycle) const;
+[[nodiscard]] std::vector<EntityRecord> FindByMaterialization(EntityMaterializationState state) const;
+[[nodiscard]] EntityChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesBefore(std::uint64_t sequence);
+[[nodiscard]] EntitySnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(EntitySnapshot snapshot);
+[[nodiscard]] EntitiesDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `Slot` (строка заголовка 267)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 1`
+- `bool occupied = false`
+
+#### `hash` (строка заголовка 304)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(const epidemic::gameplay::entities::EntityId& id) const noexcept;
+```
+
+#### `hash` (строка заголовка 305)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityArchetypeId id) const noexcept;
+```
+
+#### `hash` (строка заголовка 306)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::gameplay::entities::EntityPartId id) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `EntityService` | `EntityService::EntityService` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:80` |
+| `RegisterArchetype` | `EntityService::RegisterArchetype` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:128` |
+| `FindArchetype` | `EntityService::FindArchetype` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:143` |
+| `FindPartDefinition` | `EntityService::FindPartDefinition` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:149` |
+| `MaterializationPolicyOf` | `EntityService::MaterializationPolicyOf` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:157` |
+| `RequiresMaterialization` | `EntityService::RequiresMaterialization` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:165` |
+| `GetPart` | `EntityService::GetPart` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:171` |
+| `GetParts` | `EntityService::GetParts` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:178` |
+| `GetPartAncestors` | `EntityService::GetPartAncestors` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:190` |
+| `Create` | `EntityService::Create` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:259` |
+| `Find` | `EntityService::Find` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:342` |
+| `Resolve` | `EntityService::Resolve` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:362` |
+| `HandleOf` | `EntityService::HandleOf` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:373` |
+| `CommitPendingDestruction` | `EntityService::CommitPendingDestruction` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:446` |
+| `AllEntities` | `EntityService::AllEntities` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:591` |
+| `FindByArchetype` | `EntityService::FindByArchetype` | `EngineFramework/GameplayWorldStateOwners/Entities/src/entities.cpp:598` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterArchetype`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:21`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:23`
+- `Create`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:26`
+- `Find`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:30`
+- `Resolve`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:72`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:81`
+- `RequiresMaterialization`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:85`
+- `GetPart`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:86`
+- `GetPartAncestors`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:87`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:100`
+- `CommitPendingDestruction`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:113`
+- `CurrentRevision`: `EngineFramework/DevelopmentInfrastructure/Tests/entities_tests.cpp:120`
+

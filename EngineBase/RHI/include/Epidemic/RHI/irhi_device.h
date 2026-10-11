@@ -8,13 +8,11 @@
 #include <memory>
 #include <string_view>
 
-namespace epidemic::rhi
-{
+namespace epidemic::rhi {
 // This file defines the top-level RHI device abstraction used by EngineBase.
 // Devices create command contexts and swap chains while keeping backend selection behind composition.
 
-class IRhiDevice
-{
+class IRhiDevice {
   public:
     virtual ~IRhiDevice() = default;
 

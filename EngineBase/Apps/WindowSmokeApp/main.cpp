@@ -15,14 +15,10 @@
 #include <string_view>
 #include <utility>
 
-namespace
-{
+namespace {
 // Unwraps a Result value for smoke-app code and throws with the contained error message on failure.
-template <typename TValue>
-TValue RequireValue(epidemic::foundation::Result<TValue> result)
-{
-    if (!result.HasValue())
-    {
+template <typename TValue> TValue RequireValue(epidemic::foundation::Result<TValue> result) {
+    if (!result.HasValue()) {
         throw std::runtime_error(result.GetError().message);
     }
 
@@ -31,10 +27,8 @@ TValue RequireValue(epidemic::foundation::Result<TValue> result)
 } // namespace
 
 // Composes the baseline platform runtime, creates a window, and runs until a close request is observed.
-int main(int argc, char **argv)
-{
-    try
-    {
+int main(int argc, char **argv) {
+    try {
         const bool smoke_mode = argc == 2 && std::string_view(argv[1]) == "--smoke";
         epidemic::core::Application application;
         static_cast<void>(epidemic::enginebase::RegisterEngineBase(
@@ -47,13 +41,12 @@ int main(int argc, char **argv)
 
         const auto window = RequireValue(epidemic::enginebase::CreateMainWindow(
             application,
-            epidemic::platform::WindowCreateInfo{"Epidemic Window Smoke",
-                                                 static_cast<std::uint32_t>(configuration->GetDefaultWindowWidth().value_or(1280)),
-                                                 static_cast<std::uint32_t>(configuration->GetDefaultWindowHeight().value_or(720)),
-                                                 !smoke_mode}));
+            epidemic::platform::WindowCreateInfo{
+                "Epidemic Window Smoke",
+                static_cast<std::uint32_t>(configuration->GetDefaultWindowWidth().value_or(1280)),
+                static_cast<std::uint32_t>(configuration->GetDefaultWindowHeight().value_or(720)), !smoke_mode}));
 
-        if (smoke_mode)
-        {
+        if (smoke_mode) {
             application.SetFrameLimit(1);
         }
 
@@ -69,13 +62,10 @@ int main(int argc, char **argv)
         application.AddFramePhaseHandler(
             epidemic::core::FramePhase::PumpPlatformEvents,
             [&application, frame_platform_events, logger, window](const epidemic::core::FrameContext &) {
-                for (const auto &event : frame_platform_events->events)
-                {
-                    switch (event.type)
-                    {
+                for (const auto &event : frame_platform_events->events) {
+                    switch (event.type) {
                     case epidemic::platform::PlatformEventType::WindowCloseRequested:
-                        if (event.window_id == window->Id())
-                        {
+                        if (event.window_id == window->Id()) {
                             logger->Info("WindowSmokeApp", "Window", "Close requested");
                             window->Close();
                             application.RequestStop();
@@ -115,9 +105,7 @@ int main(int argc, char **argv)
         application.Run();
         application.Shutdown();
         return 0;
-    }
-    catch (const std::exception &exception)
-    {
+    } catch (const std::exception &exception) {
         std::cerr << "EpidemicWindowSmokeApp failed: " << exception.what() << '\n';
         return 1;
     }

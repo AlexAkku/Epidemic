@@ -5,14 +5,12 @@
 
 #include <memory>
 
-namespace epidemic::platform
-{
+namespace epidemic::platform {
 // This file declares the Win32 implementation of both IPlatformRuntime and IWindowSystem.
 // WindowsPlatformRuntime is currently a main-thread runtime: window creation, event pumping,
 // and destruction are expected to happen on the constructing thread.
 
-class WindowsPlatformRuntime final : public IPlatformRuntime, public IWindowSystem
-{
+class WindowsPlatformRuntime final : public IPlatformRuntime, public IWindowSystem {
   public:
     // Captures process information and initializes the internal Win32 runtime state.
     WindowsPlatformRuntime();

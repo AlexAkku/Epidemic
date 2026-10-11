@@ -4,14 +4,12 @@
 #include <Epidemic/Core/module_manifest.h>
 #include <Epidemic/Core/service_container.h>
 
-namespace epidemic::core
-{
+namespace epidemic::core {
 // This file defines the lifecycle contract for EngineBase modules.
 // Modules participate in composition through Bootstrap/Initialize/Tick/Shutdown and expose
 // static dependency metadata through ModuleManifest.
 
-class IModule
-{
+class IModule {
   public:
     virtual ~IModule() = default;
 

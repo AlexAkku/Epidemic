@@ -58,3 +58,38 @@ struct EnvironmentStateUpdate
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Environment/climate_profile.h`, `Epidemic/Runtime/Environment/season_state.h`, `Epidemic/Runtime/Environment/surface_state.h`, `Epidemic/Runtime/Environment/weather_state.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/runtime_time.h`.
+
+### Состав типов и операции
+
+#### `EnvironmentUpdateInput` (строка заголовка 16)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const EnvironmentUpdateInput&) const noexcept = default;
+```
+
+#### `EnvironmentStateUpdate` (строка заголовка 25)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t source_revision = 0`
+- `std::optional<WeatherState> weather`
+- `std::optional<SeasonState> season`
+- `std::optional<ClimateProfile> climate`
+- `std::vector<SurfaceState> surfaces`
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+

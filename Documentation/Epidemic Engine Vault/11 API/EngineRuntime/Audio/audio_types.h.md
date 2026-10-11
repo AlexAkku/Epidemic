@@ -313,3 +313,287 @@ template <> struct hash<epidemic::runtime::audio::MixerGroupId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/runtime_time.h`, `Epidemic/Runtime/Foundation/spatial.h`, `Epidemic/Foundation/result.h`.
+
+### Перечисления и допустимые категории
+
+- `AudioEventSpace`: `NonSpatial`, `WorldPosition`
+- `AudioEventOverflowPolicy`: `DropNewest`, `DropOldest`, `FailSubmit`
+- `SoundState`: `Missing`, `Loading`, `Ready`, `Failed`
+- `EmitterState`: `Stopped`, `Playing`, `Paused`, `FadingIn`, `FadingOut`, `Virtualized`, `Destroyed`
+- `MixerFadeState`: `Stable`, `FadingIn`, `FadingOut`
+- `AudioClipStorage`: `InMemoryEncoded`, `Streaming`
+
+### Состав типов и операции
+
+#### `SoundId` (строка заголовка 20)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SoundId&) const noexcept = default;
+```
+
+#### `AudioEmitterId` (строка заголовка 28)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AudioEmitterId&) const noexcept = default;
+```
+
+#### `AudioListenerId` (строка заголовка 36)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AudioListenerId&) const noexcept = default;
+```
+
+#### `BackendVoiceHandle` (строка заголовка 44)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const BackendVoiceHandle&) const noexcept = default;
+```
+
+#### `MixerGroupId` (строка заголовка 52)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const MixerGroupId&) const noexcept = default;
+```
+
+#### `AudioEmitterHandle` (строка заголовка 60)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AudioEmitterHandle&) const noexcept = default;
+```
+
+#### `AudioListenerHandle` (строка заголовка 69)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AudioListenerHandle&) const noexcept = default;
+```
+
+#### `SoundDesc` (строка заголовка 119)
+
+Публичные поля и значения по умолчанию:
+
+- `SoundState state = SoundState::Ready`
+
+#### `AudioClipPayload` (строка заголовка 125)
+
+Публичные поля и значения по умолчанию:
+
+- `SoundState state = SoundState::Ready`
+- `std::shared_ptr<const class IAudioClipResource> resource`
+
+#### `AudioClipFormat` (строка заголовка 138)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t channel_count = 0`
+- `std::uint32_t sample_rate_hz = 0`
+- `std::uint32_t bits_per_sample = 0`
+- `bool compressed = false`
+
+#### `IAudioClipResource` (строка заголовка 146)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAudioClipResource() = default;
+[[nodiscard]] virtual AudioClipFormat GetFormat() const = 0;
+[[nodiscard]] virtual AudioClipStorage GetStorage() const = 0;
+[[nodiscard]] virtual std::span<const std::byte> GetEncodedData() const = 0;
+[[nodiscard]] virtual std::shared_ptr<class IAudioStreamSource> GetStreamSource() const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `AudioStreamReadResult` (строка заголовка 157)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t bytes_read = 0`
+- `bool end_of_stream = false`
+
+#### `IAudioStreamSource` (строка заголовка 163)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAudioStreamSource() = default;
+[[nodiscard]] virtual std::uint64_t GetSizeBytes() const = 0;
+[[nodiscard]] virtual bool IsSeekable() const = 0;
+[[nodiscard]] virtual foundation::Result<AudioStreamReadResult> Read(std::uint64_t offset, std::span<std::byte> output) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `AudioBackendOptions` (строка заголовка 173)
+
+Публичные поля и значения по умолчанию:
+
+- `bool enabled = true`
+
+#### `AudioSpatialState` (строка заголовка 178)
+
+Публичные поля и значения по умолчанию:
+
+- `bool spatial = true`
+
+#### `AudioEmitterDesc` (строка заголовка 184)
+
+Публичные поля и значения по умолчанию:
+
+- `bool loop = false`
+- `float gain = 1.0f`
+- `bool spatial = true`
+
+#### `AudioVoiceDesc` (строка заголовка 195)
+
+Публичные поля и значения по умолчанию:
+
+- `bool loop = false`
+- `float initial_gain = 1.0f`
+
+#### `AudioEmitterSnapshot` (строка заголовка 204)
+
+Публичные поля и значения по умолчанию:
+
+- `EmitterState state = EmitterState::Destroyed`
+- `float fade_progress = 0.0f`
+- `std::uint64_t revision = 0`
+
+#### `AudioEvent` (строка заголовка 221)
+
+Публичные поля и значения по умолчанию:
+
+- `float volume = 1.0f`
+- `AudioEventSpace space = AudioEventSpace::WorldPosition`
+
+#### `MixerGroupState` (строка заголовка 229)
+
+Публичные поля и значения по умолчанию:
+
+- `float volume = 1.0f`
+- `MixerFadeState fade_state = MixerFadeState::Stable`
+- `float fade_progress = 0.0f`
+
+#### `AudioOptions` (строка заголовка 239)
+
+Публичные поля и значения по умолчанию:
+
+- `bool enable_mock_backend = true`
+- `std::uint32_t max_queued_events = 64`
+- `AudioEventOverflowPolicy event_overflow_policy = AudioEventOverflowPolicy::FailSubmit`
+- `bool allow_mixer_boost = false`
+
+#### `hash` (строка заголовка 250)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::audio::SoundId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 258)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::audio::AudioEmitterId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 266)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::audio::AudioListenerId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 274)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::audio::BackendVoiceHandle value) const noexcept;
+```
+
+#### `hash` (строка заголовка 282)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::audio::MixerGroupId value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Read`: `EngineRuntime/Audio/tests/audio_tests.cpp:759`
+

@@ -3,13 +3,11 @@
 #include <cstdint>
 #include <string_view>
 
-namespace epidemic::input
-{
+namespace epidemic::input {
 // This file defines the normalized mouse buttons recognized by EngineBase input code.
 // The enum includes Unknown so platform backends can reject unsupported raw button values explicitly.
 
-enum class MouseButton : std::uint8_t
-{
+enum class MouseButton : std::uint8_t {
     Left = 0,
     Right = 1,
     Middle = 2,
@@ -20,10 +18,8 @@ enum class MouseButton : std::uint8_t
 };
 
 // Returns true only for concrete supported buttons.
-[[nodiscard]] constexpr bool IsKnownMouseButton(MouseButton button) noexcept
-{
-    switch (button)
-    {
+[[nodiscard]] constexpr bool IsKnownMouseButton(MouseButton button) noexcept {
+    switch (button) {
     case MouseButton::Left:
     case MouseButton::Right:
     case MouseButton::Middle:
@@ -39,10 +35,8 @@ enum class MouseButton : std::uint8_t
 }
 
 // Converts a normalized mouse button to a stable diagnostic name.
-[[nodiscard]] inline std::string_view ToString(MouseButton button) noexcept
-{
-    switch (button)
-    {
+[[nodiscard]] inline std::string_view ToString(MouseButton button) noexcept {
+    switch (button) {
     case MouseButton::Left:
         return "Left";
     case MouseButton::Right:
@@ -61,4 +55,4 @@ enum class MouseButton : std::uint8_t
 
     return "Unknown";
 }
-} 
+}

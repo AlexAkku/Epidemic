@@ -16,89 +16,73 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::interaction
-{
-struct InteractionTypeId
-{
+namespace epidemic::gameplay::interaction {
+struct InteractionTypeId {
     TypeId value{};
-    static constexpr InteractionTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr InteractionTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const InteractionTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const InteractionTypeId &) const noexcept = default;
 };
-struct InteractionProviderId
-{
+struct InteractionProviderId {
     TypeId value{};
-    static constexpr InteractionProviderId FromString(std::string_view s) noexcept
-    {
+    static constexpr InteractionProviderId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const InteractionProviderId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const InteractionProviderId &) const noexcept = default;
 };
-struct InteractionExecutionId
-{
+struct InteractionExecutionId {
     GameplayObjectId value{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const InteractionExecutionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const InteractionExecutionId &) const noexcept = default;
 };
 using InteractionPriority = std::int32_t;
-struct InteractionPoint
-{
+struct InteractionPoint {
     std::int64_t x_mm = 0, y_mm = 0, z_mm = 0;
     [[nodiscard]] constexpr bool operator==(const InteractionPoint &) const noexcept = default;
 };
 
-enum class InteractionAvailability
-{
+enum class InteractionAvailability {
     Available,
     Unavailable,
     Hidden,
     Deferred
 };
-enum class InteractionExecutionMode
-{
+enum class InteractionExecutionMode {
     Instant,
     Timed,
     Continuous,
     Channelled
 };
-enum class InteractionMaterializationPolicy
-{
+enum class InteractionMaterializationPolicy {
     AbstractAllowed,
     RequiresMaterializedActor,
     RequiresMaterializedTarget,
     RequiresBothMaterialized
 };
-enum class InteractionSessionState
-{
+enum class InteractionSessionState {
     Preparing,
     Active,
     Completed,
     Cancelled,
     Failed
 };
-enum class InteractionPersistence
-{
+enum class InteractionPersistence {
     Transient,
     PersistentSession
 };
-struct InteractionDefinition
-{
+struct InteractionDefinition {
     InteractionTypeId type{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -109,8 +93,7 @@ struct InteractionDefinition
     ActionTypeId action{};
     std::vector<std::byte> payload;
 };
-struct InteractionContext
-{
+struct InteractionContext {
     GameplayObjectRef actor{};
     GameplayObjectRef target{};
     GameplayContext gameplay{};
@@ -119,8 +102,7 @@ struct InteractionContext
     Revision actor_revision{};
     Revision target_revision{};
 };
-struct InteractionCandidate
-{
+struct InteractionCandidate {
     InteractionTypeId type{};
     GameplayObjectRef actor{};
     GameplayObjectRef target{};
@@ -130,8 +112,7 @@ struct InteractionCandidate
     TypeId reason{};
     std::vector<std::byte> payload;
 };
-struct InteractionSession
-{
+struct InteractionSession {
     InteractionExecutionId id{};
     InteractionTypeId type{};
     GameplayObjectRef actor{};
@@ -146,35 +127,30 @@ struct InteractionSession
     std::optional<ScheduleId> completion_schedule{};
     Revision revision{};
 };
-struct InteractionPlan
-{
+struct InteractionPlan {
     InteractionCandidate candidate{};
     InteractionContext context{};
     Revision definition_revision{};
 };
-struct InteractionResult
-{
+struct InteractionResult {
     InteractionExecutionId execution{};
     InteractionSessionState state = InteractionSessionState::Failed;
     TypeId reason{};
 };
-struct InteractionSnapshot
-{
+struct InteractionSnapshot {
     std::vector<InteractionSession> sessions;
     MonotonicIdGenerator<GameplayObjectId>::Snapshot ids{};
     Revision revision{};
 
     std::uint64_t change_epoch = 1;
 };
-enum class InteractionChangeKind
-{
+enum class InteractionChangeKind {
     Started,
     Completed,
     Cancelled,
     Failed
 };
-struct InteractionChange
-{
+struct InteractionChange {
     std::uint64_t sequence = 0;
     InteractionChangeKind kind = InteractionChangeKind::Started;
     InteractionExecutionId execution{};
@@ -185,8 +161,7 @@ struct InteractionChange
     TypeId reason{};
     std::optional<ScheduleId> completion_schedule{};
 };
-struct InteractionChangeBatch
-{
+struct InteractionChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::vector<InteractionChange> changes;
@@ -195,22 +170,19 @@ struct InteractionChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct InteractionDiagnostics
-{
+struct InteractionDiagnostics {
     std::uint64_t candidate_requests = 0, candidates = 0, sessions = 0, completed = 0, cancelled = 0, failed = 0;
     std::uint64_t callback_failures = 0;
     std::uint64_t dropped_changes = 0;
 };
 
-class IInteractionProvider
-{
+class IInteractionProvider {
   public:
     virtual ~IInteractionProvider() = default;
     [[nodiscard]] virtual InteractionProviderId Id() const noexcept = 0;
     [[nodiscard]] virtual std::vector<InteractionCandidate> Collect(const InteractionContext &context) const = 0;
 };
-class IInteractionExecutor
-{
+class IInteractionExecutor {
   public:
     virtual ~IInteractionExecutor() = default;
     [[nodiscard]] virtual foundation::Result<void> Validate(const InteractionPlan &plan) const = 0;
@@ -218,38 +190,32 @@ class IInteractionExecutor
     [[nodiscard]] virtual foundation::Result<void> Commit(const InteractionPlan &plan,
                                                           InteractionExecutionId execution) noexcept = 0;
 };
-class IInteractionStateProvider
-{
+class IInteractionStateProvider {
   public:
     virtual ~IInteractionStateProvider() = default;
     [[nodiscard]] virtual bool IsMaterialized(GameplayObjectRef object) const = 0;
     [[nodiscard]] virtual Revision RevisionOf(GameplayObjectRef object) const = 0;
 };
 
-class InteractionService
-{
+class InteractionService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<InteractionService>;
 
   public:
     InteractionService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.interaction");
     }
     [[nodiscard]] foundation::Result<void> RegisterDefinition(InteractionDefinition definition);
     // Registered providers/executors are non-owning boot-time dependencies and must outlive this service.
     [[nodiscard]] foundation::Result<void> RegisterProvider(const IInteractionProvider &provider);
     [[nodiscard]] foundation::Result<void> RegisterExecutor(InteractionTypeId type, IInteractionExecutor &executor);
-    void SetStateProvider(const IInteractionStateProvider *provider) noexcept
-    {
+    void SetStateProvider(const IInteractionStateProvider *provider) noexcept {
         state_provider_ = provider;
     }
-    void Freeze() noexcept
-    {
+    void Freeze() noexcept {
         frozen_ = true;
     }
-    [[nodiscard]] bool IsFrozen() const noexcept
-    {
+    [[nodiscard]] bool IsFrozen() const noexcept {
         return frozen_;
     }
     [[nodiscard]] const InteractionDefinition *FindDefinition(InteractionTypeId type) const noexcept;
@@ -270,50 +236,45 @@ class InteractionService
     [[nodiscard]] std::vector<InteractionSession> SessionsRequiringSchedule() const;
     [[nodiscard]] InteractionSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(InteractionSnapshot snapshot);
-    private:
-        [[nodiscard]] std::vector<InteractionChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] InteractionChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] InteractionChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<InteractionChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] InteractionChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] InteractionChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    [[nodiscard]] Revision CurrentRevision() const noexcept { return revision_; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
+        return revision_;
+    }
     [[nodiscard]] InteractionDiagnostics GetDiagnostics() const noexcept;
 
   private:
-    struct TypeHash
-    {
-        std::size_t operator()(InteractionTypeId id) const noexcept
-        {
+    struct TypeHash {
+        std::size_t operator()(InteractionTypeId id) const noexcept {
             return std::hash<TypeId>{}(id.value);
         }
     };
-    struct ProviderHash
-    {
-        std::size_t operator()(InteractionProviderId id) const noexcept
-        {
+    struct ProviderHash {
+        std::size_t operator()(InteractionProviderId id) const noexcept {
             return std::hash<TypeId>{}(id.value);
         }
     };
-    struct ExecutionHash
-    {
-        std::size_t operator()(InteractionExecutionId id) const noexcept
-        {
+    struct ExecutionHash {
+        std::size_t operator()(InteractionExecutionId id) const noexcept {
             return std::hash<GameplayObjectId>{}(id.value);
         }
     };
@@ -339,4 +300,3 @@ class InteractionService
     std::uint64_t dropped_changes_ = 0;
 };
 } // namespace epidemic::gameplay::interaction
-

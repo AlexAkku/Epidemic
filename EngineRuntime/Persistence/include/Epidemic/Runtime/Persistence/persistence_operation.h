@@ -7,61 +7,45 @@
 
 #include <variant>
 
-namespace epidemic::runtime
-{
-struct UpsertObjectOperation
-{
+namespace epidemic::runtime {
+struct UpsertObjectOperation {
     PersistentObjectRecord record{};
 };
 
-struct AdminRemoveObjectOperation
-{
+struct AdminRemoveObjectOperation {
     PersistentObjectId id{};
 };
 
-struct DeleteObjectOperation
-{
+struct DeleteObjectOperation {
     TombstoneRecord tombstone{};
 };
 
-struct AdminAddTombstoneOperation
-{
+struct AdminAddTombstoneOperation {
     TombstoneRecord tombstone{};
 };
 
-struct UpsertLazyRuleOperation
-{
+struct UpsertLazyRuleOperation {
     LazyRuleRecord record{};
 };
 
-struct UpdateLazyRuleOperation
-{
+struct UpdateLazyRuleOperation {
     LazyRuleRecord record{};
 };
 
-struct RemoveLazyRuleOperation
-{
+struct RemoveLazyRuleOperation {
     LazyRuleId id{};
 };
 
-struct UpsertZoneOverrideOperation
-{
+struct UpsertZoneOverrideOperation {
     ZoneOverrideSnapshot snapshot{};
 };
 
-struct RemoveZoneOverrideOperation
-{
+struct RemoveZoneOverrideOperation {
     PersistenceLocation location{};
 };
 
-using PersistenceOperation = std::variant<
-    UpsertObjectOperation,
-    DeleteObjectOperation,
-    AdminRemoveObjectOperation,
-    AdminAddTombstoneOperation,
-    UpsertLazyRuleOperation,
-    UpdateLazyRuleOperation,
-    RemoveLazyRuleOperation,
-    UpsertZoneOverrideOperation,
-    RemoveZoneOverrideOperation>;
+using PersistenceOperation =
+    std::variant<UpsertObjectOperation, DeleteObjectOperation, AdminRemoveObjectOperation, AdminAddTombstoneOperation,
+                 UpsertLazyRuleOperation, UpdateLazyRuleOperation, RemoveLazyRuleOperation, UpsertZoneOverrideOperation,
+                 RemoveZoneOverrideOperation>;
 } // namespace epidemic::runtime

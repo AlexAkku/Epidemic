@@ -479,3 +479,325 @@ namespace epidemic::runtime
 } // namespace epidemic::runtime
 // END GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Foundation/path.h`, `Epidemic/Runtime/Animation/animation_runtime.h`, `Epidemic/Runtime/Assets/asset_services.h`, `Epidemic/Runtime/Audio/audio_runtime.h`, `Epidemic/Runtime/Environment/environment_services.h`, `Epidemic/Runtime/Navigation/navigation_runtime.h`, `Epidemic/Runtime/Persistence/persistence_services.h`, `Epidemic/Runtime/Physics/physics_scene.h`, `Epidemic/Runtime/Renderer/renderer_services.h`, `Epidemic/Runtime/Resources/resource_services.h`, `Epidemic/Runtime/Scene/scene_services.h`, `Epidemic/Runtime/Serialization/serialization_services.h`, `Epidemic/Runtime/Simulation/simulation_runtime.h`, `Epidemic/Runtime/Streaming/streaming_runtime.h`, `Epidemic/Runtime/Time/time_runtime.h`, `Epidemic/Runtime/World/world_services.h`, `Epidemic/Core/application.h`.
+
+### Перечисления и допустимые категории
+
+- `RuntimeProfile`: `Reference`, `Production`
+- `RuntimeAdapterKind`: `SceneToRenderer`, `ResourcesToRenderer`, `SceneToPhysics`, `SceneToAudio`, `ResourcesToAnimation`, `AnimationToRenderer`, `ResourcesToAudio`, `WorldResourcesPersistenceToStreaming`, `TimeToSimulation`, `SimulationToDomain`, `EnvironmentToNavigation`
+- `RuntimeUpdateStep`: `Time`, `MainThreadCommits`, `Resources`, `Streaming`, `Simulation`, `Navigation`, `Animation`, `Physics`, `SceneProjectionCommit`, `Audio`, `Renderer`, `DiagnosticsEvents`
+- `RuntimeShutdownStep`: `StopNewWork`, `ResolveSimulationWork`, `ShutdownStreaming`, `ShutdownAudio`, `ShutdownPhysics`, `FlushSceneProjections`, `ReleaseAnimationResources`, `ShutdownRenderer`, `ReleaseResourceAdapters`, `ClearNavigationAndEvents`, `DestroyAdapters`, `Complete`
+- `ShutdownProposalPolicy`: `CommitValid`, `DiscardWithReason`, `FailIfPending`
+
+### Состав типов и операции
+
+#### `RuntimeFoundationRegistration` (строка заголовка 42)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string name = "RuntimeFoundation"`
+
+#### `ChunkResourceRequirement` (строка заголовка 107)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t estimated_bytes = 0`
+
+#### `ChunkStreamingManifest` (строка заголовка 114)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ChunkResourceRequirement> resources`
+
+#### `IChunkStreamingManifestSource` (строка заголовка 121)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IChunkStreamingManifestSource() = default;
+[[nodiscard]] virtual foundation::Result<ChunkStreamingManifest> GetManifest(ChunkId chunk) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `PreparedChunkDataSnapshot` (строка заголовка 129)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t revision = 0`
+
+#### `IStreamingPreparedChunkDataQuery` (строка заголовка 137)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IStreamingPreparedChunkDataQuery() = default;
+[[nodiscard]] virtual foundation::Result<PreparedChunkDataSnapshot> GetPreparedData(ChunkId chunk) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IAnimationResourceMapper` (строка заголовка 146)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAnimationResourceMapper() = default;
+[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSkeleton(animation::SkeletonId id) const = 0;
+[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveClip(animation::AnimationClipId id) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IAnimationSkeletonResourcePayload` (строка заголовка 155)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAnimationSkeletonResourcePayload() = default;
+[[nodiscard]] virtual const animation::SkeletonDesc& GetSkeleton() const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IAnimationClipResourcePayload` (строка заголовка 162)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAnimationClipResourcePayload() = default;
+[[nodiscard]] virtual const animation::AnimationClipDesc& GetClip() const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IAudioResourceMapper` (строка заголовка 169)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAudioResourceMapper() = default;
+[[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSound(audio::SoundId id) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ISceneProjectionQueue` (строка заголовка 182)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISceneProjectionQueue() = default;
+[[nodiscard]] virtual foundation::Result<std::size_t> Flush() = 0;
+[[nodiscard]] virtual std::size_t PendingCount() const noexcept = 0;
+[[nodiscard]] virtual foundation::Result<void> DiscardPending() = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRuntimePoseCache` (строка заголовка 192)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimePoseCache() = default;
+[[nodiscard]] virtual foundation::Result<std::shared_ptr<const animation::PoseBuffer>> GetPose(animation::AnimatorHandle animator) const = 0;
+[[nodiscard]] virtual std::size_t PoseCount() const noexcept = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `RuntimeFrameEvents` (строка заголовка 208)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<physics::ContactEvent> physics_contacts`
+- `std::vector<animation::AnimationEvent> animation_events`
+- `std::vector<audio::AudioEvent> audio_events`
+- `std::vector<RuntimePhaseFailure> phase_failures`
+
+#### `IRuntimeEventSink` (строка заголовка 216)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimeEventSink() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRuntimeAdapterLifecycle` (строка заголовка 228)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimeAdapterLifecycle() = default;
+[[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IReferenceSimulationCommitLog` (строка заголовка 235)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IReferenceSimulationCommitLog() = default;
+[[nodiscard]] virtual std::span<const simulation::SimulationProposalBatch> CommittedBatches() const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `EngineRuntimeOptions` (строка заголовка 242)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProfile profile = RuntimeProfile::Reference`
+- `bool enable_assets = true`
+- `bool enable_serialization = true`
+- `bool enable_resources = true`
+- `bool enable_persistence = true`
+- `bool enable_time = true`
+- `bool enable_environment = true`
+- `bool enable_scene = true`
+- `bool enable_world = true`
+- `bool enable_streaming = true`
+- `bool enable_simulation = true`
+- `bool enable_navigation = true`
+- `bool enable_animation = true`
+- `bool enable_physics = true`
+- `bool enable_audio = true`
+- `bool enable_renderer = true`
+- `std::uint32_t max_simulation_commits_per_frame = 64`
+- `ShutdownProposalPolicy shutdown_proposal_policy = ShutdownProposalPolicy::DiscardWithReason`
+
+#### `RuntimeFrameInput` (строка заголовка 282)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_animators = 0`
+- `std::uint32_t max_simulation_commits = 0`
+
+#### `EngineRuntimeDependencies` (строка заголовка 292)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<IChunkStreamingManifestSource> chunk_manifests`
+- `std::shared_ptr<IAnimationResourceMapper> animation_resource_mapper`
+- `std::shared_ptr<IAudioResourceMapper> audio_resource_mapper`
+- `std::shared_ptr<IRuntimeEventSink> event_sink`
+
+#### `RuntimeTickResult` (строка заголовка 308)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<RuntimeUpdateStep> executed_steps`
+- `std::vector<RuntimePhaseFailure> failures`
+
+#### `RuntimeIntegrationServices` (строка заголовка 315)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<renderer::IRenderResourceBridge> render_resources`
+- `std::shared_ptr<renderer::IRenderSceneSource> render_scene`
+- `std::shared_ptr<renderer::IRenderPoseSource> render_pose_source`
+- `std::shared_ptr<renderer::IRenderCommandSink> render_commands`
+- `std::shared_ptr<physics::IPhysicsTransformSource> physics_transform_source`
+- `std::shared_ptr<physics::IPhysicsTransformSink> physics_transform_sink`
+- `std::shared_ptr<audio::IAudioTransformSource> audio_transforms`
+- `std::shared_ptr<ISceneProjectionQueue> scene_projections`
+- `std::shared_ptr<animation::IAnimationResourceSource> animation_resources`
+- `std::shared_ptr<animation::IAnimationPoseSink> animation_pose_sink`
+- `std::shared_ptr<animation::IAnimationEvaluatorBackend> animation_evaluator`
+- `std::shared_ptr<IRuntimePoseCache> animation_pose_cache`
+- `std::shared_ptr<audio::IAudioBackend> audio_backend`
+- `std::shared_ptr<audio::IAudioResourceSource> audio_resources`
+- `std::shared_ptr<streaming::IStreamingDataSource> streaming_data_source`
+- `std::shared_ptr<streaming::IStreamingCommitTarget> streaming_commit_target`
+- `std::shared_ptr<streaming::IStreamingPriorityProvider> streaming_priority_provider`
+- `std::shared_ptr<streaming::IResidencyController> streaming_residency_controller`
+- `std::shared_ptr<streaming::IStreamingWorldSource> streaming_world_source`
+- `std::shared_ptr<streaming::IStreamingPersistenceSource> streaming_persistence_source`
+- `std::shared_ptr<streaming::IStreamingResourceSource> streaming_resource_source`
+- `std::shared_ptr<IStreamingPreparedChunkDataQuery> streaming_prepared_data`
+- `std::shared_ptr<simulation::ISimulationClock> simulation_clock`
+- `std::shared_ptr<simulation::ISimulationCommitTarget> simulation_commit_target`
+- `std::shared_ptr<IReferenceSimulationCommitLog> simulation_commit_log`
+
+#### `IEngineRuntimeCoordinator` (строка заголовка 359)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IEngineRuntimeCoordinator() = default;
+[[nodiscard]] virtual foundation::Result<RuntimeTickResult> Tick(const RuntimeFrameInput& input) = 0;
+[[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;
+[[nodiscard]] virtual bool IsShutdownStarted() const noexcept = 0;
+[[nodiscard]] virtual bool IsShutdownComplete() const noexcept = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `EngineRuntimeServices` (строка заголовка 370)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProfile profile = RuntimeProfile::Reference`
+- `std::vector<std::string> registered_majors`
+- `std::shared_ptr<RuntimeFoundationRegistration> foundation`
+- `std::shared_ptr<AssetServices> assets`
+- `std::shared_ptr<SerializationServices> serialization`
+- `std::shared_ptr<ResourceServices> resources`
+- `std::shared_ptr<PersistenceServices> persistence`
+- `std::shared_ptr<TimeServices> time`
+- `std::shared_ptr<EnvironmentServices> environment`
+- `std::shared_ptr<SceneServices> scene`
+- `std::shared_ptr<WorldServices> world`
+- `std::shared_ptr<streaming::StreamingServices> streaming`
+- `std::shared_ptr<simulation::SimulationServices> simulation`
+- `std::shared_ptr<navigation::NavigationServices> navigation`
+- `std::shared_ptr<animation::AnimationServices> animation`
+- `std::shared_ptr<physics::PhysicsServices> physics`
+- `std::shared_ptr<audio::AudioServices> audio`
+- `std::shared_ptr<renderer::RendererServices> renderer`
+- `std::shared_ptr<RuntimeIntegrationServices> integrations`
+- `std::shared_ptr<IEngineRuntimeCoordinator> coordinator`
+
+#### `PreparedEngineRuntime` (строка заголовка 396)
+
+Публичные поля и значения по умолчанию:
+
+- `EngineRuntimeServices services`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

@@ -427,3 +427,300 @@ class LootService
 };
 } // namespace epidemic::gameplay::loot
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`, `Epidemic/GameFramework/SupportRandom/deterministic_random.h`.
+
+### Перечисления и допустимые категории
+
+- `LootRollPolicy`: `WeightedOne`, `WeightedMany`, `IndependentChance`, `GuaranteedAll`, `PickNWithoutReplacement`
+- `RewardDeliveryDisposition`: `Delivered`, `NoOp`, `Unavailable`, `Rejected`
+- `PendingRewardState`: `Generated`, `Available`, `Claimed`, `Expired`, `Cancelled`
+- `LootChangeKind`: `Generated`, `Discarded`, `Available`, `Claimed`, `Expired`, `Cancelled`, `DeliveryFailed`
+- `RewardClaimHistoryStatus`: `Unknown`, `Claimed`, `HistoryExpired`
+
+### Состав типов и операции
+
+#### `RewardTypeId` (строка заголовка 22)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr RewardTypeId FromString(std::string_view n) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const RewardTypeId &) const noexcept = default;
+```
+
+#### `RewardDefinitionId` (строка заголовка 35)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr RewardDefinitionId FromString(std::string_view n) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const RewardDefinitionId &) const noexcept = default;
+```
+
+#### `LootTableId` (строка заголовка 48)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr LootTableId FromString(std::string_view n) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const LootTableId &) const noexcept = default;
+```
+
+#### `LootEntryId` (строка заголовка 61)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr LootEntryId FromString(std::string_view n) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const LootEntryId &) const noexcept = default;
+```
+
+#### `LootQualityId` (строка заголовка 74)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr LootQualityId FromString(std::string_view n) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const LootQualityId &) const noexcept = default;
+```
+
+#### `RewardExecutionId` (строка заголовка 87)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const RewardExecutionId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 96)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 98)
+
+#### `RegisteredRewardPayload` (строка заголовка 107)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> bytes`
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] static RegisteredRewardPayload FromTrivial(TypeId t, const T &v);
+template <class T> [[nodiscard]] std::optional<T> AsTrivial(TypeId t) const;
+```
+
+#### `T` (строка заголовка 111)
+
+#### `T` (строка заголовка 120)
+
+#### `RewardDefinition` (строка заголовка 131)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::int64_t min_quantity_micro = 1'000'000`
+- `std::int64_t max_quantity_micro = 1'000'000`
+- `RegisteredRewardPayload payload`
+
+#### `LootEntry` (строка заголовка 150)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t weight = 1`
+- `std::uint32_t chance_micro = 1'000'000`
+
+#### `LootTableDefinition` (строка заголовка 159)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `LootRollPolicy policy = LootRollPolicy::WeightedOne`
+- `std::uint32_t rolls = 1`
+- `std::vector<LootEntry> entries`
+
+#### `LootContext` (строка заголовка 168)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+
+#### `ILootConditionProvider` (строка заголовка 179)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ILootConditionProvider() = default;
+[[nodiscard]] virtual bool Evaluate(TypeId condition, const LootContext &context) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `RewardOperation` (строка заголовка 186)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t quantity_micro = 0`
+- `RegisteredRewardPayload payload`
+
+#### `RewardBundle` (строка заголовка 196)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<RewardOperation> rewards`
+
+#### `RewardDeliveryStage` (строка заголовка 211)
+
+Публичные поля и значения по умолчанию:
+
+- `RewardOperation operation`
+- `RewardDeliveryDisposition disposition = RewardDeliveryDisposition::Delivered`
+
+#### `IRewardHandler` (строка заголовка 216)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRewardHandler() = default;
+[[nodiscard]] virtual RewardTypeId Type() const noexcept = 0;
+virtual void Commit(RewardDeliveryStage &stage) noexcept = 0;
+virtual void Cancel(RewardDeliveryStage &stage) noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `PendingReward` (строка заголовка 238)
+
+Публичные поля и значения по умолчанию:
+
+- `RewardBundle bundle`
+- `PendingRewardState state = PendingRewardState::Available`
+
+#### `LootChange` (строка заголовка 257)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `LootChangeKind kind = LootChangeKind::Generated`
+
+#### `LootChangeBatch` (строка заголовка 265)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<LootChange> changes`
+
+#### `LootSnapshot` (строка заголовка 274)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<RewardBundle> generated`
+- `std::vector<PendingReward> pending`
+- `std::vector<RewardExecutionId> claimed`
+- `std::uint64_t claimed_history_floor_low = 0`
+- `std::vector<LootChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `LootDiagnostics` (строка заголовка 293)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t rolls = 0, entries_evaluated = 0, bundles = 0, pending = 0, claims = 0, delivery_failures = 0, max_nested_depth = 0`
+
+#### `LootService` (строка заголовка 299)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<RewardTypeId, IRewardHandler *, IdHash> handlers_`, `std::unordered_map<RewardDefinitionId, RewardDefinition, IdHash> rewards_`, `std::unordered_map<LootTableId, LootTableDefinition, IdHash> tables_`, `std::unordered_map<RewardExecutionId, RewardBundle, IdHash> generated_`, `std::unordered_map<RewardExecutionId, PendingReward, IdHash> pending_`, `std::unordered_set<RewardExecutionId, IdHash> claimed_`, `std::deque<RewardExecutionId> claimed_order_`, `std::uint64_t claimed_history_floor_low_ = 0`, `MonotonicIdGenerator<GameplayObjectId> execution_ids_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+LootService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<RewardTypeId> RegisterRewardHandler(std::string canonical_name, IRewardHandler *handler);
+[[nodiscard]] foundation::Result<RewardDefinitionId> RegisterRewardDefinition(RewardDefinition definition);
+[[nodiscard]] foundation::Result<LootTableId> RegisterLootTable(LootTableDefinition definition);
+[[nodiscard]] foundation::Result<void> Freeze();
+void SetConditionProvider(const ILootConditionProvider *provider) noexcept;
+[[nodiscard]] foundation::Result<RewardBundle> GenerateTracked(LootTableId table, LootContext context);
+// Compatibility alias for authoritative tracked generation. [[nodiscard]] foundation::Result<RewardBundle> Generate(LootTableId table, LootContext context);
+[[nodiscard]] const RewardBundle* FindGenerated(RewardExecutionId reward) const noexcept;
+[[nodiscard]] foundation::Result<void> BindSchedule(RewardExecutionId reward, ScheduleId schedule);
+[[nodiscard]] const PendingReward *FindPending(RewardExecutionId reward) const noexcept;
+[[nodiscard]] std::vector<PendingReward> PendingFor(GameplayObjectRef recipient) const;
+[[nodiscard]] RewardClaimHistoryStatus ClaimHistoryStatus(RewardExecutionId reward) const noexcept;
+[[nodiscard]] bool WasClaimed(RewardExecutionId reward) const noexcept;
+[[nodiscard]] LootChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] LootSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(LootSnapshot snapshot);
+[[nodiscard]] LootDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `LootService` | `LootService::LootService` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:26` |
+| `RegisterRewardHandler` | `LootService::RegisterRewardHandler` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:29` |
+| `RegisterRewardDefinition` | `LootService::RegisterRewardDefinition` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:40` |
+| `RegisterLootTable` | `LootService::RegisterLootTable` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:59` |
+| `Freeze` | `LootService::Freeze` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:117` |
+| `GenerateTracked` | `LootService::GenerateTracked` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:299` |
+| `FindGenerated` | `LootService::FindGenerated` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:379` |
+| `BindSchedule` | `LootService::BindSchedule` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:385` |
+| `Cancel` | `LootService::Cancel` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:515` |
+| `FindPending` | `LootService::FindPending` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:526` |
+| `PendingFor` | `LootService::PendingFor` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:531` |
+| `ClaimHistoryStatus` | `LootService::ClaimHistoryStatus` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:557` |
+| `WasClaimed` | `LootService::WasClaimed` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:567` |
+| `CaptureSnapshot` | `LootService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:600` |
+| `RestoreSnapshot` | `LootService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:623` |
+| `GetDiagnostics` | `LootService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Loot/src/loot.cpp:717` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterRewardHandler`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:65`
+- `Type`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:67`
+- `RegisterRewardDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:70`
+- `RegisterLootTable`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:77`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:101`
+- `GenerateTracked`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:113`
+- `WasClaimed`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:129`
+- `ClaimHistoryStatus`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:130`
+- `FindPending`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:160`
+- `SetConditionProvider`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:165`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:211`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/loot_tests.cpp:214`
+

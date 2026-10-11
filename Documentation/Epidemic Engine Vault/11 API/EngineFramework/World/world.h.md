@@ -502,3 +502,347 @@ class WorldService
 };
 } // namespace epidemic::gameplay::world
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `WorldAlterationState`: `Active`, `Superseded`, `Expired`, `Removed`, `Compacted`
+- `WorldAlterationPersistence`: `Transient`, `Session`, `Persistent`
+- `WorldChangeKind`: `AlterationCreated`, `AlterationUpdated`, `AlterationExpired`, `AlterationRemoved`, `AlterationCompacted`, `FeatureChanged`, `FeatureRemoved`, `ObjectPlaced`, `ObjectPlacementRemoved`
+- `Kind`: `Create`, `Update`, `Remove`
+
+### Состав типов и операции
+
+#### `WorldRegionId` (строка заголовка 18)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr WorldRegionId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldRegionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const WorldRegionId &) const noexcept = default;
+```
+
+#### `WorldAreaId` (строка заголовка 32)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr WorldAreaId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldAreaId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const WorldAreaId &) const noexcept = default;
+```
+
+#### `LocationId` (строка заголовка 46)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr LocationId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const LocationId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const LocationId &) const noexcept = default;
+```
+
+#### `WorldFeatureId` (строка заголовка 60)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr WorldFeatureId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldFeatureId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const WorldFeatureId &) const noexcept = default;
+```
+
+#### `WorldAlterationId` (строка заголовка 74)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr WorldAlterationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldAlterationId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const WorldAlterationId &) const noexcept = default;
+```
+
+#### `WorldAlterationTypeId` (строка заголовка 88)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr WorldAlterationTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldAlterationTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const WorldAlterationTypeId &) const noexcept = default;
+```
+
+#### `WorldFeatureTypeId` (строка заголовка 102)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr WorldFeatureTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldFeatureTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const WorldFeatureTypeId &) const noexcept = default;
+```
+
+#### `WorldPosition` (строка заголовка 117)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t x_mm = 0, y_mm = 0, z_mm = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const WorldPosition &) const noexcept = default;
+```
+
+#### `WorldAabb` (строка заголовка 122)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool Contains(WorldPosition p) const noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const WorldAabb &) const noexcept = default;
+```
+
+#### `WorldRegionDefinition` (строка заголовка 138)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+
+#### `WorldAreaDefinition` (строка заголовка 145)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::vector<WorldRegionId> regions`
+- `std::vector<WorldAreaId> adjacent`
+- `GameplayTagSet tags`
+
+#### `LocationDefinition` (строка заголовка 155)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::vector<WorldRegionId> regions`
+- `std::vector<WorldAreaId> areas`
+- `GameplayTagSet tags`
+
+#### `WorldFeatureRecord` (строка заголовка 175)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+- `bool dynamic = false`
+
+#### `WorldAlterationRecord` (строка заголовка 199)
+
+Публичные поля и значения по умолчанию:
+
+- `WorldAlterationPersistence persistence = WorldAlterationPersistence::Persistent`
+- `WorldAlterationState state = WorldAlterationState::Active`
+- `std::vector<std::byte> payload`
+
+#### `WorldAlterationUpdate` (строка заголовка 214)
+
+Публичные поля и значения по умолчанию:
+
+- `bool update_expires_at = false`
+
+#### `WorldSnapshot` (строка заголовка 224)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<WorldFeatureRecord> dynamic_features`
+- `std::vector<ObjectPlacementRecord> object_placements`
+- `std::vector<WorldAlterationRecord> alterations`
+- `std::uint64_t change_epoch = 1`
+
+#### `WorldChange` (строка заголовка 247)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `WorldChangeKind kind = WorldChangeKind::AlterationCreated`
+
+#### `WorldChangeBatch` (строка заголовка 257)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<WorldChange> changes`
+- `std::uint64_t oldest_available_sequence = 0`
+- `bool snapshot_required = false`
+
+#### `WorldDiagnostics` (строка заголовка 267)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t regions = 0, areas = 0, locations = 0, features = 0, active_alterations = 0, persistent_alterations = 0, transactions = 0`
+
+#### `WorldTransaction` (строка заголовка 274)
+
+Публичные сигнатуры операций:
+
+```cpp
+WorldTransaction(WorldService &owner, GameplayContext context);
+[[nodiscard]] foundation::Result<WorldAlterationId> Create(WorldAlterationRecord record);
+[[nodiscard]] foundation::Result<void> Update(WorldAlterationId id, WorldAlterationUpdate update);
+[[nodiscard]] foundation::Result<void> Remove(WorldAlterationId id);
+[[nodiscard]] foundation::Result<void> Commit();
+void Cancel() noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `Mutation` (строка заголовка 294)
+
+Публичные поля и значения по умолчанию:
+
+- `Kind kind`
+
+#### `WorldService` (строка заголовка 310)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::size_t kChangeJournalCapacity = 4096`, `static constexpr std::int64_t kSpatialCellMm = 100000`, `static constexpr std::uint64_t kMaxIndexedCells = 4096`, `struct IdHash`, `std::unordered_map<WorldRegionId, WorldRegionDefinition, IdHash> regions_`, `std::unordered_map<WorldAreaId, WorldAreaDefinition, IdHash> areas_`, `std::unordered_map<LocationId, LocationDefinition, IdHash> locations_`, `std::unordered_map<WorldFeatureId, WorldFeatureRecord, IdHash> features_`, `std::unordered_map<WorldFeatureTypeId, std::string, TypeHash> feature_types_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+WorldService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterRegion(WorldRegionDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterArea(WorldAreaDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterLocation(LocationDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterFeatureType(WorldFeatureTypeId id, std::string canonical_name);
+[[nodiscard]] foundation::Result<void> RegisterAlterationType(WorldAlterationTypeId id, std::string canonical_name);
+[[nodiscard]] foundation::Result<void> AddStaticFeature(WorldFeatureRecord feature);
+[[nodiscard]] foundation::Result<void> Freeze();
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] const WorldRegionDefinition *FindRegion(WorldRegionId id) const noexcept;
+[[nodiscard]] const WorldAreaDefinition *FindArea(WorldAreaId id) const noexcept;
+[[nodiscard]] const LocationDefinition *FindLocation(LocationId id) const noexcept;
+[[nodiscard]] std::optional<WorldFeatureRecord> FindFeature(WorldFeatureId id) const;
+[[nodiscard]] std::optional<WorldAlterationRecord> FindAlteration(WorldAlterationId id) const;
+[[nodiscard]] std::optional<ObjectPlacementRecord> FindObjectPlacement(GameplayObjectRef object) const noexcept;
+[[nodiscard]] bool IsAlterationTypeRegistered(WorldAlterationTypeId id) const noexcept;
+[[nodiscard]] std::vector<WorldAreaDefinition> FindAreasAt(WorldPosition position) const;
+[[nodiscard]] std::vector<LocationDefinition> FindLocationsInArea(WorldAreaId area) const;
+[[nodiscard]] std::vector<LocationDefinition> FindChildLocations(LocationId parent) const;
+[[nodiscard]] std::vector<WorldAlterationRecord> FindAlterations( const WorldAabb &bounds, std::optional<WorldAlterationTypeId> type = std::nullopt) const;
+[[nodiscard]] foundation::Result<WorldFeatureId> AddDynamicFeature(WorldFeatureRecord feature);
+[[nodiscard]] foundation::Result<void> PlaceObject(ObjectPlacementRecord placement);
+[[nodiscard]] std::vector<ObjectPlacementRecord> FindObjectsInArea(WorldAreaId area) const;
+[[nodiscard]] std::vector<ObjectPlacementRecord> FindObjectsInLocation(LocationId location) const;
+[[nodiscard]] WorldSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(WorldSnapshot snapshot);
+[[nodiscard]] WorldChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesBefore(std::uint64_t sequence);
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+[[nodiscard]] WorldDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `CellKey` (строка заголовка 414)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t x = 0, y = 0, z = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const CellKey &) const noexcept = default;
+```
+
+#### `CellHash` (строка заголовка 419)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(const CellKey &c) const noexcept;
+```
+
+#### `IdHash` (строка заголовка 441)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 443)
+
+#### `TypeHash` (строка заголовка 448)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 450)
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `WorldTransaction` | `WorldTransaction::WorldTransaction` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:75` |
+| `Create` | `WorldTransaction::Create` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:79` |
+| `Update` | `WorldTransaction::Update` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:118` |
+| `Remove` | `WorldTransaction::Remove` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:137` |
+| `Commit` | `WorldTransaction::Commit` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:155` |
+| `WorldService` | `WorldService::WorldService` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:169` |
+| `RegisterRegion` | `WorldService::RegisterRegion` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:327` |
+| `RegisterArea` | `WorldService::RegisterArea` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:338` |
+| `RegisterLocation` | `WorldService::RegisterLocation` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:351` |
+| `RegisterFeatureType` | `WorldService::RegisterFeatureType` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:364` |
+| `RegisterAlterationType` | `WorldService::RegisterAlterationType` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:374` |
+| `AddStaticFeature` | `WorldService::AddStaticFeature` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:384` |
+| `Freeze` | `WorldService::Freeze` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:440` |
+| `FindRegion` | `WorldService::FindRegion` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:451` |
+| `FindArea` | `WorldService::FindArea` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:456` |
+| `FindLocation` | `WorldService::FindLocation` | `EngineFramework/GameplayWorldStateOwners/World/src/world.cpp:461` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterAlterationType`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:26`
+- `RegisterFeatureType`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:27`
+- `RegisterRegion`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:41`
+- `RegisterArea`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:48`
+- `RegisterLocation`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:56`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:67`
+- `FindAreasAt`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:68`
+- `FindLocationsInArea`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:69`
+- `FindChildLocations`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:70`
+- `Create`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:84`
+- `Commit`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:88`
+- `FindAlteration`: `EngineFramework/DevelopmentInfrastructure/Tests/world_tests.cpp:89`
+

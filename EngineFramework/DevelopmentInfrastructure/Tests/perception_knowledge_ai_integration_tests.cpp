@@ -11,42 +11,39 @@ using namespace epidemic::gameplay::ai;
 using namespace epidemic::gameplay::integration;
 
 #define CHECK(expr)                                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(expr))                                                                                                   \
-        {                                                                                                              \
-            std::fprintf(stderr, "CHECK failed at line %d: %s\n", __LINE__, #expr);                                   \
+    do {                                                                                                               \
+        if (!(expr)) {                                                                                                 \
+            std::fprintf(stderr, "CHECK failed at line %d: %s\n", __LINE__, #expr);                                    \
             std::abort();                                                                                              \
-        }                                                                                              \
+        }                                                                                                              \
     } while (false)
 
-namespace
-{
-const AIInputValue *FindInput(const AITargetCandidate &candidate, AIInputKeyId key)
-{
-    const auto it = std::find_if(candidate.inputs.begin(), candidate.inputs.end(),
-                                 [&](const AIInputValue &input) { return input.key == key; });
+namespace {
+const AIInputValue *FindInput(const AITargetCandidate &candidate, AIInputKeyId key) {
+    const auto it = std::find_if(candidate.inputs.begin(), candidate.inputs.end(), [&](const AIInputValue &input) {
+        return input.key == key;
+    });
     return it == candidate.inputs.end() ? nullptr : &*it;
 }
 
-const AITargetCandidate *FindTarget(const AIContextSnapshot &context, GameplayObjectRef target)
-{
-    const auto it = std::find_if(context.targets.begin(), context.targets.end(),
-                                 [&](const AITargetCandidate &candidate) { return candidate.target == target; });
+const AITargetCandidate *FindTarget(const AIContextSnapshot &context, GameplayObjectRef target) {
+    const auto it =
+        std::find_if(context.targets.begin(), context.targets.end(), [&](const AITargetCandidate &candidate) {
+            return candidate.target == target;
+        });
     return it == context.targets.end() ? nullptr : &*it;
 }
 } // namespace
 
-int main()
-{
+int main() {
     const GameplayObjectRef npc{GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("npc")};
     const GameplayObjectRef player{GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("player")};
     const GameplayObjectRef remembered{GameplayDomainId::FromString("test.entity"),
                                        GameplayObjectId::FromString("remembered")};
-    const GameplayObjectRef materialized_agent{
-        GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("materialized_agent")};
-    const GameplayObjectRef projected_agent{
-        GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("projected_agent")};
+    const GameplayObjectRef materialized_agent{GameplayDomainId::FromString("test.entity"),
+                                               GameplayObjectId::FromString("materialized_agent")};
+    const GameplayObjectRef projected_agent{GameplayDomainId::FromString("test.entity"),
+                                            GameplayObjectId::FromString("projected_agent")};
 
     PerceptionService perception;
     const auto hearing = SenseTypeId::FromString("framework.sense.hearing");
@@ -202,37 +199,33 @@ int main()
     KnowledgeAIAdapter knowledge_ai{knowledge, keys};
 
     // H06: composition-provided neutral availability drives AI materialization gates.
-    const auto materialized_unavailable =
-        knowledge_ai.BuildContext(materialized_agent, AIExecutionAvailability{false, false}, nullptr,
-                                  GameplayTimePoint{1});
+    const auto materialized_unavailable = knowledge_ai.BuildContext(
+        materialized_agent, AIExecutionAvailability{false, false}, nullptr, GameplayTimePoint{1});
     CHECK(!materialized_unavailable.materialized && !materialized_unavailable.runtime_projection_available);
     const auto materialized_blocked = ai.Think(materialized_agent, materialized_unavailable, {});
     CHECK(materialized_blocked && materialized_blocked.Value().deferred);
     CHECK(materialized_blocked.Value().defer_reason == AIThinkDeferReason::MaterializationUnavailable);
 
-    const auto materialized_available =
-        knowledge_ai.BuildContext(materialized_agent, AIExecutionAvailability{true, false}, nullptr,
-                                  GameplayTimePoint{1});
+    const auto materialized_available = knowledge_ai.BuildContext(
+        materialized_agent, AIExecutionAvailability{true, false}, nullptr, GameplayTimePoint{1});
     CHECK(materialized_available.materialized && !materialized_available.runtime_projection_available);
     const auto materialized_think = ai.Think(materialized_agent, materialized_available, {});
     CHECK(materialized_think && materialized_think.Value().intent.has_value());
 
     const auto projection_unavailable =
-        knowledge_ai.BuildContext(projected_agent, AIExecutionAvailability{true, false}, nullptr,
-                                  GameplayTimePoint{1});
+        knowledge_ai.BuildContext(projected_agent, AIExecutionAvailability{true, false}, nullptr, GameplayTimePoint{1});
     const auto projection_blocked = ai.Think(projected_agent, projection_unavailable, {});
     CHECK(projection_blocked && projection_blocked.Value().deferred);
     CHECK(projection_blocked.Value().defer_reason == AIThinkDeferReason::MaterializationUnavailable);
 
     const auto projection_available =
-        knowledge_ai.BuildContext(projected_agent, AIExecutionAvailability{true, true}, nullptr,
-                                  GameplayTimePoint{1});
+        knowledge_ai.BuildContext(projected_agent, AIExecutionAvailability{true, true}, nullptr, GameplayTimePoint{1});
     CHECK(projection_available.materialized && projection_available.runtime_projection_available);
     const auto projection_think = ai.Think(projected_agent, projection_available, {});
     CHECK(projection_think && projection_think.Value().intent.has_value());
 
-    const auto knowledge_only_context = knowledge_ai.BuildContext(
-        npc, AIExecutionAvailability{}, nullptr, GameplayTimePoint{2});
+    const auto knowledge_only_context =
+        knowledge_ai.BuildContext(npc, AIExecutionAvailability{}, nullptr, GameplayTimePoint{2});
     const auto *known_player = FindTarget(knowledge_only_context, player);
     const auto *last_known_target = FindTarget(knowledge_only_context, remembered);
     CHECK(known_player != nullptr && known_player->source == AITargetSource::Known);
@@ -249,8 +242,8 @@ int main()
     CHECK(recorder.Succeed(first_think.Value().intent->id, ai));
 
     // At time 3 the observation is still active and is merged with Knowledge into one candidate.
-    const auto current_context = knowledge_ai.BuildContext(
-        npc, AIExecutionAvailability{true, true}, &perception, GameplayTimePoint{3});
+    const auto current_context =
+        knowledge_ai.BuildContext(npc, AIExecutionAvailability{true, true}, &perception, GameplayTimePoint{3});
     const auto *current_player = FindTarget(current_context, player);
     CHECK(current_player != nullptr);
     CHECK(current_player->source == AITargetSource::Perceived);
@@ -262,11 +255,13 @@ int main()
     CHECK(FindInput(*current_player, keys.perception_sense) != nullptr);
     CHECK(FindInput(*current_player, keys.perception_semantics) != nullptr);
     CHECK(std::count_if(current_context.targets.begin(), current_context.targets.end(),
-                        [&](const AITargetCandidate &candidate) { return candidate.target == player; }) == 1);
+                        [&](const AITargetCandidate &candidate) {
+                            return candidate.target == player;
+                        }) == 1);
 
     // M29: read validity is evaluated against requested time even if Perception::AdvanceTime was not called.
-    const auto expired_context = knowledge_ai.BuildContext(
-        npc, AIExecutionAvailability{true, true}, &perception, GameplayTimePoint{6});
+    const auto expired_context =
+        knowledge_ai.BuildContext(npc, AIExecutionAvailability{true, true}, &perception, GameplayTimePoint{6});
     const auto *expired_player = FindTarget(expired_context, player);
     CHECK(expired_player != nullptr);
     CHECK(expired_player->source == AITargetSource::Known);

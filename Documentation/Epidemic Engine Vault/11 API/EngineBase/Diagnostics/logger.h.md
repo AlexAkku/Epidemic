@@ -208,3 +208,58 @@ class ILogger
 };
 } // namespace epidemic::diagnostics
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Diagnostics/thread_context.h`.
+
+### Перечисления и допустимые категории
+
+- `LogLevel`: `Trace`, `Debug`, `Info`, `Warning`, `Error`, `Fatal`
+
+### Состав типов и операции
+
+#### `LogMessage` (строка заголовка 50)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string_view module_name`
+- `std::string_view category`
+- `std::string_view message`
+- `std::string thread_name`
+
+#### `ILogger` (строка заголовка 70)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ILogger() = default;
+// Writes a fully prepared log message if logging is enabled. Sink failures are contained. void Log(const LogMessage &message) noexcept;
+// Builds a structured message from individual fields and forwards it to the contained sink boundary. void Log(LogLevel level, std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+// Convenience overload for uncategorized log entries. void Log(LogLevel level, std::string_view module_name, std::string_view message) noexcept;
+void Trace(std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+void Trace(std::string_view module_name, std::string_view message) noexcept;
+void Debug(std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+void Debug(std::string_view module_name, std::string_view message) noexcept;
+void Info(std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+void Info(std::string_view module_name, std::string_view message) noexcept;
+void Warn(std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+void Warn(std::string_view module_name, std::string_view message) noexcept;
+void Error(std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+void Error(std::string_view module_name, std::string_view message) noexcept;
+void Fatal(std::string_view module_name, std::string_view category, std::string_view message) noexcept;
+void Fatal(std::string_view module_name, std::string_view message) noexcept;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

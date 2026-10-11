@@ -2,10 +2,8 @@
 
 #include "scene_runtime_impl.h"
 
-namespace epidemic::runtime
-{
-foundation::Result<SceneServices> CreateSceneServices(const SceneOptions& options)
-{
+namespace epidemic::runtime {
+foundation::Result<SceneServices> CreateSceneServices(const SceneOptions &options) {
     (void)options;
 
     auto runtime = std::make_shared<SceneRuntime>();

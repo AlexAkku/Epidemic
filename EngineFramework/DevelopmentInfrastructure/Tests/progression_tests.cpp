@@ -4,54 +4,45 @@
 #include <limits>
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::progression;
-namespace
-{
-template <class T, class Pred>
-bool SameVector(const std::vector<T>& a, const std::vector<T>& b, Pred pred)
-{
+namespace {
+template <class T, class Pred> bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
     return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), pred);
 }
 
-bool SameTrack(const ProgressionTrackState& a, const ProgressionTrackState& b)
-{
+bool SameTrack(const ProgressionTrackState &a, const ProgressionTrackState &b) {
     return a.id == b.id && a.progress_micro == b.progress_micro && a.rank == b.rank && a.revision == b.revision;
 }
 
-bool SameModifier(const ProgressionModifier& a, const ProgressionModifier& b)
-{
+bool SameModifier(const ProgressionModifier &a, const ProgressionModifier &b) {
     return a.id == b.id && a.target == b.target && a.operation == b.operation && a.value_micro == b.value_micro &&
            a.priority == b.priority && a.modifier_type == b.modifier_type && a.source == b.source &&
            a.persistent == b.persistent;
 }
 
-bool SameProfile(const ProgressionProfileSnapshot& a, const ProgressionProfileSnapshot& b)
-{
+bool SameProfile(const ProgressionProfileSnapshot &a, const ProgressionProfileSnapshot &b) {
     return a.subject == b.subject && a.base_attributes == b.base_attributes &&
            SameVector(a.tracks, b.tracks, SameTrack) && SameVector(a.modifiers, b.modifiers, SameModifier) &&
            a.perks == b.perks && a.unlocks == b.unlocks && a.achieved_milestones == b.achieved_milestones &&
            a.revision == b.revision;
 }
 
-bool SameChange(const ProgressionChange& a, const ProgressionChange& b)
-{
+bool SameChange(const ProgressionChange &a, const ProgressionChange &b) {
     return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject && a.attribute == b.attribute &&
            a.track == b.track && a.perk == b.perk && a.modifier == b.modifier && a.revision == b.revision &&
            a.context == b.context && a.milestone == b.milestone && a.unlock_type == b.unlock_type &&
            a.unlock_value == b.unlock_value;
 }
 
-bool SameSnapshot(const ProgressionSnapshot& a, const ProgressionSnapshot& b)
-{
-    return SameVector(a.profiles, b.profiles, SameProfile) &&
-           a.modifier_ids.scope == b.modifier_ids.scope && a.modifier_ids.next == b.modifier_ids.next &&
+bool SameSnapshot(const ProgressionSnapshot &a, const ProgressionSnapshot &b) {
+    return SameVector(a.profiles, b.profiles, SameProfile) && a.modifier_ids.scope == b.modifier_ids.scope &&
+           a.modifier_ids.next == b.modifier_ids.next &&
            a.grant_reservation_ids.scope == b.grant_reservation_ids.scope &&
            a.grant_reservation_ids.next == b.grant_reservation_ids.next && a.revision == b.revision &&
            SameVector(a.journal, b.journal, SameChange) && a.next_change_sequence == b.next_change_sequence &&
            a.change_epoch == b.change_epoch;
 }
 }
-int main()
-{
+int main() {
     ProgressionService s;
     AttributeDefinition strength;
     strength.canonical_name = "game.strength";
@@ -126,12 +117,16 @@ int main()
     if (s.GrantProgress(actor, tid.Value(), 1))
         return 16;
     const auto pending_snapshot = s.CaptureSnapshot();
-    const auto pending_profile = std::find_if(pending_snapshot.profiles.begin(), pending_snapshot.profiles.end(),
-                                              [&](const auto& profile) { return profile.subject == actor; });
+    const auto pending_profile =
+        std::find_if(pending_snapshot.profiles.begin(), pending_snapshot.profiles.end(), [&](const auto &profile) {
+            return profile.subject == actor;
+        });
     if (pending_profile == pending_snapshot.profiles.end())
         return 17;
-    const auto pending_track = std::find_if(pending_profile->tracks.begin(), pending_profile->tracks.end(),
-                                            [&](const auto& state) { return state.id == tid.Value(); });
+    const auto pending_track =
+        std::find_if(pending_profile->tracks.begin(), pending_profile->tracks.end(), [&](const auto &state) {
+            return state.id == tid.Value();
+        });
     if (pending_track == pending_profile->tracks.end() || pending_track->progress_micro != 150)
         return 18;
     s.ReleaseProgressGrant(reserved.Value());
@@ -214,7 +209,8 @@ int main()
     if (invalid_definitions.Freeze())
         return 35;
 
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 36;
     auto progression_journal_seed = restored.CaptureSnapshot();
     progression_journal_seed.journal.clear();
@@ -228,20 +224,26 @@ int main()
     if (progression_exhausted.next_change_sequence != 0 || progression_exhausted.journal.size() != 1 ||
         progression_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 39;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 40;
     if (!restored.RestoreSnapshot(progression_exhausted))
         return 41;
     ProgressionService empty_journal;
-    if (!empty_journal.ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!empty_journal
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 42;
 
     // Goal 4 G4-INFRA-001: every named fallible publication seam starts from a fresh fixture and is full-snapshot atomic.
-    const GameplayObjectRef fault_actor{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("fault-actor")};
-    const UnlockRecord fault_unlock{UnlockTypeId::FromString("game.unlock.fault"), TypeId::FromString("game.unlock.value"), {}};
+    const GameplayObjectRef fault_actor{GameplayDomainId::FromString("test"),
+                                        GameplayObjectId::FromString("fault-actor")};
+    const UnlockRecord fault_unlock{
+        UnlockTypeId::FromString("game.unlock.fault"), TypeId::FromString("game.unlock.value"), {}};
     const auto make_fault_service = [&]() {
         ProgressionService service;
-        if (!service.RegisterAttribute(strength) || !service.RegisterTrack(level) || !service.RegisterPerk(perk) || !service.Freeze())
+        if (!service.RegisterAttribute(strength) || !service.RegisterTrack(level) || !service.RegisterPerk(perk) ||
+            !service.Freeze())
             return ProgressionService{};
         return service;
     };
@@ -253,21 +255,17 @@ int main()
         if (service.EnsureProfile(fault_actor) || !SameSnapshot(before, service.CaptureSnapshot()))
             return 980;
     }
-    for (const auto point : {test_seam::FaultPoint::SetBaseAttributeBeforePublish,
-                             test_seam::FaultPoint::GrantProgressBeforePublish,
-                             test_seam::FaultPoint::ReserveProgressBeforePublish,
-                             test_seam::FaultPoint::GrantPerkBeforePublish,
-                             test_seam::FaultPoint::GrantUnlockBeforePublish,
-                             test_seam::FaultPoint::AddModifierBeforePublish})
-    {
+    for (const auto point :
+         {test_seam::FaultPoint::SetBaseAttributeBeforePublish, test_seam::FaultPoint::GrantProgressBeforePublish,
+          test_seam::FaultPoint::ReserveProgressBeforePublish, test_seam::FaultPoint::GrantPerkBeforePublish,
+          test_seam::FaultPoint::GrantUnlockBeforePublish, test_seam::FaultPoint::AddModifierBeforePublish}) {
         auto service = make_fault_service();
         if (!service.EnsureProfile(fault_actor))
             return 981;
         const auto before = service.CaptureSnapshot();
         test_seam::FailNext(point);
         bool failed_as_expected = false;
-        switch (point)
-        {
+        switch (point) {
         case test_seam::FaultPoint::SetBaseAttributeBeforePublish:
             failed_as_expected = !service.SetBaseAttribute(fault_actor, sid.Value(), 2'000'000);
             break;
@@ -283,8 +281,7 @@ int main()
         case test_seam::FaultPoint::GrantUnlockBeforePublish:
             failed_as_expected = !service.GrantUnlock(fault_actor, fault_unlock);
             break;
-        case test_seam::FaultPoint::AddModifierBeforePublish:
-        {
+        case test_seam::FaultPoint::AddModifierBeforePublish: {
             ProgressionModifier modifier;
             modifier.target = sid.Value();
             modifier.operation = ModifierOperation::FinalAdd;
@@ -303,8 +300,8 @@ int main()
         if (!seeded.EnsureProfile(fault_actor) || !seeded.SetBaseAttribute(fault_actor, sid.Value(), 3'000'000))
             return 983;
         const auto restore_seed = seeded.CaptureSnapshot();
-        for (const auto point : {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit})
-        {
+        for (const auto point :
+             {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
             auto service = make_fault_service();
             if (!service.EnsureProfile(fault_actor))
                 return 984;
@@ -333,8 +330,10 @@ int main()
         return 942;
     auto atomic_seed = atomic.CaptureSnapshot();
     atomic_seed.revision.value = std::numeric_limits<std::uint64_t>::max();
-    auto atomic_profile = std::find_if(atomic_seed.profiles.begin(), atomic_seed.profiles.end(),
-                                       [&](const auto& profile) { return profile.subject == atomic_actor; });
+    auto atomic_profile =
+        std::find_if(atomic_seed.profiles.begin(), atomic_seed.profiles.end(), [&](const auto &profile) {
+            return profile.subject == atomic_actor;
+        });
     if (atomic_profile == atomic_seed.profiles.end())
         return 943;
     atomic_profile->revision.value = std::numeric_limits<std::uint64_t>::max();
@@ -413,13 +412,16 @@ int main()
     if (!rg_strength || !rg_perk || !revoke_guard.Freeze() || !revoke_guard.EnsureProfile(atomic_actor) ||
         !revoke_guard.GrantPerk(atomic_actor, rg_perk.Value()))
         return 960;
-    UnlockRecord revoke_unlock{UnlockTypeId::FromString("game.unlock.revoke"), TypeId::FromString("game.unlock.revoke.value"), {}};
+    UnlockRecord revoke_unlock{
+        UnlockTypeId::FromString("game.unlock.revoke"), TypeId::FromString("game.unlock.revoke.value"), {}};
     if (!revoke_guard.GrantUnlock(atomic_actor, revoke_unlock))
         return 961;
     auto revoke_snapshot = revoke_guard.CaptureSnapshot();
     revoke_snapshot.revision.value = std::numeric_limits<std::uint64_t>::max();
-    auto revoke_profile = std::find_if(revoke_snapshot.profiles.begin(), revoke_snapshot.profiles.end(),
-                                       [&](const auto& profile) { return profile.subject == atomic_actor; });
+    auto revoke_profile =
+        std::find_if(revoke_snapshot.profiles.begin(), revoke_snapshot.profiles.end(), [&](const auto &profile) {
+            return profile.subject == atomic_actor;
+        });
     if (revoke_profile == revoke_snapshot.profiles.end())
         return 962;
     revoke_profile->revision.value = std::numeric_limits<std::uint64_t>::max();
@@ -432,7 +434,8 @@ int main()
         !revoke_guard.HasUnlock(atomic_actor, revoke_unlock.type, revoke_unlock.value))
         return 964;
     const auto revoke_after = revoke_guard.CaptureSnapshot();
-    if (revoke_after.revision != revoke_before.revision || revoke_after.profiles.size() != revoke_before.profiles.size())
+    if (revoke_after.revision != revoke_before.revision ||
+        revoke_after.profiles.size() != revoke_before.profiles.size())
         return 965;
 
     // Full milestone fan-out requires more than one revision. At max-1 it must remain pending and publish nothing.
@@ -456,8 +459,10 @@ int main()
         return 966;
     auto fanout_seed = fanout_guard.CaptureSnapshot();
     fanout_seed.revision.value = std::numeric_limits<std::uint64_t>::max() - 1;
-    auto fanout_profile = std::find_if(fanout_seed.profiles.begin(), fanout_seed.profiles.end(),
-                                       [&](const auto& profile) { return profile.subject == atomic_actor; });
+    auto fanout_profile =
+        std::find_if(fanout_seed.profiles.begin(), fanout_seed.profiles.end(), [&](const auto &profile) {
+            return profile.subject == atomic_actor;
+        });
     if (fanout_profile == fanout_seed.profiles.end())
         return 967;
     fanout_profile->revision.value = std::numeric_limits<std::uint64_t>::max() - 1;
@@ -477,7 +482,6 @@ int main()
     if (fanout_guard.ReserveProgressGrant(atomic_actor, fg_track.Value(), 1))
         return 971;
     fanout_guard.ReleaseProgressGrant(fanout_reservation.Value());
-
 
     // Goal 4 exact public-API evidence: default/invalid progression surface.
     ProgressionService api_evidence;

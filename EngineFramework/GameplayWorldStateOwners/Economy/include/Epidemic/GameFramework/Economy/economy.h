@@ -10,34 +10,27 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::economy
-{
+namespace epidemic::gameplay::economy {
 using Fixed = std::int64_t;
 #define ECO_TYPE(name)                                                                                                 \
-    struct name                                                                                                        \
-    {                                                                                                                  \
+    struct name {                                                                                                      \
         TypeId value{};                                                                                                \
-        static constexpr name FromString(std::string_view s) noexcept                                                  \
-        {                                                                                                              \
+        static constexpr name FromString(std::string_view s) noexcept {                                                \
             return {TypeId::FromString(s)};                                                                            \
         }                                                                                                              \
-        [[nodiscard]] constexpr bool IsValid() const noexcept                                                          \
-        {                                                                                                              \
+        [[nodiscard]] constexpr bool IsValid() const noexcept {                                                        \
             return value.IsValid();                                                                                    \
         }                                                                                                              \
         [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;                                \
         [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;                               \
     }
 #define ECO_OBJ(name)                                                                                                  \
-    struct name                                                                                                        \
-    {                                                                                                                  \
+    struct name {                                                                                                      \
         GameplayObjectId value{};                                                                                      \
-        static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept                                       \
-        {                                                                                                              \
+        static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept {                                     \
             return {GameplayObjectId::FromRaw(h, l)};                                                                  \
         }                                                                                                              \
-        [[nodiscard]] constexpr bool IsValid() const noexcept                                                          \
-        {                                                                                                              \
+        [[nodiscard]] constexpr bool IsValid() const noexcept {                                                        \
             return value.IsValid();                                                                                    \
         }                                                                                                              \
         [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;                                \
@@ -59,35 +52,29 @@ ECO_OBJ(DebtId);
 ECO_OBJ(EconomicContractId);
 #undef ECO_TYPE
 #undef ECO_OBJ
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class AccountState
-{
+enum class AccountState {
     Active,
     Frozen,
     Closed
 };
-enum class FundsReservationState
-{
+enum class FundsReservationState {
     Active,
     Committed,
     Released
 };
-enum class OfferState
-{
+enum class OfferState {
     Active,
     Accepted,
     Expired,
     Cancelled
 };
-enum class TradeTransactionState
-{
+enum class TradeTransactionState {
     Prepared,
     Reserved,
     Committing,
@@ -96,16 +83,14 @@ enum class TradeTransactionState
     Cancelled,
     Failed
 };
-enum class DebtState
-{
+enum class DebtState {
     Active,
     Paid,
     Forgiven,
     Defaulted,
     Expired
 };
-enum class ContractState
-{
+enum class ContractState {
     Draft,
     Active,
     Fulfilled,
@@ -113,8 +98,7 @@ enum class ContractState
     Cancelled,
     Expired
 };
-enum class EconomyChangeKind
-{
+enum class EconomyChangeKind {
     AccountCreated,
     AccountStateChanged,
     BalanceChanged,
@@ -131,16 +115,14 @@ enum class EconomyChangeKind
     DebtCompacted,
     ContractCompacted
 };
-struct CurrencyDefinition
-{
+struct CurrencyDefinition {
     CurrencyId id{};
     std::string canonical_name;
     Fixed smallest_unit = 1;
     GameplayTagSet tags;
     Revision revision{};
 };
-struct EconomicAccount
-{
+struct EconomicAccount {
     EconomicAccountId id{};
     GameplayObjectRef owner{};
     CurrencyId currency{};
@@ -148,8 +130,7 @@ struct EconomicAccount
     AccountState state = AccountState::Active;
     Revision revision{};
 };
-struct FundsReservation
-{
+struct FundsReservation {
     FundsReservationId id{};
     EconomicAccountId account{};
     Fixed amount = 0;
@@ -158,15 +139,13 @@ struct FundsReservation
     FundsReservationState state = FundsReservationState::Active;
     Revision revision{};
 };
-struct MarketState
-{
+struct MarketState {
     MarketId id{};
     GameplayObjectRef area{};
     GameplayTagSet tags;
     Revision revision{};
 };
-struct MarketIndicator
-{
+struct MarketIndicator {
     MarketId market{};
     EconomicCommodityId commodity{};
     Fixed supply = 0;
@@ -175,14 +154,12 @@ struct MarketIndicator
     GameplayTimePoint updated_at{};
     Revision revision{};
 };
-struct EconomicValueRef
-{
+struct EconomicValueRef {
     EconomicValueTypeId type{};
     GameplayObjectRef object{};
     TypeId definition{};
 };
-struct PriceQuote
-{
+struct PriceQuote {
     EconomicValueRef subject{};
     CurrencyId currency{};
     std::optional<MarketId> market{};
@@ -192,8 +169,7 @@ struct PriceQuote
     Fixed unit_amount = 0;
     Revision dependencies_revision{};
 };
-struct PriceQuoteRequest
-{
+struct PriceQuoteRequest {
     EconomicValueRef subject{};
     CurrencyId currency{};
     std::optional<MarketId> market{};
@@ -202,8 +178,7 @@ struct PriceQuoteRequest
     Fixed quantity = 1;
     GameplayContext context{};
 };
-struct EconomicOffer
-{
+struct EconomicOffer {
     OfferId id{};
     GameplayObjectRef seller{};
     GameplayObjectRef buyer_scope{};
@@ -216,15 +191,13 @@ struct EconomicOffer
     OfferState state = OfferState::Active;
     Revision revision{};
 };
-struct MonetaryTransfer
-{
+struct MonetaryTransfer {
     EconomicAccountId from{};
     EconomicAccountId to{};
     Fixed amount = 0;
     CurrencyId currency{};
 };
-struct TradePlan
-{
+struct TradePlan {
     TradeTransactionId id{};
     GameplayObjectRef buyer{};
     GameplayObjectRef seller{};
@@ -232,8 +205,7 @@ struct TradePlan
     Revision dependencies_revision{};
     GameplayContext context{};
 };
-struct TradeTransaction
-{
+struct TradeTransaction {
     TradeTransactionId id{};
     TradePlan plan;
     std::vector<FundsReservationId> reservations;
@@ -244,8 +216,7 @@ struct TradeTransaction
     TradeTransactionState state = TradeTransactionState::Prepared;
     Revision revision{};
 };
-struct OfferAcceptanceRequest
-{
+struct OfferAcceptanceRequest {
     OfferId offer{};
     Revision expected_offer_revision{};
     GameplayObjectRef buyer{};
@@ -254,8 +225,7 @@ struct OfferAcceptanceRequest
     EconomicAccountId seller_destination_account{};
     GameplayContext context{};
 };
-struct DebtRecord
-{
+struct DebtRecord {
     DebtId id{};
     GameplayObjectRef debtor{};
     GameplayObjectRef creditor{};
@@ -265,14 +235,12 @@ struct DebtRecord
     DebtState state = DebtState::Active;
     Revision revision{};
 };
-struct ContractTermsSchema
-{
+struct ContractTermsSchema {
     ContractTypeId type{};
     TypeId schema{};
     std::size_t max_payload_bytes = 0;
 };
-struct EconomicContract
-{
+struct EconomicContract {
     EconomicContractId id{};
     std::vector<GameplayObjectRef> parties;
     ContractTypeId type{};
@@ -284,8 +252,7 @@ struct EconomicContract
     ContractState state = ContractState::Draft;
     Revision revision{};
 };
-struct EconomyChange
-{
+struct EconomyChange {
     std::uint64_t sequence = 0;
     EconomyChangeKind kind = EconomyChangeKind::BalanceChanged;
     GameplayObjectRef subject{};
@@ -306,8 +273,7 @@ struct EconomyChange
     AccountState old_account_state = AccountState::Active;
     AccountState new_account_state = AccountState::Active;
 };
-struct EconomySnapshot
-{
+struct EconomySnapshot {
     std::vector<EconomicAccount> accounts;
     std::vector<FundsReservation> reservations;
     std::vector<MarketState> markets;
@@ -322,8 +288,7 @@ struct EconomySnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct EconomyDiagnostics
-{
+struct EconomyDiagnostics {
     std::uint64_t accounts = 0;
     std::uint64_t active_reservations = 0;
     std::uint64_t markets = 0;
@@ -331,8 +296,7 @@ struct EconomyDiagnostics
     std::uint64_t transactions = 0;
     std::uint64_t debts = 0;
 };
-struct EconomyChangeBatch
-{
+struct EconomyChangeBatch {
     std::vector<EconomyChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -342,25 +306,23 @@ struct EconomyChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-class IPriceProvider
-{
+class IPriceProvider {
   public:
     virtual ~IPriceProvider() = default;
     [[nodiscard]] virtual std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const = 0;
 };
-class EconomyService
-{
+class EconomyService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<EconomyService>;
 
   public:
     EconomyService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.economy");
     }
     [[nodiscard]] foundation::Result<CurrencyId> RegisterCurrency(CurrencyDefinition definition);
     void Freeze() noexcept;
-    [[nodiscard]] foundation::Result<void> AddPriceProvider(PriceProviderId id, std::int32_t priority, const IPriceProvider *provider);
+    [[nodiscard]] foundation::Result<void> AddPriceProvider(PriceProviderId id, std::int32_t priority,
+                                                            const IPriceProvider *provider);
     [[nodiscard]] foundation::Result<void> RegisterContractTermsSchema(ContractTermsSchema schema);
     [[nodiscard]] foundation::Result<EconomicAccountId> CreateAccount(EconomicAccount account);
     [[nodiscard]] const EconomicAccount *FindAccount(EconomicAccountId id) const noexcept;
@@ -390,14 +352,16 @@ class EconomyService
     [[nodiscard]] foundation::Result<TradeTransactionId> AcceptOffer(OfferAcceptanceRequest request);
     [[nodiscard]] std::vector<EconomicOffer> FindOffers(GameplayObjectRef seller = {},
                                                         OfferState state = OfferState::Active) const;
-    [[nodiscard]] foundation::Result<std::vector<OfferId>> ExpireOffers(GameplayTimePoint now, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<std::vector<OfferId>> ExpireOffers(GameplayTimePoint now,
+                                                                        GameplayContext context = {});
     [[nodiscard]] foundation::Result<TradeTransactionId> PrepareTrade(TradePlan plan);
     [[nodiscard]] foundation::Result<void> ReserveTrade(TradeTransactionId transaction);
     [[nodiscard]] foundation::Result<void> CommitTrade(TradeTransactionId transaction);
     [[nodiscard]] foundation::Result<void> CancelTrade(TradeTransactionId transaction);
     [[nodiscard]] const TradeTransaction *FindTransaction(TradeTransactionId id) const noexcept;
     [[nodiscard]] std::optional<TradeTransaction> FindTransactionCopy(TradeTransactionId id) const noexcept;
-    [[nodiscard]] std::vector<EconomicAccount> FindAccounts(GameplayObjectRef owner, std::optional<CurrencyId> currency = std::nullopt) const;
+    [[nodiscard]] std::vector<EconomicAccount> FindAccounts(GameplayObjectRef owner,
+                                                            std::optional<CurrencyId> currency = std::nullopt) const;
     [[nodiscard]] foundation::Result<DebtId> CreateDebt(DebtRecord debt);
     [[nodiscard]] foundation::Result<void> ResolveDebt(DebtId debt, DebtState state, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> CompactDebt(DebtId debt, GameplayContext context = {});
@@ -406,49 +370,46 @@ class EconomyService
     [[nodiscard]] foundation::Result<void> SetContractState(EconomicContractId contract, ContractState state,
                                                             GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> CompactContract(EconomicContractId contract, GameplayContext context = {});
-    private:
-        [[nodiscard]] EconomyChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] EconomyChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] EconomyChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] EconomyChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    private:
-        [[nodiscard]] std::vector<EconomyChange> ChangesSinceSequence(std::uint64_t sequence) const;
-    public:
+
+  private:
+    [[nodiscard]] std::vector<EconomyChange> ChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
     [[nodiscard]] EconomySnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(EconomySnapshot snapshot);
     [[nodiscard]] EconomyDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
   private:
-    struct IndicatorKey
-    {
+    struct IndicatorKey {
         MarketId market{};
         EconomicCommodityId commodity{};
         [[nodiscard]] bool operator==(const IndicatorKey &) const noexcept = default;
     };
-    struct IndicatorKeyHash
-    {
-        [[nodiscard]] std::size_t operator()(const IndicatorKey &k) const noexcept
-        {
+    struct IndicatorKeyHash {
+        [[nodiscard]] std::size_t operator()(const IndicatorKey &k) const noexcept {
             auto a = std::hash<GameplayObjectId>{}(k.market.value), b = std::hash<TypeId>{}(k.commodity.value);
             return a ^ (b + 0x9E3779B97F4A7C15ull + (a << 6u) + (a >> 2u));
         }
@@ -471,8 +432,7 @@ class EconomyService
     std::unordered_map<DebtId, DebtRecord, IdHash> debts_;
     std::unordered_map<EconomicContractId, EconomicContract, IdHash> contracts_;
     std::unordered_map<ContractTypeId, ContractTermsSchema, IdHash> contract_terms_schemas_;
-    struct PriceProviderRegistration
-    {
+    struct PriceProviderRegistration {
         PriceProviderId id{};
         std::int32_t priority = 0;
         const IPriceProvider *provider = nullptr;

@@ -189,3 +189,107 @@ template <> struct hash<epidemic::runtime::renderer::ViewId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_ids.h`.
+
+### Перечисления и допустимые категории
+
+- `RenderProxyLifecycle`: `Unregistered`, `Registered`, `DestroyPending`, `Destroyed`
+- `RenderProxyReadiness`: `MissingResources`, `Loading`, `Failed`, `Ready`
+- `RenderProxyVisibility`: `Hidden`, `Visible`, `Culled`
+- `RenderProxyDirtyFlags`: `None`, `Transform`, `Material`, `Visibility`
+- `RenderLayer`: `Opaque`, `Transparent`, `Sky`, `Water`, `Debug`
+- `RenderFrameState`: `NotPrepared`, `Preparing`, `ReadyToRender`, `Rendering`, `Submitted`, `Failed`
+- `ViewLifecycle`: `Active`, `DestroyPending`, `Destroyed`
+
+### Состав типов и операции
+
+#### `RenderProxyId` (строка заголовка 11)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RenderProxyId&) const noexcept = default;
+```
+
+#### `ViewId` (строка заголовка 19)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ViewId&) const noexcept = default;
+```
+
+#### `IRenderMeshResource` (строка заголовка 29)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRenderMeshResource() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRenderMaterialResource` (строка заголовка 35)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRenderMaterialResource() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `RenderProxyDesc` (строка заголовка 123)
+
+Публичные поля и значения по умолчанию:
+
+- `RenderLayer layer = RenderLayer::Opaque`
+- `RenderProxyVisibility visibility = RenderProxyVisibility::Visible`
+
+#### `ViewDesc` (строка заголовка 133)
+
+Публичные поля и значения по умолчанию:
+
+- `float vertical_fov = 60.0f`
+- `float near_plane = 0.1f`
+- `float far_plane = 1000.0f`
+
+#### `hash` (строка заголовка 150)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::renderer::RenderProxyId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 158)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::renderer::ViewId value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

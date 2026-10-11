@@ -168,3 +168,54 @@ class EventBus final : public IEventBus
 };
 } // namespace epidemic::core::events
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Перечисления и допустимые категории
+
+- `EventDispatchMode`: `Sync`, `Queued`
+
+### Состав типов и операции
+
+#### `IEventBus` (строка заголовка 29)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IEventBus() = default;
+// Registers a synchronous handler for EventT. template <typename EventT, typename HandlerT> HandlerToken SubscribeSync(HandlerT &&handler);
+// Registers a queued handler for EventT. template <typename EventT, typename HandlerT> HandlerToken SubscribeQueued(HandlerT &&handler);
+// Immediately dispatches one event to synchronous subscribers of EventT. template <typename EventT> void PublishSync(const EventT &event);
+// Queues one event for later delivery to queued subscribers of EventT. template <typename EventT> void Enqueue(const EventT &event);
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `EventBus` (строка заголовка 96)
+
+#### `Subscription` (строка заголовка 106)
+
+Публичные поля и значения по умолчанию:
+
+- `AnyEventHandler handler`
+
+#### `QueuedEvent` (строка заголовка 112)
+
+Публичные поля и значения по умолчанию:
+
+- `std::any payload`
+
+Публичные сигнатуры операций:
+
+```cpp
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES std::uint64_t auditor_correlation;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

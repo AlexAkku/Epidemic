@@ -210,3 +210,48 @@ class Application
 };
 } // namespace epidemic::core
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Core/frame_context.h`, `Epidemic/Core/frame_phase.h`, `Epidemic/Core/module_registry.h`, `Epidemic/Core/service_container.h`.
+
+### Перечисления и допустимые категории
+
+- `State`: `Constructed`, `Bootstrapped`, `Initialized`, `Running`, `Failed`, `ShutDown`
+
+### Состав типов и операции
+
+#### `ApplicationOptions` (строка заголовка 32)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string application_name = "Epidemic Engine v1.0"`
+- `std::optional<std::uint64_t> frame_limit`
+
+#### `Application` (строка заголовка 38)
+
+#### `FramePhaseHandlerRegistration` (строка заголовка 44)
+
+Публичные поля и значения по умолчанию:
+
+- `FramePhaseCallback callback`
+- `std::string debug_name`
+
+#### `PhaseHandler` (строка заголовка 126)
+
+Публичные поля и значения по умолчанию:
+
+- `FramePhaseCallback callback`
+- `std::string debug_name`
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

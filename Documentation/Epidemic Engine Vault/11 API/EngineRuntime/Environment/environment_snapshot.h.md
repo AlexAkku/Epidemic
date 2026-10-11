@@ -52,3 +52,35 @@ struct EnvironmentSnapshot
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Environment/climate_profile.h`, `Epidemic/Runtime/Environment/season_state.h`, `Epidemic/Runtime/Environment/surface_state.h`, `Epidemic/Runtime/Environment/weather_state.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`.
+
+### Состав типов и операции
+
+#### `EnvironmentSnapshot` (строка заголовка 15)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t revision = 0`
+- `float temperature = 0.0f`
+- `float humidity = 0.0f`
+- `std::vector<SurfaceState> surfaces`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const EnvironmentSnapshot&) const = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

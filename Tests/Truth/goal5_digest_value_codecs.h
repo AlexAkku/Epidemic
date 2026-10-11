@@ -2,36 +2,45 @@
 #pragma once
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
 namespace epidemic::gameplay::savegame::detail {
-template <> struct SnapshotValueCodec<narrative::NarrativeValue>
-{
-    template <typename IO> static void Transfer(IO& io, narrative::NarrativeValue& value)
-    {
+template <> struct SnapshotValueCodec<narrative::NarrativeValue> {
+    template <typename IO> static void Transfer(IO &io, narrative::NarrativeValue &value) {
         std::uint8_t alternative = static_cast<std::uint8_t>(value.index());
         TransferSnapshot(io, alternative);
-        if (alternative >= 5) throw std::runtime_error("invalid NarrativeValue alternative");
-        if constexpr (IO::reading)
-        {
-            switch (alternative)
-            {
-            case 0: value.emplace<0>(); break;
-            case 1: value.emplace<1>(); break;
-            case 2: value.emplace<2>(); break;
-            case 3: value.emplace<3>(); break;
-            case 4: value.emplace<4>(); break;
+        if (alternative >= 5)
+            throw std::runtime_error("invalid NarrativeValue alternative");
+        if constexpr (IO::reading) {
+            switch (alternative) {
+            case 0:
+                value.emplace<0>();
+                break;
+            case 1:
+                value.emplace<1>();
+                break;
+            case 2:
+                value.emplace<2>();
+                break;
+            case 3:
+                value.emplace<3>();
+                break;
+            case 4:
+                value.emplace<4>();
+                break;
             }
         }
-        std::visit([&](auto& field) { TransferSnapshot(io, field); }, value);
+        std::visit(
+            [&](auto &field) {
+                TransferSnapshot(io, field);
+            },
+            value);
     }
 };
-template <> struct SnapshotValueCodec<materials::SubstanceAmount>
-{
-    template <class IO> static void Transfer(IO& io, materials::SubstanceAmount& amount)
-    { TransferSnapshot(io, amount.micro); }
+template <> struct SnapshotValueCodec<materials::SubstanceAmount> {
+    template <class IO> static void Transfer(IO &io, materials::SubstanceAmount &amount) {
+        TransferSnapshot(io, amount.micro);
+    }
 };
-template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord>
-{
-    template <typename IO> static void Transfer(IO& io, knowledge::KnowledgeRecord& value)
-    {
+template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord> {
+    template <typename IO> static void Transfer(IO &io, knowledge::KnowledgeRecord &value) {
         TransferSnapshot(io, value.id);
         TransferSnapshot(io, value.owner);
         TransferSnapshot(io, value.type);
@@ -55,10 +64,8 @@ template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord>
         TransferSnapshot(io, value.revision);
     }
 };
-template <> struct SnapshotValueCodec<processes::ProcessInstance>
-{
-    template <typename IO> static void Transfer(IO& io, processes::ProcessInstance& value)
-    {
+template <> struct SnapshotValueCodec<processes::ProcessInstance> {
+    template <typename IO> static void Transfer(IO &io, processes::ProcessInstance &value) {
         TransferSnapshot(io, value.id);
         TransferSnapshot(io, value.recipe);
         TransferSnapshot(io, value.actor);
@@ -78,16 +85,13 @@ template <> struct SnapshotValueCodec<processes::ProcessInstance>
         TransferSnapshot(io, value.revision);
     }
 };
-template <> struct SnapshotValueCodec<::epidemic::gameplay::ChangeCursor>
-{
-    template <typename IO> static void Transfer(IO& io, ::epidemic::gameplay::ChangeCursor& value)
-    {
-        if constexpr (!IO::reading && requires { IO::semantic_observation_identity; })
-        {
+template <> struct SnapshotValueCodec<::epidemic::gameplay::ChangeCursor> {
+    template <typename IO> static void Transfer(IO &io, ::epidemic::gameplay::ChangeCursor &value) {
+        if constexpr (!IO::reading && requires { IO::semantic_observation_identity; }) {
             auto epoch = static_cast<std::uint64_t>(value.IsValid());
             TransferSnapshot(io, epoch);
-        }
-        else TransferSnapshot(io, value.epoch);
+        } else
+            TransferSnapshot(io, value.epoch);
         TransferSnapshot(io, value.sequence);
     }
 };

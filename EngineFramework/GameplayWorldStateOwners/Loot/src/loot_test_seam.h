@@ -1,9 +1,7 @@
 #pragma once
 
-namespace epidemic::gameplay::loot::internal_test
-{
-enum class AllocationFaultPoint
-{
+namespace epidemic::gameplay::loot::internal_test {
+enum class AllocationFaultPoint {
     None,
     RestoreGenerated,
     RestorePending,
@@ -12,18 +10,15 @@ enum class AllocationFaultPoint
 
 inline thread_local AllocationFaultPoint g_allocation_fault = AllocationFaultPoint::None;
 
-inline void ArmAllocationFault(AllocationFaultPoint point) noexcept
-{
+inline void ArmAllocationFault(AllocationFaultPoint point) noexcept {
     g_allocation_fault = point;
 }
 
-inline void ResetAllocationFault() noexcept
-{
+inline void ResetAllocationFault() noexcept {
     g_allocation_fault = AllocationFaultPoint::None;
 }
 
-[[nodiscard]] inline bool ConsumeAllocationFault(AllocationFaultPoint point) noexcept
-{
+[[nodiscard]] inline bool ConsumeAllocationFault(AllocationFaultPoint point) noexcept {
     if (g_allocation_fault != point)
         return false;
     g_allocation_fault = AllocationFaultPoint::None;

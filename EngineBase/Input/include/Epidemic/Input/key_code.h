@@ -3,13 +3,11 @@
 #include <cstdint>
 #include <string_view>
 
-namespace epidemic::input
-{
+namespace epidemic::input {
 // This file defines the normalized keyboard keys recognized by EngineBase input code.
 // Values intentionally mirror Win32 virtual-key codes for the current baseline backend.
 
-enum class KeyCode : std::uint16_t
-{
+enum class KeyCode : std::uint16_t {
     Unknown = 0,
     Backspace = 8,
     Tab = 9,
@@ -112,10 +110,8 @@ enum class KeyCode : std::uint16_t
 };
 
 // Returns true for concrete supported keys and false for Unknown or out-of-range values.
-[[nodiscard]] constexpr bool IsKnownKeyCode(KeyCode key_code) noexcept
-{
-    switch (key_code)
-    {
+[[nodiscard]] constexpr bool IsKnownKeyCode(KeyCode key_code) noexcept {
+    switch (key_code) {
     case KeyCode::Backspace:
     case KeyCode::Tab:
     case KeyCode::Enter:
@@ -223,10 +219,8 @@ enum class KeyCode : std::uint16_t
 }
 
 // Converts a normalized key code to a stable diagnostic name.
-[[nodiscard]] inline std::string_view ToString(KeyCode key_code) noexcept
-{
-    switch (key_code)
-    {
+[[nodiscard]] inline std::string_view ToString(KeyCode key_code) noexcept {
+    switch (key_code) {
     case KeyCode::Unknown:
         return "Unknown";
     case KeyCode::Backspace:
@@ -429,5 +423,4 @@ enum class KeyCode : std::uint16_t
 
     return "Unknown";
 }
-} 
-
+}

@@ -384,3 +384,305 @@ class EnvironmentService
 };
 } // namespace epidemic::gameplay::environment
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `EnvironmentBlendPolicy`: `Override`, `Add`, `Multiply`, `Min`, `Max`, `CustomRegistered`
+- `EnvironmentPersistence`: `Transient`, `Session`, `Persistent`
+- `EnvironmentValueField`: `Temperature`, `Humidity`, `Precipitation`, `WindStrength`, `WindDirection`, `Visibility`, `LightExposure`
+- `EnvironmentChangeKind`: `Added`, `Changed`, `Removed`, `Expired`
+
+### Состав типов и операции
+
+#### `EnvironmentLayerId` (строка заголовка 19)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr EnvironmentLayerId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EnvironmentLayerId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EnvironmentLayerId &) const noexcept = default;
+```
+
+#### `EnvironmentLayerTypeId` (строка заголовка 31)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr EnvironmentLayerTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EnvironmentLayerTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EnvironmentLayerTypeId &) const noexcept = default;
+```
+
+#### `EnvironmentBlendHandlerId` (строка заголовка 40)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr EnvironmentBlendHandlerId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EnvironmentBlendHandlerId &) const noexcept = default;
+```
+
+#### `EnvironmentPosition` (строка заголовка 48)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t x_mm = 0, y_mm = 0, z_mm = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const EnvironmentPosition &) const noexcept = default;
+```
+
+#### `EnvironmentAabb` (строка заголовка 54)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool Contains(EnvironmentPosition p) const noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EnvironmentAabb &) const noexcept = default;
+```
+
+#### `EnvironmentValues` (строка заголовка 103)
+
+Публичные поля и значения по умолчанию:
+
+- `EnvironmentFixed temperature_milli_c = 0`
+- `EnvironmentFixed humidity = 0`
+- `EnvironmentFixed precipitation = 0`
+- `EnvironmentFixed wind_strength = 0`
+- `EnvironmentFixed wind_x = 0, wind_y = 0, wind_z = 0`
+- `EnvironmentFixed visibility = kEnvironmentOne`
+- `EnvironmentFixed light_exposure = kEnvironmentOne`
+- `EnvironmentValueMask present = kEnvironmentAllValues`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const EnvironmentValues &) const noexcept = default;
+```
+
+#### `EnvironmentHazardTypeId` (строка заголовка 116)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr EnvironmentHazardTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EnvironmentHazardTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EnvironmentHazardTypeId &) const noexcept = default;
+```
+
+#### `EnvironmentHazard` (строка заголовка 125)
+
+Публичные поля и значения по умолчанию:
+
+- `EnvironmentFixed intensity = 0`
+- `GameplayTagSet tags`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const EnvironmentHazard &) const noexcept = default;
+```
+
+#### `EnvironmentLayer` (строка заголовка 133)
+
+Публичные поля и значения по умолчанию:
+
+- `int priority = 0`
+- `EnvironmentBlendPolicy blend = EnvironmentBlendPolicy::Override`
+- `GameplayTagSet tags`
+- `std::vector<EnvironmentHazard> hazards`
+- `EnvironmentPersistence persistence = EnvironmentPersistence::Session`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const EnvironmentLayer &) const noexcept = default;
+```
+
+#### `EnvironmentSampleHazard` (строка заголовка 153)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const EnvironmentSampleHazard &) const noexcept = default;
+```
+
+#### `EnvironmentSample` (строка заголовка 160)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+- `std::vector<EnvironmentLayerId> layers`
+
+#### `EnvironmentChange` (строка заголовка 180)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `EnvironmentChangeKind kind = EnvironmentChangeKind::Added`
+
+#### `EnvironmentChangeBatch` (строка заголовка 189)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `std::vector<EnvironmentChange> changes`
+
+#### `EnvironmentSnapshot` (строка заголовка 200)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EnvironmentLayer> layers`
+- `std::uint64_t change_epoch = 1`
+
+#### `EnvironmentDiagnostics` (строка заголовка 209)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t layers = 0`
+- `std::uint64_t persistent_layers = 0`
+- `std::uint64_t samples = 0`
+- `std::uint64_t expired = 0`
+- `std::uint64_t changes = 0`
+- `std::uint64_t blend_failures = 0`
+
+#### `EnvironmentService` (строка заголовка 219)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::int64_t kSpatialCellMm = 100000`, `static constexpr std::uint64_t kMaxIndexedCells = 4096`, `static constexpr std::size_t kChangeJournalCapacity = 4096`, `std::unordered_map<EnvironmentLayerTypeId, std::string, TypeHash> types_`, `std::unordered_map<EnvironmentBlendHandlerId, std::pair<std::string, BlendHandler>, BlendHash> `, `std::unordered_map<EnvironmentHazardTypeId, std::string, HazardHash> hazard_types_`, `std::unordered_map<EnvironmentLayerId, EnvironmentLayer, IdHash> layers_`, `std::unordered_map<CellKey, std::vector<EnvironmentLayerId>, CellHash> spatial_index_`, `std::vector<EnvironmentLayerId> global_layers_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+EnvironmentService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterLayerType(EnvironmentLayerTypeId id, std::string canonical_name);
+[[nodiscard]] foundation::Result<void> RegisterBlendHandler(EnvironmentBlendHandlerId id, std::string canonical_name, BlendHandler handler);
+[[nodiscard]] foundation::Result<void> RegisterHazardType(EnvironmentHazardTypeId id, std::string canonical_name);
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] foundation::Result<EnvironmentLayerId> AddLayer(EnvironmentLayer layer);
+[[nodiscard]] foundation::Result<void> UpdateLayer(EnvironmentLayer layer);
+[[nodiscard]] std::optional<EnvironmentLayer> GetLayer(EnvironmentLayerId id) const noexcept;
+[[nodiscard]] std::vector<EnvironmentLayer> FindLayers(EnvironmentPosition position) const;
+[[nodiscard]] EnvironmentSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(EnvironmentSnapshot snapshot);
+[[nodiscard]] EnvironmentChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+[[nodiscard]] EnvironmentDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `CellKey` (строка заголовка 287)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t x = 0, y = 0, z = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const CellKey &) const noexcept = default;
+```
+
+#### `CellHash` (строка заголовка 293)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(const CellKey &c) const noexcept;
+```
+
+#### `IdHash` (строка заголовка 304)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(EnvironmentLayerId id) const noexcept;
+```
+
+#### `TypeHash` (строка заголовка 309)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(EnvironmentLayerTypeId id) const noexcept;
+```
+
+#### `HazardHash` (строка заголовка 314)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(EnvironmentHazardTypeId id) const noexcept;
+```
+
+#### `BlendHash` (строка заголовка 319)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(EnvironmentBlendHandlerId id) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `EnvironmentService` | `EnvironmentService::EnvironmentService` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:96` |
+| `RegisterLayerType` | `EnvironmentService::RegisterLayerType` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:304` |
+| `RegisterBlendHandler` | `EnvironmentService::RegisterBlendHandler` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:315` |
+| `RegisterHazardType` | `EnvironmentService::RegisterHazardType` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:327` |
+| `AddLayer` | `EnvironmentService::AddLayer` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:350` |
+| `UpdateLayer` | `EnvironmentService::UpdateLayer` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:416` |
+| `GetLayer` | `EnvironmentService::GetLayer` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:553` |
+| `FindLayers` | `EnvironmentService::FindLayers` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:559` |
+| `CaptureSnapshot` | `EnvironmentService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:710` |
+| `RestoreSnapshot` | `EnvironmentService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:723` |
+| `GetDiagnostics` | `EnvironmentService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Environment/src/environment.cpp:826` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterLayerType`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:23`
+- `RegisterHazardType`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:25`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:49`
+- `AddLayer`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:61`
+- `CurrentRevision`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:169`
+- `UpdateLayer`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:188`
+- `RegisterBlendHandler`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:214`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:228`
+- `LatestChangeCursor`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:246`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:248`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:253`
+- `GetLayer`: `EngineFramework/DevelopmentInfrastructure/Tests/environment_gameplay_tests.cpp:254`
+

@@ -7,33 +7,28 @@
 #include <cstdint>
 #include <string>
 
-namespace epidemic::rhi
-{
+namespace epidemic::rhi {
 // This file defines the value descriptors used by the baseline RHI interfaces.
 // Validation helpers keep expected runtime setup failures in Result instead of exceptions.
 
-struct RhiColor
-{
+struct RhiColor {
     float red{};
     float green{};
     float blue{};
     float alpha{1.0f};
 };
 
-struct RhiClearDesc
-{
+struct RhiClearDesc {
     bool clear_color{true};
     RhiColor color{};
 };
 
-struct RhiDeviceDesc
-{
+struct RhiDeviceDesc {
     bool enable_debug_validation{};
     std::string debug_name{"EpidemicNullRHI"};
 };
 
-struct RhiSwapChainDesc
-{
+struct RhiSwapChainDesc {
     PresentationSurfaceHandle surface_handle{};
     std::uint32_t width{};
     std::uint32_t height{};

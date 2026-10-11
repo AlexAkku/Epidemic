@@ -11,12 +11,12 @@
 #include <span>
 #include <vector>
 
-namespace epidemic::gameplay::traversal_navigation_construction
-{
-class TraversalNavigationCapabilityProvider final : public navigation_semantics::INavigationCapabilityProvider
-{
+namespace epidemic::gameplay::traversal_navigation_construction {
+class TraversalNavigationCapabilityProvider final : public navigation_semantics::INavigationCapabilityProvider {
   public:
-    explicit TraversalNavigationCapabilityProvider(const traversal::TraversalService &traversal) : traversal_(traversal) {}
+    explicit TraversalNavigationCapabilityProvider(const traversal::TraversalService &traversal)
+        : traversal_(traversal) {
+    }
     [[nodiscard]] bool HasCapability(GameplayObjectRef subject, TypeId capability,
                                      navigation_semantics::Fixed min_parameter_micro) const noexcept override;
 
@@ -24,20 +24,16 @@ class TraversalNavigationCapabilityProvider final : public navigation_semantics:
     const traversal::TraversalService &traversal_;
 };
 
-class TraversalNavigationAdapter
-{
+class TraversalNavigationAdapter {
   public:
     // GameplayContext is mandatory: Navigation semantics may depend on gameplay time and context-bound fact providers.
-    [[nodiscard]] navigation_semantics::NavigationPermissionResult CanUseLink(
-        const traversal::TraversalService &traversal,
-        const navigation_semantics::NavigationSemanticsService &navigation,
-        GameplayObjectRef subject,
-        navigation_semantics::NavigationLinkId link,
-        const GameplayContext &context) const;
+    [[nodiscard]] navigation_semantics::NavigationPermissionResult
+    CanUseLink(const traversal::TraversalService &traversal,
+               const navigation_semantics::NavigationSemanticsService &navigation, GameplayObjectRef subject,
+               navigation_semantics::NavigationLinkId link, const GameplayContext &context) const;
 };
 
-enum class ConstructionNavigationOperation : std::uint8_t
-{
+enum class ConstructionNavigationOperation : std::uint8_t {
     Add = 1,
     Update = 2,
     Remove = 3
@@ -47,8 +43,7 @@ enum class ConstructionNavigationOperation : std::uint8_t
 // `source_key` identifies one navigation semantic emitted by a placed construction object.
 // The final NavigationLayerId is derived from (placed_record, source_key), so Add/Update/Remove
 // operations remain idempotent across retries and save/load without an integration-side mapping table.
-struct ConstructionNavigationLayerPayload
-{
+struct ConstructionNavigationLayerPayload {
     ConstructionNavigationOperation operation = ConstructionNavigationOperation::Add;
     TypeId source_key{};
     navigation_semantics::NavigationLayerTypeId layer_type{};
@@ -63,46 +58,41 @@ struct ConstructionNavigationLayerPayload
 };
 
 [[nodiscard]] std::vector<std::byte> EncodeNavigationLayerPayload(const ConstructionNavigationLayerPayload &payload);
-[[nodiscard]] navigation_semantics::NavigationLayerId NavigationLayerIdFor(
-    construction::PlacedObjectId placed_object, TypeId source_key) noexcept;
+[[nodiscard]] navigation_semantics::NavigationLayerId NavigationLayerIdFor(construction::PlacedObjectId placed_object,
+                                                                           TypeId source_key) noexcept;
 
-class ConstructionNavigationAdapter
-{
+class ConstructionNavigationAdapter {
   public:
     // Queue a durable Add/Update/Remove operation for an existing placed construction object.
-    [[nodiscard]] foundation::Result<construction::PlacementOutputId> QueueNavigationOperation(
-        construction::ConstructionService &construction,
-        construction::PlacedObjectId placed_object,
-        GameplayObjectRef area,
-        const ConstructionNavigationLayerPayload &payload,
-        GameplayContext context = {}) const;
+    [[nodiscard]] foundation::Result<construction::PlacementOutputId>
+    QueueNavigationOperation(construction::ConstructionService &construction,
+                             construction::PlacedObjectId placed_object, GameplayObjectRef area,
+                             const ConstructionNavigationLayerPayload &payload, GameplayContext context = {}) const;
 
     // Production delivery path. Only navigation outputs are consumed; other outbox entries remain pending
     // for their owning integration adapters. Acknowledge happens only after the requested Navigation mutation
     // is confirmed or an idempotent replay is proven already applied.
-    [[nodiscard]] foundation::Result<std::size_t> ProcessPendingOutputs(
-        construction::ConstructionService &construction,
-        navigation_semantics::NavigationSemanticsService &navigation,
-        GameplayContext context = {}) const;
+    [[nodiscard]] foundation::Result<std::size_t>
+    ProcessPendingOutputs(construction::ConstructionService &construction,
+                          navigation_semantics::NavigationSemanticsService &navigation,
+                          GameplayContext context = {}) const;
 
   private:
-    [[nodiscard]] foundation::Result<ConstructionNavigationLayerPayload> DecodePayload(
-        const construction::PlacementOutputOperation &output) const;
-    [[nodiscard]] foundation::Result<navigation_semantics::NavigationSemanticLayer> BuildLayer(
-        const construction::PlacementOutputOperation &output,
-        const ConstructionNavigationLayerPayload &payload,
-        navigation_semantics::NavigationLayerId stable_id) const;
+    [[nodiscard]] foundation::Result<ConstructionNavigationLayerPayload>
+    DecodePayload(const construction::PlacementOutputOperation &output) const;
+    [[nodiscard]] foundation::Result<navigation_semantics::NavigationSemanticLayer>
+    BuildLayer(const construction::PlacementOutputOperation &output, const ConstructionNavigationLayerPayload &payload,
+               navigation_semantics::NavigationLayerId stable_id) const;
 };
 
-class ConstructionTraversalAdapter
-{
+class ConstructionTraversalAdapter {
   public:
     // This helper intentionally cancels exactly the supplied sessions. Traversal routes currently do not
     // store NavigationLinkId, so inferring link membership here would be a misleading contract.
-    [[nodiscard]] foundation::Result<void> CancelTraversalSessions(
-        traversal::TraversalService &traversal,
-        std::span<const traversal::TraversalSessionId> sessions,
-        GameplayContext context = {}) const;
+    [[nodiscard]] foundation::Result<void>
+    CancelTraversalSessions(traversal::TraversalService &traversal,
+                            std::span<const traversal::TraversalSessionId> sessions,
+                            GameplayContext context = {}) const;
 };
 } // namespace epidemic::gameplay::traversal_navigation_construction
 
@@ -111,10 +101,14 @@ class ConstructionTraversalAdapter
 #include "Epidemic/GameFramework/Construction/construction.h"
 #include "Epidemic/GameFramework/NavigationSemantics/navigation_semantics.h"
 #include "Epidemic/GameFramework/Traversal/traversal.h"
-namespace epidemic::gameplay::savegame
-{
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConstructionServiceSaveParticipant(epidemic::gameplay::construction::ConstructionService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNavigationSemanticsServiceSaveParticipant(epidemic::gameplay::navigation_semantics::NavigationSemanticsService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateTraversalServiceSaveParticipant(epidemic::gameplay::traversal::TraversalService& owner, SaveRestoreWorkspace& workspace);
+namespace epidemic::gameplay::savegame {
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateConstructionServiceSaveParticipant(epidemic::gameplay::construction::ConstructionService &owner,
+                                         SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateNavigationSemanticsServiceSaveParticipant(
+    epidemic::gameplay::navigation_semantics::NavigationSemanticsService &owner, SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateTraversalServiceSaveParticipant(epidemic::gameplay::traversal::TraversalService &owner,
+                                      SaveRestoreWorkspace &workspace);
 }
 // END GENERATED GOAL5 PARTICIPANTS

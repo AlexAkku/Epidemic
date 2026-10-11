@@ -8,13 +8,11 @@
 #include <string>
 #include <vector>
 
-namespace epidemic::platform
-{
+namespace epidemic::platform {
 // This file defines the window-system abstraction layered alongside IPlatformRuntime.
 // The window system owns window creation and exposes drained platform events to higher layers.
 
-struct WindowCreateInfo
-{
+struct WindowCreateInfo {
     std::string title = "Epidemic Engine v1.0";
     std::uint32_t client_width = 1280;
     std::uint32_t client_height = 720;
@@ -23,8 +21,7 @@ struct WindowCreateInfo
 
 using WindowPtr = std::shared_ptr<IWindow>;
 
-class IWindowSystem
-{
+class IWindowSystem {
   public:
     virtual ~IWindowSystem() = default;
 

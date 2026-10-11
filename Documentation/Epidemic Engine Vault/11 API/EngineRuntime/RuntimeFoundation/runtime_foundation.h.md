@@ -34,3 +34,20 @@ _Именованные `class`/`struct`/`enum` в этом заголовке �
 #include "Epidemic/Runtime/Foundation/runtime_time.h"
 #include "Epidemic/Runtime/Foundation/spatial.h"
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/checked_id_allocator.h`, `Epidemic/Runtime/Foundation/numeric_validation.h`, `Epidemic/Runtime/Foundation/runtime_budget.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/runtime_operation.h`, `Epidemic/Runtime/Foundation/runtime_states.h`, `Epidemic/Runtime/Foundation/runtime_time.h`, `Epidemic/Runtime/Foundation/spatial.h`.
+
+Этот заголовок преимущественно содержит free-functions, type aliases или implementation helpers. Точные сигнатуры смотрите в исходном блоке выше.
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

@@ -112,3 +112,92 @@ class IRenderCommandSink
 };
 } // namespace epidemic::runtime::renderer
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Foundation/spatial.h`, `Epidemic/Runtime/Renderer/render_types.h`.
+
+### Состав типов и операции
+
+#### `RenderTransformSnapshot` (строка заголовка 12)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t revision = 0`
+
+#### `RenderPoseBuffer` (строка заголовка 19)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t revision = 0`
+
+#### `IRenderPoseSource` (строка заголовка 26)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRenderPoseSource() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRenderResourceBridge` (строка заголовка 37)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRenderResourceBridge() = default;
+[[nodiscard]] virtual foundation::Result<void> ReleasePayloads(ResourceId mesh, ResourceId material) = 0;
+[[nodiscard]] virtual foundation::Result<RenderResourcePayloads> GetPayloads(ResourceId mesh, ResourceId material) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRenderSceneSource` (строка заголовка 49)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRenderSceneSource() = default;
+[[nodiscard]] virtual foundation::Result<RenderTransformSnapshot> GetTransformSnapshot(RenderTransformId node) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `RenderProxySubmission` (строка заголовка 57)
+
+Публичные поля и значения по умолчанию:
+
+- `RenderLayer layer = RenderLayer::Opaque`
+- `RenderProxyVisibility visibility = RenderProxyVisibility::Visible`
+
+#### `IRenderCommandSink` (строка заголовка 74)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRenderCommandSink() = default;
+[[nodiscard]] virtual foundation::Result<void> SubmitProxy(const RenderProxySubmission& submission) = 0;
+[[nodiscard]] virtual foundation::Result<void> EndFrame() = 0;
+[[nodiscard]] virtual foundation::Result<void> AbortFrame() = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

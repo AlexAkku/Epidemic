@@ -387,3 +387,303 @@ class SaveRestoreWorkspace
 
 } // namespace epidemic::gameplay::savegame
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `ContentCompatibilityPolicy`: 
+- `SaveParticipantRequirement`: `Required`, `Optional`
+- `SavePhase`: `Idle`, `Barrier`, `Capturing`, `Validating`, `Staging`, `Committing`, `Complete`, `Failed`
+
+### Состав типов и операции
+
+#### `SaveParticipantId` (строка заголовка 17)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SaveParticipantId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SaveParticipantId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SaveParticipantId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 31)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(SaveParticipantId id) const noexcept;
+```
+
+#### `SaveSection` (строка заголовка 77)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveSchemaVersion schema_version = 0`
+- `std::vector<std::byte> payload`
+- `DataHash payload_hash = 0`
+
+#### `SaveParticipantManifest` (строка заголовка 84)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveSchemaVersion schema_version = 0`
+- `DataHash payload_hash = 0`
+- `SaveParticipantRequirement requirement = SaveParticipantRequirement::Required`
+- `std::vector<SaveParticipantId> dependencies`
+
+#### `SaveGameManifest` (строка заголовка 92)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveGameVersion save_version = 1`
+- `std::uint64_t content_version = 0`
+- `DataHash content_hash = 0`
+- `std::uint64_t engine_version = 0`
+- `std::uint64_t framework_version = 0`
+- `std::vector<SaveParticipantManifest> participants`
+
+#### `SaveGameImage` (строка заголовка 102)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveGameManifest manifest`
+- `std::vector<SaveSection> sections`
+
+#### `SaveContext` (строка заголовка 107)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t content_version = 0`
+- `DataHash content_hash = 0`
+- `std::uint64_t engine_version = 0`
+- `std::uint64_t framework_version = 0`
+
+#### `RestoreContext` (строка заголовка 115)
+
+Публичные поля и значения по умолчанию:
+
+- `ContentCompatibilityPolicy compatibility = ContentCompatibilityPolicy::ExactRequired`
+- `std::uint64_t current_content_version = 0`
+- `DataHash current_content_hash = 0`
+- `std::uint64_t current_engine_version = 0`
+- `std::uint64_t current_framework_version = 0`
+- `bool suppress_gameplay_events = true`
+
+#### `SaveFormatSupport` (строка заголовка 124)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveGameVersion current = 1`
+- `SaveGameVersion minimum_supported = 1`
+- `SaveGameVersion maximum_supported = 1`
+
+#### `SaveResourceLimits` (строка заголовка 130)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_participants = 1024`
+- `std::size_t max_section_bytes = 64ull * 1024ull * 1024ull`
+- `std::size_t max_total_payload_bytes = 512ull * 1024ull * 1024ull`
+- `std::size_t max_dependencies_per_participant = 256`
+
+#### `SaveWireLimits` (строка заголовка 139)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_wire_bytes = 600ull * 1024ull * 1024ull`
+
+#### `ISavePackageStore` (строка заголовка 150)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISavePackageStore() = default;
+[[nodiscard]] virtual foundation::Result<std::vector<std::byte>> Load() = 0;
+[[nodiscard]] virtual foundation::Result<void> Commit(std::span<const std::byte> package) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ISaveBarrierLease` (строка заголовка 161)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISaveBarrierLease() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ISaveBarrier` (строка заголовка 166)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISaveBarrier() = default;
+[[nodiscard]] virtual foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireCaptureLease() = 0;
+[[nodiscard]] virtual foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireRestoreLease() = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRestoreStage` (строка заголовка 173)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRestoreStage() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ISaveParticipant` (строка заголовка 178)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISaveParticipant() = default;
+[[nodiscard]] virtual SaveParticipantId Id() const noexcept = 0;
+[[nodiscard]] virtual SaveSchemaVersion SchemaVersion() const noexcept = 0;
+[[nodiscard]] virtual SaveParticipantRequirement Requirement() const noexcept;
+[[nodiscard]] virtual std::vector<SaveParticipantId> Dependencies() const = 0;
+// A restore-wide private validation view follows Dependencies() order and // is discarded on every exit. It must never publish to gameplay owners. virtual void BeginRestoreValidation() noexcept;
+virtual void EndRestoreValidation() noexcept;
+[[nodiscard]] virtual foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const = 0;
+[[nodiscard]] virtual foundation::Result<void> ValidateSnapshot(const SaveSection &, const RestoreContext &) const = 0;
+[[nodiscard]] virtual foundation::Result<std::unique_ptr<IRestoreStage>> StageRestore(const SaveSection &, const RestoreContext &) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ISaveMigration` (строка заголовка 202)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISaveMigration() = default;
+[[nodiscard]] virtual SaveParticipantId Participant() const noexcept = 0;
+[[nodiscard]] virtual SaveSchemaVersion FromVersion() const noexcept = 0;
+[[nodiscard]] virtual SaveSchemaVersion ToVersion() const noexcept = 0;
+[[nodiscard]] virtual foundation::Result<SaveSection> Migrate(const SaveSection &) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SaveGameDiagnostics` (строка заголовка 211)
+
+Публичные поля и значения по умолчанию:
+
+- `SavePhase phase = SavePhase::Idle`
+- `SavePhase failure_phase = SavePhase::Idle`
+- `SaveSchemaVersion last_failed_schema_version = 0`
+- `std::uint64_t captures = 0`
+- `std::uint64_t restores = 0`
+- `std::uint64_t migrations = 0`
+- `std::uint64_t validation_failures = 0`
+- `std::uint64_t optional_participants_skipped = 0`
+
+#### `SaveGameOrchestrator` (строка заголовка 223)
+
+Публичные сигнатуры операций:
+
+```cpp
+) : format_(format), limits_(limits);
+[[nodiscard]] foundation::Result<void> SetBarrier(ISaveBarrier &barrier) noexcept;
+[[nodiscard]] foundation::Result<void> RegisterParticipant(ISaveParticipant &participant);
+[[nodiscard]] foundation::Result<void> RegisterMigration(const ISaveMigration &migration);
+[[nodiscard]] foundation::Result<void> FreezeRegistry();
+[[nodiscard]] bool RegistryFrozen() const noexcept;
+[[nodiscard]] foundation::Result<std::vector<SaveParticipantId>> ResolveOrder() const;
+[[nodiscard]] foundation::Result<SaveGameImage> Capture(const SaveContext &context);
+[[nodiscard]] foundation::Result<void> Restore(SaveGameImage image, const RestoreContext &context);
+// Return an owned point-in-time snapshot, not a reference changing during later operations. // cppcheck-suppress returnByReference [[nodiscard]] SaveGameDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] static DataHash HashBytes(std::span<const std::byte> bytes) noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `ParticipantRegistration` (строка заголовка 259)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveSchemaVersion schema_version = 0`
+- `SaveParticipantRequirement requirement = SaveParticipantRequirement::Required`
+- `std::vector<SaveParticipantId> dependencies`
+
+#### `MigrationKey` (строка заголовка 266)
+
+Публичные поля и значения по умолчанию:
+
+- `SaveSchemaVersion from = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const MigrationKey &) const noexcept = default;
+```
+
+#### `MigrationKeyHash` (строка заголовка 272)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const MigrationKey &k) const noexcept;
+```
+
+#### `SaveRestoreWorkspace` (строка заголовка 312)
+
+Публичные сигнатуры операций:
+
+```cpp
+SaveRestoreWorkspace() = default;
+```
+
+#### `ValidationRecord` (строка заголовка 351)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<void> storage`
+- `void* view = nullptr`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `HashBytes` | `SaveGameOrchestrator::HashBytes` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_wire.cpp:104` |
+| `HashBytes` | `SaveGameOrchestrator::HashBytes` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:101` |
+| `SetBarrier` | `SaveGameOrchestrator::SetBarrier` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:139` |
+| `RegisterParticipant` | `SaveGameOrchestrator::RegisterParticipant` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:145` |
+| `RegisterMigration` | `SaveGameOrchestrator::RegisterMigration` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:204` |
+| `FreezeRegistry` | `SaveGameOrchestrator::FreezeRegistry` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:279` |
+| `ResolveOrder` | `SaveGameOrchestrator::ResolveOrder` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:349` |
+| `Capture` | `SaveGameOrchestrator::Capture` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:412` |
+| `Restore` | `SaveGameOrchestrator::Restore` | `EngineFramework/GameplayWorldStateOwners/SaveGame/src/save_game.cpp:753` |
+

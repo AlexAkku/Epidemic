@@ -10,60 +10,55 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::equipment;
 
-namespace
-{
-void Check(bool value, const char* message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
 
-GameplayObjectRef Ref(const char* domain, const char* id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 
-class MockItems final : public IEquipmentItemProvider
-{
+class MockItems final : public IEquipmentItemProvider {
   public:
     std::unordered_map<EquipmentItemId, EquipmentItemDescriptor, IdHash> descriptors;
     std::unordered_map<EquipmentItemId, GameplayObjectRef, IdHash> reservations;
     bool reject_reconciliation = false;
 
-    std::optional<EquipmentItemDescriptor> Describe(EquipmentItemId id) const override
-    {
+    std::optional<EquipmentItemDescriptor> Describe(EquipmentItemId id) const override {
         const auto it = descriptors.find(id);
-        if (it == descriptors.end()) return std::nullopt;
+        if (it == descriptors.end())
+            return std::nullopt;
         auto descriptor = it->second;
         descriptor.available = !reservations.contains(id);
         return descriptor;
     }
 
-    epidemic::foundation::Result<void> ReserveForEquipment(EquipmentItemId id, GameplayObjectRef subject, GameplayContext) override
-    {
+    epidemic::foundation::Result<void> ReserveForEquipment(EquipmentItemId id, GameplayObjectRef subject,
+                                                           GameplayContext) override {
         if (!descriptors.contains(id) || reservations.contains(id))
-            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create("reserved", "reserved"));
+            return epidemic::foundation::Result<void>::Failure(
+                epidemic::foundation::Error::Create("reserved", "reserved"));
         reservations.emplace(id, subject);
         return epidemic::foundation::Result<void>::Success();
     }
 
-    epidemic::foundation::Result<void> ReleaseFromEquipment(EquipmentItemId id, GameplayObjectRef subject, GameplayContext) override
-    {
+    epidemic::foundation::Result<void> ReleaseFromEquipment(EquipmentItemId id, GameplayObjectRef subject,
+                                                            GameplayContext) override {
         const auto it = reservations.find(id);
-        if (it != reservations.end() && it->second == subject) reservations.erase(it);
+        if (it != reservations.end() && it->second == subject)
+            reservations.erase(it);
         return epidemic::foundation::Result<void>::Success();
     }
 
     epidemic::foundation::Result<void> ExchangeEquipmentReservations(std::span<const EquipmentItemId> releases,
-                                                            std::optional<EquipmentItemId> reserve,
-                                                            GameplayObjectRef subject,
-                                                            GameplayContext) override
-    {
-        for (const auto item : releases)
-        {
+                                                                     std::optional<EquipmentItemId> reserve,
+                                                                     GameplayObjectRef subject,
+                                                                     GameplayContext) override {
+        for (const auto item : releases) {
             const auto it = reservations.find(item);
             if (it == reservations.end() || it->second != subject)
                 return epidemic::foundation::Result<void>::Failure(
@@ -73,16 +68,15 @@ class MockItems final : public IEquipmentItemProvider
             std::find(releases.begin(), releases.end(), *reserve) == releases.end())
             return epidemic::foundation::Result<void>::Failure(
                 epidemic::foundation::Error::Create("reserve_conflict", "replacement item is already reserved"));
-        for (const auto item : releases) reservations.erase(item);
-        if (reserve.has_value()) reservations[*reserve] = subject;
+        for (const auto item : releases)
+            reservations.erase(item);
+        if (reserve.has_value())
+            reservations[*reserve] = subject;
         return epidemic::foundation::Result<void>::Success();
     }
 
-    epidemic::foundation::Result<void> ReconcileEquipmentReservation(EquipmentItemId item,
-                                                            GameplayObjectRef subject,
-                                                            EquipmentBindingId,
-                                                            GameplayContext) override
-    {
+    epidemic::foundation::Result<void> ReconcileEquipmentReservation(EquipmentItemId item, GameplayObjectRef subject,
+                                                                     EquipmentBindingId, GameplayContext) override {
         if (reject_reconciliation)
             return epidemic::foundation::Result<void>::Failure(
                 epidemic::foundation::Error::Create("reconcile_rejected", "reconciliation rejected"));
@@ -94,8 +88,7 @@ class MockItems final : public IEquipmentItemProvider
     }
 };
 
-EquipmentItemDescriptor Weapon(EquipmentItemId id)
-{
+EquipmentItemDescriptor Weapon(EquipmentItemId id) {
     EquipmentItemDescriptor descriptor;
     descriptor.id = id;
     descriptor.tags.Add(TagId::FromString("item.weapon"));
@@ -105,8 +98,7 @@ EquipmentItemDescriptor Weapon(EquipmentItemId id)
 }
 } // namespace
 
-int main()
-{
+int main() {
     MockItems items;
     const auto item_a = EquipmentItemId::FromRaw(1, 42);
     const auto item_b = EquipmentItemId::FromRaw(1, 43);
@@ -135,9 +127,10 @@ int main()
     Check(static_cast<bool>(off_id), "off slot creation failed");
 
     const auto slot_changes = service.ReadChangesSince(ChangeCursor{}).changes;
-    Check(std::count_if(slot_changes.begin(), slot_changes.end(), [](const auto& change) {
-              return change.kind == EquipmentChangeKind::SlotAdded;
-          }) == 2,
+    Check(std::count_if(slot_changes.begin(), slot_changes.end(),
+                        [](const auto &change) {
+                            return change.kind == EquipmentChangeKind::SlotAdded;
+                        }) == 2,
           "dynamic slots must be observable in the change journal");
 
     auto plan = service.PrepareEquip(profile.subject, item_a, {main_id.Value(), off_id.Value()});
@@ -185,7 +178,8 @@ int main()
 
     auto invalid_generators = restored.CaptureSnapshot();
     invalid_generators.profile_ids.scope = 0x9999;
-    Check(!restored.RestoreSnapshot(std::move(invalid_generators)), "restore must reject a foreign profile generator scope");
+    Check(!restored.RestoreSnapshot(std::move(invalid_generators)),
+          "restore must reject a foreign profile generator scope");
     Check(restored.FindProfile(profile.subject) != nullptr, "failed restore must not replace current equipment state");
 
     EquipmentService bounded(2);
@@ -203,14 +197,14 @@ int main()
     Check(static_cast<bool>(bounded.AddSlot(journal_profile_id.Value(), second)), "journal second slot failed");
     const auto batch = bounded.ReadChangesSince(ChangeCursor{});
     Check(batch.snapshot_required, "bounded journal must require snapshot when the consumer fell behind retention");
-    Check(batch.changes.empty(), "snapshot-required batch must not expose an incomplete change suffix as complete history");
+    Check(batch.changes.empty(),
+          "snapshot-required batch must not expose an incomplete change suffix as complete history");
 
     // Goal 4: module-local deterministic restore fault seams replace process-global allocation hooks.
     const auto allocation_before = restored.CaptureSnapshot();
-    for (const auto point : {internal_test::AllocationFaultPoint::RestoreProfiles,
-                             internal_test::AllocationFaultPoint::RestoreBindings,
-                             internal_test::AllocationFaultPoint::RestoreLoadouts})
-    {
+    for (const auto point :
+         {internal_test::AllocationFaultPoint::RestoreProfiles, internal_test::AllocationFaultPoint::RestoreBindings,
+          internal_test::AllocationFaultPoint::RestoreLoadouts}) {
         auto allocation_target = allocation_before;
         internal_test::ArmAllocationFault(point);
         const auto restored_under_fault = restored.RestoreSnapshot(std::move(allocation_target));

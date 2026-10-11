@@ -170,3 +170,23 @@ enum class SimulationLod
 }
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Перечисления и допустимые категории
+
+- `ResidencyState`: `Unloaded`, `Loading`, `Resident`, `Active`, `Sleeping`, `Unloading`
+- `ObjectRealityLevel`: `AbstractFact`, `Logical`, `Physical`
+- `PersistenceTier`: `Disposable`, `TemporaryObserved`, `PlayerTouched`, `Protected`, `QuestCritical`
+- `SimulationLod`: `Dormant`, `Abstract`, `Scheduled`, `Relevant`, `Observed`, `Active`
+
+### Состав типов и операции
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

@@ -6,18 +6,15 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::society;
 
-namespace epidemic::gameplay::society::testing
-{
+namespace epidemic::gameplay::society::testing {
 void FailNextLocalAllocationForTest() noexcept;
 }
 
-static GameplayObjectRef Ref(const char *name)
-{
+static GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
 }
 
-static RelationshipTypeDefinition TrustDefinition(RelationshipTypeId id)
-{
+static RelationshipTypeDefinition TrustDefinition(RelationshipTypeId id) {
     RelationshipTypeDefinition definition;
     definition.id = id;
     definition.minimum_value_micro = -1'000'000;
@@ -31,60 +28,52 @@ static RelationshipTypeDefinition TrustDefinition(RelationshipTypeId id)
     return definition;
 }
 
-
-static bool SameMembership(const MembershipRecord &a, const MembershipRecord &b)
-{
+static bool SameMembership(const MembershipRecord &a, const MembershipRecord &b) {
     return a.id == b.id && a.member == b.member && a.group == b.group && a.role == b.role && a.rank == b.rank &&
            a.state == b.state && a.joined_at == b.joined_at && a.revision == b.revision;
 }
 
-static bool SameRelationship(const RelationshipRecord &a, const RelationshipRecord &b)
-{
+static bool SameRelationship(const RelationshipRecord &a, const RelationshipRecord &b) {
     return a.id == b.id && a.subject == b.subject && a.target == b.target && a.type == b.type &&
            a.value_micro == b.value_micro && a.state == b.state && a.updated_at == b.updated_at &&
            a.revision == b.revision;
 }
 
-static bool SameReputation(const ReputationRecord &a, const ReputationRecord &b)
-{
+static bool SameReputation(const ReputationRecord &a, const ReputationRecord &b) {
     return a.subject == b.subject && a.scope == b.scope && a.track == b.track && a.value_micro == b.value_micro &&
            a.revision == b.revision;
 }
 
-static bool SameChange(const SocietyChange &a, const SocietyChange &b)
-{
+static bool SameChange(const SocietyChange &a, const SocietyChange &b) {
     return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject && a.target == b.target &&
            a.relationship_type == b.relationship_type && a.reputation_track == b.reputation_track &&
            a.membership == b.membership && a.context == b.context && a.revision == b.revision;
 }
 
 template <typename T, typename Equal>
-static bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Equal equal)
-{
+static bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Equal equal) {
     if (a.size() != b.size())
         return false;
-    for (std::size_t i = 0; i < a.size(); ++i)
-    {
+    for (std::size_t i = 0; i < a.size(); ++i) {
         if (!equal(a[i], b[i]))
             return false;
     }
     return true;
 }
 
-static bool SameMutableSnapshot(const SocietySnapshot &a, const SocietySnapshot &b)
-{
+static bool SameMutableSnapshot(const SocietySnapshot &a, const SocietySnapshot &b) {
     return a.definitions_frozen == b.definitions_frozen && a.groups.size() == b.groups.size() &&
-           a.relationship_types.size() == b.relationship_types.size() && a.reputation_tracks.size() == b.reputation_tracks.size() &&
+           a.relationship_types.size() == b.relationship_types.size() &&
+           a.reputation_tracks.size() == b.reputation_tracks.size() &&
            SameVector(a.memberships, b.memberships, SameMembership) &&
            SameVector(a.relationships, b.relationships, SameRelationship) &&
-           SameVector(a.reputations, b.reputations, SameReputation) &&
-           a.membership_ids.next == b.membership_ids.next && a.relationship_ids.next == b.relationship_ids.next &&
-           a.revision == b.revision && SameVector(a.journal, b.journal, SameChange) &&
-           a.next_change_sequence == b.next_change_sequence && a.change_epoch == b.change_epoch;
+           SameVector(a.reputations, b.reputations, SameReputation) && a.membership_ids.next == b.membership_ids.next &&
+           a.relationship_ids.next == b.relationship_ids.next && a.revision == b.revision &&
+           SameVector(a.journal, b.journal, SameChange) && a.next_change_sequence == b.next_change_sequence &&
+           a.change_epoch == b.change_epoch;
 }
 
-static ReputationTrackDefinition CrimeReputationDefinition(ReputationTrackId id)
-{
+static ReputationTrackDefinition CrimeReputationDefinition(ReputationTrackId id) {
     ReputationTrackDefinition definition;
     definition.id = id;
     definition.minimum_value_micro = -1'000'000;
@@ -97,8 +86,7 @@ static ReputationTrackDefinition CrimeReputationDefinition(ReputationTrackId id)
     return definition;
 }
 
-int main()
-{
+int main() {
     SocietyService society;
     const auto player = Ref("player");
     const auto npc = Ref("npc");
@@ -206,7 +194,8 @@ int main()
     reputation.value_micro = -1'000'001;
     if (society.SetReputation(reputation, time_context))
         return 24;
-    if (!society.ApplyReputationChange({player, guards, crime_rep, std::numeric_limits<std::int64_t>::min(), {}, time_context}))
+    if (!society.ApplyReputationChange(
+            {player, guards, crime_rep, std::numeric_limits<std::int64_t>::min(), {}, time_context}))
         return 25;
     const auto bounded_reputation = society.GetReputation(player, guards, crime_rep);
     if (!bounded_reputation || bounded_reputation->value_micro != -1'000'000)
@@ -305,7 +294,8 @@ int main()
         if (candidate.AddMembership(injected))
             return 46;
         const auto after = candidate.CaptureSnapshot();
-        if (!SameMutableSnapshot(before, after) || candidate.FindGroupsOf(injected.member).size() != before_groups.size() ||
+        if (!SameMutableSnapshot(before, after) ||
+            candidate.FindGroupsOf(injected.member).size() != before_groups.size() ||
             candidate.FindMembersOf(guards).size() != before_members.size())
             return 47;
     }
@@ -339,13 +329,13 @@ int main()
         if (candidate.SetReputation(injected, time_context))
             return 52;
         const auto after = candidate.CaptureSnapshot();
-        if (!SameMutableSnapshot(before, after) || candidate.GetReputation(injected.subject, injected.scope, injected.track).has_value())
+        if (!SameMutableSnapshot(before, after) ||
+            candidate.GetReputation(injected.subject, injected.scope, injected.track).has_value())
             return 53;
     }
 
     // Exercise bounded journal and explicit gap reporting.
-    for (std::uint64_t i = 0; i < 4200; ++i)
-    {
+    for (std::uint64_t i = 0; i < 4200; ++i) {
         const std::int64_t value = (i & 1u) == 0 ? -999'999 : -999'998;
         if (!restored.SetReputation({player, guards, crime_rep, value, {}}, time_context))
             return 36;

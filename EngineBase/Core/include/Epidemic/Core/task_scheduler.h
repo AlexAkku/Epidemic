@@ -12,22 +12,19 @@
 #include <thread>
 #include <vector>
 
-namespace epidemic::core::tasks
-{
+namespace epidemic::core::tasks {
 // This file defines the baseline worker-thread scheduler used by EngineBase.
 // The scheduler supports individual task waiting, grouped task waiting, diagnostics snapshots,
 // and shutdown-aware queuing without introducing job graphs or task stealing yet.
 
-struct TaskDiagnostics
-{
+struct TaskDiagnostics {
     std::size_t pending_tasks{};
     std::size_t active_tasks{};
     std::size_t completed_tasks{};
     std::size_t worker_count{};
 };
 
-class TaskHandle
-{
+class TaskHandle {
   public:
     TaskHandle() = default;
 
@@ -45,8 +42,7 @@ class TaskHandle
     friend class SimpleTaskScheduler;
 };
 
-class TaskGroup
-{
+class TaskGroup {
   public:
     // Creates an empty task group that can aggregate multiple scheduled tasks.
     TaskGroup();
@@ -70,8 +66,7 @@ class TaskGroup
     friend class SimpleTaskScheduler;
 };
 
-class ITaskScheduler
-{
+class ITaskScheduler {
   public:
     using Task = std::function<void()>;
 
@@ -115,8 +110,7 @@ class ITaskScheduler
     [[nodiscard]] virtual std::vector<std::string> WorkerThreadNames() const = 0;
 };
 
-class SimpleTaskScheduler final : public ITaskScheduler
-{
+class SimpleTaskScheduler final : public ITaskScheduler {
   public:
     // Starts the requested number of worker threads, normalizing zero to one worker.
     explicit SimpleTaskScheduler(std::size_t worker_count = 1);
@@ -163,15 +157,15 @@ class SimpleTaskScheduler final : public ITaskScheduler
   private:
     struct SharedState;
 
-    struct QueuedTask
-    {
+    struct QueuedTask {
         Task task;
         std::shared_ptr<TaskHandle::State> handle_state;
         std::shared_ptr<TaskGroup::State> group_state;
     };
 
     // Shared implementation for grouped and ungrouped scheduling requests.
-    [[nodiscard]] TaskHandle ScheduleImpl(Task task, std::shared_ptr<TaskGroup::State> group_state, std::string debug_name);
+    [[nodiscard]] TaskHandle ScheduleImpl(Task task, std::shared_ptr<TaskGroup::State> group_state,
+                                          std::string debug_name);
 
     // Worker-thread loop owns shared state independently from the scheduler facade lifetime.
     static void WorkerLoop(std::shared_ptr<SharedState> state, std::stop_token stop_token);

@@ -7,35 +7,27 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::narrative;
 
-namespace
-{
-void Check(bool value, const char *message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char *domain, const char *id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
-class AlwaysResolver final : public INarrativeConditionResolver
-{
+class AlwaysResolver final : public INarrativeConditionResolver {
   public:
     NarrativeConditionResult Evaluate(const NarrativeConditionDefinition &d,
-                                      const NarrativeEvaluationContext &) const override
-    {
+                                      const NarrativeEvaluationContext &) const override {
         return {d.id, ConditionEvaluationState::Satisfied, 1'000'000, {}, {}};
     }
 };
-class Recorder final : public INarrativeConsequenceHandler
-{
+class Recorder final : public INarrativeConsequenceHandler {
   public:
     NarrativeConsequenceResult Execute(const NarrativeConsequenceDefinition &d, const NarrativeConsequenceExecution &e,
-                                       const NarrativeExecutionContext &c) const override
-    {
+                                       const NarrativeExecutionContext &c) const override {
         executions.push_back(e.id);
         owners.push_back(c.default_owner);
         types.push_back(d.type);
@@ -46,13 +38,8 @@ class Recorder final : public INarrativeConsequenceHandler
     mutable std::vector<NarrativeConsequenceTypeId> types;
 };
 
-void ConfigureStoryletService(NarrativeService &service,
-                              AlwaysResolver &always,
-                              Recorder &recorder,
-                              StoryletId storylet_id,
-                              GameplayDuration cooldown,
-                              std::uint32_t max_activations)
-{
+void ConfigureStoryletService(NarrativeService &service, AlwaysResolver &always, Recorder &recorder,
+                              StoryletId storylet_id, GameplayDuration cooldown, std::uint32_t max_activations) {
     auto always_type = NarrativeConditionTypeId::FromString("condition.always");
     auto effect_type = NarrativeConsequenceTypeId::FromString("narrative.semantic_effect");
     Check(static_cast<bool>(service.RegisterConditionResolver(always_type, always)), "cooldown resolver");
@@ -78,8 +65,7 @@ void ConfigureStoryletService(NarrativeService &service,
     Check(static_cast<bool>(service.FreezeDefinitions()), "cooldown freeze");
 }
 
-NarrativeEvent StoryletEvent(GameplayObjectRef actor, std::int64_t time, const char *correlation)
-{
+NarrativeEvent StoryletEvent(GameplayObjectRef actor, std::int64_t time, const char *correlation) {
     NarrativeEvent event;
     event.type = NarrativeEventTypeId::FromString("storylet.cooldown.event");
     event.instigator = actor;
@@ -90,8 +76,7 @@ NarrativeEvent StoryletEvent(GameplayObjectRef actor, std::int64_t time, const c
 }
 } // namespace
 
-int main()
-{
+int main() {
     NarrativeService service;
     AlwaysResolver always;
     Recorder recorder;
@@ -201,16 +186,19 @@ int main()
         Recorder cooldown_recorder;
         ConfigureStoryletService(cooldown_service, cooldown_resolver, cooldown_recorder,
                                  StoryletId::FromString("storylet.cooldown.normal"), GameplayDuration{10}, 3);
-        Check(static_cast<bool>(cooldown_service.ProcessNarrativeEvent(StoryletEvent(player, 100, "cooldown.normal.1"))),
-              "normal cooldown first activation");
+        Check(
+            static_cast<bool>(cooldown_service.ProcessNarrativeEvent(StoryletEvent(player, 100, "cooldown.normal.1"))),
+            "normal cooldown first activation");
         Check(cooldown_service.FindConsequences(ConsequenceExecutionState::Pending).size() == 1,
               "normal cooldown first consequence");
-        Check(static_cast<bool>(cooldown_service.ProcessNarrativeEvent(StoryletEvent(player, 105, "cooldown.normal.2"))),
-              "normal cooldown second event inside window");
+        Check(
+            static_cast<bool>(cooldown_service.ProcessNarrativeEvent(StoryletEvent(player, 105, "cooldown.normal.2"))),
+            "normal cooldown second event inside window");
         Check(cooldown_service.FindConsequences(ConsequenceExecutionState::Pending).size() == 1,
               "normal cooldown blocks before end");
-        Check(static_cast<bool>(cooldown_service.ProcessNarrativeEvent(StoryletEvent(player, 110, "cooldown.normal.3"))),
-              "normal cooldown event at end boundary");
+        Check(
+            static_cast<bool>(cooldown_service.ProcessNarrativeEvent(StoryletEvent(player, 110, "cooldown.normal.3"))),
+            "normal cooldown event at end boundary");
         Check(cooldown_service.FindConsequences(ConsequenceExecutionState::Pending).size() == 2,
               "normal cooldown allows activation at end");
     }

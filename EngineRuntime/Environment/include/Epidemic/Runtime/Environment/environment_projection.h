@@ -6,10 +6,8 @@
 
 #include <cstdint>
 
-namespace epidemic::runtime
-{
-struct EnvironmentProjection
-{
+namespace epidemic::runtime {
+struct EnvironmentProjection {
     RegionId region_id{};
     std::uint64_t revision = 0;
     WeatherState weather{};
@@ -17,6 +15,6 @@ struct EnvironmentProjection
     float temperature = 0.0f;
     float humidity = 0.0f;
 
-    [[nodiscard]] constexpr bool operator==(const EnvironmentProjection&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const EnvironmentProjection &) const noexcept = default;
 };
 } // namespace epidemic::runtime

@@ -6,14 +6,12 @@
 
 #include <span>
 
-namespace epidemic::input
-{
+namespace epidemic::input {
 // This file defines the normalized input pipeline interface used by EngineBase.
 // Implementations ingest raw platform events, publish a frame-stable snapshot, and expose the
 // transient event list generated during the most recent publish.
 
-class IInputSystem
-{
+class IInputSystem {
   public:
     virtual ~IInputSystem() = default;
 
@@ -35,4 +33,4 @@ class IInputSystem
     // Returns the transient events produced by the most recent PublishSnapshot() call.
     [[nodiscard]] virtual std::span<const InputEvent> CurrentEvents() const noexcept = 0;
 };
-} 
+}

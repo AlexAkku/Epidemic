@@ -362,3 +362,287 @@ class CombatService
 };
 } // namespace epidemic::gameplay::combat
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`, `Epidemic/GameFramework/SupportRandom/deterministic_random.h`.
+
+### Перечисления и допустимые категории
+
+- `CombatResourceDepletionEffect`: `None`, `Downed`, `Dead`
+- `CombatLifeState`: `Alive`, `Downed`, `Dead`, `Disabled`
+- `CombatEngagementState`: `OutOfCombat`, `Engaged`, `Disengaging`
+- `CombatModifierPhase`: `Base`, `Attacker`, `Target`, `Mitigation`, `Amplification`, `Final`
+- `CombatModifierOperation`: `Add`, `Multiply`, `Override`, `ClampMin`, `ClampMax`
+- `CombatOutcome`: `None`, `Missed`, `Evaded`, `Blocked`, `Critical`, `Killed`, `Downed`
+- `CombatChangeKind`: `CombatantRegistered`, `CombatantRemoved`, `EngagementChanged`, `DamageResolved`, `ResourceChanged`, `LifeStateChanged`
+
+### Состав типов и операции
+
+#### `DamageTypeId` (строка заголовка 17)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr DamageTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const DamageTypeId&) const noexcept = default;
+```
+
+#### `DamageProfileId` (строка заголовка 24)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr DamageProfileId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const DamageProfileId&) const noexcept = default;
+```
+
+#### `CombatResourceTypeId` (строка заголовка 31)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr CombatResourceTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const CombatResourceTypeId&) const noexcept = default;
+```
+
+#### `CombatModifierTypeId` (строка заголовка 38)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr CombatModifierTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr auto operator<=>(const CombatModifierTypeId&) const noexcept = default;
+```
+
+#### `CombatResolutionId` (строка заголовка 44)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const CombatResolutionId&) const noexcept = default;
+```
+
+#### `CombatResourceReservationId` (строка заголовка 50)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const CombatResourceReservationId&) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 56)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <typename T> [[nodiscard]] std::size_t operator()(const T& id) const noexcept;
+```
+
+#### `CombatResourceDefinition` (строка заголовка 69)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::int64_t minimum_micro = 0`
+- `std::int64_t default_maximum_micro = 100'000'000`
+- `CombatResourceDepletionEffect depletion_effect = CombatResourceDepletionEffect::None`
+
+#### `CombatResourceState` (строка заголовка 99)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t current_micro = 0`
+- `std::int64_t maximum_micro = 0`
+
+#### `CombatResourceReservation` (строка заголовка 106)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t amount_micro = 0`
+
+#### `CombatantRecord` (строка заголовка 115)
+
+Публичные поля и значения по умолчанию:
+
+- `CombatLifeState life_state = CombatLifeState::Alive`
+- `CombatEngagementState engagement = CombatEngagementState::OutOfCombat`
+- `std::vector<CombatResourceState> resources`
+
+#### `CombatModifier` (строка заголовка 126)
+
+Публичные поля и значения по умолчанию:
+
+- `CombatModifierPhase phase = CombatModifierPhase::Base`
+- `CombatModifierOperation operation = CombatModifierOperation::Add`
+- `std::int32_t priority = 0`
+- `std::int64_t value_micro = 0`
+
+#### `DamageRequest` (строка заголовка 136)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t base_amount_micro = 0`
+
+#### `ICombatModifierProvider` (строка заголовка 148)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ICombatModifierProvider() = default;
+[[nodiscard]] virtual std::vector<CombatModifier> Collect(const DamageRequest& request) const = 0;
+[[nodiscard]] virtual Revision RevisionFor(const DamageRequest& request) const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `CombatPlan` (строка заголовка 169)
+
+Публичные поля и значения по умолчанию:
+
+- `DamageRequest request`
+- `std::uint64_t expected_provider_epoch = 0`
+- `std::int64_t requested_amount_micro = 0`
+- `std::int64_t final_amount_micro = 0`
+- `CombatOutcome outcomes = CombatOutcome::None`
+
+#### `CombatResult` (строка заголовка 189)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t requested_amount_micro = 0`
+- `std::int64_t final_amount_micro = 0`
+- `std::int64_t resource_before_micro = 0`
+- `std::int64_t resource_after_micro = 0`
+- `CombatLifeState before = CombatLifeState::Alive`
+- `CombatLifeState after = CombatLifeState::Alive`
+- `CombatOutcome outcomes = CombatOutcome::None`
+
+#### `CombatChange` (строка заголовка 205)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `CombatChangeKind kind = CombatChangeKind::CombatantRegistered`
+- `CombatLifeState life_state = CombatLifeState::Alive`
+
+#### `CombatChangeBatch` (строка заголовка 217)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<CombatChange> changes`
+
+#### `CombatSnapshot` (строка заголовка 226)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<CombatantRecord> combatants`
+- `std::vector<CombatResourceReservation> resource_reservations`
+- `std::vector<CombatChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `CombatDiagnostics` (строка заголовка 237)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t combatants = 0`
+- `std::uint64_t damage_requests = 0`
+- `std::uint64_t damage_resolved = 0`
+- `std::uint64_t criticals = 0`
+- `std::uint64_t blocks = 0`
+- `std::uint64_t evades = 0`
+- `std::uint64_t deaths = 0`
+- `std::uint64_t stale_commits = 0`
+
+#### `CombatService` (строка заголовка 249)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<CombatResourceTypeId, CombatResourceDefinition, IdHash> resources_`, `std::unordered_map<DamageTypeId, std::string, IdHash> damage_types_`, `std::unordered_map<DamageProfileId, DamageProfile, IdHash> damage_profiles_`, `std::unordered_map<GameplayObjectRef, CombatantRecord> combatants_`, `const ICombatModifierProvider* modifier_provider_ = nullptr`, `std::uint64_t modifier_provider_epoch_ = 1`, `MonotonicIdGenerator<GameplayObjectId> resolution_ids_`, `MonotonicIdGenerator<GameplayObjectId> resource_reservation_ids_`, `std::unordered_map<CombatResourceReservationId, CombatResourceReservation, IdHash> resource_res`.
+
+Публичные сигнатуры операций:
+
+```cpp
+CombatService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<CombatResourceTypeId> RegisterResource(CombatResourceDefinition definition);
+[[nodiscard]] foundation::Result<DamageTypeId> RegisterDamageType(std::string canonical_name);
+[[nodiscard]] foundation::Result<DamageProfileId> RegisterDamageProfile(DamageProfile profile);
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+void SetModifierProvider(const ICombatModifierProvider* provider) noexcept;
+[[nodiscard]] const CombatantRecord* FindCombatant(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] foundation::Result<CombatResourceState> GetResource(GameplayObjectRef subject, CombatResourceTypeId type) const;
+void CommitResourceReservation(CombatResourceReservationId reservation) noexcept;
+[[nodiscard]] const CombatResourceReservation* FindResourceReservation(CombatResourceReservationId reservation) const noexcept;
+[[nodiscard]] foundation::Result<void> SetPreparePolicy(CombatPreparePolicy policy);
+[[nodiscard]] CombatPreparePolicy GetPreparePolicy() const noexcept;
+[[nodiscard]] foundation::Result<CombatPlan> PrepareDamage(DamageRequest request);
+[[nodiscard]] foundation::Result<CombatResult> CommitDamage(const CombatPlan& plan, GameplayTimePoint now);
+[[nodiscard]] foundation::Result<void> CancelDamagePlan(CombatResolutionId id);
+[[nodiscard]] std::size_t ExpirePreparedPlans(GameplayTimePoint now) noexcept;
+[[nodiscard]] CombatChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] CombatSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(CombatSnapshot snapshot);
+[[nodiscard]] CombatDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `CombatService` | `CombatService::CombatService` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:140` |
+| `SetModifierProvider` | `CombatService::SetModifierProvider` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:145` |
+| `RegisterResource` | `CombatService::RegisterResource` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:154` |
+| `RegisterDamageType` | `CombatService::RegisterDamageType` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:172` |
+| `RegisterDamageProfile` | `CombatService::RegisterDamageProfile` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:183` |
+| `FindCombatant` | `CombatService::FindCombatant` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:337` |
+| `GetResource` | `CombatService::GetResource` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:342` |
+| `CommitResourceReservation` | `CombatService::CommitResourceReservation` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:484` |
+| `FindResourceReservation` | `CombatService::FindResourceReservation` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:520` |
+| `SetPreparePolicy` | `CombatService::SetPreparePolicy` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:587` |
+| `PrepareDamage` | `CombatService::PrepareDamage` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:631` |
+| `CommitDamage` | `CombatService::CommitDamage` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:720` |
+| `CancelDamagePlan` | `CombatService::CancelDamagePlan` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:804` |
+| `ExpirePreparedPlans` | `CombatService::ExpirePreparedPlans` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:814` |
+| `CaptureSnapshot` | `CombatService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:837` |
+| `RestoreSnapshot` | `CombatService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Combat/src/combat.cpp:860` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterResource`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:47`
+- `RegisterDamageType`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:48`
+- `RegisterDamageProfile`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:54`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:56`
+- `PrepareDamage`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:61`
+- `CommitDamage`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:63`
+- `SetPreparePolicy`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:119`
+- `CancelDamagePlan`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:167`
+- `ExpirePreparedPlans`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:210`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:213`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:223`
+- `GetResource`: `EngineFramework/DevelopmentInfrastructure/Tests/combat_tests.cpp:225`
+

@@ -1,21 +1,25 @@
 // Generated owner bindings; gameplay state remains authoritative in its original owner.
 #include "Epidemic/GameFramework/PerceptionKnowledgeAIIntegration/perception_knowledge_ai_adapters.h"
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
-namespace epidemic::gameplay
-{
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::ai::AIService>
-{
+namespace epidemic::gameplay {
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::ai::AIService> {
     using Owner = epidemic::gameplay::ai::AIService;
     using Snapshot = epidemic::gameplay::ai::AISnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.agents_, candidate.agents_);
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.diagnostics_, candidate.diagnostics_);
@@ -28,19 +32,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::ai::AIService>
         savegame::detail::SwapPreparedMember(live.tick_budget_, candidate.tick_budget_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::knowledge::KnowledgeService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::knowledge::KnowledgeService> {
     using Owner = epidemic::gameplay::knowledge::KnowledgeService;
     using Snapshot = epidemic::gameplay::knowledge::KnowledgeSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.definitions_frozen_, candidate.definitions_frozen_);
         savegame::detail::SwapPreparedMember(live.journal_epoch_, candidate.journal_epoch_);
@@ -57,19 +66,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::knowledge::Knowledg
         savegame::detail::SwapPreparedMember(live.revision_, candidate.revision_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::perception::PerceptionService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::perception::PerceptionService> {
     using Owner = epidemic::gameplay::perception::PerceptionService;
     using Snapshot = epidemic::gameplay::perception::PerceptionSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.awareness_, candidate.awareness_);
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.journal_epoch_, candidate.journal_epoch_);
@@ -88,18 +102,22 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::perception::Percept
     }
 };
 }
-namespace epidemic::gameplay::savegame
-{
-std::unique_ptr<ISaveParticipant> CreateAIServiceSaveParticipant(epidemic::gameplay::ai::AIService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::ai::AIService>>(owner, workspace, "framework.ai", std::vector<SaveParticipantId>{});
+namespace epidemic::gameplay::savegame {
+std::unique_ptr<ISaveParticipant> CreateAIServiceSaveParticipant(epidemic::gameplay::ai::AIService &owner,
+                                                                 SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::ai::AIService>>(
+        owner, workspace, "framework.ai", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreateKnowledgeServiceSaveParticipant(epidemic::gameplay::knowledge::KnowledgeService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::knowledge::KnowledgeService>>(owner, workspace, "framework.knowledge", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreateKnowledgeServiceSaveParticipant(epidemic::gameplay::knowledge::KnowledgeService &owner,
+                                      SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::knowledge::KnowledgeService>>(
+        owner, workspace, "framework.knowledge", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreatePerceptionServiceSaveParticipant(epidemic::gameplay::perception::PerceptionService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::perception::PerceptionService>>(owner, workspace, "framework.perception", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreatePerceptionServiceSaveParticipant(epidemic::gameplay::perception::PerceptionService &owner,
+                                       SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::perception::PerceptionService>>(
+        owner, workspace, "framework.perception", std::vector<SaveParticipantId>{});
 }
 }

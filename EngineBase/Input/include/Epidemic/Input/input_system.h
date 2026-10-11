@@ -4,14 +4,12 @@
 
 #include <vector>
 
-namespace epidemic::input
-{
+namespace epidemic::input {
 // This file declares the baseline InputSystem implementation.
 // The system buffers raw PlatformEvent values until PublishSnapshot() normalizes them into
 // keyboard/mouse state and transient InputEvent records.
 
-class InputSystem final : public IInputSystem
-{
+class InputSystem final : public IInputSystem {
   public:
     // Queues one raw platform event for the next publish pass.
     void QueuePlatformEvent(const epidemic::platform::PlatformEvent &event) override;
@@ -39,4 +37,4 @@ class InputSystem final : public IInputSystem
     std::vector<InputEvent> current_events_{};
     std::uint64_t next_update_index_{};
 };
-} 
+}

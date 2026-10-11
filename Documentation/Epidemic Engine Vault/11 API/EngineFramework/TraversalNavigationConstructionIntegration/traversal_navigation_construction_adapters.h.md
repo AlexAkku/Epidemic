@@ -144,3 +144,59 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Construction/construction.h`, `Epidemic/GameFramework/NavigationSemantics/navigation_semantics.h`, `Epidemic/GameFramework/Traversal/traversal.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Construction/construction.h`, `Epidemic/GameFramework/NavigationSemantics/navigation_semantics.h`, `Epidemic/GameFramework/Traversal/traversal.h`.
+
+### Перечисления и допустимые категории
+
+- `ConstructionNavigationOperation`: `Add`, `Update`, `Remove`
+
+### Состав типов и операции
+
+#### `TraversalNavigationCapabilityProvider` (строка заголовка 16)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit TraversalNavigationCapabilityProvider(const traversal::TraversalService &traversal) : traversal_(traversal);
+[[nodiscard]] bool HasCapability(GameplayObjectRef subject, TypeId capability, navigation_semantics::Fixed min_parameter_micro) const noexcept override;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ConstructionNavigationLayerPayload` (строка заголовка 50)
+
+Публичные поля и значения по умолчанию:
+
+- `ConstructionNavigationOperation operation = ConstructionNavigationOperation::Add`
+- `navigation_semantics::NavigationDecisionKind decision = navigation_semantics::NavigationDecisionKind::AddCost`
+- `navigation_semantics::NavigationLayerLifetime lifetime = navigation_semantics::NavigationLayerLifetime::Persistent`
+- `std::int32_t priority = 0`
+- `navigation_semantics::Fixed additive_cost_micro = 0`
+- `navigation_semantics::Fixed multiplier_micro = 1'000'000`
+- `navigation_semantics::Fixed required_parameter_micro = 0`
+
+#### `ConstructionNavigationAdapter` (строка заголовка 69)
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `HasCapability` | `TraversalNavigationCapabilityProvider::HasCapability` | `EngineFramework/IntegrationLayer/TraversalNavigationConstructionIntegration/src/traversal_navigation_construction_adapters.cpp:148` |
+

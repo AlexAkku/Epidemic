@@ -3,13 +3,11 @@
 #include <Epidemic/Foundation/result.h>
 #include <Epidemic/RHI/descriptors.h>
 
-namespace epidemic::rhi
-{
+namespace epidemic::rhi {
 // This file defines the command-context abstraction used by the baseline RHI.
 // The current API is intentionally minimal: begin frame, clear, end frame.
 
-class IRhiCommandContext
-{
+class IRhiCommandContext {
   public:
     virtual ~IRhiCommandContext() = default;
 

@@ -7,19 +7,15 @@
 #include <cstddef>
 #include <memory>
 
-namespace epidemic::runtime
-{
-struct ResourceOptions
-{
+namespace epidemic::runtime {
+struct ResourceOptions {
     std::size_t memory_budget_bytes = 0;
 };
 
-struct ResourceServices
-{
+struct ResourceServices {
     std::shared_ptr<IResourceLoaderRegistry> loaders;
     std::shared_ptr<IResourceManager> manager;
 };
 
-[[nodiscard]] foundation::Result<ResourceServices> CreateResourceServices(const ResourceOptions& options = {});
+[[nodiscard]] foundation::Result<ResourceServices> CreateResourceServices(const ResourceOptions &options = {});
 } // namespace epidemic::runtime
-

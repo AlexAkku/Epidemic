@@ -75,3 +75,56 @@ struct RuntimeBudgetConsumption
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`.
+
+### Состав типов и операции
+
+#### `RuntimeBudget` (строка заголовка 14)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t max_items = 0`
+- `std::uint64_t max_bytes = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool HasTimeLimit() const noexcept;
+[[nodiscard]] constexpr bool HasItemLimit() const noexcept;
+[[nodiscard]] constexpr bool HasByteLimit() const noexcept;
+[[nodiscard]] constexpr bool HasTimeBudget() const noexcept;
+[[nodiscard]] constexpr bool HasItemBudget() const noexcept;
+[[nodiscard]] constexpr bool HasByteBudget() const noexcept;
+[[nodiscard]] constexpr bool IsUnlimited() const noexcept;
+```
+
+#### `RuntimeBudgetConsumption` (строка заголовка 45)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t processed_items = 0`
+- `std::size_t processed_bytes = 0`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `IsUnlimited`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:95`
+- `HasTimeLimit`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:102`
+- `HasTimeBudget`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:103`
+

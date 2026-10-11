@@ -15,394 +15,307 @@
 #include <variant>
 #include <vector>
 
-namespace epidemic::gameplay::narrative
-{
-struct NarrativeThreadId
-{
+namespace epidemic::gameplay::narrative {
+struct NarrativeThreadId {
     GameplayObjectId value{};
-    static constexpr NarrativeThreadId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeThreadId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeThreadId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeThreadId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeThreadId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeThreadId &) const noexcept = default;
 };
-struct NarrativeArcId
-{
+struct NarrativeArcId {
     GameplayObjectId value{};
-    static constexpr NarrativeArcId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeArcId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeArcId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeArcId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeArcId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeArcId &) const noexcept = default;
 };
-struct NarrativeBeatId
-{
+struct NarrativeBeatId {
     GameplayObjectId value{};
-    static constexpr NarrativeBeatId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeBeatId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeBeatId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeBeatId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeBeatId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeBeatId &) const noexcept = default;
 };
-struct NarrativeObjectiveId
-{
+struct NarrativeObjectiveId {
     GameplayObjectId value{};
-    static constexpr NarrativeObjectiveId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeObjectiveId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeObjectiveId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeObjectiveId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeObjectiveId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeObjectiveId &) const noexcept = default;
 };
-struct NarrativeConditionId
-{
+struct NarrativeConditionId {
     GameplayObjectId value{};
-    static constexpr NarrativeConditionId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeConditionId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeConditionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeConditionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeConditionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeConditionId &) const noexcept = default;
 };
-struct NarrativeConsequenceId
-{
+struct NarrativeConsequenceId {
     GameplayObjectId value{};
-    static constexpr NarrativeConsequenceId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeConsequenceId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeConsequenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeConsequenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeConsequenceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceId &) const noexcept = default;
 };
-struct NarrativeConsequenceExecutionId
-{
+struct NarrativeConsequenceExecutionId {
     GameplayObjectId value{};
-    static constexpr NarrativeConsequenceExecutionId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeConsequenceExecutionId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeConsequenceExecutionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeConsequenceExecutionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeConsequenceExecutionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceExecutionId &) const noexcept = default;
 };
-struct JournalEntryId
-{
+struct JournalEntryId {
     GameplayObjectId value{};
-    static constexpr JournalEntryId FromString(std::string_view s) noexcept
-    {
+    static constexpr JournalEntryId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr JournalEntryId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr JournalEntryId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const JournalEntryId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const JournalEntryId &) const noexcept = default;
 };
-struct ClueId
-{
+struct ClueId {
     GameplayObjectId value{};
-    static constexpr ClueId FromString(std::string_view s) noexcept
-    {
+    static constexpr ClueId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr ClueId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ClueId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ClueId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ClueId &) const noexcept = default;
 };
-struct RumorId
-{
+struct RumorId {
     GameplayObjectId value{};
-    static constexpr RumorId FromString(std::string_view s) noexcept
-    {
+    static constexpr RumorId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr RumorId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr RumorId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const RumorId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const RumorId &) const noexcept = default;
 };
-struct StoryletId
-{
+struct StoryletId {
     GameplayObjectId value{};
-    static constexpr StoryletId FromString(std::string_view s) noexcept
-    {
+    static constexpr StoryletId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr StoryletId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr StoryletId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const StoryletId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const StoryletId &) const noexcept = default;
 };
-struct NarrativeGateId
-{
+struct NarrativeGateId {
     GameplayObjectId value{};
-    static constexpr NarrativeGateId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeGateId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeGateId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeGateId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeGateId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeGateId &) const noexcept = default;
 };
-struct NarrativeFlagId
-{
+struct NarrativeFlagId {
     GameplayObjectId value{};
-    static constexpr NarrativeFlagId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeFlagId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeFlagId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeFlagId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeFlagId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeFlagId &) const noexcept = default;
 };
-struct NarrativeVariableId
-{
+struct NarrativeVariableId {
     GameplayObjectId value{};
-    static constexpr NarrativeVariableId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeVariableId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeVariableId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeVariableId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeVariableId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeVariableId &) const noexcept = default;
 };
-struct NarrativeSceneId
-{
+struct NarrativeSceneId {
     GameplayObjectId value{};
-    static constexpr NarrativeSceneId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeSceneId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeSceneId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeSceneId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeSceneId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeSceneId &) const noexcept = default;
 };
-struct NarrativeChoiceId
-{
+struct NarrativeChoiceId {
     GameplayObjectId value{};
-    static constexpr NarrativeChoiceId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeChoiceId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeChoiceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeChoiceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeChoiceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeChoiceId &) const noexcept = default;
 };
-struct NarrativeChoiceOptionId
-{
+struct NarrativeChoiceOptionId {
     GameplayObjectId value{};
-    static constexpr NarrativeChoiceOptionId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeChoiceOptionId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr NarrativeChoiceOptionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr NarrativeChoiceOptionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeChoiceOptionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeChoiceOptionId &) const noexcept = default;
 };
-struct NarrativeThreadTypeId
-{
+struct NarrativeThreadTypeId {
     TypeId value{};
-    static constexpr NarrativeThreadTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeThreadTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeThreadTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeThreadTypeId &) const noexcept = default;
 };
-struct NarrativeEventTypeId
-{
+struct NarrativeEventTypeId {
     TypeId value{};
-    static constexpr NarrativeEventTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeEventTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeEventTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeEventTypeId &) const noexcept = default;
 };
-struct NarrativeConditionTypeId
-{
+struct NarrativeConditionTypeId {
     TypeId value{};
-    static constexpr NarrativeConditionTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeConditionTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeConditionTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeConditionTypeId &) const noexcept = default;
 };
-struct NarrativeConsequenceTypeId
-{
+struct NarrativeConsequenceTypeId {
     TypeId value{};
-    static constexpr NarrativeConsequenceTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr NarrativeConsequenceTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeConsequenceTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceTypeId &) const noexcept = default;
 };
-struct JournalEntryTypeId
-{
+struct JournalEntryTypeId {
     TypeId value{};
-    static constexpr JournalEntryTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr JournalEntryTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const JournalEntryTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const JournalEntryTypeId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class NarrativeRuntimeState
-{
+enum class NarrativeRuntimeState {
     Hidden,
     Available,
     Discovered,
@@ -413,8 +326,7 @@ enum class NarrativeRuntimeState
     Expired,
     Locked
 };
-enum class NarrativeObjectiveRuntimeState
-{
+enum class NarrativeObjectiveRuntimeState {
     Hidden,
     Available,
     Active,
@@ -423,16 +335,14 @@ enum class NarrativeObjectiveRuntimeState
     Cancelled,
     OptionalMissed
 };
-enum class ConditionEvaluationState
-{
+enum class ConditionEvaluationState {
     Satisfied,
     Unsatisfied,
     Unknown,
     Unavailable,
     Partial
 };
-enum class ConsequenceExecutionState
-{
+enum class ConsequenceExecutionState {
     Pending,
     Applied,
     Deferred,
@@ -441,8 +351,7 @@ enum class ConsequenceExecutionState
     Unsupported,
     AlreadyApplied
 };
-enum class JournalVisibilityState
-{
+enum class JournalVisibilityState {
     Hidden,
     Discovered,
     Updated,
@@ -450,8 +359,7 @@ enum class JournalVisibilityState
     Archived,
     Suppressed
 };
-enum class RumorState
-{
+enum class RumorState {
     Active,
     Spread,
     Discredited,
@@ -459,36 +367,31 @@ enum class RumorState
     Confirmed,
     Suppressed
 };
-enum class NarrativeChoiceState
-{
+enum class NarrativeChoiceState {
     Open,
     Resolved,
     Cancelled,
     Expired
 };
-enum class NarrativeEventExecutionState
-{
+enum class NarrativeEventExecutionState {
     Pending,
     Processing,
     Completed,
     FailedRetryable
 };
-enum class NarrativeEventExecutionPhase
-{
+enum class NarrativeEventExecutionPhase {
     Beats,
     Objectives,
     Storylets,
     Completed
 };
-enum class NarrativeGateState
-{
+enum class NarrativeGateState {
     Closed,
     Open,
     Locked,
     Disabled
 };
-enum class NarrativeChangeKind
-{
+enum class NarrativeChangeKind {
     ThreadStarted,
     ThreadCompleted,
     ThreadFailed,
@@ -520,13 +423,11 @@ enum class NarrativeChangeKind
 };
 
 using NarrativeValue = std::variant<bool, std::int64_t, GameplayObjectRef, GameplayTimePoint, TypeId>;
-struct NarrativeReason
-{
+struct NarrativeReason {
     TypeId type{};
     std::vector<std::byte> payload;
 };
-struct NarrativeEvent
-{
+struct NarrativeEvent {
     NarrativeEventTypeId type{};
     GameplayObjectRef subject{};
     GameplayObjectRef instigator{};
@@ -537,8 +438,7 @@ struct NarrativeEvent
     std::vector<std::byte> payload;
     CorrelationId correlation{};
 };
-struct NarrativeEventKey
-{
+struct NarrativeEventKey {
     NarrativeEventTypeId type{};
     GameplayObjectRef subject{};
     GameplayObjectRef instigator{};
@@ -549,24 +449,20 @@ struct NarrativeEventKey
     [[nodiscard]] constexpr bool operator==(const NarrativeEventKey &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeEventKey &) const noexcept = default;
 };
-struct NarrativeConsequenceKey
-{
+struct NarrativeConsequenceKey {
     NarrativeThreadId thread{};
     NarrativeBeatId beat{};
     NarrativeObjectiveId objective{};
     NarrativeConsequenceId consequence{};
     CorrelationId correlation{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return consequence.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const NarrativeConsequenceKey &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceKey &) const noexcept = default;
 };
-struct NarrativeEventKeyHash
-{
-    [[nodiscard]] std::size_t operator()(const NarrativeEventKey &key) const noexcept
-    {
+struct NarrativeEventKeyHash {
+    [[nodiscard]] std::size_t operator()(const NarrativeEventKey &key) const noexcept {
         auto h = std::hash<TypeId>{}(key.type.value);
         Combine(h, std::hash<GameplayObjectRef>{}(key.subject));
         Combine(h, std::hash<GameplayObjectRef>{}(key.instigator));
@@ -578,15 +474,12 @@ struct NarrativeEventKeyHash
     }
 
   private:
-    static void Combine(std::size_t &h, std::size_t v) noexcept
-    {
+    static void Combine(std::size_t &h, std::size_t v) noexcept {
         h ^= v + 0x9E3779B97F4A7C15ull + (h << 6u) + (h >> 2u);
     }
 };
-struct NarrativeConsequenceKeyHash
-{
-    [[nodiscard]] std::size_t operator()(const NarrativeConsequenceKey &key) const noexcept
-    {
+struct NarrativeConsequenceKeyHash {
+    [[nodiscard]] std::size_t operator()(const NarrativeConsequenceKey &key) const noexcept {
         auto h = std::hash<GameplayObjectId>{}(key.thread.value);
         Combine(h, std::hash<GameplayObjectId>{}(key.beat.value));
         Combine(h, std::hash<GameplayObjectId>{}(key.objective.value));
@@ -596,39 +489,33 @@ struct NarrativeConsequenceKeyHash
     }
 
   private:
-    static void Combine(std::size_t &h, std::size_t v) noexcept
-    {
+    static void Combine(std::size_t &h, std::size_t v) noexcept {
         h ^= v + 0x9E3779B97F4A7C15ull + (h << 6u) + (h >> 2u);
     }
 };
-struct NarrativeEvaluationContext
-{
+struct NarrativeEvaluationContext {
     NarrativeEvent event{};
     GameplayObjectRef viewer{};
     GameplayTimePoint now{};
 };
-struct NarrativeExecutionContext
-{
+struct NarrativeExecutionContext {
     GameplayObjectRef default_owner{};
     GameplayTimePoint now{};
     GameplayContext gameplay{};
 };
-struct NarrativeConditionResult
-{
+struct NarrativeConditionResult {
     NarrativeConditionId condition{};
     ConditionEvaluationState state = ConditionEvaluationState::Unavailable;
     std::int64_t score = 0;
     std::vector<NarrativeReason> reasons;
     Revision dependencies_revision{};
 };
-struct NarrativeConsequenceResult
-{
+struct NarrativeConsequenceResult {
     ConsequenceExecutionState state = ConsequenceExecutionState::Unsupported;
     Revision revision{};
 };
 
-struct NarrativeConditionDefinition
-{
+struct NarrativeConditionDefinition {
     NarrativeConditionId id{};
     NarrativeConditionTypeId type{};
     GameplayTagSet tags{};
@@ -637,23 +524,20 @@ struct NarrativeConditionDefinition
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct NarrativeConsequenceDefinition
-{
+struct NarrativeConsequenceDefinition {
     NarrativeConsequenceId id{};
     NarrativeConsequenceTypeId type{};
     GameplayTagSet tags{};
     std::int32_t priority = 0;
     bool require_success_before_advance = false;
     std::vector<std::byte> payload;
-    struct JournalTemplate
-    {
+    struct JournalTemplate {
         JournalEntryTypeId type{};
         JournalVisibilityState visibility = JournalVisibilityState::Discovered;
         GameplayTagSet tags{};
         std::vector<std::byte> payload;
     };
-    struct RumorTemplate
-    {
+    struct RumorTemplate {
         TypeId topic{};
         std::int64_t confidence = 0;
         GameplayDuration lifetime{};
@@ -663,8 +547,7 @@ struct NarrativeConsequenceDefinition
     std::optional<RumorTemplate> rumor_template;
     Revision revision{};
 };
-struct NarrativeBeatDefinition
-{
+struct NarrativeBeatDefinition {
     NarrativeBeatId id{};
     NarrativeThreadId thread{};
     GameplayTagSet tags{};
@@ -674,8 +557,7 @@ struct NarrativeBeatDefinition
     std::int32_t order = 0;
     Revision revision{};
 };
-struct NarrativeObjectiveDefinition
-{
+struct NarrativeObjectiveDefinition {
     NarrativeObjectiveId id{};
     NarrativeThreadId thread{};
     GameplayTagSet tags{};
@@ -685,8 +567,7 @@ struct NarrativeObjectiveDefinition
     bool player_visible = false;
     Revision revision{};
 };
-struct NarrativeThreadDefinition
-{
+struct NarrativeThreadDefinition {
     NarrativeThreadId id{};
     GameplayTagSet tags{};
     NarrativeThreadTypeId type{};
@@ -696,15 +577,13 @@ struct NarrativeThreadDefinition
     std::int32_t priority = 0;
     Revision revision{};
 };
-struct NarrativeArcDefinition
-{
+struct NarrativeArcDefinition {
     NarrativeArcId id{};
     GameplayTagSet tags{};
     std::vector<NarrativeThreadId> threads;
     Revision revision{};
 };
-struct StoryletDefinition
-{
+struct StoryletDefinition {
     StoryletId id{};
     GameplayTagSet tags{};
     std::vector<NarrativeConditionId> availability_conditions;
@@ -714,8 +593,7 @@ struct StoryletDefinition
     GameplayDuration cooldown{};
     Revision revision{};
 };
-struct NarrativeChoiceOption
-{
+struct NarrativeChoiceOption {
     NarrativeChoiceOptionId id{};
     GameplayTagSet tags{};
     std::vector<NarrativeConditionId> availability_conditions;
@@ -723,8 +601,7 @@ struct NarrativeChoiceOption
     std::vector<std::byte> payload;
 };
 
-struct NarrativeThreadState
-{
+struct NarrativeThreadState {
     NarrativeThreadId thread{};
     NarrativeRuntimeState state = NarrativeRuntimeState::Hidden;
     GameplayObjectRef owner_subject{};
@@ -733,8 +610,7 @@ struct NarrativeThreadState
     GameplayTimePoint updated_at{};
     Revision revision{};
 };
-struct NarrativeObjectiveState
-{
+struct NarrativeObjectiveState {
     NarrativeObjectiveId objective{};
     NarrativeObjectiveRuntimeState state = NarrativeObjectiveRuntimeState::Hidden;
     GameplayTimePoint started_at{};
@@ -742,8 +618,7 @@ struct NarrativeObjectiveState
     std::int64_t progress = 0;
     Revision revision{};
 };
-struct NarrativeConsequenceExecution
-{
+struct NarrativeConsequenceExecution {
     NarrativeConsequenceExecutionId id{};
     NarrativeThreadId thread{};
     NarrativeBeatId beat{};
@@ -757,8 +632,7 @@ struct NarrativeConsequenceExecution
     NarrativeConsequenceKey idempotency_key{};
     Revision revision{};
 };
-struct JournalEntry
-{
+struct JournalEntry {
     JournalEntryId id{};
     GameplayObjectRef owner{};
     NarrativeThreadId thread{};
@@ -770,8 +644,7 @@ struct JournalEntry
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct ClueRecord
-{
+struct ClueRecord {
     ClueId id{};
     GameplayObjectRef owner{};
     TypeId type{};
@@ -782,8 +655,7 @@ struct ClueRecord
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct RumorRecord
-{
+struct RumorRecord {
     RumorId id{};
     GameplayObjectRef owner_or_scope{};
     TypeId topic{};
@@ -794,23 +666,20 @@ struct RumorRecord
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct NarrativeFlag
-{
+struct NarrativeFlag {
     NarrativeFlagId id{};
     GameplayObjectRef scope{};
     bool value = false;
     GameplayTimePoint changed_at{};
     Revision revision{};
 };
-struct NarrativeVariable
-{
+struct NarrativeVariable {
     NarrativeVariableId id{};
     GameplayObjectRef scope{};
     NarrativeValue value{};
     Revision revision{};
 };
-struct NarrativeChoice
-{
+struct NarrativeChoice {
     NarrativeChoiceId id{};
     NarrativeThreadId thread{};
     GameplayObjectRef actor{};
@@ -822,8 +691,7 @@ struct NarrativeChoice
     GameplayTimePoint expires_at{};
     Revision revision{};
 };
-struct NarrativeEventExecution
-{
+struct NarrativeEventExecution {
     NarrativeEventKey key{};
     NarrativeEvent event{};
     NarrativeEventExecutionState state = NarrativeEventExecutionState::Pending;
@@ -837,15 +705,13 @@ struct NarrativeEventExecution
     std::size_t next_storylet = 0;
     Revision revision{};
 };
-struct StoryletRuntimeState
-{
+struct StoryletRuntimeState {
     StoryletId id{};
     std::uint32_t activations = 0;
     GameplayTimePoint last_activated_at{};
     Revision revision{};
 };
-struct NarrativeChange
-{
+struct NarrativeChange {
     std::uint64_t sequence = 0;
     NarrativeChangeKind kind = NarrativeChangeKind::EventProcessed;
     NarrativeThreadId thread{};
@@ -861,8 +727,7 @@ struct NarrativeChange
     Revision revision{};
 };
 
-struct NarrativeSnapshot
-{
+struct NarrativeSnapshot {
     std::vector<NarrativeThreadState> thread_states;
     std::vector<NarrativeObjectiveState> objective_states;
     std::vector<NarrativeConsequenceExecution> consequences;
@@ -886,8 +751,7 @@ struct NarrativeSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct NarrativeChangeBatch
-{
+struct NarrativeChangeBatch {
     std::vector<NarrativeChange> changes;
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
@@ -896,8 +760,7 @@ struct NarrativeChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct NarrativeDiagnostics
-{
+struct NarrativeDiagnostics {
     std::uint64_t threads = 0, active_threads = 0, completed_threads = 0, objectives = 0, active_objectives = 0,
                   completed_objectives = 0, journal_entries = 0, clues = 0, rumors = 0, storylets = 0,
                   events_processed = 0, deduplicated_events = 0, condition_evaluations = 0, consequences_planned = 0,
@@ -905,36 +768,31 @@ struct NarrativeDiagnostics
                   budget_exhaustions = 0, idempotency_hits = 0;
 };
 
-class INarrativeConditionResolver
-{
+class INarrativeConditionResolver {
   public:
     virtual ~INarrativeConditionResolver() = default;
     [[nodiscard]] virtual NarrativeConditionResult Evaluate(const NarrativeConditionDefinition &definition,
                                                             const NarrativeEvaluationContext &context) const = 0;
 };
-class INarrativeConsequenceHandler
-{
+class INarrativeConsequenceHandler {
   public:
     virtual ~INarrativeConsequenceHandler() = default;
     [[nodiscard]] virtual NarrativeConsequenceResult Execute(const NarrativeConsequenceDefinition &definition,
                                                              const NarrativeConsequenceExecution &execution,
                                                              const NarrativeExecutionContext &context) const = 0;
 };
-struct NarrativeProcessBudget
-{
+struct NarrativeProcessBudget {
     std::size_t max_condition_evaluations = 1024;
     std::size_t max_storylets_evaluated = 256;
     std::size_t max_storylets_activated = 16;
     std::size_t max_consequences_planned = 256;
 };
 
-class NarrativeService
-{
+class NarrativeService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<NarrativeService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.narrative");
     }
     [[nodiscard]] foundation::Result<void> RegisterThreadDefinition(NarrativeThreadDefinition definition);
@@ -980,10 +838,9 @@ class NarrativeService
     [[nodiscard]] foundation::Result<void> ResolveChoice(NarrativeChoiceId choice, NarrativeChoiceOptionId option,
                                                          GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> CancelChoice(NarrativeChoiceId choice, GameplayContext context = {});
-    [[nodiscard]] std::vector<NarrativeChoiceId> ExpireChoices(GameplayTimePoint now,
-                                                               GameplayContext context = {});
-    [[nodiscard]] std::vector<NarrativeConsequenceExecutionId> ExecutePendingConsequences(
-        NarrativeExecutionContext context, std::size_t budget = 256);
+    [[nodiscard]] std::vector<NarrativeChoiceId> ExpireChoices(GameplayTimePoint now, GameplayContext context = {});
+    [[nodiscard]] std::vector<NarrativeConsequenceExecutionId>
+    ExecutePendingConsequences(NarrativeExecutionContext context, std::size_t budget = 256);
     [[nodiscard]] foundation::Result<void> SetFlag(NarrativeFlag flag, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> SetVariable(NarrativeVariable variable, GameplayContext context = {});
     [[nodiscard]] const NarrativeThreadState *GetThreadState(NarrativeThreadId thread) const noexcept;
@@ -996,42 +853,39 @@ class NarrativeService
     [[nodiscard]] std::vector<ClueRecord> FindClues(GameplayObjectRef owner, TypeId topic = {}) const;
     [[nodiscard]] std::vector<RumorRecord> FindRumors(GameplayObjectRef scope, TypeId topic = {}) const;
     [[nodiscard]] std::vector<NarrativeConsequenceExecution> FindConsequences(ConsequenceExecutionState state) const;
-    private:
-        [[nodiscard]] std::vector<NarrativeChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] NarrativeChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] NarrativeChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<NarrativeChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] NarrativeChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] NarrativeChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] std::uint64_t CompactTerminalExecutions(GameplayTimePoint before);
     [[nodiscard]] NarrativeSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(NarrativeSnapshot snapshot);
     [[nodiscard]] NarrativeDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
   private:
     [[nodiscard]] foundation::Result<Revision> PrepareRevision() const noexcept;
     [[nodiscard]] bool CanAdvanceRevisionBy(std::size_t count) const noexcept;
-    void CommitRevision(Revision revision) noexcept
-    {
+    void CommitRevision(Revision revision) noexcept {
         revision_ = revision;
     }
     void Record(NarrativeChange change) noexcept;

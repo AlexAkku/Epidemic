@@ -248,3 +248,193 @@ template <> struct hash<epidemic::runtime::animation::AnimatorInstanceId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_time.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/spatial.h`.
+
+### Перечисления и допустимые категории
+
+- `AnimatorLifecycle`: `Uninitialized`, `Ready`, `Disabled`
+- `AnimatorReadiness`: `Ready`, `ResourceMissing`
+- `AnimatorPlaybackState`: `Stopped`, `Playing`, `Paused`, `Blending`, `Finished`
+- `PoseState`: `Clean`, `Dirty`, `Evaluating`, `Ready`
+- `AnimationLodLevel`: `Full`, `Reduced`, `Frozen`
+
+### Состав типов и операции
+
+#### `SkeletonId` (строка заголовка 18)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SkeletonId&) const noexcept = default;
+```
+
+#### `AnimationClipId` (строка заголовка 26)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AnimationClipId&) const noexcept = default;
+```
+
+#### `AnimatorInstanceId` (строка заголовка 34)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AnimatorInstanceId&) const noexcept = default;
+```
+
+#### `SkeletonDesc` (строка заголовка 81)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t joint_count = 0`
+
+#### `AnimationClipDesc` (строка заголовка 87)
+
+Публичные поля и значения по умолчанию:
+
+- `float duration_seconds = 0.0f`
+
+#### `AnimatorPlayback` (строка заголовка 94)
+
+Публичные поля и значения по умолчанию:
+
+- `bool loop = false`
+- `double playback_rate = 1.0`
+- `double fractional_microseconds = 0.0`
+
+#### `CrossfadeState` (строка заголовка 103)
+
+Публичные поля и значения по умолчанию:
+
+- `float source_weight = 1.0f`
+- `float target_weight = 0.0f`
+
+#### `AnimatorDesc` (строка заголовка 115)
+
+Публичные поля и значения по умолчанию:
+
+- `AnimationLodLevel lod = AnimationLodLevel::Full`
+
+#### `AnimationEvent` (строка заголовка 122)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string name`
+- `float time = 0.0f`
+
+#### `AnimatorHandle` (строка заголовка 129)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t generation = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AnimatorHandle&) const noexcept = default;
+```
+
+#### `PoseSnapshot` (строка заголовка 138)
+
+Публичные поля и значения по умолчанию:
+
+- `PoseState state = PoseState::Clean`
+- `AnimationLodLevel lod = AnimationLodLevel::Full`
+- `std::uint64_t revision = 0`
+
+#### `PoseBuffer` (строка заголовка 147)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t revision = 0`
+
+#### `AnimatorSnapshot` (строка заголовка 155)
+
+Публичные поля и значения по умолчанию:
+
+- `AnimatorLifecycle lifecycle = AnimatorLifecycle::Uninitialized`
+- `AnimatorReadiness readiness = AnimatorReadiness::ResourceMissing`
+- `AnimatorPlaybackState playback = AnimatorPlaybackState::Stopped`
+- `AnimationLodLevel lod = AnimationLodLevel::Full`
+- `std::uint64_t revision = 0`
+
+#### `AnimationEvaluationRequest` (строка заголовка 167)
+
+Публичные поля и значения по умолчанию:
+
+- `float source_weight = 1.0f`
+- `float target_weight = 0.0f`
+- `AnimationLodLevel lod = AnimationLodLevel::Full`
+- `std::uint64_t revision = 0`
+
+#### `AnimationPlaybackCommand` (строка заголовка 182)
+
+Публичные поля и значения по умолчанию:
+
+- `bool loop = false`
+- `double playback_rate = 1.0`
+
+#### `AnimationOptions` (строка заголовка 190)
+
+Публичные поля и значения по умолчанию:
+
+- `bool enable_mock_pose_evaluation = false`
+- `std::size_t event_capacity = 64`
+- `std::size_t max_animators = 4096`
+- `std::uint32_t max_skeleton_joints = 4096`
+
+#### `hash` (строка заголовка 201)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::animation::SkeletonId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 209)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::animation::AnimationClipId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 217)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::animation::AnimatorInstanceId value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

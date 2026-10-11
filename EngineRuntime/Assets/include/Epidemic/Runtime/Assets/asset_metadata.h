@@ -12,8 +12,7 @@
 #include <cstddef>
 #include <vector>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Public mutation limits keep caller-controlled metadata bounded before the catalog
 // performs normalization/copies. std::bad_alloc outside these validated limits remains
 // a process-level allocation failure; Assets does not invent a module-local OOM policy.
@@ -21,16 +20,14 @@ inline constexpr std::size_t kMaxAssetPathBytes = 4096;
 inline constexpr std::size_t kMaxAssetDependencies = 4096;
 inline constexpr std::size_t kMaxAssetTags = 1024;
 
-struct AssetDependency
-{
+struct AssetDependency {
     AssetId asset_id{};
     bool required = true;
 
-    [[nodiscard]] constexpr bool operator==(const AssetDependency&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const AssetDependency &) const noexcept = default;
 };
 
-struct AssetMetadata
-{
+struct AssetMetadata {
     AssetId id{};
     AssetType type{};
     AssetLocation location{};

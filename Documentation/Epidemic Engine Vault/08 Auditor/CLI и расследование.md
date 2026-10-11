@@ -29,3 +29,9 @@ $py = '..\.ai\venv\auditor\Scripts\python.exe'
 `stress --spec` читает JSON campaign configuration с конечными duration/budgets. Проверьте его на отдельном контролируемом workload и не допускайте глобальных injection вне owned process tree.
 
 `Run-Auditor.ps1` является более узкой обёрткой с параметром `Command` (`configure`, `build`, `discover`, `test-all`, `test`, `run`, `build-run`, `static`) и `-Mode Fast/Full/Deep`; для read-only анализов используйте Python CLI непосредственно.
+
+---
+
+## От RAW к диагностике
+
+Проверяйте sealed run, затем `python -B -m ep_auditor.cli event-log <sealed-run> --offset 0 --limit 50`, после выбора существующего ActionId используйте `python -B -m ep_auditor.cli action <sealed-run> <ActionId>`. Оба пути читают те же immutable records; они не создают потраченных во время запуска точных входов/выходов функций задним числом. Для сравнения run предварительно сверяйте compiler, profile, symbols и capture scope.

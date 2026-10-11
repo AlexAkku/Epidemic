@@ -5,18 +5,15 @@
 #include "Epidemic/Runtime/Foundation/runtime_ids.h"
 #include <optional>
 
-namespace epidemic::runtime
-{
-struct RegionDescriptor
-{
+namespace epidemic::runtime {
+struct RegionDescriptor {
     RegionId id{};
     foundation::StringId name{};
 
-    [[nodiscard]] constexpr bool operator==(const RegionDescriptor&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const RegionDescriptor &) const noexcept = default;
 };
 
-class IRegionRegistry
-{
+class IRegionRegistry {
   public:
     virtual ~IRegionRegistry() = default;
     [[nodiscard]] virtual foundation::Result<void> RegisterRegion(RegionDescriptor region) = 0;

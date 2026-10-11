@@ -20,3 +20,9 @@ source_snapshot: "2026-10-10"
 Фактическое расположение зависит от CMake output directory; часть проекта задаёт его явно. Проверьте: `Get-ChildItem -Path .\build -Recurse -Filter EpidemicHeadlessCoreApp.exe`. Для ручных smoke запусков исходный `README.md` рекомендует рабочий каталог `.ai/`, чтобы пути логов оставались в `.ai/logs/`.
 
 Smoke подтверждает отдельную возможность (headless lifecycle, создание окна, ввод, очистка RHI), а не готовность renderer/gameplay или интеграционное acceptance. Исходные CMake и entrypoints: `EngineBase/Apps/*`.
+
+---
+
+## Что должен удостоверить smoke
+
+Smoke должен проверять создание composition root, регистрацию обязательных сервисов, прохождение `Bootstrap` и `Initialize`, хотя бы одного `Tick`, согласованное завершение `Shutdown` и отрицательный exit code при сбое. Для Win32 + D3D11 дополнительно проверьте создание и resize swap chain и закрытие окна. Smoke не доказывает поведение AI, Simulation, World persistence или полный freeze.

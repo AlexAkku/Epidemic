@@ -14,235 +14,188 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::resources
-{
+namespace epidemic::gameplay::resources {
 using Fixed = std::int64_t;
-struct ResourceTypeId
-{
+struct ResourceTypeId {
     TypeId value{};
-    static constexpr ResourceTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr ResourceTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceTypeId &) const noexcept = default;
 };
-struct ResourceUnitId
-{
+struct ResourceUnitId {
     TypeId value{};
-    static constexpr ResourceUnitId FromString(std::string_view s) noexcept
-    {
+    static constexpr ResourceUnitId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceUnitId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceUnitId &) const noexcept = default;
 };
-struct ResourceStockpileId
-{
+struct ResourceStockpileId {
     GameplayObjectId value{};
-    static constexpr ResourceStockpileId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ResourceStockpileId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceStockpileId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceStockpileId &) const noexcept = default;
 };
-struct ResourceNodeId
-{
+struct ResourceNodeId {
     GameplayObjectId value{};
-    static constexpr ResourceNodeId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ResourceNodeId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceNodeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceNodeId &) const noexcept = default;
 };
-struct ProductionSiteId
-{
+struct ProductionSiteId {
     GameplayObjectId value{};
-    static constexpr ProductionSiteId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ProductionSiteId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ProductionSiteId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ProductionSiteId &) const noexcept = default;
 };
-struct ProductionRecipeId
-{
+struct ProductionRecipeId {
     TypeId value{};
-    static constexpr ProductionRecipeId FromString(std::string_view s) noexcept
-    {
+    static constexpr ProductionRecipeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ProductionRecipeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ProductionRecipeId &) const noexcept = default;
 };
-struct ResourceTransactionId
-{
+struct ResourceTransactionId {
     GameplayObjectId value{};
-    static constexpr ResourceTransactionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ResourceTransactionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceTransactionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceTransactionId &) const noexcept = default;
 };
-struct ResourceSourceId
-{
+struct ResourceSourceId {
     GameplayObjectId value{};
-    static constexpr ResourceSourceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ResourceSourceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceSourceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceSourceId &) const noexcept = default;
 };
-struct ResourceSinkId
-{
+struct ResourceSinkId {
     GameplayObjectId value{};
-    static constexpr ResourceSinkId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ResourceSinkId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceSinkId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceSinkId &) const noexcept = default;
 };
-struct ResourceReservationId
-{
+struct ResourceReservationId {
     GameplayObjectId value{};
-    static constexpr ResourceReservationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ResourceReservationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ResourceReservationId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ResourceReservationId &) const noexcept = default;
 };
-struct ProductionCapabilityId
-{
+struct ProductionCapabilityId {
     GameplayObjectId value{};
-    static constexpr ProductionCapabilityId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ProductionCapabilityId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ProductionCapabilityId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ProductionCapabilityId &) const noexcept = default;
 };
-struct ProductionPlanId
-{
+struct ProductionPlanId {
     GameplayObjectId value{};
-    static constexpr ProductionPlanId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr ProductionPlanId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const ProductionPlanId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ProductionPlanId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class ResourceStoragePolicy
-{
+enum class ResourceStoragePolicy {
     Abstract,
     Stockpile,
     Node,
     Virtual
 };
-enum class ResourceDecayPolicy
-{
+enum class ResourceDecayPolicy {
     None,
     Linear,
     External
 };
-enum class StockpileState
-{
+enum class StockpileState {
     Active,
     Locked,
     Disabled,
     Destroyed
 };
-enum class ResourceNodeState
-{
+enum class ResourceNodeState {
     Active,
     Depleted,
     Disabled,
     Regenerating
 };
-enum class ProductionSiteState
-{
+enum class ProductionSiteState {
     Active,
     Paused,
     Disabled,
     Destroyed
 };
-enum class ResourceReservationState
-{
+enum class ResourceReservationState {
     Active,
     Consumed,
     Released
 };
-enum class ProductionPlanState
-{
+enum class ProductionPlanState {
     Planned,
     Active,
     Satisfied,
     Paused,
     Cancelled
 };
-enum class ResourceChangeKind
-{
+enum class ResourceChangeKind {
     StockpileCreated,
     ResourceAdded,
     ResourceRemoved,
@@ -262,8 +215,7 @@ enum class ResourceChangeKind
     SurplusDetected
 };
 
-struct ResourceType
-{
+struct ResourceType {
     ResourceTypeId id{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -272,17 +224,14 @@ struct ResourceType
     ResourceDecayPolicy decay_policy = ResourceDecayPolicy::None;
     Revision revision{};
 };
-struct ResourceQuantity
-{
+struct ResourceQuantity {
     ResourceTypeId type{};
     Fixed amount = 0;
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return type.IsValid() && amount >= 0;
     }
 };
-struct ResourceStockpile
-{
+struct ResourceStockpile {
     ResourceStockpileId id{};
     GameplayObjectRef owner{};
     GameplayObjectRef location_object{};
@@ -290,8 +239,7 @@ struct ResourceStockpile
     StockpileState state = StockpileState::Active;
     Revision revision{};
 };
-struct ResourceNode
-{
+struct ResourceNode {
     ResourceNodeId id{};
     ResourceTypeId type{};
     GameplayObjectRef area{};
@@ -302,8 +250,7 @@ struct ResourceNode
     Fixed maximum_amount = 0;
     GameplayTimePoint last_regenerated_at{};
 };
-struct ProductionSite
-{
+struct ProductionSite {
     ProductionSiteId id{};
     GameplayObjectRef site_object{};
     GameplayObjectRef area{};
@@ -312,8 +259,7 @@ struct ProductionSite
     Fixed efficiency_micro = 1'000'000;
     Revision revision{};
 };
-struct ProductionRecipe
-{
+struct ProductionRecipe {
     ProductionRecipeId id{};
     std::string canonical_name;
     std::vector<ResourceQuantity> inputs;
@@ -321,8 +267,7 @@ struct ProductionRecipe
     GameplayDuration duration{};
     Revision revision{};
 };
-struct ResourceReservation
-{
+struct ResourceReservation {
     ResourceReservationId id{};
     ResourceStockpileId stockpile{};
     std::vector<ResourceQuantity> quantities;
@@ -331,16 +276,14 @@ struct ResourceReservation
     ResourceReservationState state = ResourceReservationState::Active;
     Revision revision{};
 };
-struct ProductionCapability
-{
+struct ProductionCapability {
     ProductionCapabilityId id{};
     GameplayObjectRef site{};
     GameplayTagSet process_tags;
     Fixed capacity = 0;
     Revision revision{};
 };
-struct ProductionPlan
-{
+struct ProductionPlan {
     ProductionPlanId id{};
     GameplayObjectRef owner{};
     ResourceTypeId desired_output{};
@@ -349,8 +292,7 @@ struct ProductionPlan
     ProductionPlanState state = ProductionPlanState::Planned;
     Revision revision{};
 };
-struct ResourceTransaction
-{
+struct ResourceTransaction {
     ResourceTransactionId id{};
     ResourceStockpileId from{};
     ResourceStockpileId to{};
@@ -360,8 +302,7 @@ struct ResourceTransaction
     GameplayContext context{};
     Revision revision{};
 };
-struct ResourceChange
-{
+struct ResourceChange {
     std::uint64_t sequence = 0;
     ResourceChangeKind kind = ResourceChangeKind::ResourceAdded;
     ResourceStockpileId stockpile{};
@@ -373,8 +314,7 @@ struct ResourceChange
     Revision revision{};
     ResourceNodeId node{};
 };
-struct ResourceChangeBatch
-{
+struct ResourceChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -384,8 +324,7 @@ struct ResourceChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct ResourcesSnapshot
-{
+struct ResourcesSnapshot {
     std::vector<ResourceStockpile> stockpiles;
     std::vector<std::pair<ResourceStockpileId, ResourceQuantity>> amounts;
     std::vector<ResourceNode> nodes;
@@ -405,8 +344,7 @@ struct ResourcesSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct ResourcesDiagnostics
-{
+struct ResourcesDiagnostics {
     std::uint64_t stockpiles = 0;
     std::uint64_t resource_records = 0;
     std::uint64_t nodes = 0;
@@ -418,20 +356,17 @@ struct ResourcesDiagnostics
     std::uint64_t shortages = 0;
 };
 
-class ResourcesProductionService
-{
+class ResourcesProductionService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<ResourcesProductionService>;
 
   public:
     ResourcesProductionService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.resources_production");
     }
     [[nodiscard]] foundation::Result<ResourceTypeId> RegisterResourceType(ResourceType type);
     [[nodiscard]] foundation::Result<ProductionRecipeId> RegisterProductionRecipe(ProductionRecipe recipe);
-    void Freeze() noexcept
-    {
+    void Freeze() noexcept {
         frozen_ = true;
     }
     [[nodiscard]] const ResourceType *FindResourceType(ResourceTypeId id) const noexcept;
@@ -453,8 +388,7 @@ class ResourcesProductionService
     [[nodiscard]] foundation::Result<ResourceTransactionId> Transfer(ResourceStockpileId from, ResourceStockpileId to,
                                                                      std::vector<ResourceQuantity> quantities,
                                                                      TypeId reason = {}, GameplayContext context = {});
-    [[nodiscard]] bool CanReserve(ResourceStockpileId stockpile,
-                                  std::span<const ResourceQuantity> quantities) const;
+    [[nodiscard]] bool CanReserve(ResourceStockpileId stockpile, std::span<const ResourceQuantity> quantities) const;
     [[nodiscard]] foundation::Result<ResourceReservationId> Reserve(ResourceStockpileId stockpile,
                                                                     std::vector<ResourceQuantity> quantities,
                                                                     GameplayObjectRef owner = {}, TypeId reason = {},
@@ -471,8 +405,8 @@ class ResourcesProductionService
     [[nodiscard]] foundation::Result<void> RegenerateNode(ResourceNodeId node, GameplayTimePoint to,
                                                           GameplayContext context = {});
 
-    [[nodiscard]] foundation::Result<ProductionCapabilityId> CreateProductionCapability(
-        ProductionCapability capability);
+    [[nodiscard]] foundation::Result<ProductionCapabilityId>
+    CreateProductionCapability(ProductionCapability capability);
     [[nodiscard]] const ProductionCapability *FindProductionCapability(ProductionCapabilityId id) const noexcept;
     [[nodiscard]] foundation::Result<ProductionPlanId> CreateProductionPlan(ProductionPlan plan);
     [[nodiscard]] foundation::Result<void> SetProductionPlanState(ProductionPlanId plan, ProductionPlanState state,
@@ -480,27 +414,25 @@ class ResourcesProductionService
     [[nodiscard]] const ProductionPlan *FindProductionPlan(ProductionPlanId id) const noexcept;
     [[nodiscard]] std::vector<ProductionPlan> FindProductionPlans(GameplayObjectRef owner = {}) const;
 
-    private:
-        [[nodiscard]] std::vector<ResourceChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] ResourceChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] ResourceChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+  private:
+    [[nodiscard]] std::vector<ResourceChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] ResourceChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] ResourceChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] std::uint64_t OldestChangeSequence() const noexcept;
     void PruneChangesBefore(std::uint64_t sequence) noexcept;
@@ -509,30 +441,25 @@ class ResourcesProductionService
     [[nodiscard]] ResourcesDiagnostics GetDiagnostics() const noexcept;
 
   private:
-    struct AmountKey
-    {
+    struct AmountKey {
         ResourceStockpileId stockpile{};
         ResourceTypeId type{};
         [[nodiscard]] constexpr bool operator==(const AmountKey &) const noexcept = default;
     };
-    struct AmountKeyHash
-    {
-        [[nodiscard]] std::size_t operator()(const AmountKey &k) const noexcept
-        {
+    struct AmountKeyHash {
+        [[nodiscard]] std::size_t operator()(const AmountKey &k) const noexcept {
             const auto a = std::hash<GameplayObjectId>{}(k.stockpile.value);
             const auto b = std::hash<TypeId>{}(k.type.value);
             return a ^ (b + 0x9E3779B97F4A7C15ull + (a << 6u) + (a >> 2u));
         }
     };
-    [[nodiscard]] bool Bump() noexcept
-    {
+    [[nodiscard]] bool Bump() noexcept {
         if (revision_.value == std::numeric_limits<std::uint64_t>::max())
             return false;
         ++revision_.value;
         return true;
     }
-    enum class StockpileOperation
-    {
+    enum class StockpileOperation {
         Add,
         Remove,
         Reserve,
@@ -541,8 +468,8 @@ class ResourcesProductionService
     };
     void Record(ResourceChange change);
     [[nodiscard]] foundation::Result<void> ValidateQuantities(std::span<const ResourceQuantity> quantities) const;
-    [[nodiscard]] foundation::Result<std::vector<ResourceQuantity>> CanonicalizeQuantities(
-        std::span<const ResourceQuantity> quantities) const;
+    [[nodiscard]] foundation::Result<std::vector<ResourceQuantity>>
+    CanonicalizeQuantities(std::span<const ResourceQuantity> quantities) const;
     [[nodiscard]] foundation::Result<void> ValidateStockpileOperation(ResourceStockpileId stockpile,
                                                                       StockpileOperation operation) const;
     [[nodiscard]] bool CanAddToStockpile(ResourceStockpileId stockpile) const noexcept;

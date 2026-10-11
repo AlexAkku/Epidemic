@@ -28,30 +28,27 @@
 #include <string>
 #include <vector>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Independent version-1 Runtime durable boundaries. Externally synchronized,
 // single writer per path. Missing files are errors: initialize a backend explicitly
 // with CommitSnapshot(empty, SaveAndFlushRequired) before composing a new store.
 // These operations do not establish a cross-plane consistent save point (M5.3).
-[[nodiscard]] foundation::Result<void> CommitRuntimeTimeCheckpoint(
-    const foundation::Path& path, const TimeCheckpoint& checkpoint);
-[[nodiscard]] foundation::Result<TimeCheckpoint> LoadRuntimeTimeCheckpoint(const foundation::Path& path);
-[[nodiscard]] foundation::Result<std::shared_ptr<IPersistenceBackend>> CreateFilePersistenceBackend(const foundation::Path& path);
+[[nodiscard]] foundation::Result<void> CommitRuntimeTimeCheckpoint(const foundation::Path &path,
+                                                                   const TimeCheckpoint &checkpoint);
+[[nodiscard]] foundation::Result<TimeCheckpoint> LoadRuntimeTimeCheckpoint(const foundation::Path &path);
+[[nodiscard]] foundation::Result<std::shared_ptr<IPersistenceBackend>>
+CreateFilePersistenceBackend(const foundation::Path &path);
 
-struct RuntimeFoundationRegistration
-{
+struct RuntimeFoundationRegistration {
     std::string name = "RuntimeFoundation";
 };
 
-enum class RuntimeProfile
-{
+enum class RuntimeProfile {
     Reference,
     Production,
 };
 
-enum class RuntimeAdapterKind
-{
+enum class RuntimeAdapterKind {
     SceneToRenderer,
     ResourcesToRenderer,
     SceneToPhysics,
@@ -65,8 +62,7 @@ enum class RuntimeAdapterKind
     EnvironmentToNavigation,
 };
 
-enum class RuntimeUpdateStep
-{
+enum class RuntimeUpdateStep {
     Time,
     MainThreadCommits,
     Resources,
@@ -81,8 +77,7 @@ enum class RuntimeUpdateStep
     DiagnosticsEvents,
 };
 
-enum class RuntimeShutdownStep
-{
+enum class RuntimeShutdownStep {
     StopNewWork,
     ResolveSimulationWork,
     ShutdownStreaming,
@@ -97,54 +92,46 @@ enum class RuntimeShutdownStep
     Complete,
 };
 
-enum class ShutdownProposalPolicy
-{
+enum class ShutdownProposalPolicy {
     CommitValid,
     DiscardWithReason,
     FailIfPending,
 };
 
-struct ChunkResourceRequirement
-{
+struct ChunkResourceRequirement {
     ResourceId resource{};
     ResourceType type{};
     std::size_t estimated_bytes = 0;
 };
 
-struct ChunkStreamingManifest
-{
+struct ChunkStreamingManifest {
     ChunkId chunk{};
     std::vector<ChunkResourceRequirement> resources;
     PersistenceLocation persistence_location{};
 };
 
-class IChunkStreamingManifestSource
-{
+class IChunkStreamingManifestSource {
   public:
     virtual ~IChunkStreamingManifestSource() = default;
 
     [[nodiscard]] virtual foundation::Result<ChunkStreamingManifest> GetManifest(ChunkId chunk) const = 0;
 };
 
-struct PreparedChunkDataSnapshot
-{
+struct PreparedChunkDataSnapshot {
     ChunkId chunk{};
     PersistenceLocation persistence_location{};
     std::optional<ZoneOverrideSnapshot> persisted_state{};
     std::uint64_t revision = 0;
 };
 
-class IStreamingPreparedChunkDataQuery
-{
+class IStreamingPreparedChunkDataQuery {
   public:
     virtual ~IStreamingPreparedChunkDataQuery() = default;
 
-    [[nodiscard]] virtual foundation::Result<PreparedChunkDataSnapshot>
-        GetPreparedData(ChunkId chunk) const = 0;
+    [[nodiscard]] virtual foundation::Result<PreparedChunkDataSnapshot> GetPreparedData(ChunkId chunk) const = 0;
 };
 
-class IAnimationResourceMapper
-{
+class IAnimationResourceMapper {
   public:
     virtual ~IAnimationResourceMapper() = default;
 
@@ -152,35 +139,30 @@ class IAnimationResourceMapper
     [[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveClip(animation::AnimationClipId id) const = 0;
 };
 
-class IAnimationSkeletonResourcePayload
-{
+class IAnimationSkeletonResourcePayload {
   public:
     virtual ~IAnimationSkeletonResourcePayload() = default;
-    [[nodiscard]] virtual const animation::SkeletonDesc& GetSkeleton() const noexcept = 0;
+    [[nodiscard]] virtual const animation::SkeletonDesc &GetSkeleton() const noexcept = 0;
 };
 
-class IAnimationClipResourcePayload
-{
+class IAnimationClipResourcePayload {
   public:
     virtual ~IAnimationClipResourcePayload() = default;
-    [[nodiscard]] virtual const animation::AnimationClipDesc& GetClip() const noexcept = 0;
+    [[nodiscard]] virtual const animation::AnimationClipDesc &GetClip() const noexcept = 0;
 };
 
-class IAudioResourceMapper
-{
+class IAudioResourceMapper {
   public:
     virtual ~IAudioResourceMapper() = default;
     [[nodiscard]] virtual foundation::Result<ResourceRequest> ResolveSound(audio::SoundId id) const = 0;
 };
 
-struct PendingSceneProjection
-{
+struct PendingSceneProjection {
     SceneNodeId node{};
     Transform world_transform{};
 };
 
-class ISceneProjectionQueue
-{
+class ISceneProjectionQueue {
   public:
     virtual ~ISceneProjectionQueue() = default;
 
@@ -189,32 +171,28 @@ class ISceneProjectionQueue
     [[nodiscard]] virtual foundation::Result<void> DiscardPending() = 0;
 };
 
-class IRuntimePoseCache
-{
+class IRuntimePoseCache {
   public:
     virtual ~IRuntimePoseCache() = default;
 
     [[nodiscard]] virtual foundation::Result<std::shared_ptr<const animation::PoseBuffer>>
-        GetPose(animation::AnimatorHandle animator) const = 0;
+    GetPose(animation::AnimatorHandle animator) const = 0;
     [[nodiscard]] virtual std::size_t PoseCount() const noexcept = 0;
 };
 
-struct RuntimePhaseFailure
-{
+struct RuntimePhaseFailure {
     RuntimeUpdateStep phase{};
     foundation::Error error{};
 };
 
-struct RuntimeFrameEvents
-{
+struct RuntimeFrameEvents {
     std::vector<physics::ContactEvent> physics_contacts;
     std::vector<animation::AnimationEvent> animation_events;
     std::vector<audio::AudioEvent> audio_events;
     std::vector<RuntimePhaseFailure> phase_failures;
 };
 
-class IRuntimeEventSink
-{
+class IRuntimeEventSink {
   public:
     virtual ~IRuntimeEventSink() = default;
 
@@ -222,25 +200,22 @@ class IRuntimeEventSink
     // exception means that the batch was not externally committed and the same source
     // events remain eligible for retry. Sinks that can commit before reporting failure
     // must provide their own idempotent/deduplicated boundary instead of violating this contract.
-    [[nodiscard]] virtual foundation::Result<void> Publish(const RuntimeFrameEvents& events) = 0;
+    [[nodiscard]] virtual foundation::Result<void> Publish(const RuntimeFrameEvents &events) = 0;
 };
 
-class IRuntimeAdapterLifecycle
-{
+class IRuntimeAdapterLifecycle {
   public:
     virtual ~IRuntimeAdapterLifecycle() = default;
     [[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;
 };
 
-class IReferenceSimulationCommitLog
-{
+class IReferenceSimulationCommitLog {
   public:
     virtual ~IReferenceSimulationCommitLog() = default;
     [[nodiscard]] virtual std::span<const simulation::SimulationProposalBatch> CommittedBatches() const noexcept = 0;
 };
 
-struct EngineRuntimeOptions
-{
+struct EngineRuntimeOptions {
     RuntimeProfile profile = RuntimeProfile::Reference;
 
     bool enable_assets = true;
@@ -279,8 +254,7 @@ struct EngineRuntimeOptions
     renderer::RendererOptions renderer{};
 };
 
-struct RuntimeFrameInput
-{
+struct RuntimeFrameInput {
     RuntimeFrameDuration real_delta{};
     RuntimeBudget resource_budget{};
     streaming::StreamingBudget streaming_budget{};
@@ -289,8 +263,7 @@ struct RuntimeFrameInput
     std::uint32_t max_simulation_commits = 0;
 };
 
-struct EngineRuntimeDependencies
-{
+struct EngineRuntimeDependencies {
     renderer::RendererDependencies renderer{};
     physics::PhysicsDependencies physics{};
     navigation::NavigationDependencies navigation{};
@@ -305,15 +278,13 @@ struct EngineRuntimeDependencies
     std::shared_ptr<IRuntimeEventSink> event_sink;
 };
 
-struct RuntimeTickResult
-{
+struct RuntimeTickResult {
     TimeAdvanceResult time{};
     std::vector<RuntimeUpdateStep> executed_steps;
     std::vector<RuntimePhaseFailure> failures;
 };
 
-struct RuntimeIntegrationServices
-{
+struct RuntimeIntegrationServices {
     std::shared_ptr<renderer::IRenderResourceBridge> render_resources;
     std::shared_ptr<renderer::IRenderSceneSource> render_scene;
     std::shared_ptr<renderer::IRenderPoseSource> render_pose_source;
@@ -356,19 +327,17 @@ struct RuntimeIntegrationServices
     std::vector<RuntimeShutdownStep> last_shutdown_order;
 };
 
-class IEngineRuntimeCoordinator
-{
+class IEngineRuntimeCoordinator {
   public:
     virtual ~IEngineRuntimeCoordinator() = default;
 
-    [[nodiscard]] virtual foundation::Result<RuntimeTickResult> Tick(const RuntimeFrameInput& input) = 0;
+    [[nodiscard]] virtual foundation::Result<RuntimeTickResult> Tick(const RuntimeFrameInput &input) = 0;
     [[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;
     [[nodiscard]] virtual bool IsShutdownStarted() const noexcept = 0;
     [[nodiscard]] virtual bool IsShutdownComplete() const noexcept = 0;
 };
 
-struct EngineRuntimeServices
-{
+struct EngineRuntimeServices {
     RuntimeProfile profile = RuntimeProfile::Reference;
     std::vector<std::string> registered_majors;
 
@@ -393,40 +362,43 @@ struct EngineRuntimeServices
     std::shared_ptr<IEngineRuntimeCoordinator> coordinator;
 };
 
-struct PreparedEngineRuntime
-{
+struct PreparedEngineRuntime {
     EngineRuntimeServices services;
 };
 
-[[nodiscard]] foundation::Result<void> RegisterRuntimeFoundation(core::Application& app);
-[[nodiscard]] foundation::Result<void> RegisterAssets(core::Application& app, const AssetsOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterSerialization(core::Application& app, const SerializationOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterResources(core::Application& app, const ResourceOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterPersistence(core::Application& app, const PersistenceOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterTime(core::Application& app, const TimeOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterEnvironment(core::Application& app, const EnvironmentOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterScene(core::Application& app, const SceneOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterWorld(core::Application& app, const WorldOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterStreaming(core::Application& app);
-[[nodiscard]] foundation::Result<void> RegisterSimulation(core::Application& app, const simulation::SimulationOptions& options = {});
-[[nodiscard]] foundation::Result<void> RegisterNavigation(core::Application& app, navigation::NavigationOptions options = {});
-[[nodiscard]] foundation::Result<void> RegisterAnimation(core::Application& app, animation::AnimationOptions options = {});
-[[nodiscard]] foundation::Result<void> RegisterPhysics(core::Application& app);
-[[nodiscard]] foundation::Result<void> RegisterAudio(core::Application& app, audio::AudioOptions options = {});
-[[nodiscard]] foundation::Result<void> RegisterRenderer(core::Application& app, const renderer::RendererOptions& options = {});
+[[nodiscard]] foundation::Result<void> RegisterRuntimeFoundation(core::Application &app);
+[[nodiscard]] foundation::Result<void> RegisterAssets(core::Application &app, const AssetsOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterSerialization(core::Application &app,
+                                                             const SerializationOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterResources(core::Application &app, const ResourceOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterPersistence(core::Application &app,
+                                                           const PersistenceOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterTime(core::Application &app, const TimeOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterEnvironment(core::Application &app,
+                                                           const EnvironmentOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterScene(core::Application &app, const SceneOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterWorld(core::Application &app, const WorldOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterStreaming(core::Application &app);
+[[nodiscard]] foundation::Result<void> RegisterSimulation(core::Application &app,
+                                                          const simulation::SimulationOptions &options = {});
+[[nodiscard]] foundation::Result<void> RegisterNavigation(core::Application &app,
+                                                          navigation::NavigationOptions options = {});
+[[nodiscard]] foundation::Result<void> RegisterAnimation(core::Application &app,
+                                                         animation::AnimationOptions options = {});
+[[nodiscard]] foundation::Result<void> RegisterPhysics(core::Application &app);
+[[nodiscard]] foundation::Result<void> RegisterAudio(core::Application &app, audio::AudioOptions options = {});
+[[nodiscard]] foundation::Result<void> RegisterRenderer(core::Application &app,
+                                                        const renderer::RendererOptions &options = {});
 
-[[nodiscard]] foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(
-    const EngineRuntimeOptions& options = {},
-    EngineRuntimeDependencies dependencies = {});
+[[nodiscard]] foundation::Result<PreparedEngineRuntime>
+PrepareEngineRuntime(const EngineRuntimeOptions &options = {}, EngineRuntimeDependencies dependencies = {});
 
-[[nodiscard]] foundation::Result<EngineRuntimeServices> CommitPreparedRuntime(
-    core::Application& app,
-    PreparedEngineRuntime prepared);
+[[nodiscard]] foundation::Result<EngineRuntimeServices> CommitPreparedRuntime(core::Application &app,
+                                                                              PreparedEngineRuntime prepared);
 
-[[nodiscard]] foundation::Result<EngineRuntimeServices> RegisterDefaultEngineRuntime(
-    core::Application& app,
-    const EngineRuntimeOptions& options = {},
-    EngineRuntimeDependencies dependencies = {});
+[[nodiscard]] foundation::Result<EngineRuntimeServices>
+RegisterDefaultEngineRuntime(core::Application &app, const EngineRuntimeOptions &options = {},
+                             EngineRuntimeDependencies dependencies = {});
 
 [[nodiscard]] std::vector<RuntimeAdapterKind> GetAllowedRuntimeAdapters();
 [[nodiscard]] std::vector<RuntimeUpdateStep> GetRuntimeUpdateOrder();
@@ -434,22 +406,19 @@ struct PreparedEngineRuntime
 } // namespace epidemic::runtime
 
 // BEGIN GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // These functions use exactly the same reviewed v1 wire representation as the
 // file-backed helpers. They let an upper-layer composition embed Runtime planes
 // in one outer atomic save generation without intermediate authoritative files.
-[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimeTimeCheckpointPackage(
-    const TimeCheckpoint& checkpoint);
-[[nodiscard]] foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(
-    std::span<const std::byte> package);
-[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeRuntimePersistencePackage(
-    const PersistenceSnapshot& snapshot);
-[[nodiscard]] foundation::Result<PersistenceSnapshot> DecodeRuntimePersistencePackage(
-    std::span<const std::byte> package);
+[[nodiscard]] foundation::Result<std::vector<std::byte>>
+EncodeRuntimeTimeCheckpointPackage(const TimeCheckpoint &checkpoint);
+[[nodiscard]] foundation::Result<TimeCheckpoint> DecodeRuntimeTimeCheckpointPackage(std::span<const std::byte> package);
+[[nodiscard]] foundation::Result<std::vector<std::byte>>
+EncodeRuntimePersistencePackage(const PersistenceSnapshot &snapshot);
+[[nodiscard]] foundation::Result<PersistenceSnapshot>
+DecodeRuntimePersistencePackage(std::span<const std::byte> package);
 // Externally synchronized capture. The caller must hold the same Runtime
 // quiescence used by the surrounding whole-engine generation.
-[[nodiscard]] foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(
-    const IPersistenceQuery& query);
+[[nodiscard]] foundation::Result<PersistenceSnapshot> CaptureRuntimePersistenceSnapshot(const IPersistenceQuery &query);
 } // namespace epidemic::runtime
 // END GOAL5 IN-MEMORY RUNTIME DURABLE PACKAGES

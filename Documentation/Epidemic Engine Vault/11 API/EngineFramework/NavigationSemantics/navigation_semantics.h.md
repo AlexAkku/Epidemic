@@ -487,3 +487,328 @@ class NavigationSemanticsService
 };
 } // namespace epidemic::gameplay::navigation_semantics
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `NavigationDecisionKind`: `Allow`, `Deny`, `AddCost`, `RequireCapability`, `RequireFact`, `Avoid`, `Prefer`
+- `NavigationAvailability`: `PhysicallyImpossible`, `TraversalUnsupported`, `Forbidden`, `Unsafe`, `TemporarilyBlocked`, `Available`
+- `NavigationLayerLifetime`: `Transient`, `Session`, `Persistent`, `Timed`
+- `LinkState`: `Open`, `Closed`, `Locked`, `Blocked`, `Destroyed`, `Disabled`, `Conditional`
+- `NavigationChangeKind`: `ProfileChanged`, `LayerAdded`, `LayerRemoved`, `LayerChanged`, `LinkChanged`, `RuleRegistered`
+
+### Состав типов и операции
+
+#### `NavigationDomainId` (строка заголовка 19)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationDomainId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationDomainId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationDomainId &) const noexcept = default;
+```
+
+#### `NavigationRuleId` (строка заголовка 33)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationRuleId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationRuleId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationRuleId &) const noexcept = default;
+```
+
+#### `NavigationLayerId` (строка заголовка 47)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationLayerId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+static constexpr NavigationLayerId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationLayerId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationLayerId &) const noexcept = default;
+```
+
+#### `NavigationLinkId` (строка заголовка 65)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationLinkId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationLinkId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationLinkId &) const noexcept = default;
+```
+
+#### `NavigationLayerTypeId` (строка заголовка 79)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationLayerTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationLayerTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationLayerTypeId &) const noexcept = default;
+```
+
+#### `NavigationLinkTypeId` (строка заголовка 93)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationLinkTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationLinkTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationLinkTypeId &) const noexcept = default;
+```
+
+#### `TraversalModeSemanticId` (строка заголовка 107)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalModeSemanticId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalModeSemanticId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalModeSemanticId &) const noexcept = default;
+```
+
+#### `NavigationReasonId` (строка заголовка 121)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NavigationReasonId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NavigationReasonId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NavigationReasonId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 135)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 137)
+
+#### `RefHash` (строка заголовка 142)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(GameplayObjectRef ref) const noexcept;
+```
+
+#### `NavigationDomainDefinition` (строка заголовка 199)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+
+#### `NavigationSemanticProfile` (строка заголовка 205)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet navigation_tags`
+
+#### `NavigationSemanticLayer` (строка заголовка 212)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int32_t priority = 0`
+- `NavigationLayerLifetime lifetime = NavigationLayerLifetime::Persistent`
+- `NavigationDecisionKind decision = NavigationDecisionKind::AddCost`
+- `Fixed additive_cost_micro = 0`
+- `Fixed multiplier_micro = 1'000'000`
+- `GameplayTagSet tags`
+- `Fixed required_parameter_micro = 0`
+
+#### `NavigationSemanticLink` (строка заголовка 229)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+- `LinkState state = LinkState::Open`
+
+#### `NavigationRuleDefinition` (строка заголовка 240)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int32_t priority = 0`
+- `NavigationDecisionKind decision = NavigationDecisionKind::Allow`
+- `Fixed additive_cost_micro = 0`
+- `Fixed multiplier_micro = 1'000'000`
+- `GameplayTagSet required_subject_tags`
+- `GameplayTagSet required_from_layer_tags`
+- `GameplayTagSet required_layer_tags`
+- `Fixed required_parameter_micro = 0`
+
+#### `NavigationSemanticCost` (строка заголовка 256)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed base_multiplier_micro = 1'000'000`
+- `Fixed additive_cost_micro = 0`
+- `GameplayTagSet reason_tags`
+
+#### `NavigationReason` (строка заголовка 262)
+
+Публичные поля и значения по умолчанию:
+
+- `NavigationDecisionKind decision = NavigationDecisionKind::Allow`
+
+#### `INavigationCapabilityProvider` (строка заголовка 270)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~INavigationCapabilityProvider() = default;
+[[nodiscard]] virtual bool HasCapability(GameplayObjectRef subject, TypeId capability, Fixed min_parameter_micro) const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `INavigationFactProvider` (строка заголовка 276)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~INavigationFactProvider() = default;
+[[nodiscard]] virtual bool HasFact(GameplayObjectRef subject, TypeId fact, const GameplayContext &context) const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `NavigationPermissionResult` (строка заголовка 291)
+
+Публичные поля и значения по умолчанию:
+
+- `NavigationDecisionKind decision = NavigationDecisionKind::Allow`
+- `NavigationAvailability availability = NavigationAvailability::Available`
+- `std::vector<NavigationReason> reasons`
+
+#### `NavigationChange` (строка заголовка 299)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `NavigationChangeKind kind = NavigationChangeKind::LayerAdded`
+
+#### `NavigationChangeBatch` (строка заголовка 309)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<NavigationChange> changes`
+
+#### `NavigationSnapshot` (строка заголовка 318)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NavigationSemanticProfile> profiles`
+- `std::vector<NavigationSemanticLayer> layers`
+- `std::vector<NavigationSemanticLink> links`
+- `std::vector<NavigationChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `NavigationDiagnostics` (строка заголовка 330)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t domains = 0, rules = 0, layers = 0, links = 0, permission_queries = 0, denied_queries = 0, cost_modified_queries = 0, dynamic_updates = 0`
+
+#### `NavigationSemanticsService` (строка заголовка 336)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<NavigationDomainId, NavigationDomainDefinition, IdHash> domains_`, `std::vector<NavigationRuleDefinition> rules_`, `std::unordered_map<GameplayObjectRef, NavigationSemanticProfile, RefHash> profiles_`, `std::unordered_map<NavigationLayerId, NavigationSemanticLayer, IdHash> layers_`, `std::unordered_map<NavigationLinkId, NavigationSemanticLink, IdHash> links_`, `std::unordered_map<GameplayObjectRef, std::vector<NavigationLayerId>, RefHash> layer_ids_by_are`, `std::unordered_map<LinkPairKey, std::vector<NavigationLinkId>, LinkPairHash> link_ids_by_pair_`, `MonotonicIdGenerator<GameplayObjectId> layer_ids_`, `bool frozen_ = false`.
+
+Публичные сигнатуры операций:
+
+```cpp
+NavigationSemanticsService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterDomain(NavigationDomainDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterRule(NavigationRuleDefinition rule);
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+void SetCapabilityProvider(const INavigationCapabilityProvider *provider) noexcept;
+void SetFactProvider(const INavigationFactProvider *provider) noexcept;
+[[nodiscard]] NavigationPermissionResult CanEnterArea(GameplayObjectRef subject, GameplayObjectRef area, TraversalModeSemanticId traversal_mode, const GameplayContext &context) const;
+[[nodiscard]] NavigationPermissionResult CanUseLink(GameplayObjectRef subject, NavigationLinkId link, TraversalModeSemanticId traversal_mode, const GameplayContext &context) const;
+[[nodiscard]] NavigationPermissionResult EvaluatePath(NavigationPermissionQuery query) const;
+[[nodiscard]] std::vector<NavigationSemanticLayer> FindLayersInArea(GameplayObjectRef area) const;
+[[nodiscard]] std::vector<NavigationSemanticLink> FindLinksBetween(GameplayObjectRef from, GameplayObjectRef to) const;
+[[nodiscard]] const NavigationSemanticProfile *FindProfile(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] const NavigationSemanticLink *FindLink(NavigationLinkId id) const noexcept;
+[[nodiscard]] const NavigationSemanticLayer *FindLayer(NavigationLayerId id) const noexcept;
+[[nodiscard]] NavigationSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(NavigationSnapshot snapshot);
+[[nodiscard]] NavigationChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] NavigationDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `LinkPairKey` (строка заголовка 432)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const LinkPairKey &) const noexcept = default;
+```
+
+#### `LinkPairHash` (строка заголовка 438)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const LinkPairKey &key) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `NavigationSemanticsService` | `NavigationSemanticsService::NavigationSemanticsService` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:125` |
+| `RegisterDomain` | `NavigationSemanticsService::RegisterDomain` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:142` |
+| `RegisterRule` | `NavigationSemanticsService::RegisterRule` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:159` |
+| `CanEnterArea` | `NavigationSemanticsService::CanEnterArea` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:355` |
+| `CanUseLink` | `NavigationSemanticsService::CanUseLink` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:368` |
+| `EvaluatePath` | `NavigationSemanticsService::EvaluatePath` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:395` |
+| `FindLayersInArea` | `NavigationSemanticsService::FindLayersInArea` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:599` |
+| `FindLinksBetween` | `NavigationSemanticsService::FindLinksBetween` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:615` |
+| `FindProfile` | `NavigationSemanticsService::FindProfile` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:632` |
+| `FindLink` | `NavigationSemanticsService::FindLink` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:637` |
+| `FindLayer` | `NavigationSemanticsService::FindLayer` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:642` |
+| `CaptureSnapshot` | `NavigationSemanticsService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:648` |
+| `RestoreSnapshot` | `NavigationSemanticsService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:678` |
+| `GetDiagnostics` | `NavigationSemanticsService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/NavigationSemantics/src/navigation_semantics.cpp:778` |
+

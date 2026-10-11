@@ -7,15 +7,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 struct InMemoryAssetCatalogTestAccess;
 
 // In-memory bootstrap/runtime catalog. It becomes read-only after Seal().
-class InMemoryAssetCatalog final : public IAssetCatalog, public IAssetCatalogWriter, public IAssetLocationResolver
-{
+class InMemoryAssetCatalog final : public IAssetCatalog, public IAssetCatalogWriter, public IAssetLocationResolver {
   public:
-    [[nodiscard]] foundation::Result<void> RegisterAsset(const AssetMetadata& metadata) override;
+    [[nodiscard]] foundation::Result<void> RegisterAsset(const AssetMetadata &metadata) override;
     [[nodiscard]] foundation::Result<void> Seal() override;
 
     [[nodiscard]] std::optional<AssetMetadata> FindById(AssetId id) const override;
@@ -29,7 +27,7 @@ class InMemoryAssetCatalog final : public IAssetCatalog, public IAssetCatalogWri
   private:
     friend struct InMemoryAssetCatalogTestAccess;
 
-    [[nodiscard]] foundation::Result<AssetMetadata> ValidateAndNormalize(const AssetMetadata& metadata) const;
+    [[nodiscard]] foundation::Result<AssetMetadata> ValidateAndNormalize(const AssetMetadata &metadata) const;
 
     std::unordered_map<AssetId, AssetMetadata> assets_;
     bool sealed_ = false;

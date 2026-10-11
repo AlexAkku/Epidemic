@@ -9,65 +9,52 @@ using namespace epidemic;
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::abilities;
 
-namespace
-{
-template <class T, class Pred>
-bool SameVector(const std::vector<T>& a, const std::vector<T>& b, Pred pred)
-{
+namespace {
+template <class T, class Pred> bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
     return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), pred);
 }
 
-bool SameTargetSet(const AbilityTargetSet& a, const AbilityTargetSet& b)
-{
+bool SameTargetSet(const AbilityTargetSet &a, const AbilityTargetSet &b) {
     return a.primary == b.primary && a.targets == b.targets && a.point_micro == b.point_micro &&
            a.direction_micro == b.direction_micro && a.area_radius_micro == b.area_radius_micro;
 }
 
-bool SameReservation(const AbilityResourceReservation& a, const AbilityResourceReservation& b)
-{
+bool SameReservation(const AbilityResourceReservation &a, const AbilityResourceReservation &b) {
     return a.id == b.id && a.resource == b.resource && a.provider_token.type == b.provider_token.type &&
            a.provider_token.bytes == b.provider_token.bytes;
 }
 
-bool SameInstance(const AbilityInstance& a, const AbilityInstance& b)
-{
+bool SameInstance(const AbilityInstance &a, const AbilityInstance &b) {
     return a.id == b.id && a.definition == b.definition && a.owner == b.owner && a.source == b.source &&
            a.persistence == b.persistence && a.enabled == b.enabled && a.revision == b.revision;
 }
 
-bool SameExecution(const AbilityExecution& a, const AbilityExecution& b)
-{
+bool SameExecution(const AbilityExecution &a, const AbilityExecution &b) {
     return a.id == b.id && a.ability == b.ability && a.owner == b.owner && SameTargetSet(a.targets, b.targets) &&
            a.state == b.state && a.started_at == b.started_at && a.due_at == b.due_at &&
-           a.next_channel_at == b.next_channel_at &&
-           SameVector(a.reservations, b.reservations, SameReservation) && a.schedule == b.schedule &&
-           a.context == b.context && a.revision == b.revision;
+           a.next_channel_at == b.next_channel_at && SameVector(a.reservations, b.reservations, SameReservation) &&
+           a.schedule == b.schedule && a.context == b.context && a.revision == b.revision;
 }
 
-bool SameCooldown(const AbilityCooldownState& a, const AbilityCooldownState& b)
-{
+bool SameCooldown(const AbilityCooldownState &a, const AbilityCooldownState &b) {
     return a.owner == b.owner && a.group == b.group && a.ends_at == b.ends_at;
 }
 
-bool SameChange(const AbilityChange& a, const AbilityChange& b)
-{
+bool SameChange(const AbilityChange &a, const AbilityChange &b) {
     return a.sequence == b.sequence && a.kind == b.kind && a.owner == b.owner && a.ability == b.ability &&
            a.execution == b.execution && a.time == b.time && a.context == b.context && a.reason == b.reason;
 }
 
-bool SameSnapshot(const AbilitiesSnapshot& a, const AbilitiesSnapshot& b)
-{
+bool SameSnapshot(const AbilitiesSnapshot &a, const AbilitiesSnapshot &b) {
     return SameVector(a.instances, b.instances, SameInstance) &&
            SameVector(a.executions, b.executions, SameExecution) &&
-           SameVector(a.cooldowns, b.cooldowns, SameCooldown) &&
-           a.instance_ids.scope == b.instance_ids.scope && a.instance_ids.next == b.instance_ids.next &&
-           a.execution_ids.scope == b.execution_ids.scope && a.execution_ids.next == b.execution_ids.next &&
-           SameVector(a.journal, b.journal, SameChange) && a.next_change_sequence == b.next_change_sequence &&
-           a.change_epoch == b.change_epoch;
+           SameVector(a.cooldowns, b.cooldowns, SameCooldown) && a.instance_ids.scope == b.instance_ids.scope &&
+           a.instance_ids.next == b.instance_ids.next && a.execution_ids.scope == b.execution_ids.scope &&
+           a.execution_ids.next == b.execution_ids.next && SameVector(a.journal, b.journal, SameChange) &&
+           a.next_change_sequence == b.next_change_sequence && a.change_epoch == b.change_epoch;
 }
 
-class Resource final : public IAbilityResourceProvider
-{
+class Resource final : public IAbilityResourceProvider {
   public:
     std::int64_t balance = 100;
     AbilityResourceTypeId fail_reserve{};
@@ -76,41 +63,35 @@ class Resource final : public IAbilityResourceProvider
     std::uint64_t fail_reconcile_call = 0;
     std::uint64_t reserve_counter = 0;
 
-    [[nodiscard]] bool CanAfford(GameplayObjectRef, AbilityResourceTypeId, std::int64_t amount) const override
-    {
+    [[nodiscard]] bool CanAfford(GameplayObjectRef, AbilityResourceTypeId, std::int64_t amount) const override {
         return balance >= amount;
     }
 
-    [[nodiscard]] foundation::Result<AbilityResourceReservation> Reserve(GameplayObjectRef, AbilityResourceTypeId type,
-                                                                         std::int64_t amount,
-                                                                         GameplayContext) override
-    {
-        if (type == fail_reserve)
-        {
+    [[nodiscard]] foundation::Result<AbilityResourceReservation>
+    Reserve(GameplayObjectRef, AbilityResourceTypeId type, std::int64_t amount, GameplayContext) override {
+        if (type == fail_reserve) {
             return foundation::Result<AbilityResourceReservation>::Failure(
                 foundation::Error::Create("reserve", "reserve failed"));
         }
-        if (balance < amount)
-        {
+        if (balance < amount) {
             return foundation::Result<AbilityResourceReservation>::Failure(foundation::Error::Create("no", "no"));
         }
         balance -= amount;
         ++reserve_counter;
-        struct Payload
-        {
+        struct Payload {
             std::int64_t amount;
         };
         return foundation::Result<AbilityResourceReservation>::Success(
-            {{GameplayObjectId::FromRaw(1, reserve_counter)}, type,
+            {{GameplayObjectId::FromRaw(1, reserve_counter)},
+             type,
              RegisteredAbilityPayload::FromTrivial(TypeId::FromString("p"), Payload{amount})});
     }
 
-    void Commit(const AbilityResourceReservation &, GameplayContext) noexcept override {}
+    void Commit(const AbilityResourceReservation &, GameplayContext) noexcept override {
+    }
 
-    void Release(const AbilityResourceReservation &reservation, GameplayContext) noexcept override
-    {
-        struct Payload
-        {
+    void Release(const AbilityResourceReservation &reservation, GameplayContext) noexcept override {
+        struct Payload {
             std::int64_t amount;
         };
         auto payload = reservation.provider_token.AsTrivial<Payload>(TypeId::FromString("p"));
@@ -119,36 +100,31 @@ class Resource final : public IAbilityResourceProvider
     }
 
     [[nodiscard]] foundation::Result<void> ReconcileReservation(const AbilityResourceReservation &reservation,
-                                                                GameplayObjectRef,
-                                                                GameplayContext) override
-    {
+                                                                GameplayObjectRef, GameplayContext) override {
         if (!reservation.id.IsValid())
             return foundation::Result<void>::Failure(foundation::Error::Create("reconcile", "invalid reservation"));
         ++reconcile_calls;
         if (fail_reconcile_call != 0 && reconcile_calls == fail_reconcile_call)
-            return foundation::Result<void>::Failure(foundation::Error::Create("reconcile", "forced reconcile failure"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("reconcile", "forced reconcile failure"));
         ++reconciled;
         return foundation::Result<void>::Success();
     }
 };
 
-
-class NoAllocResource final : public IAbilityResourceProvider
-{
+class NoAllocResource final : public IAbilityResourceProvider {
   public:
     std::int64_t balance = 100;
     std::uint64_t reserve_calls = 0;
     std::uint64_t release_calls = 0;
     std::uint64_t commit_calls = 0;
 
-    [[nodiscard]] bool CanAfford(GameplayObjectRef, AbilityResourceTypeId, std::int64_t amount) const override
-    {
+    [[nodiscard]] bool CanAfford(GameplayObjectRef, AbilityResourceTypeId, std::int64_t amount) const override {
         return balance >= amount;
     }
 
-    [[nodiscard]] foundation::Result<AbilityResourceReservation> Reserve(GameplayObjectRef, AbilityResourceTypeId type,
-                                                                         std::int64_t amount, GameplayContext) override
-    {
+    [[nodiscard]] foundation::Result<AbilityResourceReservation>
+    Reserve(GameplayObjectRef, AbilityResourceTypeId type, std::int64_t amount, GameplayContext) override {
         if (balance < amount)
             return foundation::Result<AbilityResourceReservation>::Failure(
                 foundation::Error::Create("no", "insufficient resource"));
@@ -158,25 +134,26 @@ class NoAllocResource final : public IAbilityResourceProvider
             {AbilityReservationId{GameplayObjectId::FromRaw(0xA11, reserve_calls)}, type, {}});
     }
 
-    void Commit(const AbilityResourceReservation &, GameplayContext) noexcept override { ++commit_calls; }
+    void Commit(const AbilityResourceReservation &, GameplayContext) noexcept override {
+        ++commit_calls;
+    }
 
-    void Release(const AbilityResourceReservation &, GameplayContext) noexcept override
-    {
+    void Release(const AbilityResourceReservation &, GameplayContext) noexcept override {
         balance += 10;
         ++release_calls;
     }
 };
 
-class Materialization final : public IAbilityMaterializationProvider
-{
+class Materialization final : public IAbilityMaterializationProvider {
   public:
     bool materialized = true;
-    [[nodiscard]] bool IsMaterialized(GameplayObjectRef) const noexcept override { return materialized; }
+    [[nodiscard]] bool IsMaterialized(GameplayObjectRef) const noexcept override {
+        return materialized;
+    }
 };
 } // namespace
 
-int main()
-{
+int main() {
     GameplayObjectRef owner{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("mage")};
     GameplayObjectRef target{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("enemy")};
 
@@ -274,8 +251,7 @@ int main()
     AbilityDefinition staged_def;
     staged_def.canonical_name = "game.pay_later";
     staged_def.timing.kind = AbilityTimingKind::Instant;
-    staged_def.costs.push_back(
-        {AbilityResourceTypeId::FromString("game.future"), 10, AbilityCostPolicy::PayOnExecute});
+    staged_def.costs.push_back({AbilityResourceTypeId::FromString("game.future"), 10, AbilityCostPolicy::PayOnExecute});
     auto staged_did = staged.RegisterDefinition(staged_def);
     if (!staged_did)
         return 16;
@@ -346,9 +322,11 @@ int main()
         return 28;
     if (restored.CompleteExecution(persisted_exec.Value(), {5}))
         return 29;
-    if (!restored.ReconcileRestoredReservations() || restored.NeedsResourceReconciliation() || restored_res.reconciled != 1)
+    if (!restored.ReconcileRestoredReservations() || restored.NeedsResourceReconciliation() ||
+        restored_res.reconciled != 1)
         return 30;
-    if (!restored.CompleteExecution(persisted_exec.Value(), {5}) || restored.FindExecution(persisted_exec.Value()) != nullptr)
+    if (!restored.CompleteExecution(persisted_exec.Value(), {5}) ||
+        restored.FindExecution(persisted_exec.Value()) != nullptr)
         return 31;
 
     auto corrupt = original.CaptureSnapshot();
@@ -372,8 +350,10 @@ int main()
     reconcile_def.canonical_name = "game.reconcile_two";
     reconcile_def.timing.kind = AbilityTimingKind::CastTime;
     reconcile_def.timing.cast_duration = {1};
-    reconcile_def.costs.push_back({AbilityResourceTypeId::FromString("game.r1"), 10, AbilityCostPolicy::ReserveThenCommit});
-    reconcile_def.costs.push_back({AbilityResourceTypeId::FromString("game.r2"), 10, AbilityCostPolicy::ReserveThenCommit});
+    reconcile_def.costs.push_back(
+        {AbilityResourceTypeId::FromString("game.r1"), 10, AbilityCostPolicy::ReserveThenCommit});
+    reconcile_def.costs.push_back(
+        {AbilityResourceTypeId::FromString("game.r2"), 10, AbilityCostPolicy::ReserveThenCommit});
     auto reconcile_did = reconcile_source.RegisterDefinition(reconcile_def);
     if (!reconcile_did)
         return 34;
@@ -466,8 +446,8 @@ int main()
     atomic_def.canonical_name = "game.atomic_activation";
     atomic_def.timing.kind = AbilityTimingKind::CastTime;
     atomic_def.timing.cast_duration = {1};
-    atomic_def.costs.push_back({AbilityResourceTypeId::FromString("game.atomic"), 10,
-                                AbilityCostPolicy::ReserveThenCommit});
+    atomic_def.costs.push_back(
+        {AbilityResourceTypeId::FromString("game.atomic"), 10, AbilityCostPolicy::ReserveThenCommit});
     auto atomic_did = atomic_service.RegisterDefinition(atomic_def);
     if (!atomic_did)
         return 51;
@@ -494,17 +474,17 @@ int main()
     output_def.canonical_name = "game.output_atomic";
     output_def.timing.kind = AbilityTimingKind::CastTime;
     output_def.timing.cast_duration = {1};
-    output_def.costs.push_back({AbilityResourceTypeId::FromString("game.output_resource"), 10,
-                                AbilityCostPolicy::ReserveThenCommit});
+    output_def.costs.push_back(
+        {AbilityResourceTypeId::FromString("game.output_resource"), 10, AbilityCostPolicy::ReserveThenCommit});
     output_def.outputs.push_back({ActionTypeId::FromString("game.output"), 1, {}});
     auto output_did = output_service.RegisterDefinition(output_def);
     if (!output_did)
         return 55;
     output_service.Freeze();
     auto output_iid = output_service.Grant(owner, output_did.Value());
-    auto output_exec = output_iid ? output_service.BeginActivation({output_iid.Value(), {}, {0}, {}})
-                                  : foundation::Result<AbilityExecutionId>::Failure(
-                                        foundation::Error::Create("test", "grant failed"));
+    auto output_exec =
+        output_iid ? output_service.BeginActivation({output_iid.Value(), {}, {0}, {}})
+                   : foundation::Result<AbilityExecutionId>::Failure(foundation::Error::Create("test", "grant failed"));
     if (!output_exec || output_res.balance != 90)
         return 56;
     const auto before_output_fault = output_service.CaptureSnapshot();
@@ -515,16 +495,16 @@ int main()
             return 57;
     }
     const auto after_output_fault = output_service.CaptureSnapshot();
-    if (output_res.commit_calls != 0 || output_res.balance != 90 || !output_service.FindExecution(output_exec.Value()) ||
-        !SameSnapshot(before_output_fault, after_output_fault))
+    if (output_res.commit_calls != 0 || output_res.balance != 90 ||
+        !output_service.FindExecution(output_exec.Value()) || !SameSnapshot(before_output_fault, after_output_fault))
         return 58;
     if (!output_service.CompleteExecution(output_exec.Value(), {1}) || output_res.commit_calls != 1)
         return 59;
 
     // Restore staging failures leave the full live snapshot unchanged; each fault starts from a fresh fixture.
     const auto restore_seed = output_service.CaptureSnapshot();
-    for (const auto point : {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit})
-    {
+    for (const auto point :
+         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
         auto restore_service = output_service;
         const auto restore_before = restore_service.CaptureSnapshot();
         auto restore_target = restore_seed;
@@ -535,7 +515,6 @@ int main()
         if (!SameSnapshot(restore_before, restore_after))
             return 62;
     }
-
 
     // Goal 4 exact public-API evidence: default/invalid ability surface and virtual provider destruction.
     AbilityService api_evidence;

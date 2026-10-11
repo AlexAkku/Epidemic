@@ -13,74 +13,97 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::ownership
-{
-struct OwnershipRecordId
-{
+namespace epidemic::gameplay::ownership {
+struct OwnershipRecordId {
     GameplayObjectId value{};
-    static constexpr OwnershipRecordId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr OwnershipRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr OwnershipRecordId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr OwnershipRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const OwnershipRecordId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const OwnershipRecordId &) const noexcept = default;
 };
-struct PropertyClaimId
-{
+struct PropertyClaimId {
     GameplayObjectId value{};
-    static constexpr PropertyClaimId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr PropertyClaimId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr PropertyClaimId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr PropertyClaimId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PropertyClaimId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PropertyClaimId &) const noexcept = default;
 };
-struct AccessRuleId
-{
+struct AccessRuleId {
     GameplayObjectId value{};
-    static constexpr AccessRuleId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr AccessRuleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr AccessRuleId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr AccessRuleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const AccessRuleId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const AccessRuleId &) const noexcept = default;
 };
-struct PermissionGrantId
-{
+struct PermissionGrantId {
     GameplayObjectId value{};
-    static constexpr PermissionGrantId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr PermissionGrantId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr PermissionGrantId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr PermissionGrantId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PermissionGrantId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PermissionGrantId &) const noexcept = default;
 };
-struct PropertyRightId
-{
+struct PropertyRightId {
     TypeId value{};
-    static constexpr PropertyRightId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr PropertyRightId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PropertyRightId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PropertyRightId &) const noexcept = default;
 };
-struct PropertyDomainId
-{
+struct PropertyDomainId {
     TypeId value{};
-    static constexpr PropertyDomainId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr PropertyDomainId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PropertyDomainId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PropertyDomainId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
-struct RefHash
-{
-    [[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept { return std::hash<GameplayObjectRef>{}(r); }
+struct RefHash {
+    [[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept {
+        return std::hash<GameplayObjectRef>{}(r);
+    }
 };
 
-enum class OwnershipStrength
-{
+enum class OwnershipStrength {
     Owned,
     Claimed,
     Borrowed,
@@ -92,15 +115,13 @@ enum class OwnershipStrength
     Public,
     Unowned
 };
-enum class PermissionStrength
-{
+enum class PermissionStrength {
     Weak,
     Normal,
     Strong,
     Absolute
 };
-enum class AccessDecision
-{
+enum class AccessDecision {
     Allow,
     Deny,
     RequirePermission,
@@ -111,8 +132,7 @@ enum class AccessDecision
     TrespassIfViolated,
     CrimeIfViolated
 };
-enum class PermissionDecision
-{
+enum class PermissionDecision {
     Allowed,
     Denied,
     Trespass,
@@ -120,8 +140,7 @@ enum class PermissionDecision
     Unknown,
     NotApplicable
 };
-enum class TransferReason
-{
+enum class TransferReason {
     Trade,
     Gift,
     Reward,
@@ -133,8 +152,7 @@ enum class TransferReason
     ConstructionCreated,
     GameSpecific
 };
-enum class OwnershipChangeKind
-{
+enum class OwnershipChangeKind {
     OwnershipAssigned,
     OwnershipTransferred,
     OwnershipRemoved,
@@ -147,8 +165,7 @@ enum class OwnershipChangeKind
     PropertyClaimResolved
 };
 
-struct OwnershipRecord
-{
+struct OwnershipRecord {
     OwnershipRecordId id{};
     GameplayObjectRef property{};
     GameplayObjectRef owner{};
@@ -158,8 +175,7 @@ struct OwnershipRecord
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct PermissionGrant
-{
+struct PermissionGrant {
     PermissionGrantId id{};
     GameplayObjectRef subject{};
     GameplayObjectRef property{};
@@ -170,8 +186,7 @@ struct PermissionGrant
     PermissionStrength strength = PermissionStrength::Normal;
     Revision revision{};
 };
-struct AccessRule
-{
+struct AccessRule {
     AccessRuleId id{};
     GameplayObjectRef property{};
     PropertyRightId right{};
@@ -183,8 +198,7 @@ struct AccessRule
     PermissionStrength minimum_permission_strength = PermissionStrength::Weak;
     PropertyDomainId domain{};
 };
-struct PropertyClaim
-{
+struct PropertyClaim {
     PropertyClaimId id{};
     GameplayObjectRef claimant{};
     GameplayObjectRef property{};
@@ -193,16 +207,14 @@ struct PropertyClaim
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct OwnershipPermissionQuery
-{
+struct OwnershipPermissionQuery {
     GameplayObjectRef actor{};
     GameplayObjectRef property{};
     PropertyRightId right{};
     GameplayContext context{};
     PropertyDomainId domain{};
 };
-struct OwnershipPermissionResult
-{
+struct OwnershipPermissionResult {
     PermissionDecision decision = PermissionDecision::Unknown;
     GameplayObjectRef effective_owner{};
     std::vector<TypeId> reasons;
@@ -210,8 +222,7 @@ struct OwnershipPermissionResult
     AccessRuleId matched_rule{};
     PermissionGrantId matched_grant{};
 };
-struct TransferOwnershipRequest
-{
+struct TransferOwnershipRequest {
     GameplayObjectRef property{};
     GameplayObjectRef from_owner{};
     GameplayObjectRef to_owner{};
@@ -220,8 +231,7 @@ struct TransferOwnershipRequest
     PropertyDomainId domain{};
     Revision expected_revision{};
 };
-struct OwnershipChange
-{
+struct OwnershipChange {
     std::uint64_t sequence = 0;
     OwnershipChangeKind kind = OwnershipChangeKind::OwnershipAssigned;
     GameplayObjectRef property{};
@@ -234,8 +244,7 @@ struct OwnershipChange
     GameplayObjectRef previous_owner{};
     TransferReason transfer_reason = TransferReason::GameSpecific;
 };
-struct OwnershipChangeBatch
-{
+struct OwnershipChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -244,8 +253,7 @@ struct OwnershipChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct OwnershipSnapshot
-{
+struct OwnershipSnapshot {
     std::vector<OwnershipRecord> records;
     std::vector<PermissionGrant> grants;
     std::vector<AccessRule> rules;
@@ -258,31 +266,26 @@ struct OwnershipSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct OwnershipDiagnostics
-{
+struct OwnershipDiagnostics {
     std::uint64_t ownership_records = 0, permission_grants = 0, access_rules = 0, property_claims = 0,
                   permission_queries = 0, denied_permissions = 0, crime_candidate_permissions = 0,
-                  ownership_transfers = 0, claim_conflicts = 0, expired_permissions = 0,
-                  journal_dropped_changes = 0;
+                  ownership_transfers = 0, claim_conflicts = 0, expired_permissions = 0, journal_dropped_changes = 0;
 };
 
 // Optional neutral boundary used only for AccessDecision::RequireRole. The provider is non-owning
 // and must outlive the OwnershipService. It must not mutate Ownership from HasRole().
-class IOwnershipRoleProvider
-{
+class IOwnershipRoleProvider {
   public:
     virtual ~IOwnershipRoleProvider() = default;
     [[nodiscard]] virtual bool HasRole(GameplayObjectRef subject, TypeId role,
                                        const GameplayContext &context) const noexcept = 0;
 };
 
-class OwnershipService
-{
+class OwnershipService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<OwnershipService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.ownership");
     }
     [[nodiscard]] foundation::Result<OwnershipRecordId> AssignOwnership(OwnershipRecord record);
@@ -304,46 +307,46 @@ class OwnershipService
     [[nodiscard]] std::vector<PermissionGrant> FindPermissions(GameplayObjectRef subject) const;
     [[nodiscard]] std::vector<PropertyClaim> FindClaims(GameplayObjectRef property) const;
     [[nodiscard]] std::vector<AccessRule> FindAccessRules(GameplayObjectRef property) const;
-    private:
-        [[nodiscard]] std::vector<OwnershipChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] OwnershipChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] OwnershipChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<OwnershipChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] OwnershipChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] OwnershipChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     void PruneChangesThrough(std::uint64_t sequence);
     [[nodiscard]] OwnershipSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(OwnershipSnapshot snapshot);
-    void SetRoleProvider(const IOwnershipRoleProvider *provider) noexcept { role_provider_ = provider; }
+    void SetRoleProvider(const IOwnershipRoleProvider *provider) noexcept {
+        role_provider_ = provider;
+    }
     [[nodiscard]] OwnershipDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept { return revision_; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
+        return revision_;
+    }
 
   private:
-    struct OwnerKey
-    {
+    struct OwnerKey {
         GameplayObjectRef property{};
         PropertyDomainId domain{};
         [[nodiscard]] bool operator==(const OwnerKey &) const noexcept = default;
     };
-    struct OwnerKeyHash
-    {
-        [[nodiscard]] std::size_t operator()(const OwnerKey &key) const noexcept
-        {
+    struct OwnerKeyHash {
+        [[nodiscard]] std::size_t operator()(const OwnerKey &key) const noexcept {
             auto h = std::hash<GameplayObjectRef>{}(key.property);
             const auto d = std::hash<TypeId>{}(key.domain.value);
             return h ^ (d + 0x9e3779b97f4a7c15ULL + (h << 6U) + (h >> 2U));
@@ -356,7 +359,8 @@ class OwnershipService
     void Record(OwnershipChange change);
     [[nodiscard]] OwnershipRecord *FindMutableOwnership(OwnershipRecordId id) noexcept;
     [[nodiscard]] const PermissionGrant *FindBestActiveGrant(GameplayObjectRef subject, GameplayObjectRef property,
-                                                              PropertyRightId right, GameplayTimePoint now) const noexcept;
+                                                             PropertyRightId right,
+                                                             GameplayTimePoint now) const noexcept;
     [[nodiscard]] bool IsPublicProperty(GameplayObjectRef property, PropertyDomainId domain) const noexcept;
     void IndexOwnership(const OwnershipRecord &record);
     void UnindexOwnership(const OwnershipRecord &record);
@@ -390,22 +394,25 @@ class OwnershipService
 };
 } // namespace epidemic::gameplay::ownership
 
-namespace std
-{
-template <> struct hash<epidemic::gameplay::ownership::OwnershipRecordId>
-{
-    size_t operator()(const epidemic::gameplay::ownership::OwnershipRecordId &v) const noexcept { return hash<epidemic::gameplay::GameplayObjectId>{}(v.value); }
+namespace std {
+template <> struct hash<epidemic::gameplay::ownership::OwnershipRecordId> {
+    size_t operator()(const epidemic::gameplay::ownership::OwnershipRecordId &v) const noexcept {
+        return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
+    }
 };
-template <> struct hash<epidemic::gameplay::ownership::PermissionGrantId>
-{
-    size_t operator()(const epidemic::gameplay::ownership::PermissionGrantId &v) const noexcept { return hash<epidemic::gameplay::GameplayObjectId>{}(v.value); }
+template <> struct hash<epidemic::gameplay::ownership::PermissionGrantId> {
+    size_t operator()(const epidemic::gameplay::ownership::PermissionGrantId &v) const noexcept {
+        return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
+    }
 };
-template <> struct hash<epidemic::gameplay::ownership::AccessRuleId>
-{
-    size_t operator()(const epidemic::gameplay::ownership::AccessRuleId &v) const noexcept { return hash<epidemic::gameplay::GameplayObjectId>{}(v.value); }
+template <> struct hash<epidemic::gameplay::ownership::AccessRuleId> {
+    size_t operator()(const epidemic::gameplay::ownership::AccessRuleId &v) const noexcept {
+        return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
+    }
 };
-template <> struct hash<epidemic::gameplay::ownership::PropertyClaimId>
-{
-    size_t operator()(const epidemic::gameplay::ownership::PropertyClaimId &v) const noexcept { return hash<epidemic::gameplay::GameplayObjectId>{}(v.value); }
+template <> struct hash<epidemic::gameplay::ownership::PropertyClaimId> {
+    size_t operator()(const epidemic::gameplay::ownership::PropertyClaimId &v) const noexcept {
+        return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
+    }
 };
 } // namespace std

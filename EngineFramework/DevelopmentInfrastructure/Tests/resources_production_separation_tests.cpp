@@ -3,23 +3,18 @@
 #include <iostream>
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::resources;
-namespace
-{
-void Check(bool v, const char *m)
-{
-    if (!v)
-    {
+namespace {
+void Check(bool v, const char *m) {
+    if (!v) {
         std::cerr << m << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char *d, const char *i)
-{
+GameplayObjectRef Ref(const char *d, const char *i) {
     return {GameplayDomainId::FromString(d), GameplayObjectId::FromString(i)};
 }
 } // namespace
-int main()
-{
+int main() {
     ResourcesProductionService s;
     ResourceType iron;
     iron.canonical_name = "resource.iron";

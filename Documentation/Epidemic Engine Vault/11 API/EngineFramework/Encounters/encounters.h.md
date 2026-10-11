@@ -513,3 +513,319 @@ class EncountersService
 };
 } // namespace epidemic::gameplay::encounters
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`, `Epidemic/GameFramework/SupportRandom/deterministic_random.h`.
+
+### Перечисления и допустимые категории
+
+- `EncounterState`: `AwaitingPopulationBinding`, `Active`, `Completed`, `Failed`, `Despawning`, `Expired`
+- `SpawnPointState`: `Available`, `Reserved`, `Disabled`, `Occupied`, `Consumed`
+- `SpawnRollPolicy`: `GuaranteedAll`, `WeightedOne`, `WeightedMany`, `IndependentChance`, `PickNWithoutReplacement`, `PopulationBacked`
+- `SpawnPersistencePolicy`: `Transient`, `Session`, `Persistent`, `PopulationBacked`
+- `SpawnResultState`: `Succeeded`, `Deferred`, `Rejected`, `Failed`
+- `EncounterChangeKind`: `EncounterCreated`, `EncounterActivated`, `EncounterCompleted`, `EncounterFailed`, `EncounterExpired`, `SpawnRequested`, `SpawnSucceeded`, `SpawnFailed`, `EntitySpawned`, `EntityDespawned`, `RespawnScheduled`, `RespawnTriggered`, `SpawnPointAdded`
+
+### Состав типов и операции
+
+#### `EncounterDefinitionId` (строка заголовка 17)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr EncounterDefinitionId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EncounterDefinitionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EncounterDefinitionId &) const noexcept = default;
+```
+
+#### `EncounterInstanceId` (строка заголовка 31)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr EncounterInstanceId FromString(std::string_view s) noexcept;
+static constexpr EncounterInstanceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EncounterInstanceId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EncounterInstanceId &) const noexcept = default;
+```
+
+#### `SpawnTableId` (строка заголовка 49)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SpawnTableId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SpawnTableId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SpawnTableId &) const noexcept = default;
+```
+
+#### `SpawnEntryId` (строка заголовка 63)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SpawnEntryId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SpawnEntryId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SpawnEntryId &) const noexcept = default;
+```
+
+#### `SpawnPointId` (строка заголовка 77)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SpawnPointId FromString(std::string_view s) noexcept;
+static constexpr SpawnPointId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SpawnPointId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SpawnPointId &) const noexcept = default;
+```
+
+#### `SpawnRequestId` (строка заголовка 95)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SpawnRequestId FromString(std::string_view s) noexcept;
+static constexpr SpawnRequestId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SpawnRequestId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SpawnRequestId &) const noexcept = default;
+```
+
+#### `SpawnedEntityRecordId` (строка заголовка 113)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SpawnedEntityRecordId FromString(std::string_view s) noexcept;
+static constexpr SpawnedEntityRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SpawnedEntityRecordId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SpawnedEntityRecordId &) const noexcept = default;
+```
+
+#### `RespawnRuleId` (строка заголовка 131)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr RespawnRuleId FromString(std::string_view s) noexcept;
+static constexpr RespawnRuleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RespawnRuleId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RespawnRuleId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 149)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 151)
+
+#### `SpawnEntry` (строка заголовка 214)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t weight = 1`
+- `std::uint32_t min_count = 1`
+- `std::uint32_t max_count = 1`
+- `std::vector<std::byte> payload`
+
+#### `SpawnTable` (строка заголовка 227)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<SpawnEntry> entries`
+- `SpawnRollPolicy roll_policy = SpawnRollPolicy::GuaranteedAll`
+- `std::vector<std::byte> payload`
+- `std::uint32_t selection_min_count = 1`
+- `std::uint32_t selection_max_count = 1`
+
+#### `EncounterDefinition` (строка заголовка 237)
+
+Публичные поля и значения по умолчанию:
+
+- `SpawnPersistencePolicy persistence = SpawnPersistencePolicy::Transient`
+- `std::vector<std::byte> payload`
+
+#### `SpawnPoint` (строка заголовка 250)
+
+Публичные поля и значения по умолчанию:
+
+- `SpawnPointState state = SpawnPointState::Available`
+
+#### `EncounterInstance` (строка заголовка 268)
+
+Публичные поля и значения по умолчанию:
+
+- `std::optional<SpawnPointId> spawn_point`
+- `EncounterState state = EncounterState::Active`
+- `std::vector<SpawnedEntityRecordId> spawned_entities`
+- `std::vector<std::byte> payload`
+
+#### `RespawnRule` (строка заголовка 282)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t remaining_limit = 0`
+- `std::optional<GameplayObjectRef> origin`
+- `std::optional<SpawnPointId> spawn_point`
+- `std::uint32_t trigger_count = 0`
+
+#### `SpawnRequest` (строка заголовка 296)
+
+Публичные поля и значения по умолчанию:
+
+- `std::optional<GameplayObjectRef> origin`
+- `std::optional<SpawnPointId> spawn_point`
+- `SpawnPersistencePolicy persistence = SpawnPersistencePolicy::Transient`
+
+#### `SpawnResult` (строка заголовка 309)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<SpawnedEntityRecordId> spawned_records`
+- `std::vector<GameplayObjectRef> created_entities`
+- `std::vector<GameplayObjectRef> linked_population_units`
+- `SpawnResultState state = SpawnResultState::Failed`
+
+#### `EncounterChange` (строка заголовка 319)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `EncounterChangeKind kind = EncounterChangeKind::EncounterCreated`
+
+#### `EncounterChangeBatch` (строка заголовка 337)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EncounterChange> changes`
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+
+#### `EncountersSnapshot` (строка заголовка 347)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<EncounterDefinition> definitions`
+- `std::vector<SpawnTable> tables`
+- `std::vector<SpawnPoint> points`
+- `std::vector<EncounterInstance> instances`
+- `std::vector<SpawnedEntityRecord> spawned`
+- `std::vector<RespawnRule> respawn_rules`
+- `std::vector<SpawnRequestRecord> requests`
+- `std::uint64_t change_epoch = 1`
+
+#### `EncounterBudgets` (строка заголовка 365)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t max_active_global = 1000`
+- `std::uint32_t max_active_per_area = 128`
+- `std::uint32_t max_spawn_operations_per_tick = 64`
+- `std::uint32_t max_spawned_entities_per_encounter = 256`
+- `std::size_t change_journal_capacity = 4096`
+
+#### `EncounterDiagnostics` (строка заголовка 373)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t definitions = 0, tables = 0, active_encounters = 0, spawn_requests = 0, spawn_successes = 0, spawn_failures = 0, spawn_budget_rejects = 0, spawned_entities = 0, respawn_schedules = 0`
+
+#### `EncountersService` (строка заголовка 379)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<EncounterDefinitionId, EncounterDefinition, IdHash> definitions_`, `std::unordered_map<SpawnTableId, SpawnTable, IdHash> tables_`, `std::unordered_map<SpawnPointId, SpawnPoint, IdHash> points_`, `std::unordered_map<EncounterInstanceId, EncounterInstance, IdHash> instances_`, `std::unordered_map<SpawnedEntityRecordId, SpawnedEntityRecord, IdHash> spawned_`, `std::unordered_map<RespawnRuleId, RespawnRule, IdHash> respawns_`, `std::unordered_map<SpawnRequestId, SpawnRequestRecord, IdHash> requests_`, `std::unordered_map<GameplayObjectRef, std::vector<EncounterInstanceId>> instances_by_area_`, `std::unordered_map<EncounterState, std::vector<EncounterInstanceId>> instances_by_state_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterSpawnTable(SpawnTable table);
+[[nodiscard]] foundation::Result<void> RegisterEncounterDefinition(EncounterDefinition definition);
+[[nodiscard]] foundation::Result<void> FreezeDefinitions();
+[[nodiscard]] bool DefinitionsFrozen() const noexcept;
+[[nodiscard]] foundation::Result<SpawnPointId> AddSpawnPoint(SpawnPoint point);
+void SetBudgets(EncounterBudgets budgets) noexcept;
+[[nodiscard]] SpawnResult SpawnEncounter(SpawnRequest request);
+[[nodiscard]] foundation::Result<std::vector<TypeId>> PreviewSpawnArchetypes(SpawnRequest request) const;
+[[nodiscard]] std::size_t PruneTerminalEncounters(std::size_t max_to_prune);
+[[nodiscard]] std::vector<EncounterDefinition> FindDefinitionsByTag(TagId tag) const;
+[[nodiscard]] const EncounterInstance *GetEncounterInstance(EncounterInstanceId id) const noexcept;
+[[nodiscard]] const SpawnedEntityRecord *GetSpawnedEntityRecord(SpawnedEntityRecordId id) const noexcept;
+[[nodiscard]] const SpawnTable *GetSpawnTable(SpawnTableId id) const noexcept;
+[[nodiscard]] std::vector<EncounterInstance> FindActiveEncountersInArea(GameplayObjectRef area) const;
+[[nodiscard]] std::vector<EncounterInstance> FindEncountersByState(EncounterState state) const;
+[[nodiscard]] std::vector<SpawnPoint> FindSpawnPointsInArea(GameplayObjectRef area) const;
+[[nodiscard]] bool CanSpawnEncounter(SpawnRequest request) const;
+[[nodiscard]] EncounterChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] EncountersSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(EncountersSnapshot snapshot);
+[[nodiscard]] EncounterDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterSpawnTable` | `EncountersService::RegisterSpawnTable` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:84` |
+| `RegisterEncounterDefinition` | `EncountersService::RegisterEncounterDefinition` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:112` |
+| `FreezeDefinitions` | `EncountersService::FreezeDefinitions` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:128` |
+| `AddSpawnPoint` | `EncountersService::AddSpawnPoint` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:138` |
+| `CanSpawnEncounter` | `EncountersService::CanSpawnEncounter` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:177` |
+| `PreviewSpawnArchetypes` | `EncountersService::PreviewSpawnArchetypes` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:262` |
+| `SpawnEncounter` | `EncountersService::SpawnEncounter` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:301` |
+| `PruneTerminalEncounters` | `EncountersService::PruneTerminalEncounters` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:500` |
+| `FindDefinitionsByTag` | `EncountersService::FindDefinitionsByTag` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:571` |
+| `GetEncounterInstance` | `EncountersService::GetEncounterInstance` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:576` |
+| `GetSpawnTable` | `EncountersService::GetSpawnTable` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:577` |
+| `GetSpawnedEntityRecord` | `EncountersService::GetSpawnedEntityRecord` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:578` |
+| `FindActiveEncountersInArea` | `EncountersService::FindActiveEncountersInArea` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:580` |
+| `FindEncountersByState` | `EncountersService::FindEncountersByState` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:586` |
+| `FindSpawnPointsInArea` | `EncountersService::FindSpawnPointsInArea` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:593` |
+| `CaptureSnapshot` | `EncountersService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Encounters/src/encounters.cpp:625` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `CurrentRevision`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:40`
+- `RegisterSpawnTable`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:41`
+- `RegisterEncounterDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:50`
+- `AddSpawnPoint`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:53`
+- `FindSpawnPointsInArea`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:54`
+- `SpawnEncounter`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:57`
+- `GetEncounterInstance`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:58`
+- `GetSpawnedEntityRecord`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:62`
+- `FindActiveEncountersInArea`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:64`
+- `SetBudgets`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:68`
+- `ReadChangesSince`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:108`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/encounters_tests.cpp:113`
+

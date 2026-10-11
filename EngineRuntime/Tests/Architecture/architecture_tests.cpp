@@ -25,66 +25,54 @@
 #include <type_traits>
 #include <vector>
 
-namespace
-{
+namespace {
 namespace fs = std::filesystem;
 
-bool Expect(bool condition, std::string_view message)
-{
-    if (!condition)
-    {
+bool Expect(bool condition, std::string_view message) {
+    if (!condition) {
         std::cerr << message << '\n';
     }
     return condition;
 }
 
-fs::path RepositoryRoot()
-{
+fs::path RepositoryRoot() {
     fs::path current = fs::path{__FILE__}.lexically_normal();
-    for (int index = 0; index < 4; ++index)
-    {
+    for (int index = 0; index < 4; ++index) {
         current = current.parent_path();
     }
     return current;
 }
 
-std::string ReadFile(const fs::path& path)
-{
+std::string ReadFile(const fs::path &path) {
     std::ifstream stream{path};
     return {std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>()};
 }
 
-bool Contains(const std::string& text, std::string_view needle)
-{
+bool Contains(const std::string &text, std::string_view needle) {
     return text.find(needle) != std::string::npos;
 }
 
-bool TestNoPrivateCrossMajorIncludes()
-{
+bool TestNoPrivateCrossMajorIncludes() {
     const fs::path root = RepositoryRoot();
     bool ok = true;
-    for (const fs::directory_entry& major : fs::directory_iterator(root / "EngineRuntime"))
-    {
-        if (!major.is_directory())
-        {
+    for (const fs::directory_entry &major : fs::directory_iterator(root / "EngineRuntime")) {
+        if (!major.is_directory()) {
             continue;
         }
 
         const fs::path include_root = major.path() / "include";
-        if (!fs::exists(include_root))
-        {
+        if (!fs::exists(include_root)) {
             continue;
         }
 
-        for (const fs::directory_entry& file : fs::recursive_directory_iterator(include_root))
-        {
-            if (!file.is_regular_file())
-            {
+        for (const fs::directory_entry &file : fs::recursive_directory_iterator(include_root)) {
+            if (!file.is_regular_file()) {
                 continue;
             }
 
             const std::string contents = ReadFile(file.path());
-            ok &= Expect(!Contains(contents, "_impl.h"), "public header must not include private implementation headers");
+            ok &=
+                Expect(!Contains(contents, "_impl.h"), "public header must not include private implementation headers");
             ok &= Expect(!Contains(contents, "/src/") && !Contains(contents, "\\src\\"),
                          "public header must not include private src paths");
         }
@@ -92,25 +80,22 @@ bool TestNoPrivateCrossMajorIncludes()
     return ok;
 }
 
-bool TestNoMajorDependsOnSupport()
-{
+bool TestNoMajorDependsOnSupport() {
     const fs::path root = RepositoryRoot() / "EngineRuntime";
     bool ok = true;
-    for (const fs::directory_entry& major : fs::directory_iterator(root))
-    {
-        if (!major.is_directory() || major.path().filename() == "Support" || major.path().filename() == "Tests")
-        {
+    for (const fs::directory_entry &major : fs::directory_iterator(root)) {
+        if (!major.is_directory() || major.path().filename() == "Support" || major.path().filename() == "Tests") {
             continue;
         }
 
         const fs::path cmake = major.path() / "CMakeLists.txt";
-        if (!fs::exists(cmake))
-        {
+        if (!fs::exists(cmake)) {
             continue;
         }
 
         const std::string contents = ReadFile(cmake);
-        ok &= Expect(Contains(contents, "EpidemicRuntimeSupport"), "major CMake must explicitly forbid Support dependency");
+        ok &= Expect(Contains(contents, "EpidemicRuntimeSupport"),
+                     "major CMake must explicitly forbid Support dependency");
         ok &= Expect(!Contains(contents, "PUBLIC EpidemicRuntimeSupport") &&
                          !Contains(contents, "PRIVATE EpidemicRuntimeSupport"),
                      "runtime major must not link Support");
@@ -118,20 +103,27 @@ bool TestNoMajorDependsOnSupport()
     return ok;
 }
 
-bool TestAllMajorsHaveFactoriesAndHandlesAreGenerationAware()
-{
+bool TestAllMajorsHaveFactoriesAndHandlesAreGenerationAware() {
     using namespace epidemic::runtime;
 
-    static_assert(std::is_same_v<decltype(streaming::CreateStreamingServices()), epidemic::foundation::Result<streaming::StreamingServices>>);
-    static_assert(std::is_same_v<decltype(physics::CreatePhysicsServices()), epidemic::foundation::Result<physics::PhysicsServices>>);
-    static_assert(std::is_same_v<decltype(navigation::CreateNavigationServices()), epidemic::foundation::Result<navigation::NavigationServices>>);
+    static_assert(std::is_same_v<decltype(streaming::CreateStreamingServices()),
+                                 epidemic::foundation::Result<streaming::StreamingServices>>);
+    static_assert(std::is_same_v<decltype(physics::CreatePhysicsServices()),
+                                 epidemic::foundation::Result<physics::PhysicsServices>>);
+    static_assert(std::is_same_v<decltype(navigation::CreateNavigationServices()),
+                                 epidemic::foundation::Result<navigation::NavigationServices>>);
     static_assert(std::is_same_v<decltype(navigation::CreateMockNavigationServices()), navigation::NavigationServices>);
-    static_assert(std::is_same_v<decltype(animation::CreateAnimationServices()), epidemic::foundation::Result<animation::AnimationServices>>);
-    static_assert(std::is_same_v<decltype(animation::CreateReferenceAnimationServices()), animation::AnimationServices>);
+    static_assert(std::is_same_v<decltype(animation::CreateAnimationServices()),
+                                 epidemic::foundation::Result<animation::AnimationServices>>);
+    static_assert(
+        std::is_same_v<decltype(animation::CreateReferenceAnimationServices()), animation::AnimationServices>);
     static_assert(std::is_same_v<decltype(animation::CreateMockAnimationServices()), animation::AnimationServices>);
-    static_assert(std::is_same_v<decltype(audio::CreateAudioServices()), epidemic::foundation::Result<audio::AudioServices>>);
-    static_assert(std::is_same_v<decltype(audio::CreateMockAudioServices()), epidemic::foundation::Result<audio::AudioServices>>);
-    static_assert(std::is_same_v<decltype(simulation::CreateSimulationServices()), epidemic::foundation::Result<simulation::SimulationServices>>);
+    static_assert(
+        std::is_same_v<decltype(audio::CreateAudioServices()), epidemic::foundation::Result<audio::AudioServices>>);
+    static_assert(
+        std::is_same_v<decltype(audio::CreateMockAudioServices()), epidemic::foundation::Result<audio::AudioServices>>);
+    static_assert(std::is_same_v<decltype(simulation::CreateSimulationServices()),
+                                 epidemic::foundation::Result<simulation::SimulationServices>>);
 
     streaming::StreamingRequestHandle streaming_handle{{1}, 1};
     navigation::PathQueryHandle path_handle{{1}, 1};
@@ -143,8 +135,7 @@ bool TestAllMajorsHaveFactoriesAndHandlesAreGenerationAware()
            emitter_handle.IsValid() && job_handle.IsValid();
 }
 
-bool TestSnapshotsAreVersioned()
-{
+bool TestSnapshotsAreVersioned() {
     using namespace epidemic::runtime;
 
     static_assert(std::is_same_v<decltype(TimeSnapshot{}.revision), std::uint64_t>);
@@ -156,8 +147,7 @@ bool TestSnapshotsAreVersioned()
     return true;
 }
 
-bool TestFreezeMarkersAreAbsent()
-{
+bool TestFreezeMarkersAreAbsent() {
     const fs::path root = RepositoryRoot() / "EngineRuntime";
     const std::vector<std::string> forbidden{
         std::string{"Physics"} + "BodyState",
@@ -170,42 +160,39 @@ bool TestFreezeMarkersAreAbsent()
     };
 
     bool ok = true;
-    for (const fs::directory_entry& entry : fs::recursive_directory_iterator(root))
-    {
-        if (!entry.is_regular_file())
-        {
+    for (const fs::directory_entry &entry : fs::recursive_directory_iterator(root)) {
+        if (!entry.is_regular_file()) {
             continue;
         }
-        if (entry.path().filename() == "architecture_tests.cpp")
-        {
+        if (entry.path().filename() == "architecture_tests.cpp") {
             continue;
         }
 
         const auto extension = entry.path().extension().string();
-        if (extension != ".h" && extension != ".cpp")
-        {
+        if (extension != ".h" && extension != ".cpp") {
             continue;
         }
 
         const std::string contents = ReadFile(entry.path());
-        for (const std::string& marker : forbidden)
-        {
+        for (const std::string &marker : forbidden) {
             ok &= Expect(!Contains(contents, marker), "frozen runtime source must not contain legacy/comment markers");
         }
     }
     return ok;
 }
 
-bool TestSupportProfileContracts()
-{
+bool TestSupportProfileContracts() {
     const fs::path root = RepositoryRoot();
     const std::string source = ReadFile(root / "EngineRuntime" / "Support" / "src" / "runtime_support.cpp");
-    const std::string header = ReadFile(root / "EngineRuntime" / "Support" / "include" / "Epidemic" / "Runtime" / "Support" / "runtime_support.h");
+    const std::string header = ReadFile(root / "EngineRuntime" / "Support" / "include" / "Epidemic" / "Runtime" /
+                                        "Support" / "runtime_support.h");
     bool ok = Expect(Contains(source, "runtime_support.production_dependency_missing"),
                      "production profile must require external runtime backends");
-    ok &= Expect(!Contains(source, "CreateMockAudioServices"), "support composition must not silently use mock audio factory");
+    ok &= Expect(!Contains(source, "CreateMockAudioServices"),
+                 "support composition must not silently use mock audio factory");
     ok &= Expect(!Contains(header, "std::shared_ptr<void>"), "support adapters must be owned through typed contracts");
-    ok &= Expect(!Contains(source, "EPIDEMIC_RUNTIME_TRY(Register"), "default runtime registration must not call sequential RegisterXxx helpers");
+    ok &= Expect(!Contains(source, "EPIDEMIC_RUNTIME_TRY(Register"),
+                 "default runtime registration must not call sequential RegisterXxx helpers");
 
     const auto adapters = epidemic::runtime::GetAllowedRuntimeAdapters();
     const auto update = epidemic::runtime::GetRuntimeUpdateOrder();
@@ -216,33 +203,28 @@ bool TestSupportProfileContracts()
     return ok;
 }
 
-bool TestPublicHeadersDeclarePragmaOnce()
-{
+bool TestPublicHeadersDeclarePragmaOnce() {
     const fs::path root = RepositoryRoot() / "EngineRuntime";
     bool ok = true;
-    for (const fs::directory_entry& major : fs::directory_iterator(root))
-    {
+    for (const fs::directory_entry &major : fs::directory_iterator(root)) {
         const fs::path include_root = major.path() / "include";
-        if (!major.is_directory() || !fs::exists(include_root))
-        {
+        if (!major.is_directory() || !fs::exists(include_root)) {
             continue;
         }
 
-        for (const fs::directory_entry& file : fs::recursive_directory_iterator(include_root))
-        {
-            if (!file.is_regular_file() || file.path().extension() != ".h")
-            {
+        for (const fs::directory_entry &file : fs::recursive_directory_iterator(include_root)) {
+            if (!file.is_regular_file() || file.path().extension() != ".h") {
                 continue;
             }
-            ok &= Expect(Contains(ReadFile(file.path()), "#pragma once"), "public runtime header must be self-contained include guarded");
+            ok &= Expect(Contains(ReadFile(file.path()), "#pragma once"),
+                         "public runtime header must be self-contained include guarded");
         }
     }
     return ok;
 }
 } // namespace
 
-int main()
-{
+int main() {
     epidemic::runtime::ResourceHandle handle{};
     static_assert(!std::is_same_v<epidemic::runtime::ResourceId, epidemic::runtime::ResourceHandle>);
 

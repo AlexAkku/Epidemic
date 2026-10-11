@@ -61,3 +61,34 @@ struct LazyRuleRecord
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/runtime_time.h`.
+
+### Перечисления и допустимые категории
+
+- `LazyRuleKind`: `Decay`, `Theft`, `Cleanup`
+- `LazyRuleState`: `Pending`, `Evaluated`, `Applied`, `Cancelled`, `Expired`
+
+### Состав типов и операции
+
+#### `LazyRuleRecord` (строка заголовка 26)
+
+Публичные поля и значения по умолчанию:
+
+- `LazyRuleKind kind = LazyRuleKind::Decay`
+- `LazyRuleState state = LazyRuleState::Pending`
+- `std::uint64_t rule_seed = 0`
+- `std::uint64_t revision = 0`
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

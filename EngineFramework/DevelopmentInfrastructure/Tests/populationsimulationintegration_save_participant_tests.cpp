@@ -3,8 +3,7 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
-void TestEncountersServiceSaveParticipant()
-{
+void TestEncountersServiceSaveParticipant() {
     std::cerr << "[participant] framework.encounters: bootstrap\n";
     epidemic::gameplay::encounters::EncountersService owner;
     participant_tests::FreezeOwner(owner);
@@ -13,57 +12,114 @@ void TestEncountersServiceSaveParticipant()
     auto participant = savegame::CreateEncountersServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.encounters", {});
     std::cerr << "[participant] framework.encounters: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.encounters: non-empty seed\n";
-    encounters::SpawnPoint point; point.area = {GameplayDomainId::FromString("participant.encounter"), GameplayObjectId::FromString("area")}; point.position = {GameplayDomainId::FromString("participant.encounter"), GameplayObjectId::FromString("position")}; participant_tests::Check(bool(owner.AddSpawnPoint(std::move(point))), "seed actual spawn point");
+    encounters::SpawnPoint point;
+    point.area = {GameplayDomainId::FromString("participant.encounter"), GameplayObjectId::FromString("area")};
+    point.position = {GameplayDomainId::FromString("participant.encounter"), GameplayObjectId::FromString("position")};
+    participant_tests::Check(bool(owner.AddSpawnPoint(std::move(point))), "seed actual spawn point");
     std::cerr << "[participant] framework.encounters: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().points.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().points.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestNeedsLifeServiceSaveParticipant()
-{
+void TestNeedsLifeServiceSaveParticipant() {
     std::cerr << "[participant] framework.needs_life: bootstrap\n";
     epidemic::gameplay::needs_life::NeedsLifeService owner;
-    needs_life::NeedDefinition need; need.id = needs_life::NeedTypeId::FromString("participant.need"); need.default_value = 100; need.min_value = 0; need.max_value = 100; need.decay_per_tick = 1; participant_tests::Check(bool(owner.RegisterNeedDefinition(need)), "needs fixture definition"); const auto need_id = need.id;
+    needs_life::NeedDefinition need;
+    need.id = needs_life::NeedTypeId::FromString("participant.need");
+    need.default_value = 100;
+    need.min_value = 0;
+    need.max_value = 100;
+    need.decay_per_tick = 1;
+    participant_tests::Check(bool(owner.RegisterNeedDefinition(need)), "needs fixture definition");
+    const auto need_id = need.id;
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] framework.needs_life: contract\n";
     auto participant = savegame::CreateNeedsLifeServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.needs_life", {});
     std::cerr << "[participant] framework.needs_life: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.needs_life: non-empty seed\n";
-    const GameplayObjectRef subject{GameplayDomainId::FromString("participant.needs"), GameplayObjectId::FromString("subject")}; needs_life::NeedProfile profile; profile.subject = subject; profile.active_needs.push_back(need_id); participant_tests::Check(bool(owner.CreateNeedProfile(std::move(profile))), "seed actual need profile");
+    const GameplayObjectRef subject{GameplayDomainId::FromString("participant.needs"),
+                                    GameplayObjectId::FromString("subject")};
+    needs_life::NeedProfile profile;
+    profile.subject = subject;
+    profile.active_needs.push_back(need_id);
+    participant_tests::Check(bool(owner.CreateNeedProfile(std::move(profile))), "seed actual need profile");
     std::cerr << "[participant] framework.needs_life: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().profiles.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().profiles.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestPopulationServiceSaveParticipant()
-{
+void TestPopulationServiceSaveParticipant() {
     std::cerr << "[participant] framework.population: bootstrap\n";
     epidemic::gameplay::population::PopulationService owner;
-    population::PopulationTemplate definition; definition.id = population::PopulationTemplateId::FromString("participant.population.template"); definition.entity_archetype = TypeId::FromString("participant.entity.archetype"); definition.persistent = true; participant_tests::Check(bool(owner.RegisterTemplate(definition)), "population fixture template");
+    population::PopulationTemplate definition;
+    definition.id = population::PopulationTemplateId::FromString("participant.population.template");
+    definition.entity_archetype = TypeId::FromString("participant.entity.archetype");
+    definition.persistent = true;
+    participant_tests::Check(bool(owner.RegisterTemplate(definition)), "population fixture template");
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] framework.population: contract\n";
     auto participant = savegame::CreatePopulationServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.population", {});
     std::cerr << "[participant] framework.population: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.population: non-empty seed\n";
-    population::PopulationGroup group; group.area = {GameplayDomainId::FromString("participant.population"), GameplayObjectId::FromString("area")}; group.society_group = {GameplayDomainId::FromString("participant.population"), GameplayObjectId::FromString("society")}; group.desired_count = 1; participant_tests::Check(bool(owner.CreateGroup(std::move(group))), "seed actual population group");
+    population::PopulationGroup group;
+    group.area = {GameplayDomainId::FromString("participant.population"), GameplayObjectId::FromString("area")};
+    group.society_group = {GameplayDomainId::FromString("participant.population"),
+                           GameplayObjectId::FromString("society")};
+    group.desired_count = 1;
+    participant_tests::Check(bool(owner.CreateGroup(std::move(group))), "seed actual population group");
     std::cerr << "[participant] framework.population: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().groups.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().groups.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestRolesJobsServiceSaveParticipant()
-{
+void TestRolesJobsServiceSaveParticipant() {
     std::cerr << "[participant] framework.roles_jobs: bootstrap\n";
     epidemic::gameplay::roles_jobs::RolesJobsService owner;
     participant_tests::FreezeOwner(owner);
@@ -72,32 +128,66 @@ void TestRolesJobsServiceSaveParticipant()
     auto participant = savegame::CreateRolesJobsServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.roles_jobs", {});
     std::cerr << "[participant] framework.roles_jobs: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.roles_jobs: non-empty seed\n";
-    roles_jobs::Workplace workplace; workplace.area = {GameplayDomainId::FromString("participant.jobs"), GameplayObjectId::FromString("area")}; participant_tests::Check(bool(owner.CreateWorkplace(std::move(workplace))), "seed actual workplace");
+    roles_jobs::Workplace workplace;
+    workplace.area = {GameplayDomainId::FromString("participant.jobs"), GameplayObjectId::FromString("area")};
+    participant_tests::Check(bool(owner.CreateWorkplace(std::move(workplace))), "seed actual workplace");
     std::cerr << "[participant] framework.roles_jobs: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().workplaces.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().workplaces.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestPopulationEncounterAdapterSaveParticipant()
-{
+void TestPopulationEncounterAdapterSaveParticipant() {
     std::cerr << "[participant] integration.population_encounter: bootstrap\n";
-    population::PopulationService population; encounters::EncountersService encounters;
-    const auto encounter_area = GameplayObjectRef{GameplayDomainId::FromString("participant.area"), GameplayObjectId::FromString("area")};
-    population::PopulationTemplate population_template; population_template.id = population::PopulationTemplateId::FromString("participant.population"); population_template.entity_archetype = TypeId::FromString("participant.archetype");
+    population::PopulationService population;
+    encounters::EncountersService encounters;
+    const auto encounter_area =
+        GameplayObjectRef{GameplayDomainId::FromString("participant.area"), GameplayObjectId::FromString("area")};
+    population::PopulationTemplate population_template;
+    population_template.id = population::PopulationTemplateId::FromString("participant.population");
+    population_template.entity_archetype = TypeId::FromString("participant.archetype");
     participant_tests::Check(bool(population.RegisterTemplate(population_template)), "population fixture template");
     participant_tests::Check(bool(population.FreezeDefinitions()), "population fixture definitions freeze");
-    population::PopulationGroup population_group_value; population_group_value.area = encounter_area;
-    const auto population_group = population.CreateGroup(population_group_value); participant_tests::Check(bool(population_group), "population fixture group");
-    population::PopulationUnit population_unit; population_unit.group = population_group.Value(); population_unit.template_id = population_template.id; population_unit.state = population::PopulationUnitState::Abstract; population_unit.current_area = encounter_area;
+    population::PopulationGroup population_group_value;
+    population_group_value.area = encounter_area;
+    const auto population_group = population.CreateGroup(population_group_value);
+    participant_tests::Check(bool(population_group), "population fixture group");
+    population::PopulationUnit population_unit;
+    population_unit.group = population_group.Value();
+    population_unit.template_id = population_template.id;
+    population_unit.state = population::PopulationUnitState::Abstract;
+    population_unit.current_area = encounter_area;
     participant_tests::Check(bool(population.CreateUnit(population_unit)), "population fixture unit");
-    encounters::SpawnTable spawn_table; spawn_table.id = encounters::SpawnTableId::FromString("participant.table"); spawn_table.roll_policy = encounters::SpawnRollPolicy::GuaranteedAll;
-    encounters::SpawnEntry spawn_entry; spawn_entry.id = encounters::SpawnEntryId::FromString("participant.entry"); spawn_entry.archetype = population_template.entity_archetype; spawn_entry.weight = 1; spawn_entry.min_count = 1; spawn_entry.max_count = 1; spawn_table.entries.push_back(spawn_entry);
+    encounters::SpawnTable spawn_table;
+    spawn_table.id = encounters::SpawnTableId::FromString("participant.table");
+    spawn_table.roll_policy = encounters::SpawnRollPolicy::GuaranteedAll;
+    encounters::SpawnEntry spawn_entry;
+    spawn_entry.id = encounters::SpawnEntryId::FromString("participant.entry");
+    spawn_entry.archetype = population_template.entity_archetype;
+    spawn_entry.weight = 1;
+    spawn_entry.min_count = 1;
+    spawn_entry.max_count = 1;
+    spawn_table.entries.push_back(spawn_entry);
     participant_tests::Check(bool(encounters.RegisterSpawnTable(spawn_table)), "encounter fixture table");
-    encounters::EncounterDefinition encounter_definition; encounter_definition.id = encounters::EncounterDefinitionId::FromString("participant.encounter"); encounter_definition.spawn_table = spawn_table.id;
-    participant_tests::Check(bool(encounters.RegisterEncounterDefinition(encounter_definition)), "encounter fixture definition");
+    encounters::EncounterDefinition encounter_definition;
+    encounter_definition.id = encounters::EncounterDefinitionId::FromString("participant.encounter");
+    encounter_definition.spawn_table = spawn_table.id;
+    participant_tests::Check(bool(encounters.RegisterEncounterDefinition(encounter_definition)),
+                             "encounter fixture definition");
     participant_tests::FreezeOwner(encounters);
     population_simulation::PopulationEncounterAdapter owner;
     savegame::SaveRestoreWorkspace workspace;
@@ -105,33 +195,38 @@ void TestPopulationEncounterAdapterSaveParticipant()
     auto encounter_binding = savegame::CreateEncountersServiceSaveParticipant(encounters, workspace);
     std::cerr << "[participant] integration.population_encounter: contract\n";
     auto participant = savegame::CreatePopulationEncounterAdapterSaveParticipant(owner, workspace);
-    CheckParticipantContract(*participant, "integration.population_encounter", {savegame::SaveParticipantId::FromString("framework.population"), savegame::SaveParticipantId::FromString("framework.encounters")});
+    CheckParticipantContract(*participant, "integration.population_encounter",
+                             {savegame::SaveParticipantId::FromString("framework.population"),
+                              savegame::SaveParticipantId::FromString("framework.encounters")});
     participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
         encounters::SpawnRequest request;
-                request.encounter = encounter_definition.id;
-                request.area = encounter_area;
-                request.seed = random::RandomSeed{55};
-                auto spawned = owner.SpawnFromPopulation(population, encounters, population_group.Value(), request, 1);
-                if (!spawned) return ::epidemic::foundation::Result<void>::Failure(spawned.GetError());
-                return ::epidemic::foundation::Result<void>::Success();
+        request.encounter = encounter_definition.id;
+        request.area = encounter_area;
+        request.seed = random::RandomSeed{55};
+        auto spawned = owner.SpawnFromPopulation(population, encounters, population_group.Value(), request, 1);
+        if (!spawned)
+            return ::epidemic::foundation::Result<void>::Failure(spawned.GetError());
+        return ::epidemic::foundation::Result<void>::Success();
     });
 }
-void TestPopulationLifecycleAdapterSaveParticipant()
-{
+void TestPopulationLifecycleAdapterSaveParticipant() {
     std::cerr << "[participant] integration.population_lifecycle: bootstrap\n";
     population_simulation::PopulationLifecycleAdapter owner;
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] integration.population_lifecycle: contract\n";
     auto participant = savegame::CreatePopulationLifecycleAdapterSaveParticipant(owner, workspace);
-    CheckParticipantContract(*participant, "integration.population_lifecycle", {savegame::SaveParticipantId::FromString("framework.population"), savegame::SaveParticipantId::FromString("framework.roles_jobs"), savegame::SaveParticipantId::FromString("framework.needs_life")});
+    CheckParticipantContract(*participant, "integration.population_lifecycle",
+                             {savegame::SaveParticipantId::FromString("framework.population"),
+                              savegame::SaveParticipantId::FromString("framework.roles_jobs"),
+                              savegame::SaveParticipantId::FromString("framework.needs_life")});
     participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
         auto snapshot = owner.CaptureSnapshot();
-                snapshot.reconciliations.push_back({population::PopulationUnitId::FromString("participant.dead.unit"), Revision{1}, false, true});
-                return owner.RestoreSnapshot(std::move(snapshot));
+        snapshot.reconciliations.push_back(
+            {population::PopulationUnitId::FromString("participant.dead.unit"), Revision{1}, false, true});
+        return owner.RestoreSnapshot(std::move(snapshot));
     });
 }
-int main()
-{
+int main() {
     TestEncountersServiceSaveParticipant();
     TestNeedsLifeServiceSaveParticipant();
     TestPopulationServiceSaveParticipant();

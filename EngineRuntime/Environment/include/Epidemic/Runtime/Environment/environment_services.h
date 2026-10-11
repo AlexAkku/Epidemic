@@ -5,19 +5,16 @@
 
 #include <memory>
 
-namespace epidemic::runtime
-{
-struct EnvironmentOptions
-{
+namespace epidemic::runtime {
+struct EnvironmentOptions {
     std::shared_ptr<const IEnvironmentUpdatePolicy> update_policy;
 };
 
-struct EnvironmentServices
-{
+struct EnvironmentServices {
     std::shared_ptr<IEnvironmentRuntime> runtime;
     std::shared_ptr<IEnvironmentQuery> query;
     std::shared_ptr<IEnvironmentWriter> writer;
 };
 
-[[nodiscard]] foundation::Result<EnvironmentServices> CreateEnvironmentServices(const EnvironmentOptions& options = {});
+[[nodiscard]] foundation::Result<EnvironmentServices> CreateEnvironmentServices(const EnvironmentOptions &options = {});
 } // namespace epidemic::runtime

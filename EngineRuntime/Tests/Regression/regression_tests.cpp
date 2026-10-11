@@ -5,20 +5,16 @@
 #include <iostream>
 #include <string_view>
 
-namespace
-{
-bool Expect(bool condition, std::string_view message)
-{
-    if (!condition)
-    {
+namespace {
+bool Expect(bool condition, std::string_view message) {
+    if (!condition) {
         std::cerr << message << '\n';
     }
     return condition;
 }
 } // namespace
 
-int main()
-{
+int main() {
     epidemic::core::Application app{};
     epidemic::runtime::EngineRuntimeOptions options{};
     options.enable_scene = false;

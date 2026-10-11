@@ -8,18 +8,15 @@
 #include <optional>
 #include <vector>
 
-namespace epidemic::runtime
-{
-struct TombstoneRecord
-{
+namespace epidemic::runtime {
+struct TombstoneRecord {
     PersistentObjectId persistent_id{};
     GameTimePoint deleted_game_time{};
     foundation::StringId reason{};
     std::uint64_t revision = 0;
 };
 
-class ITombstoneStore
-{
+class ITombstoneStore {
   public:
     virtual ~ITombstoneStore() = default;
 

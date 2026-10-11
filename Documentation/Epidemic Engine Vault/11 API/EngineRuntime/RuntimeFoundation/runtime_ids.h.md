@@ -274,3 +274,153 @@ template <> struct hash<epidemic::runtime::SimulationZoneId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/string_id.h`.
+
+### Состав типов и операции
+
+#### `NumericRuntimeId` (строка заголовка 41)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+constexpr NumericRuntimeId() noexcept = default;
+constexpr explicit NumericRuntimeId(std::uint64_t raw_value) noexcept : value(raw_value);
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NumericRuntimeId&) const noexcept = default;
+```
+
+#### `AssetId` (строка заголовка 69)
+
+Публичные сигнатуры операций:
+
+```cpp
+constexpr AssetId() noexcept = default;
+constexpr explicit AssetId(foundation::StringId raw_value) noexcept : value(raw_value);
+[[nodiscard]] static constexpr AssetId FromString(std::string_view source) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AssetId&) const noexcept = default;
+```
+
+#### `ResourceId` (строка заголовка 101)
+
+Публичные сигнатуры операций:
+
+```cpp
+constexpr ResourceId() noexcept = default;
+constexpr explicit ResourceId(foundation::StringId raw_value) noexcept : value(raw_value);
+[[nodiscard]] static constexpr ResourceId FromString(std::string_view source) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceId&) const noexcept = default;
+```
+
+#### `hash` (строка заголовка 171)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::detail::NumericRuntimeId<Tag> value) const noexcept;
+```
+
+#### `hash` (строка заголовка 179)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::AssetId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 187)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::ResourceId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 195)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::RuntimeObjectId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 203)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::PersistentObjectId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 211)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::LazyRuleId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 219)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::RegionId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 227)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::ChunkId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 235)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::SurfaceId value) const noexcept;
+```
+
+#### `hash` (строка заголовка 243)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(epidemic::runtime::SimulationZoneId value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Raw`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:89`
+

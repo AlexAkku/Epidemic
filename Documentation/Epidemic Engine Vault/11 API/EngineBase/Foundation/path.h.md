@@ -133,3 +133,31 @@ class Path
 };
 } // namespace epidemic::foundation
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `Path` (строка заголовка 15)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Builds a path from an already materialized std::filesystem::path. // Embedded NUL characters are rejected because downstream native filesystem APIs // would otherwise observe a truncated path. explicit Path(std::filesystem::path path) : path_(ValidateNative(std::move(path)));
+// Parses and lexically normalizes a string path. // Input: arbitrary textual path without embedded NUL characters. // Output: normalized Path value without hitting the filesystem. [[nodiscard]] static Path FromString(std::string_view path);
+// Returns the underlying native path object. [[nodiscard]] const std::filesystem::path &Native() const noexcept;
+// Returns true when no path value is stored. [[nodiscard]] bool Empty() const noexcept;
+// Returns a generic forward-slash string form. // Relationship: useful for diagnostics and platform-neutral comparisons. [[nodiscard]] std::string GenericString() const;
+// Returns a lexically normalized copy of the path. [[nodiscard]] Path LexicallyNormal() const;
+// Appends a relative child path and returns the normalized result. // Rooted or absolute children are rejected so they cannot replace the base path. [[nodiscard]] Path Join(std::string_view child) const;
+// Compares two paths by their stored native representation. [[nodiscard]] bool operator==(const Path &other) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

@@ -4,10 +4,8 @@
 
 #include <vector>
 
-namespace epidemic::runtime
-{
-class IDirtyTracker
-{
+namespace epidemic::runtime {
+class IDirtyTracker {
   public:
     virtual ~IDirtyTracker() = default;
 

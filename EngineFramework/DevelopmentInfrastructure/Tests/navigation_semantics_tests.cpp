@@ -7,20 +7,16 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::navigation_semantics;
 
-namespace
-{
-class TimedFactProvider final : public INavigationFactProvider
-{
+namespace {
+class TimedFactProvider final : public INavigationFactProvider {
   public:
-    [[nodiscard]] bool HasFact(GameplayObjectRef, TypeId fact, const GameplayContext &context) const noexcept override
-    {
+    [[nodiscard]] bool HasFact(GameplayObjectRef, TypeId fact, const GameplayContext &context) const noexcept override {
         return fact == TypeId::FromString("game.fact.open") && context.time.ticks >= 50;
     }
 };
 }
 
-int main()
-{
+int main() {
     NavigationSemanticsService n;
     const auto domain = NavigationDomainId::FromString("game.humanoid");
     NavigationDomainDefinition d;
@@ -204,10 +200,13 @@ int main()
         return 38;
     if (restored.CurrentRevision() != previous_revision || restored.FindLayersInArea(c).size() != previous_layers)
         return 39;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 40;
     NavigationSemanticsService empty_journal;
-    if (!empty_journal.ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!empty_journal
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 47;
 
     auto navigation_journal_seed = restored.CaptureSnapshot();
@@ -222,7 +221,8 @@ int main()
     if (navigation_exhausted.next_change_sequence != 0 || navigation_exhausted.journal.size() != 1 ||
         navigation_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 43;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 44;
     NavigationSemanticsService navigation_exhausted_restore;
     if (!navigation_exhausted_restore.RegisterDomain(d) || !navigation_exhausted_restore.RegisterRule(r))
@@ -231,15 +231,17 @@ int main()
     if (!navigation_exhausted_restore.RestoreSnapshot(navigation_exhausted))
         return 46;
 
-
     // Forged link state must fail without advancing the service revision.
     const auto navigation_invalid_revision = navigation_exhausted_restore.CurrentRevision();
     const auto *navigation_invalid_link_before = navigation_exhausted_restore.FindLink(destroyed.id);
-    if (navigation_invalid_link_before == nullptr) return 48;
+    if (navigation_invalid_link_before == nullptr)
+        return 48;
     const auto navigation_invalid_state_before = navigation_invalid_link_before->state;
-    if (navigation_exhausted_restore.SetLinkState(destroyed.id, static_cast<LinkState>(999))) return 49;
+    if (navigation_exhausted_restore.SetLinkState(destroyed.id, static_cast<LinkState>(999)))
+        return 49;
     const auto *navigation_invalid_link_after = navigation_exhausted_restore.FindLink(destroyed.id);
-    if (navigation_invalid_link_after == nullptr || navigation_exhausted_restore.CurrentRevision() != navigation_invalid_revision ||
+    if (navigation_invalid_link_after == nullptr ||
+        navigation_exhausted_restore.CurrentRevision() != navigation_invalid_revision ||
         navigation_invalid_link_after->state != navigation_invalid_state_before)
         return 50;
 
@@ -247,13 +249,17 @@ int main()
     auto navigation_revision_exhausted = navigation_exhausted;
     navigation_revision_exhausted.revision.value = std::numeric_limits<std::uint64_t>::max();
     NavigationSemanticsService navigation_revision_service;
-    if (!navigation_revision_service.RegisterDomain(d) || !navigation_revision_service.RegisterRule(r)) return 51;
+    if (!navigation_revision_service.RegisterDomain(d) || !navigation_revision_service.RegisterRule(r))
+        return 51;
     navigation_revision_service.Freeze();
-    if (!navigation_revision_service.RestoreSnapshot(navigation_revision_exhausted)) return 52;
+    if (!navigation_revision_service.RestoreSnapshot(navigation_revision_exhausted))
+        return 52;
     const auto *navigation_revision_link_before = navigation_revision_service.FindLink(destroyed.id);
-    if (navigation_revision_link_before == nullptr) return 53;
+    if (navigation_revision_link_before == nullptr)
+        return 53;
     const auto navigation_revision_state_before = navigation_revision_link_before->state;
-    if (navigation_revision_service.SetLinkState(destroyed.id, LinkState::Open)) return 54;
+    if (navigation_revision_service.SetLinkState(destroyed.id, LinkState::Open))
+        return 54;
     const auto *navigation_revision_link_after = navigation_revision_service.FindLink(destroyed.id);
     if (navigation_revision_link_after == nullptr ||
         navigation_revision_service.CurrentRevision().value != std::numeric_limits<std::uint64_t>::max() ||
@@ -264,8 +270,7 @@ int main()
     const auto allocation_before = restored.CaptureSnapshot();
     using FaultPoint = epidemic::gameplay::navigation_semantics::internal_test::AllocationFaultPoint;
     for (const auto point : {FaultPoint::RestoreProfiles, FaultPoint::RestoreLayers, FaultPoint::RestoreLinks,
-                             FaultPoint::RestoreJournal, FaultPoint::RestoreIndexes})
-    {
+                             FaultPoint::RestoreJournal, FaultPoint::RestoreIndexes}) {
         auto target = allocation_before;
         epidemic::gameplay::navigation_semantics::internal_test::ArmAllocationFault(point);
         const auto result = restored.RestoreSnapshot(std::move(target));
@@ -274,36 +279,32 @@ int main()
             return 921;
         const auto after = restored.CaptureSnapshot();
         const auto diagnostics = restored.GetDiagnostics();
-        const auto pre_state = epidemic::tests::pre_state::StateComparator("NavigationSemantics.RestoreSnapshot.pre_state")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::PrimaryRecords,
-                                                 allocation_before.profiles.size() + allocation_before.layers.size() +
-                                                     allocation_before.links.size(),
-                                                 after.profiles.size() + after.layers.size() + after.links.size(),
-                                                 "profile layer link record count")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::RecordPayloads,
-                                                 allocation_before.links.size(), after.links.size(), "link payload count")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes,
-                                                 diagnostics.links,
-                                                 static_cast<std::uint64_t>(allocation_before.links.size()),
-                                                 "link index diagnostics")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::IdGenerators,
-                                                 allocation_before.layer_ids.next, after.layer_ids.next,
-                                                 "layer id generator next")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions,
-                                                 allocation_before.revision, after.revision, "revision")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::Journal,
-                                                 allocation_before.journal.size(), after.journal.size(),
-                                                 "journal entry count")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch,
-                                                 allocation_before.change_epoch, after.change_epoch, "journal epoch")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalSequence,
-                                                 allocation_before.next_change_sequence, after.next_change_sequence,
-                                                 "next change sequence")
-                                   .RequireEqual(epidemic::tests::pre_state::StateFacet::PublicReadModels,
-                                                 diagnostics.layers,
-                                                 static_cast<std::uint64_t>(allocation_before.layers.size()),
-                                                 "public diagnostics read model")
-                                   .Finish();
+        const auto pre_state =
+            epidemic::tests::pre_state::StateComparator("NavigationSemantics.RestoreSnapshot.pre_state")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::PrimaryRecords,
+                              allocation_before.profiles.size() + allocation_before.layers.size() +
+                                  allocation_before.links.size(),
+                              after.profiles.size() + after.layers.size() + after.links.size(),
+                              "profile layer link record count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::RecordPayloads, allocation_before.links.size(),
+                              after.links.size(), "link payload count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes, diagnostics.links,
+                              static_cast<std::uint64_t>(allocation_before.links.size()), "link index diagnostics")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::IdGenerators, allocation_before.layer_ids.next,
+                              after.layer_ids.next, "layer id generator next")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions, allocation_before.revision,
+                              after.revision, "revision")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::Journal, allocation_before.journal.size(),
+                              after.journal.size(), "journal entry count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch, allocation_before.change_epoch,
+                              after.change_epoch, "journal epoch")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalSequence,
+                              allocation_before.next_change_sequence, after.next_change_sequence,
+                              "next change sequence")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::PublicReadModels, diagnostics.layers,
+                              static_cast<std::uint64_t>(allocation_before.layers.size()),
+                              "public diagnostics read model")
+                .Finish();
         if (!pre_state.Passed())
             return 922;
     }

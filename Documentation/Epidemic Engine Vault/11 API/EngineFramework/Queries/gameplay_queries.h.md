@@ -797,3 +797,215 @@ class GameplayQueryService
 };
 } // namespace epidemic::gameplay::queries
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `QueryConsistency`: `Current`, `Snapshot`
+- `QueryCoverage`: `Complete`, `Partial`, `Unavailable`
+- `QueryAccuracy`: `Exact`, `Approximate`
+
+### Состав типов и операции
+
+#### `QueryRequirements` (строка заголовка 44)
+
+Публичные поля и значения по умолчанию:
+
+- `bool require_complete = true`
+- `bool allow_approximate = false`
+- `bool allow_unavailable = false`
+
+#### `QueryBudget` (строка заголовка 51)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t max_work_units = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool HasResultLimit() const noexcept;
+[[nodiscard]] constexpr bool HasWorkLimit() const noexcept;
+```
+
+#### `QueryContext` (строка заголовка 63)
+
+Публичные поля и значения по умолчанию:
+
+- `QueryConsistency consistency = QueryConsistency::Current`
+- `std::uint64_t snapshot_epoch = 0`
+
+#### `QuerySnapshotReadEpoch` (строка заголовка 72)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool IsValid() const noexcept;
+```
+
+#### `IQuerySnapshotCoordinator` (строка заголовка 80)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IQuerySnapshotCoordinator() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `QueryMetadata` (строка заголовка 91)
+
+Публичные поля и значения по умолчанию:
+
+- `QueryCoverage coverage = QueryCoverage::Complete`
+- `std::uint64_t result_count = 0`
+- `std::uint64_t work_units = 0`
+- `bool deterministic_order = true`
+- `QueryAccuracy accuracy = QueryAccuracy::Exact`
+- `bool resident_only = false`
+
+#### `QueryProviderCapabilities` (строка заголовка 115)
+
+Публичные поля и значения по умолчанию:
+
+- `bool supports_current = true`
+- `bool supports_snapshot = false`
+- `bool can_return_partial = false`
+- `bool can_return_approximate = false`
+
+#### `QueryDiagnostics` (строка заголовка 123)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t executed = 0`
+- `std::uint64_t failed = 0`
+- `std::uint64_t budget_exceeded = 0`
+- `std::uint64_t partial_results = 0`
+- `std::uint64_t provider_exceptions = 0`
+
+#### `AnyProviderSnapshot` (строка заголовка 134)
+
+Публичные поля и значения по умолчанию:
+
+- `std::any value`
+
+#### `AnyQueryResponse` (строка заголовка 141)
+
+Публичные поля и значения по умолчанию:
+
+- `std::any value`
+- `bool has_value = false`
+
+#### `QuerySnapshot` (строка заголовка 150)
+
+Публичные сигнатуры операций:
+
+```cpp
+QuerySnapshot() = default;
+[[nodiscard]] bool IsValid() const noexcept;
+[[nodiscard]] GameplayTickId Tick() const noexcept;
+[[nodiscard]] std::size_t ProviderCount() const noexcept;
+```
+
+#### `IQueryProvider` (строка заголовка 185)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IQueryProvider() = default;
+[[nodiscard]] virtual QueryTypeId Type() const noexcept = 0;
+[[nodiscard]] virtual std::type_index QueryCppType() const noexcept = 0;
+[[nodiscard]] virtual std::type_index ResultCppType() const noexcept = 0;
+[[nodiscard]] virtual QueryProviderCapabilities Capabilities() const noexcept = 0;
+[[nodiscard]] virtual foundation::Result<AnyQueryResponse> ExecuteCurrent(const std::any& query, const QueryContext& context) const = 0;
+[[nodiscard]] virtual foundation::Result<AnyProviderSnapshot> CaptureSnapshot(const QueryContext& context) const = 0;
+[[nodiscard]] virtual foundation::Result<AnyQueryResponse> ExecuteSnapshot( const std::any& query, const QueryContext& context, const AnyProviderSnapshot& snapshot) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `FunctionQueryProvider` (строка заголовка 201)
+
+Публичные сигнатуры операций:
+
+```cpp
+) : type_(type), capabilities_(capabilities), current_handler_(std::move(current_handler)), snapshot_capture_(std::move(snapshot_capture)), snapshot_handler_(std::move(snapshot_handler));
+[[nodiscard]] QueryTypeId Type() const noexcept override;
+[[nodiscard]] std::type_index QueryCppType() const noexcept override;
+[[nodiscard]] std::type_index ResultCppType() const noexcept override;
+[[nodiscard]] QueryProviderCapabilities Capabilities() const noexcept override;
+[[nodiscard]] foundation::Result<AnyQueryResponse> ExecuteCurrent(const std::any& query, const QueryContext& context) const override;
+[[nodiscard]] foundation::Result<AnyProviderSnapshot> CaptureSnapshot(const QueryContext& context) const override;
+[[nodiscard]] foundation::Result<AnyQueryResponse> ExecuteSnapshot( const std::any& query, const QueryContext& context, const AnyProviderSnapshot& snapshot) const override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `QueryServiceState` (строка заголовка 337)
+
+Публичные поля и значения по умолчанию:
+
+- `std::unordered_map<QueryTypeId, std::shared_ptr<IQueryProvider>> providers`
+- `std::unordered_map<QueryTypeId, std::string> names`
+- `std::vector<QueryTypeId> provider_order`
+
+#### `GameplayQueryService` (строка заголовка 351)
+
+Внутреннее состояние (не часть публичного API): `bool frozen_ = false`.
+
+Публичные сигнатуры операций:
+
+```cpp
+GameplayQueryService() = default;
+explicit GameplayQueryService(std::uint64_t initial_query_id);
+GameplayQueryService(const GameplayQueryService&) = delete;
+GameplayQueryService& operator=(const GameplayQueryService&) = delete;
+GameplayQueryService(GameplayQueryService&&) noexcept = default;
+GameplayQueryService& operator=(GameplayQueryService&&) noexcept = default;
+template <typename TQuery> [[nodiscard]] foundation::Result<void> RegisterProvider( std::string_view canonical_name, QueryProviderCapabilities capabilities, typename detail::FunctionQueryProvider<TQuery>::CurrentHandler handler);
+[[nodiscard]] foundation::Result<void> SetSnapshotCoordinator(std::shared_ptr<const IQuerySnapshotCoordinator> coordinator);
+// After Freeze(), provider registry and coordinator configuration are immutable. // Execute() and AcquireSnapshot() may be called concurrently. Registered providers // and the snapshot coordinator are responsible for thread-safe concurrent reads. foundation::Result<void> Freeze();
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] std::size_t ProviderCount() const noexcept;
+[[nodiscard]] QueryDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:149`
+- `HasResultLimit`: `EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:178`
+- `SetSnapshotCoordinator`: `EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:215`
+- `ProviderCount`: `EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:221`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:327`
+- `IsFrozen`: `EngineFramework/DevelopmentInfrastructure/Tests/queries_tests.cpp:527`
+

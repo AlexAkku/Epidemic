@@ -8,8 +8,7 @@
 #include "Epidemic/GameFramework/Foundation/time_types.h"
 #include "Epidemic/GameFramework/Foundation/type_registry.h"
 
-namespace epidemic::gameplay
-{
+namespace epidemic::gameplay {
 // Ownership-local prepare/publication customization. Defined by upper-layer
 // adapters; this declaration creates no dependency on SaveGame or peer owners.
 template <typename Owner> struct SnapshotRestoreAccess;

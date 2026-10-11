@@ -210,3 +210,47 @@ class MouseState
 };
 }
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Input/mouse_button.h`.
+
+### Состав типов и операции
+
+#### `MouseState` (строка заголовка 16)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr std::size_t ButtonCount = static_cast<std::size_t>(MouseButton::Count);
+// Returns the last known cursor X position. [[nodiscard]] std::int32_t PositionX() const noexcept;
+// Returns the last known cursor Y position. [[nodiscard]] std::int32_t PositionY() const noexcept;
+// Returns the accumulated X delta for the current frame. [[nodiscard]] std::int32_t DeltaX() const noexcept;
+// Returns the accumulated Y delta for the current frame. [[nodiscard]] std::int32_t DeltaY() const noexcept;
+// Returns the accumulated wheel delta for the current frame. [[nodiscard]] std::int32_t WheelDelta() const noexcept;
+// Returns whether the specified button is currently held down. [[nodiscard]] bool IsButtonDown(MouseButton button) const noexcept;
+// Returns whether the specified button was pressed during the current frame. [[nodiscard]] bool WasPressedThisFrame(MouseButton button) const noexcept;
+// Returns whether the specified button was released during the current frame. [[nodiscard]] bool WasReleasedThisFrame(MouseButton button) const noexcept;
+// Returns whether the owning window currently has focus. [[nodiscard]] bool HasFocus() const noexcept;
+// Returns whether the owning window currently has mouse capture. [[nodiscard]] bool HasCapture() const noexcept;
+// Updates the cursor position and accumulates per-frame deltas. void SetPosition(std::int32_t x, std::int32_t y) noexcept;
+// Adds one wheel delta contribution to the current frame. void AddWheelDelta(std::int32_t wheel_delta) noexcept;
+// Sets the persistent down/up state for one mouse button. void SetButtonDown(MouseButton button, bool down) noexcept;
+// Marks a button as newly pressed for the current frame. void MarkPressed(MouseButton button) noexcept;
+// Marks a button as newly released for the current frame. void MarkReleased(MouseButton button) noexcept;
+// Updates cached focus state. void SetFocus(bool focused) noexcept;
+// Updates cached capture state. void SetCapture(bool captured) noexcept;
+// Clears all button down and transient flags. void ClearButtons() noexcept;
+// Clears only per-frame movement, wheel, and transition data. void ClearTransient() noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

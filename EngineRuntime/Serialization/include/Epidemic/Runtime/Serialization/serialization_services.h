@@ -12,71 +12,57 @@
 #include <typeindex>
 #include <typeinfo>
 
-namespace epidemic::runtime
-{
-struct SerializationOptions
-{
-};
+namespace epidemic::runtime {
+struct SerializationOptions {};
 
-class IArchiveFactory
-{
+class IArchiveFactory {
   public:
     virtual ~IArchiveFactory() = default;
 
     [[nodiscard]] virtual std::unique_ptr<IArchiveWriter> CreateWriter() const = 0;
-    [[nodiscard]] virtual foundation::Result<std::unique_ptr<IArchiveReader>> CreateReader(const SerializedDocument& document) const = 0;
+    [[nodiscard]] virtual foundation::Result<std::unique_ptr<IArchiveReader>>
+    CreateReader(const SerializedDocument &document) const = 0;
 };
 
-struct SerializationServices
-{
+struct SerializationServices {
     std::shared_ptr<ISerializerRegistry> serializers;
     std::shared_ptr<IMigrationRegistry> migrations;
     std::shared_ptr<IArchiveFactory> archives;
 };
 
-[[nodiscard]] foundation::Result<SerializationServices> CreateSerializationServices(const SerializationOptions& options = {});
+[[nodiscard]] foundation::Result<SerializationServices>
+CreateSerializationServices(const SerializationOptions &options = {});
 
 template <typename TObject>
-[[nodiscard]] foundation::Result<SerializedDocument> SerializeToDocument(
-    const ISerializer& serializer,
-    const TObject& object,
-    IArchiveFactory& archives)
-{
-    try
-    {
-        if (serializer.GetCppType() != std::type_index(typeid(TObject)))
-        {
-            return foundation::Result<SerializedDocument>::Failure(
-                CreateSerializationError("serialization.cpp_type_mismatch", "serializer C++ type does not match source object"));
+[[nodiscard]] foundation::Result<SerializedDocument>
+SerializeToDocument(const ISerializer &serializer, const TObject &object, IArchiveFactory &archives) {
+    try {
+        if (serializer.GetCppType() != std::type_index(typeid(TObject))) {
+            return foundation::Result<SerializedDocument>::Failure(CreateSerializationError(
+                "serialization.cpp_type_mismatch", "serializer C++ type does not match source object"));
         }
 
         auto writer = archives.CreateWriter();
-        if (!writer)
-        {
-            return foundation::Result<SerializedDocument>::Failure(
-                CreateSerializationError("serialization.archive_factory_failed", "archive factory returned a null writer"));
+        if (!writer) {
+            return foundation::Result<SerializedDocument>::Failure(CreateSerializationError(
+                "serialization.archive_factory_failed", "archive factory returned a null writer"));
         }
         auto serialized = serializer.Serialize(&object, *writer);
-        if (!serialized)
-        {
+        if (!serialized) {
             return foundation::Result<SerializedDocument>::Failure(serialized.GetError());
         }
         return writer->Finalize(serializer.GetTypeId(), serializer.GetSchemaVersion());
-    }
-    catch (const std::bad_alloc&)
-    {
-        return foundation::Result<SerializedDocument>::Failure(
-            CreateSerializationError("serialization.out_of_memory", "document serialization could not allocate required state"));
-    }
-    catch (const std::exception& error)
-    {
-        return foundation::Result<SerializedDocument>::Failure(
-            CreateSerializationError("serialization.serializer.exception", "serializer or archive factory threw during document serialization", error.what()));
-    }
-    catch (...)
-    {
+    } catch (const std::bad_alloc &) {
         return foundation::Result<SerializedDocument>::Failure(CreateSerializationError(
-            "serialization.serializer.exception", "serializer or archive factory threw an unknown exception during document serialization"));
+            "serialization.out_of_memory", "document serialization could not allocate required state"));
+    } catch (const std::exception &error) {
+        return foundation::Result<SerializedDocument>::Failure(CreateSerializationError(
+            "serialization.serializer.exception", "serializer or archive factory threw during document serialization",
+            error.what()));
+    } catch (...) {
+        return foundation::Result<SerializedDocument>::Failure(CreateSerializationError(
+            "serialization.serializer.exception",
+            "serializer or archive factory threw an unknown exception during document serialization"));
     }
 }
 } // namespace epidemic::runtime

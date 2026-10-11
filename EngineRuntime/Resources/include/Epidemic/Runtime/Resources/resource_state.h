@@ -1,9 +1,7 @@
 ﻿#pragma once
 
-namespace epidemic::runtime
-{
-enum class ResourceState
-{
+namespace epidemic::runtime {
+enum class ResourceState {
     Unknown,
     Unloaded,
     Queued,
@@ -16,10 +14,8 @@ enum class ResourceState
     Reloading,
 };
 
-[[nodiscard]] constexpr bool CanTransition(ResourceState from, ResourceState to) noexcept
-{
-    switch (from)
-    {
+[[nodiscard]] constexpr bool CanTransition(ResourceState from, ResourceState to) noexcept {
+    switch (from) {
     case ResourceState::Unknown:
         return to == ResourceState::Unloaded || to == ResourceState::Queued || to == ResourceState::Failed;
     case ResourceState::Unloaded:

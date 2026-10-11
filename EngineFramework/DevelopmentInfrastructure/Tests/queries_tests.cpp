@@ -15,90 +15,88 @@ using namespace epidemic;
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::queries;
 
-namespace epidemic::gameplay::queries::detail
-{
+namespace epidemic::gameplay::queries::detail {
 void SetQueryFaultPointForTesting(std::string_view point) noexcept;
 void ClearQueryFaultPointForTesting() noexcept;
 }
 
-namespace
-{
-void Check(bool condition, int code)
-{
-    if (!condition)
-    {
+namespace {
+void Check(bool condition, int code) {
+    if (!condition) {
         std::exit(code);
     }
 }
 
-template <typename TValue> void Check(const foundation::Result<TValue>& result, int code)
-{
+template <typename TValue> void Check(const foundation::Result<TValue> &result, int code) {
     Check(result.HasValue(), code);
 }
-struct NumberQuery
-{
+struct NumberQuery {
     using ResultType = std::vector<int>;
     int limit = 0;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.numbers"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.numbers");
+    }
 };
 
-struct TextQuery
-{
+struct TextQuery {
     using ResultType = std::string;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.text"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.text");
+    }
 };
 
-struct UnknownQuery
-{
+struct UnknownQuery {
     using ResultType = int;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.unknown"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.unknown");
+    }
 };
 
-struct UnavailableQuery
-{
+struct UnavailableQuery {
     using ResultType = int;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.unavailable"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.unavailable");
+    }
 };
 
-struct ApproxQuery
-{
+struct ApproxQuery {
     using ResultType = int;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.approximate"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.approximate");
+    }
 };
 
-struct BadOrderQuery
-{
+struct BadOrderQuery {
     using ResultType = std::vector<int>;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.bad_order"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.bad_order");
+    }
 };
 
-struct BudgetViolatingQuery
-{
+struct BudgetViolatingQuery {
     using ResultType = std::vector<int>;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.budget_violation"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.budget_violation");
+    }
 };
 
-struct ThrowingQuery
-{
+struct ThrowingQuery {
     using ResultType = int;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept { return QueryTypeId::FromString("framework.test.throwing"); }
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
+        return QueryTypeId::FromString("framework.test.throwing");
+    }
 };
 
-
-class TestSnapshotCoordinator final : public IQuerySnapshotCoordinator
-{
+class TestSnapshotCoordinator final : public IQuerySnapshotCoordinator {
   public:
-    explicit TestSnapshotCoordinator(std::shared_mutex* mutex = nullptr) : mutex_(mutex) {}
+    explicit TestSnapshotCoordinator(std::shared_mutex *mutex = nullptr) : mutex_(mutex) {
+    }
 
-    [[nodiscard]] foundation::Result<QuerySnapshotReadEpoch> AcquireReadEpoch(GameplayTickId) const override
-    {
-        struct Lease final
-        {
+    [[nodiscard]] foundation::Result<QuerySnapshotReadEpoch> AcquireReadEpoch(GameplayTickId) const override {
+        struct Lease final {
             std::optional<std::shared_lock<std::shared_mutex>> lock;
-            explicit Lease(std::shared_mutex* mutex)
-            {
-                if (mutex != nullptr)
-                {
+            explicit Lease(std::shared_mutex *mutex) {
+                if (mutex != nullptr) {
                     lock.emplace(*mutex);
                 }
             }
@@ -109,12 +107,11 @@ class TestSnapshotCoordinator final : public IQuerySnapshotCoordinator
     }
 
   private:
-    std::shared_mutex* mutex_ = nullptr;
+    std::shared_mutex *mutex_ = nullptr;
     mutable std::atomic<std::uint64_t> next_{1};
 };
 
-QueryMetadata MakeMetadata(Revision revision, QueryCoverage coverage, std::uint64_t count)
-{
+QueryMetadata MakeMetadata(Revision revision, QueryCoverage coverage, std::uint64_t count) {
     QueryMetadata metadata;
     metadata.revision = revision;
     metadata.coverage = coverage;
@@ -124,33 +121,34 @@ QueryMetadata MakeMetadata(Revision revision, QueryCoverage coverage, std::uint6
 }
 } // namespace
 
-int main()
-{
+int main() {
     GameplayQueryService lifecycle;
     QueryProviderCapabilities caps;
     caps.can_return_partial = true;
 
     Check(lifecycle.RegisterProvider<NumberQuery>(
-              "framework.test.numbers",
-              caps,
-              [](const NumberQuery& query, const QueryContext&) {
+              "framework.test.numbers", caps,
+              [](const NumberQuery &query, const QueryContext &) {
                   std::vector<int> values(static_cast<std::size_t>(query.limit), 1);
-                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success({std::move(values), MakeMetadata(Revision{1}, QueryCoverage::Complete, static_cast<std::uint64_t>(query.limit))});
+                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
+                      {std::move(values),
+                       MakeMetadata(Revision{1}, QueryCoverage::Complete, static_cast<std::uint64_t>(query.limit))});
               }),
           1);
     Check(!lifecycle.RegisterProvider<NumberQuery>(
-              "framework.test.numbers",
-              caps,
-              [](const NumberQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success({NumberQuery::ResultType{}, {}});
+              "framework.test.numbers", caps,
+              [](const NumberQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
+                      {NumberQuery::ResultType{}, {}});
               }),
           2);
-    Check(!lifecycle.Execute(NumberQuery{1}) && lifecycle.Execute(NumberQuery{1}).GetError().HasCode("gameplay.query_registry_not_frozen"), 3);
+    Check(!lifecycle.Execute(NumberQuery{1}) &&
+              lifecycle.Execute(NumberQuery{1}).GetError().HasCode("gameplay.query_registry_not_frozen"),
+          3);
     lifecycle.Freeze();
     Check(!lifecycle.RegisterProvider<TextQuery>(
-              "framework.test.text",
-              caps,
-              [](const TextQuery&, const QueryContext&) {
+              "framework.test.text", caps,
+              [](const TextQuery &, const QueryContext &) {
                   return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({std::string{}, {}});
               }),
           4);
@@ -158,7 +156,9 @@ int main()
     Check(lifecycle_result && lifecycle_result.Value().value && lifecycle_result.Value().value->size() == 2 &&
               lifecycle_result.Value().metadata.query_id.IsValid(),
           5);
-    Check(!lifecycle.Execute(UnknownQuery{}) && lifecycle.Execute(UnknownQuery{}).GetError().HasCode("gameplay.query_unknown"), 6);
+    Check(!lifecycle.Execute(UnknownQuery{}) &&
+              lifecycle.Execute(UnknownQuery{}).GetError().HasCode("gameplay.query_unknown"),
+          6);
 
     std::vector<int> numbers{1, 2, 3};
     Revision number_revision{10};
@@ -170,45 +170,49 @@ int main()
     snapshot_caps.supports_snapshot = true;
     snapshot_caps.can_return_partial = true;
     Check(snapshots.RegisterSnapshotProvider<NumberQuery, std::vector<int>>(
-              "framework.test.numbers",
-              snapshot_caps,
-              [&numbers, &number_revision](const NumberQuery& query, const QueryContext& context) {
+              "framework.test.numbers", snapshot_caps,
+              [&numbers, &number_revision](const NumberQuery &query, const QueryContext &context) {
                   std::vector<int> values;
                   const auto wanted = static_cast<std::size_t>(query.limit);
-                  const auto max_results = context.budget.HasResultLimit() ? static_cast<std::size_t>(context.budget.max_results) : wanted;
+                  const auto max_results =
+                      context.budget.HasResultLimit() ? static_cast<std::size_t>(context.budget.max_results) : wanted;
                   const auto allowed = wanted < max_results ? wanted : max_results;
-                  for (std::size_t index = 0; index < allowed && index < numbers.size(); ++index)
-                  {
+                  for (std::size_t index = 0; index < allowed && index < numbers.size(); ++index) {
                       values.push_back(numbers[index]);
                   }
                   const bool partial = allowed < wanted;
                   return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
-                      {std::move(values), MakeMetadata(number_revision, partial ? QueryCoverage::Partial : QueryCoverage::Complete, static_cast<std::uint64_t>(allowed))});
+                      {std::move(values),
+                       MakeMetadata(number_revision, partial ? QueryCoverage::Partial : QueryCoverage::Complete,
+                                    static_cast<std::uint64_t>(allowed))});
               },
-              [&numbers, &number_revision](const QueryContext&) {
-                  return foundation::Result<QueryProviderSnapshot<std::vector<int>>>::Success({numbers, number_revision});
+              [&numbers, &number_revision](const QueryContext &) {
+                  return foundation::Result<QueryProviderSnapshot<std::vector<int>>>::Success(
+                      {numbers, number_revision});
               },
-              [](const NumberQuery& query, const QueryContext&, const std::vector<int>& snapshot) {
+              [](const NumberQuery &query, const QueryContext &, const std::vector<int> &snapshot) {
                   std::vector<int> values;
-                  for (std::size_t index = 0; index < static_cast<std::size_t>(query.limit) && index < snapshot.size(); ++index)
-                  {
+                  for (std::size_t index = 0; index < static_cast<std::size_t>(query.limit) && index < snapshot.size();
+                       ++index) {
                       values.push_back(snapshot[index]);
                   }
                   return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
-                      {std::move(values), MakeMetadata(Revision{10}, QueryCoverage::Complete, static_cast<std::uint64_t>(values.size()))});
+                      {std::move(values),
+                       MakeMetadata(Revision{10}, QueryCoverage::Complete, static_cast<std::uint64_t>(values.size()))});
               }),
           7);
     Check(snapshots.RegisterSnapshotProvider<TextQuery, std::string>(
-              "framework.test.text",
-              snapshot_caps,
-              [&text, &text_revision](const TextQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({text, MakeMetadata(text_revision, QueryCoverage::Complete, 1)});
+              "framework.test.text", snapshot_caps,
+              [&text, &text_revision](const TextQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {text, MakeMetadata(text_revision, QueryCoverage::Complete, 1)});
               },
-              [&text, &text_revision](const QueryContext&) {
+              [&text, &text_revision](const QueryContext &) {
                   return foundation::Result<QueryProviderSnapshot<std::string>>::Success({text, text_revision});
               },
-              [](const TextQuery&, const QueryContext&, const std::string& snapshot) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({snapshot, MakeMetadata(Revision{20}, QueryCoverage::Complete, 1)});
+              [](const TextQuery &, const QueryContext &, const std::string &snapshot) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {snapshot, MakeMetadata(Revision{20}, QueryCoverage::Complete, 1)});
               }),
           8);
     auto snapshot_coordinator = std::make_shared<TestSnapshotCoordinator>();
@@ -218,7 +222,9 @@ int main()
     QueryContext snapshot_context;
     snapshot_context.tick = GameplayTickId{77};
     auto snapshot = snapshots.AcquireSnapshot(snapshot_context);
-    Check(snapshot && snapshot.Value().IsValid() && snapshot.Value().ProviderCount() == 2 && snapshot.Value().Tick() == GameplayTickId{77}, 9);
+    Check(snapshot && snapshot.Value().IsValid() && snapshot.Value().ProviderCount() == 2 &&
+              snapshot.Value().Tick() == GameplayTickId{77},
+          9);
 
     numbers = {9, 8, 7};
     number_revision = Revision{11};
@@ -236,16 +242,17 @@ int main()
 
     GameplayQueryService missing_coordinator;
     Check(missing_coordinator.RegisterSnapshotProvider<TextQuery, std::string>(
-              "framework.test.text",
-              snapshot_caps,
-              [](const TextQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({"current", MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
+              "framework.test.text", snapshot_caps,
+              [](const TextQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {"current", MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
               },
-              [](const QueryContext&) {
+              [](const QueryContext &) {
                   return foundation::Result<QueryProviderSnapshot<std::string>>::Success({"snapshot", Revision{1}});
               },
-              [](const TextQuery&, const QueryContext&, const std::string& value) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({value, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
+              [](const TextQuery &, const QueryContext &, const std::string &value) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {value, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
               }),
           30);
     missing_coordinator.Freeze();
@@ -263,39 +270,40 @@ int main()
     auto coherent_coordinator = std::make_shared<TestSnapshotCoordinator>(&epoch_mutex);
     Check(coherent_service.SetSnapshotCoordinator(coherent_coordinator), 32);
     Check(coherent_service.RegisterSnapshotProvider<NumberQuery, int>(
-              "framework.test.numbers",
-              snapshot_caps,
-              [](const NumberQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success({std::vector<int>{}, MakeMetadata(Revision{1}, QueryCoverage::Complete, 0)});
+              "framework.test.numbers", snapshot_caps,
+              [](const NumberQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
+                      {std::vector<int>{}, MakeMetadata(Revision{1}, QueryCoverage::Complete, 0)});
               },
-              [&coherent_number, &first_capture_started](const QueryContext& context) {
+              [&coherent_number, &first_capture_started](const QueryContext &context) {
                   Check(context.snapshot_epoch != 0, 33);
                   first_capture_started.store(true, std::memory_order_release);
                   return foundation::Result<QueryProviderSnapshot<int>>::Success({coherent_number, Revision{41}});
               },
-              [](const NumberQuery&, const QueryContext&, const int& value) {
-                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success({std::vector<int>{value}, MakeMetadata(Revision{41}, QueryCoverage::Complete, 1)});
+              [](const NumberQuery &, const QueryContext &, const int &value) {
+                  return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
+                      {std::vector<int>{value}, MakeMetadata(Revision{41}, QueryCoverage::Complete, 1)});
               }),
           34);
     Check(coherent_service.RegisterSnapshotProvider<TextQuery, std::string>(
-              "framework.test.text",
-              snapshot_caps,
-              [](const TextQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({"", MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
+              "framework.test.text", snapshot_caps,
+              [](const TextQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {"", MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
               },
-              [&coherent_text](const QueryContext& context) {
+              [&coherent_text](const QueryContext &context) {
                   Check(context.snapshot_epoch != 0, 35);
                   std::this_thread::yield();
                   return foundation::Result<QueryProviderSnapshot<std::string>>::Success({coherent_text, Revision{41}});
               },
-              [](const TextQuery&, const QueryContext&, const std::string& value) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({value, MakeMetadata(Revision{41}, QueryCoverage::Complete, 1)});
+              [](const TextQuery &, const QueryContext &, const std::string &value) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {value, MakeMetadata(Revision{41}, QueryCoverage::Complete, 1)});
               }),
           36);
     coherent_service.Freeze();
     std::thread writer([&]() {
-        while (!first_capture_started.load(std::memory_order_acquire))
-        {
+        while (!first_capture_started.load(std::memory_order_acquire)) {
             std::this_thread::yield();
         }
         std::unique_lock lock(epoch_mutex);
@@ -309,15 +317,18 @@ int main()
     Check(writer_completed.load(std::memory_order_acquire), 38);
     auto coherent_number_result = coherent_service.Execute(NumberQuery{1}, coherent_snapshot.Value());
     auto coherent_text_result = coherent_service.Execute(TextQuery{}, coherent_snapshot.Value());
-    Check(coherent_number_result && coherent_number_result.Value().value && (*coherent_number_result.Value().value)[0] == 41, 39);
-    Check(coherent_text_result && coherent_text_result.Value().value && *coherent_text_result.Value().value == "epoch-41", 40);
-
+    Check(coherent_number_result && coherent_number_result.Value().value &&
+              (*coherent_number_result.Value().value)[0] == 41,
+          39);
+    Check(coherent_text_result && coherent_text_result.Value().value &&
+              *coherent_text_result.Value().value == "epoch-41",
+          40);
 
     GameplayQueryService throwing_service;
     Check(throwing_service.RegisterProvider<ThrowingQuery>(
-              "framework.test.throwing",
-              {},
-              [](const ThrowingQuery&, const QueryContext&) -> foundation::Result<QueryResponse<ThrowingQuery::ResultType>> {
+              "framework.test.throwing", {},
+              [](const ThrowingQuery &,
+                 const QueryContext &) -> foundation::Result<QueryResponse<ThrowingQuery::ResultType>> {
                   throw std::runtime_error("provider failure");
               }),
           41);
@@ -326,49 +337,51 @@ int main()
     Check(!throwing_result && throwing_result.GetError().HasCode("gameplay.query_provider_exception"), 42);
     Check(throwing_service.GetDiagnostics().provider_exceptions == 1, 43);
 
-    class ThrowingCoordinator final : public IQuerySnapshotCoordinator
-    {
+    class ThrowingCoordinator final : public IQuerySnapshotCoordinator {
       public:
-        [[nodiscard]] foundation::Result<QuerySnapshotReadEpoch> AcquireReadEpoch(GameplayTickId) const override
-        {
+        [[nodiscard]] foundation::Result<QuerySnapshotReadEpoch> AcquireReadEpoch(GameplayTickId) const override {
             throw std::runtime_error("coordinator failure");
         }
     };
 
     GameplayQueryService throwing_snapshot_service;
     Check(throwing_snapshot_service.RegisterSnapshotProvider<TextQuery, std::string>(
-              "framework.test.text",
-              snapshot_caps,
-              [](const TextQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({"current", MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
+              "framework.test.text", snapshot_caps,
+              [](const TextQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {"current", MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
               },
-              [](const QueryContext&) {
+              [](const QueryContext &) {
                   return foundation::Result<QueryProviderSnapshot<std::string>>::Success({"snapshot", Revision{1}});
               },
-              [](const TextQuery&, const QueryContext&, const std::string& value) {
-                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success({value, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
+              [](const TextQuery &, const QueryContext &, const std::string &value) {
+                  return foundation::Result<QueryResponse<TextQuery::ResultType>>::Success(
+                      {value, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
               }),
           44);
     Check(throwing_snapshot_service.SetSnapshotCoordinator(std::make_shared<ThrowingCoordinator>()), 45);
     throwing_snapshot_service.Freeze();
     auto throwing_snapshot = throwing_snapshot_service.AcquireSnapshot();
-    Check(!throwing_snapshot && throwing_snapshot.GetError().HasCode("gameplay.query_snapshot_coordinator_exception"), 46);
+    Check(!throwing_snapshot && throwing_snapshot.GetError().HasCode("gameplay.query_snapshot_coordinator_exception"),
+          46);
     Check(throwing_snapshot_service.GetDiagnostics().provider_exceptions == 1, 47);
 
     QueryContext partial_context;
     partial_context.requirements.require_complete = false;
     partial_context.budget.max_results = 2;
     auto partial = snapshots.Execute(NumberQuery{5}, partial_context);
-    Check(partial && partial.Value().value && partial.Value().value->size() == 2 && partial.Value().metadata.coverage == QueryCoverage::Partial, 14);
+    Check(partial && partial.Value().value && partial.Value().value->size() == 2 &&
+              partial.Value().metadata.coverage == QueryCoverage::Partial,
+          14);
 
     GameplayQueryService unavailable_service;
     Check(unavailable_service.RegisterProvider<UnavailableQuery>(
-              "framework.test.unavailable",
-              {},
-              [](const UnavailableQuery&, const QueryContext&) {
+              "framework.test.unavailable", {},
+              [](const UnavailableQuery &, const QueryContext &) {
                   QueryMetadata metadata;
                   metadata.coverage = QueryCoverage::Unavailable;
-                  return foundation::Result<QueryResponse<UnavailableQuery::ResultType>>::Success({std::nullopt, metadata});
+                  return foundation::Result<QueryResponse<UnavailableQuery::ResultType>>::Success(
+                      {std::nullopt, metadata});
               }),
           15);
     unavailable_service.Freeze();
@@ -377,15 +390,16 @@ int main()
     allow_unavailable.requirements.require_complete = false;
     allow_unavailable.requirements.allow_unavailable = true;
     auto unavailable = unavailable_service.Execute(UnavailableQuery{}, allow_unavailable);
-    Check(unavailable && !unavailable.Value().value && unavailable.Value().metadata.coverage == QueryCoverage::Unavailable, 17);
+    Check(unavailable && !unavailable.Value().value &&
+              unavailable.Value().metadata.coverage == QueryCoverage::Unavailable,
+          17);
 
     GameplayQueryService approximate_service;
     QueryProviderCapabilities approximate_caps;
     approximate_caps.can_return_approximate = true;
     Check(approximate_service.RegisterProvider<ApproxQuery>(
-              "framework.test.approximate",
-              approximate_caps,
-              [](const ApproxQuery&, const QueryContext&) {
+              "framework.test.approximate", approximate_caps,
+              [](const ApproxQuery &, const QueryContext &) {
                   QueryMetadata metadata = MakeMetadata(Revision{1}, QueryCoverage::Complete, 1);
                   metadata.accuracy = QueryAccuracy::Approximate;
                   return foundation::Result<QueryResponse<ApproxQuery::ResultType>>::Success({7, metadata});
@@ -399,24 +413,24 @@ int main()
 
     GameplayQueryService bad_order_service;
     Check(bad_order_service.RegisterProvider<BadOrderQuery>(
-              "framework.test.bad_order",
-              {},
-              [](const BadOrderQuery&, const QueryContext&) {
+              "framework.test.bad_order", {},
+              [](const BadOrderQuery &, const QueryContext &) {
                   QueryMetadata metadata = MakeMetadata(Revision{1}, QueryCoverage::Complete, 2);
                   metadata.deterministic_order = false;
-                  return foundation::Result<QueryResponse<BadOrderQuery::ResultType>>::Success({std::vector<int>{2, 1}, metadata});
+                  return foundation::Result<QueryResponse<BadOrderQuery::ResultType>>::Success(
+                      {std::vector<int>{2, 1}, metadata});
               }),
           21);
     bad_order_service.Freeze();
-    Check(!bad_order_service.Execute(BadOrderQuery{}) &&
-              bad_order_service.Execute(BadOrderQuery{}).GetError().HasCode("gameplay.query_provider_contract_violation"),
-          22);
+    Check(
+        !bad_order_service.Execute(BadOrderQuery{}) &&
+            bad_order_service.Execute(BadOrderQuery{}).GetError().HasCode("gameplay.query_provider_contract_violation"),
+        22);
 
     GameplayQueryService budget_violation_service;
     Check(budget_violation_service.RegisterProvider<BudgetViolatingQuery>(
-              "framework.test.budget_violation",
-              {},
-              [](const BudgetViolatingQuery&, const QueryContext&) {
+              "framework.test.budget_violation", {},
+              [](const BudgetViolatingQuery &, const QueryContext &) {
                   return foundation::Result<QueryResponse<BudgetViolatingQuery::ResultType>>::Success(
                       {std::vector<int>{1, 2, 3}, MakeMetadata(Revision{1}, QueryCoverage::Complete, 3)});
               }),
@@ -429,10 +443,10 @@ int main()
 
     GameplayQueryService id_service{std::numeric_limits<std::uint64_t>::max() - 1};
     Check(id_service.RegisterProvider<ApproxQuery>(
-              "framework.test.approximate",
-              {},
-              [](const ApproxQuery&, const QueryContext&) {
-                  return foundation::Result<QueryResponse<ApproxQuery::ResultType>>::Success({1, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
+              "framework.test.approximate", {},
+              [](const ApproxQuery &, const QueryContext &) {
+                  return foundation::Result<QueryResponse<ApproxQuery::ResultType>>::Success(
+                      {1, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
               }),
           25);
     id_service.Freeze();
@@ -442,20 +456,16 @@ int main()
 
     std::atomic<int> concurrent_success{0};
     std::vector<std::thread> threads;
-    for (int index = 0; index < 4; ++index)
-    {
+    for (int index = 0; index < 4; ++index) {
         threads.emplace_back([&snapshots, &concurrent_success]() {
-            for (int iteration = 0; iteration < 16; ++iteration)
-            {
-                if (snapshots.Execute(NumberQuery{1}))
-                {
+            for (int iteration = 0; iteration < 16; ++iteration) {
+                if (snapshots.Execute(NumberQuery{1})) {
                     ++concurrent_success;
                 }
             }
         });
     }
-    for (auto& thread : threads)
-    {
+    for (auto &thread : threads) {
         thread.join();
     }
     Check(concurrent_success == 64, 28);
@@ -485,17 +495,13 @@ int main()
         const auto before = fault_service.ProviderCount();
         epidemic::gameplay::queries::detail::SetQueryFaultPointForTesting("provider_registration.publish");
         bool threw = false;
-        try
-        {
+        try {
             (void)fault_service.RegisterProvider<NumberQuery>(
-                "framework.test.numbers", QueryProviderCapabilities{},
-                [](const NumberQuery&, const QueryContext&) {
+                "framework.test.numbers", QueryProviderCapabilities{}, [](const NumberQuery &, const QueryContext &) {
                     return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
                         {std::vector<int>{1}, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
                 });
-        }
-        catch (const std::bad_alloc&)
-        {
+        } catch (const std::bad_alloc &) {
             threw = true;
         }
         epidemic::gameplay::queries::detail::ClearQueryFaultPointForTesting();
@@ -506,8 +512,7 @@ int main()
     {
         GameplayQueryService fault_service;
         const auto registered = fault_service.RegisterProvider<NumberQuery>(
-            "framework.test.numbers", QueryProviderCapabilities{},
-            [](const NumberQuery&, const QueryContext&) {
+            "framework.test.numbers", QueryProviderCapabilities{}, [](const NumberQuery &, const QueryContext &) {
                 return foundation::Result<QueryResponse<NumberQuery::ResultType>>::Success(
                     {std::vector<int>{1}, MakeMetadata(Revision{1}, QueryCoverage::Complete, 1)});
             });
@@ -515,12 +520,9 @@ int main()
             return 37;
         epidemic::gameplay::queries::detail::SetQueryFaultPointForTesting("freeze.publish");
         bool threw = false;
-        try
-        {
+        try {
             (void)fault_service.Freeze();
-        }
-        catch (const std::bad_alloc&)
-        {
+        } catch (const std::bad_alloc &) {
             threw = true;
         }
         epidemic::gameplay::queries::detail::ClearQueryFaultPointForTesting();

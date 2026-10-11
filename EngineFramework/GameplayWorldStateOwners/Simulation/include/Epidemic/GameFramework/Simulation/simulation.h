@@ -13,89 +13,70 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::simulation
-{
+namespace epidemic::gameplay::simulation {
 using Fixed = std::int64_t;
-struct SimulationRegionId
-{
+struct SimulationRegionId {
     TypeId value{};
-    static constexpr SimulationRegionId FromString(std::string_view s) noexcept
-    {
+    static constexpr SimulationRegionId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SimulationRegionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SimulationRegionId &) const noexcept = default;
 };
-struct SimulationLayerId
-{
+struct SimulationLayerId {
     TypeId value{};
-    static constexpr SimulationLayerId FromString(std::string_view s) noexcept
-    {
+    static constexpr SimulationLayerId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SimulationLayerId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SimulationLayerId &) const noexcept = default;
 };
-struct SimulationTaskId
-{
+struct SimulationTaskId {
     GameplayObjectId value{};
-    static constexpr SimulationTaskId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr SimulationTaskId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SimulationTaskId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SimulationTaskId &) const noexcept = default;
 };
-struct SimulationPolicyId
-{
+struct SimulationPolicyId {
     TypeId value{};
-    static constexpr SimulationPolicyId FromString(std::string_view s) noexcept
-    {
+    static constexpr SimulationPolicyId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SimulationPolicyId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SimulationPolicyId &) const noexcept = default;
 };
-struct SimulationSummaryId
-{
+struct SimulationSummaryId {
     GameplayObjectId value{};
-    static constexpr SimulationSummaryId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr SimulationSummaryId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SimulationSummaryId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SimulationSummaryId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class SimulationDetailLevel
-{
+enum class SimulationDetailLevel {
     Disabled,
     Dormant,
     Abstract,
@@ -103,8 +84,7 @@ enum class SimulationDetailLevel
     Detailed,
     Materialized
 };
-enum class SimulationTaskState
-{
+enum class SimulationTaskState {
     Pending,
     Running,
     Completed,
@@ -112,19 +92,16 @@ enum class SimulationTaskState
     Skipped,
     Deferred
 };
-enum class SimulationIntervalState
-{
+enum class SimulationIntervalState {
     Pending,
     Completed
 };
-enum class SimulationMaterializationPolicy
-{
+enum class SimulationMaterializationPolicy {
     AbstractCapable,
     RequiresDetailed,
     RequiresMaterialized
 };
-enum class SimulationChangeKind
-{
+enum class SimulationChangeKind {
     RegionRegistered,
     LayerRegistered,
     IntervalStarted,
@@ -135,8 +112,7 @@ enum class SimulationChangeKind
     BudgetExceeded,
     SummaryGenerated
 };
-struct SimulationBudget
-{
+struct SimulationBudget {
     // Work units processed by one SimulateInterval call. A work unit is one layer task examined
     // for prepare/commit. Exhaustion pauses the durable interval execution and never advances the
     // region cursor.
@@ -144,13 +120,11 @@ struct SimulationBudget
     std::uint32_t max_layer_commits = 1024;
     std::int64_t max_interval_ticks = 86'400;
 };
-struct SimulationRetentionPolicy
-{
+struct SimulationRetentionPolicy {
     std::size_t max_completed_summaries = 1024;
     std::size_t max_changes = 4096;
 };
-struct SimulationRegion
-{
+struct SimulationRegion {
     SimulationRegionId id{};
     std::string canonical_name;
     GameplayObjectRef area{};
@@ -159,8 +133,7 @@ struct SimulationRegion
     GameplayTimePoint last_simulated_at{};
     Revision revision{};
 };
-struct SimulationLayerDefinition
-{
+struct SimulationLayerDefinition {
     SimulationLayerId id{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -168,8 +141,7 @@ struct SimulationLayerDefinition
     SimulationMaterializationPolicy materialization_policy = SimulationMaterializationPolicy::AbstractCapable;
     Revision revision{};
 };
-struct SimulationTask
-{
+struct SimulationTask {
     SimulationTaskId id{};
     SimulationRegionId region{};
     SimulationLayerId layer{};
@@ -180,28 +152,26 @@ struct SimulationTask
     Revision revision{};
     GameplayObjectRef area{};
 };
-struct SimulationPreparedOperation
-{
+struct SimulationPreparedOperation {
     GameplayObjectId operation{};
     Revision expected_revision{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return operation.IsValid(); }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return operation.IsValid();
+    }
 };
-struct SimulationLayerSummary
-{
+struct SimulationLayerSummary {
     SimulationLayerId layer{};
     SimulationTaskState state = SimulationTaskState::Completed;
     std::uint64_t operations = 0;
     Revision revision{};
     std::vector<SimulationPreparedOperation> prepared_operations;
 };
-struct SimulationLayerExecution
-{
+struct SimulationLayerExecution {
     SimulationTask task{};
     SimulationLayerSummary prepared_summary{};
     bool prepared = false;
 };
-struct SimulationIntervalExecution
-{
+struct SimulationIntervalExecution {
     // The eventual summary id is allocated when the interval starts and serves as a stable
     // interval operation identity for save/load and retry.
     SimulationSummaryId id{};
@@ -213,8 +183,7 @@ struct SimulationIntervalExecution
     std::vector<SimulationLayerExecution> layers;
     Revision revision{};
 };
-struct SimulationSummary
-{
+struct SimulationSummary {
     SimulationSummaryId id{};
     SimulationRegionId region{};
     GameplayTimePoint from{};
@@ -222,8 +191,7 @@ struct SimulationSummary
     std::vector<SimulationLayerSummary> layers;
     Revision revision{};
 };
-struct SimulationChange
-{
+struct SimulationChange {
     std::uint64_t sequence = 0;
     SimulationChangeKind kind = SimulationChangeKind::TaskPrepared;
     SimulationRegionId region{};
@@ -233,8 +201,7 @@ struct SimulationChange
     GameplayContext context{};
     Revision revision{};
 };
-struct SimulationChangeBatch
-{
+struct SimulationChangeBatch {
     std::vector<SimulationChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -243,8 +210,7 @@ struct SimulationChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct SimulationSnapshot
-{
+struct SimulationSnapshot {
     std::vector<SimulationRegion> regions;
     std::vector<SimulationIntervalExecution> active_intervals;
     std::vector<SimulationSummary> summaries;
@@ -255,8 +221,7 @@ struct SimulationSnapshot
     std::uint64_t change_epoch = 1;
     std::uint64_t next_change_sequence = 1;
 };
-struct SimulationDiagnostics
-{
+struct SimulationDiagnostics {
     std::uint64_t regions = 0;
     std::uint64_t layers = 0;
     std::uint64_t active_intervals = 0;
@@ -267,8 +232,7 @@ struct SimulationDiagnostics
     std::uint64_t summaries = 0;
 };
 
-class ISimulationLayerExecutor
-{
+class ISimulationLayerExecutor {
   public:
     virtual ~ISimulationLayerExecutor() = default;
     [[nodiscard]] virtual SimulationLayerId Layer() const noexcept = 0;
@@ -281,14 +245,12 @@ class ISimulationLayerExecutor
                                                           const SimulationLayerSummary &summary) = 0;
 };
 
-class SimulationService
-{
+class SimulationService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<SimulationService>;
 
   public:
     SimulationService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.simulation");
     }
 
@@ -298,24 +260,20 @@ class SimulationService
     // the frozen layer definition. Executor exceptions are contained at the Simulation boundary.
     [[nodiscard]] foundation::Result<SimulationLayerId> RegisterLayer(SimulationLayerDefinition layer,
                                                                       ISimulationLayerExecutor *executor);
-    void FreezeDefinitions() noexcept
-    {
+    void FreezeDefinitions() noexcept {
         definitions_frozen_ = true;
     }
-    void Freeze() noexcept
-    {
+    void Freeze() noexcept {
         FreezeDefinitions();
     }
-    [[nodiscard]] bool DefinitionsFrozen() const noexcept
-    {
+    [[nodiscard]] bool DefinitionsFrozen() const noexcept {
         return definitions_frozen_;
     }
 
     [[nodiscard]] const SimulationRegion *FindRegion(SimulationRegionId id) const noexcept;
     [[nodiscard]] const SimulationLayerDefinition *FindLayer(SimulationLayerId id) const noexcept;
     [[nodiscard]] const SimulationIntervalExecution *FindActiveInterval(SimulationRegionId region) const noexcept;
-    void SetBudget(SimulationBudget budget) noexcept
-    {
+    void SetBudget(SimulationBudget budget) noexcept {
         budget_ = budget;
     }
     void SetRetentionPolicy(SimulationRetentionPolicy policy) noexcept;
@@ -328,14 +286,14 @@ class SimulationService
                                                                            GameplayTimePoint from, GameplayTimePoint to,
                                                                            GameplayContext context = {});
     [[nodiscard]] std::vector<SimulationSummary> FindSummaries(SimulationRegionId region) const;
-    private:
-        [[nodiscard]] SimulationChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] SimulationChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] SimulationChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] SimulationChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
-        if (!cursor.IsValid() && cursor.sequence == 0 && journal_epoch_ > 1)
-        {
+        if (!cursor.IsValid() && cursor.sequence == 0 && journal_epoch_ > 1) {
             batch.changes.clear();
             for (const auto &change : changes_)
                 batch.changes.push_back(change);
@@ -343,33 +301,31 @@ class SimulationService
         }
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    private:
-        [[nodiscard]] std::vector<SimulationChange> ChangesSinceSequence(std::uint64_t sequence) const;
-    public:
+
+  private:
+    [[nodiscard]] std::vector<SimulationChange> ChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
     [[nodiscard]] SimulationSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(SimulationSnapshot snapshot);
     [[nodiscard]] SimulationDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
   private:
-    bool Bump() noexcept
-    {
+    bool Bump() noexcept {
         if (revision_.value == std::numeric_limits<std::uint64_t>::max())
             return false;
         ++revision_.value;

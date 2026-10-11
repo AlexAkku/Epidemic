@@ -1,5 +1,5 @@
 {
-  "vault_version": "1.0",
+  "vault_version": "1.1-depth",
   "source_file": "Epidemic(1).zip",
   "source_sha256": "116094bf0244e0d10e54e69a70b35551a12055da0e72e04c1d7c70b34bcc7791",
   "snapshot_date": "2026-10-10",
@@ -10,7 +10,7 @@
   "module_pages": 78,
   "generated_pages": 359,
   "compile_tests_performed": false,
-  "code_semantics_validation": "read only/source index",
+  "code_semantics_validation": "original contract docs, public headers, CMake and static .cpp/tests cross references; no compiler-based or runtime verification",
   "scope": [
     "EngineBase",
     "EngineRuntime",
@@ -19,5 +19,16 @@
     "Development/AgentsRules",
     "Documentation"
   ],
-  "notes": "Generated cards are not live synchronized with the original repository. Python header index is lexical, not clang AST."
+  "notes": "Source line anchors refer to the supplied source archive. Lexical indexes require clangd/compiler verification before implementation changes.",
+  "depth_revision": "2026-10-10",
+  "documentation_changes": {
+    "scope_unchanged": true,
+    "file_count_unchanged": true,
+    "module_cards_deepened": 78,
+    "api_header_cards_deepened": 232,
+    "working_guides_deepened": 41,
+    "method_implementation_test_traces": 111,
+    "module_error_contexts": 73,
+    "source_snapshots_modified": false
+  }
 }

@@ -9,23 +9,19 @@ using namespace epidemic::gameplay::resources;
 using namespace epidemic::gameplay::simulation;
 using namespace epidemic::gameplay::integration;
 
-namespace epidemic::gameplay::integration::test_support
-{
+namespace epidemic::gameplay::integration::test_support {
 void FailNextResourceReservationTokenPublicationForTest() noexcept;
 void ResetProcessResourceFailureSeamsForTest() noexcept;
 }
 
-namespace
-{
-[[nodiscard]] GameplayObjectRef Ref(const char *domain, const char *id)
-{
+namespace {
+[[nodiscard]] GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 
 [[nodiscard]] ProcessRecipe MakeResourceRecipe(const char *name, ProcessDefinitionId definition,
-                                                ResourceStockpileId stockpile, ResourceTypeId input,
-                                                ResourceTypeId output)
-{
+                                               ResourceStockpileId stockpile, ResourceTypeId input,
+                                               ResourceTypeId output) {
     ProcessRecipe recipe;
     recipe.canonical_name = name;
     recipe.process = definition;
@@ -36,21 +32,17 @@ namespace
                              {},
                              EncodeProcessResourcePayload({stockpile, input})});
     recipe.outputs.push_back({ProcessOutputId::FromString("test.output.sword"),
-                              ResourceProcessOutputHandler::OutputType(),
-                              1,
-                              OutputDeliveryPolicy::OnCompletion,
+                              ResourceProcessOutputHandler::OutputType(), 1, OutputDeliveryPolicy::OnCompletion,
                               EncodeProcessResourcePayload({stockpile, output})});
     return recipe;
 }
 
-[[nodiscard]] int Require(bool condition, int code)
-{
+[[nodiscard]] int Require(bool condition, int code) {
     return condition ? 0 : code;
 }
 } // namespace
 
-int main()
-{
+int main() {
     ResourcesProductionService resources;
     ResourceType iron;
     iron.canonical_name = "test.resource.iron";
@@ -74,7 +66,8 @@ int main()
         !resources.Add(stockpile_b.Value(), {iron_id.Value(), 10}))
         return 3;
 
-    const auto roundtrip = DecodeProcessResourcePayload(EncodeProcessResourcePayload({stockpile_a.Value(), iron_id.Value()}));
+    const auto roundtrip =
+        DecodeProcessResourcePayload(EncodeProcessResourcePayload({stockpile_a.Value(), iron_id.Value()}));
     if (!roundtrip || roundtrip->stockpile != stockpile_a.Value() || roundtrip->resource != iron_id.Value())
         return 4;
     auto invalid_payload = EncodeProcessResourcePayload({stockpile_a.Value(), iron_id.Value()});
@@ -104,16 +97,15 @@ int main()
     seam_request.actor = worker_a;
     const auto seam_before = resources.CaptureSnapshot();
     integration::test_support::FailNextResourceReservationTokenPublicationForTest();
-    const auto seam_result = in_provider.Reserve(
-        seam_input, seam_request, ProcessInstanceId{GameplayObjectId::FromString("test.process.seam")});
+    const auto seam_result = in_provider.Reserve(seam_input, seam_request,
+                                                 ProcessInstanceId{GameplayObjectId::FromString("test.process.seam")});
     if (seam_result)
         return 32;
     const auto seam_after = resources.CaptureSnapshot();
     if (seam_after.reservations.size() != seam_before.reservations.size() ||
         seam_after.reservation_ids.scope != seam_before.reservation_ids.scope ||
         seam_after.reservation_ids.next != seam_before.reservation_ids.next ||
-        seam_after.revision != seam_before.revision ||
-        resources.GetAmount(stockpile_a.Value(), iron_id.Value()) != 10)
+        seam_after.revision != seam_before.revision || resources.GetAmount(stockpile_a.Value(), iron_id.Value()) != 10)
         return 33;
     integration::test_support::ResetProcessResourceFailureSeamsForTest();
 
@@ -124,19 +116,16 @@ int main()
     def.canonical_name = "test.process.craft";
     def.kind = ProcessKindId::FromString("test.kind");
     def.timing = ProcessTimingPolicy::Timed;
-    def.steps.push_back({ProcessStepId::FromString("test.step"),
-                         TypeId::FromString("test.step"),
-                         GameplayDuration{5},
-                         {},
-                         {}});
+    def.steps.push_back(
+        {ProcessStepId::FromString("test.step"), TypeId::FromString("test.step"), GameplayDuration{5}, {}, {}});
     auto def_id = processes.RegisterDefinition(def);
     if (!def_id)
         return 7;
 
-    auto recipe_a = processes.RegisterRecipe(
-        MakeResourceRecipe("test.recipe.sword_a", def_id.Value(), stockpile_a.Value(), iron_id.Value(), sword_id.Value()));
-    auto recipe_b = processes.RegisterRecipe(
-        MakeResourceRecipe("test.recipe.sword_b", def_id.Value(), stockpile_b.Value(), iron_id.Value(), sword_id.Value()));
+    auto recipe_a = processes.RegisterRecipe(MakeResourceRecipe(
+        "test.recipe.sword_a", def_id.Value(), stockpile_a.Value(), iron_id.Value(), sword_id.Value()));
+    auto recipe_b = processes.RegisterRecipe(MakeResourceRecipe(
+        "test.recipe.sword_b", def_id.Value(), stockpile_b.Value(), iron_id.Value(), sword_id.Value()));
     if (!recipe_a || !recipe_b)
         return 8;
     processes.Freeze(); // freeze process definitions for integration simulation
@@ -192,7 +181,8 @@ int main()
     auto summary_a = sim.SimulateInterval(region_a.Value(), GameplayTimePoint{0}, GameplayTimePoint{5});
     if (!summary_a)
         return 15;
-    if (const int failure = Require(processes.FindInstance(proc_a.Value())->state == ProcessInstanceState::Completed, 16))
+    if (const int failure =
+            Require(processes.FindInstance(proc_a.Value())->state == ProcessInstanceState::Completed, 16))
         return failure;
     if (const int failure = Require(processes.FindInstance(proc_b.Value())->state == ProcessInstanceState::Running, 17))
         return failure;

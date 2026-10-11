@@ -15,112 +15,118 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::perception
-{
-struct SenseTypeId
-{
+namespace epidemic::gameplay::perception {
+struct SenseTypeId {
     TypeId value{};
-    static constexpr SenseTypeId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr SenseTypeId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const SenseTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SenseTypeId &) const noexcept = default;
 };
-struct PerceiverProfileId
-{
+struct PerceiverProfileId {
     TypeId value{};
-    static constexpr PerceiverProfileId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr PerceiverProfileId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PerceiverProfileId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PerceiverProfileId &) const noexcept = default;
 };
-struct SenseEvaluatorId
-{
+struct SenseEvaluatorId {
     TypeId value{};
-    static constexpr SenseEvaluatorId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr SenseEvaluatorId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const SenseEvaluatorId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SenseEvaluatorId &) const noexcept = default;
 };
-struct PerceptionStimulusId
-{
+struct PerceptionStimulusId {
     GameplayObjectId value{};
-    static constexpr PerceptionStimulusId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr PerceptionStimulusId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PerceptionStimulusId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr PerceptionStimulusId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PerceptionStimulusId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PerceptionStimulusId &) const noexcept = default;
 };
-struct PerceptionObservationId
-{
+struct PerceptionObservationId {
     GameplayObjectId value{};
-    static constexpr PerceptionObservationId FromString(std::string_view s) noexcept
-    {
+    static constexpr PerceptionObservationId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr PerceptionObservationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PerceptionObservationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const PerceptionObservationId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PerceptionObservationId &) const noexcept = default;
 };
-struct AwarenessStateId
-{
+struct AwarenessStateId {
     TypeId value{};
-    static constexpr AwarenessStateId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr AwarenessStateId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const AwarenessStateId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const AwarenessStateId &) const noexcept = default;
 };
 
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
-struct RefHash
-{
-    [[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept { return std::hash<GameplayObjectRef>{}(r); }
+struct RefHash {
+    [[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept {
+        return std::hash<GameplayObjectRef>{}(r);
+    }
 };
 
 using Fixed = std::int64_t;
-struct WorldPosition
-{
+struct WorldPosition {
     Fixed x_mm = 0;
     Fixed y_mm = 0;
     Fixed z_mm = 0;
     [[nodiscard]] constexpr bool operator==(const WorldPosition &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorldPosition &) const noexcept = default;
 };
-struct WorldDirection
-{
+struct WorldDirection {
     Fixed x_micro = 1'000'000;
     Fixed y_micro = 0;
     Fixed z_micro = 0;
     [[nodiscard]] constexpr bool operator==(const WorldDirection &) const noexcept = default;
 };
 
-enum class PerceptionMaterializationPolicy
-{
+enum class PerceptionMaterializationPolicy {
     AbstractCapable,
     RequiresMaterialized,
     RequiresRuntimeProjection
 };
-enum class SenseEvaluationModel
-{
+enum class SenseEvaluationModel {
     Vision,
     Hearing,
     Radial,
     Custom
 };
-enum class PerceptionVisibilityState
-{
+enum class PerceptionVisibilityState {
     Visible,
     PartiallyVisible,
     Hidden,
@@ -128,32 +134,28 @@ enum class PerceptionVisibilityState
     Unknown,
     Unavailable
 };
-enum class PerceptionAudibilityState
-{
+enum class PerceptionAudibilityState {
     HeardExactly,
     HeardDirectionOnly,
     HeardVagueNoise,
     NotHeard,
     Unavailable
 };
-enum class PerceptionConfidence
-{
+enum class PerceptionConfidence {
     None,
     Low,
     Medium,
     High,
     Certain
 };
-enum class AwarenessLevel
-{
+enum class AwarenessLevel {
     Unaware,
     Suspicious,
     Aware,
     Lost,
     Confirmed
 };
-enum class PerceptionChangeKind
-{
+enum class PerceptionChangeKind {
     StimulusCreated,
     StimulusExpired,
     Observed,
@@ -164,8 +166,7 @@ enum class PerceptionChangeKind
     BudgetExceeded
 };
 
-struct SenseDefinition
-{
+struct SenseDefinition {
     SenseTypeId id{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -181,22 +182,19 @@ struct SenseDefinition
     bool requires_spatial_sample = true;
     std::vector<std::byte> payload;
 };
-struct PerceiverProfileDefinition
-{
+struct PerceiverProfileDefinition {
     PerceiverProfileId id{};
     std::string canonical_name;
     GameplayTagSet tags;
     std::vector<SenseTypeId> senses;
     PerceptionMaterializationPolicy materialization_policy = PerceptionMaterializationPolicy::AbstractCapable;
 };
-struct PerceiverRecord
-{
+struct PerceiverRecord {
     GameplayObjectRef subject{};
     PerceiverProfileId profile{};
     Revision revision{};
 };
-struct PerceptionStimulus
-{
+struct PerceptionStimulus {
     PerceptionStimulusId id{};
     SenseTypeId sense{};
     GameplayObjectRef source{};
@@ -209,8 +207,7 @@ struct PerceptionStimulus
     GameplayContext context{};
     Revision revision{};
 };
-struct PerceptionObservation
-{
+struct PerceptionObservation {
     PerceptionObservationId id{};
     GameplayObjectRef perceiver{};
     GameplayObjectRef perceived_subject{};
@@ -225,14 +222,12 @@ struct PerceptionObservation
     GameplayContext context{};
     Revision revision{};
 };
-struct PendingPerceptionObservation
-{
+struct PendingPerceptionObservation {
     PerceptionObservation observation{};
     GameplayTimePoint ready_at{};
     Fixed detection_score_micro = 0;
 };
-struct AwarenessRecord
-{
+struct AwarenessRecord {
     GameplayObjectRef perceiver{};
     GameplayObjectRef target{};
     AwarenessLevel level = AwarenessLevel::Unaware;
@@ -242,22 +237,19 @@ struct AwarenessRecord
     WorldPosition last_known_position{};
     Revision revision{};
 };
-struct VisibilityResult
-{
+struct VisibilityResult {
     PerceptionVisibilityState state = PerceptionVisibilityState::Unknown;
     Fixed score_micro = 0;
     std::vector<TypeId> reasons;
     Revision revision{};
 };
-struct AudibilityResult
-{
+struct AudibilityResult {
     PerceptionAudibilityState state = PerceptionAudibilityState::NotHeard;
     Fixed score_micro = 0;
     std::vector<TypeId> reasons;
     Revision revision{};
 };
-struct SenseEvaluationResult
-{
+struct SenseEvaluationResult {
     Fixed score_micro = 0;
     PerceptionVisibilityState visibility = PerceptionVisibilityState::Unknown;
     PerceptionAudibilityState audibility = PerceptionAudibilityState::Unavailable;
@@ -266,8 +258,7 @@ struct SenseEvaluationResult
     WorldPosition perceived_position{};
     Fixed position_uncertainty_mm = 0;
 };
-struct PerceiverEvaluationSample
-{
+struct PerceiverEvaluationSample {
     GameplayObjectRef subject{};
     WorldPosition position{};
     WorldDirection forward{};
@@ -277,8 +268,7 @@ struct PerceiverEvaluationSample
     // Current stimulus-specific attenuation. 0 means fully occluded/blocked, 1'000'000 means unattenuated.
     Fixed attenuation_micro = 1'000'000;
 };
-struct PerceptionProcessingContext
-{
+struct PerceptionProcessingContext {
     GameplayTickId tick{};
     GameplayTimePoint now{};
     GameplayContext gameplay{};
@@ -286,21 +276,17 @@ struct PerceptionProcessingContext
     PerceptionProcessingContext() = default;
     explicit PerceptionProcessingContext(GameplayTickId t, GameplayTimePoint n, GameplayContext g = {},
                                          std::vector<PerceiverEvaluationSample> samples = {})
-        : tick(t), now(n), gameplay(g), perceivers(std::move(samples))
-    {
+        : tick(t), now(n), gameplay(g), perceivers(std::move(samples)) {
     }
-    [[nodiscard]] const PerceiverEvaluationSample *FindPerceiver(GameplayObjectRef subject) const noexcept
-    {
-        for (const auto &sample : perceivers)
-        {
+    [[nodiscard]] const PerceiverEvaluationSample *FindPerceiver(GameplayObjectRef subject) const noexcept {
+        for (const auto &sample : perceivers) {
             if (sample.subject == subject)
                 return &sample;
         }
         return nullptr;
     }
 };
-struct SenseEvaluationInput
-{
+struct SenseEvaluationInput {
     const SenseDefinition &definition;
     const PerceiverProfileDefinition &profile;
     const PerceiverRecord &perceiver;
@@ -308,33 +294,29 @@ struct SenseEvaluationInput
     const PerceiverEvaluationSample *sample = nullptr;
     const PerceptionProcessingContext &context;
 };
-class ISenseEvaluator
-{
+class ISenseEvaluator {
   public:
     virtual ~ISenseEvaluator() = default;
-    [[nodiscard]] virtual foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const = 0;
+    [[nodiscard]] virtual foundation::Result<SenseEvaluationResult>
+    Evaluate(const SenseEvaluationInput &input) const = 0;
 };
 
-struct PerceptionBudget
-{
+struct PerceptionBudget {
     std::uint32_t max_stimuli_per_tick = 1024;
     std::uint32_t max_perceivers_per_stimulus = 256;
     std::uint32_t max_detection_tests_per_tick = 4096;
 };
-struct PerceptionTemporalPolicy
-{
+struct PerceptionTemporalPolicy {
     GameplayDuration observation_retention{1};
     GameplayDuration awareness_decay_interval{1};
     Fixed awareness_decay_micro_per_interval = 100'000;
 };
-struct PerceptionTickBudgetState
-{
+struct PerceptionTickBudgetState {
     GameplayTickId tick{};
     std::uint32_t processed_stimuli = 0;
     std::uint32_t detection_tests = 0;
 };
-struct PerceptionChange
-{
+struct PerceptionChange {
     std::uint64_t sequence = 0;
     PerceptionChangeKind kind = PerceptionChangeKind::StimulusCreated;
     GameplayObjectRef subject{};
@@ -345,8 +327,7 @@ struct PerceptionChange
     GameplayContext context{};
     Revision revision{};
 };
-struct PerceptionChangeBatch
-{
+struct PerceptionChangeBatch {
     std::vector<PerceptionChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -355,8 +336,7 @@ struct PerceptionChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct PerceptionSnapshot
-{
+struct PerceptionSnapshot {
     std::vector<PerceiverRecord> perceivers;
     std::vector<PerceptionStimulus> stimuli;
     std::vector<PendingPerceptionObservation> pending_observations;
@@ -369,8 +349,7 @@ struct PerceptionSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct PerceptionDiagnostics
-{
+struct PerceptionDiagnostics {
     std::uint64_t perceivers = 0;
     std::uint64_t stimuli = 0;
     std::uint64_t pending_observations = 0;
@@ -386,38 +365,32 @@ struct PerceptionDiagnostics
     std::uint64_t evaluator_failures = 0;
 };
 
-struct AwarenessKey
-{
+struct AwarenessKey {
     GameplayObjectRef perceiver{};
     GameplayObjectRef target{};
     [[nodiscard]] constexpr bool operator==(const AwarenessKey &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const AwarenessKey &) const noexcept = default;
 };
-struct AwarenessKeyHash
-{
-    [[nodiscard]] std::size_t operator()(const AwarenessKey &k) const noexcept
-    {
+struct AwarenessKeyHash {
+    [[nodiscard]] std::size_t operator()(const AwarenessKey &k) const noexcept {
         const auto a = std::hash<GameplayObjectRef>{}(k.perceiver);
         const auto b = std::hash<GameplayObjectRef>{}(k.target);
         return a ^ (b + 0x9E3779B97F4A7C15ull + (a << 6u) + (a >> 2u));
     }
 };
-struct PendingKey
-{
+struct PendingKey {
     GameplayTimePoint ready_at{};
     PerceptionObservationId observation{};
     [[nodiscard]] constexpr bool operator==(const PendingKey &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PendingKey &) const noexcept = default;
 };
 
-class PerceptionService
-{
+class PerceptionService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<PerceptionService>;
 
   public:
     PerceptionService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.perception");
     }
 
@@ -425,8 +398,12 @@ class PerceptionService
     [[nodiscard]] foundation::Result<void> RegisterProfileDefinition(PerceiverProfileDefinition definition);
     [[nodiscard]] foundation::Result<void> RegisterEvaluator(SenseEvaluatorId id,
                                                              std::shared_ptr<const ISenseEvaluator> evaluator);
-    void Freeze() noexcept { frozen_ = true; }
-    [[nodiscard]] bool IsFrozen() const noexcept { return frozen_; }
+    void Freeze() noexcept {
+        frozen_ = true;
+    }
+    [[nodiscard]] bool IsFrozen() const noexcept {
+        return frozen_;
+    }
 
     [[nodiscard]] const SenseDefinition *FindSense(SenseTypeId id) const noexcept;
     [[nodiscard]] const PerceiverProfileDefinition *FindProfileDefinition(PerceiverProfileId id) const noexcept;
@@ -437,8 +414,8 @@ class PerceptionService
 
     [[nodiscard]] foundation::Result<PerceptionStimulusId> CreateStimulus(PerceptionStimulus stimulus);
     [[nodiscard]] foundation::Result<void> ExpireStimuli(GameplayTimePoint now, GameplayContext context = {});
-    [[nodiscard]] foundation::Result<std::vector<PerceptionObservation>> ProcessStimulus(
-        PerceptionStimulusId stimulus, const PerceptionProcessingContext &context);
+    [[nodiscard]] foundation::Result<std::vector<PerceptionObservation>>
+    ProcessStimulus(PerceptionStimulusId stimulus, const PerceptionProcessingContext &context);
     [[nodiscard]] foundation::Result<std::vector<PerceptionObservation>> AdvanceTime(GameplayTimePoint now,
                                                                                      GameplayContext context = {});
 
@@ -447,62 +424,70 @@ class PerceptionService
                                                       WorldPosition target_position,
                                                       Fixed stimulus_strength_micro = 1'000'000) const;
     [[nodiscard]] AudibilityResult EvaluateAudibility(GameplayObjectRef perceiver, PerceptionStimulusId stimulus,
-                                                       const PerceiverEvaluationSample &sample) const;
+                                                      const PerceiverEvaluationSample &sample) const;
 
-    void SetBudget(PerceptionBudget budget) noexcept { budget_ = budget; }
-    void SetTemporalPolicy(PerceptionTemporalPolicy policy) noexcept { temporal_policy_ = policy; }
-    void SetChangeJournalCapacity(std::size_t capacity) noexcept { change_capacity_ = std::max<std::size_t>(1, capacity); }
+    void SetBudget(PerceptionBudget budget) noexcept {
+        budget_ = budget;
+    }
+    void SetTemporalPolicy(PerceptionTemporalPolicy policy) noexcept {
+        temporal_policy_ = policy;
+    }
+    void SetChangeJournalCapacity(std::size_t capacity) noexcept {
+        change_capacity_ = std::max<std::size_t>(1, capacity);
+    }
 
     [[nodiscard]] const PerceptionStimulus *FindStimulus(PerceptionStimulusId id) const noexcept;
     [[nodiscard]] const AwarenessRecord *GetAwareness(GameplayObjectRef perceiver,
                                                       GameplayObjectRef target) const noexcept;
     [[nodiscard]] std::vector<PerceptionStimulus> FindStimuliInArea(GameplayObjectRef area) const;
     [[nodiscard]] std::vector<PerceptionObservation> FindObservationsByPerceiver(GameplayObjectRef perceiver) const;
-    [[nodiscard]] std::vector<PerceptionObservation> FindActiveObservations(GameplayObjectRef perceiver, GameplayTimePoint now) const;
-    private:
-        [[nodiscard]] PerceptionChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] PerceptionChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+    [[nodiscard]] std::vector<PerceptionObservation> FindActiveObservations(GameplayObjectRef perceiver,
+                                                                            GameplayTimePoint now) const;
+
+  private:
+    [[nodiscard]] PerceptionChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] PerceptionChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] PerceptionSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(PerceptionSnapshot snapshot);
     [[nodiscard]] PerceptionDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept { return revision_; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
+        return revision_;
+    }
 
   private:
     [[nodiscard]] bool CanAdvanceRevision(std::size_t count = 1) const noexcept;
     [[nodiscard]] bool CanRecordChanges(std::size_t count = 1) const noexcept;
-    void Bump() noexcept { ++revision_.value; }
+    void Bump() noexcept {
+        ++revision_.value;
+    }
     void Record(PerceptionChange change);
     void EnsureBudgetEpoch(GameplayTickId tick) noexcept;
-    [[nodiscard]] foundation::Result<SenseEvaluationResult> EvaluateSense(const SenseDefinition &definition,
-                                                                          const PerceiverProfileDefinition &profile,
-                                                                          const PerceiverRecord &perceiver,
-                                                                          const PerceptionStimulus &stimulus,
-                                                                          const PerceiverEvaluationSample *sample,
-                                                                          const PerceptionProcessingContext &context) const;
+    [[nodiscard]] foundation::Result<SenseEvaluationResult>
+    EvaluateSense(const SenseDefinition &definition, const PerceiverProfileDefinition &profile,
+                  const PerceiverRecord &perceiver, const PerceptionStimulus &stimulus,
+                  const PerceiverEvaluationSample *sample, const PerceptionProcessingContext &context) const;
     [[nodiscard]] SenseEvaluationResult EvaluateBuiltIn(const SenseDefinition &definition,
                                                         const PerceiverEvaluationSample &sample,
                                                         const PerceptionStimulus &stimulus) const noexcept;
     [[nodiscard]] foundation::Result<void> ActivateObservation(PendingPerceptionObservation pending,
-                                                              GameplayContext context,
-                                                              std::vector<PerceptionObservation> *activated);
+                                                               GameplayContext context,
+                                                               std::vector<PerceptionObservation> *activated);
     [[nodiscard]] foundation::Result<void> ExpireObservations(GameplayTimePoint now, GameplayContext context);
     [[nodiscard]] foundation::Result<void> DecayAwareness(GameplayTimePoint now, GameplayContext context);
     void CleanupUnaware();

@@ -3,18 +3,14 @@
 #include <cstdlib>
 #include <utility>
 
-namespace
-{
-void Check(bool condition, int code)
-{
-    if (!condition)
-    {
+namespace {
+void Check(bool condition, int code) {
+    if (!condition) {
         std::exit(code);
     }
 }
 
-struct MutationState
-{
+struct MutationState {
     int value{0};
     std::size_t payload_size{0};
 
@@ -22,8 +18,7 @@ struct MutationState
 };
 } // namespace
 
-int main()
-{
+int main() {
     using namespace epidemic::tests;
 
     using pre_state::StateFacet;

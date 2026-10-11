@@ -524,3 +524,329 @@ class TraversalService
 };
 } // namespace epidemic::gameplay::traversal
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `TraversalMaterializationPolicy`: `AbstractCapable`, `RequiresMaterialized`, `RequiresRuntimeProjection`
+- `TraversalRouteLifetime`: `Persistent`, `Session`, `Transient`
+- `TraversalSessionState`: `Active`, `Suspended`, `Completed`, `Cancelled`, `Failed`
+- `TraversalChangeKind`: `ProfileAssigned`, `ModeChanged`, `RequestRejected`, `SessionStarted`, `SessionCompleted`, `SessionCancelled`, `CarrierBoarded`, `CarrierDisembarked`, `CapabilityGranted`, `CapabilityRevoked`, `SessionSuspended`, `SessionResumed`, `SessionFailed`, `RouteRegistered`, `RouteRemoved`, `StateRemoved`
+- `TraversalResultKind`: `Accepted`, `Rejected`, `NoOp`
+
+### Состав типов и операции
+
+#### `TraversalModeId` (строка заголовка 19)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalModeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalModeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalModeId &) const noexcept = default;
+```
+
+#### `TraversalProfileId` (строка заголовка 33)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalProfileId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalProfileId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalProfileId &) const noexcept = default;
+```
+
+#### `TraversalSessionId` (строка заголовка 47)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalSessionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+static constexpr TraversalSessionId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalSessionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalSessionId &) const noexcept = default;
+```
+
+#### `TraversalRouteId` (строка заголовка 65)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalRouteId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalRouteId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalRouteId &) const noexcept = default;
+```
+
+#### `TraversalCapabilityId` (строка заголовка 79)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalCapabilityId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalCapabilityId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalCapabilityId &) const noexcept = default;
+```
+
+#### `TraversalCapabilityGrantId` (строка заголовка 93)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const TraversalCapabilityGrantId &) const noexcept = default;
+```
+
+#### `TraversalCarrierRoleId` (строка заголовка 100)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalCarrierRoleId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalCarrierRoleId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalCarrierRoleId &) const noexcept = default;
+```
+
+#### `TraversalReasonId` (строка заголовка 114)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr TraversalReasonId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalReasonId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalReasonId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 129)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 131)
+
+#### `RefHash` (строка заголовка 136)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(GameplayObjectRef ref) const noexcept;
+```
+
+#### `WorldPosition` (строка заголовка 145)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed x_mm = 0, y_mm = 0, z_mm = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const WorldPosition &) const noexcept = default;
+```
+
+#### `TraversalModeDefinition` (строка заголовка 198)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `Fixed required_capability_parameter_micro = 0`
+- `TraversalMaterializationPolicy materialization_policy = TraversalMaterializationPolicy::AbstractCapable`
+- `Fixed base_speed_micro = 1'000'000`
+- `Fixed acceleration_modifier_micro = 1'000'000`
+
+#### `TraversalCapabilityValue` (строка заголовка 210)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed parameter_micro = 1'000'000`
+
+Публичные сигнатуры операций:
+
+```cpp
+constexpr TraversalCapabilityValue() noexcept = default;
+constexpr TraversalCapabilityValue(TraversalCapabilityId capability, Fixed parameter = 1'000'000) noexcept : id(capability), parameter_micro(parameter);
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const TraversalCapabilityValue &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const TraversalCapabilityValue &) const noexcept = default;
+```
+
+#### `TraversalCapabilityGrant` (строка заголовка 230)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed parameter_micro = 1'000'000`
+- `bool persistent = true`
+
+#### `ITraversalMaterializationProvider` (строка заголовка 242)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ITraversalMaterializationProvider() = default;
+[[nodiscard]] virtual bool IsMaterialized(GameplayObjectRef subject) const noexcept = 0;
+[[nodiscard]] virtual bool HasRuntimeProjection(GameplayObjectRef subject) const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `TraversalProfile` (строка заголовка 250)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `std::vector<TraversalModeId> allowed_modes`
+- `std::vector<TraversalCapabilityValue> capabilities`
+
+#### `TraversalRoute` (строка заголовка 270)
+
+Публичные поля и значения по умолчанию:
+
+- `TraversalRouteLifetime lifetime = TraversalRouteLifetime::Persistent`
+- `std::vector<std::byte> payload`
+
+#### `TraversalSession` (строка заголовка 283)
+
+Публичные поля и значения по умолчанию:
+
+- `TraversalSessionState state = TraversalSessionState::Active`
+
+#### `TraversalResult` (строка заголовка 319)
+
+Публичные поля и значения по умолчанию:
+
+- `TraversalResultKind kind = TraversalResultKind::Rejected`
+
+#### `TraversalChange` (строка заголовка 325)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `TraversalChangeKind kind = TraversalChangeKind::ProfileAssigned`
+
+#### `TraversalChangeBatch` (строка заголовка 339)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<TraversalChange> changes`
+
+#### `TraversalSnapshot` (строка заголовка 348)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<TraversalState> states`
+- `std::vector<TraversalSession> sessions`
+- `std::vector<TraversalRoute> routes`
+- `std::vector<TraversalCapabilityGrant> capability_grants`
+- `std::vector<TraversalCarrierBinding> carrier_bindings`
+- `std::vector<TraversalChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `TraversalDiagnostics` (строка заголовка 364)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t profiles = 0, modes = 0, states = 0, active_sessions = 0, carrier_bindings = 0, mode_changes = 0, rejected_mode_changes = 0, boarding_ops = 0`
+
+#### `TraversalService` (строка заголовка 370)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<TraversalModeId, TraversalModeDefinition, IdHash> modes_`, `std::unordered_map<TraversalProfileId, TraversalProfile, IdHash> profiles_`, `std::unordered_map<GameplayObjectRef, TraversalState, RefHash> states_`, `std::unordered_map<TraversalSessionId, TraversalSession, IdHash> sessions_`, `std::unordered_map<TraversalRouteId, TraversalRoute, IdHash> routes_`, `std::unordered_map<TraversalCapabilityGrantId, TraversalCapabilityGrant, IdHash> capability_gra`, `std::unordered_map<GameplayObjectRef, TraversalCarrierBinding, RefHash> carrier_by_passenger_`, `MonotonicIdGenerator<GameplayObjectId> session_ids_`, `MonotonicIdGenerator<GameplayObjectId> route_ids_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+TraversalService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterMode(TraversalModeDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterProfile(TraversalProfile profile);
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] const TraversalModeDefinition *FindMode(TraversalModeId id) const noexcept;
+[[nodiscard]] const TraversalProfile *FindProfile(TraversalProfileId id) const noexcept;
+void SetMaterializationProvider(const ITraversalMaterializationProvider *provider) noexcept;
+[[nodiscard]] bool HasCapability(GameplayObjectRef subject, TraversalCapabilityId capability, Fixed min_parameter_micro = 0) const noexcept;
+[[nodiscard]] Fixed EffectiveCapabilityParameter(GameplayObjectRef subject, TraversalCapabilityId capability) const noexcept;
+[[nodiscard]] foundation::Result<TraversalResult> ChangeMode(ChangeTraversalModeRequest request);
+[[nodiscard]] TraversalResult CanUseMode(GameplayObjectRef subject, TraversalModeId mode) const;
+[[nodiscard]] foundation::Result<TraversalRouteId> RegisterRoute(TraversalRoute route);
+[[nodiscard]] const TraversalRoute *FindRoute(TraversalRouteId id) const noexcept;
+[[nodiscard]] const TraversalState *FindState(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] const TraversalSession *FindSession(TraversalSessionId id) const noexcept;
+[[nodiscard]] std::vector<TraversalState> FindSubjectsUsingMode(TraversalModeId mode) const;
+[[nodiscard]] std::vector<TraversalCarrierBinding> FindCarrierPassengers(GameplayObjectRef carrier) const;
+[[nodiscard]] TraversalChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] TraversalSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(TraversalSnapshot snapshot);
+[[nodiscard]] TraversalDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `TraversalService` | `TraversalService::TraversalService` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:125` |
+| `RegisterMode` | `TraversalService::RegisterMode` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:131` |
+| `RegisterProfile` | `TraversalService::RegisterProfile` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:150` |
+| `FindMode` | `TraversalService::FindMode` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:206` |
+| `FindProfile` | `TraversalService::FindProfile` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:212` |
+| `EffectiveCapabilityParameter` | `TraversalService::EffectiveCapabilityParameter` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:312` |
+| `HasCapability` | `TraversalService::HasCapability` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:332` |
+| `CanUseMode` | `TraversalService::CanUseMode` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:429` |
+| `ChangeMode` | `TraversalService::ChangeMode` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:452` |
+| `RegisterRoute` | `TraversalService::RegisterRoute` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:484` |
+| `FindRoute` | `TraversalService::FindRoute` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:562` |
+| `FindState` | `TraversalService::FindState` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:783` |
+| `FindSession` | `TraversalService::FindSession` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:793` |
+| `FindSubjectsUsingMode` | `TraversalService::FindSubjectsUsingMode` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:820` |
+| `FindCarrierPassengers` | `TraversalService::FindCarrierPassengers` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:833` |
+| `CaptureSnapshot` | `TraversalService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Traversal/src/traversal.cpp:875` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterMode`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_navigation_construction_integration_tests.cpp:55`
+- `RegisterProfile`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_navigation_construction_integration_tests.cpp:62`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_navigation_construction_integration_tests.cpp:64`
+- `FindSession`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_navigation_construction_integration_tests.cpp:209`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_navigation_construction_integration_tests.cpp:213`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:18`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/traversalnavigationconstructionintegration_save_participant_tests.cpp:19`
+- `IsFrozen`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_tests.cpp:128`
+- `CanUseMode`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_tests.cpp:133`
+- `EffectiveCapabilityParameter`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_tests.cpp:144`
+- `ChangeMode`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_tests.cpp:153`
+- `FindCarrierPassengers`: `EngineFramework/DevelopmentInfrastructure/Tests/traversal_tests.cpp:160`
+

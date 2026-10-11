@@ -5,10 +5,8 @@
 
 #include <unordered_map>
 
-namespace epidemic::runtime
-{
-class EnvironmentRuntime final : public IEnvironmentRuntime
-{
+namespace epidemic::runtime {
+class EnvironmentRuntime final : public IEnvironmentRuntime {
   public:
     [[nodiscard]] foundation::Result<WeatherState> GetWeather(RegionId region) const override;
     [[nodiscard]] foundation::Result<SeasonState> GetSeason(RegionId region) const override;
@@ -19,13 +17,15 @@ class EnvironmentRuntime final : public IEnvironmentRuntime
     [[nodiscard]] std::uint64_t GetRevision() const override;
     [[nodiscard]] foundation::Result<std::uint64_t> GetRegionRevision(RegionId region) const override;
 
-    [[nodiscard]] foundation::Result<void> RegisterRegionEnvironment(RegionId region, WeatherState weather, SeasonState season, ClimateProfile climate) override;
+    [[nodiscard]] foundation::Result<void> RegisterRegionEnvironment(RegionId region, WeatherState weather,
+                                                                     SeasonState season,
+                                                                     ClimateProfile climate) override;
     [[nodiscard]] foundation::Result<void> SetWeather(RegionId region, WeatherState weather) override;
     [[nodiscard]] foundation::Result<void> SetSeason(RegionId region, SeasonState season) override;
     [[nodiscard]] foundation::Result<void> SetClimateProfile(RegionId region, ClimateProfile climate) override;
     [[nodiscard]] foundation::Result<void> SetSurfaceState(SurfaceState state) override;
-    [[nodiscard]] foundation::Result<void> ApplyUpdate(const EnvironmentStateUpdate& update) override;
-    [[nodiscard]] foundation::Result<void> Update(const EnvironmentUpdateInput& input) override;
+    [[nodiscard]] foundation::Result<void> ApplyUpdate(const EnvironmentStateUpdate &update) override;
+    [[nodiscard]] foundation::Result<void> Update(const EnvironmentUpdateInput &input) override;
     void SetUpdatePolicy(std::shared_ptr<const IEnvironmentUpdatePolicy> policy) override;
     void FreezeRegistration() noexcept override;
     [[nodiscard]] bool IsRegistrationFrozen() const noexcept override;
@@ -35,8 +35,7 @@ class EnvironmentRuntime final : public IEnvironmentRuntime
     void FailNextBatchValidationAllocationForTesting() noexcept;
 
   private:
-    struct RegionEnvironmentRecord
-    {
+    struct RegionEnvironmentRecord {
         WeatherState weather{};
         SeasonState season{};
         ClimateProfile climate{};
@@ -47,7 +46,8 @@ class EnvironmentRuntime final : public IEnvironmentRuntime
     [[nodiscard]] foundation::Result<void> EnsureRegisteredRegion(RegionId region) const;
     [[nodiscard]] std::uint64_t LookupRegionRevision(RegionId region) const;
     [[nodiscard]] foundation::Result<std::uint64_t> PeekNextRevision() const;
-    [[nodiscard]] foundation::Result<void> ValidateSurfaceMutation(const SurfaceState* existing, const SurfaceState& candidate) const;
+    [[nodiscard]] foundation::Result<void> ValidateSurfaceMutation(const SurfaceState *existing,
+                                                                   const SurfaceState &candidate) const;
     [[nodiscard]] bool ConsumeAllocationFailureForTesting() noexcept;
     [[nodiscard]] bool ConsumeBatchValidationAllocationFailureForTesting() noexcept;
 

@@ -5,20 +5,16 @@
 #include <string>
 #include <utility>
 
-namespace epidemic::runtime
-{
-enum class AssetLocationKind
-{
+namespace epidemic::runtime {
+enum class AssetLocationKind {
     FilePath,
     PackageEntry,
     VirtualPath,
     Generated,
 };
 
-[[nodiscard]] constexpr bool IsValidAssetLocationKind(AssetLocationKind value) noexcept
-{
-    switch (value)
-    {
+[[nodiscard]] constexpr bool IsValidAssetLocationKind(AssetLocationKind value) noexcept {
+    switch (value) {
     case AssetLocationKind::FilePath:
     case AssetLocationKind::PackageEntry:
     case AssetLocationKind::VirtualPath:
@@ -28,8 +24,7 @@ enum class AssetLocationKind
     return false;
 }
 
-struct AssetLocation
-{
+struct AssetLocation {
     AssetLocationKind kind = AssetLocationKind::FilePath;
     foundation::StringId mount_id{};
     std::string path;
@@ -37,12 +32,13 @@ struct AssetLocation
 
     AssetLocation() = default;
     AssetLocation(AssetLocationKind location_kind, std::string location_path)
-        : kind(location_kind), path(std::move(location_path))
-    {
+        : kind(location_kind), path(std::move(location_path)) {
     }
 
-    [[nodiscard]] bool Empty() const noexcept { return path.empty(); }
-    [[nodiscard]] bool operator==(const AssetLocation&) const = default;
+    [[nodiscard]] bool Empty() const noexcept {
+        return path.empty();
+    }
+    [[nodiscard]] bool operator==(const AssetLocation &) const = default;
 };
 
 // Canonicalizes only lexical separators and dot segments. It performs no I/O
@@ -54,5 +50,5 @@ struct AssetLocation
 // NUL and no host-rooted, UNC/device or Windows drive-relative form. Package
 // and virtual locations require mount_id. Generated locations require
 // generator_id. Extra fields are metadata only and do not imply I/O ownership.
-[[nodiscard]] bool IsValidAssetLocation(const AssetLocation& location) noexcept;
+[[nodiscard]] bool IsValidAssetLocation(const AssetLocation &location) noexcept;
 } // namespace epidemic::runtime

@@ -3,13 +3,11 @@
 #include <Epidemic/Foundation/result.h>
 #include <Epidemic/RHI/descriptors.h>
 
-namespace epidemic::rhi
-{
+namespace epidemic::rhi {
 // This file defines the swap-chain abstraction used by the baseline RHI.
 // Swap chains own presentation buffers and expose resize/present operations through Result.
 
-class IRhiSwapChain
-{
+class IRhiSwapChain {
   public:
     virtual ~IRhiSwapChain() = default;
 

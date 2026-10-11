@@ -4,58 +4,47 @@
 #include <iostream>
 #include <stdexcept>
 #define CHECK(expr)                                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        if (!(expr))                                                                                                   \
-        {                                                                                                              \
-            std::cerr << "CHECK failed at line " << __LINE__ << ": " #expr << "\\n";                              \
+    do {                                                                                                               \
+        if (!(expr)) {                                                                                                 \
+            std::cerr << "CHECK failed at line " << __LINE__ << ": " #expr << "\\n";                                   \
             std::exit(1);                                                                                              \
         }                                                                                                              \
     } while (false)
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::interaction;
-struct Provider final : IInteractionProvider
-{
+struct Provider final : IInteractionProvider {
     InteractionTypeId type;
     InteractionProviderId id = InteractionProviderId::FromString("test.provider");
     bool throw_on_collect = false;
-    InteractionProviderId Id() const noexcept override
-    {
+    InteractionProviderId Id() const noexcept override {
         return id;
     }
-    std::vector<InteractionCandidate> Collect(const InteractionContext &c) const override
-    {
-        if (throw_on_collect) throw std::runtime_error("provider failed");
+    std::vector<InteractionCandidate> Collect(const InteractionContext &c) const override {
+        if (throw_on_collect)
+            throw std::runtime_error("provider failed");
         return {{type, c.actor, c.target, id, 10, InteractionAvailability::Available, {}, {}}};
     }
 };
-struct Exec final : IInteractionExecutor
-{
+struct Exec final : IInteractionExecutor {
     int commits = 0;
-    epidemic::foundation::Result<void> Validate(const InteractionPlan &) const override
-    {
+    epidemic::foundation::Result<void> Validate(const InteractionPlan &) const override {
         return epidemic::foundation::Result<void>::Success();
     }
-    epidemic::foundation::Result<void> Commit(const InteractionPlan &, InteractionExecutionId) noexcept override
-    {
+    epidemic::foundation::Result<void> Commit(const InteractionPlan &, InteractionExecutionId) noexcept override {
         ++commits;
         return epidemic::foundation::Result<void>::Success();
     }
 };
-struct State final : IInteractionStateProvider
-{
+struct State final : IInteractionStateProvider {
     bool materialized = true;
-    bool IsMaterialized(GameplayObjectRef) const override
-    {
+    bool IsMaterialized(GameplayObjectRef) const override {
         return materialized;
     }
-    Revision RevisionOf(GameplayObjectRef) const override
-    {
+    Revision RevisionOf(GameplayObjectRef) const override {
         return Revision{2};
     }
 };
-int main()
-{
+int main() {
     InteractionService s;
     auto type = InteractionTypeId::FromString("game.use");
     InteractionDefinition d;
@@ -116,8 +105,8 @@ int main()
     CHECK(x.commits == 1);
     CHECK(s.FindActive(c.actor).empty());
     const auto restore_before = s.CaptureSnapshot();
-    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit})
-    {
+    for (const auto fault :
+         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         CHECK(!s.RestoreSnapshot(active_restore_target));
         const auto restore_after = s.CaptureSnapshot();
@@ -128,5 +117,3 @@ int main()
     }
     return 0;
 }
-
-

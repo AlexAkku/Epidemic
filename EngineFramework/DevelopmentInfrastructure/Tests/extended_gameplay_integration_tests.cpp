@@ -15,29 +15,23 @@ namespace ownership = epidemic::gameplay::ownership;
 namespace processes = epidemic::gameplay::processes;
 namespace integration = epidemic::gameplay::integration;
 
-namespace epidemic::gameplay::integration::test_support
-{
+namespace epidemic::gameplay::integration::test_support {
 void FailNextTradePublicationForTest() noexcept;
 void FailAfterTradeGoodsReservationsForTest(std::size_t accepted_goods) noexcept;
 void ResetTradeCoordinatorFailureSeamsForTest() noexcept;
 }
 
-namespace
-{
-void Check(bool value, const char* message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char* domain, const char* id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
-template<class T> std::vector<std::byte> Bytes(const T& value)
-{
+template <class T> std::vector<std::byte> Bytes(const T &value) {
     static_assert(std::is_trivially_copyable_v<T>);
     std::vector<std::byte> out(sizeof(T));
     std::memcpy(out.data(), &value, sizeof(T));
@@ -45,8 +39,7 @@ template<class T> std::vector<std::byte> Bytes(const T& value)
 }
 }
 
-int main()
-{
+int main() {
     const auto seller = Ref("actor", "seller");
     const auto buyer = Ref("actor", "buyer");
     const auto third_party = Ref("actor", "third");
@@ -103,7 +96,8 @@ int main()
     hand.accepted_tags.Add(TagId::FromString("item.weapon"));
     auto hand_id = equipment_service.AddSlot(profile_id.Value(), hand);
     Check(static_cast<bool>(hand_id), "create equipment slot");
-    auto equip_plan = equipment_service.PrepareEquip(seller, equipment::EquipmentItemId{sword_id.Value().value}, {hand_id.Value()});
+    auto equip_plan =
+        equipment_service.PrepareEquip(seller, equipment::EquipmentItemId{sword_id.Value().value}, {hand_id.Value()});
     Check(static_cast<bool>(equip_plan), "prepare equipment through Items adapter");
     auto binding = equipment_service.CommitEquip(equip_plan.Value());
     Check(static_cast<bool>(binding), "commit equipment through Items adapter");
@@ -117,15 +111,18 @@ int main()
     broken_sword.location.container = seller_container_id.Value();
     auto broken_sword_id = item_service.CreateItem(broken_sword);
     Check(static_cast<bool>(broken_sword_id), "create second sword");
-    auto broken_plan = equipment_service.PrepareEquip(seller, equipment::EquipmentItemId{broken_sword_id.Value().value}, {hand_id.Value()});
+    auto broken_plan = equipment_service.PrepareEquip(seller, equipment::EquipmentItemId{broken_sword_id.Value().value},
+                                                      {hand_id.Value()});
     Check(static_cast<bool>(broken_plan), "prepare second equipment binding");
     auto broken_binding = equipment_service.CommitEquip(broken_plan.Value());
     Check(static_cast<bool>(broken_binding), "commit second equipment binding");
     const auto backing = item_service.FindReservations(broken_sword_id.Value());
     Check(backing.size() == 1, "second equipment binding has one backing reservation");
-    Check(static_cast<bool>(item_service.ReleaseReservation(backing.front().id)), "simulate missing backing reservation");
+    Check(static_cast<bool>(item_service.ReleaseReservation(backing.front().id)),
+          "simulate missing backing reservation");
     Check(!equipment_service.Unequip(broken_binding.Value()), "unequip detects missing backing reservation");
-    Check(equipment_service.FindBinding(broken_binding.Value()) != nullptr, "failed release preserves equipment binding");
+    Check(equipment_service.FindBinding(broken_binding.Value()) != nullptr,
+          "failed release preserves equipment binding");
 
     items::ItemInstance ore;
     ore.definition = ore_definition_id.Value();
@@ -160,7 +157,8 @@ int main()
     output.id = processes::ProcessOutputId::FromString("output.ingot");
     output.type = integration::ItemProcessOutputHandler::OutputType();
     output.amount = 1;
-    output.payload = integration::EncodeProcessItemOutputPayload({ingot_definition_id.Value(), seller_container_id.Value()});
+    output.payload =
+        integration::EncodeProcessItemOutputPayload({ingot_definition_id.Value(), seller_container_id.Value()});
     process_recipe.outputs.push_back(output);
     auto recipe_id = process_service.RegisterRecipe(process_recipe);
     Check(static_cast<bool>(recipe_id), "register item process recipe");
@@ -174,10 +172,12 @@ int main()
     Check(item_service.FindItem(ore_id.Value())->quantity == 1, "process consumed item reservation");
     auto ingots = item_service.FindItemsByDefinition(ingot_definition_id.Value());
     Check(ingots.size() == 1, "process produced one item output");
-    const auto* process_instance = process_service.FindInstance(process_id.Value());
-    Check(process_instance && !process_instance->prepared_outputs.empty() && process_instance->prepared_outputs.front().provider_token.IsPortable(),
+    const auto *process_instance = process_service.FindInstance(process_id.Value());
+    Check(process_instance && !process_instance->prepared_outputs.empty() &&
+              process_instance->prepared_outputs.front().provider_token.IsPortable(),
           "process output token is portable");
-    Check(process_instance && !process_instance->reserved_inputs.empty() && process_instance->reserved_inputs.front().provider_token.IsPortable(),
+    Check(process_instance && !process_instance->reserved_inputs.empty() &&
+              process_instance->reserved_inputs.front().provider_token.IsPortable(),
           "process reservation token is portable");
     Check(static_cast<bool>(item_output.Commit(process_instance->prepared_outputs.front(), *process_instance, {})),
           "replaying committed process output is idempotent");
@@ -222,8 +222,10 @@ int main()
     assertion_payload.subject = seller;
     assertion.payload = Bytes(assertion_payload);
     Check(static_cast<bool>(dialogue_service.RegisterConsequence(assertion)), "register assert knowledge consequence");
-    Check(static_cast<bool>(dialogue_service.RegisterConsequenceHandler(share.type, knowledge_handler)), "register share knowledge handler");
-    Check(static_cast<bool>(dialogue_service.RegisterConsequenceHandler(assertion.type, knowledge_handler)), "register assert knowledge handler");
+    Check(static_cast<bool>(dialogue_service.RegisterConsequenceHandler(share.type, knowledge_handler)),
+          "register share knowledge handler");
+    Check(static_cast<bool>(dialogue_service.RegisterConsequenceHandler(assertion.type, knowledge_handler)),
+          "register assert knowledge handler");
     dialogue::ConversationDefinition conversation;
     conversation.canonical_name = "conversation.integration.tell";
     conversation.entry_node = dialogue::DialogueNodeId::FromString("node.tell");
@@ -240,9 +242,11 @@ int main()
     const auto executed = dialogue_service.ExecutePendingConsequences();
     Check(executed.size() == 2, "execute explicit share and assertion consequences");
     const auto shared = knowledge_service.FindKnowledgeByTopic(buyer, source_knowledge.topic.id);
-    Check(shared.size() == 1 && shared.front().derived_from == source_record.Value(), "dialogue share preserves knowledge provenance");
+    Check(shared.size() == 1 && shared.front().derived_from == source_record.Value(),
+          "dialogue share preserves knowledge provenance");
     const auto asserted = knowledge_service.FindKnowledgeByTopic(buyer, assertion_payload.topic);
-    Check(asserted.size() == 1 && asserted.front().source == seller, "dialogue assertion records speaker as authored source");
+    Check(asserted.size() == 1 && asserted.front().source == seller,
+          "dialogue assertion records speaker as authored source");
 
     ownership::OwnershipService ownership_service;
     ownership::OwnershipRecord sword_ownership;
@@ -282,7 +286,8 @@ int main()
         integration::CoordinatedTradePlan plan;
         plan.money.buyer = buyer;
         plan.money.seller = seller;
-        plan.money.monetary_transfers.push_back({buyer_account_id.Value(), seller_account_id.Value(), 1, coin_id.Value()});
+        plan.money.monetary_transfers.push_back(
+            {buyer_account_id.Value(), seller_account_id.Value(), 1, coin_id.Value()});
         plan.goods.push_back({item, destination, seller, buyer});
         return plan;
     };
@@ -305,7 +310,8 @@ int main()
     duplicate_probe_owner.property = integration::ItemPropertyRef(duplicate_probe_id.Value());
     duplicate_probe_owner.owner = seller;
     duplicate_probe_owner.domain = ownership::PropertyDomainId::FromString("personal");
-    Check(static_cast<bool>(ownership_service.AssignOwnership(duplicate_probe_owner)), "assign duplicate trade probe ownership");
+    Check(static_cast<bool>(ownership_service.AssignOwnership(duplicate_probe_owner)),
+          "assign duplicate trade probe ownership");
 
     auto duplicate_plan = MakeValidationPlan(duplicate_probe_id.Value(), buyer_container_id.Value());
     duplicate_plan.goods.push_back(duplicate_plan.goods.front());
@@ -325,8 +331,10 @@ int main()
     unavailable_probe_owner.property = integration::ItemPropertyRef(unavailable_probe_id.Value());
     unavailable_probe_owner.owner = seller;
     unavailable_probe_owner.domain = ownership::PropertyDomainId::FromString("personal");
-    Check(static_cast<bool>(ownership_service.AssignOwnership(unavailable_probe_owner)), "assign unavailable trade probe ownership");
-    auto held_probe = item_service.ReserveItem(unavailable_probe_id.Value(), 1, seller, TypeId::FromString("test.hold"));
+    Check(static_cast<bool>(ownership_service.AssignOwnership(unavailable_probe_owner)),
+          "assign unavailable trade probe ownership");
+    auto held_probe =
+        item_service.ReserveItem(unavailable_probe_id.Value(), 1, seller, TypeId::FromString("test.hold"));
     Check(static_cast<bool>(held_probe), "reserve unavailable trade probe");
     auto unavailable_plan = MakeValidationPlan(unavailable_probe_id.Value(), buyer_container_id.Value());
     Check(!validation_trade.Prepare(std::move(unavailable_plan)), "G4-EXTINT-001 unavailable goods rejected");
@@ -334,7 +342,8 @@ int main()
     Check(validation_after.executions.size() == validation_before.executions.size() &&
               validation_after.execution_ids.next == validation_before.execution_ids.next,
           "G4-EXTINT-001 unavailable goods preserve execution generator");
-    Check(static_cast<bool>(item_service.ReleaseReservation(held_probe.Value())), "release unavailable trade probe hold");
+    Check(static_cast<bool>(item_service.ReleaseReservation(held_probe.Value())),
+          "release unavailable trade probe hold");
 
     items::ItemInstance owner_mismatch_probe;
     owner_mismatch_probe.definition = ingot_definition_id.Value();
@@ -346,7 +355,8 @@ int main()
     owner_mismatch_probe_owner.property = integration::ItemPropertyRef(owner_mismatch_probe_id.Value());
     owner_mismatch_probe_owner.owner = third_party;
     owner_mismatch_probe_owner.domain = ownership::PropertyDomainId::FromString("personal");
-    Check(static_cast<bool>(ownership_service.AssignOwnership(owner_mismatch_probe_owner)), "assign mismatched trade probe ownership");
+    Check(static_cast<bool>(ownership_service.AssignOwnership(owner_mismatch_probe_owner)),
+          "assign mismatched trade probe ownership");
     auto owner_mismatch_plan = MakeValidationPlan(owner_mismatch_probe_id.Value(), buyer_container_id.Value());
     Check(!validation_trade.Prepare(std::move(owner_mismatch_plan)), "G4-EXTINT-001 ownership mismatch rejected");
     validation_after = validation_trade.CaptureSnapshot();
@@ -367,7 +377,8 @@ int main()
     publication_probe_owner.property = integration::ItemPropertyRef(publication_probe_id.Value());
     publication_probe_owner.owner = seller;
     publication_probe_owner.domain = ownership::PropertyDomainId::FromString("personal");
-    Check(static_cast<bool>(ownership_service.AssignOwnership(publication_probe_owner)), "assign trade publication probe ownership");
+    Check(static_cast<bool>(ownership_service.AssignOwnership(publication_probe_owner)),
+          "assign trade publication probe ownership");
 
     integration::TradeCoordinator publication_trade(economy_service, item_service, ownership_service);
     const auto publication_before = publication_trade.CaptureSnapshot();
@@ -375,7 +386,8 @@ int main()
     const auto economy_before_publication = economy_service.CaptureSnapshot();
     integration::test_support::FailNextTradePublicationForTest();
     auto publication_plan = MakeValidationPlan(publication_probe_id.Value(), buyer_container_id.Value());
-    Check(!publication_trade.Prepare(std::move(publication_plan)), "G4-EXTINT-002 local publication failure is surfaced");
+    Check(!publication_trade.Prepare(std::move(publication_plan)),
+          "G4-EXTINT-002 local publication failure is surfaced");
     const auto publication_after = publication_trade.CaptureSnapshot();
     const auto items_after_publication = item_service.CaptureSnapshot();
     const auto economy_after_publication = economy_service.CaptureSnapshot();
@@ -402,8 +414,7 @@ int main()
     items::ItemInstance partial_probe_b = partial_probe_a;
     auto partial_probe_b_id = item_service.CreateItem(partial_probe_b);
     Check(static_cast<bool>(partial_probe_b_id), "create second partial trade probe");
-    for (auto item : {partial_probe_a_id.Value(), partial_probe_b_id.Value()})
-    {
+    for (auto item : {partial_probe_a_id.Value(), partial_probe_b_id.Value()}) {
         ownership::OwnershipRecord record;
         record.property = integration::ItemPropertyRef(item);
         record.owner = seller;
@@ -415,13 +426,15 @@ int main()
     integration::CoordinatedTradePlan partial_plan;
     partial_plan.money.buyer = buyer;
     partial_plan.money.seller = seller;
-    partial_plan.money.monetary_transfers.push_back({buyer_account_id.Value(), seller_account_id.Value(), 1, coin_id.Value()});
+    partial_plan.money.monetary_transfers.push_back(
+        {buyer_account_id.Value(), seller_account_id.Value(), 1, coin_id.Value()});
     partial_plan.goods.push_back({partial_probe_a_id.Value(), buyer_container_id.Value(), seller, buyer});
     partial_plan.goods.push_back({partial_probe_b_id.Value(), buyer_container_id.Value(), seller, buyer});
     integration::test_support::FailAfterTradeGoodsReservationsForTest(1);
     auto partial_execution = partial_trade.Prepare(std::move(partial_plan));
-    Check(static_cast<bool>(partial_execution), "G4-EXTINT-002 accepted external work returns durable reconciliation execution");
-    const auto* partial_record = partial_trade.FindExecution(partial_execution.Value());
+    Check(static_cast<bool>(partial_execution),
+          "G4-EXTINT-002 accepted external work returns durable reconciliation execution");
+    const auto *partial_record = partial_trade.FindExecution(partial_execution.Value());
     Check(partial_record && partial_record->state == integration::CoordinatedTradeState::ReconciliationRequired &&
               partial_record->goods.size() == 2 &&
               partial_record->goods[0].state == integration::TradeGoodsLegState::Reserved &&
@@ -451,7 +464,8 @@ int main()
     integration::CoordinatedTradePlan trade_plan;
     trade_plan.money.buyer = buyer;
     trade_plan.money.seller = seller;
-    trade_plan.money.monetary_transfers.push_back({buyer_account_id.Value(), seller_account_id.Value(), 25, coin_id.Value()});
+    trade_plan.money.monetary_transfers.push_back(
+        {buyer_account_id.Value(), seller_account_id.Value(), 25, coin_id.Value()});
     trade_plan.goods.push_back({sword_id.Value(), buyer_container_id.Value(), seller, buyer});
     auto trade_execution = trade.Prepare(std::move(trade_plan));
     Check(static_cast<bool>(trade_execution), "prepare coordinated trade saga");
@@ -463,8 +477,9 @@ int main()
     Check(static_cast<bool>(trade_result), "continue restored coordinated trade saga");
     Check(economy_service.GetBalance(buyer_account_id.Value()) == 75, "buyer money transferred");
     Check(economy_service.GetBalance(seller_account_id.Value()) == 25, "seller money transferred");
-    Check(item_service.FindItem(sword_id.Value())->location.container == buyer_container_id.Value(), "trade moved reserved item");
-    const auto* new_owner = ownership_service.GetOwner(integration::ItemPropertyRef(sword_id.Value()));
+    Check(item_service.FindItem(sword_id.Value())->location.container == buyer_container_id.Value(),
+          "trade moved reserved item");
+    const auto *new_owner = ownership_service.GetOwner(integration::ItemPropertyRef(sword_id.Value()));
     Check(new_owner && new_owner->owner == buyer, "trade transferred ownership");
     Check(static_cast<bool>(restored_trade.Continue(trade_execution.Value())), "completed trade retry is idempotent");
     Check(economy_service.GetBalance(buyer_account_id.Value()) == 75, "trade retry does not debit buyer twice");
@@ -472,14 +487,17 @@ int main()
     integration::CoordinatedTradePlan bad_parties;
     bad_parties.money.buyer = buyer;
     bad_parties.money.seller = seller;
-    bad_parties.money.monetary_transfers.push_back({buyer_account_id.Value(), seller_account_id.Value(), 1, coin_id.Value()});
+    bad_parties.money.monetary_transfers.push_back(
+        {buyer_account_id.Value(), seller_account_id.Value(), 1, coin_id.Value()});
     bad_parties.goods.push_back({ingots.front().id, buyer_container_id.Value(), third_party, buyer});
-    Check(!restored_trade.Prepare(std::move(bad_parties)), "trade rejects third-party goods owner without explicit authorization policy");
+    Check(!restored_trade.Prepare(std::move(bad_parties)),
+          "trade rejects third-party goods owner without explicit authorization policy");
 
     integration::CoordinatedTradePlan stale_trade;
     stale_trade.money.buyer = buyer;
     stale_trade.money.seller = seller;
-    stale_trade.money.monetary_transfers.push_back({buyer_account_id.Value(), seller_account_id.Value(), 5, coin_id.Value()});
+    stale_trade.money.monetary_transfers.push_back(
+        {buyer_account_id.Value(), seller_account_id.Value(), 5, coin_id.Value()});
     stale_trade.goods.push_back({ingots.front().id, buyer_container_id.Value(), seller, buyer});
     auto stale_execution = restored_trade.Prepare(std::move(stale_trade));
     Check(static_cast<bool>(stale_execution), "prepare trade used for expected ownership revision test");
@@ -494,7 +512,7 @@ int main()
     Check(!restored_trade.Continue(stale_execution.Value()), "stale ownership prevents trade commit");
     Check(item_service.FindItem(ingots.front().id)->location.container == seller_container_id.Value(),
           "stale ownership is detected before item movement");
-    const auto* stalled = restored_trade.FindExecution(stale_execution.Value());
+    const auto *stalled = restored_trade.FindExecution(stale_execution.Value());
     Check(stalled && stalled->state == integration::CoordinatedTradeState::ReconciliationRequired,
           "stale trade remains as durable reconciliation state");
     Check(static_cast<bool>(restored_trade.Cancel(stale_execution.Value())),

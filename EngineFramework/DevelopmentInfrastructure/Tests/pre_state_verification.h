@@ -10,10 +10,8 @@
 #include <utility>
 #include <vector>
 
-namespace epidemic::tests::pre_state
-{
-enum class StateFacet
-{
+namespace epidemic::tests::pre_state {
+enum class StateFacet {
     PrimaryRecords,
     RecordPayloads,
     SecondaryIndexes,
@@ -33,82 +31,63 @@ enum class StateFacet
 
 [[nodiscard]] inline std::string_view ToString(StateFacet facet) noexcept;
 
-struct FacetCheck
-{
+struct FacetCheck {
     StateFacet facet{StateFacet::PrimaryRecords};
     bool passed{false};
     std::string detail;
 };
 
-struct ComparisonReport
-{
+struct ComparisonReport {
     std::string scope;
     std::vector<FacetCheck> checks;
 
-    [[nodiscard]] bool HasFacet(StateFacet facet) const noexcept
-    {
-        for (const auto &check : checks)
-        {
-            if (check.facet == facet)
-            {
+    [[nodiscard]] bool HasFacet(StateFacet facet) const noexcept {
+        for (const auto &check : checks) {
+            if (check.facet == facet) {
                 return true;
             }
         }
         return false;
     }
 
-    [[nodiscard]] bool Passed() const noexcept
-    {
-        if (checks.empty())
-        {
+    [[nodiscard]] bool Passed() const noexcept {
+        if (checks.empty()) {
             return false;
         }
 
-        for (const auto &check : checks)
-        {
-            if (!check.passed)
-            {
+        for (const auto &check : checks) {
+            if (!check.passed) {
                 return false;
             }
         }
         return true;
     }
 
-    [[nodiscard]] bool Covers(std::initializer_list<StateFacet> required_facets) const noexcept
-    {
-        for (const auto facet : required_facets)
-        {
-            if (!HasFacet(facet))
-            {
+    [[nodiscard]] bool Covers(std::initializer_list<StateFacet> required_facets) const noexcept {
+        for (const auto facet : required_facets) {
+            if (!HasFacet(facet)) {
                 return false;
             }
         }
         return true;
     }
 
-    [[nodiscard]] bool Covers(std::span<const StateFacet> required_facets) const noexcept
-    {
-        for (const auto facet : required_facets)
-        {
-            if (!HasFacet(facet))
-            {
+    [[nodiscard]] bool Covers(std::span<const StateFacet> required_facets) const noexcept {
+        for (const auto facet : required_facets) {
+            if (!HasFacet(facet)) {
                 return false;
             }
         }
         return true;
     }
 
-    [[nodiscard]] bool PassedAndCovers(std::initializer_list<StateFacet> required_facets) const noexcept
-    {
+    [[nodiscard]] bool PassedAndCovers(std::initializer_list<StateFacet> required_facets) const noexcept {
         const auto passed = Passed();
         const auto covers = Covers(required_facets);
-        if (!passed || !covers)
-        {
+        if (!passed || !covers) {
             std::cerr << scope << " pre-state comparison failed: passed=" << passed << " covers=" << covers << '\n';
-            for (const auto &check : checks)
-            {
-                if (!check.passed)
-                {
+            for (const auto &check : checks) {
+                if (!check.passed) {
                     std::cerr << "  failed facet=" << ToString(check.facet) << " detail=" << check.detail << '\n';
                 }
             }
@@ -116,17 +95,13 @@ struct ComparisonReport
         return passed && covers;
     }
 
-    [[nodiscard]] bool PassedAndCovers(std::span<const StateFacet> required_facets) const noexcept
-    {
+    [[nodiscard]] bool PassedAndCovers(std::span<const StateFacet> required_facets) const noexcept {
         const auto passed = Passed();
         const auto covers = Covers(required_facets);
-        if (!passed || !covers)
-        {
+        if (!passed || !covers) {
             std::cerr << scope << " pre-state comparison failed: passed=" << passed << " covers=" << covers << '\n';
-            for (const auto &check : checks)
-            {
-                if (!check.passed)
-                {
+            for (const auto &check : checks) {
+                if (!check.passed) {
                     std::cerr << "  failed facet=" << ToString(check.facet) << " detail=" << check.detail << '\n';
                 }
             }
@@ -135,24 +110,15 @@ struct ComparisonReport
     }
 };
 
-inline constexpr std::array RequiredMutationFacets{StateFacet::PrimaryRecords,
-                                                   StateFacet::RecordPayloads,
-                                                   StateFacet::SecondaryIndexes,
-                                                   StateFacet::IdGenerators,
-                                                   StateFacet::Revisions,
-                                                   StateFacet::PublicReadModels};
+inline constexpr std::array RequiredMutationFacets{StateFacet::PrimaryRecords,   StateFacet::RecordPayloads,
+                                                   StateFacet::SecondaryIndexes, StateFacet::IdGenerators,
+                                                   StateFacet::Revisions,        StateFacet::PublicReadModels};
 
-inline constexpr std::array RequiredJournaledMutationFacets{StateFacet::PrimaryRecords,
-                                                            StateFacet::RecordPayloads,
-                                                            StateFacet::SecondaryIndexes,
-                                                            StateFacet::IdGenerators,
-                                                            StateFacet::Revisions,
-                                                            StateFacet::Journal,
-                                                            StateFacet::JournalEpoch,
-                                                            StateFacet::JournalSequence,
-                                                            StateFacet::JournalRetainedRecords,
-                                                            StateFacet::JournalLatestCursor,
-                                                            StateFacet::PublicReadModels};
+inline constexpr std::array RequiredJournaledMutationFacets{
+    StateFacet::PrimaryRecords,      StateFacet::RecordPayloads,  StateFacet::SecondaryIndexes,
+    StateFacet::IdGenerators,        StateFacet::Revisions,       StateFacet::Journal,
+    StateFacet::JournalEpoch,        StateFacet::JournalSequence, StateFacet::JournalRetainedRecords,
+    StateFacet::JournalLatestCursor, StateFacet::PublicReadModels};
 
 inline constexpr std::array RequiredJournaledMutationFacetsWithoutIdGenerator{StateFacet::PrimaryRecords,
                                                                               StateFacet::RecordPayloads,
@@ -165,50 +131,36 @@ inline constexpr std::array RequiredJournaledMutationFacetsWithoutIdGenerator{St
                                                                               StateFacet::JournalLatestCursor,
                                                                               StateFacet::PublicReadModels};
 
-inline constexpr std::array RequiredExternalMutationFacets{StateFacet::PrimaryRecords,
-                                                           StateFacet::RecordPayloads,
-                                                           StateFacet::SecondaryIndexes,
-                                                           StateFacet::IdGenerators,
-                                                           StateFacet::Revisions,
-                                                           StateFacet::Journal,
-                                                           StateFacet::JournalEpoch,
-                                                           StateFacet::JournalSequence,
-                                                           StateFacet::JournalRetainedRecords,
-                                                           StateFacet::JournalLatestCursor,
-                                                           StateFacet::ExternalCallbacks,
-                                                           StateFacet::PublicReadModels};
+inline constexpr std::array RequiredExternalMutationFacets{
+    StateFacet::PrimaryRecords,      StateFacet::RecordPayloads,    StateFacet::SecondaryIndexes,
+    StateFacet::IdGenerators,        StateFacet::Revisions,         StateFacet::Journal,
+    StateFacet::JournalEpoch,        StateFacet::JournalSequence,   StateFacet::JournalRetainedRecords,
+    StateFacet::JournalLatestCursor, StateFacet::ExternalCallbacks, StateFacet::PublicReadModels};
 
-class StateComparator
-{
+class StateComparator {
   public:
-    explicit StateComparator(std::string scope) : report_{std::move(scope), {}}
-    {
+    explicit StateComparator(std::string scope) : report_{std::move(scope), {}} {
     }
 
-    StateComparator &Require(StateFacet facet, bool condition, std::string detail)
-    {
+    StateComparator &Require(StateFacet facet, bool condition, std::string detail) {
         report_.checks.push_back(FacetCheck{facet, condition, std::move(detail)});
         return *this;
     }
 
     template <typename TValue>
-    StateComparator &RequireEqual(StateFacet facet, const TValue &before, const TValue &after, std::string detail)
-    {
+    StateComparator &RequireEqual(StateFacet facet, const TValue &before, const TValue &after, std::string detail) {
         return Require(facet, before == after, std::move(detail));
     }
 
-    [[nodiscard]] const ComparisonReport &Report() const noexcept
-    {
+    [[nodiscard]] const ComparisonReport &Report() const noexcept {
         return report_;
     }
 
-    [[nodiscard]] ComparisonReport Finish() const &
-    {
+    [[nodiscard]] ComparisonReport Finish() const & {
         return report_;
     }
 
-    [[nodiscard]] ComparisonReport Finish() &&
-    {
+    [[nodiscard]] ComparisonReport Finish() && {
         return std::move(report_);
     }
 
@@ -216,10 +168,8 @@ class StateComparator
     ComparisonReport report_;
 };
 
-[[nodiscard]] inline std::string_view ToString(StateFacet facet) noexcept
-{
-    switch (facet)
-    {
+[[nodiscard]] inline std::string_view ToString(StateFacet facet) noexcept {
+    switch (facet) {
     case StateFacet::PrimaryRecords:
         return "primary_records";
     case StateFacet::RecordPayloads:
@@ -256,25 +206,18 @@ class StateComparator
 }
 
 template <typename TSnapshot>
-[[nodiscard]] ComparisonReport CompareSnapshotState(std::string scope,
-                                                    const TSnapshot &before,
-                                                    const TSnapshot &after,
-                                                    std::initializer_list<StateFacet> facets)
-{
+[[nodiscard]] ComparisonReport CompareSnapshotState(std::string scope, const TSnapshot &before, const TSnapshot &after,
+                                                    std::initializer_list<StateFacet> facets) {
     StateComparator comparator(std::move(scope));
-    for (const auto facet : facets)
-    {
+    for (const auto facet : facets) {
         comparator.RequireEqual(facet, before, after, std::string(ToString(facet)));
     }
     return std::move(comparator).Finish();
 }
 
 template <typename TCaptureBefore, typename TCaptureAfter, typename TCompare>
-[[nodiscard]] ComparisonReport CompareCapturedState(std::string scope,
-                                                   TCaptureBefore &&capture_before,
-                                                   TCaptureAfter &&capture_after,
-                                                   TCompare &&compare)
-{
+[[nodiscard]] ComparisonReport CompareCapturedState(std::string scope, TCaptureBefore &&capture_before,
+                                                    TCaptureAfter &&capture_after, TCompare &&compare) {
     auto before = capture_before();
     auto after = capture_after();
     return compare(std::move(scope), before, after);

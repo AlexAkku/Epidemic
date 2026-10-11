@@ -19,13 +19,11 @@
 #include <string>
 #include <utility>
 
-namespace
-{
+namespace {
 using epidemic::tests::Assert;
 
 // Verifies that the null graphics runtime composes successfully and registers expected services.
-void TestNullGraphicsRuntimeRegistration()
-{
+void TestNullGraphicsRuntimeRegistration() {
     epidemic::core::Application application({"RhiIntegration"});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "RhiIntegration", .log_module = "RhiIntegration"}));
@@ -36,14 +34,14 @@ void TestNullGraphicsRuntimeRegistration()
     const auto graphics_runtime = graphics_runtime_result.Value();
     Assert(graphics_runtime.device != nullptr, "RegisterGraphicsRuntime(Null) must return a device");
     Assert(graphics_runtime.command_context != nullptr, "RegisterGraphicsRuntime(Null) must return a command context");
-    Assert(application.Services().Contains<epidemic::rhi::IRhiDevice>(), "Null graphics runtime must register IRhiDevice");
+    Assert(application.Services().Contains<epidemic::rhi::IRhiDevice>(),
+           "Null graphics runtime must register IRhiDevice");
     Assert(application.Services().Contains<epidemic::rhi::IRhiCommandContext>(),
            "Null graphics runtime must register IRhiCommandContext");
 }
 
 // Verifies that D3D11 setup failures surface as Result errors rather than hidden exceptions.
-void TestD3D11GraphicsRuntimeFailurePath()
-{
+void TestD3D11GraphicsRuntimeFailurePath() {
     epidemic::core::Application application({"RhiD3D11Failure"});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "RhiD3D11Failure", .log_module = "RhiD3D11Failure"}));
@@ -55,25 +53,22 @@ void TestD3D11GraphicsRuntimeFailurePath()
            "RegisterGraphicsRuntime(D3D11) must surface a meaningful failure message for invalid setup");
 }
 // Exercises the real D3D11 device/swap-chain path with an actual hidden Win32 window.
-void TestD3D11PositiveSmoke()
-{
+void TestD3D11PositiveSmoke() {
     epidemic::core::Application application({"RhiD3D11Positive"});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "RhiD3D11Positive", .log_module = "RhiD3D11Positive"}));
     static_cast<void>(epidemic::enginebase::RegisterWindowsRuntime(application));
 
     const auto graphics = epidemic::enginebase::RegisterGraphicsRuntime(
-        application,
-        {.backend = epidemic::enginebase::GraphicsBackend::D3D11,
-         .enable_debug_validation = false,
-         .debug_name = "RhiD3D11PositiveDevice"});
+        application, {.backend = epidemic::enginebase::GraphicsBackend::D3D11,
+                      .enable_debug_validation = false,
+                      .debug_name = "RhiD3D11PositiveDevice"});
     Assert(graphics.HasValue(), "D3D11 graphics runtime must initialize for the positive smoke test");
 
     const auto window_result = epidemic::enginebase::CreateMainWindow(
         application, epidemic::platform::WindowCreateInfo{"Hidden D3D11 Test", 320, 240, false});
     Assert(window_result.HasValue(), "D3D11 smoke test window creation must succeed");
-    if (!graphics.HasValue() || !window_result.HasValue())
-    {
+    if (!graphics.HasValue() || !window_result.HasValue()) {
         return;
     }
 
@@ -86,8 +81,7 @@ void TestD3D11PositiveSmoke()
     swap_desc.debug_name = "RhiD3D11PositiveSwapChain";
     const auto swap_chain = epidemic::enginebase::RegisterMainSwapChain(application, window_result.Value(), swap_desc);
     Assert(swap_chain.HasValue(), "D3D11 swap chain creation must succeed");
-    if (!swap_chain.HasValue())
-    {
+    if (!swap_chain.HasValue()) {
         window_result.Value()->Close();
         return;
     }
@@ -120,13 +114,10 @@ void TestD3D11PositiveSmoke()
     window_result.Value()->Close();
 }
 
-
 // Verifies D3D11 factory cleanup after native acquisition and the optional debug-layer contract.
-void TestD3D11FactoryCleanupAndDebugLayer()
-{
+void TestD3D11FactoryCleanupAndDebugLayer() {
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    epidemic::rhi::d3d11::testing::SetFaultPoint(
-        epidemic::rhi::d3d11::testing::FaultPoint::AfterDeviceCreate);
+    epidemic::rhi::d3d11::testing::SetFaultPoint(epidemic::rhi::d3d11::testing::FaultPoint::AfterDeviceCreate);
     const auto injected_failure = epidemic::rhi::d3d11::CreateD3D11RhiDevice(
         epidemic::rhi::RhiDeviceDesc{false, "RhiD3D11InjectedFactoryFailure"});
     Assert(!injected_failure.HasValue(), "Injected post-create D3D11 factory failure must return Result failure");
@@ -135,13 +126,12 @@ void TestD3D11FactoryCleanupAndDebugLayer()
     epidemic::rhi::d3d11::testing::ClearFaultPoint();
 #endif
 
-    const auto retry = epidemic::rhi::d3d11::CreateD3D11RhiDevice(
-        epidemic::rhi::RhiDeviceDesc{false, "RhiD3D11FactoryRetry"});
+    const auto retry =
+        epidemic::rhi::d3d11::CreateD3D11RhiDevice(epidemic::rhi::RhiDeviceDesc{false, "RhiD3D11FactoryRetry"});
     Assert(retry.HasValue(), "D3D11 factory must remain usable after a post-acquisition failure");
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    epidemic::rhi::d3d11::testing::SetFaultPoint(
-        epidemic::rhi::d3d11::testing::FaultPoint::DebugLayerUnavailable);
+    epidemic::rhi::d3d11::testing::SetFaultPoint(epidemic::rhi::d3d11::testing::FaultPoint::DebugLayerUnavailable);
     const auto injected_debug_failure = epidemic::rhi::d3d11::CreateD3D11RhiDevice(
         epidemic::rhi::RhiDeviceDesc{true, "RhiD3D11InjectedMissingDebugLayer"});
     Assert(!injected_debug_failure.HasValue() &&
@@ -150,41 +140,35 @@ void TestD3D11FactoryCleanupAndDebugLayer()
     epidemic::rhi::d3d11::testing::ClearFaultPoint();
 #endif
 
-    const auto debug_device = epidemic::rhi::d3d11::CreateD3D11RhiDevice(
-        epidemic::rhi::RhiDeviceDesc{true, "RhiD3D11DebugLayer"});
-    if (debug_device.HasValue())
-    {
+    const auto debug_device =
+        epidemic::rhi::d3d11::CreateD3D11RhiDevice(epidemic::rhi::RhiDeviceDesc{true, "RhiD3D11DebugLayer"});
+    if (debug_device.HasValue()) {
         Assert(debug_device.Value()->Descriptor().enable_debug_validation,
                "D3D11 debug-layer success must preserve the debug-validation descriptor");
-    }
-    else
-    {
+    } else {
         Assert(debug_device.GetError().code == "rhi.d3d11.debug_layer_unavailable",
                "Unavailable D3D11 debug layer must return its dedicated controlled error");
     }
 }
 
 // Exercises partial swap-chain creation cleanup, render-target recreation, zero-area rejection and child lifetimes.
-void TestD3D11SwapChainRecoveryAndLifetime()
-{
+void TestD3D11SwapChainRecoveryAndLifetime() {
     epidemic::core::Application application({"RhiD3D11Recovery"});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "RhiD3D11Recovery", .log_module = "RhiD3D11Recovery"}));
     static_cast<void>(epidemic::enginebase::RegisterWindowsRuntime(application));
 
-    auto device_result = epidemic::rhi::d3d11::CreateD3D11RhiDevice(
-        epidemic::rhi::RhiDeviceDesc{false, "RhiD3D11RecoveryDevice"});
+    auto device_result =
+        epidemic::rhi::d3d11::CreateD3D11RhiDevice(epidemic::rhi::RhiDeviceDesc{false, "RhiD3D11RecoveryDevice"});
     Assert(device_result.HasValue(), "D3D11 recovery test device creation must succeed");
-    if (!device_result.HasValue())
-    {
+    if (!device_result.HasValue()) {
         return;
     }
     auto device = std::move(device_result).Value();
 
     auto context_result = device->CreateCommandContext();
     Assert(context_result.HasValue(), "D3D11 recovery test command-context creation must succeed");
-    if (!context_result.HasValue())
-    {
+    if (!context_result.HasValue()) {
         return;
     }
     auto context = std::move(context_result).Value();
@@ -200,8 +184,7 @@ void TestD3D11SwapChainRecoveryAndLifetime()
     const auto window_result = epidemic::enginebase::CreateMainWindow(
         application, epidemic::platform::WindowCreateInfo{"Hidden D3D11 Recovery Test", 320, 240, false});
     Assert(window_result.HasValue(), "D3D11 recovery test window creation must succeed");
-    if (!window_result.HasValue())
-    {
+    if (!window_result.HasValue()) {
         return;
     }
     const auto window = window_result.Value();
@@ -216,8 +199,7 @@ void TestD3D11SwapChainRecoveryAndLifetime()
     swap_desc.debug_name = "RhiD3D11RecoverySwapChain";
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    epidemic::rhi::d3d11::testing::SetFaultPoint(
-        epidemic::rhi::d3d11::testing::FaultPoint::GetBackBuffer);
+    epidemic::rhi::d3d11::testing::SetFaultPoint(epidemic::rhi::d3d11::testing::FaultPoint::GetBackBuffer);
     const auto partial_create = device->CreateSwapChain(swap_desc);
     Assert(!partial_create.HasValue(), "Injected back-buffer acquisition failure must fail swap-chain creation");
     Assert(partial_create.GetError().code == "rhi.d3d11.get_back_buffer_failed",
@@ -227,8 +209,7 @@ void TestD3D11SwapChainRecoveryAndLifetime()
 
     auto swap_chain_result = device->CreateSwapChain(swap_desc);
     Assert(swap_chain_result.HasValue(), "D3D11 swap chain must be creatable after partial creation cleanup");
-    if (!swap_chain_result.HasValue())
-    {
+    if (!swap_chain_result.HasValue()) {
         window->Close();
         return;
     }
@@ -261,8 +242,7 @@ void TestD3D11SwapChainRecoveryAndLifetime()
     Assert(swap_chain->Present().HasValue(), "Rejected minimized resize must leave the old target usable");
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    epidemic::rhi::d3d11::testing::SetFaultPoint(
-        epidemic::rhi::d3d11::testing::FaultPoint::CreateRenderTargetView);
+    epidemic::rhi::d3d11::testing::SetFaultPoint(epidemic::rhi::d3d11::testing::FaultPoint::CreateRenderTargetView);
     const auto failed_recreate = swap_chain->Resize(400, 300);
     Assert(!failed_recreate.HasValue(), "Injected RTV recreation failure must fail D3D11 resize");
     Assert(failed_recreate.GetError().code == "rhi.d3d11.create_render_target_failed",
@@ -295,8 +275,7 @@ void TestD3D11SwapChainRecoveryAndLifetime()
 
     auto replacement_result = device->CreateSwapChain(swap_desc);
     Assert(replacement_result.HasValue(), "D3D11 swap chain must be recreatable after active-target destruction");
-    if (!replacement_result.HasValue())
-    {
+    if (!replacement_result.HasValue()) {
         window->Close();
         return;
     }
@@ -304,13 +283,13 @@ void TestD3D11SwapChainRecoveryAndLifetime()
 
     device.reset();
     Assert(context->BeginFrame().HasValue(), "D3D11 child objects must retain shared native device/context lifetime");
-    Assert(context->Clear(clear).HasValue(), "D3D11 command context must remain valid after device wrapper destruction");
+    Assert(context->Clear(clear).HasValue(),
+           "D3D11 command context must remain valid after device wrapper destruction");
     Assert(context->EndFrame().HasValue(), "D3D11 retained command context must close its frame");
     Assert(swap_chain->Present().HasValue(), "D3D11 swap chain must retain device state after wrapper destruction");
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    epidemic::rhi::d3d11::testing::SetFaultPoint(
-        epidemic::rhi::d3d11::testing::FaultPoint::PresentDeviceRemoved);
+    epidemic::rhi::d3d11::testing::SetFaultPoint(epidemic::rhi::d3d11::testing::FaultPoint::PresentDeviceRemoved);
     const auto lost_present = swap_chain->Present();
     Assert(!lost_present.HasValue() && lost_present.GetError().code == "rhi.d3d11.device_lost",
            "D3D11 device-loss HRESULT must become stable rhi.d3d11.device_lost");
@@ -326,8 +305,7 @@ void TestD3D11SwapChainRecoveryAndLifetime()
 }
 
 // Runs the RHI integration-test group.
-int main()
-{
+int main() {
     return epidemic::tests::RunNamedTests({
         {"NullGraphicsRuntimeRegistration", &TestNullGraphicsRuntimeRegistration},
         {"D3D11GraphicsRuntimeFailurePath", &TestD3D11GraphicsRuntimeFailurePath},

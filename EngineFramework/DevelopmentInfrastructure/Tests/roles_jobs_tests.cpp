@@ -6,28 +6,22 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::roles_jobs;
 
-namespace epidemic::gameplay::roles_jobs::testing
-{
+namespace epidemic::gameplay::roles_jobs::testing {
 void FailNextLocalAllocationForTest() noexcept;
 }
 
-namespace
-{
-void Check(bool value, const char *message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char *domain, const char *id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 
-JobDefinition MakeJob()
-{
+JobDefinition MakeJob() {
     JobDefinition job;
     job.id = JobDefinitionId::FromString("job.shopkeeper");
     job.function = RoleFunctionId::FromString("function.trade");
@@ -35,8 +29,7 @@ JobDefinition MakeJob()
     return job;
 }
 
-WorkSchedule MakeSchedule(JobAssignmentId assignment, GameplayTimePoint start, GameplayDuration duration)
-{
+WorkSchedule MakeSchedule(JobAssignmentId assignment, GameplayTimePoint start, GameplayDuration duration) {
     WorkSchedule schedule;
     schedule.assignment = assignment;
     schedule.priority = 10;
@@ -50,8 +43,7 @@ WorkSchedule MakeSchedule(JobAssignmentId assignment, GameplayTimePoint start, G
 }
 } // namespace
 
-int main()
-{
+int main() {
     RolesJobsService service;
     auto job = MakeJob();
     Check(static_cast<bool>(service.RegisterJobDefinition(job)), "register job");
@@ -69,8 +61,8 @@ int main()
     auto assignment_id = service.AssignJob(assignment, {.time = GameplayTimePoint{0}});
     Check(static_cast<bool>(assignment_id), "assign job");
 
-    Check(static_cast<bool>(service.CreateSchedule(MakeSchedule(assignment_id.Value(), GameplayTimePoint{800},
-                                                               GameplayDuration{400}))),
+    Check(static_cast<bool>(service.CreateSchedule(
+              MakeSchedule(assignment_id.Value(), GameplayTimePoint{800}, GameplayDuration{400}))),
           "create schedule");
     Check(service.ActivateDueShifts(GameplayTimePoint{700}).empty(), "not due");
     auto duties = service.ActivateDueShifts(GameplayTimePoint{900});
@@ -84,7 +76,8 @@ int main()
     Check(service.FindActiveDuties().empty(), "duty completed");
     Check(!static_cast<bool>(service.CompleteDuty(duties.front())), "terminal duty cannot complete twice");
 
-    Check(static_cast<bool>(service.SetWorkplaceState(workplace_id.Value(), WorkplaceState::Closed)), "close workplace");
+    Check(static_cast<bool>(service.SetWorkplaceState(workplace_id.Value(), WorkplaceState::Closed)),
+          "close workplace");
     JobAssignment rejected;
     rejected.worker = Ref("entities", "npc.rejected");
     rejected.job = job.id;
@@ -92,7 +85,8 @@ int main()
     Check(!static_cast<bool>(service.AssignJob(rejected)), "closed workplace rejects assignment");
     Check(service.GetJobAssignment(assignment_id.Value())->state == AssignmentState::Suspended,
           "closing workplace suspends assignments");
-    Check(static_cast<bool>(service.SetWorkplaceState(workplace_id.Value(), WorkplaceState::Active)), "reopen workplace");
+    Check(static_cast<bool>(service.SetWorkplaceState(workplace_id.Value(), WorkplaceState::Active)),
+          "reopen workplace");
     Check(static_cast<bool>(service.ResumeAssignment(assignment_id.Value())), "resume assignment after reopen");
 
     RolesJobsService recurrence;
@@ -125,7 +119,6 @@ int main()
     Check(missed.size() == 1, "missed occurrence is recorded");
     Check(recurrence.FindDuty(missed.front())->state == DutyState::Skipped, "missed occurrence skipped");
 
-
     // Extreme recurrence arithmetic must not overflow or wrap gameplay time.
     RolesJobsService extreme_time;
     Check(static_cast<bool>(extreme_time.RegisterJobDefinition(job)), "extreme-time register job");
@@ -155,9 +148,10 @@ int main()
     unrepresentable_end.task_type = JobTaskTypeId::FromString("task.open_shop");
     extreme_schedule.shifts.push_back(unrepresentable_end);
     Check(static_cast<bool>(extreme_time.CreateSchedule(extreme_schedule)), "extreme-time schedule");
-    Check(extreme_time.ActivateDueShifts(
-              GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 1},
-              GameplayTimePoint{std::numeric_limits<std::int64_t>::max()}).empty(),
+    Check(extreme_time
+              .ActivateDueShifts(GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 1},
+                                 GameplayTimePoint{std::numeric_limits<std::int64_t>::max()})
+              .empty(),
           "unrepresentable recurrence delta stops deterministically");
 
     RolesJobsService journal;
@@ -165,21 +159,22 @@ int main()
     workplace.id = {};
     auto journal_workplace = journal.CreateWorkplace(workplace);
     Check(static_cast<bool>(journal_workplace), "journal create workplace");
-    for (int i = 0; i < 4100; ++i)
-    {
-        Check(static_cast<bool>(journal.SetWorkplaceState(journal_workplace.Value(),
-                                                         (i % 2) == 0 ? WorkplaceState::Suspended
-                                                                      : WorkplaceState::Active)),
+    for (int i = 0; i < 4100; ++i) {
+        Check(static_cast<bool>(journal.SetWorkplaceState(
+                  journal_workplace.Value(), (i % 2) == 0 ? WorkplaceState::Suspended : WorkplaceState::Active)),
               "journal state change");
     }
     auto stale_batch = journal.ReadChangesSince(ChangeCursor{});
     Check(stale_batch.snapshot_required, "bounded journal requires snapshot for stale reader");
     auto latest_batch = journal.ReadChangesSince(journal.LatestChangeCursor());
     Check(!latest_batch.snapshot_required && latest_batch.changes.empty(), "latest journal cursor valid");
-    Check(journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required,
+    Check(journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required,
           "UINT64_MAX is an incompatible future roles/jobs cursor");
     RolesJobsService empty_journal;
-    Check(empty_journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required,
+    Check(empty_journal
+              .ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required,
           "UINT64_MAX is incompatible with an empty roles/jobs journal");
 
     const auto pre_restore_cursor = service.LatestChangeCursor();

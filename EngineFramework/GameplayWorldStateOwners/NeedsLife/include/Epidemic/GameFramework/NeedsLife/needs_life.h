@@ -12,87 +12,118 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::needs_life
-{
-struct NeedTypeId
-{
+namespace epidemic::gameplay::needs_life {
+struct NeedTypeId {
     TypeId value{};
-    static constexpr NeedTypeId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr NeedTypeId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const NeedTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NeedTypeId &) const noexcept = default;
 };
-struct NeedProfileId
-{
+struct NeedProfileId {
     GameplayObjectId value{};
-    static constexpr NeedProfileId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr NeedProfileId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr NeedProfileId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr NeedProfileId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const NeedProfileId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NeedProfileId &) const noexcept = default;
 };
-struct LifeRoutineId
-{
+struct LifeRoutineId {
     GameplayObjectId value{};
-    static constexpr LifeRoutineId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr LifeRoutineId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr LifeRoutineId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr LifeRoutineId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const LifeRoutineId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LifeRoutineId &) const noexcept = default;
 };
-struct LifePressureId
-{
+struct LifePressureId {
     GameplayObjectId value{};
-    static constexpr LifePressureId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr LifePressureId FromRaw(std::uint64_t h, std::uint64_t l) noexcept { return {GameplayObjectId::FromRaw(h, l)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr LifePressureId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr LifePressureId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
+        return {GameplayObjectId::FromRaw(h, l)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const LifePressureId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LifePressureId &) const noexcept = default;
 };
-struct NeedDecayRuleId
-{
+struct NeedDecayRuleId {
     TypeId value{};
-    static constexpr NeedDecayRuleId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr NeedDecayRuleId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const NeedDecayRuleId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const NeedDecayRuleId &) const noexcept = default;
 };
-struct LifeSimulationProfileId
-{
+struct LifeSimulationProfileId {
     TypeId value{};
-    static constexpr LifeSimulationProfileId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr LifeSimulationProfileId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const LifeSimulationProfileId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LifeSimulationProfileId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
-struct NeedStateKey
-{
+struct NeedStateKey {
     GameplayObjectRef subject{};
     NeedTypeId need{};
     [[nodiscard]] constexpr bool operator==(const NeedStateKey &) const noexcept = default;
 };
-struct NeedStateKeyHash
-{
-    [[nodiscard]] std::size_t operator()(const NeedStateKey &key) const noexcept
-    {
+struct NeedStateKeyHash {
+    [[nodiscard]] std::size_t operator()(const NeedStateKey &key) const noexcept {
         auto a = std::hash<GameplayObjectRef>{}(key.subject);
         auto b = std::hash<TypeId>{}(key.need.value);
         return a ^ (b + 0x9E3779B97F4A7C15ull + (a << 6u) + (a >> 2u));
     }
 };
 
-enum class NeedThreshold { Satisfied, Low, Medium, High, Critical };
-enum class NeedMaterializationPolicy { AbstractCapable, MaterializedOnly, DisabledWhenAbstract };
-enum class LifePressureState { Active, Resolved, Expired };
-enum class NeedsLifeChangeKind
-{
+enum class NeedThreshold {
+    Satisfied,
+    Low,
+    Medium,
+    High,
+    Critical
+};
+enum class NeedMaterializationPolicy {
+    AbstractCapable,
+    MaterializedOnly,
+    DisabledWhenAbstract
+};
+enum class LifePressureState {
+    Active,
+    Resolved,
+    Expired
+};
+enum class NeedsLifeChangeKind {
     NeedProfileCreated,
     NeedProfileChanged,
     NeedChanged,
@@ -107,22 +138,19 @@ enum class NeedsLifeChangeKind
     LifeSimulationStepCompleted
 };
 
-struct NeedDecayRule
-{
+struct NeedDecayRule {
     NeedDecayRuleId id{};
     // Multiplies NeedDefinition::decay_per_tick. 1'000'000 means unchanged.
     std::int64_t rate_multiplier_micro = 1'000'000;
     Revision revision{};
 };
-struct LifeSimulationProfile
-{
+struct LifeSimulationProfile {
     LifeSimulationProfileId id{};
     std::int64_t abstract_rate_multiplier_micro = 1'000'000;
     std::int64_t materialized_rate_multiplier_micro = 1'000'000;
     Revision revision{};
 };
-struct NeedDefinition
-{
+struct NeedDefinition {
     NeedTypeId id{};
     GameplayTagSet tags{};
     std::int64_t default_value = 1'000'000;
@@ -138,8 +166,7 @@ struct NeedDefinition
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct NeedProfile
-{
+struct NeedProfile {
     NeedProfileId id{};
     GameplayObjectRef subject{};
     std::vector<NeedTypeId> active_needs;
@@ -148,8 +175,7 @@ struct NeedProfile
     GameplayTimePoint last_simulated_at{};
     Revision revision{};
 };
-struct NeedState
-{
+struct NeedState {
     GameplayObjectRef subject{};
     NeedTypeId type{};
     std::int64_t value = 0;
@@ -157,8 +183,7 @@ struct NeedState
     GameplayTimePoint last_updated_at{};
     Revision revision{};
 };
-struct LifePressure
-{
+struct LifePressure {
     LifePressureId id{};
     GameplayObjectRef subject{};
     TypeId type{};
@@ -169,8 +194,7 @@ struct LifePressure
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct RoutineEntry
-{
+struct RoutineEntry {
     GameplayTimePoint start{};
     GameplayDuration duration{};
     TypeId routine_type{};
@@ -178,51 +202,44 @@ struct RoutineEntry
     GameplayObjectRef target_object{};
     std::vector<std::byte> payload;
 };
-struct LifeRoutine
-{
+struct LifeRoutine {
     LifeRoutineId id{};
     GameplayObjectRef subject{};
     GameplayTagSet tags{};
     std::vector<RoutineEntry> entries;
     Revision revision{};
 };
-struct SatisfyNeedRequest
-{
+struct SatisfyNeedRequest {
     GameplayObjectRef subject{};
     NeedTypeId need{};
     std::int64_t amount = 0;
     TypeId source{};
     GameplayContext context{};
 };
-struct AddNeedPressureRequest
-{
+struct AddNeedPressureRequest {
     GameplayObjectRef subject{};
     NeedTypeId need{};
     std::int64_t amount = 0;
     TypeId source{};
     GameplayContext context{};
 };
-struct LifeSimulationRequest
-{
+struct LifeSimulationRequest {
     GameplayObjectRef subject{};
     GameplayTimePoint from{};
     GameplayTimePoint to{};
     GameplayContext context{};
     bool materialized = false;
 };
-struct LifeRoutineOccurrence
-{
+struct LifeRoutineOccurrence {
     LifeRoutineId routine{};
     std::uint32_t entry_index = 0;
     GameplayTimePoint start{};
     RoutineEntry entry{};
-    [[nodiscard]] constexpr bool operator==(const LifeRoutineOccurrence &other) const noexcept
-    {
+    [[nodiscard]] constexpr bool operator==(const LifeRoutineOccurrence &other) const noexcept {
         return routine == other.routine && entry_index == other.entry_index && start == other.start;
     }
 };
-struct NeedsLifeChange
-{
+struct NeedsLifeChange {
     std::uint64_t sequence = 0;
     NeedsLifeChangeKind kind = NeedsLifeChangeKind::NeedChanged;
     GameplayObjectRef subject{};
@@ -232,8 +249,7 @@ struct NeedsLifeChange
     GameplayContext context{};
     Revision revision{};
 };
-struct NeedsLifeChangeBatch
-{
+struct NeedsLifeChangeBatch {
     std::vector<NeedsLifeChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -242,8 +258,7 @@ struct NeedsLifeChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct NeedsLifeSnapshot
-{
+struct NeedsLifeSnapshot {
     std::vector<NeedDecayRule> decay_rules;
     std::vector<LifeSimulationProfile> simulation_profiles;
     std::vector<NeedDefinition> definitions;
@@ -258,30 +273,30 @@ struct NeedsLifeSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct NeedsLifeDiagnostics
-{
+struct NeedsLifeDiagnostics {
     std::uint64_t definitions = 0, profiles = 0, states = 0, critical_needs = 0, life_pressures = 0, routines = 0,
                   threshold_events = 0, abstract_simulation_steps = 0, materialized_simulation_steps = 0,
                   expired_pressures = 0;
 };
 
-class NeedsLifeService
-{
+class NeedsLifeService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<NeedsLifeService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.needs_life");
     }
     [[nodiscard]] foundation::Result<void> RegisterDecayRule(NeedDecayRule rule);
     [[nodiscard]] foundation::Result<void> RegisterSimulationProfile(LifeSimulationProfile profile);
     [[nodiscard]] foundation::Result<void> RegisterNeedDefinition(NeedDefinition definition);
     [[nodiscard]] foundation::Result<void> FreezeDefinitions();
-    [[nodiscard]] bool DefinitionsFrozen() const noexcept { return definitions_frozen_; }
+    [[nodiscard]] bool DefinitionsFrozen() const noexcept {
+        return definitions_frozen_;
+    }
 
     // Exactly one active profile is permitted per semantic subject.
-    [[nodiscard]] foundation::Result<NeedProfileId> CreateNeedProfile(NeedProfile profile, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<NeedProfileId> CreateNeedProfile(NeedProfile profile,
+                                                                      GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> RemoveNeedProfile(GameplayObjectRef subject, GameplayContext context = {});
     [[nodiscard]] NeedState EvaluateNeed(GameplayObjectRef subject, NeedTypeId need, GameplayTimePoint now) const;
     [[nodiscard]] foundation::Result<void> CommitNeedEvaluation(GameplayObjectRef subject, NeedTypeId need,
@@ -298,9 +313,8 @@ class NeedsLifeService
     // SetRoutine is an upsert by subject. A subject owns at most one active routine record.
     [[nodiscard]] foundation::Result<LifeRoutineId> SetRoutine(LifeRoutine routine, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> RemoveRoutine(GameplayObjectRef subject, GameplayContext context = {});
-    [[nodiscard]] std::vector<LifeRoutineOccurrence> FindRoutineEntriesInInterval(GameplayObjectRef subject,
-                                                                                  GameplayTimePoint from,
-                                                                                  GameplayTimePoint to) const;
+    [[nodiscard]] std::vector<LifeRoutineOccurrence>
+    FindRoutineEntriesInInterval(GameplayObjectRef subject, GameplayTimePoint from, GameplayTimePoint to) const;
     [[nodiscard]] std::size_t PruneTerminalPressures(GameplayObjectRef subject = {}) noexcept;
 
     // Mutating simulation is strict over (from,to]. from must equal profile.last_simulated_at.
@@ -314,44 +328,45 @@ class NeedsLifeService
     [[nodiscard]] std::vector<LifePressure> FindLifePressures(GameplayObjectRef subject) const;
     [[nodiscard]] const LifeRoutine *GetRoutine(GameplayObjectRef subject) const noexcept;
 
-    private:
+  private:
+    [[nodiscard]] NeedsLifeChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
 
-        [[nodiscard]] NeedsLifeChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-
-    public:
-    [[nodiscard]] NeedsLifeChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+  public:
+    [[nodiscard]] NeedsLifeChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    private:
-        [[nodiscard]] std::vector<NeedsLifeChange> ChangesSinceSequence(std::uint64_t sequence) const;
-    public:
+
+  private:
+    [[nodiscard]] std::vector<NeedsLifeChange> ChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
     void PruneChangesThrough(std::uint64_t sequence) noexcept;
     void SetChangeJournalCapacity(std::size_t capacity) noexcept;
 
     [[nodiscard]] NeedsLifeSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(NeedsLifeSnapshot snapshot);
     [[nodiscard]] NeedsLifeDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept { return revision_; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
+        return revision_;
+    }
 
   private:
     [[nodiscard]] foundation::Result<void> ValidateDefinition(const NeedDefinition &definition) const;
     [[nodiscard]] foundation::Result<void> ValidateProfile(const NeedProfile &profile) const;
-    [[nodiscard]] NeedState EvaluateNeedWithMultiplier(GameplayObjectRef subject, NeedTypeId need, GameplayTimePoint now,
+    [[nodiscard]] NeedState EvaluateNeedWithMultiplier(GameplayObjectRef subject, NeedTypeId need,
+                                                       GameplayTimePoint now,
                                                        std::int64_t simulation_multiplier_micro) const;
     [[nodiscard]] std::int64_t EffectiveDecayRate(const NeedDefinition &definition,
                                                   std::int64_t simulation_multiplier_micro) const noexcept;
@@ -363,8 +378,7 @@ class NeedsLifeService
     void TrimJournal() noexcept;
     void RebuildIndexes();
     [[nodiscard]] NeedThreshold ThresholdFor(const NeedDefinition &def, std::int64_t value) const noexcept;
-    [[nodiscard]] std::int64_t Clamp(const NeedDefinition &def, std::int64_t value) const noexcept
-    {
+    [[nodiscard]] std::int64_t Clamp(const NeedDefinition &def, std::int64_t value) const noexcept {
         return std::max(def.min_value, std::min(def.max_value, value));
     }
     [[nodiscard]] static NeedStateKey StateKey(GameplayObjectRef subject, NeedTypeId need) noexcept;

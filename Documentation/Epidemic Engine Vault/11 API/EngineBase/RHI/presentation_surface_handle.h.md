@@ -67,3 +67,27 @@ class PresentationSurfaceHandle
 };
 } // namespace epidemic::rhi
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `PresentationSurfaceHandle` (строка заголовка 8)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Wraps a raw native presentation surface pointer. explicit constexpr PresentationSurfaceHandle(void *value) noexcept : value_(value);
+// Returns the wrapped raw pointer value. [[nodiscard]] constexpr void *Value() const noexcept;
+// Returns the wrapped raw pointer cast to the requested native handle type. template <typename T> [[nodiscard]] constexpr T As() const noexcept;
+// Returns whether the handle contains a non-null native pointer. [[nodiscard]] constexpr bool IsValid() const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

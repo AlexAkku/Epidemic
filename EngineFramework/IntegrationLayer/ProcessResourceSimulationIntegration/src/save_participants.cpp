@@ -1,21 +1,25 @@
 // Generated owner bindings; gameplay state remains authoritative in its original owner.
 #include "Epidemic/GameFramework/ProcessResourceSimulationIntegration/process_resource_simulation_adapters.h"
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
-namespace epidemic::gameplay
-{
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::processes::ProcessesService>
-{
+namespace epidemic::gameplay {
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::processes::ProcessesService> {
     using Owner = epidemic::gameplay::processes::ProcessesService;
     using Snapshot = epidemic::gameplay::processes::ProcessesSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.diagnostics_, candidate.diagnostics_);
         savegame::detail::SwapPreparedMember(live.instance_ids_, candidate.instance_ids_);
@@ -29,19 +33,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::processes::Processe
         savegame::detail::SwapPreparedMember(live.stations_, candidate.stations_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::resources::ResourcesProductionService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::resources::ResourcesProductionService> {
     using Owner = epidemic::gameplay::resources::ResourcesProductionService;
     using Snapshot = epidemic::gameplay::resources::ResourcesSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.amounts_, candidate.amounts_);
         savegame::detail::SwapPreparedMember(live.capabilities_, candidate.capabilities_);
         savegame::detail::SwapPreparedMember(live.capability_ids_, candidate.capability_ids_);
@@ -65,19 +74,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::resources::Resource
         savegame::detail::SwapPreparedMember(live.transactions_, candidate.transactions_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::simulation::SimulationService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::simulation::SimulationService> {
     using Owner = epidemic::gameplay::simulation::SimulationService;
     using Snapshot = epidemic::gameplay::simulation::SimulationSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.active_intervals_, candidate.active_intervals_);
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.diagnostics_, candidate.diagnostics_);
@@ -91,18 +105,23 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::simulation::Simulat
     }
 };
 }
-namespace epidemic::gameplay::savegame
-{
-std::unique_ptr<ISaveParticipant> CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::processes::ProcessesService>>(owner, workspace, "framework.processes", std::vector<SaveParticipantId>{});
+namespace epidemic::gameplay::savegame {
+std::unique_ptr<ISaveParticipant>
+CreateProcessesServiceSaveParticipant(epidemic::gameplay::processes::ProcessesService &owner,
+                                      SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::processes::ProcessesService>>(
+        owner, workspace, "framework.processes", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreateResourcesProductionServiceSaveParticipant(epidemic::gameplay::resources::ResourcesProductionService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::resources::ResourcesProductionService>>(owner, workspace, "framework.resources", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreateResourcesProductionServiceSaveParticipant(epidemic::gameplay::resources::ResourcesProductionService &owner,
+                                                SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::resources::ResourcesProductionService>>(
+        owner, workspace, "framework.resources", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreateSimulationServiceSaveParticipant(epidemic::gameplay::simulation::SimulationService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::simulation::SimulationService>>(owner, workspace, "framework.simulation", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreateSimulationServiceSaveParticipant(epidemic::gameplay::simulation::SimulationService &owner,
+                                       SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::simulation::SimulationService>>(
+        owner, workspace, "framework.simulation", std::vector<SaveParticipantId>{});
 }
 }

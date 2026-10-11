@@ -8,37 +8,30 @@
 #include <unordered_set>
 #include <utility>
 
-namespace epidemic::gameplay::roles_jobs
-{
-namespace testing
-{
-namespace
-{
+namespace epidemic::gameplay::roles_jobs {
+namespace testing {
+namespace {
 thread_local bool g_fail_next_local_allocation = false;
 }
 
-void FailNextLocalAllocationForTest() noexcept
-{
+void FailNextLocalAllocationForTest() noexcept {
     g_fail_next_local_allocation = true;
 }
 
-[[nodiscard]] bool ConsumeLocalAllocationFailureForTest() noexcept
-{
+[[nodiscard]] bool ConsumeLocalAllocationFailureForTest() noexcept {
     if (!g_fail_next_local_allocation)
         return false;
     g_fail_next_local_allocation = false;
     return true;
 }
 } // namespace testing
-namespace
-{
-foundation::Error Error(std::string_view code, std::string_view message)
-{
+namespace {
+foundation::Error Error(std::string_view code, std::string_view message) {
     return foundation::Error::Create(code, message);
 }
 
-template <class TId> void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &generator, TId id) noexcept
-{
+template <class TId>
+void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &generator, TId id) noexcept {
     if (!id.IsValid())
         return;
 
@@ -50,22 +43,17 @@ template <class TId> void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<Ga
     (void)generator.Restore(snapshot);
 }
 
-template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TId> &ids) noexcept
-{
+template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TId> &ids) noexcept {
     std::uint64_t result = 0;
-    for (const auto id : ids)
-    {
+    for (const auto id : ids) {
         if (id.IsValid())
             result = std::max(result, id.value.Low());
     }
     return result;
 }
 
-
-[[nodiscard]] bool IsValidWorkplaceState(WorkplaceState state) noexcept
-{
-    switch (state)
-    {
+[[nodiscard]] bool IsValidWorkplaceState(WorkplaceState state) noexcept {
+    switch (state) {
     case WorkplaceState::Active:
     case WorkplaceState::Closed:
     case WorkplaceState::Destroyed:
@@ -77,10 +65,8 @@ template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TI
     return false;
 }
 
-[[nodiscard]] bool IsValidAssignmentState(AssignmentState state) noexcept
-{
-    switch (state)
-    {
+[[nodiscard]] bool IsValidAssignmentState(AssignmentState state) noexcept {
+    switch (state) {
     case AssignmentState::Active:
     case AssignmentState::Paused:
     case AssignmentState::Suspended:
@@ -92,10 +78,8 @@ template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TI
     return false;
 }
 
-[[nodiscard]] bool IsValidDutyState(DutyState state) noexcept
-{
-    switch (state)
-    {
+[[nodiscard]] bool IsValidDutyState(DutyState state) noexcept {
+    switch (state) {
     case DutyState::Scheduled:
     case DutyState::Available:
     case DutyState::Active:
@@ -108,17 +92,15 @@ template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TI
     return false;
 }
 
-[[nodiscard]] bool IsAllowedAssignmentTransition(AssignmentState from, AssignmentState to) noexcept
-{
+[[nodiscard]] bool IsAllowedAssignmentTransition(AssignmentState from, AssignmentState to) noexcept {
     if (!IsValidAssignmentState(from) || !IsValidAssignmentState(to))
         return false;
     if (from == to)
         return true;
-    switch (from)
-    {
+    switch (from) {
     case AssignmentState::Active:
-        return to == AssignmentState::Paused || to == AssignmentState::Suspended ||
-               to == AssignmentState::Completed || to == AssignmentState::Cancelled || to == AssignmentState::Invalid;
+        return to == AssignmentState::Paused || to == AssignmentState::Suspended || to == AssignmentState::Completed ||
+               to == AssignmentState::Cancelled || to == AssignmentState::Invalid;
     case AssignmentState::Paused:
         return to == AssignmentState::Active || to == AssignmentState::Suspended || to == AssignmentState::Cancelled;
     case AssignmentState::Suspended:
@@ -131,16 +113,15 @@ template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TI
     return false;
 }
 
-[[nodiscard]] bool IsAllowedDutyTransition(DutyState from, DutyState to) noexcept
-{
+[[nodiscard]] bool IsAllowedDutyTransition(DutyState from, DutyState to) noexcept {
     if (!IsValidDutyState(from) || !IsValidDutyState(to))
         return false;
     if (from == to)
         return true;
-    switch (from)
-    {
+    switch (from) {
     case DutyState::Scheduled:
-        return to == DutyState::Available || to == DutyState::Active || to == DutyState::Skipped || to == DutyState::Cancelled;
+        return to == DutyState::Available || to == DutyState::Active || to == DutyState::Skipped ||
+               to == DutyState::Cancelled;
     case DutyState::Available:
         return to == DutyState::Active || to == DutyState::Skipped || to == DutyState::Cancelled;
     case DutyState::Active:
@@ -154,63 +135,53 @@ template <class TId> [[nodiscard]] std::uint64_t MaxLowPart(const std::vector<TI
     return false;
 }
 
-[[nodiscard]] bool IsPositiveDuration(GameplayDuration duration) noexcept
-{
+[[nodiscard]] bool IsPositiveDuration(GameplayDuration duration) noexcept {
     return duration.ticks > 0;
 }
 
-[[nodiscard]] bool IsNonNegativeDuration(GameplayDuration duration) noexcept
-{
+[[nodiscard]] bool IsNonNegativeDuration(GameplayDuration duration) noexcept {
     return duration.ticks >= 0;
 }
 
-[[nodiscard]] std::size_t HashCombine(std::size_t seed, std::size_t value) noexcept
-{
+[[nodiscard]] std::size_t HashCombine(std::size_t seed, std::size_t value) noexcept {
     return seed ^ (value + 0x9E3779B97F4A7C15ull + (seed << 6u) + (seed >> 2u));
 }
 
-[[nodiscard]] GameplayTimePoint OneTickBefore(GameplayTimePoint value) noexcept
-{
+[[nodiscard]] GameplayTimePoint OneTickBefore(GameplayTimePoint value) noexcept {
     if (value.ticks == std::numeric_limits<std::int64_t>::min())
         return value;
     return GameplayTimePoint{value.ticks - 1};
 }
 
 [[nodiscard]] bool IntersectsOpenClosed(GameplayTimePoint from, GameplayTimePoint to, GameplayTimePoint start,
-                                         GameplayTimePoint end) noexcept
-{
+                                        GameplayTimePoint end) noexcept {
     // Shift occurrence interval is [start,end). Simulation activation interval is (from,to].
     return end.ticks > from.ticks && start.ticks <= to.ticks;
 }
 
-[[nodiscard]] bool IsMissedAt(GameplayTimePoint to, GameplayTimePoint end) noexcept
-{
+[[nodiscard]] bool IsMissedAt(GameplayTimePoint to, GameplayTimePoint end) noexcept {
     return end.ticks <= to.ticks;
 }
 } // namespace
 
-std::size_t RolesJobsService::DutyOccurrenceKeyHash::operator()(const DutyOccurrenceKey &key) const noexcept
-{
+std::size_t RolesJobsService::DutyOccurrenceKeyHash::operator()(const DutyOccurrenceKey &key) const noexcept {
     std::size_t hash = IdHash{}(key.assignment);
     hash = HashCombine(hash, IdHash{}(key.shift));
     hash = HashCombine(hash, std::hash<std::int64_t>{}(key.start.ticks));
     return hash;
 }
 
-Duty *RolesJobsService::FindMutableDuty(DutyId id) noexcept
-{
+Duty *RolesJobsService::FindMutableDuty(DutyId id) noexcept {
     auto it = duties_.find(id);
     return it == duties_.end() ? nullptr : &it->second;
 }
 
-JobAssignment *RolesJobsService::FindMutableAssignment(JobAssignmentId id) noexcept
-{
+JobAssignment *RolesJobsService::FindMutableAssignment(JobAssignmentId id) noexcept {
     auto it = assignments_.find(id);
     return it == assignments_.end() ? nullptr : &it->second;
 }
 
-foundation::Result<Revision> RolesJobsService::NextRevision() const
-{
+foundation::Result<Revision> RolesJobsService::NextRevision() const {
     const auto next = CheckedNext(revision_);
     if (!next)
         return foundation::Result<Revision>::Failure(
@@ -218,37 +189,31 @@ foundation::Result<Revision> RolesJobsService::NextRevision() const
     return foundation::Result<Revision>::Success(*next);
 }
 
-bool RolesJobsService::IsWorkplaceStateOperational(WorkplaceState state) const noexcept
-{
+bool RolesJobsService::IsWorkplaceStateOperational(WorkplaceState state) const noexcept {
     return state == WorkplaceState::Active || state == WorkplaceState::Seasonal;
 }
 
-bool RolesJobsService::IsWorkplaceOperational(WorkplaceId id) const noexcept
-{
+bool RolesJobsService::IsWorkplaceOperational(WorkplaceId id) const noexcept {
     const auto it = workplaces_.find(id);
     return it != workplaces_.end() && IsWorkplaceStateOperational(it->second.state);
 }
 
-bool RolesJobsService::IsTerminalAssignment(AssignmentState state) const noexcept
-{
-    return state == AssignmentState::Completed || state == AssignmentState::Cancelled || state == AssignmentState::Invalid;
+bool RolesJobsService::IsTerminalAssignment(AssignmentState state) const noexcept {
+    return state == AssignmentState::Completed || state == AssignmentState::Cancelled ||
+           state == AssignmentState::Invalid;
 }
 
-bool RolesJobsService::IsTerminalDuty(DutyState state) const noexcept
-{
+bool RolesJobsService::IsTerminalDuty(DutyState state) const noexcept {
     return state == DutyState::Completed || state == DutyState::Failed || state == DutyState::Skipped ||
            state == DutyState::Cancelled;
 }
 
-bool RolesJobsService::IsLiveDuty(DutyState state) const noexcept
-{
+bool RolesJobsService::IsLiveDuty(DutyState state) const noexcept {
     return state == DutyState::Scheduled || state == DutyState::Available || state == DutyState::Active;
 }
 
-bool RolesJobsService::HasDutyOccurrence(JobAssignmentId assignment, WorkShiftId shift, GameplayTimePoint start) const
-{
-    for (const auto &[id, duty] : duties_)
-    {
+bool RolesJobsService::HasDutyOccurrence(JobAssignmentId assignment, WorkShiftId shift, GameplayTimePoint start) const {
+    for (const auto &[id, duty] : duties_) {
         (void)id;
         if (duty.assignment == assignment && duty.shift == shift && duty.scheduled_start == start)
             return true;
@@ -256,8 +221,7 @@ bool RolesJobsService::HasDutyOccurrence(JobAssignmentId assignment, WorkShiftId
     return false;
 }
 
-void RolesJobsService::RebuildIndexes()
-{
+void RolesJobsService::RebuildIndexes() {
     std::unordered_map<GameplayObjectRef, std::vector<JobAssignmentId>> assignments_by_worker;
     std::unordered_map<WorkplaceId, std::vector<JobAssignmentId>, IdHash> assignments_by_workplace;
     std::unordered_map<JobAssignmentId, std::vector<WorkScheduleId>, IdHash> schedules_by_assignment;
@@ -270,24 +234,20 @@ void RolesJobsService::RebuildIndexes()
     duties_by_assignment.reserve(duties_.size());
     duties_by_subject.reserve(duties_.size());
 
-    for (const auto &[id, assignment] : assignments_)
-    {
+    for (const auto &[id, assignment] : assignments_) {
         assignments_by_worker[assignment.worker].push_back(id);
         assignments_by_workplace[assignment.workplace].push_back(id);
     }
-    for (const auto &[id, schedule] : schedules_)
-    {
+    for (const auto &[id, schedule] : schedules_) {
         schedules_by_assignment[schedule.assignment].push_back(id);
     }
-    for (const auto &[id, duty] : duties_)
-    {
+    for (const auto &[id, duty] : duties_) {
         duties_by_assignment[duty.assignment].push_back(id);
         duties_by_subject[duty.subject].push_back(id);
     }
 
     auto sort_ids = [](auto &map) {
-        for (auto &[key, ids] : map)
-        {
+        for (auto &[key, ids] : map) {
             (void)key;
             std::sort(ids.begin(), ids.end());
         }
@@ -305,15 +265,13 @@ void RolesJobsService::RebuildIndexes()
     duties_by_subject_.swap(duties_by_subject);
 }
 
-void RolesJobsService::PruneTerminalDuties()
-{
+void RolesJobsService::PruneTerminalDuties() {
     if (terminal_duty_retention_capacity_ == 0)
         return;
 
     std::vector<DutyId> terminal;
     terminal.reserve(duties_.size());
-    for (const auto &[id, duty] : duties_)
-    {
+    for (const auto &[id, duty] : duties_) {
         if (IsValidDutyState(duty.state) && IsTerminalDuty(duty.state))
             terminal.push_back(id);
     }
@@ -333,16 +291,14 @@ void RolesJobsService::PruneTerminalDuties()
     RebuildIndexes();
 }
 
-foundation::Result<void> RolesJobsService::RegisterJobDefinition(JobDefinition definition)
-{
+foundation::Result<void> RolesJobsService::RegisterJobDefinition(JobDefinition definition) {
     if (!definition.id.IsValid())
         return foundation::Result<void>::Failure(
             Error("gameplay.roles_jobs.invalid_definition", "invalid job definition"));
     if (definitions_.contains(definition.id))
         return foundation::Result<void>::Failure(
             Error("gameplay.roles_jobs.duplicate_definition", "duplicate job definition"));
-    for (const auto task : definition.default_tasks)
-    {
+    for (const auto task : definition.default_tasks) {
         if (!task.IsValid())
             return foundation::Result<void>::Failure(
                 Error("gameplay.roles_jobs.invalid_definition", "invalid default job task"));
@@ -356,8 +312,7 @@ foundation::Result<void> RolesJobsService::RegisterJobDefinition(JobDefinition d
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<WorkplaceId> RolesJobsService::CreateWorkplace(Workplace workplace)
-{
+foundation::Result<WorkplaceId> RolesJobsService::CreateWorkplace(Workplace workplace) {
     if (!workplace.area.IsValid() || !IsValidWorkplaceState(workplace.state))
         return foundation::Result<WorkplaceId>::Failure(
             Error("gameplay.roles_jobs.invalid_workplace", "invalid workplace"));
@@ -387,8 +342,8 @@ foundation::Result<WorkplaceId> RolesJobsService::CreateWorkplace(Workplace work
     return foundation::Result<WorkplaceId>::Success(id);
 }
 
-foundation::Result<void> RolesJobsService::SetWorkplaceState(WorkplaceId id, WorkplaceState state, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::SetWorkplaceState(WorkplaceId id, WorkplaceState state,
+                                                             GameplayContext context) {
     auto it = workplaces_.find(id);
     if (it == workplaces_.end())
         return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.workplace_missing", "workplace missing"));
@@ -405,32 +360,28 @@ foundation::Result<void> RolesJobsService::SetWorkplaceState(WorkplaceId id, Wor
     it->second.revision = revision_;
     Record({0, RolesJobsChangeKind::WorkplaceStateChanged, {}, {}, id, {}, context, revision_});
 
-    if (!IsWorkplaceStateOperational(state))
-    {
+    if (!IsWorkplaceStateOperational(state)) {
         std::vector<JobAssignmentId> affected_assignments;
         if (const auto idx = assignments_by_workplace_.find(id); idx != assignments_by_workplace_.end())
             affected_assignments = idx->second;
-        for (const auto assignment_id : affected_assignments)
-        {
+        for (const auto assignment_id : affected_assignments) {
             auto *assignment = FindMutableAssignment(assignment_id);
-            if (assignment != nullptr && assignment->state == AssignmentState::Active)
-            {
+            if (assignment != nullptr && assignment->state == AssignmentState::Active) {
                 assignment->state = AssignmentState::Suspended;
                 assignment->revision = revision_;
-                Record({0, RolesJobsChangeKind::JobPaused, assignment->worker, assignment_id, id, {}, context, revision_});
+                Record(
+                    {0, RolesJobsChangeKind::JobPaused, assignment->worker, assignment_id, id, {}, context, revision_});
             }
         }
 
         std::vector<DutyId> duties_to_cancel;
-        for (const auto &[duty_id, duty] : duties_)
-        {
+        for (const auto &[duty_id, duty] : duties_) {
             const auto assignment = assignments_.find(duty.assignment);
             if (assignment != assignments_.end() && assignment->second.workplace == id && IsLiveDuty(duty.state))
                 duties_to_cancel.push_back(duty_id);
         }
         std::sort(duties_to_cancel.begin(), duties_to_cancel.end());
-        for (const auto duty_id : duties_to_cancel)
-        {
+        for (const auto duty_id : duties_to_cancel) {
             auto *duty = FindMutableDuty(duty_id);
             if (duty == nullptr)
                 continue;
@@ -438,8 +389,8 @@ foundation::Result<void> RolesJobsService::SetWorkplaceState(WorkplaceId id, Wor
             duty->revision = revision_;
             Record({0, RolesJobsChangeKind::DutyCancelled, duty->subject, duty->assignment, id, duty_id, context,
                     revision_});
-            Record({0, RolesJobsChangeKind::ShiftEnded, duty->subject, duty->assignment, id, duty_id, context,
-                    revision_});
+            Record(
+                {0, RolesJobsChangeKind::ShiftEnded, duty->subject, duty->assignment, id, duty_id, context, revision_});
         }
     }
 
@@ -448,8 +399,7 @@ foundation::Result<void> RolesJobsService::SetWorkplaceState(WorkplaceId id, Wor
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<JobAssignmentId> RolesJobsService::AssignJob(JobAssignment assignment, GameplayContext context)
-{
+foundation::Result<JobAssignmentId> RolesJobsService::AssignJob(JobAssignment assignment, GameplayContext context) {
     if (!assignment.worker.IsValid() || !assignment.job.IsValid() || !definitions_.contains(assignment.job) ||
         !assignment.workplace.IsValid() || !workplaces_.contains(assignment.workplace))
         return foundation::Result<JobAssignmentId>::Failure(
@@ -490,15 +440,16 @@ foundation::Result<JobAssignmentId> RolesJobsService::AssignJob(JobAssignment as
 }
 
 foundation::Result<void> RolesJobsService::TransitionAssignment(JobAssignmentId id, AssignmentState state,
-                                                                RolesJobsChangeKind change, GameplayContext context)
-{
+                                                                RolesJobsChangeKind change, GameplayContext context) {
     auto *assignment = FindMutableAssignment(id);
     if (assignment == nullptr)
         return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.assignment_missing", "assignment missing"));
     if (!IsValidAssignmentState(assignment->state))
-        return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.invalid_assignment_state", "invalid assignment state"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.roles_jobs.invalid_assignment_state", "invalid assignment state"));
     if (!IsAllowedAssignmentTransition(assignment->state, AssignmentState::Cancelled))
-        return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.invalid_assignment_transition", "invalid assignment transition"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.roles_jobs.invalid_assignment_transition", "invalid assignment transition"));
     if (IsTerminalAssignment(assignment->state))
         return foundation::Result<void>::Failure(
             Error("gameplay.roles_jobs.assignment_terminal", "terminal assignment cannot transition"));
@@ -519,37 +470,34 @@ foundation::Result<void> RolesJobsService::TransitionAssignment(JobAssignmentId 
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> RolesJobsService::PauseAssignment(JobAssignmentId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::PauseAssignment(JobAssignmentId id, GameplayContext context) {
     return TransitionAssignment(id, AssignmentState::Paused, RolesJobsChangeKind::JobPaused, context);
 }
 
-foundation::Result<void> RolesJobsService::ResumeAssignment(JobAssignmentId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::ResumeAssignment(JobAssignmentId id, GameplayContext context) {
     return TransitionAssignment(id, AssignmentState::Active, RolesJobsChangeKind::JobResumed, context);
 }
 
-foundation::Result<void> RolesJobsService::SuspendAssignment(JobAssignmentId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::SuspendAssignment(JobAssignmentId id, GameplayContext context) {
     return TransitionAssignment(id, AssignmentState::Suspended, RolesJobsChangeKind::JobPaused, context);
 }
 
-foundation::Result<void> RolesJobsService::CompleteAssignment(JobAssignmentId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::CompleteAssignment(JobAssignmentId id, GameplayContext context) {
     return TransitionAssignment(id, AssignmentState::Completed, RolesJobsChangeKind::JobRemoved, context);
 }
 
-foundation::Result<void> RolesJobsService::CancelAssignment(JobAssignmentId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::CancelAssignment(JobAssignmentId id, GameplayContext context) {
     auto *assignment = FindMutableAssignment(id);
     if (assignment == nullptr)
         return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.assignment_missing", "assignment missing"));
     if (assignment->state == AssignmentState::Cancelled)
         return foundation::Result<void>::Success();
     if (!IsValidAssignmentState(assignment->state))
-        return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.invalid_assignment_state", "invalid assignment state"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.roles_jobs.invalid_assignment_state", "invalid assignment state"));
     if (!IsAllowedAssignmentTransition(assignment->state, AssignmentState::Cancelled))
-        return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.invalid_assignment_transition", "invalid assignment transition"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.roles_jobs.invalid_assignment_transition", "invalid assignment transition"));
     if (IsTerminalAssignment(assignment->state))
         return foundation::Result<void>::Failure(
             Error("gameplay.roles_jobs.assignment_terminal", "terminal assignment cannot be cancelled"));
@@ -566,11 +514,9 @@ foundation::Result<void> RolesJobsService::CancelAssignment(JobAssignmentId id, 
     if (const auto idx = duties_by_assignment_.find(id); idx != duties_by_assignment_.end())
         affected_duties = idx->second;
     std::sort(affected_duties.begin(), affected_duties.end());
-    for (const auto duty_id : affected_duties)
-    {
+    for (const auto duty_id : affected_duties) {
         auto *duty = FindMutableDuty(duty_id);
-        if (duty != nullptr && IsLiveDuty(duty->state))
-        {
+        if (duty != nullptr && IsLiveDuty(duty->state)) {
             duty->state = DutyState::Cancelled;
             duty->revision = revision_;
             Record({0, RolesJobsChangeKind::DutyCancelled, duty->subject, id, assignment->workplace, duty_id, context,
@@ -585,8 +531,7 @@ foundation::Result<void> RolesJobsService::CancelAssignment(JobAssignmentId id, 
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<WorkScheduleId> RolesJobsService::CreateSchedule(WorkSchedule schedule)
-{
+foundation::Result<WorkScheduleId> RolesJobsService::CreateSchedule(WorkSchedule schedule) {
     if (!schedule.assignment.IsValid() || !assignments_.contains(schedule.assignment))
         return foundation::Result<WorkScheduleId>::Failure(
             Error("gameplay.roles_jobs.invalid_schedule", "invalid schedule"));
@@ -614,8 +559,7 @@ foundation::Result<WorkScheduleId> RolesJobsService::CreateSchedule(WorkSchedule
             Error("gameplay.roles_jobs.duplicate_schedule", "duplicate schedule"));
 
     std::unordered_set<WorkShiftId, IdHash> local_shift_ids;
-    for (auto &shift : schedule.shifts)
-    {
+    for (auto &shift : schedule.shifts) {
         if (!IsPositiveDuration(shift.duration) || !IsNonNegativeDuration(shift.recurrence))
             return foundation::Result<WorkScheduleId>::Failure(
                 Error("gameplay.roles_jobs.invalid_shift", "shift duration or recurrence is invalid"));
@@ -652,8 +596,7 @@ foundation::Result<WorkScheduleId> RolesJobsService::CreateSchedule(WorkSchedule
 }
 
 foundation::Result<DutyId> RolesJobsService::CreateDutyInternal(Duty duty, RolesJobsChangeKind initial_shift_change,
-                                                                GameplayContext context)
-{
+                                                                GameplayContext context) {
     auto staged_ids = duty_ids_;
     if (!duty.id.IsValid())
         duty.id = DutyId{staged_ids.Next()};
@@ -680,48 +623,40 @@ foundation::Result<DutyId> RolesJobsService::CreateDutyInternal(Duty duty, Roles
     duties_.emplace(id, std::move(duty));
     RebuildIndexes();
     Record({0, RolesJobsChangeKind::DutyCreated, subject, assignment, workplace, id, context, revision_});
-    if (initial_shift_change == RolesJobsChangeKind::ShiftStarted)
-    {
+    if (initial_shift_change == RolesJobsChangeKind::ShiftStarted) {
         Record({0, RolesJobsChangeKind::ShiftStarted, subject, assignment, workplace, id, context, revision_});
         Record({0, RolesJobsChangeKind::DutyActivated, subject, assignment, workplace, id, context, revision_});
         ++diagnostics_.shift_events;
-    }
-    else if (initial_shift_change == RolesJobsChangeKind::ShiftScheduled)
-    {
+    } else if (initial_shift_change == RolesJobsChangeKind::ShiftScheduled) {
         Record({0, RolesJobsChangeKind::ShiftScheduled, subject, assignment, workplace, id, context, revision_});
-    }
-    else if (initial_shift_change == RolesJobsChangeKind::DutySkipped)
-    {
+    } else if (initial_shift_change == RolesJobsChangeKind::DutySkipped) {
         Record({0, RolesJobsChangeKind::DutySkipped, subject, assignment, workplace, id, context, revision_});
         Record({0, RolesJobsChangeKind::ShiftEnded, subject, assignment, workplace, id, context, revision_});
     }
     return foundation::Result<DutyId>::Success(id);
 }
 
-foundation::Result<DutyId> RolesJobsService::CreateDuty(Duty duty, GameplayContext context)
-{
+foundation::Result<DutyId> RolesJobsService::CreateDuty(Duty duty, GameplayContext context) {
     if (!duty.subject.IsValid())
         return foundation::Result<DutyId>::Failure(Error("gameplay.roles_jobs.invalid_duty", "invalid duty"));
     if (!IsValidDutyState(duty.state))
-        return foundation::Result<DutyId>::Failure(Error("gameplay.roles_jobs.invalid_duty_state", "invalid duty state"));
+        return foundation::Result<DutyId>::Failure(
+            Error("gameplay.roles_jobs.invalid_duty_state", "invalid duty state"));
     if (IsTerminalDuty(duty.state))
         return foundation::Result<DutyId>::Failure(
             Error("gameplay.roles_jobs.invalid_duty_state", "new duty cannot start in terminal state"));
-    if (duty.assignment.IsValid())
-    {
+    if (duty.assignment.IsValid()) {
         const auto assignment = assignments_.find(duty.assignment);
         if (assignment == assignments_.end() || IsTerminalAssignment(assignment->second.state))
             return foundation::Result<DutyId>::Failure(
                 Error("gameplay.roles_jobs.invalid_duty", "duty assignment is invalid"));
-        if (duty.state == DutyState::Active &&
-            (assignment->second.state != AssignmentState::Active || !IsWorkplaceOperational(assignment->second.workplace)))
-            return foundation::Result<DutyId>::Failure(
-                Error("gameplay.roles_jobs.workplace_not_operational", "active duty requires active assignment and workplace"));
-        if (duty.shift.IsValid())
-        {
+        if (duty.state == DutyState::Active && (assignment->second.state != AssignmentState::Active ||
+                                                !IsWorkplaceOperational(assignment->second.workplace)))
+            return foundation::Result<DutyId>::Failure(Error("gameplay.roles_jobs.workplace_not_operational",
+                                                             "active duty requires active assignment and workplace"));
+        if (duty.shift.IsValid()) {
             bool shift_found = false;
-            for (const auto &[schedule_id, schedule] : schedules_)
-            {
+            for (const auto &[schedule_id, schedule] : schedules_) {
                 (void)schedule_id;
                 if (schedule.assignment != duty.assignment)
                     continue;
@@ -733,27 +668,25 @@ foundation::Result<DutyId> RolesJobsService::CreateDuty(Duty duty, GameplayConte
                     Error("gameplay.roles_jobs.invalid_duty", "duty shift does not belong to assignment"));
         }
     }
-    return CreateDutyInternal(std::move(duty), duty.state == DutyState::Active ? RolesJobsChangeKind::ShiftStarted
-                                                                               : RolesJobsChangeKind::ShiftScheduled,
+    return CreateDutyInternal(std::move(duty),
+                              duty.state == DutyState::Active ? RolesJobsChangeKind::ShiftStarted
+                                                              : RolesJobsChangeKind::ShiftScheduled,
                               context);
 }
 
-std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint now, GameplayContext context)
-{
+std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint now, GameplayContext context) {
     return ActivateDueShifts(OneTickBefore(now), now, context);
 }
 
 std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint from, GameplayTimePoint to,
-                                                        GameplayContext context)
-{
+                                                        GameplayContext context) {
     std::vector<DutyId> created;
     if (to < from)
         return created;
 
     std::vector<WorkSchedule> schedules;
     schedules.reserve(schedules_.size());
-    for (const auto &[id, schedule] : schedules_)
-    {
+    for (const auto &[id, schedule] : schedules_) {
         (void)id;
         schedules.push_back(schedule);
     }
@@ -763,13 +696,11 @@ std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint from, 
         return lhs.id < rhs.id;
     });
 
-    for (const auto &schedule : schedules)
-    {
+    for (const auto &schedule : schedules) {
         auto assignment_it = assignments_.find(schedule.assignment);
         if (assignment_it == assignments_.end() || assignment_it->second.state != AssignmentState::Active)
             continue;
-        if (!IsWorkplaceOperational(assignment_it->second.workplace))
-        {
+        if (!IsWorkplaceOperational(assignment_it->second.workplace)) {
             const auto suspended = SuspendAssignment(schedule.assignment, context);
             if (!suspended)
                 ++diagnostics_.automatic_suspension_failures;
@@ -786,19 +717,16 @@ std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint from, 
             return lhs.id < rhs.id;
         });
 
-        for (const auto &shift : shifts)
-        {
+        for (const auto &shift : shifts) {
             if (!IsPositiveDuration(shift.duration))
                 continue;
 
             auto occurrence_start = shift.start;
-            if (shift.recurrence.ticks > 0)
-            {
+            if (shift.recurrence.ticks > 0) {
                 const auto base_end = CheckedAdd(shift.start, shift.duration);
                 if (!base_end.has_value())
                     continue;
-                if (base_end->ticks <= from.ticks)
-                {
+                if (base_end->ticks <= from.ticks) {
                     const auto delta = CheckedDifference(from, *base_end);
                     if (!delta.has_value())
                         continue;
@@ -808,23 +736,22 @@ std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint from, 
                     const auto skip_count = skipped_occurrences + 1;
                     if (skip_count > std::numeric_limits<std::int64_t>::max() / shift.recurrence.ticks)
                         continue;
-                    const auto advanced = CheckedAdd(shift.start, GameplayDuration{skip_count * shift.recurrence.ticks});
+                    const auto advanced =
+                        CheckedAdd(shift.start, GameplayDuration{skip_count * shift.recurrence.ticks});
                     if (!advanced.has_value())
                         continue;
                     occurrence_start = *advanced;
                 }
             }
 
-            while (occurrence_start.ticks <= to.ticks)
-            {
+            while (occurrence_start.ticks <= to.ticks) {
                 const auto occurrence_end = CheckedAdd(occurrence_start, shift.duration);
                 if (!occurrence_end.has_value())
                     break;
                 if (!IntersectsOpenClosed(from, to, occurrence_start, *occurrence_end))
                     break;
 
-                if (!HasDutyOccurrence(schedule.assignment, shift.id, occurrence_start))
-                {
+                if (!HasDutyOccurrence(schedule.assignment, shift.id, occurrence_start)) {
                     Duty duty;
                     duty.subject = assignment_it->second.worker;
                     duty.type = shift.task_type.IsValid() ? TypeId{shift.task_type.value}
@@ -841,11 +768,11 @@ std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint from, 
                     else
                         duty.tasks = definition_it->second.default_tasks;
 
-                    const auto created_duty = CreateDutyInternal(
-                        std::move(duty),
-                        IsMissedAt(to, *occurrence_end) ? RolesJobsChangeKind::DutySkipped
-                                                       : RolesJobsChangeKind::ShiftStarted,
-                        context);
+                    const auto created_duty =
+                        CreateDutyInternal(std::move(duty),
+                                           IsMissedAt(to, *occurrence_end) ? RolesJobsChangeKind::DutySkipped
+                                                                           : RolesJobsChangeKind::ShiftStarted,
+                                           context);
                     if (created_duty)
                         created.push_back(created_duty.Value());
                 }
@@ -864,25 +791,24 @@ std::vector<DutyId> RolesJobsService::ActivateDueShifts(GameplayTimePoint from, 
 }
 
 foundation::Result<void> RolesJobsService::TransitionDuty(DutyId id, DutyState state, RolesJobsChangeKind change,
-                                                          GameplayContext context)
-{
+                                                          GameplayContext context) {
     auto *duty = FindMutableDuty(id);
     if (duty == nullptr)
         return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.duty_missing", "duty missing"));
     if (!IsValidDutyState(duty->state) || !IsValidDutyState(state))
         return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.invalid_duty_state", "invalid duty state"));
     if (!IsAllowedDutyTransition(duty->state, state))
-        return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.invalid_duty_transition", "invalid duty transition"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.roles_jobs.invalid_duty_transition", "invalid duty transition"));
     if (IsTerminalDuty(duty->state))
         return foundation::Result<void>::Failure(
             Error("gameplay.roles_jobs.duty_terminal", "terminal duty cannot transition"));
-    if (state == DutyState::Active)
-    {
+    if (state == DutyState::Active) {
         const auto assignment = assignments_.find(duty->assignment);
         if (assignment == assignments_.end() || assignment->second.state != AssignmentState::Active ||
             !IsWorkplaceOperational(assignment->second.workplace))
-            return foundation::Result<void>::Failure(
-                Error("gameplay.roles_jobs.workplace_not_operational", "active duty requires active assignment and workplace"));
+            return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.workplace_not_operational",
+                                                           "active duty requires active assignment and workplace"));
     }
 
     auto next_revision = NextRevision();
@@ -897,7 +823,8 @@ foundation::Result<void> RolesJobsService::TransitionDuty(DutyId id, DutyState s
         workplace = assignment_it->second.workplace;
     Record({0, change, duty->subject, duty->assignment, workplace, id, context, revision_});
     if (IsTerminalDuty(state) && state != DutyState::Skipped)
-        Record({0, RolesJobsChangeKind::ShiftEnded, duty->subject, duty->assignment, workplace, id, context, revision_});
+        Record(
+            {0, RolesJobsChangeKind::ShiftEnded, duty->subject, duty->assignment, workplace, id, context, revision_});
     if (state == DutyState::Failed)
         ++diagnostics_.duty_failures;
     RebuildIndexes();
@@ -905,63 +832,52 @@ foundation::Result<void> RolesJobsService::TransitionDuty(DutyId id, DutyState s
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> RolesJobsService::ActivateDuty(DutyId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::ActivateDuty(DutyId id, GameplayContext context) {
     return TransitionDuty(id, DutyState::Active, RolesJobsChangeKind::DutyActivated, context);
 }
 
-foundation::Result<void> RolesJobsService::CompleteDuty(DutyId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::CompleteDuty(DutyId id, GameplayContext context) {
     return TransitionDuty(id, DutyState::Completed, RolesJobsChangeKind::DutyCompleted, context);
 }
 
-foundation::Result<void> RolesJobsService::FailDuty(DutyId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::FailDuty(DutyId id, GameplayContext context) {
     return TransitionDuty(id, DutyState::Failed, RolesJobsChangeKind::DutyFailed, context);
 }
 
-foundation::Result<void> RolesJobsService::SkipDuty(DutyId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::SkipDuty(DutyId id, GameplayContext context) {
     return TransitionDuty(id, DutyState::Skipped, RolesJobsChangeKind::DutySkipped, context);
 }
 
-foundation::Result<void> RolesJobsService::CancelDuty(DutyId id, GameplayContext context)
-{
+foundation::Result<void> RolesJobsService::CancelDuty(DutyId id, GameplayContext context) {
     return TransitionDuty(id, DutyState::Cancelled, RolesJobsChangeKind::DutyCancelled, context);
 }
 
-const JobAssignment *RolesJobsService::GetJobAssignment(JobAssignmentId id) const noexcept
-{
+const JobAssignment *RolesJobsService::GetJobAssignment(JobAssignmentId id) const noexcept {
     auto it = assignments_.find(id);
     return it == assignments_.end() ? nullptr : &it->second;
 }
 
-const Workplace *RolesJobsService::GetWorkplace(WorkplaceId id) const noexcept
-{
+const Workplace *RolesJobsService::GetWorkplace(WorkplaceId id) const noexcept {
     auto it = workplaces_.find(id);
     return it == workplaces_.end() ? nullptr : &it->second;
 }
 
-const Duty *RolesJobsService::FindDuty(DutyId id) const noexcept
-{
+const Duty *RolesJobsService::FindDuty(DutyId id) const noexcept {
     auto it = duties_.find(id);
     return it == duties_.end() ? nullptr : &it->second;
 }
 
-const Duty *RolesJobsService::GetCurrentDuty(GameplayObjectRef subject) const noexcept
-{
+const Duty *RolesJobsService::GetCurrentDuty(GameplayObjectRef subject) const noexcept {
     const Duty *best = nullptr;
     const auto index = duties_by_subject_.find(subject);
     if (index == duties_by_subject_.end())
         return nullptr;
-    for (const auto duty_id : index->second)
-    {
+    for (const auto duty_id : index->second) {
         const auto it = duties_.find(duty_id);
         if (it == duties_.end())
             continue;
         const auto &duty = it->second;
-        if (duty.state == DutyState::Active)
-        {
+        if (duty.state == DutyState::Active) {
             if (!best || duty.priority > best->priority || (duty.priority == best->priority && duty.id < best->id))
                 best = &duty;
         }
@@ -969,30 +885,28 @@ const Duty *RolesJobsService::GetCurrentDuty(GameplayObjectRef subject) const no
     return best;
 }
 
-std::vector<JobAssignment> RolesJobsService::FindJobsOfSubject(GameplayObjectRef subject) const
-{
+std::vector<JobAssignment> RolesJobsService::FindJobsOfSubject(GameplayObjectRef subject) const {
     std::vector<JobAssignment> out;
     const auto index = assignments_by_worker_.find(subject);
     if (index == assignments_by_worker_.end())
         return out;
-    for (const auto id : index->second)
-    {
+    for (const auto id : index->second) {
         const auto it = assignments_.find(id);
         if (it != assignments_.end())
             out.push_back(it->second);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
     return out;
 }
 
-std::vector<JobAssignment> RolesJobsService::FindWorkersAtWorkplace(WorkplaceId workplace) const
-{
+std::vector<JobAssignment> RolesJobsService::FindWorkersAtWorkplace(WorkplaceId workplace) const {
     std::vector<JobAssignment> out;
     const auto index = assignments_by_workplace_.find(workplace);
     if (index == assignments_by_workplace_.end())
         return out;
-    for (const auto id : index->second)
-    {
+    for (const auto id : index->second) {
         const auto it = assignments_.find(id);
         if (it != assignments_.end())
             out.push_back(it->second);
@@ -1005,27 +919,25 @@ std::vector<JobAssignment> RolesJobsService::FindWorkersAtWorkplace(WorkplaceId 
     return out;
 }
 
-std::vector<Workplace> RolesJobsService::FindWorkplacesInArea(GameplayObjectRef area) const
-{
+std::vector<Workplace> RolesJobsService::FindWorkplacesInArea(GameplayObjectRef area) const {
     std::vector<Workplace> out;
-    for (const auto &[id, workplace] : workplaces_)
-    {
+    for (const auto &[id, workplace] : workplaces_) {
         (void)id;
         if (workplace.area == area)
             out.push_back(workplace);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
     return out;
 }
 
-std::vector<Duty> RolesJobsService::FindDutiesForAssignment(JobAssignmentId assignment) const
-{
+std::vector<Duty> RolesJobsService::FindDutiesForAssignment(JobAssignmentId assignment) const {
     std::vector<Duty> out;
     const auto index = duties_by_assignment_.find(assignment);
     if (index == duties_by_assignment_.end())
         return out;
-    for (const auto id : index->second)
-    {
+    for (const auto id : index->second) {
         const auto it = duties_.find(id);
         if (it != duties_.end())
             out.push_back(it->second);
@@ -1038,11 +950,9 @@ std::vector<Duty> RolesJobsService::FindDutiesForAssignment(JobAssignmentId assi
     return out;
 }
 
-std::vector<Duty> RolesJobsService::FindActiveDuties() const
-{
+std::vector<Duty> RolesJobsService::FindActiveDuties() const {
     std::vector<Duty> out;
-    for (const auto &[id, duty] : duties_)
-    {
+    for (const auto &[id, duty] : duties_) {
         (void)id;
         if (duty.state == DutyState::Active)
             out.push_back(duty);
@@ -1055,85 +965,78 @@ std::vector<Duty> RolesJobsService::FindActiveDuties() const
     return out;
 }
 
-std::vector<RolesJobsChange> RolesJobsService::ChangesSinceSequence(std::uint64_t sequence) const
-{
+std::vector<RolesJobsChange> RolesJobsService::ChangesSinceSequence(std::uint64_t sequence) const {
     return ReadChangesSinceSequence(sequence).changes;
 }
 
-RolesJobsChangeBatch RolesJobsService::ReadChangesSinceSequence(std::uint64_t sequence) const
-{
+RolesJobsChangeBatch RolesJobsService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     RolesJobsChangeBatch batch;
     batch.latest_sequence = LatestChangeCursor().sequence;
     batch.oldest_available_sequence = OldestChangeSequence();
-    if (next_change_sequence_ == 0 || sequence > batch.latest_sequence)
-    {
+    if (next_change_sequence_ == 0 || sequence > batch.latest_sequence) {
         batch.snapshot_required = true;
         return batch;
     }
-    if (changes_.empty())
-    {
+    if (changes_.empty()) {
         batch.snapshot_required = sequence < batch.latest_sequence;
         return batch;
     }
-    if (sequence < batch.oldest_available_sequence && batch.oldest_available_sequence - sequence > 1)
-    {
+    if (sequence < batch.oldest_available_sequence && batch.oldest_available_sequence - sequence > 1) {
         batch.snapshot_required = true;
         return batch;
     }
-    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes),
-                 [sequence](const auto &change) { return change.sequence > sequence; });
+    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes), [sequence](const auto &change) {
+        return change.sequence > sequence;
+    });
     return batch;
 }
 
-
-std::uint64_t RolesJobsService::OldestChangeSequence() const noexcept
-{
+std::uint64_t RolesJobsService::OldestChangeSequence() const noexcept {
     return changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
 }
 
-void RolesJobsService::PruneChangesBefore(std::uint64_t sequence) noexcept
-{
+void RolesJobsService::PruneChangesBefore(std::uint64_t sequence) noexcept {
     while (!changes_.empty() && changes_.front().sequence < sequence)
         changes_.pop_front();
 }
 
-RolesJobsSnapshot RolesJobsService::CaptureSnapshot() const
-{
+RolesJobsSnapshot RolesJobsService::CaptureSnapshot() const {
     RolesJobsSnapshot snapshot;
-    for (const auto &[id, definition] : definitions_)
-    {
+    for (const auto &[id, definition] : definitions_) {
         (void)id;
         snapshot.definitions.push_back(definition);
     }
-    for (const auto &[id, workplace] : workplaces_)
-    {
+    for (const auto &[id, workplace] : workplaces_) {
         (void)id;
         snapshot.workplaces.push_back(workplace);
     }
-    for (const auto &[id, assignment] : assignments_)
-    {
+    for (const auto &[id, assignment] : assignments_) {
         (void)id;
         snapshot.assignments.push_back(assignment);
     }
-    for (const auto &[id, schedule] : schedules_)
-    {
+    for (const auto &[id, schedule] : schedules_) {
         (void)id;
         snapshot.schedules.push_back(schedule);
     }
-    for (const auto &[id, duty] : duties_)
-    {
+    for (const auto &[id, duty] : duties_) {
         (void)id;
         snapshot.duties.push_back(duty);
     }
-    std::sort(snapshot.definitions.begin(), snapshot.definitions.end(),
-              [](const auto &a, const auto &b) { return a.id < b.id; });
-    std::sort(snapshot.workplaces.begin(), snapshot.workplaces.end(),
-              [](const auto &a, const auto &b) { return a.id < b.id; });
-    std::sort(snapshot.assignments.begin(), snapshot.assignments.end(),
-              [](const auto &a, const auto &b) { return a.id < b.id; });
-    std::sort(snapshot.schedules.begin(), snapshot.schedules.end(),
-              [](const auto &a, const auto &b) { return a.id < b.id; });
-    std::sort(snapshot.duties.begin(), snapshot.duties.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.definitions.begin(), snapshot.definitions.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
+    std::sort(snapshot.workplaces.begin(), snapshot.workplaces.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
+    std::sort(snapshot.assignments.begin(), snapshot.assignments.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
+    std::sort(snapshot.schedules.begin(), snapshot.schedules.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
+    std::sort(snapshot.duties.begin(), snapshot.duties.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
     snapshot.assignment_ids = assignment_ids_.GetSnapshot();
     snapshot.workplace_ids = workplace_ids_.GetSnapshot();
     snapshot.schedule_ids = schedule_ids_.GetSnapshot();
@@ -1144,15 +1047,14 @@ RolesJobsSnapshot RolesJobsService::CaptureSnapshot() const
     return snapshot;
 }
 
-foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot snapshot)
-{
+foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot snapshot) {
     if (testing::ConsumeLocalAllocationFailureForTest())
         return foundation::Result<void>::Failure(
             Error("gameplay.roles_jobs.allocation_failed", "module-local injected allocation failure"));
 
-    const auto next_journal_epoch = CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
-    if (!next_journal_epoch)
-    {
+    const auto next_journal_epoch =
+        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
             foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
     }
@@ -1168,13 +1070,11 @@ foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot sna
     std::vector<WorkShiftId> shift_ids;
     std::vector<DutyId> duty_ids;
 
-    for (const auto &definition : snapshot.definitions)
-    {
+    for (const auto &definition : snapshot.definitions) {
         if (!definition.id.IsValid())
             return foundation::Result<void>::Failure(
                 Error("gameplay.roles_jobs.restore_invalid", "invalid definition"));
-        for (const auto task : definition.default_tasks)
-        {
+        for (const auto task : definition.default_tasks) {
             if (!task.IsValid())
                 return foundation::Result<void>::Failure(
                     Error("gameplay.roles_jobs.restore_invalid", "invalid default task"));
@@ -1184,20 +1084,21 @@ foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot sna
                 Error("gameplay.roles_jobs.restore_invalid", "duplicate definition"));
     }
 
-    for (const auto &workplace : snapshot.workplaces)
-    {
-        if (!workplace.id.IsValid() || !workplace.area.IsValid() || !IsValidWorkplaceState(workplace.state) || workplace.revision.value > snapshot.revision.value)
+    for (const auto &workplace : snapshot.workplaces) {
+        if (!workplace.id.IsValid() || !workplace.area.IsValid() || !IsValidWorkplaceState(workplace.state) ||
+            workplace.revision.value > snapshot.revision.value)
             return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "invalid workplace"));
         if (!workplaces.emplace(workplace.id, workplace).second)
-            return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "duplicate workplace"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.roles_jobs.restore_invalid", "duplicate workplace"));
         workplace_ids.push_back(workplace.id);
     }
 
-    for (const auto &assignment : snapshot.assignments)
-    {
+    for (const auto &assignment : snapshot.assignments) {
         if (!assignment.id.IsValid() || !assignment.worker.IsValid() || !assignment.job.IsValid() ||
             !definitions.contains(assignment.job) || !assignment.workplace.IsValid() ||
-            !workplaces.contains(assignment.workplace) || !IsValidAssignmentState(assignment.state) || assignment.revision.value > snapshot.revision.value)
+            !workplaces.contains(assignment.workplace) || !IsValidAssignmentState(assignment.state) ||
+            assignment.revision.value > snapshot.revision.value)
             return foundation::Result<void>::Failure(
                 Error("gameplay.roles_jobs.restore_invalid", "invalid assignment"));
         if (assignment.state == AssignmentState::Active &&
@@ -1211,37 +1112,39 @@ foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot sna
     }
 
     std::unordered_set<WorkShiftId, IdHash> global_shift_ids;
-    for (const auto &schedule : snapshot.schedules)
-    {
-        if (!schedule.id.IsValid() || !schedule.assignment.IsValid() || !assignments.contains(schedule.assignment) || schedule.revision.value > snapshot.revision.value)
+    for (const auto &schedule : snapshot.schedules) {
+        if (!schedule.id.IsValid() || !schedule.assignment.IsValid() || !assignments.contains(schedule.assignment) ||
+            schedule.revision.value > snapshot.revision.value)
             return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "invalid schedule"));
         const auto assignment = assignments.at(schedule.assignment);
         const auto definition = definitions.find(assignment.job);
         if (definition == definitions.end())
-            return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "schedule job missing"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.roles_jobs.restore_invalid", "schedule job missing"));
         std::unordered_set<WorkShiftId, IdHash> local_shift_ids;
-        for (const auto &shift : schedule.shifts)
-        {
-            if (!shift.id.IsValid() || !IsPositiveDuration(shift.duration) || !IsNonNegativeDuration(shift.recurrence) ||
+        for (const auto &shift : schedule.shifts) {
+            if (!shift.id.IsValid() || !IsPositiveDuration(shift.duration) ||
+                !IsNonNegativeDuration(shift.recurrence) ||
                 (shift.recurrence.ticks > 0 && shift.recurrence.ticks < shift.duration.ticks) ||
                 (!shift.task_type.IsValid() && definition->second.default_tasks.empty()))
                 return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "invalid shift"));
             if (!local_shift_ids.insert(shift.id).second || !global_shift_ids.insert(shift.id).second)
-                return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "duplicate shift"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.roles_jobs.restore_invalid", "duplicate shift"));
             shift_ids.push_back(shift.id);
         }
         if (!schedules.emplace(schedule.id, schedule).second)
-            return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "duplicate schedule"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.roles_jobs.restore_invalid", "duplicate schedule"));
         schedule_ids.push_back(schedule.id);
     }
 
     std::unordered_set<DutyOccurrenceKey, DutyOccurrenceKeyHash> live_occurrences;
-    for (const auto &duty : snapshot.duties)
-    {
-        if (!duty.id.IsValid() || !duty.subject.IsValid() || !IsValidDutyState(duty.state) || duty.revision.value > snapshot.revision.value)
+    for (const auto &duty : snapshot.duties) {
+        if (!duty.id.IsValid() || !duty.subject.IsValid() || !IsValidDutyState(duty.state) ||
+            duty.revision.value > snapshot.revision.value)
             return foundation::Result<void>::Failure(Error("gameplay.roles_jobs.restore_invalid", "invalid duty"));
-        if (duty.assignment.IsValid())
-        {
+        if (duty.assignment.IsValid()) {
             const auto assignment = assignments.find(duty.assignment);
             if (assignment == assignments.end())
                 return foundation::Result<void>::Failure(
@@ -1251,18 +1154,14 @@ foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot sna
                  !IsWorkplaceStateOperational(workplaces.at(assignment->second.workplace).state)))
                 return foundation::Result<void>::Failure(
                     Error("gameplay.roles_jobs.restore_invalid", "active duty has invalid assignment/workplace"));
-            if (duty.shift.IsValid())
-            {
+            if (duty.shift.IsValid()) {
                 bool shift_found = false;
-                for (const auto &[schedule_id, schedule] : schedules)
-                {
+                for (const auto &[schedule_id, schedule] : schedules) {
                     (void)schedule_id;
                     if (schedule.assignment != duty.assignment)
                         continue;
-                    for (const auto &shift : schedule.shifts)
-                    {
-                        if (shift.id == duty.shift)
-                        {
+                    for (const auto &shift : schedule.shifts) {
+                        if (shift.id == duty.shift) {
                             shift_found = true;
                             break;
                         }
@@ -1273,8 +1172,7 @@ foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot sna
                 if (!shift_found)
                     return foundation::Result<void>::Failure(
                         Error("gameplay.roles_jobs.restore_invalid", "duty shift does not belong to assignment"));
-                if (IsLiveDuty(duty.state))
-                {
+                if (IsLiveDuty(duty.state)) {
                     DutyOccurrenceKey key{duty.assignment, duty.shift, duty.scheduled_start};
                     if (!live_occurrences.insert(key).second)
                         return foundation::Result<void>::Failure(
@@ -1320,8 +1218,7 @@ foundation::Result<void> RolesJobsService::RestoreSnapshot(RolesJobsSnapshot sna
     return foundation::Result<void>::Success();
 }
 
-RolesJobsDiagnostics RolesJobsService::GetDiagnostics() const noexcept
-{
+RolesJobsDiagnostics RolesJobsService::GetDiagnostics() const noexcept {
     auto diagnostics = diagnostics_;
     diagnostics.definitions = definitions_.size();
     diagnostics.workplaces = workplaces_.size();
@@ -1330,8 +1227,7 @@ RolesJobsDiagnostics RolesJobsService::GetDiagnostics() const noexcept
     diagnostics.active_duties = 0;
     diagnostics.retained_changes = changes_.size();
     diagnostics.retained_terminal_duties = 0;
-    for (const auto &[id, duty] : duties_)
-    {
+    for (const auto &[id, duty] : duties_) {
         (void)id;
         if (duty.state == DutyState::Active)
             ++diagnostics.active_duties;
@@ -1341,8 +1237,7 @@ RolesJobsDiagnostics RolesJobsService::GetDiagnostics() const noexcept
     return diagnostics;
 }
 
-void RolesJobsService::Record(RolesJobsChange change)
-{
+void RolesJobsService::Record(RolesJobsChange change) {
     if (next_change_sequence_ == 0)
         return;
     const auto assigned = next_change_sequence_;

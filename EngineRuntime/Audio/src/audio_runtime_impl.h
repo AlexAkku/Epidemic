@@ -6,8 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::runtime::audio
-{
+namespace epidemic::runtime::audio {
 // Internal in-memory Audio runtime. It models service contracts and state transitions without opening an audio device.
 
 class AudioRuntime final : public ISoundRegistry,
@@ -15,29 +14,31 @@ class AudioRuntime final : public ISoundRegistry,
                            public IListenerSystem,
                            public IAudioEventQueue,
                            public IMixerSystem,
-                           public IAudioBackend
-{
-public:
+                           public IAudioBackend {
+  public:
     explicit AudioRuntime(AudioOptions options, AudioDependencies dependencies = {});
 
     [[nodiscard]] foundation::Result<void> RegisterSound(SoundDesc desc) override;
     [[nodiscard]] SoundState GetSoundState(SoundId id) const override;
     [[nodiscard]] bool IsEnabled() const override;
-    [[nodiscard]] foundation::Result<void> Initialize(const AudioBackendOptions& options) override;
-    [[nodiscard]] foundation::Result<BackendVoiceHandle> CreateVoice(const AudioVoiceDesc& desc) override;
+    [[nodiscard]] foundation::Result<void> Initialize(const AudioBackendOptions &options) override;
+    [[nodiscard]] foundation::Result<BackendVoiceHandle> CreateVoice(const AudioVoiceDesc &desc) override;
     [[nodiscard]] foundation::Result<void> DestroyVoice(BackendVoiceHandle handle) override;
     [[nodiscard]] foundation::Result<void> Play(BackendVoiceHandle handle) override;
     [[nodiscard]] foundation::Result<void> Pause(BackendVoiceHandle handle) override;
     [[nodiscard]] foundation::Result<void> Stop(BackendVoiceHandle handle) override;
     [[nodiscard]] bool IsVoiceFinished(BackendVoiceHandle handle) const override;
     [[nodiscard]] foundation::Result<void> SetGain(BackendVoiceHandle handle, float gain) override;
-    [[nodiscard]] foundation::Result<void> SetSpatialState(BackendVoiceHandle handle, const AudioSpatialState& state) override;
-    [[nodiscard]] foundation::Result<void> CreateBackendListener(AudioListenerHandle handle, const Transform& transform) override;
+    [[nodiscard]] foundation::Result<void> SetSpatialState(BackendVoiceHandle handle,
+                                                           const AudioSpatialState &state) override;
+    [[nodiscard]] foundation::Result<void> CreateBackendListener(AudioListenerHandle handle,
+                                                                 const Transform &transform) override;
     [[nodiscard]] foundation::Result<void> DestroyBackendListener(AudioListenerHandle handle) override;
-    [[nodiscard]] foundation::Result<void> SetBackendListenerTransform(AudioListenerHandle handle, const Transform& transform) override;
+    [[nodiscard]] foundation::Result<void> SetBackendListenerTransform(AudioListenerHandle handle,
+                                                                       const Transform &transform) override;
     [[nodiscard]] foundation::Result<void> Update(RuntimeFrameDuration delta) override;
 
-    [[nodiscard]] foundation::Result<AudioEmitterHandle> CreateEmitterHandle(const AudioEmitterDesc& desc) override;
+    [[nodiscard]] foundation::Result<AudioEmitterHandle> CreateEmitterHandle(const AudioEmitterDesc &desc) override;
     [[nodiscard]] foundation::Result<void> DestroyEmitter(AudioEmitterHandle handle) override;
     [[nodiscard]] foundation::Result<void> Play(AudioEmitterHandle handle) override;
     [[nodiscard]] foundation::Result<void> Pause(AudioEmitterHandle handle) override;
@@ -51,38 +52,38 @@ public:
     [[nodiscard]] foundation::Result<void> Tick(RuntimeFrameDuration delta) override;
     [[nodiscard]] foundation::Result<void> Shutdown() override;
 
-    [[nodiscard]] foundation::Result<AudioListenerHandle> CreateListenerHandle(const AudioListenerDesc& desc) override;
+    [[nodiscard]] foundation::Result<AudioListenerHandle> CreateListenerHandle(const AudioListenerDesc &desc) override;
     [[nodiscard]] foundation::Result<void> DestroyListener(AudioListenerHandle handle) override;
     [[nodiscard]] foundation::Result<void> SetMainListener(AudioListenerHandle handle) override;
     [[nodiscard]] std::optional<AudioListenerHandle> GetMainListener() const override;
 
-    [[nodiscard]] foundation::Result<void> SubmitOneShot(const AudioEvent& event) override;
+    [[nodiscard]] foundation::Result<void> SubmitOneShot(const AudioEvent &event) override;
     [[nodiscard]] std::span<const AudioEvent> Events() const override;
     void Clear() override;
 
     [[nodiscard]] foundation::Result<void> SetMixerGroup(MixerGroupState state) override;
     [[nodiscard]] std::optional<MixerGroupState> GetMixerGroup(MixerGroupId id) const override;
 
-    void SetAllocatorStateForTesting(std::uint64_t emitter_value,
-                                     std::uint32_t emitter_generation,
-                                     std::uint64_t listener_value,
-                                     std::uint32_t listener_generation,
+    void SetAllocatorStateForTesting(std::uint64_t emitter_value, std::uint32_t emitter_generation,
+                                     std::uint64_t listener_value, std::uint32_t listener_generation,
                                      std::uint64_t voice_value);
-    [[nodiscard]] foundation::Result<void> SetEmitterRevisionForTesting(AudioEmitterHandle handle, std::uint64_t revision);
-    void FailNextListenerPublicationForTesting() noexcept { fail_next_listener_publication_for_testing_ = true; }
-    void FailNextVoiceCleanupPreflightForTesting() noexcept { fail_next_voice_cleanup_preflight_for_testing_ = true; }
-    [[nodiscard]] std::size_t PendingVoiceCleanupCountForTesting() const noexcept
-    {
+    [[nodiscard]] foundation::Result<void> SetEmitterRevisionForTesting(AudioEmitterHandle handle,
+                                                                        std::uint64_t revision);
+    void FailNextListenerPublicationForTesting() noexcept {
+        fail_next_listener_publication_for_testing_ = true;
+    }
+    void FailNextVoiceCleanupPreflightForTesting() noexcept {
+        fail_next_voice_cleanup_preflight_for_testing_ = true;
+    }
+    [[nodiscard]] std::size_t PendingVoiceCleanupCountForTesting() const noexcept {
         return pending_voice_cleanups_.size();
     }
-    [[nodiscard]] std::size_t PendingListenerCleanupCountForTesting() const noexcept
-    {
+    [[nodiscard]] std::size_t PendingListenerCleanupCountForTesting() const noexcept {
         return pending_listener_cleanups_.size();
     }
 
-private:
-    struct EmitterRecord
-    {
+  private:
+    struct EmitterRecord {
         AudioEmitterDesc desc{};
         AudioEmitterHandle handle{};
         BackendVoiceHandle voice{};
@@ -99,64 +100,61 @@ private:
         std::uint64_t revision = 0;
     };
 
-    struct ListenerRecord
-    {
+    struct ListenerRecord {
         AudioListenerDesc desc{};
         AudioListenerHandle handle{};
     };
 
-    struct MockVoiceRecord
-    {
+    struct MockVoiceRecord {
         AudioVoiceDesc desc{};
         EmitterState state = EmitterState::Stopped;
         float gain = 1.0f;
         AudioSpatialState spatial{};
     };
 
-    struct MixerFadeRecord
-    {
+    struct MixerFadeRecord {
         float start_volume = 1.0f;
         float target_volume = 1.0f;
         RuntimeFrameDuration elapsed{};
     };
 
-    struct VoiceOwnership
-    {
+    struct VoiceOwnership {
         BackendVoiceHandle voice{};
         std::shared_ptr<const IAudioClipResource> clip_resource{};
     };
 
-    [[nodiscard]] IAudioBackend* Backend() const noexcept;
-    [[nodiscard]] IAudioResourceSource* Resources() const noexcept;
-    [[nodiscard]] IAudioTransformSource* Transforms() const noexcept;
+    [[nodiscard]] IAudioBackend *Backend() const noexcept;
+    [[nodiscard]] IAudioResourceSource *Resources() const noexcept;
+    [[nodiscard]] IAudioTransformSource *Transforms() const noexcept;
     [[nodiscard]] foundation::Result<AudioClipPayload> ResolvePayload(SoundId id);
-    [[nodiscard]] foundation::Result<AudioSpatialState> ReadSpatialState(AudioTransformId transform, bool spatial) const;
-    [[nodiscard]] foundation::Result<void> ApplyEmitterSpatialState(EmitterRecord& emitter);
-    [[nodiscard]] foundation::Result<VoiceOwnership> CreateOneShotVoice(const AudioEvent& event);
+    [[nodiscard]] foundation::Result<AudioSpatialState> ReadSpatialState(AudioTransformId transform,
+                                                                         bool spatial) const;
+    [[nodiscard]] foundation::Result<void> ApplyEmitterSpatialState(EmitterRecord &emitter);
+    [[nodiscard]] foundation::Result<VoiceOwnership> CreateOneShotVoice(const AudioEvent &event);
     [[nodiscard]] foundation::Result<void> CleanupFinishedOneShots();
     [[nodiscard]] foundation::Result<void> EnsurePendingVoiceCleanupCapacity(std::size_t additional);
     [[nodiscard]] foundation::Result<void> CleanupPendingVoices();
     [[nodiscard]] foundation::Result<void> CleanupPendingListeners();
     [[nodiscard]] foundation::Result<void> EnsureCanStartWork() const;
-    void RecordCleanupFailure(const foundation::Error& error);
-    void RollbackCreatedVoice(IAudioBackend& backend,
-                              BackendVoiceHandle voice,
+    void RecordCleanupFailure(const foundation::Error &error);
+    void RollbackCreatedVoice(IAudioBackend &backend, BackendVoiceHandle voice,
                               std::shared_ptr<const IAudioClipResource> clip_resource = {});
-    void RollbackCreatedListener(IAudioBackend& backend, AudioListenerHandle handle) noexcept;
-    void ResetFade(EmitterRecord& emitter);
-    [[nodiscard]] foundation::Result<void> BeginFade(EmitterRecord& emitter, EmitterState target_state, RuntimeFrameDuration duration);
-    [[nodiscard]] foundation::Result<void> EnsureEmitterRevisionAvailable(const EmitterRecord& emitter) const;
-    void CommitEmitterRevision(EmitterRecord& emitter) noexcept;
+    void RollbackCreatedListener(IAudioBackend &backend, AudioListenerHandle handle) noexcept;
+    void ResetFade(EmitterRecord &emitter);
+    [[nodiscard]] foundation::Result<void> BeginFade(EmitterRecord &emitter, EmitterState target_state,
+                                                     RuntimeFrameDuration duration);
+    [[nodiscard]] foundation::Result<void> EnsureEmitterRevisionAvailable(const EmitterRecord &emitter) const;
+    void CommitEmitterRevision(EmitterRecord &emitter) noexcept;
     [[nodiscard]] foundation::Result<void> ApplyMainListenerTransform();
-    [[nodiscard]] float EffectiveGain(const EmitterRecord& emitter) const;
-    [[nodiscard]] EmitterRecord* FindEmitter(AudioEmitterId id);
-    [[nodiscard]] const EmitterRecord* FindEmitter(AudioEmitterId id) const;
-    [[nodiscard]] EmitterRecord* FindEmitter(AudioEmitterHandle handle);
-    [[nodiscard]] const EmitterRecord* FindEmitter(AudioEmitterHandle handle) const;
-    [[nodiscard]] ListenerRecord* FindListener(AudioListenerId id);
-    [[nodiscard]] const ListenerRecord* FindListener(AudioListenerId id) const;
-    [[nodiscard]] ListenerRecord* FindListener(AudioListenerHandle handle);
-    [[nodiscard]] const ListenerRecord* FindListener(AudioListenerHandle handle) const;
+    [[nodiscard]] float EffectiveGain(const EmitterRecord &emitter) const;
+    [[nodiscard]] EmitterRecord *FindEmitter(AudioEmitterId id);
+    [[nodiscard]] const EmitterRecord *FindEmitter(AudioEmitterId id) const;
+    [[nodiscard]] EmitterRecord *FindEmitter(AudioEmitterHandle handle);
+    [[nodiscard]] const EmitterRecord *FindEmitter(AudioEmitterHandle handle) const;
+    [[nodiscard]] ListenerRecord *FindListener(AudioListenerId id);
+    [[nodiscard]] const ListenerRecord *FindListener(AudioListenerId id) const;
+    [[nodiscard]] ListenerRecord *FindListener(AudioListenerHandle handle);
+    [[nodiscard]] const ListenerRecord *FindListener(AudioListenerHandle handle) const;
     [[nodiscard]] bool HasListener(AudioListenerId id) const;
     [[nodiscard]] bool MixerWouldCycle(MixerGroupId id, MixerGroupId parent) const;
     [[nodiscard]] bool IsFinite(float value) const noexcept;

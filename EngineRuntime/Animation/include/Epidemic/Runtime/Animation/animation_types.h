@@ -10,52 +10,51 @@
 #include <string>
 #include <vector>
 
-namespace epidemic::runtime::animation
-{
+namespace epidemic::runtime::animation {
 // Public value types for the Animation major. They model runtime animation data identities,
 // animator lifecycle states, generic events and LOD hints without defining higher-level actor behavior.
 
-struct SkeletonId
-{
+struct SkeletonId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
-    [[nodiscard]] constexpr bool operator==(const SkeletonId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const SkeletonId &) const noexcept = default;
 };
 
-struct AnimationClipId
-{
+struct AnimationClipId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
-    [[nodiscard]] constexpr bool operator==(const AnimationClipId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const AnimationClipId &) const noexcept = default;
 };
 
-struct AnimatorInstanceId
-{
+struct AnimatorInstanceId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
-    [[nodiscard]] constexpr bool operator==(const AnimatorInstanceId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const AnimatorInstanceId &) const noexcept = default;
 };
 
 using FrameDuration = RuntimeFrameDuration;
 
-enum class AnimatorLifecycle
-{
+enum class AnimatorLifecycle {
     Uninitialized,
     Ready,
     Disabled
 };
 
-enum class AnimatorReadiness
-{
+enum class AnimatorReadiness {
     Ready,
     ResourceMissing
 };
 
-enum class AnimatorPlaybackState
-{
+enum class AnimatorPlaybackState {
     Stopped,
     Playing,
     Paused,
@@ -63,36 +62,31 @@ enum class AnimatorPlaybackState
     Finished
 };
 
-enum class PoseState
-{
+enum class PoseState {
     Clean,
     Dirty,
     Evaluating,
     Ready
 };
 
-enum class AnimationLodLevel
-{
+enum class AnimationLodLevel {
     Full,
     Reduced,
     Frozen
 };
 
-struct SkeletonDesc
-{
+struct SkeletonDesc {
     SkeletonId id{};
     std::uint32_t joint_count = 0;
 };
 
-struct AnimationClipDesc
-{
+struct AnimationClipDesc {
     AnimationClipId id{};
     SkeletonId skeleton{};
     float duration_seconds = 0.0f;
 };
 
-struct AnimatorPlayback
-{
+struct AnimatorPlayback {
     AnimationClipId clip{};
     bool loop = false;
     double playback_rate = 1.0;
@@ -100,8 +94,7 @@ struct AnimatorPlayback
     double fractional_microseconds = 0.0;
 };
 
-struct CrossfadeState
-{
+struct CrossfadeState {
     AnimationClipId source_clip{};
     AnimationClipId target_clip{};
     FrameDuration source_time{};
@@ -112,31 +105,29 @@ struct CrossfadeState
     float target_weight = 0.0f;
 };
 
-struct AnimatorDesc
-{
+struct AnimatorDesc {
     RuntimeObjectId owner{};
     SkeletonId skeleton{};
     AnimationLodLevel lod = AnimationLodLevel::Full;
 };
 
-struct AnimationEvent
-{
+struct AnimationEvent {
     AnimatorInstanceId animator{};
     std::string name;
     float time = 0.0f;
 };
 
-struct AnimatorHandle
-{
+struct AnimatorHandle {
     AnimatorInstanceId id{};
     std::uint32_t generation = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return id.IsValid() && generation != 0; }
-    [[nodiscard]] constexpr bool operator==(const AnimatorHandle&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return id.IsValid() && generation != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const AnimatorHandle &) const noexcept = default;
 };
 
-struct PoseSnapshot
-{
+struct PoseSnapshot {
     AnimatorInstanceId animator{};
     AnimatorHandle handle{};
     PoseState state = PoseState::Clean;
@@ -144,16 +135,14 @@ struct PoseSnapshot
     std::uint64_t revision = 0;
 };
 
-struct PoseBuffer
-{
+struct PoseBuffer {
     AnimatorHandle animator{};
     RuntimeObjectId owner{};
     std::vector<Transform> bone_transforms{};
     std::uint64_t revision = 0;
 };
 
-struct AnimatorSnapshot
-{
+struct AnimatorSnapshot {
     AnimatorHandle handle{};
     AnimatorLifecycle lifecycle = AnimatorLifecycle::Uninitialized;
     AnimatorReadiness readiness = AnimatorReadiness::ResourceMissing;
@@ -164,8 +153,7 @@ struct AnimatorSnapshot
     std::uint64_t revision = 0;
 };
 
-struct AnimationEvaluationRequest
-{
+struct AnimationEvaluationRequest {
     AnimatorHandle animator{};
     RuntimeObjectId owner{};
     SkeletonDesc skeleton{};
@@ -179,16 +167,14 @@ struct AnimationEvaluationRequest
     std::uint64_t revision = 0;
 };
 
-struct AnimationPlaybackCommand
-{
+struct AnimationPlaybackCommand {
     AnimatorHandle animator{};
     AnimationClipId clip{};
     bool loop = false;
     double playback_rate = 1.0;
 };
 
-struct AnimationOptions
-{
+struct AnimationOptions {
     bool enable_mock_pose_evaluation = false;
     std::size_t event_capacity = 64;
     std::size_t max_animators = 4096;
@@ -196,30 +182,22 @@ struct AnimationOptions
 };
 } // namespace epidemic::runtime::animation
 
-namespace std
-{
-template <> struct hash<epidemic::runtime::animation::SkeletonId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::animation::SkeletonId value) const noexcept
-    {
+namespace std {
+template <> struct hash<epidemic::runtime::animation::SkeletonId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::animation::SkeletonId value) const noexcept {
         return hash<std::uint64_t>{}(value.value);
     }
 };
 
-template <> struct hash<epidemic::runtime::animation::AnimationClipId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::animation::AnimationClipId value) const noexcept
-    {
+template <> struct hash<epidemic::runtime::animation::AnimationClipId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::animation::AnimationClipId value) const noexcept {
         return hash<std::uint64_t>{}(value.value);
     }
 };
 
-template <> struct hash<epidemic::runtime::animation::AnimatorInstanceId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::animation::AnimatorInstanceId value) const noexcept
-    {
+template <> struct hash<epidemic::runtime::animation::AnimatorInstanceId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::animation::AnimatorInstanceId value) const noexcept {
         return hash<std::uint64_t>{}(value.value);
     }
 };
 } // namespace std
-

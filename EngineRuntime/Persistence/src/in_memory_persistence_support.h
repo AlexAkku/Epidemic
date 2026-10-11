@@ -14,35 +14,32 @@
 #include <shadow_probe.h>
 #endif
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 struct PersistenceRuntimeTestAccess;
 
-struct PersistenceLocationHash
-{
-    [[nodiscard]] size_t operator()(const PersistenceLocation& location) const noexcept;
+struct PersistenceLocationHash {
+    [[nodiscard]] size_t operator()(const PersistenceLocation &location) const noexcept;
 };
 
 class InMemoryPersistenceStore;
 
-struct PersistenceCandidateState
-{
+struct PersistenceCandidateState {
     // MSVC hash containers may allocate buckets during default construction.
-    PersistenceCandidateState() noexcept(false) {}
+    PersistenceCandidateState() noexcept(false) {
+    }
     // MSVC hash containers allocate replacement buckets. Construct before swapping
     // so allocation failure propagates to the transaction guard, never terminate().
-    PersistenceCandidateState(PersistenceCandidateState&& other) noexcept(false) // NOLINT(bugprone-unsafe-to-allow-exceptions): fallible bucket construction.
-        : PersistenceCandidateState()
-    {
+    PersistenceCandidateState(PersistenceCandidateState &&other) noexcept(
+        false) // NOLINT(bugprone-unsafe-to-allow-exceptions): fallible bucket construction.
+        : PersistenceCandidateState() {
         Swap(other);
     }
-    PersistenceCandidateState(const PersistenceCandidateState&) = default;
-    PersistenceCandidateState& operator=(PersistenceCandidateState&& other) noexcept
-    {
+    PersistenceCandidateState(const PersistenceCandidateState &) = default;
+    PersistenceCandidateState &operator=(PersistenceCandidateState &&other) noexcept {
         Swap(other);
         return *this;
     }
-    PersistenceCandidateState& operator=(const PersistenceCandidateState&) = default;
+    PersistenceCandidateState &operator=(const PersistenceCandidateState &) = default;
 
     PersistenceSnapshot snapshot{};
     std::unordered_map<PersistentObjectId, PersistentObjectRecord> objects{};
@@ -51,8 +48,7 @@ struct PersistenceCandidateState
     std::unordered_map<PersistenceLocation, ZoneOverrideSnapshot, PersistenceLocationHash> zone_overrides{};
     std::unordered_set<PersistentObjectId> dirty_ids{};
 
-    void Swap(PersistenceCandidateState& other) noexcept
-    {
+    void Swap(PersistenceCandidateState &other) noexcept {
         std::swap(snapshot, other.snapshot);
         objects.swap(other.objects);
         lazy_rules.swap(other.lazy_rules);
@@ -62,10 +58,9 @@ struct PersistenceCandidateState
     }
 };
 
-class InMemorySaveTransaction final : public ISaveTransaction, public IPersistenceAdministrativeTransaction
-{
+class InMemorySaveTransaction final : public ISaveTransaction, public IPersistenceAdministrativeTransaction {
   public:
-    InMemorySaveTransaction(InMemoryPersistenceStore& store, PersistenceRevision base_revision);
+    InMemorySaveTransaction(InMemoryPersistenceStore &store, PersistenceRevision base_revision);
 
     [[nodiscard]] SaveTransactionState GetState() const override;
     [[nodiscard]] PersistenceRevision GetBaseRevision() const override;
@@ -75,7 +70,7 @@ class InMemorySaveTransaction final : public ISaveTransaction, public IPersisten
     [[nodiscard]] foundation::Result<void> UpdateLazyRule(LazyRuleRecord record) override;
     [[nodiscard]] foundation::Result<void> RemoveLazyRule(LazyRuleId id) override;
     [[nodiscard]] foundation::Result<void> UpsertZoneOverride(ZoneOverrideSnapshot snapshot) override;
-    [[nodiscard]] foundation::Result<void> RemoveZoneOverride(const PersistenceLocation& location) override;
+    [[nodiscard]] foundation::Result<void> RemoveZoneOverride(const PersistenceLocation &location) override;
     [[nodiscard]] foundation::Result<void> Commit() override;
     void Rollback() override;
 
@@ -89,7 +84,7 @@ class InMemorySaveTransaction final : public ISaveTransaction, public IPersisten
     [[nodiscard]] foundation::Result<void> EnsureOpen() const;
     [[nodiscard]] foundation::Result<void> StageOperation(PersistenceOperation operation);
 
-    InMemoryPersistenceStore& store_;
+    InMemoryPersistenceStore &store_;
     PersistenceRevision base_revision_ = 0;
     SaveTransactionState state_ = SaveTransactionState::Open;
     std::vector<PersistenceOperation> operations_;
@@ -100,15 +95,16 @@ class InMemorySaveTransaction final : public ISaveTransaction, public IPersisten
 #endif
 };
 
-class InMemoryPersistenceStore final : public IPersistenceStore
-{
+class InMemoryPersistenceStore final : public IPersistenceStore {
   public:
     InMemoryPersistenceStore() = default;
-    explicit InMemoryPersistenceStore(const PersistenceSnapshot& snapshot);
-    InMemoryPersistenceStore(const PersistenceSnapshot& snapshot, std::shared_ptr<IPersistenceBackend> backend, PersistenceDurability durability);
+    explicit InMemoryPersistenceStore(const PersistenceSnapshot &snapshot);
+    InMemoryPersistenceStore(const PersistenceSnapshot &snapshot, std::shared_ptr<IPersistenceBackend> backend,
+                             PersistenceDurability durability);
 
     [[nodiscard]] std::optional<PersistentObjectRecord> FindObject(PersistentObjectId id) const override;
-    [[nodiscard]] std::vector<PersistentObjectRecord> FindByLocation(const PersistenceLocation& location) const override;
+    [[nodiscard]] std::vector<PersistentObjectRecord>
+    FindByLocation(const PersistenceLocation &location) const override;
     [[nodiscard]] std::vector<PersistentObjectRecord> ListObjects() const override;
 
     [[nodiscard]] bool IsDirty(PersistentObjectId id) const override;
@@ -118,7 +114,8 @@ class InMemoryPersistenceStore final : public IPersistenceStore
     [[nodiscard]] bool IsTombstoned(PersistentObjectId id) const override;
     [[nodiscard]] std::vector<TombstoneRecord> ListTombstones() const override;
 
-    [[nodiscard]] std::optional<ZoneOverrideSnapshot> FindZoneOverride(const PersistenceLocation& location) const override;
+    [[nodiscard]] std::optional<ZoneOverrideSnapshot>
+    FindZoneOverride(const PersistenceLocation &location) const override;
     [[nodiscard]] std::vector<ZoneOverrideSnapshot> ListZoneOverrides() const override;
 
     [[nodiscard]] std::optional<LazyRuleRecord> FindLazyRule(LazyRuleId id) const override;
@@ -134,7 +131,8 @@ class InMemoryPersistenceStore final : public IPersistenceStore
     friend class InMemorySaveTransaction;
     friend struct PersistenceRuntimeTestAccess;
 
-    [[nodiscard]] foundation::Result<PersistenceCandidateState> BuildCandidateSnapshot(const InMemorySaveTransaction& transaction) const;
+    [[nodiscard]] foundation::Result<PersistenceCandidateState>
+    BuildCandidateSnapshot(const InMemorySaveTransaction &transaction) const;
     [[nodiscard]] foundation::Result<void> PublishSnapshot(PersistenceCandidateState candidate);
 
     std::unordered_map<PersistentObjectId, PersistentObjectRecord> objects_;
@@ -148,13 +146,13 @@ class InMemoryPersistenceStore final : public IPersistenceStore
     mutable bool fail_next_candidate_build_allocation_for_testing_ = false;
 };
 
-[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot& snapshot);
+[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot &snapshot);
 
-class InMemoryPersistenceBackend final : public IPersistenceBackend
-{
+class InMemoryPersistenceBackend final : public IPersistenceBackend {
   public:
     [[nodiscard]] foundation::Result<PersistenceSnapshot> Load() override;
-    [[nodiscard]] foundation::Result<void> CommitSnapshot(const PersistenceSnapshot& snapshot, PersistenceDurability durability) override;
+    [[nodiscard]] foundation::Result<void> CommitSnapshot(const PersistenceSnapshot &snapshot,
+                                                          PersistenceDurability durability) override;
 
   private:
     friend struct PersistenceRuntimeTestAccess;
@@ -163,5 +161,3 @@ class InMemoryPersistenceBackend final : public IPersistenceBackend
     bool fail_next_candidate_build_allocation_for_testing_ = false;
 };
 } // namespace epidemic::runtime
-
-

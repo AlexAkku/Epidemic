@@ -13,172 +13,137 @@
 #include <unordered_set>
 #include <vector>
 
-namespace epidemic::gameplay::population
-{
-struct PopulationGroupId
-{
+namespace epidemic::gameplay::population {
+struct PopulationGroupId {
     GameplayObjectId value{};
-    static constexpr PopulationGroupId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationGroupId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr PopulationGroupId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PopulationGroupId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationGroupId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationGroupId &) const noexcept = default;
 };
-struct PopulationUnitId
-{
+struct PopulationUnitId {
     GameplayObjectId value{};
-    static constexpr PopulationUnitId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationUnitId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr PopulationUnitId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PopulationUnitId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationUnitId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationUnitId &) const noexcept = default;
 };
-struct PopulationProfileId
-{
+struct PopulationProfileId {
     TypeId value{};
-    static constexpr PopulationProfileId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationProfileId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationProfileId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationProfileId &) const noexcept = default;
 };
-struct PopulationTemplateId
-{
+struct PopulationTemplateId {
     TypeId value{};
-    static constexpr PopulationTemplateId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationTemplateId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationTemplateId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationTemplateId &) const noexcept = default;
 };
-struct PopulationResidenceId
-{
+struct PopulationResidenceId {
     GameplayObjectId value{};
-    static constexpr PopulationResidenceId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationResidenceId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr PopulationResidenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PopulationResidenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationResidenceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationResidenceId &) const noexcept = default;
 };
-struct PopulationMigrationId
-{
+struct PopulationMigrationId {
     GameplayObjectId value{};
-    static constexpr PopulationMigrationId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationMigrationId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr PopulationMigrationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PopulationMigrationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationMigrationId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationMigrationId &) const noexcept = default;
 };
-struct PopulationAllocationId
-{
+struct PopulationAllocationId {
     GameplayObjectId value{};
-    static constexpr PopulationAllocationId FromString(std::string_view s) noexcept
-    {
+    static constexpr PopulationAllocationId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr PopulationAllocationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr PopulationAllocationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const PopulationAllocationId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const PopulationAllocationId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class PopulationGroupState
-{
+enum class PopulationGroupState {
     Active,
     Dormant,
     Depleted,
     Removed
 };
-enum class PopulationUnitState
-{
+enum class PopulationUnitState {
     Latent,
     Abstract,
     Materialized,
     Dead,
     Removed
 };
-enum class ResidenceState
-{
+enum class ResidenceState {
     Assigned,
     Unavailable,
     Abandoned,
     Destroyed
 };
-enum class MigrationState
-{
+enum class MigrationState {
     Planned,
     Active,
     Completed,
     Cancelled,
     Failed
 };
-enum class PopulationAllocationState
-{
+enum class PopulationAllocationState {
     Active,
     Committed,
     Released
 };
-enum class PopulationChangeKind
-{
+enum class PopulationChangeKind {
     GroupCreated,
     GroupChanged,
     UnitCreated,
@@ -199,8 +164,7 @@ enum class PopulationChangeKind
     AllocationReleased
 };
 
-struct PopulationTemplate
-{
+struct PopulationTemplate {
     PopulationTemplateId id{};
     TypeId entity_archetype{};
     GameplayTagSet tags{};
@@ -208,8 +172,7 @@ struct PopulationTemplate
     bool persistent = true;
     Revision revision{};
 };
-struct PopulationGroup
-{
+struct PopulationGroup {
     PopulationGroupId id{};
     GameplayObjectRef area{};
     GameplayObjectRef society_group{};
@@ -220,8 +183,7 @@ struct PopulationGroup
     std::uint32_t materialized_count = 0;
     Revision revision{};
 };
-struct PopulationUnit
-{
+struct PopulationUnit {
     PopulationUnitId id{};
     PopulationGroupId group{};
     std::optional<GameplayObjectRef> entity;
@@ -235,8 +197,7 @@ struct PopulationUnit
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct PopulationResidence
-{
+struct PopulationResidence {
     PopulationResidenceId id{};
     PopulationUnitId unit{};
     GameplayObjectRef home_area{};
@@ -244,8 +205,7 @@ struct PopulationResidence
     ResidenceState state = ResidenceState::Assigned;
     Revision revision{};
 };
-struct PopulationMigration
-{
+struct PopulationMigration {
     PopulationMigrationId id{};
     PopulationUnitId unit{};
     GameplayObjectRef from{};
@@ -255,8 +215,7 @@ struct PopulationMigration
     GameplayTimePoint started_at{};
     Revision revision{};
 };
-struct PopulationAllocation
-{
+struct PopulationAllocation {
     PopulationAllocationId id{};
     PopulationUnitId unit{};
     TypeId purpose{};
@@ -266,25 +225,21 @@ struct PopulationAllocation
     GameplayObjectRef bound_entity{};
     Revision revision{};
 };
-struct PopulationAllocationRequest
-{
+struct PopulationAllocationRequest {
     std::vector<PopulationUnitId> units;
     TypeId purpose{};
     GameplayObjectId correlation{};
     std::optional<GameplayTimePoint> expires_at;
 };
-struct PopulationAllocationToken
-{
+struct PopulationAllocationToken {
     PopulationAllocationId allocation{};
     PopulationUnitId unit{};
 };
-struct PopulationAllocationBatch
-{
+struct PopulationAllocationBatch {
     GameplayObjectId correlation{};
     std::vector<PopulationAllocationToken> tokens;
 };
-struct PopulationChange
-{
+struct PopulationChange {
     std::uint64_t sequence = 0;
     PopulationChangeKind kind = PopulationChangeKind::GroupCreated;
     PopulationGroupId group{};
@@ -294,12 +249,10 @@ struct PopulationChange
     GameplayContext context{};
     Revision revision{};
 };
-struct PopulationCounts
-{
+struct PopulationCounts {
     std::uint32_t latent = 0, abstract_units = 0, materialized = 0, dead = 0, removed = 0;
 };
-struct PopulationChangeBatch
-{
+struct PopulationChangeBatch {
     std::vector<PopulationChange> changes;
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
@@ -309,8 +262,7 @@ struct PopulationChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct PopulationSnapshot
-{
+struct PopulationSnapshot {
     std::vector<PopulationGroup> groups;
     std::vector<PopulationUnit> units;
     std::vector<PopulationResidence> residences;
@@ -326,25 +278,24 @@ struct PopulationSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct PopulationDiagnostics
-{
+struct PopulationDiagnostics {
     std::uint64_t groups = 0, units = 0, latent = 0, abstract_units = 0, materialized = 0, migrations = 0,
                   residences = 0, allocations = 0, active_allocations = 0, materialization_requests = 0,
                   dematerialization_requests = 0;
 };
 
-class PopulationService
-{
+class PopulationService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<PopulationService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.population");
     }
     [[nodiscard]] foundation::Result<void> RegisterTemplate(PopulationTemplate definition);
     [[nodiscard]] foundation::Result<void> FreezeDefinitions();
-    [[nodiscard]] bool DefinitionsFrozen() const noexcept { return definitions_frozen_; }
+    [[nodiscard]] bool DefinitionsFrozen() const noexcept {
+        return definitions_frozen_;
+    }
     [[nodiscard]] foundation::Result<PopulationGroupId> CreateGroup(PopulationGroup group);
     [[nodiscard]] foundation::Result<PopulationUnitId> CreateUnit(PopulationUnit unit, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> SetUnitEntity(PopulationUnitId unit, GameplayObjectRef entity,
@@ -362,12 +313,10 @@ class PopulationService
                                                              GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> CancelMigration(PopulationMigrationId migration,
                                                            GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> FailMigration(PopulationMigrationId migration,
-                                                         GameplayContext context = {});
-    [[nodiscard]] foundation::Result<PopulationAllocationBatch> ReserveAllocations(
-        PopulationAllocationRequest request, GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> CommitAllocation(PopulationAllocationId allocation,
-                                                            GameplayObjectRef entity,
+    [[nodiscard]] foundation::Result<void> FailMigration(PopulationMigrationId migration, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<PopulationAllocationBatch> ReserveAllocations(PopulationAllocationRequest request,
+                                                                                   GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> CommitAllocation(PopulationAllocationId allocation, GameplayObjectRef entity,
                                                             GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> ReleaseAllocation(PopulationAllocationId allocation,
                                                              GameplayContext context = {});
@@ -379,8 +328,7 @@ class PopulationService
     [[nodiscard]] const PopulationAllocation *GetActiveAllocationForUnit(PopulationUnitId unit) const noexcept;
     [[nodiscard]] const PopulationUnit *FindUnitByEntity(GameplayObjectRef entity) const noexcept;
     [[nodiscard]] std::vector<PopulationAllocation> FindAllocationsByCorrelation(GameplayObjectId correlation) const;
-    [[nodiscard]] static constexpr GameplayObjectRef ResidentRef(PopulationUnitId unit) noexcept
-    {
+    [[nodiscard]] static constexpr GameplayObjectRef ResidentRef(PopulationUnitId unit) noexcept {
         return {Domain(), unit.value};
     }
     [[nodiscard]] std::vector<PopulationGroup> FindGroupsInArea(GameplayObjectRef area) const;
@@ -391,44 +339,43 @@ class PopulationService
     [[nodiscard]] std::vector<PopulationUnit> FindMaterializationCandidates(GameplayObjectRef area,
                                                                             std::size_t limit) const;
     [[nodiscard]] PopulationCounts GetPopulationCounts(PopulationGroupId group = {}) const;
-    private:
-        [[nodiscard]] PopulationChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] PopulationChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] PopulationChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] PopulationChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    private:
-        [[nodiscard]] std::vector<PopulationChange> ChangesSinceSequence(std::uint64_t sequence) const;
-    public:
+
+  private:
+    [[nodiscard]] std::vector<PopulationChange> ChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
     void PruneChangesThrough(std::uint64_t sequence);
     [[nodiscard]] PopulationSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(PopulationSnapshot snapshot);
     [[nodiscard]] PopulationDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
   private:
     [[nodiscard]] bool CanAdvanceRevision(std::size_t count = 1) const noexcept;
     [[nodiscard]] bool CanRecordChanges(std::size_t count = 1) const noexcept;
-    void Bump() noexcept
-    {
+    void Bump() noexcept {
         ++revision_.value;
     }
     void Record(PopulationChange change);
@@ -439,7 +386,7 @@ class PopulationService
     void RemoveEntityBinding(PopulationUnit &unit) noexcept;
     [[nodiscard]] foundation::Result<void> BindEntity(PopulationUnit &unit, GameplayObjectRef entity);
     [[nodiscard]] foundation::Result<void> FinishMigration(PopulationMigrationId migration, MigrationState state,
-                                                            GameplayContext context);
+                                                           GameplayContext context);
     [[nodiscard]] PopulationUnit *FindMutableUnit(PopulationUnitId id) noexcept;
     [[nodiscard]] PopulationGroup *FindMutableGroup(PopulationGroupId id) noexcept;
     Revision revision_{};

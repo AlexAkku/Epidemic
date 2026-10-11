@@ -512,3 +512,381 @@ template <> struct hash<epidemic::gameplay::society::RelationshipId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `MembershipState`: `Active`, `Suspended`, `Former`, `Banned`, `Applicant`, `Honorary`
+- `RelationshipState`: `Neutral`, `Friendly`, `Hostile`, `Allied`, `Feared`, `Trusted`, `Unknown`
+- `SocietyChangeKind`: `GroupCreated`, `MembershipAdded`, `MembershipRemoved`, `MembershipChanged`, `RelationshipChanged`, `ReputationChanged`, `SocialRoleAssigned`, `SocialRoleRemoved`, `FactionRelationChanged`
+
+### Состав типов и операции
+
+#### `MembershipId` (строка заголовка 17)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr MembershipId FromString(std::string_view s) noexcept;
+static constexpr MembershipId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const MembershipId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const MembershipId &) const noexcept = default;
+```
+
+#### `RelationshipId` (строка заголовка 30)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr RelationshipId FromString(std::string_view s) noexcept;
+static constexpr RelationshipId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RelationshipId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RelationshipId &) const noexcept = default;
+```
+
+#### `SocialRoleId` (строка заголовка 46)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SocialRoleId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SocialRoleId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SocialRoleId &) const noexcept = default;
+```
+
+#### `SocialGroupTypeId` (строка заголовка 55)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SocialGroupTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SocialGroupTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SocialGroupTypeId &) const noexcept = default;
+```
+
+#### `RelationshipTypeId` (строка заголовка 64)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr RelationshipTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RelationshipTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RelationshipTypeId &) const noexcept = default;
+```
+
+#### `ReputationTrackId` (строка заголовка 73)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ReputationTrackId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ReputationTrackId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ReputationTrackId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 82)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 84)
+
+#### `RefHash` (строка заголовка 90)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept;
+```
+
+#### `PairHash` (строка заголовка 98)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const std::pair<GameplayObjectRef, GameplayObjectRef> &p) const noexcept;
+```
+
+#### `RelationshipStateThreshold` (строка заголовка 141)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t minimum_value_micro = 0`
+- `RelationshipState state = RelationshipState::Neutral`
+
+#### `RelationshipTypeDefinition` (строка заголовка 147)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t minimum_value_micro = -1'000'000`
+- `std::int64_t maximum_value_micro = 1'000'000`
+- `std::int64_t default_value_micro = 0`
+- `std::int64_t group_attitude_weight_micro = 0`
+
+#### `ReputationStandingThreshold` (строка заголовка 162)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t minimum_value_micro = 0`
+
+#### `ReputationTrackDefinition` (строка заголовка 168)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t minimum_value_micro = -1'000'000`
+- `std::int64_t maximum_value_micro = 1'000'000`
+- `std::int64_t default_value_micro = 0`
+
+#### `SocialGroupDefinition` (строка заголовка 182)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+- `std::vector<std::byte> payload`
+
+#### `MembershipRecord` (строка заголовка 191)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t rank = 0`
+- `MembershipState state = MembershipState::Active`
+
+#### `RelationshipRecord` (строка заголовка 203)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t value_micro = 0`
+
+#### `ReputationRecord` (строка заголовка 216)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t value_micro = 0`
+
+#### `SocialStandingSnapshot` (строка заголовка 225)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet standing_tags`
+- `std::vector<ReputationRecord> reputations`
+
+#### `SocialChangeRequest` (строка заголовка 234)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t delta_micro = 0`
+
+#### `ReputationChangeRequest` (строка заголовка 244)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t delta_micro = 0`
+
+#### `SocietyChange` (строка заголовка 261)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `SocietyChangeKind kind = SocietyChangeKind::GroupCreated`
+
+#### `SocietyChangeBatch` (строка заголовка 274)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `std::vector<SocietyChange> changes`
+
+#### `SocietySnapshot` (строка заголовка 285)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<SocialGroupDefinition> groups`
+- `std::vector<RelationshipTypeDefinition> relationship_types`
+- `std::vector<ReputationTrackDefinition> reputation_tracks`
+- `bool definitions_frozen = false`
+- `std::vector<MembershipRecord> memberships`
+- `std::vector<RelationshipRecord> relationships`
+- `std::vector<ReputationRecord> reputations`
+- `std::vector<SocietyChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `SocietyDiagnostics` (строка заголовка 303)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t groups = 0`
+- `std::uint64_t memberships = 0`
+- `std::uint64_t relationships = 0`
+- `std::uint64_t reputation_records = 0`
+- `std::uint64_t relationship_changes = 0`
+- `std::uint64_t reputation_changes = 0`
+- `std::uint64_t attitude_queries = 0`
+- `std::uint64_t social_transactions = 0`
+- `std::uint64_t journal_gaps = 0`
+
+#### `SocietyService` (строка заголовка 316)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::size_t kChangeJournalCapacity = 4096`, `std::unordered_map<GameplayObjectRef, SocialGroupDefinition, RefHash> groups_`, `std::unordered_map<RelationshipTypeId, RelationshipTypeDefinition, IdHash> relationship_types_`, `std::unordered_map<ReputationTrackId, ReputationTrackDefinition, IdHash> reputation_tracks_`, `bool definitions_frozen_ = false`, `std::unordered_map<MembershipId, MembershipRecord, IdHash> memberships_`, `std::unordered_map<MembershipKey, MembershipId, MembershipKeyHash> membership_by_key_`, `std::unordered_map<GameplayObjectRef, std::vector<MembershipId>, RefHash> memberships_by_member`, `std::unordered_map<GameplayObjectRef, std::vector<MembershipId>, RefHash> memberships_by_group_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterGroup(SocialGroupDefinition group);
+[[nodiscard]] foundation::Result<void> RegisterRelationshipType(RelationshipTypeDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterReputationTrack(ReputationTrackDefinition definition);
+[[nodiscard]] foundation::Result<void> FreezeDefinitions();
+[[nodiscard]] bool DefinitionsFrozen() const noexcept;
+[[nodiscard]] foundation::Result<MembershipId> AddMembership(MembershipRecord record);
+[[nodiscard]] foundation::Result<void> ApplySocialChange(SocialChangeRequest request);
+[[nodiscard]] foundation::Result<void> ApplyReputationChange(ReputationChangeRequest request);
+[[nodiscard]] const SocialGroupDefinition *GetGroup(GameplayObjectRef group) const noexcept;
+[[nodiscard]] const RelationshipTypeDefinition *GetRelationshipType(RelationshipTypeId id) const noexcept;
+[[nodiscard]] const ReputationTrackDefinition *GetReputationTrack(ReputationTrackId id) const noexcept;
+[[nodiscard]] const MembershipRecord *GetMembership(MembershipId id) const noexcept;
+[[nodiscard]] std::vector<MembershipRecord> FindGroupsOf(GameplayObjectRef member) const;
+[[nodiscard]] std::vector<MembershipRecord> FindMembersOf(GameplayObjectRef group) const;
+[[nodiscard]] std::optional<RelationshipRecord> GetRelationship(GameplayObjectRef subject, GameplayObjectRef target, RelationshipTypeId type) const;
+[[nodiscard]] std::int64_t GetEffectiveAttitude(AttitudeQuery query) const;
+[[nodiscard]] std::optional<ReputationRecord> GetReputation(GameplayObjectRef subject, GameplayObjectRef scope, ReputationTrackId track) const;
+[[nodiscard]] SocialStandingSnapshot GetSocialStanding(GameplayObjectRef subject, GameplayObjectRef scope) const;
+[[nodiscard]] SocietyChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesThrough(std::uint64_t sequence);
+[[nodiscard]] SocietySnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(SocietySnapshot snapshot);
+[[nodiscard]] SocietyDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `MembershipKey` (строка заголовка 389)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const MembershipKey &) const noexcept = default;
+```
+
+#### `MembershipKeyHash` (строка заголовка 395)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const MembershipKey &key) const noexcept;
+```
+
+#### `RelationshipKey` (строка заголовка 399)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const RelationshipKey &) const noexcept = default;
+```
+
+#### `RelationshipKeyHash` (строка заголовка 406)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const RelationshipKey &key) const noexcept;
+```
+
+#### `ReputationKey` (строка заголовка 410)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const ReputationKey &) const noexcept = default;
+```
+
+#### `ReputationKeyHash` (строка заголовка 417)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const ReputationKey &key) const noexcept;
+```
+
+#### `hash` (строка заголовка 474)
+
+Публичные сигнатуры операций:
+
+```cpp
+size_t operator()(const epidemic::gameplay::society::MembershipId &v) const noexcept;
+```
+
+#### `hash` (строка заголовка 481)
+
+Публичные сигнатуры операций:
+
+```cpp
+size_t operator()(const epidemic::gameplay::society::RelationshipId &v) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterGroup` | `SocietyService::RegisterGroup` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:183` |
+| `RegisterRelationshipType` | `SocietyService::RegisterRelationshipType` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:208` |
+| `RegisterReputationTrack` | `SocietyService::RegisterReputationTrack` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:258` |
+| `FreezeDefinitions` | `SocietyService::FreezeDefinitions` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:303` |
+| `AddMembership` | `SocietyService::AddMembership` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:309` |
+| `ApplySocialChange` | `SocietyService::ApplySocialChange` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:546` |
+| `ApplyReputationChange` | `SocietyService::ApplyReputationChange` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:649` |
+| `GetGroup` | `SocietyService::GetGroup` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:670` |
+| `GetRelationshipType` | `SocietyService::GetRelationshipType` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:676` |
+| `GetReputationTrack` | `SocietyService::GetReputationTrack` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:682` |
+| `GetMembership` | `SocietyService::GetMembership` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:688` |
+| `FindGroupsOf` | `SocietyService::FindGroupsOf` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:694` |
+| `FindMembersOf` | `SocietyService::FindMembersOf` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:712` |
+| `GetRelationship` | `SocietyService::GetRelationship` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:730` |
+| `GetEffectiveAttitude` | `SocietyService::GetEffectiveAttitude` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:742` |
+| `GetReputation` | `SocietyService::GetReputation` | `EngineFramework/GameplayWorldStateOwners/Society/src/society.cpp:794` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterGroup`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:115`
+- `RegisterRelationshipType`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:117`
+- `RegisterReputationTrack`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:119`
+- `AddMembership`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:125`
+- `FreezeDefinitions`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:128`
+- `ApplySocialChange`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:172`
+- `GetRelationship`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:174`
+- `ApplyReputationChange`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:209`
+- `GetReputation`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:211`
+- `GetSocialStanding`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:215`
+- `GetEffectiveAttitude`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:219`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/society_tests.cpp:224`
+

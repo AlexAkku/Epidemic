@@ -340,3 +340,316 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/GameFramework/Abilities/abilities.h`, `Epidemic/GameFramework/Combat/combat.h`, `Epidemic/GameFramework/Conditions/conditions.h`, `Epidemic/GameFramework/Effects/effects.h`, `Epidemic/GameFramework/Loot/loot.h`, `Epidemic/GameFramework/Progression/progression.h`, `Epidemic/GameFramework/Time/gameplay_time.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Abilities/abilities.h`, `Epidemic/GameFramework/Combat/combat.h`, `Epidemic/GameFramework/Loot/loot.h`, `Epidemic/GameFramework/Progression/progression.h`.
+
+### Перечисления и допустимые категории
+
+- `ProgressionCombatRole`: `Attacker`, `Target`
+- `DeathRewardDeliveryState`: `Generated`, `Pending`
+
+### Состав типов и операции
+
+#### `CombatDamageEffectPayload` (строка заголовка 18)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t seed_salt=0`
+
+#### `CombatDamageEffectHandler` (строка заголовка 25)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit CombatDamageEffectHandler(combat::CombatService& combat) : combat_(combat);
+[[nodiscard]] static constexpr effects::EffectTypeId StaticType() noexcept;
+[[nodiscard]] static constexpr TypeId PayloadType() noexcept;
+[[nodiscard]] static constexpr TypeId PlanTokenType() noexcept;
+[[nodiscard]] effects::EffectTypeId Type() const noexcept override;
+[[nodiscard]] effects::EffectHandlerCapabilities Capabilities() const noexcept override;
+[[nodiscard]] foundation::Result<effects::EffectPrepareResult> Prepare(const effects::EffectOperation& operation) const override;
+[[nodiscard]] foundation::Result<effects::EffectCommitResult> Commit(const effects::EffectOperation& operation,const effects::RegisteredEffectPayload& token) noexcept override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ProgressionCombatMapping` (строка заголовка 41)
+
+Публичные поля и значения по умолчанию:
+
+- `ProgressionCombatRole role=ProgressionCombatRole::Attacker`
+- `combat::CombatModifierPhase phase=combat::CombatModifierPhase::Attacker`
+- `combat::CombatModifierOperation operation=combat::CombatModifierOperation::Add`
+- `std::int32_t priority=0`
+- `std::int64_t scale_micro=1'000'000`
+
+#### `ProgressionCombatModifierProvider` (строка заголовка 51)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ProgressionCombatModifierProvider(const progression::ProgressionService& progression) : progression_(progression);
+[[nodiscard]] foundation::Result<void> AddMapping(ProgressionCombatMapping mapping);
+[[nodiscard]] foundation::Result<void> FreezeMappings();
+[[nodiscard]] bool MappingsFrozen() const noexcept;
+[[nodiscard]] std::uint64_t MappingRevision() const noexcept;
+[[nodiscard]] std::vector<combat::CombatModifier> Collect(const combat::DamageRequest& request) const override;
+[[nodiscard]] Revision RevisionFor(const combat::DamageRequest& request) const noexcept override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `CombatAbilityResourceProvider` (строка заголовка 73)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit CombatAbilityResourceProvider(combat::CombatService& combat) : combat_(combat);
+[[nodiscard]] foundation::Result<void> AddMapping(CombatAbilityResourceMapping mapping);
+[[nodiscard]] foundation::Result<void> FreezeMappings();
+[[nodiscard]] bool MappingsFrozen() const noexcept;
+[[nodiscard]] std::uint64_t MappingRevision() const noexcept;
+[[nodiscard]] bool CanAfford(GameplayObjectRef owner,abilities::AbilityResourceTypeId type,std::int64_t amount_micro) const override;
+[[nodiscard]] foundation::Result<abilities::AbilityResourceReservation> Reserve(GameplayObjectRef owner,abilities::AbilityResourceTypeId type,std::int64_t amount_micro,GameplayContext context) override;
+void Commit(const abilities::AbilityResourceReservation& reservation,GameplayContext context) noexcept override;
+void Release(const abilities::AbilityResourceReservation& reservation,GameplayContext context) noexcept override;
+[[nodiscard]] foundation::Result<void> ReconcileReservation(const abilities::AbilityResourceReservation& reservation, GameplayObjectRef owner, GameplayContext context) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ReservationToken` (строка заголовка 89)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t amount_micro = 0`
+
+#### `AbilityEffectDeliveryKey` (строка заголовка 102)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t output_index = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr auto operator<=>(const AbilityEffectDeliveryKey&) const noexcept = default;
+```
+
+#### `AbilityEffectDeliveryRecord` (строка заголовка 109)
+
+Публичные поля и значения по умолчанию:
+
+- `effects::EffectExecutionResult result`
+
+#### `AbilityEffectsCheckpoint` (строка заголовка 114)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t mapping_revision = 0`
+- `std::vector<AbilityEffectDeliveryRecord> delivered`
+
+#### `AbilityEffectsDispatcher` (строка заголовка 119)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit AbilityEffectsDispatcher(effects::EffectService& effects) : effects_(effects);
+[[nodiscard]] foundation::Result<void> Map(ActionTypeId action,effects::EffectDefinitionId definition);
+[[nodiscard]] foundation::Result<void> FreezeMappings();
+[[nodiscard]] std::uint64_t MappingRevision() const noexcept;
+[[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>> Dispatch(std::span<const abilities::AbilityOutput> outputs);
+[[nodiscard]] AbilityEffectsCheckpoint CaptureCheckpoint() const;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(AbilityEffectsCheckpoint checkpoint);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `ConditionProgressionMapping` (строка заголовка 142)
+
+Публичные поля и значения по умолчанию:
+
+- `progression::ModifierOperation operation=progression::ModifierOperation::FinalAdd`
+- `std::int32_t priority=0`
+- `std::int64_t magnitude_scale_micro=1'000'000`
+
+#### `ConditionProgressionCheckpoint` (строка заголовка 151)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t mapping_revision = 0`
+
+#### `ConditionProgressionAdapter` (строка заголовка 156)
+
+Публичные сигнатуры операций:
+
+```cpp
+ConditionProgressionAdapter(const conditions::ConditionService& conditions,progression::ProgressionService& progression) : conditions_(conditions),progression_(progression);
+[[nodiscard]] foundation::Result<void> AddMapping(ConditionProgressionMapping mapping);
+[[nodiscard]] foundation::Result<void> FreezeMappings();
+[[nodiscard]] std::uint64_t MappingRevision() const noexcept;
+[[nodiscard]] foundation::Result<void> ProcessChanges();
+[[nodiscard]] foundation::Result<void> ReconcileAll();
+[[nodiscard]] ChangeCursor Cursor() const noexcept;
+void RestoreCursor(ChangeCursor cursor) noexcept;
+[[nodiscard]] ConditionProgressionCheckpoint CaptureCheckpoint() const noexcept;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(ConditionProgressionCheckpoint checkpoint);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `AbilityTimePendingTrigger` (строка заголовка 182)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<abilities::AbilityOutput> outputs`
+
+#### `AbilityTimeCheckpoint` (строка заголовка 189)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<AbilityTimePendingTrigger> pending`
+
+#### `AbilityTimeAdapter` (строка заголовка 195)
+
+Публичные сигнатуры операций:
+
+```cpp
+AbilityTimeAdapter(time::GameplayTimeService& time,abilities::AbilityService& abilities,ClockId clock,ActionTypeId action) : time_(time),abilities_(abilities),clock_(clock),action_(action);
+[[nodiscard]] foundation::Result<ScheduleId> ScheduleExecution(abilities::AbilityExecutionId execution);
+[[nodiscard]] foundation::Result<std::vector<abilities::AbilityOutput>> ProcessTrigger(const time::ScheduledTrigger& trigger);
+[[nodiscard]] const AbilityTimePendingTrigger* FindPendingOutputs(ScheduleId trigger) const noexcept;
+[[nodiscard]] foundation::Result<void> AcknowledgeOutputs(ScheduleId trigger);
+[[nodiscard]] AbilityTimeCheckpoint CaptureCheckpoint() const;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(AbilityTimeCheckpoint checkpoint);
+[[nodiscard]] std::size_t PendingOutputCount() const noexcept;
+[[nodiscard]] bool HasPendingOutputsForExecution(abilities::AbilityExecutionId execution) const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `AbilityOutputDeliveryCoordinator` (строка заголовка 218)
+
+Внутреннее состояние (не часть публичного API): `abilities::AbilityService& abilities_`, `AbilityTimeAdapter& time_adapter_`, `AbilityEffectsDispatcher& effects_dispatcher_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+AbilityOutputDeliveryCoordinator(abilities::AbilityService& abilities, AbilityTimeAdapter& time_adapter, AbilityEffectsDispatcher& effects_dispatcher) noexcept : abilities_(abilities), time_adapter_(time_adapter), effects_dispatcher_(effects_dispatcher);
+[[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>> DeliverPendingOutputs( ScheduleId trigger);
+std::uint64_t PruneSafeTerminalDeliveries(abilities::AbilityExecutionId execution) noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `ProgressionRewardHandler` (строка заголовка 237)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ProgressionRewardHandler(progression::ProgressionService& progression) : progression_(progression);
+[[nodiscard]] static constexpr loot::RewardTypeId StaticType() noexcept;
+[[nodiscard]] static constexpr TypeId PayloadType() noexcept;
+[[nodiscard]] loot::RewardTypeId Type() const noexcept override;
+[[nodiscard]] foundation::Result<loot::RewardDeliveryStage> Prepare(const loot::RewardOperation& operation) override;
+void Commit(loot::RewardDeliveryStage& stage) noexcept override;
+void Cancel(loot::RewardDeliveryStage& stage) noexcept override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `DeathRewardDeliveryKey` (строка заголовка 253)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t combat_sequence = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr auto operator<=>(const DeathRewardDeliveryKey&) const noexcept = default;
+```
+
+#### `DeathRewardDeliveryRecord` (строка заголовка 261)
+
+Публичные поля и значения по умолчанию:
+
+- `DeathRewardDeliveryState state = DeathRewardDeliveryState::Generated`
+
+#### `DeathRewardCheckpoint` (строка заголовка 267)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t mapping_revision = 0`
+- `std::vector<DeathRewardDeliveryRecord> deliveries`
+
+#### `DeathRewardAdapter` (строка заголовка 273)
+
+Публичные сигнатуры операций:
+
+```cpp
+DeathRewardAdapter(const combat::CombatService& combat,loot::LootService& loot) : combat_(combat),loot_(loot);
+[[nodiscard]] foundation::Result<void> SetTable(GameplayObjectRef subject,loot::LootTableId table);
+[[nodiscard]] foundation::Result<void> FreezeMappings();
+[[nodiscard]] std::uint64_t MappingRevision() const noexcept;
+[[nodiscard]] foundation::Result<std::vector<loot::RewardExecutionId>> ProcessChanges();
+[[nodiscard]] ChangeCursor Cursor() const noexcept;
+void RestoreCursor(ChangeCursor cursor) noexcept;
+[[nodiscard]] DeathRewardCheckpoint CaptureCheckpoint() const;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(DeathRewardCheckpoint checkpoint);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Prepare` | `CombatDamageEffectHandler::Prepare` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:68` |
+| `Commit` | `CombatDamageEffectHandler::Commit` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:95` |
+| `AddMapping` | `ProgressionCombatModifierProvider::AddMapping` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:108` |
+| `FreezeMappings` | `ProgressionCombatModifierProvider::FreezeMappings` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:123` |
+| `Collect` | `ProgressionCombatModifierProvider::Collect` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:151` |
+| `RevisionFor` | `ProgressionCombatModifierProvider::RevisionFor` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:169` |
+| `AddMapping` | `CombatAbilityResourceProvider::AddMapping` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:190` |
+| `FreezeMappings` | `CombatAbilityResourceProvider::FreezeMappings` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:201` |
+| `CanAfford` | `CombatAbilityResourceProvider::CanAfford` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:217` |
+| `Reserve` | `CombatAbilityResourceProvider::Reserve` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:228` |
+| `Commit` | `CombatAbilityResourceProvider::Commit` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:248` |
+| `Release` | `CombatAbilityResourceProvider::Release` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:255` |
+| `ReconcileReservation` | `CombatAbilityResourceProvider::ReconcileReservation` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:263` |
+| `Map` | `AbilityEffectsDispatcher::Map` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:286` |
+| `FreezeMappings` | `AbilityEffectsDispatcher::FreezeMappings` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:297` |
+| `Dispatch` | `AbilityEffectsDispatcher::Dispatch` | `EngineFramework/IntegrationLayer/GameplayIntegration/src/gameplay_adapters.cpp:316` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Type`: `EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:62`
+- `FreezeMappings`: `EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:108`
+- `CaptureCheckpoint`: `EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:114`
+- `RestoreCheckpoint`: `EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:122`
+- `RestoreCursor`: `EngineFramework/DevelopmentInfrastructure/Tests/gameplayintegration_save_participant_tests.cpp:170`
+

@@ -13,38 +13,30 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::savegame;
 
-namespace epidemic::gameplay::savegame::detail
-{
+namespace epidemic::gameplay::savegame::detail {
 void SetSaveGameFaultPointForTesting(std::string_view point) noexcept;
 void ClearSaveGameFaultPointForTesting() noexcept;
 }
 
-namespace
-{
-void Check(bool value, const char *message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
 
-struct BarrierLease final : ISaveBarrierLease
-{
-    explicit BarrierLease(bool &active) : active_(&active)
-    {
+struct BarrierLease final : ISaveBarrierLease {
+    explicit BarrierLease(bool &active) : active_(&active) {
         active = true;
     }
-    ~BarrierLease() override
-    {
+    ~BarrierLease() override {
         *active_ = false;
     }
     bool *active_ = nullptr;
 };
 
-class Barrier final : public ISaveBarrier
-{
+class Barrier final : public ISaveBarrier {
   public:
     bool active = false;
     bool fail_capture = false;
@@ -52,11 +44,9 @@ class Barrier final : public ISaveBarrier
     int capture_acquires = 0;
     int restore_acquires = 0;
 
-    epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireCaptureLease() override
-    {
+    epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireCaptureLease() override {
         ++capture_acquires;
-        if (fail_capture)
-        {
+        if (fail_capture) {
             return epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>>::Failure(
                 epidemic::foundation::Error::Create("barrier", "capture failed"));
         }
@@ -64,11 +54,9 @@ class Barrier final : public ISaveBarrier
             std::make_unique<BarrierLease>(active));
     }
 
-    epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireRestoreLease() override
-    {
+    epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireRestoreLease() override {
         ++restore_acquires;
-        if (fail_restore)
-        {
+        if (fail_restore) {
             return epidemic::foundation::Result<std::unique_ptr<ISaveBarrierLease>>::Failure(
                 epidemic::foundation::Error::Create("barrier", "restore failed"));
         }
@@ -77,13 +65,11 @@ class Barrier final : public ISaveBarrier
     }
 };
 
-struct Stage final : IRestoreStage
-{
+struct Stage final : IRestoreStage {
     int value = 0;
 };
 
-class Part final : public ISaveParticipant
-{
+class Part final : public ISaveParticipant {
   public:
     SaveParticipantId id{};
     SaveSchemaVersion version = 1;
@@ -96,30 +82,23 @@ class Part final : public ISaveParticipant
     bool *barrier_active = nullptr;
     std::vector<SaveParticipantId> *commit_order = nullptr;
 
-    SaveParticipantId Id() const noexcept override
-    {
+    SaveParticipantId Id() const noexcept override {
         return id;
     }
-    SaveSchemaVersion SchemaVersion() const noexcept override
-    {
+    SaveSchemaVersion SchemaVersion() const noexcept override {
         return version;
     }
-    SaveParticipantRequirement Requirement() const noexcept override
-    {
+    SaveParticipantRequirement Requirement() const noexcept override {
         return requirement;
     }
-    std::vector<SaveParticipantId> Dependencies() const override
-    {
+    std::vector<SaveParticipantId> Dependencies() const override {
         return deps;
     }
-    epidemic::foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const override
-    {
-        if (throw_capture)
-        {
+    epidemic::foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const override {
+        if (throw_capture) {
             throw std::runtime_error("capture exception");
         }
-        if (barrier_active != nullptr && !*barrier_active)
-        {
+        if (barrier_active != nullptr && !*barrier_active) {
             return epidemic::foundation::Result<SaveSection>::Failure(
                 epidemic::foundation::Error::Create("barrier", "capture outside barrier"));
         }
@@ -131,10 +110,8 @@ class Part final : public ISaveParticipant
         return epidemic::foundation::Result<SaveSection>::Success(std::move(section));
     }
     epidemic::foundation::Result<void> ValidateSnapshot(const SaveSection &section,
-                                                        const RestoreContext &) const override
-    {
-        if (throw_validate)
-        {
+                                                        const RestoreContext &) const override {
+        if (throw_validate) {
             throw std::runtime_error("validation exception");
         }
         return section.payload.size() == sizeof(int)
@@ -143,10 +120,8 @@ class Part final : public ISaveParticipant
                          epidemic::foundation::Error::Create("invalid", "invalid payload"));
     }
     epidemic::foundation::Result<std::unique_ptr<IRestoreStage>> StageRestore(const SaveSection &section,
-                                                                              const RestoreContext &) override
-    {
-        if (fail_stage)
-        {
+                                                                              const RestoreContext &) override {
+        if (fail_stage) {
             return epidemic::foundation::Result<std::unique_ptr<IRestoreStage>>::Failure(
                 epidemic::foundation::Error::Create("stage", "failed"));
         }
@@ -154,54 +129,44 @@ class Part final : public ISaveParticipant
         std::memcpy(&stage->value, section.payload.data(), sizeof(int));
         return epidemic::foundation::Result<std::unique_ptr<IRestoreStage>>::Success(std::move(stage));
     }
-    void CommitRestore(IRestoreStage &stage) noexcept override
-    {
-        if (barrier_active != nullptr && !*barrier_active)
-        {
+    void CommitRestore(IRestoreStage &stage) noexcept override {
+        if (barrier_active != nullptr && !*barrier_active) {
             std::abort();
         }
         value = static_cast<Stage &>(stage).value;
-        if (commit_order != nullptr)
-        {
+        if (commit_order != nullptr) {
             commit_order->push_back(id);
         }
     }
 };
 
-class Migration final : public ISaveMigration
-{
+class Migration final : public ISaveMigration {
   public:
     SaveParticipantId id{};
     SaveSchemaVersion from = 1;
     SaveSchemaVersion to = 2;
     bool corrupt_identity = false;
 
-    SaveParticipantId Participant() const noexcept override
-    {
+    SaveParticipantId Participant() const noexcept override {
         return id;
     }
-    SaveSchemaVersion FromVersion() const noexcept override
-    {
+    SaveSchemaVersion FromVersion() const noexcept override {
         return from;
     }
-    SaveSchemaVersion ToVersion() const noexcept override
-    {
+    SaveSchemaVersion ToVersion() const noexcept override {
         return to;
     }
-    epidemic::foundation::Result<SaveSection> Migrate(const SaveSection &source) const override
-    {
+    epidemic::foundation::Result<SaveSection> Migrate(const SaveSection &source) const override {
         auto result = source;
         result.schema_version = to;
-        if (corrupt_identity)
-        {
+        if (corrupt_identity) {
             result.participant = SaveParticipantId::FromString("wrong");
         }
         return epidemic::foundation::Result<SaveSection>::Success(std::move(result));
     }
 };
 
-SaveContext SaveCtx()
-{
+SaveContext SaveCtx() {
     SaveContext context;
     context.content_version = 4;
     context.content_hash = 99;
@@ -210,8 +175,7 @@ SaveContext SaveCtx()
     return context;
 }
 
-RestoreContext ExactRestoreCtx()
-{
+RestoreContext ExactRestoreCtx() {
     RestoreContext context;
     context.compatibility = ContentCompatibilityPolicy::ExactRequired;
     context.current_content_version = 4;
@@ -221,8 +185,7 @@ RestoreContext ExactRestoreCtx()
     return context;
 }
 
-void Rehash(SaveGameImage &image, std::size_t index)
-{
+void Rehash(SaveGameImage &image, std::size_t index) {
     auto &section = image.sections[index];
     section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);
     auto manifest_it = std::find_if(image.manifest.participants.begin(), image.manifest.participants.end(),
@@ -237,125 +200,199 @@ void Rehash(SaveGameImage &image, std::size_t index)
 
 void TestSnapshotParticipantMechanics();
 void TestSaveWireCodec();
-void RecordSaveWireFixtures(const std::filesystem::path& root);
-void TestCompositionRegistryClosure()
-{
-    Part a; a.id = SaveParticipantId::FromString("composition.a"); a.version = 2;
-    Part b; b.id = SaveParticipantId::FromString("composition.b"); b.deps = {a.id};
-    Migration migration; migration.id = a.id;
-    std::vector<ISaveParticipant*> participants{&b, &a};
-    std::vector<const ISaveMigration*> migrations{&migration};
-    std::vector<SaveParticipantManifest> expected{
-        {a.id, 2, 0, SaveParticipantRequirement::Required, {}},
-        {b.id, 1, 0, SaveParticipantRequirement::Required, {a.id}}};
+void RecordSaveWireFixtures(const std::filesystem::path &root);
+void TestCompositionRegistryClosure() {
+    Part a;
+    a.id = SaveParticipantId::FromString("composition.a");
+    a.version = 2;
+    Part b;
+    b.id = SaveParticipantId::FromString("composition.b");
+    b.deps = {a.id};
+    Migration migration;
+    migration.id = a.id;
+    std::vector<ISaveParticipant *> participants{&b, &a};
+    std::vector<const ISaveMigration *> migrations{&migration};
+    std::vector<SaveParticipantManifest> expected{{a.id, 2, 0, SaveParticipantRequirement::Required, {}},
+                                                  {b.id, 1, 0, SaveParticipantRequirement::Required, {a.id}}};
     SaveGameOrchestrator orchestrator;
-    auto missing = participants; missing.pop_back();
+    auto missing = participants;
+    missing.pop_back();
     Check(!orchestrator.RegisterComposition(missing, migrations, expected), "composition rejects missing participant");
-    auto duplicate = participants; duplicate.push_back(&a);
-    Check(!orchestrator.RegisterComposition(duplicate, migrations, expected), "composition rejects duplicate participant");
-    auto wrong = expected; wrong[0].schema_version = 3;
+    auto duplicate = participants;
+    duplicate.push_back(&a);
+    Check(!orchestrator.RegisterComposition(duplicate, migrations, expected),
+          "composition rejects duplicate participant");
+    auto wrong = expected;
+    wrong[0].schema_version = 3;
     Check(!orchestrator.RegisterComposition(participants, migrations, wrong), "composition rejects schema drift");
-    wrong = expected; wrong[1].dependencies.clear();
+    wrong = expected;
+    wrong[1].dependencies.clear();
     Check(!orchestrator.RegisterComposition(participants, migrations, wrong), "composition rejects dependency drift");
-    wrong = expected; wrong[0].requirement = SaveParticipantRequirement::Optional;
+    wrong = expected;
+    wrong[0].requirement = SaveParticipantRequirement::Optional;
     Check(!orchestrator.RegisterComposition(participants, migrations, wrong), "composition rejects requirement drift");
-    wrong = expected; wrong.push_back(expected[0]);
-    Check(!orchestrator.RegisterComposition(participants, migrations, wrong), "composition rejects duplicate contract identity");
-    auto nulls = participants; nulls[0] = nullptr;
+    wrong = expected;
+    wrong.push_back(expected[0]);
+    Check(!orchestrator.RegisterComposition(participants, migrations, wrong),
+          "composition rejects duplicate contract identity");
+    auto nulls = participants;
+    nulls[0] = nullptr;
     Check(!orchestrator.RegisterComposition(nulls, migrations, expected), "composition rejects null participant");
     migration.id = SaveParticipantId::FromString("orphan.migration");
-    Check(!orchestrator.RegisterComposition(participants, migrations, expected), "composition rejects orphan migration");
+    Check(!orchestrator.RegisterComposition(participants, migrations, expected),
+          "composition rejects orphan migration");
     migration.id = a.id;
-    auto duplicate_migrations = migrations; duplicate_migrations.push_back(&migration);
-    Check(!orchestrator.RegisterComposition(participants, duplicate_migrations, expected), "composition rejects duplicate migration");
-    a.deps = {b.id}; wrong = expected; wrong[0].dependencies = a.deps;
+    auto duplicate_migrations = migrations;
+    duplicate_migrations.push_back(&migration);
+    Check(!orchestrator.RegisterComposition(participants, duplicate_migrations, expected),
+          "composition rejects duplicate migration");
+    a.deps = {b.id};
+    wrong = expected;
+    wrong[0].dependencies = a.deps;
     Check(!orchestrator.RegisterComposition(participants, migrations, wrong), "composition rejects cyclic contract");
     a.deps.clear();
     Check(!orchestrator.RegistryFrozen() && orchestrator.ResolveOrder().Value().empty(),
           "failed composition leaves registry empty and unfrozen");
-    Check(bool(orchestrator.RegisterComposition(participants, migrations, expected)), "exact composition registers and freezes");
-    Check(orchestrator.RegistryFrozen() && orchestrator.ResolveOrder().Value().size() == 2, "composition closes exact registry");
-    Check(!orchestrator.RegisterParticipant(a) && !orchestrator.RegisterMigration(migration), "late registration rejected");
+    Check(bool(orchestrator.RegisterComposition(participants, migrations, expected)),
+          "exact composition registers and freezes");
+    Check(orchestrator.RegistryFrozen() && orchestrator.ResolveOrder().Value().size() == 2,
+          "composition closes exact registry");
+    Check(!orchestrator.RegisterParticipant(a) && !orchestrator.RegisterMigration(migration),
+          "late registration rejected");
     Check(!orchestrator.RegisterComposition(participants, migrations, expected), "late composition rejected");
     Barrier barrier;
     Check(bool(orchestrator.SetBarrier(barrier)), "composition barrier");
     a.value = 73;
     auto image = orchestrator.Capture(SaveCtx());
     Check(bool(image), "composition captures exact participants");
-    auto old = std::find_if(image.Value().sections.begin(), image.Value().sections.end(), [&](const auto& s) { return s.participant == a.id; });
+    auto old = std::find_if(image.Value().sections.begin(), image.Value().sections.end(), [&](const auto &s) {
+        return s.participant == a.id;
+    });
     old->schema_version = 1;
     Rehash(image.Value(), static_cast<std::size_t>(old - image.Value().sections.begin()));
     a.value = 99;
-    auto context = ExactRestoreCtx(); context.compatibility = ContentCompatibilityPolicy::MigrationRequired;
+    auto context = ExactRestoreCtx();
+    context.compatibility = ContentCompatibilityPolicy::MigrationRequired;
     Check(bool(orchestrator.Restore(std::move(image.Value()), context)) && a.value == 73,
           "composition registers migration before freeze and uses it on restore");
 }
 
-void TestCompatibilityProfileMatrix()
-{
+void TestCompatibilityProfileMatrix() {
     for (auto policy : {ContentCompatibilityPolicy::ExactRequired, ContentCompatibilityPolicy::CompatibleVersion,
-         ContentCompatibilityPolicy::MigrationRequired, ContentCompatibilityPolicy::BestEffort, ContentCompatibilityPolicy::DeveloperMode})
-    {
-        Barrier barrier; Part required; required.id=SaveParticipantId::FromString("profile.required"); required.value=42;
-        Part optional; optional.id=SaveParticipantId::FromString("profile.optional"); optional.requirement=SaveParticipantRequirement::Optional; optional.value=17;
+                        ContentCompatibilityPolicy::MigrationRequired, ContentCompatibilityPolicy::BestEffort,
+                        ContentCompatibilityPolicy::DeveloperMode}) {
+        Barrier barrier;
+        Part required;
+        required.id = SaveParticipantId::FromString("profile.required");
+        required.value = 42;
+        Part optional;
+        optional.id = SaveParticipantId::FromString("profile.optional");
+        optional.requirement = SaveParticipantRequirement::Optional;
+        optional.value = 17;
         SaveGameOrchestrator orchestrator;
-        Check(bool(orchestrator.SetBarrier(barrier)) && bool(orchestrator.RegisterParticipant(required)) && bool(orchestrator.RegisterParticipant(optional)), "profile setup");
-        auto captured=orchestrator.Capture(SaveCtx()); Check(bool(captured), "profile captures current schema");
-        auto context=ExactRestoreCtx(); context.compatibility=policy;
-        required.value=99; optional.value=98;
-        auto package=EncodeSaveGameImage(captured.Value()); Check(bool(package), "profile image encodes");
-        auto decoded=DecodeSaveGameImage(package.Value()); Check(bool(decoded), "profile image decodes");
-        Check(bool(orchestrator.Restore(std::move(decoded.Value()),context)) && required.value==42 && optional.value==17,
-            "each compatibility profile restores supported v1");
-        auto future=captured.Value();
-        for (std::size_t i=0; i<future.sections.size(); ++i) if (future.sections[i].participant==required.id)
-        { future.sections[i].schema_version=2; Rehash(future,i); }
-        required.value=99; optional.value=98;
-        Check(!orchestrator.Restore(std::move(future),context) && required.value==99 && optional.value==98,
-            "all profiles reject future required schema without publication");
-        future=captured.Value();
-        for (std::size_t i=0; i<future.sections.size(); ++i) if (future.sections[i].participant==optional.id)
-        { future.sections[i].schema_version=2; Rehash(future,i); }
-        const bool permissive=policy==ContentCompatibilityPolicy::BestEffort || policy==ContentCompatibilityPolicy::DeveloperMode;
-        const auto result=orchestrator.Restore(std::move(future),context);
-        Check(bool(result)==permissive && optional.value==98 && required.value==(permissive?42:99),
-            "strict profiles reject future optional schema; permissive profiles skip it explicitly");
-        required.value=99;
-        auto unknown=captured.Value(); auto extra=unknown.sections.front(); extra.participant=SaveParticipantId::FromString("profile.unknown");
-        unknown.sections.push_back(extra); unknown.manifest.participants.push_back({extra.participant,1,extra.payload_hash,SaveParticipantRequirement::Optional,{}});
-        auto unknownWire=EncodeSaveGameImage(unknown); Check(bool(unknownWire),"wire preserves unknown optional participant metadata");
-        auto unknownDecoded=DecodeSaveGameImage(unknownWire.Value()); Check(bool(unknownDecoded),"unknown optional participant structurally decodes");
-        Check(bool(orchestrator.Restore(std::move(unknownDecoded.Value()),context))==(policy!=ContentCompatibilityPolicy::ExactRequired), "unknown optional semantics by profile");
-        unknown.manifest.participants.back().requirement=SaveParticipantRequirement::Required; required.value=99;
-        unknownWire=EncodeSaveGameImage(unknown); Check(bool(unknownWire),"wire preserves unknown required participant metadata");
-        unknownDecoded=DecodeSaveGameImage(unknownWire.Value()); Check(bool(unknownDecoded),"unknown required participant structurally decodes");
-        Check(bool(orchestrator.Restore(std::move(unknownDecoded.Value()),context))==(policy==ContentCompatibilityPolicy::DeveloperMode), "unknown required semantics by profile");
-        auto metadata=captured.Value(); metadata.manifest.content_version=100; metadata.manifest.engine_version=100;
-        Check(bool(orchestrator.Restore(std::move(metadata),context))==permissive, "only permissive profiles ignore newer metadata");
+        Check(bool(orchestrator.SetBarrier(barrier)) && bool(orchestrator.RegisterParticipant(required)) &&
+                  bool(orchestrator.RegisterParticipant(optional)),
+              "profile setup");
+        auto captured = orchestrator.Capture(SaveCtx());
+        Check(bool(captured), "profile captures current schema");
+        auto context = ExactRestoreCtx();
+        context.compatibility = policy;
+        required.value = 99;
+        optional.value = 98;
+        auto package = EncodeSaveGameImage(captured.Value());
+        Check(bool(package), "profile image encodes");
+        auto decoded = DecodeSaveGameImage(package.Value());
+        Check(bool(decoded), "profile image decodes");
+        Check(bool(orchestrator.Restore(std::move(decoded.Value()), context)) && required.value == 42 &&
+                  optional.value == 17,
+              "each compatibility profile restores supported v1");
+        auto future = captured.Value();
+        for (std::size_t i = 0; i < future.sections.size(); ++i)
+            if (future.sections[i].participant == required.id) {
+                future.sections[i].schema_version = 2;
+                Rehash(future, i);
+            }
+        required.value = 99;
+        optional.value = 98;
+        Check(!orchestrator.Restore(std::move(future), context) && required.value == 99 && optional.value == 98,
+              "all profiles reject future required schema without publication");
+        future = captured.Value();
+        for (std::size_t i = 0; i < future.sections.size(); ++i)
+            if (future.sections[i].participant == optional.id) {
+                future.sections[i].schema_version = 2;
+                Rehash(future, i);
+            }
+        const bool permissive =
+            policy == ContentCompatibilityPolicy::BestEffort || policy == ContentCompatibilityPolicy::DeveloperMode;
+        const auto result = orchestrator.Restore(std::move(future), context);
+        Check(bool(result) == permissive && optional.value == 98 && required.value == (permissive ? 42 : 99),
+              "strict profiles reject future optional schema; permissive profiles skip it explicitly");
+        required.value = 99;
+        auto unknown = captured.Value();
+        auto extra = unknown.sections.front();
+        extra.participant = SaveParticipantId::FromString("profile.unknown");
+        unknown.sections.push_back(extra);
+        unknown.manifest.participants.push_back(
+            {extra.participant, 1, extra.payload_hash, SaveParticipantRequirement::Optional, {}});
+        auto unknownWire = EncodeSaveGameImage(unknown);
+        Check(bool(unknownWire), "wire preserves unknown optional participant metadata");
+        auto unknownDecoded = DecodeSaveGameImage(unknownWire.Value());
+        Check(bool(unknownDecoded), "unknown optional participant structurally decodes");
+        Check(bool(orchestrator.Restore(std::move(unknownDecoded.Value()), context)) ==
+                  (policy != ContentCompatibilityPolicy::ExactRequired),
+              "unknown optional semantics by profile");
+        unknown.manifest.participants.back().requirement = SaveParticipantRequirement::Required;
+        required.value = 99;
+        unknownWire = EncodeSaveGameImage(unknown);
+        Check(bool(unknownWire), "wire preserves unknown required participant metadata");
+        unknownDecoded = DecodeSaveGameImage(unknownWire.Value());
+        Check(bool(unknownDecoded), "unknown required participant structurally decodes");
+        Check(bool(orchestrator.Restore(std::move(unknownDecoded.Value()), context)) ==
+                  (policy == ContentCompatibilityPolicy::DeveloperMode),
+              "unknown required semantics by profile");
+        auto metadata = captured.Value();
+        metadata.manifest.content_version = 100;
+        metadata.manifest.engine_version = 100;
+        Check(bool(orchestrator.Restore(std::move(metadata), context)) == permissive,
+              "only permissive profiles ignore newer metadata");
     }
     // Historical chains are tested on a synthetic v2 participant, never advertised
     // as supported history of the 47 current-v1 production participants.
-    for (auto policy : {ContentCompatibilityPolicy::CompatibleVersion,ContentCompatibilityPolicy::MigrationRequired})
-    {
-        Barrier barrier; Part owner; owner.id=SaveParticipantId::FromString("profile.migration"); owner.version=2; owner.value=73;
-        Migration migration; migration.id=owner.id; SaveGameOrchestrator orchestrator;
-        Check(bool(orchestrator.SetBarrier(barrier)) && bool(orchestrator.RegisterParticipant(owner)) && bool(orchestrator.RegisterMigration(migration)), "strict migration profile setup");
-        auto image=orchestrator.Capture(SaveCtx()).Value(); image.sections[0].schema_version=1; Rehash(image,0); owner.value=99;
-        auto context=ExactRestoreCtx(); context.compatibility=policy;
-        Check(bool(orchestrator.Restore(std::move(image),context)) && owner.value==73, "explicit historical chain works in both migration-capable strict profiles");
+    for (auto policy : {ContentCompatibilityPolicy::CompatibleVersion, ContentCompatibilityPolicy::MigrationRequired}) {
+        Barrier barrier;
+        Part owner;
+        owner.id = SaveParticipantId::FromString("profile.migration");
+        owner.version = 2;
+        owner.value = 73;
+        Migration migration;
+        migration.id = owner.id;
+        SaveGameOrchestrator orchestrator;
+        Check(bool(orchestrator.SetBarrier(barrier)) && bool(orchestrator.RegisterParticipant(owner)) &&
+                  bool(orchestrator.RegisterMigration(migration)),
+              "strict migration profile setup");
+        auto image = orchestrator.Capture(SaveCtx()).Value();
+        image.sections[0].schema_version = 1;
+        Rehash(image, 0);
+        owner.value = 99;
+        auto context = ExactRestoreCtx();
+        context.compatibility = policy;
+        Check(bool(orchestrator.Restore(std::move(image), context)) && owner.value == 73,
+              "explicit historical chain works in both migration-capable strict profiles");
     }
 }
 
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 int RunAuditorSaveLoadScenario();
 #endif
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-    if (argc == 2 && std::string_view(argv[1]) == "--auditor-save-load") return RunAuditorSaveLoadScenario();
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-save-load")
+        return RunAuditorSaveLoadScenario();
 #endif
-    if (argc == 3 && std::string_view(argv[1]) == "--record-wire-fixtures")
-    { RecordSaveWireFixtures(argv[2]); return 0; }
+    if (argc == 3 && std::string_view(argv[1]) == "--record-wire-fixtures") {
+        RecordSaveWireFixtures(argv[2]);
+        return 0;
+    }
     TestCompositionRegistryClosure();
     TestSnapshotParticipantMechanics();
     TestSaveWireCodec();
@@ -441,7 +478,8 @@ int main(int argc, char** argv)
     Barrier migration_barrier;
     SaveGameOrchestrator migration_orchestrator;
     Check(static_cast<bool>(migration_orchestrator.SetBarrier(migration_barrier)), "migration barrier");
-    Check(static_cast<bool>(migration_orchestrator.RegisterParticipant(migrated_part)), "register migrated participant");
+    Check(static_cast<bool>(migration_orchestrator.RegisterParticipant(migrated_part)),
+          "register migrated participant");
     Check(static_cast<bool>(migration_orchestrator.RegisterMigration(migration)), "register migration");
     auto migrated_image = migration_orchestrator.Capture(SaveCtx());
     Check(static_cast<bool>(migrated_image), "capture migrated participant");
@@ -476,14 +514,18 @@ int main(int argc, char** argv)
     Check(static_cast<bool>(optional_orchestrator.RegisterParticipant(optional)), "register optional");
     auto optional_image = optional_orchestrator.Capture(SaveCtx());
     Check(static_cast<bool>(optional_image), "capture optional image");
-    optional_image.Value().sections.erase(
-        std::remove_if(optional_image.Value().sections.begin(), optional_image.Value().sections.end(),
-                       [&](const SaveSection &section) { return section.participant == optional.id; }),
-        optional_image.Value().sections.end());
+    optional_image.Value().sections.erase(std::remove_if(optional_image.Value().sections.begin(),
+                                                         optional_image.Value().sections.end(),
+                                                         [&](const SaveSection &section) {
+                                                             return section.participant == optional.id;
+                                                         }),
+                                          optional_image.Value().sections.end());
     optional_image.Value().manifest.participants.erase(
         std::remove_if(optional_image.Value().manifest.participants.begin(),
                        optional_image.Value().manifest.participants.end(),
-                       [&](const SaveParticipantManifest &entry) { return entry.id == optional.id; }),
+                       [&](const SaveParticipantManifest &entry) {
+                           return entry.id == optional.id;
+                       }),
         optional_image.Value().manifest.participants.end());
     required.value = 70;
     optional.value = 71;
@@ -532,12 +574,9 @@ int main(int argc, char** argv)
     b.value = 200;
     epidemic::gameplay::savegame::detail::SetSaveGameFaultPointForTesting("restore.pre_commit");
     bool saw_restore_allocation_failure = false;
-    try
-    {
+    try {
         (void)orchestrator.Restore(std::move(allocation_image), ExactRestoreCtx());
-    }
-    catch (const std::bad_alloc &)
-    {
+    } catch (const std::bad_alloc &) {
         saw_restore_allocation_failure = true;
     }
     epidemic::gameplay::savegame::detail::ClearSaveGameFaultPointForTesting();

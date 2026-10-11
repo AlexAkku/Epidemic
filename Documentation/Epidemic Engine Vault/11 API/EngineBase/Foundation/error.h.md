@@ -76,3 +76,33 @@ struct Error
 };
 }
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `Error` (строка заголовка 17)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string code`
+- `std::string message`
+- `std::string context`
+
+Публичные сигнатуры операций:
+
+```cpp
+// Checks whether the stored code matches the requested code exactly. // Input: expected code string. // Output: true when the codes are equal. [[nodiscard]] bool HasCode(std::string_view expected_code) const noexcept;
+// Reports whether the error contains a non-empty message. [[nodiscard]] bool HasMessage() const noexcept;
+// Reports whether the error contains extra contextual details. [[nodiscard]] bool HasContext() const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

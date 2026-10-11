@@ -3,93 +3,213 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
-void TestEnvironmentServiceSaveParticipant()
-{
+void TestEnvironmentServiceSaveParticipant() {
     std::cerr << "[participant] framework.environment: bootstrap\n";
     epidemic::gameplay::environment::EnvironmentService owner;
-    const auto layer_type = environment::EnvironmentLayerTypeId::FromString("participant.environment.layer"); participant_tests::Check(bool(owner.RegisterLayerType(layer_type, "participant.environment.layer")), "environment fixture layer type");
+    const auto layer_type = environment::EnvironmentLayerTypeId::FromString("participant.environment.layer");
+    participant_tests::Check(bool(owner.RegisterLayerType(layer_type, "participant.environment.layer")),
+                             "environment fixture layer type");
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] framework.environment: contract\n";
     auto participant = savegame::CreateEnvironmentServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.environment", {});
     std::cerr << "[participant] framework.environment: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.environment: non-empty seed\n";
-    environment::EnvironmentLayer layer; layer.type = layer_type; layer.persistence = environment::EnvironmentPersistence::Persistent; participant_tests::Check(bool(owner.AddLayer(std::move(layer))), "seed actual environment layer");
+    environment::EnvironmentLayer layer;
+    layer.type = layer_type;
+    layer.persistence = environment::EnvironmentPersistence::Persistent;
+    participant_tests::Check(bool(owner.AddLayer(std::move(layer))), "seed actual environment layer");
     std::cerr << "[participant] framework.environment: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().layers.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().layers.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestInteractionServiceSaveParticipant()
-{
+void TestInteractionServiceSaveParticipant() {
     std::cerr << "[participant] framework.interaction: bootstrap\n";
     epidemic::gameplay::interaction::InteractionService owner;
-    class ParticipantProvider final : public interaction::IInteractionProvider { public: interaction::InteractionTypeId type{}; interaction::InteractionProviderId Id() const noexcept override { return interaction::InteractionProviderId::FromString("participant.provider"); } std::vector<interaction::InteractionCandidate> Collect(const interaction::InteractionContext& context) const override { return {{type, context.actor, context.target, Id(), 10, interaction::InteractionAvailability::Available, {}, {}}}; } }; class ParticipantExecutor final : public interaction::IInteractionExecutor { public: epidemic::foundation::Result<void> Validate(const interaction::InteractionPlan&) const override { return epidemic::foundation::Result<void>::Success(); } epidemic::foundation::Result<void> Commit(const interaction::InteractionPlan&, interaction::InteractionExecutionId) noexcept override { return epidemic::foundation::Result<void>::Success(); } }; class ParticipantState final : public interaction::IInteractionStateProvider { public: bool IsMaterialized(GameplayObjectRef) const override { return true; } Revision RevisionOf(GameplayObjectRef) const override { return Revision{1}; } };
-        const auto interaction_type = interaction::InteractionTypeId::FromString("participant.interaction"); interaction::InteractionDefinition definition; definition.type = interaction_type; definition.canonical_name = "participant.interaction"; definition.mode = interaction::InteractionExecutionMode::Timed; definition.duration = GameplayDuration{10}; definition.persistence = interaction::InteractionPersistence::PersistentSession; participant_tests::Check(bool(owner.RegisterDefinition(definition)), "interaction fixture definition"); ParticipantProvider provider; provider.type = interaction_type; ParticipantExecutor executor; ParticipantState state; participant_tests::Check(bool(owner.RegisterProvider(provider)), "interaction fixture provider"); participant_tests::Check(bool(owner.RegisterExecutor(interaction_type, executor)), "interaction fixture executor"); owner.SetStateProvider(&state);
+    class ParticipantProvider final : public interaction::IInteractionProvider {
+      public:
+        interaction::InteractionTypeId type{};
+        interaction::InteractionProviderId Id() const noexcept override {
+            return interaction::InteractionProviderId::FromString("participant.provider");
+        }
+        std::vector<interaction::InteractionCandidate>
+        Collect(const interaction::InteractionContext &context) const override {
+            return {{type,
+                     context.actor,
+                     context.target,
+                     Id(),
+                     10,
+                     interaction::InteractionAvailability::Available,
+                     {},
+                     {}}};
+        }
+    };
+    class ParticipantExecutor final : public interaction::IInteractionExecutor {
+      public:
+        epidemic::foundation::Result<void> Validate(const interaction::InteractionPlan &) const override {
+            return epidemic::foundation::Result<void>::Success();
+        }
+        epidemic::foundation::Result<void> Commit(const interaction::InteractionPlan &,
+                                                  interaction::InteractionExecutionId) noexcept override {
+            return epidemic::foundation::Result<void>::Success();
+        }
+    };
+    class ParticipantState final : public interaction::IInteractionStateProvider {
+      public:
+        bool IsMaterialized(GameplayObjectRef) const override {
+            return true;
+        }
+        Revision RevisionOf(GameplayObjectRef) const override {
+            return Revision{1};
+        }
+    };
+    const auto interaction_type = interaction::InteractionTypeId::FromString("participant.interaction");
+    interaction::InteractionDefinition definition;
+    definition.type = interaction_type;
+    definition.canonical_name = "participant.interaction";
+    definition.mode = interaction::InteractionExecutionMode::Timed;
+    definition.duration = GameplayDuration{10};
+    definition.persistence = interaction::InteractionPersistence::PersistentSession;
+    participant_tests::Check(bool(owner.RegisterDefinition(definition)), "interaction fixture definition");
+    ParticipantProvider provider;
+    provider.type = interaction_type;
+    ParticipantExecutor executor;
+    ParticipantState state;
+    participant_tests::Check(bool(owner.RegisterProvider(provider)), "interaction fixture provider");
+    participant_tests::Check(bool(owner.RegisterExecutor(interaction_type, executor)), "interaction fixture executor");
+    owner.SetStateProvider(&state);
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] framework.interaction: contract\n";
     auto participant = savegame::CreateInteractionServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.interaction", {});
     std::cerr << "[participant] framework.interaction: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.interaction: non-empty seed\n";
-    interaction::InteractionContext context; context.actor = {GameplayDomainId::FromString("participant.interaction"), GameplayObjectId::FromString("actor")}; context.target = {GameplayDomainId::FromString("participant.interaction"), GameplayObjectId::FromString("target")}; context.actor_revision = Revision{1}; context.target_revision = Revision{1}; auto candidates = owner.GetAvailableInteractions(context); participant_tests::Check(!candidates.empty(), "interaction fixture candidate"); auto plan = owner.Prepare(context, candidates.front()); participant_tests::Check(bool(plan), "interaction fixture plan"); participant_tests::Check(bool(owner.Commit(plan.Value())), "seed actual interaction session");
+    interaction::InteractionContext context;
+    context.actor = {GameplayDomainId::FromString("participant.interaction"), GameplayObjectId::FromString("actor")};
+    context.target = {GameplayDomainId::FromString("participant.interaction"), GameplayObjectId::FromString("target")};
+    context.actor_revision = Revision{1};
+    context.target_revision = Revision{1};
+    auto candidates = owner.GetAvailableInteractions(context);
+    participant_tests::Check(!candidates.empty(), "interaction fixture candidate");
+    auto plan = owner.Prepare(context, candidates.front());
+    participant_tests::Check(bool(plan), "interaction fixture plan");
+    participant_tests::Check(bool(owner.Commit(plan.Value())), "seed actual interaction session");
     std::cerr << "[participant] framework.interaction: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().sessions.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().sessions.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestWorldServiceSaveParticipant()
-{
+void TestWorldServiceSaveParticipant() {
     std::cerr << "[participant] framework.world: bootstrap\n";
     epidemic::gameplay::world::WorldService owner;
-    const auto feature_type = world::WorldFeatureTypeId::FromString("participant.world.feature_type"); participant_tests::Check(bool(owner.RegisterFeatureType(feature_type, "participant.world.feature_type")), "world fixture feature type");
+    const auto feature_type = world::WorldFeatureTypeId::FromString("participant.world.feature_type");
+    participant_tests::Check(bool(owner.RegisterFeatureType(feature_type, "participant.world.feature_type")),
+                             "world fixture feature type");
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] framework.world: contract\n";
     auto participant = savegame::CreateWorldServiceSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "framework.world", {});
     std::cerr << "[participant] framework.world: counters\n";
-    participant_tests::CheckOwnerCounterContinuity(owner, *participant, [&] { return owner.CaptureSnapshot(); },
-        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.world: non-empty seed\n";
-    world::WorldFeatureRecord feature; feature.id = world::WorldFeatureId::FromString("participant.world.feature"); feature.type = feature_type; feature.bounds = {{0, 0, 0}, {10, 10, 10}}; participant_tests::Check(bool(owner.AddDynamicFeature(std::move(feature))), "seed actual dynamic world feature");
+    world::WorldFeatureRecord feature;
+    feature.id = world::WorldFeatureId::FromString("participant.world.feature");
+    feature.type = feature_type;
+    feature.bounds = {{0, 0, 0}, {10, 10, 10}};
+    participant_tests::Check(bool(owner.AddDynamicFeature(std::move(feature))), "seed actual dynamic world feature");
     std::cerr << "[participant] framework.world: non-empty publication\n";
-    participant_tests::CheckNonEmptyPublication(*participant, [&] { return owner.CaptureSnapshot().dynamic_features.size(); },
-        [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().dynamic_features.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
-void TestWorldFactsAdapterSaveParticipant()
-{
+void TestWorldFactsAdapterSaveParticipant() {
     std::cerr << "[participant] integration.world_facts: bootstrap\n";
-    world::WorldService world; environment::EnvironmentService environment; interaction::InteractionService interaction; facts::GameplayFactsService facts;
-    const auto world_alteration_type = world::WorldAlterationTypeId::FromString("participant.world.alteration"); participant_tests::Check(bool(world.RegisterAlterationType(world_alteration_type, "participant.world.alteration")), "world fixture alteration type");
-    world::WorldAreaDefinition world_area; world_area.id = world::WorldAreaId::FromString("participant.world.area"); world_area.canonical_name = "participant.world.area"; world_area.bounds = {{0,0,0},{10,10,10}}; participant_tests::Check(bool(world.RegisterArea(world_area)), "world fixture area");
-    participant_tests::FreezeOwner(world); participant_tests::FreezeOwner(environment); participant_tests::FreezeOwner(interaction);
+    world::WorldService world;
+    environment::EnvironmentService environment;
+    interaction::InteractionService interaction;
+    facts::GameplayFactsService facts;
+    const auto world_alteration_type = world::WorldAlterationTypeId::FromString("participant.world.alteration");
+    participant_tests::Check(bool(world.RegisterAlterationType(world_alteration_type, "participant.world.alteration")),
+                             "world fixture alteration type");
+    world::WorldAreaDefinition world_area;
+    world_area.id = world::WorldAreaId::FromString("participant.world.area");
+    world_area.canonical_name = "participant.world.area";
+    world_area.bounds = {{0, 0, 0}, {10, 10, 10}};
+    participant_tests::Check(bool(world.RegisterArea(world_area)), "world fixture area");
+    participant_tests::FreezeOwner(world);
+    participant_tests::FreezeOwner(environment);
+    participant_tests::FreezeOwner(interaction);
     auto world_tx = world.BeginTransaction();
-    world::WorldAlterationRecord world_seed; world_seed.type = world_alteration_type; world_seed.affected_area = world_area.bounds;
-    auto world_created = world_tx.Create(world_seed); participant_tests::Check(bool(world_created), "world fixture alteration create");
+    world::WorldAlterationRecord world_seed;
+    world_seed.type = world_alteration_type;
+    world_seed.affected_area = world_area.bounds;
+    auto world_created = world_tx.Create(world_seed);
+    participant_tests::Check(bool(world_created), "world fixture alteration create");
     participant_tests::Check(bool(world_tx.Commit()), "world fixture alteration commit");
     world_integration::WorldFactsAdapter owner(world, environment, interaction, facts);
-    (void)owner.RegisterContracts(); participant_tests::FreezeOwner(facts);
+    (void)owner.RegisterContracts();
+    participant_tests::FreezeOwner(facts);
     owner.ResetCursorsToLatest();
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] integration.world_facts: contract\n";
     auto participant = savegame::CreateWorldFactsAdapterSaveParticipant(owner, workspace);
-    CheckParticipantContract(*participant, "integration.world_facts", {savegame::SaveParticipantId::FromString("framework.world"), savegame::SaveParticipantId::FromString("framework.environment"), savegame::SaveParticipantId::FromString("framework.interaction"), savegame::SaveParticipantId::FromString("framework.facts")});
+    CheckParticipantContract(*participant, "integration.world_facts",
+                             {savegame::SaveParticipantId::FromString("framework.world"),
+                              savegame::SaveParticipantId::FromString("framework.environment"),
+                              savegame::SaveParticipantId::FromString("framework.interaction"),
+                              savegame::SaveParticipantId::FromString("framework.facts")});
     participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
         auto checkpoint = owner.CaptureCheckpoint();
-                checkpoint.world_sequence = 0;
-                return owner.RestoreCheckpoint(std::move(checkpoint));
+        checkpoint.world_sequence = 0;
+        return owner.RestoreCheckpoint(std::move(checkpoint));
     });
 }
-int main()
-{
+int main() {
     TestEnvironmentServiceSaveParticipant();
     TestInteractionServiceSaveParticipant();
     TestWorldServiceSaveParticipant();

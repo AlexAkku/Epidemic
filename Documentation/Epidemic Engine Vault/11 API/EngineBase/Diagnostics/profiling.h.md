@@ -92,3 +92,74 @@ class ProfileScope
 
 #define EPIDEMIC_PROFILE_SCOPE(name) ::epidemic::diagnostics::ProfileScope epidemic_profile_scope_##__LINE__(name)
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Diagnostics/thread_context.h`.
+
+### Состав типов и операции
+
+#### `ProfileEvent` (строка заголовка 15)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string name`
+- `std::string thread_name`
+
+#### `IProfileCollector` (строка заголовка 23)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IProfileCollector() = default;
+virtual void Record(ProfileEvent event) = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `InMemoryProfileCollector` (строка заголовка 30)
+
+Публичные сигнатуры операций:
+
+```cpp
+void Record(ProfileEvent event) override;
+[[nodiscard]] std::vector<ProfileEvent> Snapshot() const;
+void Reset();
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ProfileScope` (строка заголовка 52)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ProfileScope(std::string_view scope_name);
+~ProfileScope() noexcept;
+ProfileScope(const ProfileScope &) = delete;
+ProfileScope &operator=(const ProfileScope &) = delete;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Record` | `InMemoryProfileCollector::Record` | `EngineBase/Diagnostics/src/profiling.cpp:15` |
+| `Snapshot` | `InMemoryProfileCollector::Snapshot` | `EngineBase/Diagnostics/src/profiling.cpp:21` |
+| `Reset` | `InMemoryProfileCollector::Reset` | `EngineBase/Diagnostics/src/profiling.cpp:27` |
+| `ProfileScope` | `ProfileScope::ProfileScope` | `EngineBase/Diagnostics/src/profiling.cpp:55` |
+| `Reset` | `DiagnosticsCounters::Reset` | `EngineBase/Diagnostics/src/counters.cpp:92` |
+

@@ -5,13 +5,11 @@ using namespace epidemic;
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::construction;
 
-namespace
-{
-class PlacementProvider final : public IConstructionPlacementProvider
-{
+namespace {
+class PlacementProvider final : public IConstructionPlacementProvider {
   public:
-    [[nodiscard]] foundation::Result<PlacementSemanticProjection> Project(const PlacementRequest &request) const override
-    {
+    [[nodiscard]] foundation::Result<PlacementSemanticProjection>
+    Project(const PlacementRequest &request) const override {
         PlacementSemanticProjection projection;
         projection.materialized = true;
         projection.area_allowed = true;
@@ -21,8 +19,7 @@ class PlacementProvider final : public IConstructionPlacementProvider
         projection.revision = {1};
         if (request.target.area)
             projection.footprint.volume.area = *request.target.area;
-        if (request.target.position)
-        {
+        if (request.target.position) {
             projection.footprint.volume.min = *request.target.position;
             projection.footprint.volume.max = {request.target.position->x_mm + 100, request.target.position->y_mm + 100,
                                                request.target.position->z_mm + 100};
@@ -30,12 +27,13 @@ class PlacementProvider final : public IConstructionPlacementProvider
         return foundation::Result<PlacementSemanticProjection>::Success(projection);
     }
 
-    [[nodiscard]] Revision CurrentRevision() const noexcept override { return {1}; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept override {
+        return {1};
+    }
 };
 } // namespace
 
-int main()
-{
+int main() {
     ConstructionService c;
     PlacementProvider provider;
     c.SetPlacementProvider(&provider);
@@ -144,10 +142,13 @@ int main()
         return 13;
     if (restored.FindSocket(sock.id)->state != SocketState::Occupied)
         return 14;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 46;
     ConstructionService empty_journal;
-    if (!empty_journal.ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required)
+    if (!empty_journal
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .snapshot_required)
         return 53;
 
     auto construction_journal_seed = restored.CaptureSnapshot();
@@ -168,8 +169,9 @@ int main()
     if (!journal_reservation)
         return 48;
     const auto construction_exhausted = restored.CaptureSnapshot();
-    if (construction_exhausted.change_epoch <= epoch_before_rollover || construction_exhausted.next_change_sequence != 2 ||
-        construction_exhausted.journal.size() != 1 || construction_exhausted.journal.front().sequence != 1)
+    if (construction_exhausted.change_epoch <= epoch_before_rollover ||
+        construction_exhausted.next_change_sequence != 2 || construction_exhausted.journal.size() != 1 ||
+        construction_exhausted.journal.front().sequence != 1)
         return 49;
     if (!restored.ReadChangesSince(ChangeCursor{epoch_before_rollover, 0}).snapshot_required)
         return 50;
@@ -258,20 +260,20 @@ int main()
     auto overflow_plan = expiring.PreparePlacementPlan(overflow_plan_request);
     const auto plan_generator_after = expiring.CaptureSnapshot().plan_ids;
     if (overflow_plan || !overflow_plan.GetError().HasCode("gameplay.time_overflow") ||
-        plan_generator_before.scope != plan_generator_after.scope || plan_generator_before.next != plan_generator_after.next)
+        plan_generator_before.scope != plan_generator_after.scope ||
+        plan_generator_before.next != plan_generator_after.next)
         return 55;
 
-
     // Goal 4 external-provider failure evidence: provider rejection is propagated before plan publication.
-    class FailingPlacementProvider final : public IConstructionPlacementProvider
-    {
+    class FailingPlacementProvider final : public IConstructionPlacementProvider {
       public:
-        [[nodiscard]] foundation::Result<PlacementSemanticProjection> Project(const PlacementRequest &) const override
-        {
+        [[nodiscard]] foundation::Result<PlacementSemanticProjection> Project(const PlacementRequest &) const override {
             return foundation::Result<PlacementSemanticProjection>::Failure(
                 foundation::Error::Create("test.construction.provider_failure", "forced placement provider failure"));
         }
-        [[nodiscard]] Revision CurrentRevision() const noexcept override { return {1}; }
+        [[nodiscard]] Revision CurrentRevision() const noexcept override {
+            return {1};
+        }
     };
     FailingPlacementProvider failing_provider;
     ConstructionService provider_failure_service;
@@ -283,8 +285,7 @@ int main()
     const auto provider_failure_before = provider_failure_service.CaptureSnapshot();
     const auto provider_failure_result = provider_failure_service.PreparePlacementPlan(req);
     const auto provider_failure_after = provider_failure_service.CaptureSnapshot();
-    if (provider_failure_result ||
-        !provider_failure_result.GetError().HasCode("test.construction.provider_failure") ||
+    if (provider_failure_result || !provider_failure_result.GetError().HasCode("test.construction.provider_failure") ||
         provider_failure_after.revision != provider_failure_before.revision ||
         provider_failure_after.plan_ids.next != provider_failure_before.plan_ids.next ||
         provider_failure_after.plans.size() != provider_failure_before.plans.size())
@@ -296,5 +297,3 @@ int main()
 
     return 0;
 }
-
-

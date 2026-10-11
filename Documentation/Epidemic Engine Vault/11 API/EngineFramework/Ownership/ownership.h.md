@@ -435,3 +435,318 @@ template <> struct hash<epidemic::gameplay::ownership::PropertyClaimId>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `OwnershipStrength`: `Owned`, `Claimed`, `Borrowed`, `Leased`, `Reserved`, `Stolen`, `Contested`, `Abandoned`, `Public`, `Unowned`
+- `PermissionStrength`: `Weak`, `Normal`, `Strong`, `Absolute`
+- `AccessDecision`: `Allow`, `Deny`, `RequirePermission`, `RequireRole`, `RequireOwner`, `Public`, `Private`, `TrespassIfViolated`, `CrimeIfViolated`
+- `PermissionDecision`: `Allowed`, `Denied`, `Trespass`, `CrimeCandidate`, `Unknown`, `NotApplicable`
+- `TransferReason`: `Trade`, `Gift`, `Reward`, `Loot`, `Theft`, `Confiscation`, `Inheritance`, `Abandonment`, `ConstructionCreated`, `GameSpecific`
+- `OwnershipChangeKind`: `OwnershipAssigned`, `OwnershipTransferred`, `OwnershipRemoved`, `PermissionGranted`, `PermissionRevoked`, `AccessRuleAdded`, `AccessRuleChanged`, `AccessRuleRemoved`, `PropertyClaimCreated`, `PropertyClaimResolved`
+
+### Состав типов и операции
+
+#### `OwnershipRecordId` (строка заголовка 18)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr OwnershipRecordId FromString(std::string_view s) noexcept;
+static constexpr OwnershipRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const OwnershipRecordId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const OwnershipRecordId &) const noexcept = default;
+```
+
+#### `PropertyClaimId` (строка заголовка 27)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PropertyClaimId FromString(std::string_view s) noexcept;
+static constexpr PropertyClaimId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PropertyClaimId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PropertyClaimId &) const noexcept = default;
+```
+
+#### `AccessRuleId` (строка заголовка 36)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AccessRuleId FromString(std::string_view s) noexcept;
+static constexpr AccessRuleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AccessRuleId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AccessRuleId &) const noexcept = default;
+```
+
+#### `PermissionGrantId` (строка заголовка 45)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PermissionGrantId FromString(std::string_view s) noexcept;
+static constexpr PermissionGrantId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PermissionGrantId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PermissionGrantId &) const noexcept = default;
+```
+
+#### `PropertyRightId` (строка заголовка 54)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PropertyRightId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PropertyRightId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PropertyRightId &) const noexcept = default;
+```
+
+#### `PropertyDomainId` (строка заголовка 62)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PropertyDomainId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PropertyDomainId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PropertyDomainId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 70)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 72)
+
+#### `RefHash` (строка заголовка 77)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept;
+```
+
+#### `OwnershipRecord` (строка заголовка 150)
+
+Публичные поля и значения по умолчанию:
+
+- `OwnershipStrength strength = OwnershipStrength::Owned`
+- `std::vector<std::byte> payload`
+
+#### `PermissionGrant` (строка заголовка 161)
+
+Публичные поля и значения по умолчанию:
+
+- `std::optional<GameplayTimePoint> expires_at`
+- `PermissionStrength strength = PermissionStrength::Normal`
+
+#### `AccessRule` (строка заголовка 173)
+
+Публичные поля и значения по умолчанию:
+
+- `AccessDecision decision = AccessDecision::RequirePermission`
+- `int priority = 0`
+- `PermissionStrength minimum_permission_strength = PermissionStrength::Weak`
+
+#### `PropertyClaim` (строка заголовка 186)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t strength_micro = 0`
+- `std::vector<std::byte> payload`
+
+#### `OwnershipPermissionResult` (строка заголовка 204)
+
+Публичные поля и значения по умолчанию:
+
+- `PermissionDecision decision = PermissionDecision::Unknown`
+- `std::vector<TypeId> reasons`
+
+#### `TransferOwnershipRequest` (строка заголовка 213)
+
+Публичные поля и значения по умолчанию:
+
+- `TransferReason reason = TransferReason::Trade`
+
+#### `OwnershipChange` (строка заголовка 223)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `OwnershipChangeKind kind = OwnershipChangeKind::OwnershipAssigned`
+- `TransferReason transfer_reason = TransferReason::GameSpecific`
+
+#### `OwnershipChangeBatch` (строка заголовка 237)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `std::vector<OwnershipChange> changes`
+
+#### `OwnershipSnapshot` (строка заголовка 247)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<OwnershipRecord> records`
+- `std::vector<PermissionGrant> grants`
+- `std::vector<AccessRule> rules`
+- `std::vector<PropertyClaim> claims`
+- `std::uint64_t change_epoch = 1`
+
+#### `IOwnershipRoleProvider` (строка заголовка 271)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IOwnershipRoleProvider() = default;
+[[nodiscard]] virtual bool HasRole(GameplayObjectRef subject, TypeId role, const GameplayContext &context) const noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `OwnershipService` (строка заголовка 279)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::size_t kChangeRetention = 4096`, `std::unordered_map<OwnershipRecordId, OwnershipRecord, IdHash> records_`, `std::unordered_map<PermissionGrantId, PermissionGrant, IdHash> grants_`, `std::unordered_map<AccessRuleId, AccessRule, IdHash> rules_`, `std::unordered_map<PropertyClaimId, PropertyClaim, IdHash> claims_`, `std::unordered_map<OwnerKey, OwnershipRecordId, OwnerKeyHash> canonical_owners_`, `std::unordered_map<GameplayObjectRef, std::vector<OwnershipRecordId>, RefHash> ownership_by_pro`, `std::unordered_map<GameplayObjectRef, std::vector<OwnershipRecordId>, RefHash> ownership_by_own`, `std::unordered_map<GameplayObjectRef, std::vector<PermissionGrantId>, RefHash> grants_by_subjec`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<OwnershipRecordId> AssignOwnership(OwnershipRecord record);
+[[nodiscard]] foundation::Result<void> TransferOwnership(TransferOwnershipRequest request);
+[[nodiscard]] foundation::Result<PermissionGrantId> GrantPermission(PermissionGrant grant);
+[[nodiscard]] foundation::Result<AccessRuleId> AddAccessRule(AccessRule rule);
+[[nodiscard]] foundation::Result<PropertyClaimId> CreateClaim(PropertyClaim claim);
+[[nodiscard]] OwnershipPermissionResult EvaluatePermission(OwnershipPermissionQuery query) const;
+[[nodiscard]] const OwnershipRecord *GetOwner(GameplayObjectRef property) const noexcept;
+[[nodiscard]] const OwnershipRecord *GetOwner(GameplayObjectRef property, PropertyDomainId domain) const noexcept;
+[[nodiscard]] std::vector<OwnershipRecord> GetOwnershipRecords(GameplayObjectRef property) const;
+[[nodiscard]] std::vector<OwnershipRecord> FindPropertiesOwnedBy(GameplayObjectRef owner) const;
+[[nodiscard]] std::vector<PermissionGrant> FindPermissions(GameplayObjectRef subject) const;
+[[nodiscard]] std::vector<PropertyClaim> FindClaims(GameplayObjectRef property) const;
+[[nodiscard]] std::vector<AccessRule> FindAccessRules(GameplayObjectRef property) const;
+[[nodiscard]] OwnershipChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesThrough(std::uint64_t sequence);
+[[nodiscard]] OwnershipSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(OwnershipSnapshot snapshot);
+void SetRoleProvider(const IOwnershipRoleProvider *provider) noexcept;
+[[nodiscard]] OwnershipDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `OwnerKey` (строка заголовка 337)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const OwnerKey &) const noexcept = default;
+```
+
+#### `OwnerKeyHash` (строка заголовка 343)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const OwnerKey &key) const noexcept;
+```
+
+#### `hash` (строка заголовка 395)
+
+Публичные сигнатуры операций:
+
+```cpp
+size_t operator()(const epidemic::gameplay::ownership::OwnershipRecordId &v) const noexcept;
+```
+
+#### `hash` (строка заголовка 399)
+
+Публичные сигнатуры операций:
+
+```cpp
+size_t operator()(const epidemic::gameplay::ownership::PermissionGrantId &v) const noexcept;
+```
+
+#### `hash` (строка заголовка 403)
+
+Публичные сигнатуры операций:
+
+```cpp
+size_t operator()(const epidemic::gameplay::ownership::AccessRuleId &v) const noexcept;
+```
+
+#### `hash` (строка заголовка 407)
+
+Публичные сигнатуры операций:
+
+```cpp
+size_t operator()(const epidemic::gameplay::ownership::PropertyClaimId &v) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `AssignOwnership` | `OwnershipService::AssignOwnership` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:267` |
+| `TransferOwnership` | `OwnershipService::TransferOwnership` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:347` |
+| `GrantPermission` | `OwnershipService::GrantPermission` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:419` |
+| `AddAccessRule` | `OwnershipService::AddAccessRule` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:487` |
+| `CreateClaim` | `OwnershipService::CreateClaim` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:534` |
+| `EvaluatePermission` | `OwnershipService::EvaluatePermission` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:609` |
+| `GetOwner` | `OwnershipService::GetOwner` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:741` |
+| `GetOwnershipRecords` | `OwnershipService::GetOwnershipRecords` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:768` |
+| `FindPropertiesOwnedBy` | `OwnershipService::FindPropertiesOwnedBy` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:782` |
+| `FindPermissions` | `OwnershipService::FindPermissions` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:802` |
+| `FindClaims` | `OwnershipService::FindClaims` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:816` |
+| `FindAccessRules` | `OwnershipService::FindAccessRules` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:830` |
+| `PruneChangesThrough` | `OwnershipService::PruneChangesThrough` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:875` |
+| `CaptureSnapshot` | `OwnershipService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:881` |
+| `RestoreSnapshot` | `OwnershipService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:921` |
+| `GetDiagnostics` | `OwnershipService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Ownership/src/ownership.cpp:1048` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `AssignOwnership`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:38`
+- `GetOwner`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:57`
+- `EvaluatePermission`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:75`
+- `GrantPermission`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:87`
+- `AddAccessRule`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:98`
+- `FindPermissions`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:119`
+- `FindAccessRules`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:144`
+- `SetRoleProvider`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:150`
+- `TransferOwnership`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:172`
+- `CreateClaim`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:201`
+- `FindClaims`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:202`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/ownership_tests.cpp:208`
+

@@ -4,10 +4,8 @@
 
 #include <vector>
 
-namespace epidemic::runtime
-{
-class TimeRuntime final : public IGameClock, public ITimeRuntime
-{
+namespace epidemic::runtime {
+class TimeRuntime final : public IGameClock, public ITimeRuntime {
   public:
     explicit TimeRuntime(TimeOptions options = {});
 
@@ -16,26 +14,25 @@ class TimeRuntime final : public IGameClock, public ITimeRuntime
     [[nodiscard]] TimeSnapshot GetSnapshot() const override;
 
     [[nodiscard]] TimeCheckpoint CaptureCheckpoint() const override;
-    [[nodiscard]] foundation::Result<void> RestoreCheckpoint(const TimeCheckpoint& checkpoint) override;
+    [[nodiscard]] foundation::Result<void> RestoreCheckpoint(const TimeCheckpoint &checkpoint) override;
     [[nodiscard]] foundation::Result<TimeAdvanceResult> Advance(std::chrono::microseconds real_delta) override;
     [[nodiscard]] foundation::Result<void> Pause() override;
     [[nodiscard]] foundation::Result<void> Resume() override;
     [[nodiscard]] foundation::Result<void> SetTimeScale(TimeScale scale) override;
     [[nodiscard]] foundation::Result<TimeAdvanceResult> Skip(GameDuration duration) override;
 
-    [[nodiscard]] const std::vector<TimeEvent>& GetEvents() const;
+    [[nodiscard]] const std::vector<TimeEvent> &GetEvents() const;
     [[nodiscard]] foundation::Result<GameTimePoint> ToGameTimePoint(CalendarDate date) const;
     [[nodiscard]] CalendarDate ToCalendarDate(GameTimePoint time) const;
     void FailNextAllocationForTesting() noexcept;
 
   private:
     [[nodiscard]] foundation::Result<void> ValidateOptions() const;
-    [[nodiscard]] foundation::Result<void> ValidateCheckpoint(const TimeCheckpoint& checkpoint) const;
-    [[nodiscard]] bool HasCompatibleConfiguration(const TimeCheckpoint& checkpoint) const noexcept;
+    [[nodiscard]] foundation::Result<void> ValidateCheckpoint(const TimeCheckpoint &checkpoint) const;
+    [[nodiscard]] bool HasCompatibleConfiguration(const TimeCheckpoint &checkpoint) const noexcept;
     [[nodiscard]] foundation::Result<void> ValidateDate(CalendarDate date) const;
-    [[nodiscard]] DayPhase DetermineDayPhase(const CalendarDate& date) const;
-    struct TimeMutableState
-    {
+    [[nodiscard]] DayPhase DetermineDayPhase(const CalendarDate &date) const;
+    struct TimeMutableState {
         TimeOptions options{};
         GameTimePoint now{};
         GameDuration last_delta{};
@@ -49,18 +46,19 @@ class TimeRuntime final : public IGameClock, public ITimeRuntime
     };
 
     [[nodiscard]] TimeAdvanceResult MakeResult(TimeSnapshot previous) const;
-    [[nodiscard]] foundation::Result<TimeSnapshot> BuildSnapshot(const TimeMutableState& state, bool changed) const;
+    [[nodiscard]] foundation::Result<TimeSnapshot> BuildSnapshot(const TimeMutableState &state, bool changed) const;
     [[nodiscard]] foundation::Result<void> PreflightRevision(bool changed) const;
     [[nodiscard]] static bool IsValidDayPhase(DayPhase phase) noexcept;
     [[nodiscard]] static std::uint64_t NextRevision(std::uint64_t current) noexcept;
-    [[nodiscard]] static foundation::Result<void> AppendBoundaryEvents(TimeMutableState& candidate, const TimeSnapshot& previous);
-    [[nodiscard]] static foundation::Result<void> PushEvent(TimeMutableState& candidate, TimeEventKind kind);
+    [[nodiscard]] static foundation::Result<void> AppendBoundaryEvents(TimeMutableState &candidate,
+                                                                       const TimeSnapshot &previous);
+    [[nodiscard]] static foundation::Result<void> PushEvent(TimeMutableState &candidate, TimeEventKind kind);
     void FailAllocationIfRequestedForTesting();
     void Commit(TimeMutableState candidate) noexcept;
 
     void RefreshSnapshot(bool changed);
     void PushEvent(TimeEventKind kind);
-    void AppendBoundaryEvents(const TimeSnapshot& previous);
+    void AppendBoundaryEvents(const TimeSnapshot &previous);
     void ClearEvents();
 
     TimeOptions options_{};

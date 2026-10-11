@@ -12,100 +12,105 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::society
-{
-struct MembershipId
-{
+namespace epidemic::gameplay::society {
+struct MembershipId {
     GameplayObjectId value{};
-    static constexpr MembershipId FromString(std::string_view s) noexcept { return {GameplayObjectId::FromString(s)}; }
-    static constexpr MembershipId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr MembershipId FromString(std::string_view s) noexcept {
+        return {GameplayObjectId::FromString(s)};
+    }
+    static constexpr MembershipId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const MembershipId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const MembershipId &) const noexcept = default;
 };
 
-struct RelationshipId
-{
+struct RelationshipId {
     GameplayObjectId value{};
-    static constexpr RelationshipId FromString(std::string_view s) noexcept
-    {
+    static constexpr RelationshipId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr RelationshipId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr RelationshipId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const RelationshipId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const RelationshipId &) const noexcept = default;
 };
 
-struct SocialRoleId
-{
+struct SocialRoleId {
     TypeId value{};
-    static constexpr SocialRoleId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr SocialRoleId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const SocialRoleId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SocialRoleId &) const noexcept = default;
 };
 
-struct SocialGroupTypeId
-{
+struct SocialGroupTypeId {
     TypeId value{};
-    static constexpr SocialGroupTypeId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr SocialGroupTypeId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const SocialGroupTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SocialGroupTypeId &) const noexcept = default;
 };
 
-struct RelationshipTypeId
-{
+struct RelationshipTypeId {
     TypeId value{};
-    static constexpr RelationshipTypeId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr RelationshipTypeId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const RelationshipTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const RelationshipTypeId &) const noexcept = default;
 };
 
-struct ReputationTrackId
-{
+struct ReputationTrackId {
     TypeId value{};
-    static constexpr ReputationTrackId FromString(std::string_view s) noexcept { return {TypeId::FromString(s)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
+    static constexpr ReputationTrackId FromString(std::string_view s) noexcept {
+        return {TypeId::FromString(s)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
     [[nodiscard]] constexpr bool operator==(const ReputationTrackId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ReputationTrackId &) const noexcept = default;
 };
 
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-struct RefHash
-{
-    [[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept
-    {
+struct RefHash {
+    [[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept {
         return std::hash<GameplayObjectRef>{}(r);
     }
 };
 
-struct PairHash
-{
-    [[nodiscard]] std::size_t operator()(const std::pair<GameplayObjectRef, GameplayObjectRef> &p) const noexcept
-    {
+struct PairHash {
+    [[nodiscard]] std::size_t operator()(const std::pair<GameplayObjectRef, GameplayObjectRef> &p) const noexcept {
         return std::hash<GameplayObjectRef>{}(p.first) ^
                (std::hash<GameplayObjectRef>{}(p.second) + 0x9E3779B97F4A7C15ull);
     }
 };
 
-enum class MembershipState
-{
+enum class MembershipState {
     Active,
     Suspended,
     Former,
@@ -114,8 +119,7 @@ enum class MembershipState
     Honorary
 };
 
-enum class RelationshipState
-{
+enum class RelationshipState {
     Neutral,
     Friendly,
     Hostile,
@@ -125,8 +129,7 @@ enum class RelationshipState
     Unknown
 };
 
-enum class SocietyChangeKind
-{
+enum class SocietyChangeKind {
     GroupCreated,
     MembershipAdded,
     MembershipRemoved,
@@ -138,14 +141,12 @@ enum class SocietyChangeKind
     FactionRelationChanged
 };
 
-struct RelationshipStateThreshold
-{
+struct RelationshipStateThreshold {
     std::int64_t minimum_value_micro = 0;
     RelationshipState state = RelationshipState::Neutral;
 };
 
-struct RelationshipTypeDefinition
-{
+struct RelationshipTypeDefinition {
     RelationshipTypeId id{};
     std::int64_t minimum_value_micro = -1'000'000;
     std::int64_t maximum_value_micro = 1'000'000;
@@ -159,14 +160,12 @@ struct RelationshipTypeDefinition
     Revision revision{};
 };
 
-struct ReputationStandingThreshold
-{
+struct ReputationStandingThreshold {
     std::int64_t minimum_value_micro = 0;
     TagId standing_tag{};
 };
 
-struct ReputationTrackDefinition
-{
+struct ReputationTrackDefinition {
     ReputationTrackId id{};
     std::int64_t minimum_value_micro = -1'000'000;
     std::int64_t maximum_value_micro = 1'000'000;
@@ -179,8 +178,7 @@ struct ReputationTrackDefinition
     Revision revision{};
 };
 
-struct SocialGroupDefinition
-{
+struct SocialGroupDefinition {
     GameplayObjectRef group{};
     GameplayTagSet tags;
     SocialGroupTypeId type{};
@@ -188,8 +186,7 @@ struct SocialGroupDefinition
     Revision revision{};
 };
 
-struct MembershipRecord
-{
+struct MembershipRecord {
     MembershipId id{};
     GameplayObjectRef member{};
     GameplayObjectRef group{};
@@ -200,8 +197,7 @@ struct MembershipRecord
     Revision revision{};
 };
 
-struct RelationshipRecord
-{
+struct RelationshipRecord {
     RelationshipId id{};
     GameplayObjectRef subject{};
     GameplayObjectRef target{};
@@ -213,8 +209,7 @@ struct RelationshipRecord
     Revision revision{};
 };
 
-struct ReputationRecord
-{
+struct ReputationRecord {
     GameplayObjectRef subject{};
     GameplayObjectRef scope{};
     ReputationTrackId track{};
@@ -222,8 +217,7 @@ struct ReputationRecord
     Revision revision{};
 };
 
-struct SocialStandingSnapshot
-{
+struct SocialStandingSnapshot {
     GameplayObjectRef subject{};
     GameplayObjectRef scope{};
     GameplayTagSet standing_tags;
@@ -231,8 +225,7 @@ struct SocialStandingSnapshot
     Revision revision{};
 };
 
-struct SocialChangeRequest
-{
+struct SocialChangeRequest {
     GameplayObjectRef subject{};
     GameplayObjectRef target{};
     RelationshipTypeId type{};
@@ -241,8 +234,7 @@ struct SocialChangeRequest
     GameplayContext context{};
 };
 
-struct ReputationChangeRequest
-{
+struct ReputationChangeRequest {
     GameplayObjectRef subject{};
     GameplayObjectRef scope{};
     ReputationTrackId track{};
@@ -251,15 +243,13 @@ struct ReputationChangeRequest
     GameplayContext context{};
 };
 
-struct AttitudeQuery
-{
+struct AttitudeQuery {
     GameplayObjectRef observer{};
     GameplayObjectRef target{};
     GameplayContext context{};
 };
 
-struct SocietyChange
-{
+struct SocietyChange {
     std::uint64_t sequence = 0;
     SocietyChangeKind kind = SocietyChangeKind::GroupCreated;
     GameplayObjectRef subject{};
@@ -271,8 +261,7 @@ struct SocietyChange
     Revision revision{};
 };
 
-struct SocietyChangeBatch
-{
+struct SocietyChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -282,8 +271,7 @@ struct SocietyChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct SocietySnapshot
-{
+struct SocietySnapshot {
     std::vector<SocialGroupDefinition> groups;
     std::vector<RelationshipTypeDefinition> relationship_types;
     std::vector<ReputationTrackDefinition> reputation_tracks;
@@ -300,8 +288,7 @@ struct SocietySnapshot
     std::uint64_t change_epoch = 1;
 };
 
-struct SocietyDiagnostics
-{
+struct SocietyDiagnostics {
     std::uint64_t groups = 0;
     std::uint64_t memberships = 0;
     std::uint64_t relationships = 0;
@@ -313,13 +300,11 @@ struct SocietyDiagnostics
     std::uint64_t journal_gaps = 0;
 };
 
-class SocietyService
-{
+class SocietyService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<SocietyService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.society");
     }
 
@@ -327,7 +312,9 @@ class SocietyService
     [[nodiscard]] foundation::Result<void> RegisterRelationshipType(RelationshipTypeDefinition definition);
     [[nodiscard]] foundation::Result<void> RegisterReputationTrack(ReputationTrackDefinition definition);
     [[nodiscard]] foundation::Result<void> FreezeDefinitions();
-    [[nodiscard]] bool DefinitionsFrozen() const noexcept { return definitions_frozen_; }
+    [[nodiscard]] bool DefinitionsFrozen() const noexcept {
+        return definitions_frozen_;
+    }
 
     [[nodiscard]] foundation::Result<MembershipId> AddMembership(MembershipRecord record);
     [[nodiscard]] foundation::Result<void> SetMembershipState(MembershipId id, MembershipState state,
@@ -356,73 +343,66 @@ class SocietyService
     [[nodiscard]] SocialStandingSnapshot GetSocialStanding(GameplayObjectRef subject, GameplayObjectRef scope) const;
     [[nodiscard]] bool HasRole(GameplayObjectRef subject, SocialRoleId role, GameplayObjectRef scope = {}) const;
 
-    private:
-        [[nodiscard]] std::vector<SocietyChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] SocietyChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] SocietyChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+  private:
+    [[nodiscard]] std::vector<SocietyChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] SocietyChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] SocietyChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     void PruneChangesThrough(std::uint64_t sequence);
 
     [[nodiscard]] SocietySnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(SocietySnapshot snapshot);
     [[nodiscard]] SocietyDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept { return revision_; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
+        return revision_;
+    }
 
   private:
-    struct MembershipKey
-    {
+    struct MembershipKey {
         GameplayObjectRef member{};
         GameplayObjectRef group{};
         [[nodiscard]] bool operator==(const MembershipKey &) const noexcept = default;
     };
-    struct MembershipKeyHash
-    {
+    struct MembershipKeyHash {
         [[nodiscard]] std::size_t operator()(const MembershipKey &key) const noexcept;
     };
-    struct RelationshipKey
-    {
+    struct RelationshipKey {
         GameplayObjectRef subject{};
         GameplayObjectRef target{};
         RelationshipTypeId type{};
         [[nodiscard]] bool operator==(const RelationshipKey &) const noexcept = default;
     };
-    struct RelationshipKeyHash
-    {
+    struct RelationshipKeyHash {
         [[nodiscard]] std::size_t operator()(const RelationshipKey &key) const noexcept;
     };
-    struct ReputationKey
-    {
+    struct ReputationKey {
         GameplayObjectRef subject{};
         GameplayObjectRef scope{};
         ReputationTrackId track{};
         [[nodiscard]] bool operator==(const ReputationKey &) const noexcept = default;
     };
-    struct ReputationKeyHash
-    {
+    struct ReputationKeyHash {
         [[nodiscard]] std::size_t operator()(const ReputationKey &key) const noexcept;
     };
 
     static constexpr std::size_t kChangeJournalCapacity = 4096;
 
-    bool Bump() noexcept
-    {
+    bool Bump() noexcept {
         if (revision_.value == std::numeric_limits<std::uint64_t>::max())
             return false;
         ++revision_.value;
@@ -469,19 +449,14 @@ class SocietyService
 };
 } // namespace epidemic::gameplay::society
 
-namespace std
-{
-template <> struct hash<epidemic::gameplay::society::MembershipId>
-{
-    size_t operator()(const epidemic::gameplay::society::MembershipId &v) const noexcept
-    {
+namespace std {
+template <> struct hash<epidemic::gameplay::society::MembershipId> {
+    size_t operator()(const epidemic::gameplay::society::MembershipId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::society::RelationshipId>
-{
-    size_t operator()(const epidemic::gameplay::society::RelationshipId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::society::RelationshipId> {
+    size_t operator()(const epidemic::gameplay::society::RelationshipId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };

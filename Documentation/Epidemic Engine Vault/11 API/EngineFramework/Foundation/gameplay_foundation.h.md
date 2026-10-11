@@ -40,3 +40,20 @@ namespace epidemic::gameplay
 template <typename Owner> struct SnapshotRestoreAccess;
 }
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/GameFramework/Foundation/change_cursor.h`, `Epidemic/GameFramework/Foundation/gameplay_context.h`, `Epidemic/GameFramework/Foundation/id_generator.h`, `Epidemic/GameFramework/Foundation/ids.h`, `Epidemic/GameFramework/Foundation/tags.h`, `Epidemic/GameFramework/Foundation/time_types.h`, `Epidemic/GameFramework/Foundation/type_registry.h`.
+
+Этот заголовок преимущественно содержит free-functions, type aliases или implementation helpers. Точные сигнатуры смотрите в исходном блоке выше.
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

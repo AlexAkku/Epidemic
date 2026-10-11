@@ -5,13 +5,11 @@
 #include <memory>
 #include <string_view>
 
-namespace epidemic::platform
-{
+namespace epidemic::platform {
 // This file defines the minimal dynamic-library abstraction returned by the platform runtime.
 // The abstraction keeps symbol lookup behind Result-based error reporting instead of exceptions.
 
-class IDynamicLibrary
-{
+class IDynamicLibrary {
   public:
     virtual ~IDynamicLibrary() = default;
 

@@ -8,18 +8,15 @@
 
 #include <vector>
 
-namespace epidemic::runtime
-{
-struct ResourceLoadArtifact
-{
+namespace epidemic::runtime {
+struct ResourceLoadArtifact {
     ResourceId resource_id{};
     ResourceType type{};
     ResourcePayloadPtr payload{};
     std::vector<ResourceDependency> dependencies;
 };
 
-class IResourceLoader
-{
+class IResourceLoader {
   public:
     virtual ~IResourceLoader() = default;
 

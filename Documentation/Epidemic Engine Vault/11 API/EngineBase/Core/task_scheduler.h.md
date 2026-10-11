@@ -213,3 +213,64 @@ class SimpleTaskScheduler final : public ITaskScheduler
 };
 } // namespace epidemic::core::tasks
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `TaskHandle` (строка заголовка 29)
+
+Публичные сигнатуры операций:
+
+```cpp
+TaskHandle() = default;
+```
+
+#### `TaskGroup` (строка заголовка 48)
+
+Публичные сигнатуры операций:
+
+```cpp
+TaskGroup(const TaskGroup &) = default;
+TaskGroup(TaskGroup &&) noexcept = default;
+TaskGroup &operator=(const TaskGroup &) = default;
+TaskGroup &operator=(TaskGroup &&) noexcept = default;
+```
+
+#### `ITaskScheduler` (строка заголовка 73)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ITaskScheduler() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SimpleTaskScheduler` (строка заголовка 118)
+
+#### `QueuedTask` (строка заголовка 166)
+
+Публичные поля и значения по умолчанию:
+
+- `Task task`
+- `std::shared_ptr<TaskHandle::State> handle_state`
+- `std::shared_ptr<TaskGroup::State> group_state`
+
+### Интеграция и безопасность вызовов
+
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `TaskHandle` | `TaskHandle::TaskHandle` | `EngineBase/Core/src/task_scheduler.cpp:88` |
+| `TaskGroup` | `TaskGroup::TaskGroup` | `EngineBase/Core/src/task_scheduler.cpp:93` |
+

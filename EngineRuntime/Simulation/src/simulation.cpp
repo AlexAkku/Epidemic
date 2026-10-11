@@ -2,10 +2,9 @@
 
 #include <utility>
 
-namespace epidemic::runtime::simulation
-{
-foundation::Result<SimulationServices> CreateSimulationServices(SimulationOptions options, SimulationDependencies dependencies)
-{
+namespace epidemic::runtime::simulation {
+foundation::Result<SimulationServices> CreateSimulationServices(SimulationOptions options,
+                                                                SimulationDependencies dependencies) {
     auto runtime = std::make_shared<SimulationRuntime>(options, std::move(dependencies));
 
     SimulationServices services{};

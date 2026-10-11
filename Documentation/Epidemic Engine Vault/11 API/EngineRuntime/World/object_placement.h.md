@@ -113,3 +113,68 @@ using ObjectPlacement = std::variant<
 }
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/string_id.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/runtime_time.h`, `Epidemic/Runtime/Foundation/spatial.h`.
+
+### Состав типов и операции
+
+#### `WorldSurfacePlacement` (строка заголовка 13)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const WorldSurfacePlacement&) const noexcept = default;
+```
+
+#### `ContainerPlacement` (строка заголовка 22)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const ContainerPlacement&) const noexcept = default;
+```
+
+#### `InventoryPlacement` (строка заголовка 30)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const InventoryPlacement&) const noexcept = default;
+```
+
+#### `EquippedPlacement` (строка заголовка 37)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const EquippedPlacement&) const noexcept = default;
+```
+
+#### `HiddenPlacement` (строка заголовка 45)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const HiddenPlacement&) const noexcept = default;
+```
+
+#### `DestroyedPlacement` (строка заголовка 52)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const DestroyedPlacement&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+

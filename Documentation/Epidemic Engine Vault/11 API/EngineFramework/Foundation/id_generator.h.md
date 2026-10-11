@@ -230,3 +230,78 @@ template <typename TId>
 
 } // namespace epidemic::gameplay
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/ids.h`.
+
+### Перечисления и допустимые категории
+
+- `MonotonicIdGeneratorSnapshotStatus`: `Valid`, `InvalidExpectedScope`, `InvalidSnapshotScope`, `UnexpectedScope`, `SequenceNotAheadOfRestoredIds`
+
+### Состав типов и операции
+
+#### `MonotonicIdGenerator` (строка заголовка 14)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit constexpr MonotonicIdGenerator(std::uint64_t scope) noexcept : scope_(NormalizeScope(scope));
+explicit constexpr MonotonicIdGenerator(IdScopeId scope) noexcept : scope_(NormalizeScope(scope.Raw()));
+[[nodiscard]] static constexpr MonotonicIdGenerator FromScopeName(std::string_view stable_scope_name) noexcept;
+[[nodiscard]] TId Next() noexcept;
+[[nodiscard]] constexpr bool IsExhausted() const noexcept;
+[[nodiscard]] constexpr IdScopeId Scope() const noexcept;
+[[nodiscard]] Snapshot GetSnapshot() const noexcept;
+[[nodiscard]] bool Restore(Snapshot snapshot) noexcept;
+```
+
+#### `Snapshot` (строка заголовка 17)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t scope = 0`
+- `std::uint64_t next = 1`
+
+#### `MonotonicIdGeneratorSnapshotValidation` (строка заголовка 110)
+
+Публичные поля и значения по умолчанию:
+
+- `MonotonicIdGeneratorSnapshotStatus status = MonotonicIdGeneratorSnapshotStatus::Valid`
+- `std::uint64_t expected_scope = 0`
+- `std::uint64_t snapshot_scope = 0`
+- `std::uint64_t snapshot_next = 0`
+- `std::uint64_t max_restored_low_part = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr explicit operator bool() const noexcept;
+[[nodiscard]] constexpr std::string_view Code() const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Next`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:129`
+- `GetSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:130`
+- `Restore`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:132`
+- `Scope`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:137`
+- `Code`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:143`
+- `IsExhausted`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:180`
+

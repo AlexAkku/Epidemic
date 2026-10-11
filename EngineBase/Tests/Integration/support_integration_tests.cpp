@@ -25,115 +25,147 @@
 #include <utility>
 #include <vector>
 
-namespace
-{
+namespace {
 using epidemic::tests::Assert;
 
-class StubWindow final : public epidemic::platform::IWindow
-{
+class StubWindow final : public epidemic::platform::IWindow {
   public:
     explicit StubWindow(void *native_handle = reinterpret_cast<void *>(static_cast<std::uintptr_t>(1)))
-        : native_handle_(native_handle)
-    {
+        : native_handle_(native_handle) {
     }
 
-    [[nodiscard]] epidemic::platform::WindowId Id() const noexcept override
-    {
+    [[nodiscard]] epidemic::platform::WindowId Id() const noexcept override {
         return epidemic::platform::WindowId(1);
     }
 
-    [[nodiscard]] std::string_view Title() const noexcept override
-    {
+    [[nodiscard]] std::string_view Title() const noexcept override {
         return "SupportStubWindow";
     }
 
-    [[nodiscard]] epidemic::platform::NativeWindowHandle GetNativeHandle() const noexcept override
-    {
+    [[nodiscard]] epidemic::platform::NativeWindowHandle GetNativeHandle() const noexcept override {
         return epidemic::platform::NativeWindowHandle(native_handle_);
     }
 
-    [[nodiscard]] std::uint32_t ClientWidth() const noexcept override { return 320; }
-    [[nodiscard]] std::uint32_t ClientHeight() const noexcept override { return 240; }
-    [[nodiscard]] std::uint32_t Dpi() const noexcept override { return 96; }
-    [[nodiscard]] bool HasFocus() const noexcept override { return true; }
-    [[nodiscard]] bool IsMinimized() const noexcept override { return false; }
-    [[nodiscard]] bool IsCloseRequested() const noexcept override { return false; }
-    void Show() override {}
-    void Close() override {}
+    [[nodiscard]] std::uint32_t ClientWidth() const noexcept override {
+        return 320;
+    }
+    [[nodiscard]] std::uint32_t ClientHeight() const noexcept override {
+        return 240;
+    }
+    [[nodiscard]] std::uint32_t Dpi() const noexcept override {
+        return 96;
+    }
+    [[nodiscard]] bool HasFocus() const noexcept override {
+        return true;
+    }
+    [[nodiscard]] bool IsMinimized() const noexcept override {
+        return false;
+    }
+    [[nodiscard]] bool IsCloseRequested() const noexcept override {
+        return false;
+    }
+    void Show() override {
+    }
+    void Close() override {
+    }
 
   private:
     void *native_handle_{};
 };
 
-class StubWindowSystem final : public epidemic::platform::IWindowSystem
-{
+class StubWindowSystem final : public epidemic::platform::IWindowSystem {
   public:
     [[nodiscard]] epidemic::foundation::Result<epidemic::platform::WindowPtr>
-    CreateWindow(const epidemic::platform::WindowCreateInfo &) override
-    {
+    CreateWindow(const epidemic::platform::WindowCreateInfo &) override {
         return epidemic::foundation::Result<epidemic::platform::WindowPtr>::Success(std::make_shared<StubWindow>());
     }
 
-    [[nodiscard]] std::vector<epidemic::platform::PlatformEvent> DrainEvents() override { return {}; }
-    [[nodiscard]] bool HasPendingEvents() const noexcept override { return false; }
-    [[nodiscard]] std::size_t WindowCount() const noexcept override { return 0; }
+    [[nodiscard]] std::vector<epidemic::platform::PlatformEvent> DrainEvents() override {
+        return {};
+    }
+    [[nodiscard]] bool HasPendingEvents() const noexcept override {
+        return false;
+    }
+    [[nodiscard]] std::size_t WindowCount() const noexcept override {
+        return 0;
+    }
 };
 
-class TracePlatform final : public epidemic::platform::IPlatformRuntime, public epidemic::platform::IWindowSystem
-{
+class TracePlatform final : public epidemic::platform::IPlatformRuntime, public epidemic::platform::IWindowSystem {
   public:
-    explicit TracePlatform(std::vector<std::string> &trace) : trace_(trace) {}
-
-    [[nodiscard]] std::string_view Name() const override { return "TracePlatform"; }
-    [[nodiscard]] const epidemic::platform::ProcessInfo &GetProcessInfo() const override { return process_info_; }
-    [[nodiscard]] epidemic::foundation::TimePoint Now() const override { return epidemic::foundation::Clock::now(); }
-
-    [[nodiscard]] epidemic::foundation::Result<epidemic::platform::DynamicLibraryPtr>
-    LoadDynamicLibrary(const epidemic::foundation::Path &) override
-    {
-        return epidemic::foundation::Result<epidemic::platform::DynamicLibraryPtr>::Failure(
-            epidemic::foundation::Error::Create("support.test.unsupported", "Dynamic loading is not used by this test"));
+    explicit TracePlatform(std::vector<std::string> &trace) : trace_(trace) {
     }
 
-    void PumpEvents() override { trace_.push_back("platform.pump"); }
-    [[nodiscard]] bool IsExitRequested() const override { return false; }
+    [[nodiscard]] std::string_view Name() const override {
+        return "TracePlatform";
+    }
+    [[nodiscard]] const epidemic::platform::ProcessInfo &GetProcessInfo() const override {
+        return process_info_;
+    }
+    [[nodiscard]] epidemic::foundation::TimePoint Now() const override {
+        return epidemic::foundation::Clock::now();
+    }
+
+    [[nodiscard]] epidemic::foundation::Result<epidemic::platform::DynamicLibraryPtr>
+    LoadDynamicLibrary(const epidemic::foundation::Path &) override {
+        return epidemic::foundation::Result<epidemic::platform::DynamicLibraryPtr>::Failure(
+            epidemic::foundation::Error::Create("support.test.unsupported",
+                                                "Dynamic loading is not used by this test"));
+    }
+
+    void PumpEvents() override {
+        trace_.push_back("platform.pump");
+    }
+    [[nodiscard]] bool IsExitRequested() const override {
+        return false;
+    }
 
     [[nodiscard]] epidemic::foundation::Result<epidemic::platform::WindowPtr>
-    CreateWindow(const epidemic::platform::WindowCreateInfo &) override
-    {
+    CreateWindow(const epidemic::platform::WindowCreateInfo &) override {
         return epidemic::foundation::Result<epidemic::platform::WindowPtr>::Success(std::make_shared<StubWindow>());
     }
 
-    [[nodiscard]] std::vector<epidemic::platform::PlatformEvent> DrainEvents() override
-    {
+    [[nodiscard]] std::vector<epidemic::platform::PlatformEvent> DrainEvents() override {
         trace_.push_back("platform.drain");
         return {};
     }
 
-    [[nodiscard]] bool HasPendingEvents() const noexcept override { return false; }
-    [[nodiscard]] std::size_t WindowCount() const noexcept override { return 0; }
+    [[nodiscard]] bool HasPendingEvents() const noexcept override {
+        return false;
+    }
+    [[nodiscard]] std::size_t WindowCount() const noexcept override {
+        return 0;
+    }
 
   private:
     std::vector<std::string> &trace_;
     epidemic::platform::ProcessInfo process_info_{};
 };
 
-class TraceInput final : public epidemic::input::IInputSystem
-{
+class TraceInput final : public epidemic::input::IInputSystem {
   public:
-    explicit TraceInput(std::vector<std::string> &trace) : trace_(trace) {}
+    explicit TraceInput(std::vector<std::string> &trace) : trace_(trace) {
+    }
 
-    void QueuePlatformEvent(const epidemic::platform::PlatformEvent &) override { trace_.push_back("input.queue_one"); }
+    void QueuePlatformEvent(const epidemic::platform::PlatformEvent &) override {
+        trace_.push_back("input.queue_one");
+    }
 
-    void QueuePlatformEvents(std::span<const epidemic::platform::PlatformEvent>) override
-    {
+    void QueuePlatformEvents(std::span<const epidemic::platform::PlatformEvent>) override {
         trace_.push_back("input.queue");
     }
 
-    void PublishSnapshot() override { trace_.push_back("input.publish"); }
-    void Reset() noexcept override {}
-    [[nodiscard]] const epidemic::input::InputSnapshot &CurrentSnapshot() const noexcept override { return snapshot_; }
-    [[nodiscard]] std::span<const epidemic::input::InputEvent> CurrentEvents() const noexcept override { return events_; }
+    void PublishSnapshot() override {
+        trace_.push_back("input.publish");
+    }
+    void Reset() noexcept override {
+    }
+    [[nodiscard]] const epidemic::input::InputSnapshot &CurrentSnapshot() const noexcept override {
+        return snapshot_;
+    }
+    [[nodiscard]] std::span<const epidemic::input::InputEvent> CurrentEvents() const noexcept override {
+        return events_;
+    }
 
   private:
     std::vector<std::string> &trace_;
@@ -141,37 +173,35 @@ class TraceInput final : public epidemic::input::IInputSystem
     std::vector<epidemic::input::InputEvent> events_{};
 };
 
-class TraceCommandContext final : public epidemic::rhi::IRhiCommandContext
-{
+class TraceCommandContext final : public epidemic::rhi::IRhiCommandContext {
   public:
-    explicit TraceCommandContext(std::vector<std::string> &trace) : trace_(trace) {}
+    explicit TraceCommandContext(std::vector<std::string> &trace) : trace_(trace) {
+    }
 
-    [[nodiscard]] epidemic::foundation::Result<void> BeginFrame() override
-    {
+    [[nodiscard]] epidemic::foundation::Result<void> BeginFrame() override {
         trace_.push_back("rhi.begin");
         active_ = true;
         return epidemic::foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] epidemic::foundation::Result<void> Clear(const epidemic::rhi::RhiClearDesc &) override
-    {
+    [[nodiscard]] epidemic::foundation::Result<void> Clear(const epidemic::rhi::RhiClearDesc &) override {
         trace_.push_back("rhi.clear");
-        if (fail_clear)
-        {
+        if (fail_clear) {
             return epidemic::foundation::Result<void>::Failure(
                 epidemic::foundation::Error::Create("support.test.clear_failure", "Injected clear failure"));
         }
         return epidemic::foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] epidemic::foundation::Result<void> EndFrame() override
-    {
+    [[nodiscard]] epidemic::foundation::Result<void> EndFrame() override {
         trace_.push_back("rhi.end");
         active_ = false;
         return epidemic::foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] bool IsFrameActive() const noexcept override { return active_; }
+    [[nodiscard]] bool IsFrameActive() const noexcept override {
+        return active_;
+    }
 
     bool fail_clear{false};
 
@@ -180,27 +210,30 @@ class TraceCommandContext final : public epidemic::rhi::IRhiCommandContext
     bool active_{false};
 };
 
-class TraceSwapChain final : public epidemic::rhi::IRhiSwapChain
-{
+class TraceSwapChain final : public epidemic::rhi::IRhiSwapChain {
   public:
-    explicit TraceSwapChain(std::vector<std::string> &trace) : trace_(trace) {}
+    explicit TraceSwapChain(std::vector<std::string> &trace) : trace_(trace) {
+    }
 
-    [[nodiscard]] epidemic::foundation::Result<void> Present() override
-    {
+    [[nodiscard]] epidemic::foundation::Result<void> Present() override {
         trace_.push_back("rhi.present");
         return epidemic::foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] epidemic::foundation::Result<void> Resize(std::uint32_t, std::uint32_t) override
-    {
+    [[nodiscard]] epidemic::foundation::Result<void> Resize(std::uint32_t, std::uint32_t) override {
         return epidemic::foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] std::uint32_t Width() const noexcept override { return 320; }
-    [[nodiscard]] std::uint32_t Height() const noexcept override { return 240; }
-    [[nodiscard]] std::uint32_t BufferCount() const noexcept override { return 2; }
-    [[nodiscard]] epidemic::rhi::RhiPixelFormat ColorFormat() const noexcept override
-    {
+    [[nodiscard]] std::uint32_t Width() const noexcept override {
+        return 320;
+    }
+    [[nodiscard]] std::uint32_t Height() const noexcept override {
+        return 240;
+    }
+    [[nodiscard]] std::uint32_t BufferCount() const noexcept override {
+        return 2;
+    }
+    [[nodiscard]] epidemic::rhi::RhiPixelFormat ColorFormat() const noexcept override {
         return epidemic::rhi::RhiPixelFormat::B8G8R8A8_UNorm;
     }
 
@@ -208,25 +241,25 @@ class TraceSwapChain final : public epidemic::rhi::IRhiSwapChain
     std::vector<std::string> &trace_;
 };
 
-class CountingDevice final : public epidemic::rhi::IRhiDevice
-{
+class CountingDevice final : public epidemic::rhi::IRhiDevice {
   public:
-    [[nodiscard]] std::string_view BackendName() const noexcept override { return "CountingDevice"; }
-    [[nodiscard]] const epidemic::rhi::RhiDeviceDesc &Descriptor() const noexcept override { return descriptor_; }
+    [[nodiscard]] std::string_view BackendName() const noexcept override {
+        return "CountingDevice";
+    }
+    [[nodiscard]] const epidemic::rhi::RhiDeviceDesc &Descriptor() const noexcept override {
+        return descriptor_;
+    }
 
     [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<epidemic::rhi::IRhiCommandContext>>
-    CreateCommandContext() override
-    {
+    CreateCommandContext() override {
         return epidemic::foundation::Result<std::shared_ptr<epidemic::rhi::IRhiCommandContext>>::Failure(
             epidemic::foundation::Error::Create("support.test.unused", "Command context creation is unused"));
     }
 
     [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<epidemic::rhi::IRhiSwapChain>>
-    CreateSwapChain(const epidemic::rhi::RhiSwapChainDesc &) override
-    {
+    CreateSwapChain(const epidemic::rhi::RhiSwapChainDesc &) override {
         ++swap_chain_create_count;
-        if (fail_swap_chain_creation)
-        {
+        if (fail_swap_chain_creation) {
             return epidemic::foundation::Result<std::shared_ptr<epidemic::rhi::IRhiSwapChain>>::Failure(
                 epidemic::foundation::Error::Create("support.test.swap_chain_failure", "Injected swap-chain failure"));
         }
@@ -243,19 +276,15 @@ class CountingDevice final : public epidemic::rhi::IRhiDevice
     epidemic::rhi::RhiDeviceDesc descriptor_{};
 };
 
-void TestEngineBaseBundleRejectsLateConflictWithoutPartialRegistration()
-{
+void TestEngineBaseBundleRejectsLateConflictWithoutPartialRegistration() {
     epidemic::core::Application application({.application_name = "SupportAtomicBaseline", .frame_limit = std::nullopt});
     auto existing_memory = std::make_shared<epidemic::memory::MemoryTracker>(true);
     application.Services().RegisterInstance<epidemic::memory::IMemoryTracker>(existing_memory);
 
     bool rejected = false;
-    try
-    {
+    try {
         static_cast<void>(epidemic::enginebase::RegisterEngineBase(application, {}));
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         rejected = true;
     }
 
@@ -274,9 +303,9 @@ void TestEngineBaseBundleRejectsLateConflictWithoutPartialRegistration()
            "Failed later bundle registration must preserve the previously valid service");
 }
 
-void TestEngineBaseOptionsNormalizeAndRejectBeforePublication()
-{
-    epidemic::core::Application normalized({.application_name = "SupportWorkerNormalization", .frame_limit = std::nullopt});
+void TestEngineBaseOptionsNormalizeAndRejectBeforePublication() {
+    epidemic::core::Application normalized(
+        {.application_name = "SupportWorkerNormalization", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         normalized, {.runtime_name = "SupportWorkerNormalization", .worker_count = 0}));
     const auto configuration = normalized.Services().Get<epidemic::core::config::IConfiguration>();
@@ -287,13 +316,10 @@ void TestEngineBaseOptionsNormalizeAndRejectBeforePublication()
 
     epidemic::core::Application invalid({.application_name = "SupportInvalidOptions", .frame_limit = std::nullopt});
     bool rejected = false;
-    try
-    {
+    try {
         static_cast<void>(epidemic::enginebase::RegisterEngineBase(
             invalid, {.default_window_width = 0, .default_window_height = 720}));
-    }
-    catch (const std::invalid_argument &)
-    {
+    } catch (const std::invalid_argument &) {
         rejected = true;
     }
     Assert(rejected, "Invalid default window dimensions must be rejected");
@@ -301,19 +327,16 @@ void TestEngineBaseOptionsNormalizeAndRejectBeforePublication()
            "Invalid EngineBase options must be rejected before service publication");
 }
 
-void TestWindowsAndInputDuplicateRegistrationAreControlled()
-{
-    epidemic::core::Application windows_conflict({.application_name = "SupportWindowsConflict", .frame_limit = std::nullopt});
+void TestWindowsAndInputDuplicateRegistrationAreControlled() {
+    epidemic::core::Application windows_conflict(
+        {.application_name = "SupportWindowsConflict", .frame_limit = std::nullopt});
     auto existing_window_system = std::make_shared<StubWindowSystem>();
     windows_conflict.Services().RegisterInstance<epidemic::platform::IWindowSystem>(existing_window_system);
 
     bool windows_rejected = false;
-    try
-    {
+    try {
         static_cast<void>(epidemic::enginebase::RegisterWindowsRuntime(windows_conflict));
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         windows_rejected = true;
     }
     Assert(windows_rejected, "Windows bundle must reject a pre-existing service role");
@@ -322,16 +345,14 @@ void TestWindowsAndInputDuplicateRegistrationAreControlled()
     Assert(windows_conflict.Services().Get<epidemic::platform::IWindowSystem>() == existing_window_system,
            "Rejected Windows bundle must preserve the existing window-system owner");
 
-    epidemic::core::Application input_conflict({.application_name = "SupportInputConflict", .frame_limit = std::nullopt});
+    epidemic::core::Application input_conflict(
+        {.application_name = "SupportInputConflict", .frame_limit = std::nullopt});
     auto existing_input = std::make_shared<epidemic::input::InputSystem>();
     input_conflict.Services().RegisterInstance<epidemic::input::IInputSystem>(existing_input);
     bool input_rejected = false;
-    try
-    {
+    try {
         static_cast<void>(epidemic::enginebase::RegisterInputRuntime(input_conflict));
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         input_rejected = true;
     }
     Assert(input_rejected, "Input duplicate registration must be rejected");
@@ -339,8 +360,7 @@ void TestWindowsAndInputDuplicateRegistrationAreControlled()
            "Input duplicate rejection must preserve the existing service");
 }
 
-void TestGraphicsRegistrationConflictsAndInvalidBackendAreResultFailures()
-{
+void TestGraphicsRegistrationConflictsAndInvalidBackendAreResultFailures() {
     epidemic::core::Application conflict({.application_name = "SupportGraphicsConflict", .frame_limit = std::nullopt});
     const auto null_device_result = epidemic::rhi::CreateNullRhiDevice({.debug_name = "SupportPreexistingNull"});
     Assert(null_device_result.HasValue(), "Null device setup for support regression must succeed");
@@ -359,7 +379,8 @@ void TestGraphicsRegistrationConflictsAndInvalidBackendAreResultFailures()
     Assert(conflict.Services().Get<epidemic::rhi::IRhiCommandContext>() == existing_context,
            "Graphics bundle conflict must preserve the pre-existing command context");
 
-    epidemic::core::Application invalid_backend({.application_name = "SupportInvalidBackend", .frame_limit = std::nullopt});
+    epidemic::core::Application invalid_backend(
+        {.application_name = "SupportInvalidBackend", .frame_limit = std::nullopt});
     const auto invalid_result = epidemic::enginebase::RegisterGraphicsRuntime(
         invalid_backend,
         {.backend = static_cast<epidemic::enginebase::GraphicsBackend>(255), .debug_name = "InvalidBackend"});
@@ -371,9 +392,9 @@ void TestGraphicsRegistrationConflictsAndInvalidBackendAreResultFailures()
            "Unknown GraphicsBackend must not mutate the composition root");
 }
 
-void TestValidWindowsInputAndNullGraphicsComposition()
-{
-    epidemic::core::Application application({.application_name = "SupportValidComposition", .frame_limit = std::nullopt});
+void TestValidWindowsInputAndNullGraphicsComposition() {
+    epidemic::core::Application application(
+        {.application_name = "SupportValidComposition", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "SupportValidComposition", .worker_count = 1}));
     const auto platform = epidemic::enginebase::RegisterWindowsRuntime(application);
@@ -394,9 +415,9 @@ void TestValidWindowsInputAndNullGraphicsComposition()
            "Null graphics registration must publish the returned command-context role");
 }
 
-void TestMainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork()
-{
-    epidemic::core::Application application({.application_name = "SupportSwapChainOwnership", .frame_limit = std::nullopt});
+void TestMainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork() {
+    epidemic::core::Application application(
+        {.application_name = "SupportSwapChainOwnership", .frame_limit = std::nullopt});
     auto device = std::make_shared<CountingDevice>();
     application.Services().RegisterInstance<epidemic::rhi::IRhiDevice>(device);
 
@@ -423,7 +444,8 @@ void TestMainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork()
     Assert(!missing_window.HasValue() && missing_window.GetError().HasCode("engine_base.support.window_required"),
            "Null main-window wiring must return a controlled failure");
 
-    epidemic::core::Application missing_device({.application_name = "SupportMissingDevice", .frame_limit = std::nullopt});
+    epidemic::core::Application missing_device(
+        {.application_name = "SupportMissingDevice", .frame_limit = std::nullopt});
     const auto no_device = epidemic::enginebase::RegisterMainSwapChain(missing_device, window, desc);
     Assert(!no_device.HasValue() && no_device.GetError().HasCode("engine_base.support.rhi_device_required"),
            "Missing RHI device must return a controlled Result failure");
@@ -448,32 +470,27 @@ void TestMainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork()
            "Swap-chain backend failure must not publish a partial main swap-chain owner");
 }
 
-void TestFrameLoopDependencyFailureDoesNotPublishEventBuffer()
-{
-    epidemic::core::Application platform_missing({.application_name = "SupportPlatformLoopMissing", .frame_limit = std::nullopt});
+void TestFrameLoopDependencyFailureDoesNotPublishEventBuffer() {
+    epidemic::core::Application platform_missing(
+        {.application_name = "SupportPlatformLoopMissing", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(platform_missing, {}));
     bool platform_rejected = false;
-    try
-    {
+    try {
         epidemic::enginebase::RegisterPlatformFrameLoop(platform_missing);
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         platform_rejected = true;
     }
     Assert(platform_rejected, "Platform frame-loop registration must reject missing dependencies");
     Assert(!platform_missing.Services().Contains<epidemic::enginebase::FramePlatformEvents>(),
            "Missing platform dependencies must not leave a partial FramePlatformEvents service");
 
-    epidemic::core::Application input_missing({.application_name = "SupportInputLoopMissing", .frame_limit = std::nullopt});
+    epidemic::core::Application input_missing(
+        {.application_name = "SupportInputLoopMissing", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(input_missing, {}));
     bool input_rejected = false;
-    try
-    {
+    try {
         epidemic::enginebase::RegisterInputFrameLoop(input_missing);
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         input_rejected = true;
     }
     Assert(input_rejected, "Input frame-loop registration must reject missing dependencies");
@@ -481,8 +498,7 @@ void TestFrameLoopDependencyFailureDoesNotPublishEventBuffer()
            "Missing input dependency must not leave a partial FramePlatformEvents service");
 }
 
-void TestFrameHandlerOrderIsPlatformInputThenPresentation()
-{
+void TestFrameHandlerOrderIsPlatformInputThenPresentation() {
     epidemic::core::Application application({.application_name = "SupportFrameOrder", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "SupportFrameOrder", .worker_count = 1}));
@@ -490,8 +506,9 @@ void TestFrameHandlerOrderIsPlatformInputThenPresentation()
     std::vector<std::string> trace;
     auto platform = std::make_shared<TracePlatform>(trace);
     auto input = std::make_shared<TraceInput>(trace);
-    application.Services().RegisterInstancesAtomic<epidemic::platform::IPlatformRuntime, epidemic::platform::IWindowSystem>(
-        platform, platform);
+    application.Services()
+        .RegisterInstancesAtomic<epidemic::platform::IPlatformRuntime, epidemic::platform::IWindowSystem>(platform,
+                                                                                                          platform);
     application.Services().RegisterInstance<epidemic::input::IInputSystem>(input);
 
     epidemic::enginebase::RegisterPlatformFrameLoop(application);
@@ -509,14 +526,13 @@ void TestFrameHandlerOrderIsPlatformInputThenPresentation()
     Assert(application.Run() == 0, "Support frame-order run must succeed");
     Assert(application.Shutdown() == 0, "Support frame-order shutdown must succeed");
 
-    const std::vector<std::string> expected{
-        "platform.pump", "platform.drain", "input.queue", "input.publish", "rhi.begin", "rhi.clear", "rhi.end", "rhi.present"};
+    const std::vector<std::string> expected{"platform.pump", "platform.drain", "input.queue", "input.publish",
+                                            "rhi.begin",     "rhi.clear",      "rhi.end",     "rhi.present"};
     Assert(trace == expected,
            "Support frame handlers must execute in platform -> input -> begin/clear -> end -> present phase order");
 }
 
-void TestRhiFrameLoopRejectsInvalidWiringBeforeRegistration()
-{
+void TestRhiFrameLoopRejectsInvalidWiringBeforeRegistration() {
     epidemic::core::Application application({.application_name = "SupportInvalidRhiLoop", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(application, {}));
 
@@ -527,12 +543,9 @@ void TestRhiFrameLoopRejectsInvalidWiringBeforeRegistration()
     auto clear = std::make_shared<epidemic::rhi::RhiClearDesc>();
 
     bool rejected = false;
-    try
-    {
+    try {
         epidemic::enginebase::RegisterRhiFrameLoop(application, {}, swap_chain, paused, clear);
-    }
-    catch (const std::invalid_argument &)
-    {
+    } catch (const std::invalid_argument &) {
         rejected = true;
     }
     Assert(rejected, "RHI frame-loop registration must reject null dependencies before adding handlers");
@@ -546,9 +559,9 @@ void TestRhiFrameLoopRejectsInvalidWiringBeforeRegistration()
            "Rejected RHI frame-loop wiring must not leave duplicate partial handlers");
 }
 
-void TestRhiClearFailureClosesActiveFrame()
-{
-    epidemic::core::Application application({.application_name = "SupportRhiClearFailure", .frame_limit = std::nullopt});
+void TestRhiClearFailureClosesActiveFrame() {
+    epidemic::core::Application application(
+        {.application_name = "SupportRhiClearFailure", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(application, {}));
 
     std::vector<std::string> trace;
@@ -562,12 +575,9 @@ void TestRhiClearFailureClosesActiveFrame()
     Assert(application.Bootstrap() == 0 && application.Initialize() == 0,
            "Clear-failure application must reach initialized state");
     bool clear_failed = false;
-    try
-    {
+    try {
         static_cast<void>(application.Tick());
-    }
-    catch (const std::runtime_error &exception)
-    {
+    } catch (const std::runtime_error &exception) {
         clear_failed = std::string(exception.what()) == "Injected clear failure";
     }
     Assert(clear_failed, "Injected Clear failure must remain the reported frame error");
@@ -577,10 +587,8 @@ void TestRhiClearFailureClosesActiveFrame()
            "Clear failure cleanup must end the frame without presenting it");
 }
 
-void TestFramePlatformEventsAndThrottleContracts()
-{
-    epidemic::core::Application application(
-        {.application_name = "SupportFrameHelpers", .frame_limit = std::nullopt});
+void TestFramePlatformEventsAndThrottleContracts() {
+    epidemic::core::Application application({.application_name = "SupportFrameHelpers", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(application, {}));
 
     const auto first = epidemic::enginebase::EnsureFramePlatformEvents(application);
@@ -596,8 +604,7 @@ void TestFramePlatformEventsAndThrottleContracts()
            "Zero-duration frame throttle must integrate into the EndFrame phase without changing lifecycle success");
 }
 
-void TestRegistrationAfterSealIsRejectedWithoutNewServices()
-{
+void TestRegistrationAfterSealIsRejectedWithoutNewServices() {
     epidemic::core::Application application(
         {.application_name = "SupportSealedComposition", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(application, {}));
@@ -605,12 +612,9 @@ void TestRegistrationAfterSealIsRejectedWithoutNewServices()
            "Application must reach the sealed state for the support lifecycle test");
 
     bool input_rejected = false;
-    try
-    {
+    try {
         static_cast<void>(epidemic::enginebase::RegisterInputRuntime(application));
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         input_rejected = true;
     }
     Assert(input_rejected && !application.Services().Contains<epidemic::input::IInputSystem>(),
@@ -626,34 +630,40 @@ void TestRegistrationAfterSealIsRejectedWithoutNewServices()
     Assert(application.Shutdown() == 0, "Sealed support lifecycle test must shut down cleanly");
 }
 
-void TestCompositionServicesAreApplicationScoped()
-{
+void TestCompositionServicesAreApplicationScoped() {
     epidemic::core::Application first({.application_name = "SupportScopeA", .frame_limit = std::nullopt});
     epidemic::core::Application second({.application_name = "SupportScopeB", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(first, {.runtime_name = "ScopeA"}));
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(second, {.runtime_name = "ScopeB"}));
 
-    Assert(first.Services().Get<epidemic::diagnostics::ILogger>() != second.Services().Get<epidemic::diagnostics::ILogger>(),
+    Assert(first.Services().Get<epidemic::diagnostics::ILogger>() !=
+               second.Services().Get<epidemic::diagnostics::ILogger>(),
            "Support must not keep ILogger in a hidden global service locator");
-    Assert(first.Services().Get<epidemic::core::events::IEventBus>() != second.Services().Get<epidemic::core::events::IEventBus>(),
+    Assert(first.Services().Get<epidemic::core::events::IEventBus>() !=
+               second.Services().Get<epidemic::core::events::IEventBus>(),
            "Support must keep EventBus ownership scoped to each Application");
     Assert(first.Services().Get<epidemic::core::config::IConfiguration>()->GetRuntimeName().value_or("") == "ScopeA" &&
-               second.Services().Get<epidemic::core::config::IConfiguration>()->GetRuntimeName().value_or("") == "ScopeB",
+               second.Services().Get<epidemic::core::config::IConfiguration>()->GetRuntimeName().value_or("") ==
+                   "ScopeB",
            "Independent composition roots must retain independent configuration state");
 }
 
 } // namespace
 
-int main()
-{
+int main() {
     return epidemic::tests::RunNamedTests({
-        {"EngineBaseBundleRejectsLateConflictWithoutPartialRegistration", &TestEngineBaseBundleRejectsLateConflictWithoutPartialRegistration},
-        {"EngineBaseOptionsNormalizeAndRejectBeforePublication", &TestEngineBaseOptionsNormalizeAndRejectBeforePublication},
+        {"EngineBaseBundleRejectsLateConflictWithoutPartialRegistration",
+         &TestEngineBaseBundleRejectsLateConflictWithoutPartialRegistration},
+        {"EngineBaseOptionsNormalizeAndRejectBeforePublication",
+         &TestEngineBaseOptionsNormalizeAndRejectBeforePublication},
         {"WindowsAndInputDuplicateRegistrationAreControlled", &TestWindowsAndInputDuplicateRegistrationAreControlled},
-        {"GraphicsRegistrationConflictsAndInvalidBackendAreResultFailures", &TestGraphicsRegistrationConflictsAndInvalidBackendAreResultFailures},
+        {"GraphicsRegistrationConflictsAndInvalidBackendAreResultFailures",
+         &TestGraphicsRegistrationConflictsAndInvalidBackendAreResultFailures},
         {"ValidWindowsInputAndNullGraphicsComposition", &TestValidWindowsInputAndNullGraphicsComposition},
-        {"MainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork", &TestMainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork},
-        {"FrameLoopDependencyFailureDoesNotPublishEventBuffer", &TestFrameLoopDependencyFailureDoesNotPublishEventBuffer},
+        {"MainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork",
+         &TestMainSwapChainDuplicateOwnerIsRejectedBeforeBackendWork},
+        {"FrameLoopDependencyFailureDoesNotPublishEventBuffer",
+         &TestFrameLoopDependencyFailureDoesNotPublishEventBuffer},
         {"FrameHandlerOrderIsPlatformInputThenPresentation", &TestFrameHandlerOrderIsPlatformInputThenPresentation},
         {"RhiFrameLoopRejectsInvalidWiringBeforeRegistration", &TestRhiFrameLoopRejectsInvalidWiringBeforeRegistration},
         {"RhiClearFailureClosesActiveFrame", &TestRhiClearFailureClosesActiveFrame},

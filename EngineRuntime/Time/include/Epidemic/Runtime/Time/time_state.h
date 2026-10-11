@@ -1,17 +1,14 @@
 #pragma once
 
-namespace epidemic::runtime
-{
-enum class DayPhase
-{
+namespace epidemic::runtime {
+enum class DayPhase {
     Dawn,
     Day,
     Dusk,
     Night,
 };
 
-enum class TimeRuntimeState
-{
+enum class TimeRuntimeState {
     Running,
     Paused,
     TimeScaleChanged,

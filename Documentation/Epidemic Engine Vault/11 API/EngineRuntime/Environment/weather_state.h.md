@@ -53,3 +53,39 @@ struct WeatherState
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Перечисления и допустимые категории
+
+- `WeatherKind`: `Clear`, `Cloudy`, `Rain`, `Storm`, `Snow`, `Fog`, `Transitioning`
+
+### Состав типов и операции
+
+#### `WeatherState` (строка заголовка 16)
+
+Публичные поля и значения по умолчанию:
+
+- `WeatherKind kind = WeatherKind::Clear`
+- `float intensity = 0.0f`
+- `float cloudiness = 0.0f`
+- `float precipitation = 0.0f`
+- `float wind_speed = 0.0f`
+- `float wind_direction_degrees = 0.0f`
+- `float current_temperature = 0.0f`
+- `float current_humidity = 0.0f`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const WeatherState&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

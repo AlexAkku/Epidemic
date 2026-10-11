@@ -14,15 +14,12 @@
 
 using namespace epidemic::gameplay;
 
-namespace
-{
-GameplayObjectRef LoadActor(std::uint64_t id)
-{
+namespace {
+GameplayObjectRef LoadActor(std::uint64_t id) {
     return {GameplayDomainId::FromString("truth.load.actor"), GameplayObjectId::FromRaw(0xAC70, id)};
 }
 
-void EntityOwnerHandlesOneHundredThousandLiveRecords()
-{
+void EntityOwnerHandlesOneHundredThousandLiveRecords() {
     using namespace entities;
     EntityService service;
     EntityArchetypeDefinition definition;
@@ -33,27 +30,23 @@ void EntityOwnerHandlesOneHundredThousandLiveRecords()
 
     std::vector<EntityHandle> samples;
     samples.reserve(100);
-    for (std::size_t index = 0; index < 100'000; ++index)
-    {
+    for (std::size_t index = 0; index < 100'000; ++index) {
         CreateEntityRequest request;
         request.archetype = archetype.Value();
         const auto created = service.Create(request);
         TRUTH_REQUIRE(created);
-        if (index % 1000 == 0)
-        {
+        if (index % 1000 == 0) {
             samples.push_back(created.Value().handle);
         }
     }
     TRUTH_REQUIRE(service.GetDiagnostics().entity_count == 100'000);
     TRUTH_REQUIRE(service.AllEntities().size() == 100'000);
-    for (const auto handle : samples)
-    {
+    for (const auto handle : samples) {
         TRUTH_REQUIRE(service.Resolve(handle).has_value());
     }
 }
 
-void SchedulerBudgetBoundsTwentyThousandDeadlines()
-{
+void SchedulerBudgetBoundsTwentyThousandDeadlines() {
     using namespace time;
     GameplayTimeService service;
     const auto clock = service.RegisterClock("truth.load.clock");
@@ -62,22 +55,19 @@ void SchedulerBudgetBoundsTwentyThousandDeadlines()
     TRUTH_REQUIRE(clock && action);
     service.Freeze();
 
-    for (std::uint64_t index = 1; index <= 20'000; ++index)
-    {
+    for (std::uint64_t index = 1; index <= 20'000; ++index) {
         const GameplayObjectRef owner{domain, GameplayObjectId::FromRaw(0x5CED, index)};
         TRUTH_REQUIRE(service.Schedule(clock.Value(), GameplayTimePoint{1}, owner, action.Value()));
     }
     TRUTH_REQUIRE(service.AdvanceTo(clock.Value(), GameplayTimePoint{1}));
 
     std::size_t emitted = 0;
-    for (;;)
-    {
+    for (;;) {
         const auto batch = service.CollectDue(clock.Value(), SchedulerBudget{257, 257});
         TRUTH_REQUIRE(batch);
         TRUTH_REQUIRE(batch.Value().size() <= 257);
         emitted += batch.Value().size();
-        if (batch.Value().empty())
-        {
+        if (batch.Value().empty()) {
             break;
         }
     }
@@ -86,8 +76,7 @@ void SchedulerBudgetBoundsTwentyThousandDeadlines()
     TRUTH_REQUIRE(service.GetDiagnostics().budget_exhaustions > 0);
 }
 
-void PerceptionAndAIBudgetsBoundNpcWork()
-{
+void PerceptionAndAIBudgetsBoundNpcWork() {
     using namespace perception;
     PerceptionService perception;
     SenseDefinition hearing;
@@ -106,8 +95,7 @@ void PerceptionAndAIBudgetsBoundNpcWork()
 
     std::vector<PerceiverEvaluationSample> samples;
     samples.reserve(5'000);
-    for (std::uint64_t index = 1; index <= 5'000; ++index)
-    {
+    for (std::uint64_t index = 1; index <= 5'000; ++index) {
         const auto actor = LoadActor(index);
         TRUTH_REQUIRE(perception.RegisterPerceiver(actor, perceiver_profile.id));
         PerceiverEvaluationSample sample;
@@ -145,8 +133,7 @@ void PerceptionAndAIBudgetsBoundNpcWork()
     ai_profile.default_goals = {goal.id};
     TRUTH_REQUIRE(ai.RegisterProfile(ai_profile));
     TRUTH_REQUIRE(ai.Freeze());
-    for (std::uint64_t index = 1; index <= 10'000; ++index)
-    {
+    for (std::uint64_t index = 1; index <= 10'000; ++index) {
         TRUTH_REQUIRE(ai.RegisterAgent(LoadActor(index), ai_profile.id, GameplayTimePoint{5}));
     }
     const auto due = ai.FindDueAgents(GameplayTimePoint{5}, 256);
@@ -154,27 +141,26 @@ void PerceptionAndAIBudgetsBoundNpcWork()
     TRUTH_REQUIRE(ai.GetDiagnostics().agents == 10'000);
 }
 
-void DefaultRuntimeSurvivesOneThousandHeadlessFrames()
-{
+void DefaultRuntimeSurvivesOneThousandHeadlessFrames() {
     epidemic::core::Application application({"TruthLoadRuntime"});
     const auto runtime = epidemic::runtime::RegisterDefaultEngineRuntime(application);
     TRUTH_REQUIRE(runtime);
     epidemic::runtime::RuntimeFrameInput frame;
     frame.real_delta = epidemic::runtime::RuntimeFrameDuration{std::chrono::microseconds{16'667}};
-    for (int index = 0; index < 1'000; ++index)
-    {
+    for (int index = 0; index < 1'000; ++index) {
         TRUTH_REQUIRE(runtime.Value().coordinator->Tick(frame));
     }
     TRUTH_REQUIRE(runtime.Value().coordinator->Shutdown());
 }
 } // namespace
 
-int main()
-{
-    return epidemic::truth_tests::Run("engine-load", {
-        {"entity owner handles 100000 live records", &EntityOwnerHandlesOneHundredThousandLiveRecords},
-        {"scheduler budget bounds 20000 deadlines", &SchedulerBudgetBoundsTwentyThousandDeadlines},
-        {"perception and AI budgets bound NPC work", &PerceptionAndAIBudgetsBoundNpcWork},
-        {"default runtime survives 1000 headless frames", &DefaultRuntimeSurvivesOneThousandHeadlessFrames},
-    });
+int main() {
+    return epidemic::truth_tests::Run(
+        "engine-load",
+        {
+            {"entity owner handles 100000 live records", &EntityOwnerHandlesOneHundredThousandLiveRecords},
+            {"scheduler budget bounds 20000 deadlines", &SchedulerBudgetBoundsTwentyThousandDeadlines},
+            {"perception and AI budgets bound NPC work", &PerceptionAndAIBudgetsBoundNpcWork},
+            {"default runtime survives 1000 headless frames", &DefaultRuntimeSurvivesOneThousandHeadlessFrames},
+        });
 }

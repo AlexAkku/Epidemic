@@ -10,15 +10,12 @@ using namespace epidemic::gameplay::integration;
 using namespace epidemic::gameplay::knowledge;
 using namespace epidemic::gameplay::perception;
 
-namespace
-{
-GameplayObjectRef Actor(std::string_view name)
-{
+namespace {
+GameplayObjectRef Actor(std::string_view name) {
     return {GameplayDomainId::FromString("truth.integration.actor"), GameplayObjectId::FromString(name)};
 }
 
-struct Scenario
-{
+struct Scenario {
     GameplayObjectRef observer = Actor("observer");
     GameplayObjectRef target = Actor("target");
     SenseTypeId hearing = SenseTypeId::FromString("truth.sense.hearing");
@@ -26,8 +23,7 @@ struct Scenario
     PerceptionService perception;
     KnowledgeService knowledge;
 
-    Scenario()
-    {
+    Scenario() {
         SenseDefinition sense;
         sense.id = hearing;
         sense.canonical_name = "truth.sense.hearing";
@@ -48,8 +44,7 @@ struct Scenario
         TRUTH_REQUIRE(knowledge.CreateProfile(knowledge_profile));
     }
 
-    PerceptionObservation Observe()
-    {
+    PerceptionObservation Observe() {
         PerceptionStimulus stimulus;
         stimulus.sense = hearing;
         stimulus.source = target;
@@ -69,14 +64,14 @@ struct Scenario
         causal_context.tick = GameplayTickId{77};
         causal_context.time = GameplayTimePoint{10};
         const auto observations = perception.ProcessStimulus(
-            id.Value(), PerceptionProcessingContext{GameplayTickId{77}, GameplayTimePoint{10}, causal_context, {sample}});
+            id.Value(),
+            PerceptionProcessingContext{GameplayTickId{77}, GameplayTimePoint{10}, causal_context, {sample}});
         TRUTH_REQUIRE(observations && observations.Value().size() == 1);
         return observations.Value().front();
     }
 };
 
-void ObservationBecomesSubjectiveKnowledge()
-{
+void ObservationBecomesSubjectiveKnowledge() {
     Scenario scenario;
     const auto observation = scenario.Observe();
     PerceptionKnowledgeMapping mapping;
@@ -84,7 +79,7 @@ void ObservationBecomesSubjectiveKnowledge()
     PerceptionKnowledgeAdapter adapter{scenario.knowledge, mapping};
     const auto learned = adapter.LearnFromObservation(observation);
     TRUTH_REQUIRE(learned && learned.Value().knowledge.IsValid());
-    const auto* record = scenario.knowledge.FindKnowledge(learned.Value().knowledge);
+    const auto *record = scenario.knowledge.FindKnowledge(learned.Value().knowledge);
     TRUTH_REQUIRE(record != nullptr);
     TRUTH_REQUIRE(record->owner == scenario.observer);
     TRUTH_REQUIRE(record->subject == scenario.target);
@@ -95,8 +90,7 @@ void ObservationBecomesSubjectiveKnowledge()
     TRUTH_REQUIRE(changes.changes.back().context.time == GameplayTimePoint{10});
 }
 
-void KnowledgeDrivesARealTargetedIntent()
-{
+void KnowledgeDrivesARealTargetedIntent() {
     Scenario scenario;
     const auto observation = scenario.Observe();
     PerceptionKnowledgeMapping mapping;
@@ -123,9 +117,9 @@ void KnowledgeDrivesARealTargetedIntent()
     TRUTH_REQUIRE(ai.RegisterAgent(scenario.observer, profile.id));
 
     KnowledgeAIAdapter context_builder{scenario.knowledge};
-    const auto context = context_builder.BuildContext(
-        scenario.observer, AIExecutionAvailability{true, true}, &scenario.perception, GameplayTimePoint{10});
-    TRUTH_REQUIRE(std::any_of(context.targets.begin(), context.targets.end(), [&](const auto& candidate) {
+    const auto context = context_builder.BuildContext(scenario.observer, AIExecutionAvailability{true, true},
+                                                      &scenario.perception, GameplayTimePoint{10});
+    TRUTH_REQUIRE(std::any_of(context.targets.begin(), context.targets.end(), [&](const auto &candidate) {
         return candidate.target == scenario.target;
     }));
 
@@ -144,10 +138,11 @@ void KnowledgeDrivesARealTargetedIntent()
 }
 } // namespace
 
-int main()
-{
-    return epidemic::truth_tests::Run("framework-integration", {
-        {"observation becomes subjective knowledge", &ObservationBecomesSubjectiveKnowledge},
-        {"knowledge drives a real targeted intent", &KnowledgeDrivesARealTargetedIntent},
-    });
+int main() {
+    return epidemic::truth_tests::Run(
+        "framework-integration",
+        {
+            {"observation becomes subjective knowledge", &ObservationBecomesSubjectiveKnowledge},
+            {"knowledge drives a real targeted intent", &KnowledgeDrivesARealTargetedIntent},
+        });
 }

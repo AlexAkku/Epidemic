@@ -10,10 +10,8 @@
 #include <string_view>
 #include <vector>
 
-namespace epidemic::runtime
-{
-class IArchiveReader
-{
+namespace epidemic::runtime {
+class IArchiveReader {
   public:
     virtual ~IArchiveReader() = default;
 

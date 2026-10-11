@@ -485,3 +485,360 @@ class EffectService
 };
 } // namespace epidemic::gameplay::effects
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `EffectTargetSelector`: `AllTargets`, `FirstTarget`
+- `EffectExecutionPolicy`: `BestEffort`, `RequireAllPrepared`
+- `EffectPrepareDisposition`: `Accepted`, `Rejected`, `NoOp`, `Unavailable`, `InvalidTarget`, `Unsupported`
+- `EffectCommitDisposition`: `Applied`, `NoOp`
+- `EffectOperationDisposition`: `Applied`, `Rejected`, `NoOp`, `Unavailable`, `InvalidTarget`, `Unsupported`, `BudgetExceeded`, `Failed`
+- `EffectBatchDisposition`: `Succeeded`, `PartiallyApplied`, `Rejected`, `Failed`
+- `EffectChangeKind`: `ExecutionStarted`, `Applied`, `Rejected`, `Failed`, `ExecutionCompleted`, `BudgetExceeded`, `DeferredCreated`, `DeferredCancelled`, `DeferredExecuted`
+- `DeferredEffectPersistence`: `Session`, `Persistent`
+
+### Состав типов и операции
+
+#### `EffectTypeId` (строка заголовка 22)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr EffectTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EffectTypeId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EffectTypeId&) const noexcept = default;
+```
+
+#### `EffectDefinitionId` (строка заголовка 32)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr EffectDefinitionId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EffectDefinitionId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EffectDefinitionId&) const noexcept = default;
+```
+
+#### `EffectExecutionId` (строка заголовка 42)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const EffectExecutionId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const EffectExecutionId&) const noexcept = default;
+```
+
+#### `DeferredEffectId` (строка заголовка 50)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const DeferredEffectId&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const DeferredEffectId&) const noexcept = default;
+```
+
+#### `EffectTypeIdHash` (строка заголовка 58)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(EffectTypeId id) const noexcept;
+```
+
+#### `EffectDefinitionIdHash` (строка заголовка 62)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(EffectDefinitionId id) const noexcept;
+```
+
+#### `DeferredEffectIdHash` (строка заголовка 66)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const DeferredEffectId& id) const noexcept;
+```
+
+#### `RegisteredEffectPayload` (строка заголовка 71)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> bytes`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool Empty() const noexcept;
+template <typename T> [[nodiscard]] static RegisteredEffectPayload FromTrivial(TypeId type_id, const T& value);
+template <typename T> [[nodiscard]] std::optional<T> AsTrivial(TypeId expected_type) const;
+```
+
+#### `EffectStepDefinition` (строка заголовка 108)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectTargetSelector selector = EffectTargetSelector::AllTargets`
+- `std::int64_t magnitude_micro = 0`
+- `RegisteredEffectPayload payload`
+
+#### `EffectDefinition` (строка заголовка 122)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::vector<EffectStepDefinition> steps`
+- `EffectExecutionPolicy policy = EffectExecutionPolicy::BestEffort`
+
+#### `EffectRequest` (строка заголовка 130)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<GameplayObjectRef> targets`
+- `std::int64_t scale_micro = 1'000'000`
+
+#### `EffectOperation` (строка заголовка 140)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t wave = 0`
+- `std::uint32_t step_index = 0`
+- `std::uint64_t local_sequence = 0`
+- `std::int64_t magnitude_micro = 0`
+- `RegisteredEffectPayload payload`
+
+#### `EffectHandlerCapabilities` (строка заголовка 153)
+
+Публичные поля и значения по умолчанию:
+
+- `bool abstract_capable = true`
+- `bool requires_materialized = false`
+- `bool requires_runtime_projection = false`
+- `bool thread_safe_prepare = false`
+
+#### `EffectPrepareResult` (строка заголовка 171)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectPrepareDisposition disposition = EffectPrepareDisposition::Accepted`
+- `RegisteredEffectPayload commit_token`
+
+#### `EffectCommitResult` (строка заголовка 183)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectCommitDisposition disposition = EffectCommitDisposition::Applied`
+- `std::vector<EffectOperation> derived_effects`
+
+#### `IEffectHandler` (строка заголовка 189)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IEffectHandler() = default;
+[[nodiscard]] virtual EffectTypeId Type() const noexcept = 0;
+[[nodiscard]] virtual EffectHandlerCapabilities Capabilities() const noexcept = 0;
+[[nodiscard]] virtual foundation::Result<EffectPrepareResult> Prepare(const EffectOperation& operation) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `EffectTargetState` (строка заголовка 203)
+
+Публичные поля и значения по умолчанию:
+
+- `bool known = true`
+- `bool materialized = false`
+- `bool runtime_projection = false`
+
+#### `IEffectTargetStateProvider` (строка заголовка 210)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IEffectTargetStateProvider() = default;
+[[nodiscard]] virtual EffectTargetState Resolve(GameplayObjectRef target) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `EffectExecutionBudget` (строка заголовка 217)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t max_effects = 100000`
+- `std::uint32_t max_waves = 64`
+- `std::uint32_t max_derived_per_parent = 256`
+
+#### `EffectOperationResult` (строка заголовка 236)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectOperation operation`
+- `EffectOperationDisposition disposition = EffectOperationDisposition::Failed`
+
+#### `EffectExecutionResult` (строка заголовка 250)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectBatchDisposition disposition = EffectBatchDisposition::Failed`
+- `std::vector<EffectOperationResult> operations`
+- `std::uint32_t waves = 0`
+
+#### `EffectChange` (строка заголовка 271)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `EffectChangeKind kind = EffectChangeKind::ExecutionStarted`
+- `EffectOperationDisposition disposition = EffectOperationDisposition::Applied`
+
+#### `DeferredEffectRecord` (строка заголовка 290)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectRequest request`
+- `DeferredEffectPersistence persistence = DeferredEffectPersistence::Session`
+
+#### `EffectChangeBatch` (строка заголовка 300)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<EffectChange> changes`
+
+#### `EffectsSnapshot` (строка заголовка 310)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<DeferredEffectRecord> deferred`
+- `std::uint64_t change_epoch = 1`
+
+#### `EffectsDiagnostics` (строка заголовка 319)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t executions = 0`
+- `std::uint64_t operations = 0`
+- `std::uint64_t targets = 0`
+- `std::uint64_t derived_effects = 0`
+- `std::uint64_t waves = 0`
+- `std::uint64_t rejections = 0`
+- `std::uint64_t budget_exhaustions = 0`
+- `std::uint64_t deferred_effects = 0`
+
+#### `EffectService` (строка заголовка 331)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::size_t kChangeJournalCapacity = 4096`, `std::unordered_map<EffectTypeId, HandlerEntry, EffectTypeIdHash> handlers_`, `std::unordered_map<EffectDefinitionId, EffectDefinition, EffectDefinitionIdHash> definitions_`, `const IEffectTargetStateProvider* target_state_provider_ = nullptr`, `bool frozen_ = false`, `MonotonicIdGenerator<GameplayObjectId> execution_ids_`, `MonotonicIdGenerator<GameplayObjectId> deferred_ids_`, `std::unordered_map<DeferredEffectId, DeferredEffectRecord, DeferredEffectIdHash> deferred_`, `std::unordered_map<ScheduleId, DeferredEffectId> deferred_by_schedule_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+EffectService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<EffectDefinitionId> RegisterDefinition(EffectDefinition definition);
+void SetTargetStateProvider(const IEffectTargetStateProvider* provider) noexcept;
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] const EffectDefinition* FindDefinition(EffectDefinitionId id) const noexcept;
+[[nodiscard]] foundation::Result<DeferredEffectId> Defer( EffectRequest request, ClockId clock, GameplayTimePoint due, DeferredEffectPersistence persistence = DeferredEffectPersistence::Session);
+[[nodiscard]] foundation::Result<void> BindDeferredSchedule(DeferredEffectId id, ScheduleId schedule);
+[[nodiscard]] const DeferredEffectRecord* FindDeferred(DeferredEffectId id) const noexcept;
+[[nodiscard]] std::optional<DeferredEffectRecord> FindDeferredCopy(DeferredEffectId id) const noexcept;
+[[nodiscard]] std::vector<DeferredEffectRecord> AllDeferred() const;
+[[nodiscard]] std::vector<DeferredEffectRecord> UnscheduledDeferred() const;
+[[nodiscard]] foundation::Result<void> ClearDeferredSchedule(DeferredEffectId id);
+[[nodiscard]] EffectChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] std::uint64_t OldestChangeSequence() const noexcept;
+void PruneChangesBefore(std::uint64_t sequence);
+[[nodiscard]] EffectsSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(EffectsSnapshot snapshot);
+[[nodiscard]] EffectsDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `HandlerEntry` (строка заголовка 411)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::shared_ptr<IEffectHandler> handler`
+- `std::size_t max_payload_bytes = 0`
+- `PayloadValidator validator`
+
+#### `PreparedOperation` (строка заголовка 420)
+
+Публичные поля и значения по умолчанию:
+
+- `EffectOperation operation`
+- `EffectPrepareResult prepared`
+- `EffectOperationDisposition preflight_disposition = EffectOperationDisposition::Failed`
+- `bool commit = false`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `EffectService` | `EffectService::EffectService` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:102` |
+| `RegisterDefinition` | `EffectService::RegisterDefinition` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:144` |
+| `FindDefinition` | `EffectService::FindDefinition` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:188` |
+| `Defer` | `EffectService::Defer` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:687` |
+| `BindDeferredSchedule` | `EffectService::BindDeferredSchedule` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:730` |
+| `FindDeferred` | `EffectService::FindDeferred` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:789` |
+| `FindDeferredCopy` | `EffectService::FindDeferredCopy` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:795` |
+| `AllDeferred` | `EffectService::AllDeferred` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:801` |
+| `UnscheduledDeferred` | `EffectService::UnscheduledDeferred` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:813` |
+| `ClearDeferredSchedule` | `EffectService::ClearDeferredSchedule` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:865` |
+| `OldestChangeSequence` | `EffectService::OldestChangeSequence` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:987` |
+| `PruneChangesBefore` | `EffectService::PruneChangesBefore` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:992` |
+| `CaptureSnapshot` | `EffectService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:1000` |
+| `RestoreSnapshot` | `EffectService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:1019` |
+| `GetDiagnostics` | `EffectService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Effects/src/effects.cpp:1081` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `SetTargetStateProvider`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:229`
+- `RegisterDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:236`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:241`
+- `Defer`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:264`
+- `BindDeferredSchedule`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:272`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:281`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:282`
+- `LatestChangeCursor`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:283`
+- `OldestChangeSequence`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:284`
+- `AllDeferred`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:285`
+- `UnscheduledDeferred`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:286`
+- `IsFrozen`: `EngineFramework/DevelopmentInfrastructure/Tests/effects_tests.cpp:399`
+

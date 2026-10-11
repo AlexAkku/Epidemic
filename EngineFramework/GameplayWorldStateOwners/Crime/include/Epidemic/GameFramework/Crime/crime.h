@@ -14,214 +14,167 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::crime
-{
-struct LawId
-{
+namespace epidemic::gameplay::crime {
+struct LawId {
     TypeId value{};
-    static constexpr LawId FromString(std::string_view s) noexcept
-    {
+    static constexpr LawId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const LawId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LawId &) const noexcept = default;
 };
-struct CrimeTypeId
-{
+struct CrimeTypeId {
     TypeId value{};
-    static constexpr CrimeTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr CrimeTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const CrimeTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const CrimeTypeId &) const noexcept = default;
 };
-struct JurisdictionId
-{
+struct JurisdictionId {
     GameplayObjectId value{};
-    static constexpr JurisdictionId FromString(std::string_view s) noexcept
-    {
+    static constexpr JurisdictionId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr JurisdictionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr JurisdictionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const JurisdictionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const JurisdictionId &) const noexcept = default;
 };
-struct CrimeRecordId
-{
+struct CrimeRecordId {
     GameplayObjectId value{};
-    static constexpr CrimeRecordId FromString(std::string_view s) noexcept
-    {
+    static constexpr CrimeRecordId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr CrimeRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr CrimeRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const CrimeRecordId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const CrimeRecordId &) const noexcept = default;
 };
-struct EvidenceId
-{
+struct EvidenceId {
     GameplayObjectId value{};
-    static constexpr EvidenceId FromString(std::string_view s) noexcept
-    {
+    static constexpr EvidenceId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr EvidenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr EvidenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const EvidenceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const EvidenceId &) const noexcept = default;
 };
-struct WitnessRecordId
-{
+struct WitnessRecordId {
     GameplayObjectId value{};
-    static constexpr WitnessRecordId FromString(std::string_view s) noexcept
-    {
+    static constexpr WitnessRecordId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr WitnessRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr WitnessRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WitnessRecordId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WitnessRecordId &) const noexcept = default;
 };
-struct BountyRecordId
-{
+struct BountyRecordId {
     GameplayObjectId value{};
-    static constexpr BountyRecordId FromString(std::string_view s) noexcept
-    {
+    static constexpr BountyRecordId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr BountyRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr BountyRecordId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const BountyRecordId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const BountyRecordId &) const noexcept = default;
 };
-struct AuthorityId
-{
+struct AuthorityId {
     GameplayObjectId value{};
-    static constexpr AuthorityId FromString(std::string_view s) noexcept
-    {
+    static constexpr AuthorityId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr AuthorityId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr AuthorityId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const AuthorityId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const AuthorityId &) const noexcept = default;
 };
-struct LawResponseId
-{
+struct LawResponseId {
     GameplayObjectId value{};
-    static constexpr LawResponseId FromString(std::string_view s) noexcept
-    {
+    static constexpr LawResponseId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr LawResponseId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr LawResponseId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const LawResponseId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LawResponseId &) const noexcept = default;
 };
-struct LawResponseTypeId
-{
+struct LawResponseTypeId {
     TypeId value{};
-    static constexpr LawResponseTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr LawResponseTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const LawResponseTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const LawResponseTypeId &) const noexcept = default;
 };
-struct EvidenceTypeId
-{
+struct EvidenceTypeId {
     TypeId value{};
-    static constexpr EvidenceTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr EvidenceTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const EvidenceTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const EvidenceTypeId &) const noexcept = default;
 };
-struct WitnessTypeId
-{
+struct WitnessTypeId {
     TypeId value{};
-    static constexpr WitnessTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr WitnessTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WitnessTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WitnessTypeId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class CrimeProofState
-{
+enum class CrimeProofState {
     Unknown,
     Suspected,
     Witnessed,
@@ -231,8 +184,7 @@ enum class CrimeProofState
     FalseAccusation,
     Resolved
 };
-enum class CrimeCaseState
-{
+enum class CrimeCaseState {
     Open,
     Reported,
     UnderInvestigation,
@@ -243,16 +195,14 @@ enum class CrimeCaseState
     Dismissed,
     Resolved
 };
-enum class BountyState
-{
+enum class BountyState {
     Active,
     Paid,
     Forgiven,
     Expired,
     Transferred
 };
-enum class CrimeChangeKind
-{
+enum class CrimeChangeKind {
     CrimeCandidateCreated,
     CrimeRecorded,
     CrimeReported,
@@ -270,22 +220,19 @@ enum class CrimeChangeKind
     CrimeDismissed,
     CrimePruned
 };
-enum class CrimeCandidatePolicy
-{
+enum class CrimeCandidatePolicy {
     RecordAlways,
     RecordIfWitnessed,
     IgnoreWithoutJurisdiction
 };
 
-struct LawResponseDefinition
-{
+struct LawResponseDefinition {
     LawResponseTypeId id{};
     std::uint32_t required_authority_capabilities = 0;
     std::optional<CrimeCaseState> resulting_case_state;
     Revision revision{};
 };
-struct LawDefinition
-{
+struct LawDefinition {
     LawId id{};
     CrimeTypeId crime_type{};
     GameplayTagSet tags;
@@ -294,8 +241,7 @@ struct LawDefinition
     GameplayDuration statute_of_limitations{};
     Revision revision{};
 };
-struct JurisdictionRecord
-{
+struct JurisdictionRecord {
     JurisdictionId id{};
     GameplayObjectRef authority_group{};
     GameplayObjectRef area{};
@@ -303,24 +249,21 @@ struct JurisdictionRecord
     int priority = 0;
     Revision revision{};
 };
-struct AuthorityRecord
-{
+struct AuthorityRecord {
     AuthorityId id{};
     GameplayObjectRef authority_group{};
     JurisdictionId jurisdiction{};
     std::uint32_t capabilities = 0;
     Revision revision{};
 };
-struct CrimeCandidateWitness
-{
+struct CrimeCandidateWitness {
     GameplayObjectRef witness{};
     WitnessTypeId witness_type{};
     std::int64_t confidence_micro = 0;
     GameplayTimePoint observed_at{};
     std::vector<std::byte> payload;
 };
-struct CrimeCandidate
-{
+struct CrimeCandidate {
     CrimeTypeId type{};
     GameplayObjectRef offender{};
     GameplayObjectRef victim{};
@@ -331,8 +274,7 @@ struct CrimeCandidate
     std::vector<std::byte> payload;
     std::optional<CrimeCandidateWitness> initial_witness;
 };
-struct WitnessRecord
-{
+struct WitnessRecord {
     WitnessRecordId id{};
     CrimeRecordId crime{};
     GameplayObjectRef witness{};
@@ -342,8 +284,7 @@ struct WitnessRecord
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct EvidenceRecord
-{
+struct EvidenceRecord {
     EvidenceId id{};
     CrimeRecordId crime{};
     EvidenceTypeId type{};
@@ -353,8 +294,7 @@ struct EvidenceRecord
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct CrimeRecord
-{
+struct CrimeRecord {
     CrimeRecordId id{};
     CrimeTypeId type{};
     GameplayObjectRef offender{};
@@ -371,8 +311,7 @@ struct CrimeRecord
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct BountyRecord
-{
+struct BountyRecord {
     BountyRecordId id{};
     GameplayObjectRef offender{};
     JurisdictionId jurisdiction{};
@@ -382,16 +321,14 @@ struct BountyRecord
     std::vector<CrimeRecordId> source_crimes;
     Revision revision{};
 };
-struct LawResponseRequest
-{
+struct LawResponseRequest {
     CrimeRecordId crime{};
     LawResponseTypeId response_type{};
     GameplayObjectRef authority{};
     GameplayObjectRef target{};
     GameplayContext context{};
 };
-struct LawResponseRecord
-{
+struct LawResponseRecord {
     LawResponseId id{};
     CrimeRecordId crime{};
     LawResponseTypeId response_type{};
@@ -399,24 +336,21 @@ struct LawResponseRecord
     GameplayObjectRef target{};
     Revision revision{};
 };
-struct CrimeEvaluationResult
-{
+struct CrimeEvaluationResult {
     std::optional<CrimeRecordId> crime;
     CrimeProofState proof_state = CrimeProofState::Unknown;
     JurisdictionId jurisdiction{};
     std::vector<TypeId> reasons;
     Revision revision{};
 };
-struct LegalityPreview
-{
+struct LegalityPreview {
     bool illegal = false;
     CrimeTypeId crime_type{};
     JurisdictionId jurisdiction{};
     std::int64_t severity_micro = 0;
     Revision revision{};
 };
-struct CrimeChange
-{
+struct CrimeChange {
     std::uint64_t sequence = 0;
     CrimeChangeKind kind = CrimeChangeKind::CrimeCandidateCreated;
     CrimeRecordId crime{};
@@ -430,8 +364,7 @@ struct CrimeChange
     GameplayContext context{};
     Revision revision{};
 };
-struct CrimeSnapshot
-{
+struct CrimeSnapshot {
     std::vector<LawDefinition> laws;
     std::vector<LawResponseDefinition> response_definitions;
     std::vector<JurisdictionRecord> jurisdictions;
@@ -452,8 +385,7 @@ struct CrimeSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct CrimeChangeBatch
-{
+struct CrimeChangeBatch {
     std::vector<CrimeChange> changes;
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
@@ -462,20 +394,17 @@ struct CrimeChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct CrimeDiagnostics
-{
+struct CrimeDiagnostics {
     std::uint64_t crime_candidates = 0, crime_records = 0, open_cases = 0, wanted_subjects = 0, witnesses = 0,
                   evidence_records = 0, bounties = 0, law_responses = 0, jurisdiction_resolutions = 0,
                   expired_crimes = 0, dismissed_crimes = 0;
 };
 
-class CrimeService
-{
+class CrimeService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<CrimeService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.crime");
     }
     [[nodiscard]] foundation::Result<void> RegisterLaw(LawDefinition law);
@@ -483,10 +412,12 @@ class CrimeService
     [[nodiscard]] foundation::Result<void> RegisterJurisdiction(JurisdictionRecord jurisdiction);
     [[nodiscard]] foundation::Result<AuthorityId> RegisterAuthority(AuthorityRecord authority);
     [[nodiscard]] foundation::Result<void> FreezeDefinitions();
-    [[nodiscard]] bool DefinitionsFrozen() const noexcept { return definitions_frozen_; }
+    [[nodiscard]] bool DefinitionsFrozen() const noexcept {
+        return definitions_frozen_;
+    }
     [[nodiscard]] std::optional<JurisdictionRecord> GetApplicableJurisdiction(GameplayObjectRef area) const;
-    [[nodiscard]] foundation::Result<CrimeEvaluationResult> EvaluateCrimeCandidate(
-        CrimeCandidate candidate, CrimeCandidatePolicy policy = CrimeCandidatePolicy::RecordAlways);
+    [[nodiscard]] foundation::Result<CrimeEvaluationResult>
+    EvaluateCrimeCandidate(CrimeCandidate candidate, CrimeCandidatePolicy policy = CrimeCandidatePolicy::RecordAlways);
     [[nodiscard]] foundation::Result<WitnessRecordId> AddWitness(WitnessRecord witness, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> RemoveWitness(WitnessRecordId witness, GameplayContext context = {});
     [[nodiscard]] foundation::Result<EvidenceId> AddEvidence(EvidenceRecord evidence, GameplayContext context = {});
@@ -511,27 +442,26 @@ class CrimeService
     [[nodiscard]] std::vector<WitnessRecord> FindWitnesses(CrimeRecordId crime) const;
     [[nodiscard]] std::vector<EvidenceRecord> FindEvidence(CrimeRecordId crime) const;
     [[nodiscard]] std::optional<BountyRecord> GetBounty(GameplayObjectRef offender, JurisdictionId jurisdiction) const;
-    private:
-        [[nodiscard]] std::vector<CrimeChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] CrimeChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] CrimeChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<CrimeChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] CrimeChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] CrimeChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     void PruneChangesThrough(std::uint64_t sequence);
     void SetChangeJournalCapacity(std::size_t capacity) noexcept;
@@ -539,8 +469,7 @@ class CrimeService
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(CrimeSnapshot snapshot);
     [[nodiscard]] CrimeDiagnostics GetDiagnostics() const noexcept;
     [[nodiscard]] const CrimeRecord *FindCrime(CrimeRecordId id) const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
@@ -570,7 +499,8 @@ class CrimeService
     std::unordered_map<EvidenceId, EvidenceRecord, IdHash> evidence_;
     std::unordered_map<BountyRecordId, BountyRecord, IdHash> bounties_;
     std::unordered_map<LawResponseId, LawResponseRecord, IdHash> responses_;
-    std::unordered_map<GameplayObjectRef, std::unordered_map<JurisdictionId, BountyRecordId, IdHash>> active_bounty_index_;
+    std::unordered_map<GameplayObjectRef, std::unordered_map<JurisdictionId, BountyRecordId, IdHash>>
+        active_bounty_index_;
     std::deque<CrimeChange> changes_;
     std::size_t change_journal_capacity_ = 4096;
     std::uint64_t next_change_sequence_ = 1;
@@ -579,54 +509,39 @@ class CrimeService
 };
 } // namespace epidemic::gameplay::crime
 
-namespace std
-{
-template <> struct hash<epidemic::gameplay::crime::JurisdictionId>
-{
-    size_t operator()(const epidemic::gameplay::crime::JurisdictionId &v) const noexcept
-    {
+namespace std {
+template <> struct hash<epidemic::gameplay::crime::JurisdictionId> {
+    size_t operator()(const epidemic::gameplay::crime::JurisdictionId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::crime::CrimeRecordId>
-{
-    size_t operator()(const epidemic::gameplay::crime::CrimeRecordId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::crime::CrimeRecordId> {
+    size_t operator()(const epidemic::gameplay::crime::CrimeRecordId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::crime::WitnessRecordId>
-{
-    size_t operator()(const epidemic::gameplay::crime::WitnessRecordId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::crime::WitnessRecordId> {
+    size_t operator()(const epidemic::gameplay::crime::WitnessRecordId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::crime::EvidenceId>
-{
-    size_t operator()(const epidemic::gameplay::crime::EvidenceId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::crime::EvidenceId> {
+    size_t operator()(const epidemic::gameplay::crime::EvidenceId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::crime::BountyRecordId>
-{
-    size_t operator()(const epidemic::gameplay::crime::BountyRecordId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::crime::BountyRecordId> {
+    size_t operator()(const epidemic::gameplay::crime::BountyRecordId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::crime::AuthorityId>
-{
-    size_t operator()(const epidemic::gameplay::crime::AuthorityId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::crime::AuthorityId> {
+    size_t operator()(const epidemic::gameplay::crime::AuthorityId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };
-template <> struct hash<epidemic::gameplay::crime::LawResponseId>
-{
-    size_t operator()(const epidemic::gameplay::crime::LawResponseId &v) const noexcept
-    {
+template <> struct hash<epidemic::gameplay::crime::LawResponseId> {
+    size_t operator()(const epidemic::gameplay::crime::LawResponseId &v) const noexcept {
         return hash<epidemic::gameplay::GameplayObjectId>{}(v.value);
     }
 };

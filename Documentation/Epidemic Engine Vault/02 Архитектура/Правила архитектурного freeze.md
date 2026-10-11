@@ -25,3 +25,9 @@ cmake --build build/full-debug --config Debug --target EpidemicPublicHeaderSelfC
 ```
 
 [[09 Качество и статус/Матрица проверок]] · [[90 Первоисточники/Documentation/architecture|Исходная архитектура]].
+
+---
+
+## Проверяемый порядок изменения зависимости
+
+Проверьте исходную связь `#include`, CMake target_link_libraries, ownership порта и правила списка запрещённых связей. Если связь нарушает freeze, перенесите её в разрешённый adapter/port. После изменения проверьте `cmake -P cmake/ArchitectureFreezeSelfTest.cmake`, header self-containment и dependent tests. Добавлять исключение только ради прохода сборки недопустимо.

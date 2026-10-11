@@ -1,9 +1,7 @@
 #pragma once
 
-namespace epidemic::gameplay::abilities::test_seam
-{
-enum class FaultPoint
-{
+namespace epidemic::gameplay::abilities::test_seam {
+enum class FaultPoint {
     None,
     BindScheduleBeforePublish,
     BeginActivationBeforePublish,
@@ -14,21 +12,18 @@ enum class FaultPoint
 
 inline thread_local FaultPoint next_fault = FaultPoint::None;
 
-inline void FailNext(FaultPoint point) noexcept
-{
+inline void FailNext(FaultPoint point) noexcept {
     next_fault = point;
 }
 
-[[nodiscard]] inline bool Consume(FaultPoint point) noexcept
-{
+[[nodiscard]] inline bool Consume(FaultPoint point) noexcept {
     if (next_fault != point)
         return false;
     next_fault = FaultPoint::None;
     return true;
 }
 
-inline void Reset() noexcept
-{
+inline void Reset() noexcept {
     next_fault = FaultPoint::None;
 }
 } // namespace epidemic::gameplay::abilities::test_seam

@@ -3,10 +3,8 @@
 #include "Epidemic/GameFramework/Foundation/ids.h"
 #include "Epidemic/GameFramework/Foundation/time_types.h"
 
-namespace epidemic::gameplay
-{
-struct GameplayContext
-{
+namespace epidemic::gameplay {
+struct GameplayContext {
     GameplayTickId tick{};
     GameplayTimePoint time{};
 
@@ -23,6 +21,6 @@ struct GameplayContext
     OperationId parent_operation{};
     EventId cause_event{};
 
-    [[nodiscard]] constexpr bool operator==(const GameplayContext&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const GameplayContext &) const noexcept = default;
 };
 } // namespace epidemic::gameplay

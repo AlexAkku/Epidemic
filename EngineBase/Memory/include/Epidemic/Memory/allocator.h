@@ -12,22 +12,19 @@
 #include "shadow_probe.h"
 #endif
 
-namespace epidemic::memory
-{
+namespace epidemic::memory {
 // This file contains the minimal allocator contracts used by the memory baseline.
 // The allocators are intentionally simple: they define allocation/deallocation flow and
 // optional tracking, but they do not implement arenas, pooling, streaming, or asset systems.
 
 // Normalizes zero-byte allocation requests to a single tracked byte.
 // Relationship: keeps tracking behavior consistent with DefaultAllocator materializing storage.
-[[nodiscard]] constexpr std::size_t NormalizeAllocationSize(std::size_t bytes) noexcept
-{
+[[nodiscard]] constexpr std::size_t NormalizeAllocationSize(std::size_t bytes) noexcept {
     return bytes == 0 ? std::size_t{1} : bytes;
 }
 
 // Minimal allocation interface used by the EngineBase memory baseline.
-class IAllocator
-{
+class IAllocator {
   public:
     virtual ~IAllocator() = default;
 
@@ -50,24 +47,21 @@ class IAllocator
 };
 
 // Thin allocator that forwards directly to aligned global new/delete.
-class DefaultAllocator final : public IAllocator
-{
+class DefaultAllocator final : public IAllocator {
   public:
     // Allocates storage through aligned operator new after validating the common allocator contract.
     void *Allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
-                   AllocationTag = AllocationTag::Unknown) override
-    {
-        if (alignment == 0 || (alignment & (alignment - 1)) != 0)
-        {
+                   AllocationTag = AllocationTag::Unknown) override {
+        if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
             throw std::invalid_argument("allocation alignment must be a non-zero power of two");
         }
-        if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()))
-        {
+        if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
             throw std::length_error("allocation size exceeds PTRDIFF_MAX");
         }
 
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-        if (auditor::shadow::fail_allocation("DefaultAllocator.Allocate")) throw std::bad_alloc{};
+        if (auditor::shadow::fail_allocation("DefaultAllocator.Allocate"))
+            throw std::bad_alloc{};
 #endif
         auto *pointer = ::operator new(NormalizeAllocationSize(bytes), std::align_val_t(alignment));
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
@@ -79,11 +73,9 @@ class DefaultAllocator final : public IAllocator
 
     // Releases storage through aligned operator delete. Null or invalid requests are ignored.
     void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
-                    AllocationTag = AllocationTag::Unknown) noexcept override
-    {
+                    AllocationTag = AllocationTag::Unknown) noexcept override {
         if (pointer == nullptr || alignment == 0 || (alignment & (alignment - 1)) != 0 ||
-            bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()))
-        {
+            bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
             return;
         }
 
@@ -101,30 +93,24 @@ class DefaultAllocator final : public IAllocator
 // Zero-sized requests are normalized to 1 byte for tracking so the counters stay
 // consistent with DefaultAllocator and with upstream allocators that materialize
 // a minimal allocation for size 0.
-class TrackingAllocator final : public IAllocator
-{
+class TrackingAllocator final : public IAllocator {
   public:
     // Binds a tracker interface to an upstream allocator implementation.
-    TrackingAllocator(IMemoryTracker &tracker, IAllocator &upstream) noexcept : tracker_(tracker), upstream_(upstream)
-    {
+    TrackingAllocator(IMemoryTracker &tracker, IAllocator &upstream) noexcept : tracker_(tracker), upstream_(upstream) {
     }
 
     // Allocates through the upstream allocator and records exactly one successful allocation.
     void *Allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
-                   AllocationTag tag = AllocationTag::Unknown) override
-    {
-        if (alignment == 0 || (alignment & (alignment - 1)) != 0)
-        {
+                   AllocationTag tag = AllocationTag::Unknown) override {
+        if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
             throw std::invalid_argument("allocation alignment must be a non-zero power of two");
         }
-        if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()))
-        {
+        if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
             throw std::length_error("allocation size exceeds PTRDIFF_MAX");
         }
 
         void *pointer = upstream_.Allocate(bytes, alignment, tag);
-        if (pointer == nullptr)
-        {
+        if (pointer == nullptr) {
             return nullptr;
         }
 
@@ -134,11 +120,9 @@ class TrackingAllocator final : public IAllocator
 
     // Frees through the upstream allocator and mirrors a valid non-null free into the tracker.
     void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
-                    AllocationTag tag = AllocationTag::Unknown) noexcept override
-    {
+                    AllocationTag tag = AllocationTag::Unknown) noexcept override {
         if (pointer == nullptr || alignment == 0 || (alignment & (alignment - 1)) != 0 ||
-            bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max()))
-        {
+            bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
             return;
         }
 
@@ -155,8 +139,7 @@ class TrackingAllocator final : public IAllocator
 // No concrete production frame allocator exists in EngineBase yet. Implementations must make
 // Reset the explicit lifetime boundary: storage obtained before Reset becomes invalid only when
 // Reset is called by the owning frame/batch coordinator, never implicitly from Allocate/Deallocate.
-class IFrameAllocator
-{
+class IFrameAllocator {
   public:
     virtual ~IFrameAllocator() = default;
 

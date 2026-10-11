@@ -5,8 +5,7 @@
 
 #include <memory>
 
-namespace epidemic::rhi::d3d11
-{
+namespace epidemic::rhi::d3d11 {
 // This file exposes the D3D11 RHI backend factory used by EngineBase support wiring.
 // Backend creation returns Result because device creation and swap-chain setup are expected runtime failures.
 

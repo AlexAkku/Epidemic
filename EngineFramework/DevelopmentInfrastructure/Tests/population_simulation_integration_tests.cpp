@@ -11,24 +11,19 @@ using namespace epidemic::gameplay::needs_life;
 using namespace epidemic::gameplay::population_simulation;
 using epidemic::gameplay::random::RandomSeed;
 
-namespace
-{
-void Check(bool value, const char* message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
 
-GameplayObjectRef Ref(const char* domain, const char* id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 
-void RegisterBanditTemplate(PopulationService& population)
-{
+void RegisterBanditTemplate(PopulationService &population) {
     PopulationTemplate templ;
     templ.id = PopulationTemplateId::FromString("population.bandit");
     templ.entity_archetype = TypeId::FromString("entity.bandit");
@@ -37,8 +32,7 @@ void RegisterBanditTemplate(PopulationService& population)
 }
 } // namespace
 
-int main()
-{
+int main() {
     const auto forest = Ref("world.area", "forest");
     const auto town = Ref("world.area", "town");
 
@@ -48,8 +42,7 @@ int main()
     bandits.area = forest;
     auto bandit_group = population.CreateGroup(bandits);
     Check(static_cast<bool>(bandit_group), "create bandit group");
-    for (int i = 0; i < 3; ++i)
-    {
+    for (int i = 0; i < 3; ++i) {
         PopulationUnit unit;
         unit.group = bandit_group.Value();
         unit.template_id = PopulationTemplateId::FromString("population.bandit");
@@ -90,9 +83,8 @@ int main()
     Check(spawn.spawn.created_entities.empty(), "encounters did not fabricate runtime entities");
     Check(population.GetPopulationCounts(bandit_group.Value()).materialized == 0,
           "allocation does not materialize residents before entity binding");
-    for (const auto unit : spawn.allocated_units)
-    {
-        const auto* allocation = population.GetActiveAllocationForUnit(unit);
+    for (const auto unit : spawn.allocated_units) {
+        const auto *allocation = population.GetActiveAllocationForUnit(unit);
         Check(allocation != nullptr && allocation->correlation == spawn.spawn.request_id.value,
               "population owns pending encounter allocation");
     }
@@ -100,7 +92,8 @@ int main()
     SpawnRequest competing = request;
     competing.id = {};
     competing.seed = RandomSeed{77};
-    auto competing_spawn = encounter_adapter.SpawnFromPopulation(population, encounters, bandit_group.Value(), competing, 2);
+    auto competing_spawn =
+        encounter_adapter.SpawnFromPopulation(population, encounters, bandit_group.Value(), competing, 2);
     Check(!competing_spawn, "second encounter cannot allocate already reserved residents");
 
     const auto population_snapshot = population.CaptureSnapshot();
@@ -109,28 +102,28 @@ int main()
 
     PopulationService restored_population;
     RegisterBanditTemplate(restored_population);
-    Check(static_cast<bool>(restored_population.RestoreSnapshot(population_snapshot)), "restore population allocations");
+    Check(static_cast<bool>(restored_population.RestoreSnapshot(population_snapshot)),
+          "restore population allocations");
     EncountersService restored_encounters;
     Check(static_cast<bool>(restored_encounters.RestoreSnapshot(encounters_snapshot)), "restore encounter state");
     PopulationEncounterAdapter restored_adapter;
-    Check(static_cast<bool>(restored_adapter.RestoreSnapshot(adapter_snapshot, restored_population, restored_encounters)),
-          "restore population encounter plan");
+    Check(
+        static_cast<bool>(restored_adapter.RestoreSnapshot(adapter_snapshot, restored_population, restored_encounters)),
+        "restore population encounter plan");
 
-    for (std::size_t i = 0; i < spawn.allocated_units.size(); ++i)
-    {
+    for (std::size_t i = 0; i < spawn.allocated_units.size(); ++i) {
         const auto entity = Ref("entities", i == 0 ? "bandit.0" : "bandit.1");
-        Check(static_cast<bool>(restored_adapter.BindSpawnedEntity(restored_population, restored_encounters,
-                                                                  spawn.spawn.request_id,
-                                                                  spawn.spawn.spawned_records[i], entity,
-                                                                  {.time = GameplayTimePoint{150}})),
+        Check(static_cast<bool>(restored_adapter.BindSpawnedEntity(
+                  restored_population, restored_encounters, spawn.spawn.request_id, spawn.spawn.spawned_records[i],
+                  entity, {.time = GameplayTimePoint{150}})),
               "bind real encounter entity through population plan");
-        const auto* unit = restored_population.GetUnit(spawn.allocated_units[i]);
+        const auto *unit = restored_population.GetUnit(spawn.allocated_units[i]);
         Check(unit != nullptr && unit->state == PopulationUnitState::Materialized && unit->entity == entity,
               "allocation commit materializes exactly its resident");
     }
     Check(restored_population.GetPopulationCounts(bandit_group.Value()).materialized == 2,
           "population materialized after all entity bindings");
-    const auto* restored_plan = restored_adapter.FindPlan(spawn.spawn.request_id);
+    const auto *restored_plan = restored_adapter.FindPlan(spawn.spawn.request_id);
     Check(restored_plan != nullptr && restored_plan->state == PopulationEncounterPlanState::Completed,
           "population encounter plan completed after exact bindings");
     Check(restored_population.FindAllocationsByCorrelation(spawn.spawn.request_id.value).empty(),
@@ -149,20 +142,21 @@ int main()
     Check(static_cast<bool>(replay_encounters.RestoreSnapshot(completed_encounters_snapshot)),
           "restore encounters after completed encounter");
     PopulationEncounterAdapter replay_adapter;
-    Check(static_cast<bool>(replay_adapter.RestoreSnapshot(completed_adapter_snapshot, replay_population, replay_encounters)),
+    Check(static_cast<bool>(
+              replay_adapter.RestoreSnapshot(completed_adapter_snapshot, replay_population, replay_encounters)),
           "restore completed population encounter tombstone");
     SpawnRequest replay_request = request;
     replay_request.id = spawn.spawn.request_id;
-    const auto replay_spawn = replay_adapter.SpawnFromPopulation(
-        replay_population, replay_encounters, bandit_group.Value(), replay_request, 2);
+    const auto replay_spawn = replay_adapter.SpawnFromPopulation(replay_population, replay_encounters,
+                                                                 bandit_group.Value(), replay_request, 2);
     Check(static_cast<bool>(replay_spawn) && replay_spawn.Value().allocated_units == spawn.allocated_units &&
               replay_spawn.Value().spawn.spawned_records == spawn.spawn.spawned_records,
           "completed spawn request remains idempotent after restore");
     Check(replay_population.FindAllocationsByCorrelation(spawn.spawn.request_id.value).empty(),
           "completed spawn replay does not reserve new residents");
 
-    Check(static_cast<bool>(replay_encounters.CompleteEncounter(spawn.spawn.encounter_instance,
-                                                            {.time = GameplayTimePoint{175}})),
+    Check(static_cast<bool>(
+              replay_encounters.CompleteEncounter(spawn.spawn.encounter_instance, {.time = GameplayTimePoint{175}})),
           "complete encounter before pruning its idempotency record");
     Check(replay_encounters.PruneTerminalEncounters(1) == 1,
           "prune encounter and its SpawnRequestId idempotency record");
@@ -207,8 +201,8 @@ int main()
     profile.active_needs.push_back(work.id);
     Check(static_cast<bool>(needs.CreateNeedProfile(profile)), "create need profile for stable resident identity");
 
-    Check(static_cast<bool>(restored_population.DematerializeUnit(spawn.allocated_units.front(),
-                                                                  {.time = GameplayTimePoint{700}})),
+    Check(static_cast<bool>(
+              restored_population.DematerializeUnit(spawn.allocated_units.front(), {.time = GameplayTimePoint{700}})),
           "dematerialize resident");
     Check(roles.FindJobsOfSubject(resident).size() == 1, "job identity survives dematerialization");
     Check(needs.GetNeedProfile(resident) != nullptr, "needs identity survives dematerialization");
@@ -237,27 +231,26 @@ int main()
           "city critical-needs result is filtered to residents of requested area");
 
     RolesNeedsAdapter roles_needs;
-    const auto* duty = roles.GetCurrentDuty(resident);
+    const auto *duty = roles.GetCurrentDuty(resident);
     Check(duty != nullptr, "current duty uses stable resident identity");
     Check(static_cast<bool>(roles_needs.CreateWorkPressureForDuty(*duty, needs, 400, {.time = GameplayTimePoint{900}})),
           "create work pressure");
     Check(static_cast<bool>(roles_needs.CreateWorkPressureForDuty(*duty, needs, 400, {.time = GameplayTimePoint{901}})),
           "retry same work pressure is idempotent");
     Check(needs.FindLifePressures(resident).size() == 1, "duty produces only one source-keyed work pressure");
-    Check(static_cast<bool>(roles_needs.SatisfyWorkNeedFromDuty(*duty, needs, work.id, 100,
-                                                               {.time = GameplayTimePoint{950}})),
+    Check(static_cast<bool>(
+              roles_needs.SatisfyWorkNeedFromDuty(*duty, needs, work.id, 100, {.time = GameplayTimePoint{950}})),
           "satisfy work need");
 
-    Check(static_cast<bool>(restored_population.MarkUnitDead(spawn.allocated_units.front(),
-                                                             {.time = GameplayTimePoint{1000}})),
+    Check(static_cast<bool>(
+              restored_population.MarkUnitDead(spawn.allocated_units.front(), {.time = GameplayTimePoint{1000}})),
           "commit authoritative population death first");
     const auto death_revision = restored_population.GetUnit(spawn.allocated_units.front())->revision;
     PopulationLifecycleAdapterSnapshot pending_lifecycle;
     pending_lifecycle.reconciliations.push_back({spawn.allocated_units.front(), death_revision, false, false});
     PopulationLifecycleAdapter lifecycle;
     Check(static_cast<bool>(lifecycle.RestoreSnapshot(pending_lifecycle)), "restore pending death reconciliation");
-    Check(static_cast<bool>(lifecycle.MarkResidentDead(restored_population, roles, needs,
-                                                       spawn.allocated_units.front(),
+    Check(static_cast<bool>(lifecycle.MarkResidentDead(restored_population, roles, needs, spawn.allocated_units.front(),
                                                        {.time = GameplayTimePoint{1001}})),
           "resume dependent cleanup for already dead resident");
     Check(roles.FindJobsOfSubject(resident).front().state == AssignmentState::Cancelled,

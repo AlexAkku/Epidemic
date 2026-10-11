@@ -6,10 +6,8 @@
 #include <cstdint>
 #include <memory>
 
-namespace epidemic::runtime
-{
-class SerializedDocument
-{
+namespace epidemic::runtime {
+class SerializedDocument {
   public:
     SerializedDocument() = default;
 

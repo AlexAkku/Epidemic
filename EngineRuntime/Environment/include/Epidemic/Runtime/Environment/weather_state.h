@@ -1,9 +1,7 @@
 ﻿#pragma once
 
-namespace epidemic::runtime
-{
-enum class WeatherKind
-{
+namespace epidemic::runtime {
+enum class WeatherKind {
     Clear,
     Cloudy,
     Rain,
@@ -13,8 +11,7 @@ enum class WeatherKind
     Transitioning,
 };
 
-struct WeatherState
-{
+struct WeatherState {
     WeatherKind kind = WeatherKind::Clear;
     float intensity = 0.0f;
     float cloudiness = 0.0f;
@@ -24,6 +21,6 @@ struct WeatherState
     float current_temperature = 0.0f;
     float current_humidity = 0.0f;
 
-    [[nodiscard]] constexpr bool operator==(const WeatherState&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const WeatherState &) const noexcept = default;
 };
 } // namespace epidemic::runtime

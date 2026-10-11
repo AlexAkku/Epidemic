@@ -53,3 +53,34 @@ struct TimeSnapshot
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Time/game_calendar.h`, `Epidemic/Runtime/Time/game_time.h`, `Epidemic/Runtime/Time/time_scale.h`, `Epidemic/Runtime/Time/time_state.h`.
+
+### Состав типов и операции
+
+#### `TimeSnapshot` (строка заголовка 12)
+
+Публичные поля и значения по умолчанию:
+
+- `bool paused = false`
+- `DayPhase day_phase = DayPhase::Night`
+- `std::uint64_t revision = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const TimeSnapshot&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

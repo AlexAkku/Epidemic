@@ -1,9 +1,7 @@
 ﻿#pragma once
 
-namespace epidemic::runtime
-{
-enum class SeasonKind
-{
+namespace epidemic::runtime {
+enum class SeasonKind {
     Spring,
     Summer,
     Autumn,
@@ -11,11 +9,10 @@ enum class SeasonKind
     Transitioning,
 };
 
-struct SeasonState
-{
+struct SeasonState {
     SeasonKind kind = SeasonKind::Spring;
     float progress = 0.0f;
 
-    [[nodiscard]] constexpr bool operator==(const SeasonState&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const SeasonState &) const noexcept = default;
 };
 } // namespace epidemic::runtime

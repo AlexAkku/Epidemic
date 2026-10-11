@@ -7,29 +7,23 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::population;
 
-namespace epidemic::gameplay::population::testing
-{
+namespace epidemic::gameplay::population::testing {
 void FailNextLocalAllocationForTest() noexcept;
 }
 
-namespace
-{
-void Check(bool value, const char *message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
 
-GameplayObjectRef Ref(const char *domain, const char *id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 
-PopulationTemplate CitizenTemplate(bool persistent = true)
-{
+PopulationTemplate CitizenTemplate(bool persistent = true) {
     PopulationTemplate templ;
     templ.id = PopulationTemplateId::FromString(persistent ? "citizen.template" : "transient.template");
     templ.entity_archetype = TypeId::FromString(persistent ? "entity.citizen" : "entity.transient");
@@ -38,8 +32,7 @@ PopulationTemplate CitizenTemplate(bool persistent = true)
 }
 } // namespace
 
-int main()
-{
+int main() {
     PopulationService service;
     const auto templ = CitizenTemplate();
     const auto transient_templ = CitizenTemplate(false);
@@ -150,7 +143,8 @@ int main()
     Check(static_cast<bool>(restored.RestoreSnapshot(snapshot)), "restore");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "pre-restore population cursor requires snapshot in new journal epoch");
-    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required,
+    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required,
           "future population cursor is incompatible");
     Check(restored.GetUnit(unit_id.Value())->current_area == migration.to, "restore unit");
     Check(restored.GetUnit(transient_id.Value()) == nullptr, "transient unit not restored");
@@ -178,8 +172,7 @@ int main()
     const auto current_epoch = restored.ReadChangesSince(new_epoch.latest_cursor);
     Check(!current_epoch.snapshot_required && current_epoch.changes.empty(), "exact population cursor is current");
 
-    for (int i = 0; i < 4200; ++i)
-    {
+    for (int i = 0; i < 4200; ++i) {
         PopulationResidence update;
         update.unit = unit_id.Value();
         update.home_area = (i % 2 == 0) ? Ref("world.area", "suburb") : Ref("world.area", "town");

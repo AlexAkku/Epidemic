@@ -81,3 +81,42 @@ struct SurfaceState
 }
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_ids.h`.
+
+### Перечисления и допустимые категории
+
+- `SurfaceConditionKind`: `Dry`, `Wet`, `Muddy`, `SnowCovered`, `Icy`, `Frozen`, `Thawing`, `Drying`
+
+### Состав типов и операции
+
+#### `SurfaceState` (строка заголовка 22)
+
+Публичные поля и значения по умолчанию:
+
+- `SurfaceConditionKind condition = SurfaceConditionKind::Dry`
+- `float wetness = 0.0f`
+- `float snow_depth = 0.0f`
+- `float mud_depth = 0.0f`
+- `float ice_thickness = 0.0f`
+- `float temperature = 0.0f`
+- `std::uint64_t revision = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const SurfaceState&) const noexcept = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

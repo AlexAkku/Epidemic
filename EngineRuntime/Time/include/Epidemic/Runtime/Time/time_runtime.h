@@ -12,23 +12,19 @@
 #include <memory>
 #include <vector>
 
-namespace epidemic::runtime
-{
-struct TimeAdvanceResult
-{
+namespace epidemic::runtime {
+struct TimeAdvanceResult {
     TimeSnapshot previous{};
     TimeSnapshot current{};
     std::vector<TimeEvent> events{};
 };
 
-struct PhaseBoundary
-{
+struct PhaseBoundary {
     std::uint32_t start_minute = 0;
     DayPhase phase = DayPhase::Night;
 };
 
-struct TimeOptions
-{
+struct TimeOptions {
     CalendarDefinition calendar{};
     std::int64_t game_ticks_per_real_second = 1;
     TimeScale initial_time_scale{};
@@ -41,8 +37,7 @@ struct TimeOptions
 // the fractional accumulator remainder. Persist this checkpoint instead. The
 // configuration fields identify the immutable clock configuration that must
 // match the destination runtime before RestoreCheckpoint() may commit.
-struct TimeCheckpoint
-{
+struct TimeCheckpoint {
     GameTimePoint now{};
     TimeScale time_scale{};
     bool paused = false;
@@ -54,8 +49,7 @@ struct TimeCheckpoint
     std::vector<PhaseBoundary> phase_boundaries{};
 };
 
-class IGameClock
-{
+class IGameClock {
   public:
     virtual ~IGameClock() = default;
 
@@ -64,8 +58,7 @@ class IGameClock
     [[nodiscard]] virtual TimeSnapshot GetSnapshot() const = 0;
 };
 
-class ITimeRuntime
-{
+class ITimeRuntime {
   public:
     virtual ~ITimeRuntime() = default;
 
@@ -73,7 +66,7 @@ class ITimeRuntime
     [[nodiscard]] virtual TimeCheckpoint CaptureCheckpoint() const = 0;
     // Restore validates the complete candidate before a single no-fail commit.
     // Validation failure or std::bad_alloc leaves the live clock unchanged.
-    [[nodiscard]] virtual foundation::Result<void> RestoreCheckpoint(const TimeCheckpoint& checkpoint) = 0;
+    [[nodiscard]] virtual foundation::Result<void> RestoreCheckpoint(const TimeCheckpoint &checkpoint) = 0;
     [[nodiscard]] virtual foundation::Result<TimeAdvanceResult> Advance(std::chrono::microseconds real_delta) = 0;
     [[nodiscard]] virtual foundation::Result<void> Pause() = 0;
     [[nodiscard]] virtual foundation::Result<void> Resume() = 0;
@@ -81,12 +74,11 @@ class ITimeRuntime
     [[nodiscard]] virtual foundation::Result<TimeAdvanceResult> Skip(GameDuration duration) = 0;
 };
 
-struct TimeServices
-{
+struct TimeServices {
     std::shared_ptr<IGameClock> clock;
     std::shared_ptr<ITimeRuntime> runtime;
 };
 
-[[nodiscard]] foundation::Result<void> ValidateTimeOptions(const TimeOptions& options);
-[[nodiscard]] foundation::Result<TimeServices> CreateTimeServices(const TimeOptions& options = {});
+[[nodiscard]] foundation::Result<void> ValidateTimeOptions(const TimeOptions &options);
+[[nodiscard]] foundation::Result<TimeServices> CreateTimeServices(const TimeOptions &options = {});
 } // namespace epidemic::runtime

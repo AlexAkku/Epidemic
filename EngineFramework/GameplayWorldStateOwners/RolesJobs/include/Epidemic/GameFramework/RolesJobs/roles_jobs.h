@@ -11,150 +11,117 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::roles_jobs
-{
-struct JobDefinitionId
-{
+namespace epidemic::gameplay::roles_jobs {
+struct JobDefinitionId {
     TypeId value{};
-    static constexpr JobDefinitionId FromString(std::string_view s) noexcept
-    {
+    static constexpr JobDefinitionId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const JobDefinitionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const JobDefinitionId &) const noexcept = default;
 };
-struct JobAssignmentId
-{
+struct JobAssignmentId {
     GameplayObjectId value{};
-    static constexpr JobAssignmentId FromString(std::string_view s) noexcept
-    {
+    static constexpr JobAssignmentId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr JobAssignmentId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr JobAssignmentId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const JobAssignmentId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const JobAssignmentId &) const noexcept = default;
 };
-struct WorkplaceId
-{
+struct WorkplaceId {
     GameplayObjectId value{};
-    static constexpr WorkplaceId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorkplaceId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr WorkplaceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr WorkplaceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorkplaceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorkplaceId &) const noexcept = default;
 };
-struct WorkScheduleId
-{
+struct WorkScheduleId {
     GameplayObjectId value{};
-    static constexpr WorkScheduleId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorkScheduleId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr WorkScheduleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr WorkScheduleId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorkScheduleId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorkScheduleId &) const noexcept = default;
 };
-struct WorkShiftId
-{
+struct WorkShiftId {
     GameplayObjectId value{};
-    static constexpr WorkShiftId FromString(std::string_view s) noexcept
-    {
+    static constexpr WorkShiftId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr WorkShiftId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr WorkShiftId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const WorkShiftId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const WorkShiftId &) const noexcept = default;
 };
-struct DutyId
-{
+struct DutyId {
     GameplayObjectId value{};
-    static constexpr DutyId FromString(std::string_view s) noexcept
-    {
+    static constexpr DutyId FromString(std::string_view s) noexcept {
         return {GameplayObjectId::FromString(s)};
     }
-    static constexpr DutyId FromRaw(std::uint64_t h, std::uint64_t l) noexcept
-    {
+    static constexpr DutyId FromRaw(std::uint64_t h, std::uint64_t l) noexcept {
         return {GameplayObjectId::FromRaw(h, l)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const DutyId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const DutyId &) const noexcept = default;
 };
-struct RoleFunctionId
-{
+struct RoleFunctionId {
     TypeId value{};
-    static constexpr RoleFunctionId FromString(std::string_view s) noexcept
-    {
+    static constexpr RoleFunctionId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const RoleFunctionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const RoleFunctionId &) const noexcept = default;
 };
-struct JobTaskTypeId
-{
+struct JobTaskTypeId {
     TypeId value{};
-    static constexpr JobTaskTypeId FromString(std::string_view s) noexcept
-    {
+    static constexpr JobTaskTypeId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const JobTaskTypeId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const JobTaskTypeId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class WorkplaceState
-{
+enum class WorkplaceState {
     Active,
     Closed,
     Destroyed,
@@ -162,8 +129,7 @@ enum class WorkplaceState
     Seasonal,
     Suspended
 };
-enum class AssignmentState
-{
+enum class AssignmentState {
     Active,
     Paused,
     Suspended,
@@ -171,8 +137,7 @@ enum class AssignmentState
     Cancelled,
     Invalid
 };
-enum class DutyState
-{
+enum class DutyState {
     Scheduled,
     Available,
     Active,
@@ -181,8 +146,7 @@ enum class DutyState
     Skipped,
     Cancelled
 };
-enum class RolesJobsChangeKind
-{
+enum class RolesJobsChangeKind {
     JobAssigned,
     JobRemoved,
     JobPaused,
@@ -200,8 +164,7 @@ enum class RolesJobsChangeKind
     DutyCancelled
 };
 
-struct JobDefinition
-{
+struct JobDefinition {
     JobDefinitionId id{};
     GameplayTagSet tags{};
     RoleFunctionId function{};
@@ -209,8 +172,7 @@ struct JobDefinition
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct Workplace
-{
+struct Workplace {
     WorkplaceId id{};
     GameplayObjectRef owner{};
     GameplayObjectRef area{};
@@ -219,8 +181,7 @@ struct Workplace
     WorkplaceState state = WorkplaceState::Active;
     Revision revision{};
 };
-struct JobAssignment
-{
+struct JobAssignment {
     JobAssignmentId id{};
     GameplayObjectRef worker{};
     JobDefinitionId job{};
@@ -230,8 +191,7 @@ struct JobAssignment
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct WorkShift
-{
+struct WorkShift {
     WorkShiftId id{};
     GameplayTimePoint start{};
     GameplayDuration duration{};
@@ -242,16 +202,14 @@ struct WorkShift
     GameplayObjectRef target_object{};
     std::vector<std::byte> payload;
 };
-struct WorkSchedule
-{
+struct WorkSchedule {
     WorkScheduleId id{};
     JobAssignmentId assignment{};
     std::vector<WorkShift> shifts;
     std::int32_t priority = 0;
     Revision revision{};
 };
-struct Duty
-{
+struct Duty {
     DutyId id{};
     GameplayObjectRef subject{};
     TypeId type{};
@@ -265,8 +223,7 @@ struct Duty
     std::vector<std::byte> payload;
     Revision revision{};
 };
-struct RolesJobsChange
-{
+struct RolesJobsChange {
     std::uint64_t sequence = 0;
     RolesJobsChangeKind kind = RolesJobsChangeKind::JobAssigned;
     GameplayObjectRef subject{};
@@ -276,8 +233,7 @@ struct RolesJobsChange
     GameplayContext context{};
     Revision revision{};
 };
-struct RolesJobsChangeBatch
-{
+struct RolesJobsChangeBatch {
     std::vector<RolesJobsChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -286,8 +242,7 @@ struct RolesJobsChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct RolesJobsSnapshot
-{
+struct RolesJobsSnapshot {
     std::vector<JobDefinition> definitions;
     std::vector<Workplace> workplaces;
     std::vector<JobAssignment> assignments;
@@ -302,20 +257,17 @@ struct RolesJobsSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct RolesJobsDiagnostics
-{
+struct RolesJobsDiagnostics {
     std::uint64_t definitions = 0, workplaces = 0, assignments = 0, schedules = 0, active_duties = 0, shift_events = 0,
                   duty_failures = 0, automatic_suspension_failures = 0, retained_changes = 0,
                   retained_terminal_duties = 0;
 };
 
-class RolesJobsService
-{
+class RolesJobsService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<RolesJobsService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.roles_jobs");
     }
     [[nodiscard]] foundation::Result<void> RegisterJobDefinition(JobDefinition definition);
@@ -347,54 +299,49 @@ class RolesJobsService
     [[nodiscard]] std::vector<Workplace> FindWorkplacesInArea(GameplayObjectRef area) const;
     [[nodiscard]] std::vector<Duty> FindDutiesForAssignment(JobAssignmentId assignment) const;
     [[nodiscard]] std::vector<Duty> FindActiveDuties() const;
-    private:
-        [[nodiscard]] std::vector<RolesJobsChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] RolesJobsChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] RolesJobsChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] std::vector<RolesJobsChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] RolesJobsChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] RolesJobsChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] std::uint64_t OldestChangeSequence() const noexcept;
     void PruneChangesBefore(std::uint64_t sequence) noexcept;
     [[nodiscard]] RolesJobsSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(RolesJobsSnapshot snapshot);
     [[nodiscard]] RolesJobsDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept
-    {
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
   private:
-    struct DutyOccurrenceKey
-    {
+    struct DutyOccurrenceKey {
         JobAssignmentId assignment{};
         WorkShiftId shift{};
         GameplayTimePoint start{};
         [[nodiscard]] bool operator==(const DutyOccurrenceKey &) const noexcept = default;
     };
-    struct DutyOccurrenceKeyHash
-    {
+    struct DutyOccurrenceKeyHash {
         [[nodiscard]] std::size_t operator()(const DutyOccurrenceKey &key) const noexcept;
     };
 
     [[nodiscard]] foundation::Result<Revision> NextRevision() const;
-    void Bump(Revision next) noexcept
-    {
+    void Bump(Revision next) noexcept {
         revision_ = next;
     }
     void Record(RolesJobsChange change);

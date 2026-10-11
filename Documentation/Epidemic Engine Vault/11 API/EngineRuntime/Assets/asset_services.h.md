@@ -51,3 +51,29 @@ struct AssetServices
 [[nodiscard]] foundation::Result<AssetServices> CreateAssetServices(const AssetsOptions& options = {});
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Assets/asset_catalog.h`, `Epidemic/Runtime/Assets/asset_catalog_writer.h`, `Epidemic/Runtime/Assets/asset_location_resolver.h`.
+
+### Состав типов и операции
+
+#### `AssetServices` (строка заголовка 16)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<IAssetCatalog> catalog`
+- `std::shared_ptr<IAssetCatalogWriter> writer`
+- `std::shared_ptr<IAssetLocationResolver> location_resolver`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

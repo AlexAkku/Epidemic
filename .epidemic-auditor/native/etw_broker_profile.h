@@ -238,5 +238,6 @@ inline constexpr char general_profile_xml[] = R"PROFILE(<WindowsPerformanceRecor
   </Profiles>
 </WindowsPerformanceRecorder>)PROFILE";
 inline constexpr char general_profile_sha256[] = "cdeccdebe39ba3cef0b36e65ff060a71c5959d3bf73cf4d5c68e0467608bce27";
-inline constexpr char general_profile_origin_sha256[] = "890d5545cd26492fb3d91a5e666eb61ad748cfe66c5c4a9b041fe3061ac66fde";
+inline constexpr char general_profile_origin_sha256[] =
+    "890d5545cd26492fb3d91a5e666eb61ad748cfe66c5c4a9b041fe3061ac66fde";
 }

@@ -12,10 +12,8 @@
 #include <cstdint>
 #include <memory>
 
-namespace epidemic::runtime
-{
-class IEnvironmentQuery
-{
+namespace epidemic::runtime {
+class IEnvironmentQuery {
   public:
     virtual ~IEnvironmentQuery() = default;
 
@@ -31,37 +29,30 @@ class IEnvironmentQuery
 
 // Threading: mutation must occur on the runtime thread.
 // Concurrent reads/writes are not supported unless explicitly documented.
-class IEnvironmentWriter
-{
+class IEnvironmentWriter {
   public:
     virtual ~IEnvironmentWriter() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> RegisterRegionEnvironment(
-        RegionId region,
-        WeatherState weather,
-        SeasonState season,
-        ClimateProfile climate) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    RegisterRegionEnvironment(RegionId region, WeatherState weather, SeasonState season, ClimateProfile climate) = 0;
     [[nodiscard]] virtual foundation::Result<void> SetWeather(RegionId region, WeatherState weather) = 0;
     [[nodiscard]] virtual foundation::Result<void> SetSeason(RegionId region, SeasonState season) = 0;
     [[nodiscard]] virtual foundation::Result<void> SetClimateProfile(RegionId region, ClimateProfile climate) = 0;
     [[nodiscard]] virtual foundation::Result<void> SetSurfaceState(SurfaceState state) = 0;
-    [[nodiscard]] virtual foundation::Result<void> ApplyUpdate(const EnvironmentStateUpdate& update) = 0;
-    [[nodiscard]] virtual foundation::Result<void> Update(const EnvironmentUpdateInput& input) = 0;
+    [[nodiscard]] virtual foundation::Result<void> ApplyUpdate(const EnvironmentStateUpdate &update) = 0;
+    [[nodiscard]] virtual foundation::Result<void> Update(const EnvironmentUpdateInput &input) = 0;
 };
 
-class IEnvironmentUpdatePolicy
-{
+class IEnvironmentUpdatePolicy {
   public:
     virtual ~IEnvironmentUpdatePolicy() = default;
 
     // Result failure and exceptions are contained by Update(). Returned state is fully validated before commit.
-    [[nodiscard]] virtual foundation::Result<EnvironmentStateUpdate> BuildUpdate(
-        const EnvironmentUpdateInput& input,
-        const IEnvironmentQuery& query) const = 0;
+    [[nodiscard]] virtual foundation::Result<EnvironmentStateUpdate>
+    BuildUpdate(const EnvironmentUpdateInput &input, const IEnvironmentQuery &query) const = 0;
 };
 
-class IEnvironmentRuntime : public IEnvironmentQuery, public IEnvironmentWriter
-{
+class IEnvironmentRuntime : public IEnvironmentQuery, public IEnvironmentWriter {
   public:
     ~IEnvironmentRuntime() override = default;
 

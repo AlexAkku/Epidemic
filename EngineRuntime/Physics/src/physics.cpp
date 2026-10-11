@@ -10,43 +10,29 @@
 
 // Umbrella translation unit that anchors the public Physics contracts in the build.
 
-namespace epidemic::runtime::physics
-{
-foundation::Result<PhysicsServices> CreatePhysicsServices()
-{
+namespace epidemic::runtime::physics {
+foundation::Result<PhysicsServices> CreatePhysicsServices() {
     return CreatePhysicsServices(PhysicsDependencies{});
 }
 
-foundation::Result<PhysicsServices> CreatePhysicsServices(std::shared_ptr<IPhysicsBackend> backend)
-{
+foundation::Result<PhysicsServices> CreatePhysicsServices(std::shared_ptr<IPhysicsBackend> backend) {
     return CreatePhysicsServices(PhysicsDependencies{std::move(backend), nullptr, nullptr});
 }
 
-foundation::Result<PhysicsServices> CreatePhysicsServices(PhysicsDependencies dependencies)
-{
-    if (dependencies.backend)
-    {
+foundation::Result<PhysicsServices> CreatePhysicsServices(PhysicsDependencies dependencies) {
+    if (dependencies.backend) {
         foundation::Result<void> initialized = foundation::Result<void>::Failure(
             foundation::Error::Create("physics.backend_exception", "physics backend initialization did not run"));
-        try
-        {
+        try {
             initialized = dependencies.backend->Initialize(PhysicsBackendOptions{});
-        }
-        catch (const std::exception& exception)
-        {
+        } catch (const std::exception &exception) {
+            return foundation::Result<PhysicsServices>::Failure(foundation::Error::Create(
+                "physics.backend_exception", "physics backend threw during initialization", exception.what()));
+        } catch (...) {
             return foundation::Result<PhysicsServices>::Failure(
-                foundation::Error::Create("physics.backend_exception",
-                                          "physics backend threw during initialization",
-                                          exception.what()));
+                foundation::Error::Create("physics.backend_exception", "physics backend threw during initialization"));
         }
-        catch (...)
-        {
-            return foundation::Result<PhysicsServices>::Failure(
-                foundation::Error::Create("physics.backend_exception",
-                                          "physics backend threw during initialization"));
-        }
-        if (!initialized)
-        {
+        if (!initialized) {
             return foundation::Result<PhysicsServices>::Failure(initialized.GetError());
         }
     }

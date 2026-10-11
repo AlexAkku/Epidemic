@@ -7,29 +7,23 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::needs_life;
 
-namespace epidemic::gameplay::needs_life::testing
-{
+namespace epidemic::gameplay::needs_life::testing {
 void FailNextLocalAllocationForTest() noexcept;
 }
 
-namespace
-{
-void Check(bool value, const char *message)
-{
-    if (!value)
-    {
+namespace {
+void Check(bool value, const char *message) {
+    if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char *domain, const char *id)
-{
+GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
 }
 } // namespace
 
-int main()
-{
+int main() {
     NeedsLifeService service;
 
     NeedDecayRule fast;
@@ -140,7 +134,8 @@ int main()
     Check(static_cast<bool>(routine_id), "set routine");
     routine.entries[0].start = GameplayTimePoint{900};
     auto updated_routine = service.SetRoutine(routine);
-    Check(static_cast<bool>(updated_routine) && updated_routine.Value() == routine_id.Value(), "routine upsert by subject");
+    Check(static_cast<bool>(updated_routine) && updated_routine.Value() == routine_id.Value(),
+          "routine upsert by subject");
     auto occurrences = service.FindRoutineEntriesInInterval(npc, GameplayTimePoint{850}, GameplayTimePoint{950});
     Check(occurrences.size() == 1 && occurrences.front().routine == routine_id.Value() &&
               occurrences.front().entry_index == 0,
@@ -160,7 +155,8 @@ int main()
     materialized_request.to = GameplayTimePoint{1};
     Check(!service.SimulateLifeInterval(materialized_request), "materialized-only rejects abstract simulation");
     materialized_request.materialized = true;
-    Check(static_cast<bool>(service.SimulateLifeInterval(materialized_request)), "materialized-only accepts materialized");
+    Check(static_cast<bool>(service.SimulateLifeInterval(materialized_request)),
+          "materialized-only accepts materialized");
 
     // Journal is bounded and reports a gap instead of pretending retained changes are complete.
     service.SetChangeJournalCapacity(2);
@@ -173,7 +169,8 @@ int main()
     small.context.time = GameplayTimePoint{23};
     Check(static_cast<bool>(service.SatisfyNeed(small)), "journal change 3");
     Check(service.ReadChangesSince(ChangeCursor{}).snapshot_required, "journal gap requires snapshot");
-    Check(service.ReadChangesSince(service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required,
+    Check(service.ReadChangesSince(service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required,
           "future needs cursor is incompatible");
     const auto pre_restore_cursor = service.ReadChangesSince(ChangeCursor{}).latest_cursor;
 
@@ -184,7 +181,8 @@ int main()
     Check(restored.GetCommittedNeedState(npc, hunger.id) != nullptr, "restore need state");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "pre-restore needs cursor requires snapshot in new epoch");
-    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max())).snapshot_required,
+    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+              .snapshot_required,
           "future needs cursor remains incompatible after restore");
     small.context.time = GameplayTimePoint{24};
     Check(static_cast<bool>(restored.SatisfyNeed(small)), "post-restore needs change");
@@ -223,8 +221,8 @@ int main()
     generated.subject = Ref("population", "generated");
     generated.active_needs.push_back(hunger.id);
     auto generated_id = requested_id_service.CreateNeedProfile(generated);
-    Check(static_cast<bool>(generated_id) && generated_id.Value().value.Low() > 100, "generator advanced past requested id");
-
+    Check(static_cast<bool>(generated_id) && generated_id.Value().value.Low() > 100,
+          "generator advanced past requested id");
 
     // Forged profile policy must not consume an id or publish a revision.
     const auto needs_invalid_before = requested_id_service.CaptureSnapshot();

@@ -7,13 +7,11 @@ using namespace epidemic::gameplay::navigation_semantics;
 using namespace epidemic::gameplay::construction;
 using namespace epidemic::gameplay::traversal_navigation_construction;
 
-namespace
-{
-class PlacementProvider final : public IConstructionPlacementProvider
-{
+namespace {
+class PlacementProvider final : public IConstructionPlacementProvider {
   public:
-    [[nodiscard]] foundation::Result<PlacementSemanticProjection> Project(const PlacementRequest &request) const override
-    {
+    [[nodiscard]] foundation::Result<PlacementSemanticProjection>
+    Project(const PlacementRequest &request) const override {
         PlacementSemanticProjection projection;
         projection.materialized = true;
         projection.area_allowed = true;
@@ -23,8 +21,7 @@ class PlacementProvider final : public IConstructionPlacementProvider
         projection.revision = {1};
         if (request.target.area)
             projection.footprint.volume.area = *request.target.area;
-        if (request.target.position)
-        {
+        if (request.target.position) {
             projection.footprint.volume.min = *request.target.position;
             projection.footprint.volume.max = {request.target.position->x_mm + 100, request.target.position->y_mm + 100,
                                                request.target.position->z_mm + 100};
@@ -32,11 +29,12 @@ class PlacementProvider final : public IConstructionPlacementProvider
         return foundation::Result<PlacementSemanticProjection>::Success(projection);
     }
 
-    [[nodiscard]] Revision CurrentRevision() const noexcept override { return {1}; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept override {
+        return {1};
+    }
 };
 
-PlacementOutputOperation NavigationOutput(GameplayObjectRef area, const ConstructionNavigationLayerPayload& payload)
-{
+PlacementOutputOperation NavigationOutput(GameplayObjectRef area, const ConstructionNavigationLayerPayload &payload) {
     PlacementOutputOperation output;
     output.type = PlacementOutputTypeId::FromString("construction.output.navigation_layer");
     output.subject = area;
@@ -45,8 +43,7 @@ PlacementOutputOperation NavigationOutput(GameplayObjectRef area, const Construc
 }
 } // namespace
 
-int main()
-{
+int main() {
     TraversalService t;
     auto walk = TraversalModeId::FromString("game.walk");
     TraversalModeDefinition w;
@@ -156,7 +153,7 @@ int main()
     if (!processed || processed.Value() != 1)
         return 14;
     const auto layer_id = NavigationLayerIdFor(placed, source_key);
-    const auto* layer = n.FindLayer(layer_id);
+    const auto *layer = n.FindLayer(layer_id);
     if (layer == nullptr || layer->area != b || layer->additive_cost_micro != 500 || !layer->source.IsValid())
         return 15;
     auto replay = cn.ProcessPendingOutputs(c, n);

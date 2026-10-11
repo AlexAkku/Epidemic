@@ -8,12 +8,10 @@
 
 #include <vector>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 struct SerializationRuntimeTestAccess;
 
-class InMemoryArchiveWriter final : public IArchiveWriter
-{
+class InMemoryArchiveWriter final : public IArchiveWriter {
   public:
     InMemoryArchiveWriter();
 
@@ -31,17 +29,21 @@ class InMemoryArchiveWriter final : public IArchiveWriter
     [[nodiscard]] foundation::Result<void> WriteBool(std::string_view name, bool value) override;
     [[nodiscard]] foundation::Result<void> WriteBytes(std::string_view name, std::span<const std::byte> value) override;
     [[nodiscard]] foundation::Result<void> WriteNull(std::string_view name) override;
-    [[nodiscard]] foundation::Result<SerializedDocument> Finalize(foundation::StringId type_id, SchemaVersion schema_version) override;
+    [[nodiscard]] foundation::Result<SerializedDocument> Finalize(foundation::StringId type_id,
+                                                                  SchemaVersion schema_version) override;
 
     [[nodiscard]] ArchiveObjectPtr Snapshot() const;
-    [[nodiscard]] foundation::Result<void> MergeRootFieldsTransactional(const ArchiveObject& source);
+    [[nodiscard]] foundation::Result<void> MergeRootFieldsTransactional(const ArchiveObject &source);
 
   private:
     friend struct SerializationRuntimeTestAccess;
 
-    enum class ContextKind { Object, Array, ArrayElement };
-    struct Context
-    {
+    enum class ContextKind {
+        Object,
+        Array,
+        ArrayElement
+    };
+    struct Context {
         ContextKind kind = ContextKind::Object;
         ArchiveObjectPtr object{};
         ArchiveArrayPtr array{};
@@ -51,8 +53,8 @@ class InMemoryArchiveWriter final : public IArchiveWriter
     [[nodiscard]] foundation::Result<void> ValidateFieldWrite(std::string_view name) const;
     [[nodiscard]] foundation::Result<void> WriteValue(std::string_view name, ArchiveValue value);
     [[nodiscard]] bool HasUninitializedArrays() const;
-    [[nodiscard]] static bool HasUninitializedArrays(const ArchiveObject& object);
-    [[nodiscard]] static bool HasUninitializedArrays(const ArchiveValue& value);
+    [[nodiscard]] static bool HasUninitializedArrays(const ArchiveObject &object);
+    [[nodiscard]] static bool HasUninitializedArrays(const ArchiveValue &value);
 
     ArchiveObjectPtr root_;
     std::vector<Context> stack_;
@@ -64,8 +66,7 @@ class InMemoryArchiveWriter final : public IArchiveWriter
     bool fail_next_finalize_candidate_for_testing_ = false;
 };
 
-class InMemoryArchiveReader final : public IArchiveReader
-{
+class InMemoryArchiveReader final : public IArchiveReader {
   public:
     explicit InMemoryArchiveReader(SerializedDocument document);
     explicit InMemoryArchiveReader(ArchiveObjectPtr root);
@@ -90,25 +91,28 @@ class InMemoryArchiveReader final : public IArchiveReader
     [[nodiscard]] foundation::Result<bool> IsNull(std::string_view name) const override;
 
   private:
-    enum class ContextKind { Object, Array, ArrayElement };
-    struct Context
-    {
+    enum class ContextKind {
+        Object,
+        Array,
+        ArrayElement
+    };
+    struct Context {
         ContextKind kind = ContextKind::Object;
-        const ArchiveObject* object = nullptr;
-        const ArchiveArray* array = nullptr;
+        const ArchiveObject *object = nullptr;
+        const ArchiveArray *array = nullptr;
     };
 
-    [[nodiscard]] const ArchiveObject* CurrentObject() const;
-    [[nodiscard]] foundation::Result<const ArchiveValue*> FindValue(std::string_view name) const;
+    [[nodiscard]] const ArchiveObject *CurrentObject() const;
+    [[nodiscard]] foundation::Result<const ArchiveValue *> FindValue(std::string_view name) const;
 
     SerializedDocument document_{};
     std::vector<Context> stack_;
 };
 
-class InMemoryArchiveFactory final : public IArchiveFactory
-{
+class InMemoryArchiveFactory final : public IArchiveFactory {
   public:
     [[nodiscard]] std::unique_ptr<IArchiveWriter> CreateWriter() const override;
-    [[nodiscard]] foundation::Result<std::unique_ptr<IArchiveReader>> CreateReader(const SerializedDocument& document) const override;
+    [[nodiscard]] foundation::Result<std::unique_ptr<IArchiveReader>>
+    CreateReader(const SerializedDocument &document) const override;
 };
 } // namespace epidemic::runtime

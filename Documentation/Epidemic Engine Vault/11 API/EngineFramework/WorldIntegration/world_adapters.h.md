@@ -176,3 +176,125 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Entities/entities.h`, `Epidemic/GameFramework/Environment/environment.h`, `Epidemic/GameFramework/Facts/gameplay_facts.h`, `Epidemic/GameFramework/Interaction/interaction.h`, `Epidemic/GameFramework/Queries/gameplay_queries.h`, `Epidemic/GameFramework/World/world.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Environment/environment.h`, `Epidemic/GameFramework/Interaction/interaction.h`, `Epidemic/GameFramework/World/world.h`.
+
+### Состав типов и операции
+
+#### `AreasAtPositionQuery` (строка заголовка 18)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `AlterationsInAreaQuery` (строка заголовка 27)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `EnvironmentSampleQuery` (строка заголовка 37)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<GameplayObjectRef> scopes`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `ActiveInteractionsQuery` (строка заголовка 48)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `WorldFactsCheckpoint` (строка заголовка 58)
+
+Публичные поля и значения по умолчанию:
+
+- `static constexpr std::uint32_t kSchemaVersion = 2`
+- `std::uint32_t schema_version = kSchemaVersion`
+- `std::uint64_t world_sequence = 0`
+- `std::uint64_t environment_sequence = 0`
+- `std::uint64_t interaction_sequence = 0`
+- `std::uint64_t world_epoch = 0`
+- `std::uint64_t environment_epoch = 0`
+- `std::uint64_t interaction_epoch = 0`
+
+#### `WorldQueryAdapter` (строка заголовка 81)
+
+Публичные сигнатуры операций:
+
+```cpp
+WorldQueryAdapter(world::WorldService &w, environment::EnvironmentService &e, interaction::InteractionService &i, queries::GameplayQueryService &q) : world_(w), environment_(e), interaction_(i), queries_(q);
+[[nodiscard]] foundation::Result<void> RegisterProviders();
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `WorldFactsAdapter` (строка заголовка 98)
+
+Публичные сигнатуры операций:
+
+```cpp
+WorldFactsAdapter(world::WorldService &w, environment::EnvironmentService &e, interaction::InteractionService &i, facts::GameplayFactsService &f) : world_(w), environment_(e), interaction_(i), facts_(f);
+[[nodiscard]] foundation::Result<void> RegisterContracts();
+[[nodiscard]] WorldFactsCheckpoint CaptureCheckpoint() const noexcept;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(WorldFactsCheckpoint checkpoint);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `EntityInteractionStateProvider` (строка заголовка 125)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit EntityInteractionStateProvider(const entities::EntityService &e) : entities_(e);
+[[nodiscard]] bool IsMaterialized(GameplayObjectRef object) const override;
+[[nodiscard]] Revision RevisionOf(GameplayObjectRef object) const override;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterProviders` | `WorldQueryAdapter::RegisterProviders` | `EngineFramework/IntegrationLayer/WorldIntegration/src/world_adapters.cpp:49` |
+| `RegisterContracts` | `WorldFactsAdapter::RegisterContracts` | `EngineFramework/IntegrationLayer/WorldIntegration/src/world_adapters.cpp:115` |
+| `CaptureCheckpoint` | `WorldFactsAdapter::CaptureCheckpoint` | `EngineFramework/IntegrationLayer/WorldIntegration/src/world_adapters.cpp:187` |
+| `RestoreCheckpoint` | `WorldFactsAdapter::RestoreCheckpoint` | `EngineFramework/IntegrationLayer/WorldIntegration/src/world_adapters.cpp:201` |
+| `IsMaterialized` | `EntityInteractionStateProvider::IsMaterialized` | `EngineFramework/IntegrationLayer/WorldIntegration/src/world_adapters.cpp:263` |
+| `RevisionOf` | `EntityInteractionStateProvider::RevisionOf` | `EngineFramework/IntegrationLayer/WorldIntegration/src/world_adapters.cpp:269` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterContracts`: `EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:79`
+- `CaptureCheckpoint`: `EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:86`
+- `RestoreCheckpoint`: `EngineFramework/DevelopmentInfrastructure/Tests/worldintegration_save_participant_tests.cpp:88`
+

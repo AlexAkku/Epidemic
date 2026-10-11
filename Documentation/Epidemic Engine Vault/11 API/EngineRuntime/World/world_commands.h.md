@@ -91,3 +91,66 @@ struct DestroyObjectCommand
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/string_id.h`, `Epidemic/Runtime/Foundation/runtime_time.h`, `Epidemic/Runtime/World/object_materialization.h`, `Epidemic/Runtime/World/world_object.h`.
+
+### Состав типов и операции
+
+#### `WorldCommandResult` (строка заголовка 13)
+
+Публичные поля и значения по умолчанию:
+
+- `std::optional<WorldObjectSnapshot> before`
+- `std::optional<WorldObjectSnapshot> after`
+
+#### `ChangePlacementCommand` (строка заголовка 25)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t expected_revision = 0`
+
+#### `ChangeResidencyCommand` (строка заголовка 32)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t expected_revision = 0`
+- `ResidencyState residency = ResidencyState::Unloaded`
+
+#### `PromotePersistenceTierCommand` (строка заголовка 39)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t expected_revision = 0`
+- `PersistenceTier tier = PersistenceTier::Disposable`
+- `std::optional<PersistentObjectId> persistent_id`
+
+#### `MaterializeObjectCommand` (строка заголовка 48)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t expected_revision = 0`
+
+#### `DemoteObjectCommand` (строка заголовка 54)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t expected_revision = 0`
+
+#### `DestroyObjectCommand` (строка заголовка 60)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t expected_revision = 0`
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+

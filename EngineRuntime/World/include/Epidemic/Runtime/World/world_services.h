@@ -9,19 +9,15 @@
 
 #include <memory>
 
-namespace epidemic::runtime
-{
-struct WorldOptions
-{
-};
+namespace epidemic::runtime {
+struct WorldOptions {};
 
 using IWorldObjectQuery = IWorldQuery;
 using IWorldObjectWriter = IWorldObjectRegistry;
 using IWorldMaterializationRuntime = IObjectMaterializer;
 using IWorldDemotionAuthority = IDemotionCommitAuthority;
 
-struct WorldServices
-{
+struct WorldServices {
     std::shared_ptr<IRegionRegistry> regions;
     std::shared_ptr<IChunkRegistry> chunks;
     std::shared_ptr<IWorldObjectQuery> query;
@@ -30,5 +26,5 @@ struct WorldServices
     std::shared_ptr<IWorldDemotionAuthority> demotion_authority;
 };
 
-[[nodiscard]] foundation::Result<WorldServices> CreateWorldServices(const WorldOptions& options = {});
+[[nodiscard]] foundation::Result<WorldServices> CreateWorldServices(const WorldOptions &options = {});
 } // namespace epidemic::runtime

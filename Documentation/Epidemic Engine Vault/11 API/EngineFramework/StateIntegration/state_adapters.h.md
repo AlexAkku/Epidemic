@@ -553,3 +553,320 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Conditions/conditions.h`, `Epidemic/GameFramework/Effects/effects.h`, `Epidemic/GameFramework/Entities/entities.h`, `Epidemic/GameFramework/Facts/gameplay_facts.h`, `Epidemic/GameFramework/Integration/core_adapters.h`, `Epidemic/GameFramework/Materials/materials.h`, `Epidemic/GameFramework/Queries/gameplay_queries.h`, `Epidemic/GameFramework/Time/gameplay_time.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Conditions/conditions.h`, `Epidemic/GameFramework/Effects/effects.h`, `Epidemic/GameFramework/Entities/entities.h`, `Epidemic/GameFramework/Materials/materials.h`.
+
+### Перечисления и допустимые категории
+
+- `ConditionEffectDeliveryState`: `Pending`, `Applied`, `RejectedTerminal`, `ReconciliationRequired`
+- `ConditionEffectReconciliationResolution`: `ConfirmedApplied`, `ConfirmedNotApplied`, `RejectedTerminal`
+
+### Состав типов и операции
+
+#### `GetEntityQuery` (строка заголовка 21)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `FindEntitiesQuery` (строка заголовка 28)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `GetMaterialSlotsQuery` (строка заголовка 38)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `GetConditionsQuery` (строка заголовка 45)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `StateQueryAdapter` (строка заголовка 52)
+
+Публичные сигнатуры операций:
+
+```cpp
+StateQueryAdapter( entities::EntityService& entities, materials::MaterialService& materials, conditions::ConditionService& conditions, const GameplayTagRegistry& tags, queries::GameplayQueryService& queries) : entities_(entities), materials_(materials), conditions_(conditions), tags_(tags), queries_(queries);
+[[nodiscard]] foundation::Result<void> RegisterProviders();
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `ConditionFactValue` (строка заголовка 75)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t magnitude_micro = 0`
+- `std::uint32_t stacks = 0`
+- `bool paused_for_materialization = false`
+
+#### `StateFactsCheckpoint` (строка заголовка 83)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t schema_version = 2`
+- `std::uint64_t contract_revision = 0`
+
+#### `StateFactsAdapter` (строка заголовка 97)
+
+Публичные сигнатуры операций:
+
+```cpp
+StateFactsAdapter( entities::EntityService& entities, materials::MaterialService& materials, conditions::ConditionService& conditions, effects::EffectService& effects, facts::GameplayFactsService& facts) : entities_(entities), materials_(materials), conditions_(conditions), effects_(effects), facts_(facts);
+[[nodiscard]] foundation::Result<void> RegisterContracts();
+[[nodiscard]] StateFactsCheckpoint CaptureCheckpoint() const noexcept;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(StateFactsCheckpoint checkpoint);
+[[nodiscard]] EventTypeId EntityChangedEvent() const noexcept;
+[[nodiscard]] EventTypeId MaterialChangedEvent() const noexcept;
+[[nodiscard]] EventTypeId ConditionChangedEvent() const noexcept;
+[[nodiscard]] EventTypeId EffectChangedEvent() const noexcept;
+[[nodiscard]] FactTypeId ActiveConditionFact() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `EntityCreateEffectPayload` (строка заголовка 152)
+
+Публичные поля и значения по умолчанию:
+
+- `entities::EntityPersistencePolicy persistence = entities::EntityPersistencePolicy::Persistent`
+
+#### `EntityConvertEffectPayload` (строка заголовка 157)
+
+Публичные поля и значения по умолчанию:
+
+- `bool preserve_instance_tags = true`
+- `bool preserve_persistence = true`
+
+#### `MaterialStimulusEffectPayload` (строка заголовка 167)
+
+Публичные поля и значения по умолчанию:
+
+- `materials::MaterialStimulusType stimulus = materials::MaterialStimulusType::Heat`
+
+#### `SubstanceExposureEffectPayload` (строка заголовка 172)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t coverage_ppm = 0`
+
+#### `ConditionApplyEffectData` (строка заголовка 183)
+
+Публичные поля и значения по умолчанию:
+
+- `conditions::RegisteredConditionPayload condition_payload`
+
+#### `MaterialResponseEffectRouter` (строка заголовка 193)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<void> Register(materials::MaterialResponseTypeId response, Builder builder);
+[[nodiscard]] foundation::Result<std::vector<effects::EffectOperation>> Build( const materials::MaterialResponse& response, const effects::EffectOperation& parent) const;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `EntityTargetStateProvider` (строка заголовка 209)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit EntityTargetStateProvider(const entities::EntityService& entities) : entities_(entities);
+[[nodiscard]] effects::EffectTargetState Resolve(GameplayObjectRef target) const override;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `StateEffectAdapter` (строка заголовка 233)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<BuiltinEffectTypes> RegisterHandlers();
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `StateLifecycleCheckpoint` (строка заголовка 261)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t schema_version = 2`
+
+#### `StateLifecycleAdapter` (строка заголовка 268)
+
+Публичные сигнатуры операций:
+
+```cpp
+StateLifecycleAdapter( entities::EntityService& entities, materials::MaterialService& materials, conditions::ConditionService& conditions, effects::EffectService& effects) : entities_(entities), materials_(materials), conditions_(conditions), effects_(effects);
+[[nodiscard]] StateLifecycleCheckpoint CaptureCheckpoint() const noexcept;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(StateLifecycleCheckpoint checkpoint);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `ConditionEffectDeliveryKey` (строка заголовка 313)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t condition_sequence = 0`
+- `std::uint64_t route_revision = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const ConditionEffectDeliveryKey&) const noexcept = default;
+```
+
+#### `ConditionEffectDeliveryRecord` (строка заголовка 323)
+
+Публичные поля и значения по умолчанию:
+
+- `ConditionEffectDeliveryState state = ConditionEffectDeliveryState::Pending`
+- `bool retry_authorized = false`
+- `effects::EffectBatchDisposition last_disposition = effects::EffectBatchDisposition::Failed`
+- `bool had_applied_operation = false`
+
+#### `ConditionEffectsCheckpoint` (строка заголовка 333)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t schema_version = 3`
+- `std::uint64_t route_revision = 0`
+- `std::vector<ConditionEffectDeliveryRecord> deliveries`
+
+#### `ConditionEffectsAdapter` (строка заголовка 342)
+
+Публичные сигнатуры операций:
+
+```cpp
+ConditionEffectsAdapter(conditions::ConditionService& conditions, effects::EffectService& effects) : conditions_(conditions), effects_(effects);
+[[nodiscard]] foundation::Result<void> RegisterRoute(ActionTypeId action, effects::EffectDefinitionId definition);
+[[nodiscard]] ConditionEffectsCheckpoint CaptureCheckpoint() const;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(ConditionEffectsCheckpoint checkpoint);
+[[nodiscard]] std::span<const ConditionEffectDeliveryRecord> Deliveries() const noexcept;
+[[nodiscard]] foundation::Result<void> ResolveReconciliation( const ConditionEffectDeliveryKey& key, ConditionEffectReconciliationResolution resolution);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `StateTimeProcessResult` (строка заголовка 379)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t condition_expirations = 0`
+- `std::uint64_t condition_periodic = 0`
+- `std::vector<effects::EffectExecutionResult> effect_executions`
+- `std::vector<time::ScheduledTrigger> unhandled`
+
+#### `DeferredEffectReconciliationRecord` (строка заголовка 387)
+
+Публичные поля и значения по умолчанию:
+
+- `effects::EffectExecutionResult execution`
+
+#### `StateTimeCheckpoint` (строка заголовка 395)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t schema_version = 3`
+- `std::vector<DeferredEffectReconciliationRecord> deferred_reconciliations`
+
+#### `StateTimeAdapter` (строка заголовка 405)
+
+Публичные сигнатуры операций:
+
+```cpp
+StateTimeAdapter( conditions::ConditionService& conditions, effects::EffectService& effects, time::GameplayTimeService& time) : conditions_(conditions), effects_(effects), time_(time);
+[[nodiscard]] foundation::Result<void> RegisterContracts();
+[[nodiscard]] StateTimeCheckpoint CaptureCheckpoint() const;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(StateTimeCheckpoint checkpoint);
+[[nodiscard]] std::span<const DeferredEffectReconciliationRecord> DeferredReconciliations() const noexcept;
+[[nodiscard]] foundation::Result<void> ResolveDeferredReconciliation(effects::DeferredEffectId deferred);
+[[nodiscard]] ActionTypeId ExpireAction() const noexcept;
+[[nodiscard]] ActionTypeId PeriodicAction() const noexcept;
+[[nodiscard]] ActionTypeId DeferredEffectAction() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `StateIntegrationCheckpoint` (строка заголовка 481)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t schema_version = 1`
+- `StateFactsCheckpoint facts`
+- `StateLifecycleCheckpoint lifecycle`
+- `ConditionEffectsCheckpoint condition_effects`
+- `StateTimeCheckpoint time`
+
+#### `StateIntegrationPersistence` (строка заголовка 490)
+
+Публичные сигнатуры операций:
+
+```cpp
+StateIntegrationPersistence( StateFactsAdapter& facts, StateLifecycleAdapter& lifecycle, ConditionEffectsAdapter& condition_effects, StateTimeAdapter& time) noexcept : facts_(facts), lifecycle_(lifecycle), condition_effects_(condition_effects), time_(time);
+[[nodiscard]] StateIntegrationCheckpoint CaptureCheckpoint() const;
+[[nodiscard]] foundation::Result<void> RestoreCheckpoint(StateIntegrationCheckpoint checkpoint);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterProviders` | `StateQueryAdapter::RegisterProviders` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:493` |
+| `RegisterContracts` | `StateFactsAdapter::RegisterContracts` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:585` |
+| `CaptureCheckpoint` | `StateFactsAdapter::CaptureCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:876` |
+| `RestoreCheckpoint` | `StateFactsAdapter::RestoreCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:927` |
+| `Register` | `MaterialResponseEffectRouter::Register` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:986` |
+| `Build` | `MaterialResponseEffectRouter::Build` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1000` |
+| `Resolve` | `EntityTargetStateProvider::Resolve` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1012` |
+| `RegisterHandlers` | `StateEffectAdapter::RegisterHandlers` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1027` |
+| `CaptureCheckpoint` | `StateLifecycleAdapter::CaptureCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1165` |
+| `RestoreCheckpoint` | `StateLifecycleAdapter::RestoreCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1186` |
+| `RegisterRoute` | `ConditionEffectsAdapter::RegisterRoute` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1195` |
+| `CaptureCheckpoint` | `ConditionEffectsAdapter::CaptureCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1392` |
+| `RestoreCheckpoint` | `ConditionEffectsAdapter::RestoreCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1446` |
+| `ResolveReconciliation` | `ConditionEffectsAdapter::ResolveReconciliation` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1458` |
+| `RegisterContracts` | `StateTimeAdapter::RegisterContracts` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:1532` |
+| `CaptureCheckpoint` | `StateTimeAdapter::CaptureCheckpoint` | `EngineFramework/IntegrationLayer/StateIntegration/src/state_adapters.cpp:2172` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterContracts`: `EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:100`
+- `CaptureCheckpoint`: `EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:111`
+- `RestoreCheckpoint`: `EngineFramework/DevelopmentInfrastructure/Tests/stateintegration_save_participant_tests.cpp:114`
+

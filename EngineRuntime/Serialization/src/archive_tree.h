@@ -9,10 +9,8 @@
 #include <variant>
 #include <vector>
 
-namespace epidemic::runtime
-{
-enum class ArchiveValueKind
-{
+namespace epidemic::runtime {
+enum class ArchiveValueKind {
     Null,
     String,
     UInt64,
@@ -29,45 +27,48 @@ struct ArchiveArray;
 using ArchiveObjectPtr = std::shared_ptr<ArchiveObject>;
 using ArchiveArrayPtr = std::shared_ptr<ArchiveArray>;
 
-struct ArchiveValue
-{
+struct ArchiveValue {
     using Storage = std::variant<std::monostate, std::string, std::uint64_t, std::int64_t, double, bool,
                                  std::vector<std::byte>, ArchiveObjectPtr, ArchiveArrayPtr>;
 
     Storage storage{};
 
-    [[nodiscard]] ArchiveValueKind Kind() const noexcept
-    {
-        switch (storage.index())
-        {
-        case 0: return ArchiveValueKind::Null;
-        case 1: return ArchiveValueKind::String;
-        case 2: return ArchiveValueKind::UInt64;
-        case 3: return ArchiveValueKind::Int64;
-        case 4: return ArchiveValueKind::Double;
-        case 5: return ArchiveValueKind::Bool;
-        case 6: return ArchiveValueKind::Bytes;
-        case 7: return ArchiveValueKind::Object;
-        default: return ArchiveValueKind::Array;
+    [[nodiscard]] ArchiveValueKind Kind() const noexcept {
+        switch (storage.index()) {
+        case 0:
+            return ArchiveValueKind::Null;
+        case 1:
+            return ArchiveValueKind::String;
+        case 2:
+            return ArchiveValueKind::UInt64;
+        case 3:
+            return ArchiveValueKind::Int64;
+        case 4:
+            return ArchiveValueKind::Double;
+        case 5:
+            return ArchiveValueKind::Bool;
+        case 6:
+            return ArchiveValueKind::Bytes;
+        case 7:
+            return ArchiveValueKind::Object;
+        default:
+            return ArchiveValueKind::Array;
         }
     }
 };
 
-struct ArchiveObject
-{
+struct ArchiveObject {
     std::unordered_map<std::string, ArchiveValue> fields;
 };
 
-struct ArchiveArray
-{
+struct ArchiveArray {
     std::vector<ArchiveValue> elements;
     // Writer-side initialization bitmap. Declared-size arrays are write-once: every
     // slot must be explicitly entered through BeginArrayElement() before finalization.
     std::vector<bool> initialized;
 };
 
-struct SerializedDocument::Impl
-{
+struct SerializedDocument::Impl {
     foundation::StringId type_id{};
     SchemaVersion schema_version{};
     std::uint32_t format_version = 1;

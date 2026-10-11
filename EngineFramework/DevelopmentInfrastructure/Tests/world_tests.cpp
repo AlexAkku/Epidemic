@@ -1,11 +1,9 @@
 #include "Epidemic/GameFramework/World/world.h"
 
-
 #include <cstdlib>
 
 #define CHECK(expr)                                                                                                    \
-    do                                                                                                                 \
-    {                                                                                                                  \
+    do {                                                                                                               \
         if (!(expr))                                                                                                   \
             std::abort();                                                                                              \
     } while (false)
@@ -13,23 +11,19 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::world;
 
-namespace epidemic::gameplay::world::detail
-{
+namespace epidemic::gameplay::world::detail {
 void SetWorldFaultPointForTesting(std::string_view point) noexcept;
 void ClearWorldFaultPointForTesting() noexcept;
 }
 
-namespace
-{
-void RegisterTypes(WorldService &world, WorldAlterationTypeId alteration, WorldFeatureTypeId feature)
-{
+namespace {
+void RegisterTypes(WorldService &world, WorldAlterationTypeId alteration, WorldFeatureTypeId feature) {
     CHECK(world.RegisterAlterationType(alteration, "game.test.terrain"));
     CHECK(world.RegisterFeatureType(feature, "game.test.road"));
 }
 } // namespace
 
-int main()
-{
+int main() {
     WorldService world;
     const auto alteration_type = WorldAlterationTypeId::FromString("game.test.terrain");
     const auto feature_type = WorldFeatureTypeId::FromString("game.test.road");
@@ -252,8 +246,7 @@ int main()
           restored.LatestChangeCursor() == transaction_cursor_before);
     // The change journal is bounded and reports when a consumer must resync from
     // a snapshot.
-    for (int i = 0; i < 4200; ++i)
-    {
+    for (int i = 0; i < 4200; ++i) {
         const GameplayObjectRef object{GameplayDomainId::FromString("test.world.journal"),
                                        GameplayObjectId::FromRaw(1, static_cast<std::uint64_t>(i + 1))};
         ObjectPlacementRecord p;

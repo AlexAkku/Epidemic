@@ -1,21 +1,25 @@
 // Generated owner bindings; gameplay state remains authoritative in its original owner.
 #include "Epidemic/GameFramework/PopulationSimulationIntegration/population_simulation_adapters.h"
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
-namespace epidemic::gameplay
-{
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::encounters::EncountersService>
-{
+namespace epidemic::gameplay {
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::encounters::EncountersService> {
     using Owner = epidemic::gameplay::encounters::EncountersService;
     using Snapshot = epidemic::gameplay::encounters::EncountersSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.definitions_, candidate.definitions_);
         savegame::detail::SwapPreparedMember(live.instance_ids_, candidate.instance_ids_);
@@ -38,19 +42,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::encounters::Encount
         savegame::detail::SwapPreparedMember(live.tables_, candidate.tables_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::needs_life::NeedsLifeService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::needs_life::NeedsLifeService> {
     using Owner = epidemic::gameplay::needs_life::NeedsLifeService;
     using Snapshot = epidemic::gameplay::needs_life::NeedsLifeSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.decay_rules_, candidate.decay_rules_);
         savegame::detail::SwapPreparedMember(live.definitions_, candidate.definitions_);
@@ -72,19 +81,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::needs_life::NeedsLi
         savegame::detail::SwapPreparedMember(live.states_, candidate.states_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::population::PopulationService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::population::PopulationService> {
     using Owner = epidemic::gameplay::population::PopulationService;
     using Snapshot = epidemic::gameplay::population::PopulationSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.active_allocation_by_unit_, candidate.active_allocation_by_unit_);
         savegame::detail::SwapPreparedMember(live.active_migration_by_unit_, candidate.active_migration_by_unit_);
         savegame::detail::SwapPreparedMember(live.active_residence_by_unit_, candidate.active_residence_by_unit_);
@@ -111,19 +125,24 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::population::Populat
         savegame::detail::SwapPreparedMember(live.units_by_template_, candidate.units_by_template_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::roles_jobs::RolesJobsService>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::roles_jobs::RolesJobsService> {
     using Owner = epidemic::gameplay::roles_jobs::RolesJobsService;
     using Snapshot = epidemic::gameplay::roles_jobs::RolesJobsSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.assignment_ids_, candidate.assignment_ids_);
         savegame::detail::SwapPreparedMember(live.assignments_, candidate.assignments_);
         savegame::detail::SwapPreparedMember(live.assignments_by_worker_, candidate.assignments_by_worker_);
@@ -145,67 +164,92 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::roles_jobs::RolesJo
         savegame::detail::SwapPreparedMember(live.workplaces_, candidate.workplaces_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::population_simulation::PopulationEncounterAdapter>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::population_simulation::PopulationEncounterAdapter> {
     using Owner = epidemic::gameplay::population_simulation::PopulationEncounterAdapter;
     using Snapshot = epidemic::gameplay::population_simulation::PopulationEncounterAdapterSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
+    }
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
         (void)w;
         auto copy = std::make_unique<Owner>(o);
         return copy;
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s), w.Require<population::PopulationService>(), w.Require<encounters::EncountersService>()); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s), w.Require<population::PopulationService>(),
+                                 w.Require<encounters::EncountersService>());
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.plans_, candidate.plans_);
     }
 };
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::population_simulation::PopulationLifecycleAdapter>
-{
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::population_simulation::PopulationLifecycleAdapter> {
     using Owner = epidemic::gameplay::population_simulation::PopulationLifecycleAdapter;
     using Snapshot = epidemic::gameplay::population_simulation::PopulationLifecycleAdapterSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
+    }
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
         (void)w;
         auto copy = std::make_unique<Owner>(o);
         return copy;
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.reconciliations_, candidate.reconciliations_);
     }
 };
 }
-namespace epidemic::gameplay::savegame
-{
-std::unique_ptr<ISaveParticipant> CreateEncountersServiceSaveParticipant(epidemic::gameplay::encounters::EncountersService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::encounters::EncountersService>>(owner, workspace, "framework.encounters", std::vector<SaveParticipantId>{});
+namespace epidemic::gameplay::savegame {
+std::unique_ptr<ISaveParticipant>
+CreateEncountersServiceSaveParticipant(epidemic::gameplay::encounters::EncountersService &owner,
+                                       SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::encounters::EncountersService>>(
+        owner, workspace, "framework.encounters", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreateNeedsLifeServiceSaveParticipant(epidemic::gameplay::needs_life::NeedsLifeService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::needs_life::NeedsLifeService>>(owner, workspace, "framework.needs_life", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreateNeedsLifeServiceSaveParticipant(epidemic::gameplay::needs_life::NeedsLifeService &owner,
+                                      SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::needs_life::NeedsLifeService>>(
+        owner, workspace, "framework.needs_life", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreatePopulationServiceSaveParticipant(epidemic::gameplay::population::PopulationService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::population::PopulationService>>(owner, workspace, "framework.population", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreatePopulationServiceSaveParticipant(epidemic::gameplay::population::PopulationService &owner,
+                                       SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::population::PopulationService>>(
+        owner, workspace, "framework.population", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreateRolesJobsServiceSaveParticipant(epidemic::gameplay::roles_jobs::RolesJobsService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::roles_jobs::RolesJobsService>>(owner, workspace, "framework.roles_jobs", std::vector<SaveParticipantId>{});
+std::unique_ptr<ISaveParticipant>
+CreateRolesJobsServiceSaveParticipant(epidemic::gameplay::roles_jobs::RolesJobsService &owner,
+                                      SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::roles_jobs::RolesJobsService>>(
+        owner, workspace, "framework.roles_jobs", std::vector<SaveParticipantId>{});
 }
-std::unique_ptr<ISaveParticipant> CreatePopulationEncounterAdapterSaveParticipant(epidemic::gameplay::population_simulation::PopulationEncounterAdapter& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::population_simulation::PopulationEncounterAdapter>>(owner, workspace, "integration.population_encounter", std::vector<SaveParticipantId>{SaveParticipantId::FromString("framework.population"), SaveParticipantId::FromString("framework.encounters")});
+std::unique_ptr<ISaveParticipant> CreatePopulationEncounterAdapterSaveParticipant(
+    epidemic::gameplay::population_simulation::PopulationEncounterAdapter &owner, SaveRestoreWorkspace &workspace) {
+    return std::make_unique<
+        detail::SnapshotParticipant<epidemic::gameplay::population_simulation::PopulationEncounterAdapter>>(
+        owner, workspace, "integration.population_encounter",
+        std::vector<SaveParticipantId>{SaveParticipantId::FromString("framework.population"),
+                                       SaveParticipantId::FromString("framework.encounters")});
 }
-std::unique_ptr<ISaveParticipant> CreatePopulationLifecycleAdapterSaveParticipant(epidemic::gameplay::population_simulation::PopulationLifecycleAdapter& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::population_simulation::PopulationLifecycleAdapter>>(owner, workspace, "integration.population_lifecycle", std::vector<SaveParticipantId>{SaveParticipantId::FromString("framework.population"), SaveParticipantId::FromString("framework.roles_jobs"), SaveParticipantId::FromString("framework.needs_life")});
+std::unique_ptr<ISaveParticipant> CreatePopulationLifecycleAdapterSaveParticipant(
+    epidemic::gameplay::population_simulation::PopulationLifecycleAdapter &owner, SaveRestoreWorkspace &workspace) {
+    return std::make_unique<
+        detail::SnapshotParticipant<epidemic::gameplay::population_simulation::PopulationLifecycleAdapter>>(
+        owner, workspace, "integration.population_lifecycle",
+        std::vector<SaveParticipantId>{SaveParticipantId::FromString("framework.population"),
+                                       SaveParticipantId::FromString("framework.roles_jobs"),
+                                       SaveParticipantId::FromString("framework.needs_life")});
 }
 }

@@ -8,13 +8,11 @@
 #include <optional>
 #include <vector>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Read-only asset catalog contract. Mutation is intentionally split into IAssetCatalogWriter
 // so runtime consumers do not need write access after bootstrap. Queries perform no hidden
 // mutation; concurrent read/write remains outside the contract.
-class IAssetCatalog
-{
+class IAssetCatalog {
   public:
     virtual ~IAssetCatalog() = default;
 
@@ -42,4 +40,3 @@ class IAssetCatalog
     [[nodiscard]] virtual foundation::Result<AssetDependencyManifest> BuildDependencyManifest(AssetId root) const = 0;
 };
 } // namespace epidemic::runtime
-

@@ -1128,3 +1128,668 @@ class NarrativeService
 };
 } // namespace epidemic::gameplay::narrative
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `NarrativeRuntimeState`: `Hidden`, `Available`, `Discovered`, `Active`, `Suspended`, `Completed`, `Failed`, `Expired`, `Locked`
+- `NarrativeObjectiveRuntimeState`: `Hidden`, `Available`, `Active`, `Completed`, `Failed`, `Cancelled`, `OptionalMissed`
+- `ConditionEvaluationState`: `Satisfied`, `Unsatisfied`, `Unknown`, `Unavailable`, `Partial`
+- `ConsequenceExecutionState`: `Pending`, `Applied`, `Deferred`, `FailedRetryable`, `FailedPermanent`, `Unsupported`, `AlreadyApplied`
+- `JournalVisibilityState`: `Hidden`, `Discovered`, `Updated`, `Resolved`, `Archived`, `Suppressed`
+- `RumorState`: `Active`, `Spread`, `Discredited`, `Expired`, `Confirmed`, `Suppressed`
+- `NarrativeChoiceState`: `Open`, `Resolved`, `Cancelled`, `Expired`
+- `NarrativeEventExecutionState`: `Pending`, `Processing`, `Completed`, `FailedRetryable`
+- `NarrativeEventExecutionPhase`: `Beats`, `Objectives`, `Storylets`, `Completed`
+- `NarrativeGateState`: `Closed`, `Open`, `Locked`, `Disabled`
+- `NarrativeChangeKind`: `ThreadStarted`, `ThreadCompleted`, `ThreadFailed`, `ThreadSuspended`, `ThreadResumed`, `ThreadExpired`, `ObjectiveActivated`, `ObjectiveCompleted`, `ObjectiveFailed`, `ObjectiveCancelled`, `ObjectiveOptionalMissed`, `ObjectiveProgressChanged`, `JournalEntryAdded`, `ClueDiscovered`, `RumorCreated`, `RumorExpired`, `ChoiceCreated`, `ChoiceResolved`, `ChoiceCancelled`, `ChoiceExpired`, `StoryletActivated`, `ConsequencePlanned`, `ConsequenceApplied`, `ConsequenceFailed`
+
+### Состав типов и операции
+
+#### `NarrativeThreadId` (строка заголовка 20)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeThreadId FromString(std::string_view s) noexcept;
+static constexpr NarrativeThreadId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeThreadId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeThreadId &) const noexcept = default;
+```
+
+#### `NarrativeArcId` (строка заголовка 38)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeArcId FromString(std::string_view s) noexcept;
+static constexpr NarrativeArcId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeArcId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeArcId &) const noexcept = default;
+```
+
+#### `NarrativeBeatId` (строка заголовка 56)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeBeatId FromString(std::string_view s) noexcept;
+static constexpr NarrativeBeatId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeBeatId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeBeatId &) const noexcept = default;
+```
+
+#### `NarrativeObjectiveId` (строка заголовка 74)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeObjectiveId FromString(std::string_view s) noexcept;
+static constexpr NarrativeObjectiveId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeObjectiveId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeObjectiveId &) const noexcept = default;
+```
+
+#### `NarrativeConditionId` (строка заголовка 92)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeConditionId FromString(std::string_view s) noexcept;
+static constexpr NarrativeConditionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeConditionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeConditionId &) const noexcept = default;
+```
+
+#### `NarrativeConsequenceId` (строка заголовка 110)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeConsequenceId FromString(std::string_view s) noexcept;
+static constexpr NarrativeConsequenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeConsequenceId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceId &) const noexcept = default;
+```
+
+#### `NarrativeConsequenceExecutionId` (строка заголовка 128)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeConsequenceExecutionId FromString(std::string_view s) noexcept;
+static constexpr NarrativeConsequenceExecutionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeConsequenceExecutionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceExecutionId &) const noexcept = default;
+```
+
+#### `JournalEntryId` (строка заголовка 146)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr JournalEntryId FromString(std::string_view s) noexcept;
+static constexpr JournalEntryId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const JournalEntryId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const JournalEntryId &) const noexcept = default;
+```
+
+#### `ClueId` (строка заголовка 164)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ClueId FromString(std::string_view s) noexcept;
+static constexpr ClueId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ClueId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ClueId &) const noexcept = default;
+```
+
+#### `RumorId` (строка заголовка 182)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr RumorId FromString(std::string_view s) noexcept;
+static constexpr RumorId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RumorId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RumorId &) const noexcept = default;
+```
+
+#### `StoryletId` (строка заголовка 200)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr StoryletId FromString(std::string_view s) noexcept;
+static constexpr StoryletId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const StoryletId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const StoryletId &) const noexcept = default;
+```
+
+#### `NarrativeGateId` (строка заголовка 218)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeGateId FromString(std::string_view s) noexcept;
+static constexpr NarrativeGateId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeGateId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeGateId &) const noexcept = default;
+```
+
+#### `NarrativeFlagId` (строка заголовка 236)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeFlagId FromString(std::string_view s) noexcept;
+static constexpr NarrativeFlagId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeFlagId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeFlagId &) const noexcept = default;
+```
+
+#### `NarrativeVariableId` (строка заголовка 254)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeVariableId FromString(std::string_view s) noexcept;
+static constexpr NarrativeVariableId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeVariableId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeVariableId &) const noexcept = default;
+```
+
+#### `NarrativeSceneId` (строка заголовка 272)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeSceneId FromString(std::string_view s) noexcept;
+static constexpr NarrativeSceneId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeSceneId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeSceneId &) const noexcept = default;
+```
+
+#### `NarrativeChoiceId` (строка заголовка 290)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeChoiceId FromString(std::string_view s) noexcept;
+static constexpr NarrativeChoiceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeChoiceId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeChoiceId &) const noexcept = default;
+```
+
+#### `NarrativeChoiceOptionId` (строка заголовка 308)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeChoiceOptionId FromString(std::string_view s) noexcept;
+static constexpr NarrativeChoiceOptionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeChoiceOptionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeChoiceOptionId &) const noexcept = default;
+```
+
+#### `NarrativeThreadTypeId` (строка заголовка 326)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeThreadTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeThreadTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeThreadTypeId &) const noexcept = default;
+```
+
+#### `NarrativeEventTypeId` (строка заголовка 340)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeEventTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeEventTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeEventTypeId &) const noexcept = default;
+```
+
+#### `NarrativeConditionTypeId` (строка заголовка 354)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeConditionTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeConditionTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeConditionTypeId &) const noexcept = default;
+```
+
+#### `NarrativeConsequenceTypeId` (строка заголовка 368)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr NarrativeConsequenceTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeConsequenceTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceTypeId &) const noexcept = default;
+```
+
+#### `JournalEntryTypeId` (строка заголовка 382)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr JournalEntryTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const JournalEntryTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const JournalEntryTypeId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 396)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 398)
+
+#### `NarrativeReason` (строка заголовка 523)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> payload`
+
+#### `NarrativeEvent` (строка заголовка 528)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> payload`
+
+#### `NarrativeEventKey` (строка заголовка 540)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const NarrativeEventKey &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeEventKey &) const noexcept = default;
+```
+
+#### `NarrativeConsequenceKey` (строка заголовка 552)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const NarrativeConsequenceKey &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const NarrativeConsequenceKey &) const noexcept = default;
+```
+
+#### `NarrativeEventKeyHash` (строка заголовка 566)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const NarrativeEventKey &key) const noexcept;
+```
+
+#### `NarrativeConsequenceKeyHash` (строка заголовка 586)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const NarrativeConsequenceKey &key) const noexcept;
+```
+
+#### `NarrativeConditionResult` (строка заголовка 616)
+
+Публичные поля и значения по умолчанию:
+
+- `ConditionEvaluationState state = ConditionEvaluationState::Unavailable`
+- `std::int64_t score = 0`
+- `std::vector<NarrativeReason> reasons`
+
+#### `NarrativeConsequenceResult` (строка заголовка 624)
+
+Публичные поля и значения по умолчанию:
+
+- `ConsequenceExecutionState state = ConsequenceExecutionState::Unsupported`
+
+#### `NarrativeConditionDefinition` (строка заголовка 630)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeConditionId> all_of`
+- `std::vector<NarrativeConditionId> any_of`
+- `std::vector<std::byte> payload`
+
+#### `NarrativeConsequenceDefinition` (строка заголовка 640)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int32_t priority = 0`
+- `bool require_success_before_advance = false`
+- `std::vector<std::byte> payload`
+- `std::optional<JournalTemplate> journal_template`
+- `std::optional<RumorTemplate> rumor_template`
+
+#### `JournalTemplate` (строка заголовка 648)
+
+Публичные поля и значения по умолчанию:
+
+- `JournalVisibilityState visibility = JournalVisibilityState::Discovered`
+- `std::vector<std::byte> payload`
+
+#### `RumorTemplate` (строка заголовка 655)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t confidence = 0`
+- `std::vector<std::byte> payload`
+
+#### `NarrativeBeatDefinition` (строка заголовка 666)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeConditionId> activation_conditions`
+- `std::vector<NarrativeConditionId> completion_conditions`
+- `std::vector<NarrativeConsequenceId> consequences`
+- `std::int32_t order = 0`
+
+#### `NarrativeObjectiveDefinition` (строка заголовка 677)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeConditionId> start_conditions`
+- `std::vector<NarrativeConditionId> completion_conditions`
+- `std::vector<NarrativeConditionId> failure_conditions`
+- `bool player_visible = false`
+
+#### `NarrativeThreadDefinition` (строка заголовка 688)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeBeatId> beats`
+- `std::vector<NarrativeObjectiveId> root_objectives`
+- `NarrativeRuntimeState initial_state = NarrativeRuntimeState::Hidden`
+- `std::int32_t priority = 0`
+
+#### `NarrativeArcDefinition` (строка заголовка 699)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeThreadId> threads`
+
+#### `StoryletDefinition` (строка заголовка 706)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeConditionId> availability_conditions`
+- `std::vector<NarrativeConsequenceId> consequences`
+- `std::int32_t priority = 0`
+- `std::uint32_t max_activations = 1`
+
+#### `NarrativeChoiceOption` (строка заголовка 717)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeConditionId> availability_conditions`
+- `std::vector<NarrativeConsequenceId> consequences`
+- `std::vector<std::byte> payload`
+
+#### `NarrativeThreadState` (строка заголовка 726)
+
+Публичные поля и значения по умолчанию:
+
+- `NarrativeRuntimeState state = NarrativeRuntimeState::Hidden`
+
+#### `NarrativeObjectiveState` (строка заголовка 736)
+
+Публичные поля и значения по умолчанию:
+
+- `NarrativeObjectiveRuntimeState state = NarrativeObjectiveRuntimeState::Hidden`
+- `std::int64_t progress = 0`
+
+#### `NarrativeConsequenceExecution` (строка заголовка 745)
+
+Публичные поля и значения по умолчанию:
+
+- `ConsequenceExecutionState state = ConsequenceExecutionState::Pending`
+- `std::uint32_t attempts = 0`
+
+#### `JournalEntry` (строка заголовка 760)
+
+Публичные поля и значения по умолчанию:
+
+- `JournalVisibilityState visibility = JournalVisibilityState::Hidden`
+- `std::vector<std::byte> payload`
+
+#### `ClueRecord` (строка заголовка 773)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t confidence = 0`
+- `std::vector<std::byte> payload`
+
+#### `RumorRecord` (строка заголовка 785)
+
+Публичные поля и значения по умолчанию:
+
+- `RumorState state = RumorState::Active`
+- `std::int64_t confidence = 0`
+- `std::vector<std::byte> payload`
+
+#### `NarrativeFlag` (строка заголовка 797)
+
+Публичные поля и значения по умолчанию:
+
+- `bool value = false`
+
+#### `NarrativeChoice` (строка заголовка 812)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeChoiceOption> options`
+- `NarrativeChoiceState state = NarrativeChoiceState::Open`
+- `std::optional<NarrativeChoiceOptionId> selected_option`
+
+#### `NarrativeEventExecution` (строка заголовка 825)
+
+Публичные поля и значения по умолчанию:
+
+- `NarrativeEventExecutionState state = NarrativeEventExecutionState::Pending`
+- `NarrativeEventExecutionPhase phase = NarrativeEventExecutionPhase::Beats`
+- `bool work_plan_initialized = false`
+- `std::vector<NarrativeBeatId> beat_plan`
+- `std::vector<NarrativeObjectiveId> objective_plan`
+- `std::vector<StoryletId> storylet_plan`
+- `std::size_t next_beat = 0`
+- `std::size_t next_objective = 0`
+- `std::size_t next_storylet = 0`
+
+#### `StoryletRuntimeState` (строка заголовка 840)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t activations = 0`
+
+#### `NarrativeChange` (строка заголовка 847)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `NarrativeChangeKind kind = NarrativeChangeKind::EventProcessed`
+
+#### `NarrativeSnapshot` (строка заголовка 864)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeThreadState> thread_states`
+- `std::vector<NarrativeObjectiveState> objective_states`
+- `std::vector<NarrativeConsequenceExecution> consequences`
+- `std::vector<JournalEntry> journal_entries`
+- `std::vector<ClueRecord> clues`
+- `std::vector<RumorRecord> rumors`
+- `std::vector<NarrativeFlag> flags`
+- `std::vector<NarrativeVariable> variables`
+- `std::vector<NarrativeChoice> choices`
+- `std::vector<StoryletRuntimeState> storylet_runtime`
+- `std::vector<NarrativeEventExecution> event_executions`
+- `std::vector<NarrativeBeatId> activated_beats`
+- `std::vector<NarrativeEventKey> processed_event_keys`
+- `bool frozen = false`
+- `std::uint64_t change_epoch = 1`
+
+#### `NarrativeChangeBatch` (строка заголовка 889)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeChange> changes`
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+
+#### `INarrativeConditionResolver` (строка заголовка 908)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~INarrativeConditionResolver() = default;
+[[nodiscard]] virtual NarrativeConditionResult Evaluate(const NarrativeConditionDefinition &definition, const NarrativeEvaluationContext &context) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `INarrativeConsequenceHandler` (строка заголовка 915)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~INarrativeConsequenceHandler() = default;
+[[nodiscard]] virtual NarrativeConsequenceResult Execute(const NarrativeConsequenceDefinition &definition, const NarrativeConsequenceExecution &execution, const NarrativeExecutionContext &context) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `NarrativeProcessBudget` (строка заголовка 923)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_condition_evaluations = 1024`
+- `std::size_t max_storylets_evaluated = 256`
+- `std::size_t max_storylets_activated = 16`
+- `std::size_t max_consequences_planned = 256`
+
+#### `NarrativeService` (строка заголовка 931)
+
+Внутреннее состояние (не часть публичного API): `bool frozen_ = false`, `std::unordered_map<NarrativeThreadId, NarrativeThreadDefinition, IdHash> thread_defs_`, `std::unordered_map<NarrativeArcId, NarrativeArcDefinition, IdHash> arc_defs_`, `std::unordered_map<NarrativeBeatId, NarrativeBeatDefinition, IdHash> beat_defs_`, `std::unordered_map<NarrativeObjectiveId, NarrativeObjectiveDefinition, IdHash> objective_defs_`, `std::unordered_map<NarrativeConditionId, NarrativeConditionDefinition, IdHash> condition_defs_`, `std::unordered_map<NarrativeConsequenceId, NarrativeConsequenceDefinition, IdHash> consequence_`, `std::unordered_map<StoryletId, StoryletDefinition, IdHash> storylet_defs_`, `std::unordered_map<NarrativeConditionTypeId, const INarrativeConditionResolver *, IdHash> condi`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterThreadDefinition(NarrativeThreadDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterArcDefinition(NarrativeArcDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterBeatDefinition(NarrativeBeatDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterObjectiveDefinition(NarrativeObjectiveDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterConditionDefinition(NarrativeConditionDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterConsequenceDefinition(NarrativeConsequenceDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterStoryletDefinition(StoryletDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterConditionResolver(NarrativeConditionTypeId type, const INarrativeConditionResolver &resolver);
+[[nodiscard]] foundation::Result<void> RegisterConsequenceHandler(NarrativeConsequenceTypeId type, const INarrativeConsequenceHandler &handler);
+[[nodiscard]] foundation::Result<void> FreezeDefinitions();
+[[nodiscard]] NarrativeConditionResult EvaluateCondition(NarrativeConditionId condition, NarrativeEvaluationContext context) const;
+[[nodiscard]] std::vector<NarrativeConsequenceExecutionId> ExecutePendingConsequences( NarrativeExecutionContext context, std::size_t budget = 256);
+[[nodiscard]] const NarrativeThreadState *GetThreadState(NarrativeThreadId thread) const noexcept;
+[[nodiscard]] const NarrativeObjectiveState *GetObjectiveState(NarrativeObjectiveId objective) const noexcept;
+[[nodiscard]] const JournalEntry *GetJournalEntry(JournalEntryId id) const noexcept;
+[[nodiscard]] const ClueRecord *GetClue(ClueId id) const noexcept;
+[[nodiscard]] const RumorRecord *GetRumor(RumorId id) const noexcept;
+[[nodiscard]] const NarrativeChoice *GetChoice(NarrativeChoiceId id) const noexcept;
+[[nodiscard]] std::vector<JournalEntry> GetJournal(GameplayObjectRef owner) const;
+[[nodiscard]] std::vector<NarrativeConsequenceExecution> FindConsequences(ConsequenceExecutionState state) const;
+[[nodiscard]] NarrativeChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] std::uint64_t CompactTerminalExecutions(GameplayTimePoint before);
+[[nodiscard]] NarrativeSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(NarrativeSnapshot snapshot);
+[[nodiscard]] NarrativeDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterThreadDefinition` | `NarrativeService::RegisterThreadDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:131` |
+| `RegisterArcDefinition` | `NarrativeService::RegisterArcDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:148` |
+| `RegisterBeatDefinition` | `NarrativeService::RegisterBeatDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:165` |
+| `RegisterObjectiveDefinition` | `NarrativeService::RegisterObjectiveDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:182` |
+| `RegisterConditionDefinition` | `NarrativeService::RegisterConditionDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:199` |
+| `RegisterConsequenceDefinition` | `NarrativeService::RegisterConsequenceDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:216` |
+| `RegisterStoryletDefinition` | `NarrativeService::RegisterStoryletDefinition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:233` |
+| `RegisterConditionResolver` | `NarrativeService::RegisterConditionResolver` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:261` |
+| `RegisterConsequenceHandler` | `NarrativeService::RegisterConsequenceHandler` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:281` |
+| `FreezeDefinitions` | `NarrativeService::FreezeDefinitions` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:301` |
+| `EvaluateCondition` | `NarrativeService::EvaluateCondition` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:840` |
+| `ExecutePendingConsequences` | `NarrativeService::ExecutePendingConsequences` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:1881` |
+| `GetThreadState` | `NarrativeService::GetThreadState` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:2087` |
+| `GetObjectiveState` | `NarrativeService::GetObjectiveState` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:2092` |
+| `GetJournalEntry` | `NarrativeService::GetJournalEntry` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:2097` |
+| `GetClue` | `NarrativeService::GetClue` | `EngineFramework/GameplayWorldStateOwners/Narrative/src/narrative.cpp:2102` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp:16`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp:17`
+- `RegisterConditionResolver`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:69`
+- `RegisterConsequenceHandler`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:70`
+- `RegisterConditionDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:83`
+- `RegisterConsequenceDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:89`
+- `RegisterBeatDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:106`
+- `RegisterObjectiveDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:114`
+- `RegisterThreadDefinition`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:121`
+- `FreezeDefinitions`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:122`
+- `GetJournal`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:137`
+- `GetThreadState`: `EngineFramework/DevelopmentInfrastructure/Tests/narrative_tests.cpp:148`
+

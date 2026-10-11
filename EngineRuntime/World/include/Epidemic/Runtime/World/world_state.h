@@ -1,8 +1,6 @@
 #pragma once
-namespace epidemic::runtime
-{
-enum class ChunkState
-{
+namespace epidemic::runtime {
+enum class ChunkState {
     Unloaded,
     Loading,
     Resident,
@@ -10,4 +8,4 @@ enum class ChunkState
     Sleeping,
     Unloading,
 };
-} 
+}

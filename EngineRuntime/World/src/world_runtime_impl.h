@@ -9,12 +9,15 @@
 
 #include <unordered_map>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 struct WorldRuntimeTestAccess;
 
-class WorldRuntime : public IRegionRegistry, public IChunkRegistry, public IWorldObjectRegistry, public IObjectMaterializer, public IDemotionCommitAuthority, public IWorldQuery
-{
+class WorldRuntime : public IRegionRegistry,
+                     public IChunkRegistry,
+                     public IWorldObjectRegistry,
+                     public IObjectMaterializer,
+                     public IDemotionCommitAuthority,
+                     public IWorldQuery {
   public:
     [[nodiscard]] foundation::Result<void> RegisterRegion(RegionDescriptor region) override;
     [[nodiscard]] std::optional<RegionDescriptor> FindRegion(RegionId id) const override;
@@ -26,13 +29,13 @@ class WorldRuntime : public IRegionRegistry, public IChunkRegistry, public IWorl
     void Freeze() noexcept override;
     [[nodiscard]] bool IsFrozen() const noexcept override;
 
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const CreateObjectCommand& command) override;
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const ChangePlacementCommand& command) override;
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const ChangeResidencyCommand& command) override;
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const PromotePersistenceTierCommand& command) override;
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const MaterializeObjectCommand& command);
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const DemoteObjectCommand& command);
-    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const DestroyObjectCommand& command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const CreateObjectCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const ChangePlacementCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const ChangeResidencyCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const PromotePersistenceTierCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const MaterializeObjectCommand &command);
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const DemoteObjectCommand &command);
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const DestroyObjectCommand &command) override;
 
     [[nodiscard]] foundation::Result<RuntimeObjectId> CreateObject(WorldObjectRecord record);
     [[nodiscard]] foundation::Result<void> DestroyObject(RuntimeObjectId id);
@@ -43,16 +46,15 @@ class WorldRuntime : public IRegionRegistry, public IChunkRegistry, public IWorl
     [[nodiscard]] foundation::Result<void> SetPlacement(RuntimeObjectId id, ObjectPlacement placement);
     [[nodiscard]] foundation::Result<void> SetResidency(RuntimeObjectId id, ResidencyState state);
 
-    [[nodiscard]] foundation::Result<RuntimeObjectId> Materialize(const MaterializationRequest& request) override;
-    [[nodiscard]] foundation::Result<void> Demote(const DemotionRequest& request) override;
+    [[nodiscard]] foundation::Result<RuntimeObjectId> Materialize(const MaterializationRequest &request) override;
+    [[nodiscard]] foundation::Result<void> Demote(const DemotionRequest &request) override;
     [[nodiscard]] foundation::Result<DemotionCommitToken> IssueDemotionCommitToken(DemotionSnapshot snapshot) override;
     [[nodiscard]] foundation::Result<void> RevokeDemotionCommitToken(std::uint64_t token_id) override;
 
     foundation::Result<void> SetChunkState(ChunkId id, ChunkState state);
 
   protected:
-    struct ChunkRecord
-    {
+    struct ChunkRecord {
         ChunkDescriptor descriptor{};
         ChunkState state = ChunkState::Unloaded;
         std::uint64_t revision = 1;

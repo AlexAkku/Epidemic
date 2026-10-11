@@ -87,3 +87,56 @@ class MainThreadDispatcher final : public IMainThreadDispatcher
 };
 } // namespace epidemic::core
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `IMainThreadDispatcher` (строка заголовка 18)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IMainThreadDispatcher() = default;
+// Queues a task for later execution on the owning main thread. virtual void Post(std::function<void()> task, std::string debug_name =;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `MainThreadDispatcher` (строка заголовка 33)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Queues one task for later main-thread execution. void Post(std::function<void()> task, std::string debug_name =;
+```
+
+#### `PendingTask` (строка заголовка 49)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string debug_name`
+- `auditor::shadow::Identity auditor_correlation`
+
+Публичные сигнатуры операций:
+
+```cpp
+std::function<void()> task;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Post` | `MainThreadDispatcher::Post` | `EngineBase/Core/src/main_thread_dispatcher.cpp:20` |
+

@@ -190,3 +190,64 @@ class IFrameAllocator
 };
 } // namespace epidemic::memory
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Memory/allocation_tag.h`, `Epidemic/Memory/imemory_tracker.h`.
+
+### Состав типов и операции
+
+#### `IAllocator` (строка заголовка 29)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAllocator() = default;
+a decorator must not publish accounting for either case. virtual void *Allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t), AllocationTag tag = AllocationTag::Unknown) = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `DefaultAllocator` (строка заголовка 53)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Allocates storage through aligned operator new after validating the common allocator contract. void *Allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t), AllocationTag = AllocationTag::Unknown) override;
+// Releases storage through aligned operator delete. Null or invalid requests are ignored. void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t), AllocationTag = AllocationTag::Unknown) noexcept override;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `TrackingAllocator` (строка заголовка 104)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Binds a tracker interface to an upstream allocator implementation. TrackingAllocator(IMemoryTracker &tracker, IAllocator &upstream) noexcept : tracker_(tracker), upstream_(upstream);
+// Allocates through the upstream allocator and records exactly one successful allocation. void *Allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t), AllocationTag tag = AllocationTag::Unknown) override;
+// Frees through the upstream allocator and mirrors a valid non-null free into the tracker. void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t), AllocationTag tag = AllocationTag::Unknown) noexcept override;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IFrameAllocator` (строка заголовка 158)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IFrameAllocator() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

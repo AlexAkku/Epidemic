@@ -9,33 +9,26 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::dialogue
-{
+namespace epidemic::gameplay::dialogue {
 #define DLG_TYPE(name)                                                                                                 \
-    struct name                                                                                                        \
-    {                                                                                                                  \
+    struct name {                                                                                                      \
         TypeId value{};                                                                                                \
-        static constexpr name FromString(std::string_view s) noexcept                                                  \
-        {                                                                                                              \
+        static constexpr name FromString(std::string_view s) noexcept {                                                \
             return {TypeId::FromString(s)};                                                                            \
         }                                                                                                              \
-        [[nodiscard]] constexpr bool IsValid() const noexcept                                                          \
-        {                                                                                                              \
+        [[nodiscard]] constexpr bool IsValid() const noexcept {                                                        \
             return value.IsValid();                                                                                    \
         }                                                                                                              \
         [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;                                \
         [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;                               \
     }
 #define DLG_OBJ(name)                                                                                                  \
-    struct name                                                                                                        \
-    {                                                                                                                  \
+    struct name {                                                                                                      \
         GameplayObjectId value{};                                                                                      \
-        static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept                                       \
-        {                                                                                                              \
+        static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept {                                     \
             return {GameplayObjectId::FromRaw(h, l)};                                                                  \
         }                                                                                                              \
-        [[nodiscard]] constexpr bool IsValid() const noexcept                                                          \
-        {                                                                                                              \
+        [[nodiscard]] constexpr bool IsValid() const noexcept {                                                        \
             return value.IsValid();                                                                                    \
         }                                                                                                              \
         [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;                                \
@@ -52,16 +45,13 @@ DLG_OBJ(ConversationSessionId);
 DLG_OBJ(DialogueConsequenceExecutionId);
 #undef DLG_TYPE
 #undef DLG_OBJ
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class ConversationState
-{
+enum class ConversationState {
     Active,
     WaitingForChoice,
     WaitingForExternalAction,
@@ -69,28 +59,24 @@ enum class ConversationState
     Interrupted,
     Failed
 };
-enum class DialogueConditionState
-{
+enum class DialogueConditionState {
     Satisfied,
     Unsatisfied,
     Unknown,
     Unavailable
 };
-enum class DialogueConsequenceState
-{
+enum class DialogueConsequenceState {
     Pending,
     Applied,
     Deferred,
     Failed,
     ReconciliationRequired
 };
-enum class DialogueOptionRepeatPolicy
-{
+enum class DialogueOptionRepeatPolicy {
     Repeatable,
     OncePerConversation
 };
-enum class DialogueChangeKind
-{
+enum class DialogueChangeKind {
     ConversationStarted,
     NodeEntered,
     OptionSelected,
@@ -104,26 +90,22 @@ enum class DialogueChangeKind
     ConsequenceReconciliationRequired
 };
 
-struct DialogueTextRef
-{
+struct DialogueTextRef {
     DialogueTextKey key{};
     std::vector<TypeId> parameter_keys;
 };
-struct DialogueConditionDefinition
-{
+struct DialogueConditionDefinition {
     TypeId id{};
     DialogueConditionTypeId type{};
     std::vector<std::byte> payload;
 };
-struct DialogueConsequenceDefinition
-{
+struct DialogueConsequenceDefinition {
     TypeId id{};
     DialogueConsequenceTypeId type{};
     std::vector<std::byte> payload;
     std::int32_t priority = 0;
 };
-struct DialogueOptionDefinition
-{
+struct DialogueOptionDefinition {
     DialogueOptionId id{};
     DialogueTextRef text;
     std::vector<TypeId> conditions;
@@ -132,8 +114,7 @@ struct DialogueOptionDefinition
     DialogueOptionRepeatPolicy repeat_policy = DialogueOptionRepeatPolicy::Repeatable;
     GameplayTagSet tags;
 };
-struct DialogueNodeDefinition
-{
+struct DialogueNodeDefinition {
     DialogueNodeId id{};
     DialogueTextRef utterance;
     TypeId speaker_role{};
@@ -142,8 +123,7 @@ struct DialogueNodeDefinition
     std::vector<TypeId> consequences;
     DialogueNodeId automatic_next{};
 };
-struct ConversationDefinition
-{
+struct ConversationDefinition {
     ConversationDefinitionId id{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -152,20 +132,17 @@ struct ConversationDefinition
     std::vector<DialogueNodeDefinition> nodes;
     Revision revision{};
 };
-struct ConversationParticipant
-{
+struct ConversationParticipant {
     TypeId role{};
     GameplayObjectRef object{};
     [[nodiscard]] bool operator==(const ConversationParticipant &) const noexcept = default;
 };
-struct ConversationContext
-{
+struct ConversationContext {
     GameplayObjectRef area{};
     GameplayTagSet tags;
     GameplayContext gameplay{};
 };
-struct ConversationSession
-{
+struct ConversationSession {
     ConversationSessionId id{};
     ConversationDefinitionId definition{};
     std::vector<GameplayObjectRef> participants;
@@ -178,19 +155,16 @@ struct ConversationSession
     std::vector<TypeId> resolved_once_per_conversation_options;
     Revision revision{};
 };
-struct DialogueConditionContext
-{
+struct DialogueConditionContext {
     ConversationSessionId session{};
     GameplayObjectRef actor{};
     GameplayObjectRef listener{};
     ConversationContext context{};
 };
-struct DialogueConditionResult
-{
+struct DialogueConditionResult {
     DialogueConditionState state = DialogueConditionState::Unknown;
 };
-struct DialogueConsequenceExecution
-{
+struct DialogueConsequenceExecution {
     DialogueConsequenceExecutionId id{};
     ConversationSessionId session{};
     TypeId consequence{};
@@ -200,8 +174,7 @@ struct DialogueConsequenceExecution
     GameplayContext context{};
     Revision revision{};
 };
-struct DialogueChange
-{
+struct DialogueChange {
     std::uint64_t sequence = 0;
     DialogueChangeKind kind = DialogueChangeKind::ConversationStarted;
     ConversationSessionId session{};
@@ -214,8 +187,7 @@ struct DialogueChange
     GameplayContext context{};
     Revision revision{};
 };
-struct DialogueChangeBatch
-{
+struct DialogueChangeBatch {
     std::vector<DialogueChange> changes;
     std::uint64_t oldest_available_sequence = 0;
     std::uint64_t latest_sequence = 0;
@@ -224,8 +196,7 @@ struct DialogueChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct DialogueSnapshot
-{
+struct DialogueSnapshot {
     std::vector<ConversationSession> sessions;
     std::vector<DialogueConsequenceExecution> consequences;
     MonotonicIdGenerator<GameplayObjectId>::Snapshot session_ids{};
@@ -234,8 +205,7 @@ struct DialogueSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct DialogueDiagnostics
-{
+struct DialogueDiagnostics {
     std::uint64_t definitions = 0;
     std::uint64_t active_sessions = 0;
     std::uint64_t options_selected = 0;
@@ -243,15 +213,13 @@ struct DialogueDiagnostics
     std::uint64_t consequences = 0;
 };
 
-class IDialogueConditionResolver
-{
+class IDialogueConditionResolver {
   public:
     virtual ~IDialogueConditionResolver() = default;
     [[nodiscard]] virtual DialogueConditionResult Evaluate(const DialogueConditionDefinition &,
                                                            const DialogueConditionContext &) const = 0;
 };
-class IDialogueConsequenceHandler
-{
+class IDialogueConsequenceHandler {
   public:
     virtual ~IDialogueConsequenceHandler() = default;
     [[nodiscard]] virtual DialogueConsequenceState Execute(const DialogueConsequenceDefinition &,
@@ -259,13 +227,11 @@ class IDialogueConsequenceHandler
                                                            const ConversationSession &) const = 0;
 };
 
-class DialogueService
-{
+class DialogueService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<DialogueService>;
 
   public:
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.dialogue");
     }
     [[nodiscard]] foundation::Result<void> RegisterCondition(DialogueConditionDefinition definition);
@@ -276,12 +242,12 @@ class DialogueService
     [[nodiscard]] foundation::Result<void> RegisterConsequenceHandler(DialogueConsequenceTypeId type,
                                                                       const IDialogueConsequenceHandler &handler);
     [[nodiscard]] foundation::Result<void> FreezeDefinitions();
-    [[nodiscard]] foundation::Result<ConversationSessionId> StartConversation(
-        ConversationDefinitionId definition, std::vector<GameplayObjectRef> participants,
-        ConversationContext context = {});
-    [[nodiscard]] foundation::Result<ConversationSessionId> StartConversation(
-        ConversationDefinitionId definition, std::vector<ConversationParticipant> participants,
-        ConversationContext context = {});
+    [[nodiscard]] foundation::Result<ConversationSessionId>
+    StartConversation(ConversationDefinitionId definition, std::vector<GameplayObjectRef> participants,
+                      ConversationContext context = {});
+    [[nodiscard]] foundation::Result<ConversationSessionId>
+    StartConversation(ConversationDefinitionId definition, std::vector<ConversationParticipant> participants,
+                      ConversationContext context = {});
     [[nodiscard]] foundation::Result<void> SelectOption(ConversationSessionId session, DialogueOptionId option,
                                                         GameplayObjectRef actor, GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> Advance(ConversationSessionId session, GameplayContext context = {});
@@ -294,34 +260,36 @@ class DialogueService
     [[nodiscard]] std::vector<DialogueConsequenceExecutionId> ExecutePendingConsequences(std::size_t budget = 128);
     [[nodiscard]] foundation::Result<void> ResumeConsequence(DialogueConsequenceExecutionId execution,
                                                              GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> ResolveConsequenceReconciliation(
-        DialogueConsequenceExecutionId execution, bool confirmed_applied, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> ResolveConsequenceReconciliation(DialogueConsequenceExecutionId execution,
+                                                                            bool confirmed_applied,
+                                                                            GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> FailConsequence(DialogueConsequenceExecutionId execution, TypeId reason,
                                                            GameplayContext context = {});
-    private:
-        [[nodiscard]] DialogueChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] DialogueChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] DialogueChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] DialogueChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    private:
-        [[nodiscard]] std::vector<DialogueChange> ChangesSinceSequence(std::uint64_t sequence) const;
-    public:
+
+  private:
+    [[nodiscard]] std::vector<DialogueChange> ChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
     [[nodiscard]] DialogueSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(DialogueSnapshot snapshot);
     [[nodiscard]] DialogueDiagnostics GetDiagnostics() const noexcept;
@@ -332,15 +300,15 @@ class DialogueService
     [[nodiscard]] const DialogueNodeDefinition *FindNode(const ConversationDefinition &d,
                                                          DialogueNodeId id) const noexcept;
     [[nodiscard]] bool ConditionsPass(const std::vector<TypeId> &ids, const DialogueConditionContext &ctx) const;
-    [[nodiscard]] foundation::Result<void> EnterNode(ConversationSession &session, DialogueNodeId node,
-                                                     GameplayContext context,
-                                                     std::optional<std::vector<DialogueConsequenceExecution>> prepared_consequences = std::nullopt);
-    [[nodiscard]] foundation::Result<std::vector<DialogueConsequenceExecution>> PrepareConsequences(
-        ConversationSessionId session, const std::vector<TypeId> &ids, DialogueNodeId source_node,
-        DialogueOptionId source_option, GameplayContext context,
-        MonotonicIdGenerator<GameplayObjectId> &staged_generator);
-    [[nodiscard]] foundation::Result<void> CommitPreparedConsequences(
-        std::vector<DialogueConsequenceExecution> prepared, Revision revision);
+    [[nodiscard]] foundation::Result<void>
+    EnterNode(ConversationSession &session, DialogueNodeId node, GameplayContext context,
+              std::optional<std::vector<DialogueConsequenceExecution>> prepared_consequences = std::nullopt);
+    [[nodiscard]] foundation::Result<std::vector<DialogueConsequenceExecution>>
+    PrepareConsequences(ConversationSessionId session, const std::vector<TypeId> &ids, DialogueNodeId source_node,
+                        DialogueOptionId source_option, GameplayContext context,
+                        MonotonicIdGenerator<GameplayObjectId> &staged_generator);
+    [[nodiscard]] foundation::Result<void>
+    CommitPreparedConsequences(std::vector<DialogueConsequenceExecution> prepared, Revision revision);
     [[nodiscard]] GameplayObjectRef ResolveRole(const ConversationSession &session, TypeId role) const noexcept;
     [[nodiscard]] DialogueConditionContext MakeConditionContext(const ConversationSession &session,
                                                                 GameplayObjectRef actor) const noexcept;

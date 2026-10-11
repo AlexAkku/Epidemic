@@ -10,38 +10,28 @@
 #include <type_traits>
 #include <unordered_set>
 
-namespace epidemic::gameplay::narrative_integration
-{
-namespace detail
-{
-namespace
-{
+namespace epidemic::gameplay::narrative_integration {
+namespace detail {
+namespace {
 thread_local std::string_view g_narrative_integration_fault_point;
 }
-void SetNarrativeIntegrationFaultPointForTesting(std::string_view point) noexcept
-{
+void SetNarrativeIntegrationFaultPointForTesting(std::string_view point) noexcept {
     g_narrative_integration_fault_point = point;
 }
-void ClearNarrativeIntegrationFaultPointForTesting() noexcept
-{
+void ClearNarrativeIntegrationFaultPointForTesting() noexcept {
     g_narrative_integration_fault_point = {};
 }
 }
 
-namespace
-{
-void NarrativeIntegrationPublicationFaultPointForInternalTest(std::string_view point)
-{
-    if (!detail::g_narrative_integration_fault_point.empty() &&
-        detail::g_narrative_integration_fault_point == point)
-    {
+namespace {
+void NarrativeIntegrationPublicationFaultPointForInternalTest(std::string_view point) {
+    if (!detail::g_narrative_integration_fault_point.empty() && detail::g_narrative_integration_fault_point == point) {
         detail::g_narrative_integration_fault_point = {};
         throw std::bad_alloc{};
     }
 }
 
-[[nodiscard]] std::optional<Revision> NextOutboxRevision(Revision current) noexcept
-{
+[[nodiscard]] std::optional<Revision> NextOutboxRevision(Revision current) noexcept {
     if (current.value == std::numeric_limits<std::uint64_t>::max())
         return std::nullopt;
     return Revision{current.value + 1};
@@ -50,80 +40,73 @@ constexpr std::uint32_t kOutboxWireMagic = 0x314F494Eu; // NIO1, little-endian o
 constexpr std::uint32_t kOutboxWireVersion = 1;
 constexpr std::size_t kMaxPersistentPayloadBytes = 1024u * 1024u;
 
-foundation::Error Error(std::string_view code, std::string_view message)
-{
+foundation::Error Error(std::string_view code, std::string_view message) {
     return foundation::Error::Create(code, message);
 }
 
-template <class E> bool EnumInRange(E value, E max_value) noexcept
-{
+template <class E> bool EnumInRange(E value, E max_value) noexcept {
     using U = std::underlying_type_t<E>;
     return static_cast<U>(value) >= static_cast<U>(0) && static_cast<U>(value) <= static_cast<U>(max_value);
 }
 
-class ByteWriter
-{
+class ByteWriter {
   public:
-    void U8(std::uint8_t value) { bytes_.push_back(static_cast<std::byte>(value)); }
-    void U32(std::uint32_t value)
-    {
+    void U8(std::uint8_t value) {
+        bytes_.push_back(static_cast<std::byte>(value));
+    }
+    void U32(std::uint32_t value) {
         for (std::uint32_t i = 0; i < 4; ++i)
             U8(static_cast<std::uint8_t>((value >> (i * 8u)) & 0xFFu));
     }
-    void U64(std::uint64_t value)
-    {
+    void U64(std::uint64_t value) {
         for (std::uint32_t i = 0; i < 8; ++i)
             U8(static_cast<std::uint8_t>((value >> (i * 8u)) & 0xFFu));
     }
-    void I64(std::int64_t value) { U64(static_cast<std::uint64_t>(value)); }
-    void ObjectId(GameplayObjectId value)
-    {
+    void I64(std::int64_t value) {
+        U64(static_cast<std::uint64_t>(value));
+    }
+    void ObjectId(GameplayObjectId value) {
         U64(value.High());
         U64(value.Low());
     }
-    void Correlation(CorrelationId value)
-    {
+    void Correlation(CorrelationId value) {
         U64(value.High());
         U64(value.Low());
     }
-    void Operation(OperationId value)
-    {
+    void Operation(OperationId value) {
         U64(value.High());
         U64(value.Low());
     }
-    void Ref(GameplayObjectRef value)
-    {
+    void Ref(GameplayObjectRef value) {
         U64(value.domain.Raw());
         ObjectId(value.id);
     }
-    void Payload(std::span<const std::byte> payload)
-    {
+    void Payload(std::span<const std::byte> payload) {
         U32(static_cast<std::uint32_t>(payload.size()));
         bytes_.insert(bytes_.end(), payload.begin(), payload.end());
     }
-    [[nodiscard]] std::vector<std::byte> Take() && { return std::move(bytes_); }
+    [[nodiscard]] std::vector<std::byte> Take() && {
+        return std::move(bytes_);
+    }
 
   private:
     std::vector<std::byte> bytes_;
 };
 
-class ByteReader
-{
+class ByteReader {
   public:
-    explicit ByteReader(std::span<const std::byte> bytes) : bytes_(bytes) {}
+    explicit ByteReader(std::span<const std::byte> bytes) : bytes_(bytes) {
+    }
 
-    [[nodiscard]] bool U8(std::uint8_t &value)
-    {
+    [[nodiscard]] bool U8(std::uint8_t &value) {
         if (position_ >= bytes_.size())
             return false;
         value = std::to_integer<std::uint8_t>(bytes_[position_++]);
         return true;
     }
-    [[nodiscard]] bool U32(std::uint32_t &value)
-    {
+    [[nodiscard]] bool U32(std::uint32_t &value) {
         value = 0;
-        for (std::uint32_t i = 0; i < 4; ++i)
-        {
+        for (std::uint32_t i = 0; i < 4; ++i) {
             std::uint8_t part = 0;
             if (!U8(part))
                 return false;
@@ -131,11 +114,9 @@ class ByteReader
         }
         return true;
     }
-    [[nodiscard]] bool U64(std::uint64_t &value)
-    {
+    [[nodiscard]] bool U64(std::uint64_t &value) {
         value = 0;
-        for (std::uint32_t i = 0; i < 8; ++i)
-        {
+        for (std::uint32_t i = 0; i < 8; ++i) {
             std::uint8_t part = 0;
             if (!U8(part))
                 return false;
@@ -143,40 +124,35 @@ class ByteReader
         }
         return true;
     }
-    [[nodiscard]] bool I64(std::int64_t &value)
-    {
+    [[nodiscard]] bool I64(std::int64_t &value) {
         std::uint64_t raw = 0;
         if (!U64(raw))
             return false;
         value = static_cast<std::int64_t>(raw);
         return true;
     }
-    [[nodiscard]] bool ObjectId(GameplayObjectId &value)
-    {
+    [[nodiscard]] bool ObjectId(GameplayObjectId &value) {
         std::uint64_t high = 0, low = 0;
         if (!U64(high) || !U64(low))
             return false;
         value = GameplayObjectId::FromRaw(high, low);
         return true;
     }
-    [[nodiscard]] bool Correlation(CorrelationId &value)
-    {
+    [[nodiscard]] bool Correlation(CorrelationId &value) {
         std::uint64_t high = 0, low = 0;
         if (!U64(high) || !U64(low))
             return false;
         value = CorrelationId::FromRaw(high, low);
         return true;
     }
-    [[nodiscard]] bool Operation(OperationId &value)
-    {
+    [[nodiscard]] bool Operation(OperationId &value) {
         std::uint64_t high = 0, low = 0;
         if (!U64(high) || !U64(low))
             return false;
         value = OperationId::FromRaw(high, low);
         return true;
     }
-    [[nodiscard]] bool Ref(GameplayObjectRef &value)
-    {
+    [[nodiscard]] bool Ref(GameplayObjectRef &value) {
         std::uint64_t domain = 0;
         GameplayObjectId id{};
         if (!U64(domain) || !ObjectId(id))
@@ -184,8 +160,7 @@ class ByteReader
         value = {GameplayDomainId::FromRaw(domain), id};
         return true;
     }
-    [[nodiscard]] bool Payload(std::vector<std::byte> &payload)
-    {
+    [[nodiscard]] bool Payload(std::vector<std::byte> &payload) {
         std::uint32_t size = 0;
         if (!U32(size) || size > kMaxPersistentPayloadBytes || position_ + size > bytes_.size())
             return false;
@@ -194,17 +169,17 @@ class ByteReader
         position_ += size;
         return true;
     }
-    [[nodiscard]] bool Finished() const noexcept { return position_ == bytes_.size(); }
+    [[nodiscard]] bool Finished() const noexcept {
+        return position_ == bytes_.size();
+    }
 
   private:
     std::span<const std::byte> bytes_;
     std::size_t position_ = 0;
 };
 
-std::int64_t ConfidenceMicro(knowledge::KnowledgeConfidence confidence) noexcept
-{
-    switch (confidence)
-    {
+std::int64_t ConfidenceMicro(knowledge::KnowledgeConfidence confidence) noexcept {
+    switch (confidence) {
     case knowledge::KnowledgeConfidence::None:
         return 0;
     case knowledge::KnowledgeConfidence::Low:
@@ -219,23 +194,20 @@ std::int64_t ConfidenceMicro(knowledge::KnowledgeConfidence confidence) noexcept
     return 0;
 }
 
-OperationId StableExternalOperation(narrative::NarrativeConsequenceExecutionId execution) noexcept
-{
+OperationId StableExternalOperation(narrative::NarrativeConsequenceExecutionId execution) noexcept {
     constexpr std::uint64_t kHighSalt = 0x4E41525241544956ull;
     constexpr std::uint64_t kLowSalt = 0x455F4F5554424F58ull;
     return OperationId::FromRaw(execution.value.High() ^ kHighSalt, execution.value.Low() ^ kLowSalt);
 }
 
 bool DeliveryRestoreOrder(const NarrativeExternalConsequenceDelivery &a,
-                          const NarrativeExternalConsequenceDelivery &b) noexcept
-{
+                          const NarrativeExternalConsequenceDelivery &b) noexcept {
     if (a.revision != b.revision)
         return a.revision < b.revision;
     return a.execution < b.execution;
 }
 
-std::vector<std::byte> EncodeKnowledgeReference(const knowledge::KnowledgeRecord &record)
-{
+std::vector<std::byte> EncodeKnowledgeReference(const knowledge::KnowledgeRecord &record) {
     ByteWriter writer;
     writer.U32(KnowledgeNarrativeReference::kSchemaVersion);
     writer.ObjectId(record.id.value);
@@ -254,29 +226,26 @@ std::vector<std::byte> EncodeKnowledgeReference(const knowledge::KnowledgeRecord
     return std::move(writer).Take();
 }
 
-foundation::Result<NarrativeExternalConsequenceSnapshot> DecodeOutboxSnapshot(
-    std::span<const std::byte> payload,
-    std::size_t max_records)
-{
+foundation::Result<NarrativeExternalConsequenceSnapshot> DecodeOutboxSnapshot(std::span<const std::byte> payload,
+                                                                              std::size_t max_records) {
     ByteReader reader(payload);
     std::uint32_t magic = 0, version = 0, count = 0;
     std::uint64_t revision = 0;
     if (!reader.U32(magic) || !reader.U32(version) || !reader.U64(revision) || !reader.U32(count) ||
-        magic != kOutboxWireMagic || version != kOutboxWireVersion)
-    {
+        magic != kOutboxWireMagic || version != kOutboxWireVersion) {
         return foundation::Result<NarrativeExternalConsequenceSnapshot>::Failure(
-            Error("gameplay.narrative_integration.invalid_delivery_snapshot", "invalid external consequence snapshot header"));
+            Error("gameplay.narrative_integration.invalid_delivery_snapshot",
+                  "invalid external consequence snapshot header"));
     }
-    if (static_cast<std::size_t>(count) > max_records)
-    {
+    if (static_cast<std::size_t>(count) > max_records) {
         return foundation::Result<NarrativeExternalConsequenceSnapshot>::Failure(
-            Error("gameplay.narrative_integration.delivery_snapshot_capacity", "external consequence snapshot exceeds configured capacity"));
+            Error("gameplay.narrative_integration.delivery_snapshot_capacity",
+                  "external consequence snapshot exceeds configured capacity"));
     }
     NarrativeExternalConsequenceSnapshot snapshot;
     snapshot.revision = Revision{revision};
     snapshot.deliveries.reserve(count);
-    for (std::uint32_t i = 0; i < count; ++i)
-    {
+    for (std::uint32_t i = 0; i < count; ++i) {
         NarrativeExternalConsequenceDelivery delivery;
         GameplayObjectId raw{};
         std::uint64_t type = 0, record_revision = 0;
@@ -306,26 +275,24 @@ foundation::Result<NarrativeExternalConsequenceSnapshot> DecodeOutboxSnapshot(
         snapshot.deliveries.push_back(std::move(delivery));
         continue;
     invalid:
-        return foundation::Result<NarrativeExternalConsequenceSnapshot>::Failure(
-            Error("gameplay.narrative_integration.invalid_delivery_snapshot", "truncated external consequence snapshot"));
+        return foundation::Result<NarrativeExternalConsequenceSnapshot>::Failure(Error(
+            "gameplay.narrative_integration.invalid_delivery_snapshot", "truncated external consequence snapshot"));
     }
-    if (!reader.Finished())
-    {
+    if (!reader.Finished()) {
         return foundation::Result<NarrativeExternalConsequenceSnapshot>::Failure(
-            Error("gameplay.narrative_integration.invalid_delivery_snapshot", "external consequence snapshot has trailing bytes"));
+            Error("gameplay.narrative_integration.invalid_delivery_snapshot",
+                  "external consequence snapshot has trailing bytes"));
     }
     return foundation::Result<NarrativeExternalConsequenceSnapshot>::Success(std::move(snapshot));
 }
 
-std::vector<std::byte> EncodeOutboxSnapshot(const NarrativeExternalConsequenceSnapshot &snapshot)
-{
+std::vector<std::byte> EncodeOutboxSnapshot(const NarrativeExternalConsequenceSnapshot &snapshot) {
     ByteWriter writer;
     writer.U32(kOutboxWireMagic);
     writer.U32(kOutboxWireVersion);
     writer.U64(snapshot.revision.value);
     writer.U32(static_cast<std::uint32_t>(snapshot.deliveries.size()));
-    for (const auto &delivery : snapshot.deliveries)
-    {
+    for (const auto &delivery : snapshot.deliveries) {
         writer.ObjectId(delivery.execution.value);
         writer.ObjectId(delivery.consequence.value);
         writer.U64(delivery.type.value.Raw());
@@ -343,11 +310,8 @@ std::vector<std::byte> EncodeOutboxSnapshot(const NarrativeExternalConsequenceSn
     return std::move(writer).Take();
 }
 
-narrative::ClueId DiscoveryClueId(GameplayObjectRef discoverer,
-                                  GameplayObjectRef subject,
-                                  TypeId topic,
-                                  CorrelationId correlation) noexcept
-{
+narrative::ClueId DiscoveryClueId(GameplayObjectRef discoverer, GameplayObjectRef subject, TypeId topic,
+                                  CorrelationId correlation) noexcept {
     constexpr std::uint64_t kMix = 0x9E3779B97F4A7C15ull;
     auto high = correlation.IsValid() ? correlation.High() : subject.id.High();
     auto low = correlation.IsValid() ? correlation.Low() : subject.id.Low();
@@ -358,19 +322,16 @@ narrative::ClueId DiscoveryClueId(GameplayObjectRef discoverer,
     return narrative::ClueId::FromRaw(high, low);
 }
 
-class NarrativeExternalConsequenceRestoreStage final : public savegame::IRestoreStage
-{
+class NarrativeExternalConsequenceRestoreStage final : public savegame::IRestoreStage {
   public:
     explicit NarrativeExternalConsequenceRestoreStage(NarrativeExternalConsequenceSnapshot value)
-        : snapshot(std::move(value))
-    {
+        : snapshot(std::move(value)) {
     }
     NarrativeExternalConsequenceSnapshot snapshot;
 };
 } // namespace
 
-foundation::Result<void> NarrativeIntegrationContractRegistry::RegisterContract(NarrativeEventContract contract)
-{
+foundation::Result<void> NarrativeIntegrationContractRegistry::RegisterContract(NarrativeEventContract contract) {
     if (frozen_)
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.contracts_frozen", "narrative integration contracts are frozen"));
@@ -380,29 +341,25 @@ foundation::Result<void> NarrativeIntegrationContractRegistry::RegisterContract(
     if (contracts_.contains(contract.id))
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.duplicate_contract", "duplicate narrative integration contract id"));
-    for (const auto &[id, existing] : contracts_)
-    {
+    for (const auto &[id, existing] : contracts_) {
         (void)id;
         if (existing.event_type == contract.event_type)
-            return foundation::Result<void>::Failure(
-                Error("gameplay.narrative_integration.duplicate_event_type", "duplicate narrative event type contract"));
+            return foundation::Result<void>::Failure(Error("gameplay.narrative_integration.duplicate_event_type",
+                                                           "duplicate narrative event type contract"));
     }
     contracts_.emplace(contract.id, contract);
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> NarrativeIntegrationContractRegistry::RegisterStandardContracts()
-{
+foundation::Result<void> NarrativeIntegrationContractRegistry::RegisterStandardContracts() {
     NarrativeIntegrationContractRegistry staged = *this;
     const std::array<NarrativeEventContract, 3> standard{{
         {DiscoveryContractId(), DiscoveryEventType(), DiscoveryTag()},
         {WorldEventContractId(), WorldEventType(), {}},
         {EncounterCompletedContractId(), EncounterCompletedEventType(), EncounterCompletedTag()},
     }};
-    for (const auto &contract : standard)
-    {
-        if (const auto *existing = staged.Find(contract.id))
-        {
+    for (const auto &contract : standard) {
+        if (const auto *existing = staged.Find(contract.id)) {
             if (existing->event_type != contract.event_type || existing->required_tag != contract.required_tag)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.narrative_integration.standard_contract_conflict",
@@ -417,8 +374,7 @@ foundation::Result<void> NarrativeIntegrationContractRegistry::RegisterStandardC
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> NarrativeIntegrationContractRegistry::Freeze()
-{
+foundation::Result<void> NarrativeIntegrationContractRegistry::Freeze() {
     if (frozen_)
         return foundation::Result<void>::Success();
     const auto validate = [this](TypeId id, narrative::NarrativeEventTypeId event_type, TagId required_tag) {
@@ -427,8 +383,7 @@ foundation::Result<void> NarrativeIntegrationContractRegistry::Freeze()
     };
     if (!validate(DiscoveryContractId(), DiscoveryEventType(), DiscoveryTag()) ||
         !validate(WorldEventContractId(), WorldEventType(), {}) ||
-        !validate(EncounterCompletedContractId(), EncounterCompletedEventType(), EncounterCompletedTag()))
-    {
+        !validate(EncounterCompletedContractId(), EncounterCompletedEventType(), EncounterCompletedTag())) {
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.standard_contract_missing",
                   "standard narrative integration contracts are missing or incompatible"));
@@ -437,14 +392,12 @@ foundation::Result<void> NarrativeIntegrationContractRegistry::Freeze()
     return foundation::Result<void>::Success();
 }
 
-const NarrativeEventContract *NarrativeIntegrationContractRegistry::Find(TypeId id) const noexcept
-{
+const NarrativeEventContract *NarrativeIntegrationContractRegistry::Find(TypeId id) const noexcept {
     const auto it = contracts_.find(id);
     return it == contracts_.end() ? nullptr : &it->second;
 }
 
-foundation::Result<const NarrativeEventContract *> NarrativeSemanticEventAdapter::RequireContract(TypeId id) const
-{
+foundation::Result<const NarrativeEventContract *> NarrativeSemanticEventAdapter::RequireContract(TypeId id) const {
     if (!contracts_.Frozen())
         return foundation::Result<const NarrativeEventContract *>::Failure(
             Error("gameplay.narrative_integration.contracts_not_frozen",
@@ -456,14 +409,9 @@ foundation::Result<const NarrativeEventContract *> NarrativeSemanticEventAdapter
     return foundation::Result<const NarrativeEventContract *>::Success(contract);
 }
 
-foundation::Result<void> NarrativeSemanticEventAdapter::ProcessDiscovery(narrative::NarrativeService &service,
-                                                                         GameplayObjectRef discoverer,
-                                                                         GameplayObjectRef subject,
-                                                                         GameplayObjectRef area,
-                                                                         TypeId topic,
-                                                                         GameplayContext context,
-                                                                         narrative::NarrativeProcessBudget budget) const
-{
+foundation::Result<void> NarrativeSemanticEventAdapter::ProcessDiscovery(
+    narrative::NarrativeService &service, GameplayObjectRef discoverer, GameplayObjectRef subject,
+    GameplayObjectRef area, TypeId topic, GameplayContext context, narrative::NarrativeProcessBudget budget) const {
     if (!discoverer.IsValid() || !subject.IsValid() || !topic.IsValid())
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.invalid_discovery", "invalid discovery integration request"));
@@ -496,8 +444,8 @@ foundation::Result<void> NarrativeSemanticEventAdapter::ProcessDiscovery(narrati
         return processed;
     const auto diagnostics_after = service.GetDiagnostics();
     if (diagnostics_after.budget_exhaustions > diagnostics_before.budget_exhaustions)
-        return foundation::Result<void>::Failure(
-            Error("gameplay.narrative_integration.discovery_deferred", "discovery narrative event exhausted its budget"));
+        return foundation::Result<void>::Failure(Error("gameplay.narrative_integration.discovery_deferred",
+                                                       "discovery narrative event exhausted its budget"));
     if (service.GetClue(clue.id) != nullptr)
         return foundation::Result<void>::Success();
     auto discovered = service.DiscoverClue(std::move(clue), context);
@@ -506,13 +454,10 @@ foundation::Result<void> NarrativeSemanticEventAdapter::ProcessDiscovery(narrati
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> NarrativeSemanticEventAdapter::ProcessWorldEvent(narrative::NarrativeService &service,
-                                                                          GameplayObjectRef subject,
-                                                                          GameplayObjectRef area,
-                                                                          TagId event_tag,
-                                                                          GameplayContext context,
-                                                                          narrative::NarrativeProcessBudget budget) const
-{
+foundation::Result<void>
+NarrativeSemanticEventAdapter::ProcessWorldEvent(narrative::NarrativeService &service, GameplayObjectRef subject,
+                                                 GameplayObjectRef area, TagId event_tag, GameplayContext context,
+                                                 narrative::NarrativeProcessBudget budget) const {
     if (!subject.IsValid() || !event_tag.IsValid())
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.invalid_world_event", "invalid world event integration request"));
@@ -531,13 +476,8 @@ foundation::Result<void> NarrativeSemanticEventAdapter::ProcessWorldEvent(narrat
 }
 
 foundation::Result<void> NarrativeSemanticEventAdapter::ProcessEncounterCompleted(
-    narrative::NarrativeService &service,
-    GameplayObjectRef encounter,
-    GameplayObjectRef actor,
-    GameplayObjectRef area,
-    GameplayContext context,
-    narrative::NarrativeProcessBudget budget) const
-{
+    narrative::NarrativeService &service, GameplayObjectRef encounter, GameplayObjectRef actor, GameplayObjectRef area,
+    GameplayContext context, narrative::NarrativeProcessBudget budget) const {
     if (!encounter.IsValid() || !actor.IsValid())
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.invalid_encounter_event", "invalid encounter integration request"));
@@ -557,46 +497,42 @@ foundation::Result<void> NarrativeSemanticEventAdapter::ProcessEncounterComplete
     return service.ProcessNarrativeEvent(std::move(event), budget);
 }
 
-NarrativeExternalConsequenceDelivery *NarrativeExternalConsequenceOutbox::FindMutable(
-    narrative::NarrativeConsequenceExecutionId execution) noexcept
-{
-    auto it = std::find_if(deliveries_.begin(), deliveries_.end(),
-                           [execution](const auto &delivery) { return delivery.execution == execution; });
+NarrativeExternalConsequenceDelivery *
+NarrativeExternalConsequenceOutbox::FindMutable(narrative::NarrativeConsequenceExecutionId execution) noexcept {
+    auto it = std::find_if(deliveries_.begin(), deliveries_.end(), [execution](const auto &delivery) {
+        return delivery.execution == execution;
+    });
     return it == deliveries_.end() ? nullptr : &*it;
 }
 
-const NarrativeExternalConsequenceDelivery *NarrativeExternalConsequenceOutbox::FindDelivery(
-    narrative::NarrativeConsequenceExecutionId execution) const noexcept
-{
-    auto it = std::find_if(deliveries_.begin(), deliveries_.end(),
-                           [execution](const auto &delivery) { return delivery.execution == execution; });
+const NarrativeExternalConsequenceDelivery *
+NarrativeExternalConsequenceOutbox::FindDelivery(narrative::NarrativeConsequenceExecutionId execution) const noexcept {
+    auto it = std::find_if(deliveries_.begin(), deliveries_.end(), [execution](const auto &delivery) {
+        return delivery.execution == execution;
+    });
     return it == deliveries_.end() ? nullptr : &*it;
 }
 
-bool NarrativeExternalConsequenceOutbox::Matches(const NarrativeExternalConsequenceDelivery &delivery,
-                                                 const narrative::NarrativeConsequenceDefinition &definition,
-                                                 const narrative::NarrativeConsequenceExecution &execution) const noexcept
-{
+bool NarrativeExternalConsequenceOutbox::Matches(
+    const NarrativeExternalConsequenceDelivery &delivery, const narrative::NarrativeConsequenceDefinition &definition,
+    const narrative::NarrativeConsequenceExecution &execution) const noexcept {
     return delivery.execution == execution.id && delivery.consequence == definition.id &&
            delivery.type == definition.type && delivery.thread == execution.thread &&
            delivery.objective == execution.objective && delivery.correlation == execution.correlation;
 }
 
-narrative::NarrativeConsequenceResult NarrativeExternalConsequenceOutbox::Execute(
-    const narrative::NarrativeConsequenceDefinition &definition,
-    const narrative::NarrativeConsequenceExecution &execution,
-    const narrative::NarrativeExecutionContext &context) const
-{
+narrative::NarrativeConsequenceResult
+NarrativeExternalConsequenceOutbox::Execute(const narrative::NarrativeConsequenceDefinition &definition,
+                                            const narrative::NarrativeConsequenceExecution &execution,
+                                            const narrative::NarrativeExecutionContext &context) const {
     if (!definition.id.IsValid() || !definition.type.IsValid() || !execution.id.IsValid() ||
         definition.payload.size() > kMaxPersistentPayloadBytes)
         return {narrative::ConsequenceExecutionState::FailedPermanent, revision_};
 
-    if (const auto *existing = FindDelivery(execution.id))
-    {
+    if (const auto *existing = FindDelivery(execution.id)) {
         if (!Matches(*existing, definition, execution))
             return {narrative::ConsequenceExecutionState::FailedPermanent, revision_};
-        switch (existing->state)
-        {
+        switch (existing->state) {
         case ExternalConsequenceDeliveryState::Pending:
         case ExternalConsequenceDeliveryState::Retryable:
             return {narrative::ConsequenceExecutionState::Deferred, revision_};
@@ -614,8 +550,7 @@ narrative::NarrativeConsequenceResult NarrativeExternalConsequenceOutbox::Execut
     if (!next_revision)
         return {narrative::ConsequenceExecutionState::FailedPermanent, revision_};
 
-    try
-    {
+    try {
         NarrativeExternalConsequenceDelivery delivery;
         delivery.execution = execution.id;
         delivery.consequence = definition.id;
@@ -632,20 +567,16 @@ narrative::NarrativeConsequenceResult NarrativeExternalConsequenceOutbox::Execut
         delivery.revision = *next_revision;
         NarrativeIntegrationPublicationFaultPointForInternalTest("outbox.execute.publish");
         deliveries_.push_back(std::move(delivery));
-    }
-    catch (const std::bad_alloc &)
-    {
+    } catch (const std::bad_alloc &) {
         return {narrative::ConsequenceExecutionState::FailedRetryable, revision_};
     }
 
     revision_ = *next_revision;
     return {narrative::ConsequenceExecutionState::Deferred, revision_};
 }
-std::vector<NarrativeExternalConsequenceDelivery> NarrativeExternalConsequenceOutbox::PendingDeliveries() const
-{
+std::vector<NarrativeExternalConsequenceDelivery> NarrativeExternalConsequenceOutbox::PendingDeliveries() const {
     std::vector<NarrativeExternalConsequenceDelivery> result;
-    for (const auto &delivery : deliveries_)
-    {
+    for (const auto &delivery : deliveries_) {
         if (delivery.state == ExternalConsequenceDeliveryState::Pending ||
             delivery.state == ExternalConsequenceDeliveryState::Retryable)
             result.push_back(delivery);
@@ -658,10 +589,9 @@ std::vector<NarrativeExternalConsequenceDelivery> NarrativeExternalConsequenceOu
     return result;
 }
 
-foundation::Result<void> NarrativeExternalConsequenceOutbox::MarkRetryable(
-    narrative::NarrativeConsequenceExecutionId execution,
-    GameplayTimePoint now)
-{
+foundation::Result<void>
+NarrativeExternalConsequenceOutbox::MarkRetryable(narrative::NarrativeConsequenceExecutionId execution,
+                                                  GameplayTimePoint now) {
     auto *delivery = FindMutable(execution);
     if (!delivery)
         return foundation::Result<void>::Failure(
@@ -685,11 +615,9 @@ foundation::Result<void> NarrativeExternalConsequenceOutbox::MarkRetryable(
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> NarrativeExternalConsequenceOutbox::AcknowledgeApplied(
-    narrative::NarrativeConsequenceExecutionId execution,
-    OperationId external_operation,
-    GameplayTimePoint now)
-{
+foundation::Result<void>
+NarrativeExternalConsequenceOutbox::AcknowledgeApplied(narrative::NarrativeConsequenceExecutionId execution,
+                                                       OperationId external_operation, GameplayTimePoint now) {
     if (!external_operation.IsValid())
         return foundation::Result<void>::Failure(
             Error("gameplay.narrative_integration.invalid_external_operation", "external operation id is required"));
@@ -718,10 +646,9 @@ foundation::Result<void> NarrativeExternalConsequenceOutbox::AcknowledgeApplied(
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> NarrativeExternalConsequenceOutbox::FailTerminal(
-    narrative::NarrativeConsequenceExecutionId execution,
-    GameplayTimePoint now)
-{
+foundation::Result<void>
+NarrativeExternalConsequenceOutbox::FailTerminal(narrative::NarrativeConsequenceExecutionId execution,
+                                                 GameplayTimePoint now) {
     auto *delivery = FindMutable(execution);
     if (!delivery)
         return foundation::Result<void>::Failure(
@@ -743,17 +670,17 @@ foundation::Result<void> NarrativeExternalConsequenceOutbox::FailTerminal(
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> NarrativeExternalConsequenceOutbox::PruneConfirmedTerminal(
-    narrative::NarrativeConsequenceExecutionId execution)
-{
-    auto it = std::find_if(deliveries_.begin(), deliveries_.end(),
-                           [execution](const auto &delivery) { return delivery.execution == execution; });
+foundation::Result<void>
+NarrativeExternalConsequenceOutbox::PruneConfirmedTerminal(narrative::NarrativeConsequenceExecutionId execution) {
+    auto it = std::find_if(deliveries_.begin(), deliveries_.end(), [execution](const auto &delivery) {
+        return delivery.execution == execution;
+    });
     if (it == deliveries_.end())
         return foundation::Result<void>::Success();
     if (it->state != ExternalConsequenceDeliveryState::Applied &&
         it->state != ExternalConsequenceDeliveryState::FailedTerminal)
-        return foundation::Result<void>::Failure(
-            Error("gameplay.narrative_integration.delivery_not_terminal", "only confirmed terminal delivery may be pruned"));
+        return foundation::Result<void>::Failure(Error("gameplay.narrative_integration.delivery_not_terminal",
+                                                       "only confirmed terminal delivery may be pruned"));
     const auto next_revision = NextOutboxRevision(revision_);
     if (!next_revision)
         return foundation::Result<void>::Failure(
@@ -763,8 +690,7 @@ foundation::Result<void> NarrativeExternalConsequenceOutbox::PruneConfirmedTermi
     return foundation::Result<void>::Success();
 }
 
-NarrativeExternalConsequenceSnapshot NarrativeExternalConsequenceOutbox::CaptureSnapshot() const
-{
+NarrativeExternalConsequenceSnapshot NarrativeExternalConsequenceOutbox::CaptureSnapshot() const {
     NarrativeExternalConsequenceSnapshot snapshot;
     snapshot.deliveries = deliveries_;
     std::sort(snapshot.deliveries.begin(), snapshot.deliveries.end(), DeliveryRestoreOrder);
@@ -772,31 +698,27 @@ NarrativeExternalConsequenceSnapshot NarrativeExternalConsequenceOutbox::Capture
     return snapshot;
 }
 
-foundation::Result<void> NarrativeExternalConsequenceOutbox::ValidateSnapshot(
-    const NarrativeExternalConsequenceSnapshot &snapshot) const
-{
+foundation::Result<void>
+NarrativeExternalConsequenceOutbox::ValidateSnapshot(const NarrativeExternalConsequenceSnapshot &snapshot) const {
     if (snapshot.deliveries.size() > max_records_)
-        return foundation::Result<void>::Failure(
-            Error("gameplay.narrative_integration.delivery_snapshot_capacity", "delivery snapshot exceeds configured capacity"));
+        return foundation::Result<void>::Failure(Error("gameplay.narrative_integration.delivery_snapshot_capacity",
+                                                       "delivery snapshot exceeds configured capacity"));
     std::unordered_set<GameplayObjectId> ids;
-    for (const auto &delivery : snapshot.deliveries)
-    {
+    for (const auto &delivery : snapshot.deliveries) {
         if (!delivery.execution.IsValid() || !delivery.consequence.IsValid() || !delivery.type.IsValid() ||
             !EnumInRange(delivery.state, ExternalConsequenceDeliveryState::FailedTerminal) ||
             delivery.payload.size() > kMaxPersistentPayloadBytes || delivery.revision > snapshot.revision ||
             delivery.updated_at < delivery.created_at || !delivery.external_operation.IsValid() ||
-            !ids.emplace(delivery.execution.value).second)
-        {
-            return foundation::Result<void>::Failure(
-                Error("gameplay.narrative_integration.invalid_delivery_snapshot", "invalid external consequence delivery snapshot"));
+            !ids.emplace(delivery.execution.value).second) {
+            return foundation::Result<void>::Failure(Error("gameplay.narrative_integration.invalid_delivery_snapshot",
+                                                           "invalid external consequence delivery snapshot"));
         }
     }
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<NarrativeExternalConsequenceSnapshot> NarrativeExternalConsequenceOutbox::PrepareSnapshotForRestore(
-    NarrativeExternalConsequenceSnapshot snapshot) const
-{
+foundation::Result<NarrativeExternalConsequenceSnapshot>
+NarrativeExternalConsequenceOutbox::PrepareSnapshotForRestore(NarrativeExternalConsequenceSnapshot snapshot) const {
     auto valid = ValidateSnapshot(snapshot);
     if (!valid)
         return foundation::Result<NarrativeExternalConsequenceSnapshot>::Failure(valid.GetError());
@@ -805,15 +727,13 @@ foundation::Result<NarrativeExternalConsequenceSnapshot> NarrativeExternalConseq
 }
 
 void NarrativeExternalConsequenceOutbox::PublishPreparedSnapshot(
-    NarrativeExternalConsequenceSnapshot &&snapshot) noexcept
-{
+    NarrativeExternalConsequenceSnapshot &&snapshot) noexcept {
     deliveries_.swap(snapshot.deliveries);
     revision_ = snapshot.revision;
 }
 
-foundation::Result<void> NarrativeExternalConsequenceOutbox::RestoreSnapshot(
-    NarrativeExternalConsequenceSnapshot snapshot)
-{
+foundation::Result<void>
+NarrativeExternalConsequenceOutbox::RestoreSnapshot(NarrativeExternalConsequenceSnapshot snapshot) {
     auto prepared = PrepareSnapshotForRestore(std::move(snapshot));
     if (!prepared)
         return foundation::Result<void>::Failure(prepared.GetError());
@@ -822,18 +742,16 @@ foundation::Result<void> NarrativeExternalConsequenceOutbox::RestoreSnapshot(
     return foundation::Result<void>::Success();
 }
 
-savegame::SaveParticipantId NarrativeExternalConsequenceSaveParticipant::Id() const noexcept
-{
+savegame::SaveParticipantId NarrativeExternalConsequenceSaveParticipant::Id() const noexcept {
     return savegame::SaveParticipantId::FromString("integration.narrative.external_consequence_delivery");
 }
 
-foundation::Result<savegame::SaveSection> NarrativeExternalConsequenceSaveParticipant::CaptureSnapshot(
-    const savegame::SaveContext &) const
-{
+foundation::Result<savegame::SaveSection>
+NarrativeExternalConsequenceSaveParticipant::CaptureSnapshot(const savegame::SaveContext &) const {
     const auto snapshot = outbox_.CaptureSnapshot();
     if (snapshot.deliveries.size() > std::numeric_limits<std::uint32_t>::max())
-        return foundation::Result<savegame::SaveSection>::Failure(
-            Error("gameplay.narrative_integration.delivery_snapshot_too_large", "too many external consequence deliveries"));
+        return foundation::Result<savegame::SaveSection>::Failure(Error(
+            "gameplay.narrative_integration.delivery_snapshot_too_large", "too many external consequence deliveries"));
     savegame::SaveSection section;
     section.participant = Id();
     section.schema_version = SchemaVersion();
@@ -842,10 +760,9 @@ foundation::Result<savegame::SaveSection> NarrativeExternalConsequenceSavePartic
     return foundation::Result<savegame::SaveSection>::Success(std::move(section));
 }
 
-foundation::Result<void> NarrativeExternalConsequenceSaveParticipant::ValidateSnapshot(
-    const savegame::SaveSection &section,
-    const savegame::RestoreContext &) const
-{
+foundation::Result<void>
+NarrativeExternalConsequenceSaveParticipant::ValidateSnapshot(const savegame::SaveSection &section,
+                                                              const savegame::RestoreContext &) const {
     if (section.participant != Id() || section.schema_version != SchemaVersion() ||
         section.payload_hash != savegame::SaveGameOrchestrator::HashBytes(section.payload))
         return foundation::Result<void>::Failure(
@@ -856,13 +773,11 @@ foundation::Result<void> NarrativeExternalConsequenceSaveParticipant::ValidateSn
     return outbox_.ValidateSnapshot(decoded.Value());
 }
 
-foundation::Result<std::unique_ptr<savegame::IRestoreStage>> NarrativeExternalConsequenceSaveParticipant::StageRestore(
-    const savegame::SaveSection &section,
-    const savegame::RestoreContext &)
-{
+foundation::Result<std::unique_ptr<savegame::IRestoreStage>>
+NarrativeExternalConsequenceSaveParticipant::StageRestore(const savegame::SaveSection &section,
+                                                          const savegame::RestoreContext &) {
     if (section.participant != Id() || section.schema_version != SchemaVersion() ||
-        section.payload_hash != savegame::SaveGameOrchestrator::HashBytes(section.payload))
-    {
+        section.payload_hash != savegame::SaveGameOrchestrator::HashBytes(section.payload)) {
         return foundation::Result<std::unique_ptr<savegame::IRestoreStage>>::Failure(
             Error("gameplay.narrative_integration.invalid_save_section", "invalid external consequence save section"));
     }
@@ -876,8 +791,7 @@ foundation::Result<std::unique_ptr<savegame::IRestoreStage>> NarrativeExternalCo
         std::make_unique<NarrativeExternalConsequenceRestoreStage>(std::move(prepared.Value())));
 }
 
-void NarrativeExternalConsequenceSaveParticipant::CommitRestore(savegame::IRestoreStage &stage) noexcept
-{
+void NarrativeExternalConsequenceSaveParticipant::CommitRestore(savegame::IRestoreStage &stage) noexcept {
     auto *typed = dynamic_cast<NarrativeExternalConsequenceRestoreStage *>(&stage);
     if (!typed)
         return;
@@ -885,12 +799,8 @@ void NarrativeExternalConsequenceSaveParticipant::CommitRestore(savegame::IResto
 }
 
 foundation::Result<narrative::ClueId> KnowledgeNarrativeAdapter::CreateClueFromKnowledge(
-    narrative::NarrativeService &narrative_service,
-    const knowledge::KnowledgeService &knowledge_service,
-    knowledge::KnowledgeRecordId record_id,
-    GameplayObjectRef area,
-    GameplayContext context) const
-{
+    narrative::NarrativeService &narrative_service, const knowledge::KnowledgeService &knowledge_service,
+    knowledge::KnowledgeRecordId record_id, GameplayObjectRef area, GameplayContext context) const {
     const auto *record = knowledge_service.FindKnowledge(record_id);
     if (!record)
         return foundation::Result<narrative::ClueId>::Failure(
@@ -905,14 +815,11 @@ foundation::Result<narrative::ClueId> KnowledgeNarrativeAdapter::CreateClueFromK
     return narrative_service.DiscoverClue(std::move(clue), context);
 }
 
-foundation::Result<narrative::RumorId> KnowledgeNarrativeAdapter::CreateRumorFromKnowledge(
-    narrative::NarrativeService &narrative_service,
-    const knowledge::KnowledgeService &knowledge_service,
-    knowledge::KnowledgeRecordId record_id,
-    GameplayObjectRef scope,
-    GameplayDuration lifetime,
-    GameplayContext context) const
-{
+foundation::Result<narrative::RumorId>
+KnowledgeNarrativeAdapter::CreateRumorFromKnowledge(narrative::NarrativeService &narrative_service,
+                                                    const knowledge::KnowledgeService &knowledge_service,
+                                                    knowledge::KnowledgeRecordId record_id, GameplayObjectRef scope,
+                                                    GameplayDuration lifetime, GameplayContext context) const {
     if (!scope.IsValid() || lifetime.ticks < 0)
         return foundation::Result<narrative::RumorId>::Failure(
             Error("gameplay.narrative_integration.invalid_knowledge_rumor", "invalid knowledge rumor request"));
@@ -923,7 +830,8 @@ foundation::Result<narrative::RumorId> KnowledgeNarrativeAdapter::CreateRumorFro
     const auto expires = CheckedAdd(context.time, lifetime);
     if (!expires)
         return foundation::Result<narrative::RumorId>::Failure(
-            Error("gameplay.narrative_integration.knowledge_rumor_time_overflow", "knowledge rumor lifetime overflows gameplay time"));
+            Error("gameplay.narrative_integration.knowledge_rumor_time_overflow",
+                  "knowledge rumor lifetime overflows gameplay time"));
     narrative::RumorRecord rumor;
     rumor.owner_or_scope = scope;
     rumor.topic = record->topic.id.value;
@@ -933,9 +841,8 @@ foundation::Result<narrative::RumorId> KnowledgeNarrativeAdapter::CreateRumorFro
     return narrative_service.CreateRumor(std::move(rumor), context);
 }
 
-foundation::Result<KnowledgeNarrativeReference> KnowledgeNarrativeAdapter::DecodeReference(
-    std::span<const std::byte> payload)
-{
+foundation::Result<KnowledgeNarrativeReference>
+KnowledgeNarrativeAdapter::DecodeReference(std::span<const std::byte> payload) {
     ByteReader reader(payload);
     KnowledgeNarrativeReference result;
     GameplayObjectId raw{};

@@ -98,3 +98,37 @@ template <typename TTag> struct hash<epidemic::foundation::Handle<TTag>>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Состав типов и операции
+
+#### `Handle` (строка заголовка 15)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr std::uint32_t kInvalidIndex = std::numeric_limits<std::uint32_t>::max();
+// Builds a handle from an explicit slot index and generation pair. // An invalid index always canonicalizes to generation 0. constexpr Handle(std::uint32_t index, std::uint32_t generation) noexcept : index_(index), generation_(index == kInvalidIndex ? 0u : generation);
+// Returns true when the handle points at a real slot index. [[nodiscard]] constexpr bool IsValid() const noexcept;
+// Returns the slot index portion of the handle. [[nodiscard]] constexpr std::uint32_t Index() const noexcept;
+// Returns the generation used to detect recycled slots. [[nodiscard]] constexpr std::uint32_t Generation() const noexcept;
+// Packs generation and index into a single 64-bit value. // Relationship: used by hashing and quick identity comparisons. [[nodiscard]] constexpr std::uint64_t Packed() const noexcept;
+```
+
+#### `hash` (строка заголовка 66)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Hashes the packed handle identity so Handle<TTag> can be used in unordered containers. [[nodiscard]] size_t operator()(const epidemic::foundation::Handle<TTag> &value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

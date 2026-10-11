@@ -498,3 +498,288 @@ class PopulationService
 };
 } // namespace epidemic::gameplay::population
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `PopulationGroupState`: `Active`, `Dormant`, `Depleted`, `Removed`
+- `PopulationUnitState`: `Latent`, `Abstract`, `Materialized`, `Dead`, `Removed`
+- `ResidenceState`: `Assigned`, `Unavailable`, `Abandoned`, `Destroyed`
+- `MigrationState`: `Planned`, `Active`, `Completed`, `Cancelled`, `Failed`
+- `PopulationAllocationState`: `Active`, `Committed`, `Released`
+- `PopulationChangeKind`: `GroupCreated`, `GroupChanged`, `UnitCreated`, `UnitMaterialized`, `UnitDematerialized`, `UnitDied`, `UnitMigrated`, `UnitRetired`, `ResidenceAssigned`, `MigrationStarted`, `MigrationCompleted`, `MigrationCancelled`, `MigrationFailed`, `EntityBindingChanged`, `ResidenceChanged`, `AllocationReserved`, `AllocationCommitted`, `AllocationReleased`
+
+### Состав типов и операции
+
+#### `PopulationGroupId` (строка заголовка 18)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationGroupId FromString(std::string_view s) noexcept;
+static constexpr PopulationGroupId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationGroupId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationGroupId &) const noexcept = default;
+```
+
+#### `PopulationUnitId` (строка заголовка 36)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationUnitId FromString(std::string_view s) noexcept;
+static constexpr PopulationUnitId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationUnitId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationUnitId &) const noexcept = default;
+```
+
+#### `PopulationProfileId` (строка заголовка 54)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationProfileId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationProfileId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationProfileId &) const noexcept = default;
+```
+
+#### `PopulationTemplateId` (строка заголовка 68)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationTemplateId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationTemplateId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationTemplateId &) const noexcept = default;
+```
+
+#### `PopulationResidenceId` (строка заголовка 82)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationResidenceId FromString(std::string_view s) noexcept;
+static constexpr PopulationResidenceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationResidenceId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationResidenceId &) const noexcept = default;
+```
+
+#### `PopulationMigrationId` (строка заголовка 100)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationMigrationId FromString(std::string_view s) noexcept;
+static constexpr PopulationMigrationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationMigrationId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationMigrationId &) const noexcept = default;
+```
+
+#### `PopulationAllocationId` (строка заголовка 118)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr PopulationAllocationId FromString(std::string_view s) noexcept;
+static constexpr PopulationAllocationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const PopulationAllocationId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const PopulationAllocationId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 136)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 138)
+
+#### `PopulationTemplate` (строка заголовка 202)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> generation_payload`
+- `bool persistent = true`
+
+#### `PopulationGroup` (строка заголовка 211)
+
+Публичные поля и значения по умолчанию:
+
+- `PopulationGroupState state = PopulationGroupState::Active`
+- `std::uint32_t desired_count = 0`
+- `std::uint32_t current_known_count = 0`
+- `std::uint32_t materialized_count = 0`
+
+#### `PopulationUnit` (строка заголовка 223)
+
+Публичные поля и значения по умолчанию:
+
+- `std::optional<GameplayObjectRef> entity`
+- `PopulationUnitState state = PopulationUnitState::Latent`
+- `std::vector<std::byte> payload`
+
+#### `PopulationResidence` (строка заголовка 238)
+
+Публичные поля и значения по умолчанию:
+
+- `ResidenceState state = ResidenceState::Assigned`
+
+#### `PopulationMigration` (строка заголовка 247)
+
+Публичные поля и значения по умолчанию:
+
+- `MigrationState state = MigrationState::Planned`
+
+#### `PopulationAllocation` (строка заголовка 258)
+
+Публичные поля и значения по умолчанию:
+
+- `PopulationAllocationState state = PopulationAllocationState::Active`
+- `std::optional<GameplayTimePoint> expires_at`
+
+#### `PopulationAllocationRequest` (строка заголовка 269)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PopulationUnitId> units`
+- `std::optional<GameplayTimePoint> expires_at`
+
+#### `PopulationAllocationBatch` (строка заголовка 281)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PopulationAllocationToken> tokens`
+
+#### `PopulationChange` (строка заголовка 286)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `PopulationChangeKind kind = PopulationChangeKind::GroupCreated`
+
+#### `PopulationCounts` (строка заголовка 297)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t latent = 0, abstract_units = 0, materialized = 0, dead = 0, removed = 0`
+
+#### `PopulationChangeBatch` (строка заголовка 301)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PopulationChange> changes`
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+
+#### `PopulationSnapshot` (строка заголовка 312)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PopulationGroup> groups`
+- `std::vector<PopulationUnit> units`
+- `std::vector<PopulationResidence> residences`
+- `std::vector<PopulationMigration> migrations`
+- `std::vector<PopulationAllocation> allocations`
+- `std::uint64_t change_epoch = 1`
+
+#### `PopulationService` (строка заголовка 336)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<PopulationTemplateId, PopulationTemplate, IdHash> templates_`, `std::unordered_map<PopulationGroupId, PopulationGroup, IdHash> groups_`, `std::unordered_map<PopulationUnitId, PopulationUnit, IdHash> units_`, `std::unordered_map<PopulationResidenceId, PopulationResidence, IdHash> residences_`, `std::unordered_map<PopulationMigrationId, PopulationMigration, IdHash> migrations_`, `std::unordered_map<PopulationAllocationId, PopulationAllocation, IdHash> allocations_`, `std::unordered_map<GameplayObjectRef, PopulationUnitId> unit_by_entity_`, `std::unordered_map<PopulationUnitId, PopulationMigrationId, IdHash> active_migration_by_unit_`, `std::unordered_map<PopulationUnitId, PopulationResidenceId, IdHash> active_residence_by_unit_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterTemplate(PopulationTemplate definition);
+[[nodiscard]] foundation::Result<void> FreezeDefinitions();
+[[nodiscard]] bool DefinitionsFrozen() const noexcept;
+[[nodiscard]] foundation::Result<PopulationGroupId> CreateGroup(PopulationGroup group);
+void PruneTerminalAllocations(GameplayObjectId correlation);
+[[nodiscard]] const PopulationGroup *GetGroup(PopulationGroupId id) const noexcept;
+[[nodiscard]] const PopulationUnit *GetUnit(PopulationUnitId id) const noexcept;
+[[nodiscard]] const PopulationTemplate *GetTemplate(PopulationTemplateId id) const noexcept;
+[[nodiscard]] const PopulationAllocation *GetAllocation(PopulationAllocationId id) const noexcept;
+[[nodiscard]] const PopulationAllocation *GetActiveAllocationForUnit(PopulationUnitId unit) const noexcept;
+[[nodiscard]] const PopulationUnit *FindUnitByEntity(GameplayObjectRef entity) const noexcept;
+[[nodiscard]] std::vector<PopulationAllocation> FindAllocationsByCorrelation(GameplayObjectId correlation) const;
+[[nodiscard]] static constexpr GameplayObjectRef ResidentRef(PopulationUnitId unit) noexcept;
+[[nodiscard]] std::vector<PopulationGroup> FindGroupsInArea(GameplayObjectRef area) const;
+[[nodiscard]] std::vector<PopulationUnit> FindUnitsByGroup(PopulationGroupId group) const;
+[[nodiscard]] std::vector<PopulationUnit> FindUnitsByState(PopulationUnitState state) const;
+[[nodiscard]] std::vector<PopulationUnit> FindUnitsInArea(GameplayObjectRef area) const;
+[[nodiscard]] std::vector<PopulationUnit> FindResidentsOfArea(GameplayObjectRef area) const;
+[[nodiscard]] std::vector<PopulationUnit> FindMaterializationCandidates(GameplayObjectRef area, std::size_t limit) const;
+[[nodiscard]] PopulationChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+void PruneChangesThrough(std::uint64_t sequence);
+[[nodiscard]] PopulationSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(PopulationSnapshot snapshot);
+[[nodiscard]] PopulationDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterTemplate` | `PopulationService::RegisterTemplate` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:147` |
+| `FreezeDefinitions` | `PopulationService::FreezeDefinitions` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:158` |
+| `CreateGroup` | `PopulationService::CreateGroup` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:166` |
+| `PruneTerminalAllocations` | `PopulationService::PruneTerminalAllocations` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:475` |
+| `GetGroup` | `PopulationService::GetGroup` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:496` |
+| `GetUnit` | `PopulationService::GetUnit` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:502` |
+| `GetTemplate` | `PopulationService::GetTemplate` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:508` |
+| `GetAllocation` | `PopulationService::GetAllocation` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:514` |
+| `GetActiveAllocationForUnit` | `PopulationService::GetActiveAllocationForUnit` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:520` |
+| `FindUnitByEntity` | `PopulationService::FindUnitByEntity` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:526` |
+| `FindAllocationsByCorrelation` | `PopulationService::FindAllocationsByCorrelation` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:532` |
+| `FindGroupsInArea` | `PopulationService::FindGroupsInArea` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:549` |
+| `FindUnitsByGroup` | `PopulationService::FindUnitsByGroup` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:562` |
+| `FindUnitsByState` | `PopulationService::FindUnitsByState` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:576` |
+| `FindUnitsInArea` | `PopulationService::FindUnitsInArea` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:594` |
+| `FindResidentsOfArea` | `PopulationService::FindResidentsOfArea` | `EngineFramework/GameplayWorldStateOwners/Population/src/population.cpp:611` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterTemplate`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:35`
+- `FreezeDefinitions`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:36`
+- `CreateGroup`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:49`
+- `GetActiveAllocationForUnit`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:95`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:106`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:112`
+- `GetUnit`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:127`
+- `FindAllocationsByCorrelation`: `EngineFramework/DevelopmentInfrastructure/Tests/population_simulation_integration_tests.cpp:136`
+- `DefinitionsFrozen`: `EngineFramework/DevelopmentInfrastructure/Tests/population_tests.cpp:49`
+- `GetGroup`: `EngineFramework/DevelopmentInfrastructure/Tests/population_tests.cpp:60`
+- `FindMaterializationCandidates`: `EngineFramework/DevelopmentInfrastructure/Tests/population_tests.cpp:73`
+- `FindResidentsOfArea`: `EngineFramework/DevelopmentInfrastructure/Tests/population_tests.cpp:95`
+

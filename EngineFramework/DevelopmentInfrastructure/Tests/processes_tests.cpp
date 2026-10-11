@@ -12,42 +12,35 @@ using namespace epidemic;
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::processes;
 
-namespace
-{
-enum class CallbackMode
-{
+namespace {
+enum class CallbackMode {
     Success,
     Failure,
     Throw
 };
 
-enum class ProviderIdMode
-{
+enum class ProviderIdMode {
     Normal,
     Invalid,
     FixedConflict
 };
 
-[[nodiscard]] RegisteredPayload PortableToken(std::uint64_t value)
-{
+[[nodiscard]] RegisteredPayload PortableToken(std::uint64_t value) {
     std::vector<std::byte> bytes(8);
     for (std::size_t i = 0; i < bytes.size(); ++i)
         bytes[i] = static_cast<std::byte>((value >> (i * 8)) & 0xffu);
     return RegisteredPayload::FromVersioned(TypeId::FromString("test.process.token"), 1, std::move(bytes));
 }
 
-[[nodiscard]] RegisteredPayload NonPortableToken(std::uint64_t value)
-{
+[[nodiscard]] RegisteredPayload NonPortableToken(std::uint64_t value) {
     return RegisteredPayload::FromTrivial(TypeId::FromString("test.process.nonportable_token"), value);
 }
 
-[[nodiscard]] bool SamePayload(const RegisteredPayload &a, const RegisteredPayload &b)
-{
+[[nodiscard]] bool SamePayload(const RegisteredPayload &a, const RegisteredPayload &b) {
     return a.type == b.type && a.schema_version == b.schema_version && a.portable == b.portable && a.bytes == b.bytes;
 }
 
-class FaultInput final : public IProcessInputProvider
-{
+class FaultInput final : public IProcessInputProvider {
   public:
     bool portable_token = true;
     ProviderIdMode id_mode = ProviderIdMode::Normal;
@@ -60,19 +53,17 @@ class FaultInput final : public IProcessInputProvider
     RegisteredPayload last_released_token;
 
     [[nodiscard]] foundation::Result<void> Validate(const ProcessInputDefinition &, const StartProcessRequest &,
-                                                     ProcessInstanceId) override
-    {
+                                                    ProcessInstanceId) override {
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<ReservedProcessInput> Reserve(const ProcessInputDefinition &input,
-                                                                   const StartProcessRequest &,
-                                                                   ProcessInstanceId instance) override
-    {
+    [[nodiscard]] foundation::Result<ReservedProcessInput>
+    Reserve(const ProcessInputDefinition &input, const StartProcessRequest &, ProcessInstanceId instance) override {
         ++reserve_calls;
         ReservedProcessInput reservation;
         if (id_mode == ProviderIdMode::Normal)
-            reservation.id = ProcessReservationId::FromRaw(instance.value.High(), static_cast<std::uint64_t>(reserve_calls));
+            reservation.id =
+                ProcessReservationId::FromRaw(instance.value.High(), static_cast<std::uint64_t>(reserve_calls));
         else if (id_mode == ProviderIdMode::FixedConflict)
             reservation.id = ProcessReservationId::FromRaw(instance.value.High(), 77);
         reservation.input = input.id;
@@ -84,30 +75,29 @@ class FaultInput final : public IProcessInputProvider
         return foundation::Result<ReservedProcessInput>::Success(std::move(reservation));
     }
 
-    [[nodiscard]] foundation::Result<void> Consume(const ReservedProcessInput &, GameplayContext) override
-    {
+    [[nodiscard]] foundation::Result<void> Consume(const ReservedProcessInput &, GameplayContext) override {
         ++consume_calls;
         if (consume_mode == CallbackMode::Throw)
             throw std::runtime_error("consume failure");
         if (consume_mode == CallbackMode::Failure)
-            return foundation::Result<void>::Failure(foundation::Error::Create("test.consume_failed", "consume failed"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("test.consume_failed", "consume failed"));
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> Release(const ReservedProcessInput &reservation, GameplayContext) override
-    {
+    [[nodiscard]] foundation::Result<void> Release(const ReservedProcessInput &reservation, GameplayContext) override {
         ++release_calls;
         last_released_token = reservation.provider_token;
         if (release_mode == CallbackMode::Throw)
             throw std::runtime_error("release failure");
         if (release_mode == CallbackMode::Failure)
-            return foundation::Result<void>::Failure(foundation::Error::Create("test.release_failed", "release failed"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("test.release_failed", "release failed"));
         return foundation::Result<void>::Success();
     }
 };
 
-class FaultOutput final : public IProcessOutputHandler
-{
+class FaultOutput final : public IProcessOutputHandler {
   public:
     bool portable_token = true;
     int fail_prepare_on_call = 0;
@@ -119,14 +109,12 @@ class FaultOutput final : public IProcessOutputHandler
     RegisteredPayload last_prepared_token;
     RegisteredPayload last_cancelled_token;
 
-    [[nodiscard]] bool Supports(ProcessOutputTypeId type) const noexcept override
-    {
+    [[nodiscard]] bool Supports(ProcessOutputTypeId type) const noexcept override {
         return type == ProcessOutputTypeId::FromString("test.output");
     }
 
     [[nodiscard]] foundation::Result<PreparedProcessOutput> Prepare(const ProcessOutputDefinition &output,
-                                                                    const ProcessInstance &, GameplayContext) override
-    {
+                                                                    const ProcessInstance &, GameplayContext) override {
         ++prepare_calls;
         if (fail_prepare_on_call == prepare_calls)
             return foundation::Result<PreparedProcessOutput>::Failure(
@@ -142,8 +130,7 @@ class FaultOutput final : public IProcessOutputHandler
     }
 
     [[nodiscard]] foundation::Result<void> Commit(const PreparedProcessOutput &, const ProcessInstance &,
-                                                  GameplayContext) override
-    {
+                                                  GameplayContext) override {
         ++commit_calls;
         if (commit_mode == CallbackMode::Throw)
             throw std::runtime_error("commit failure");
@@ -153,8 +140,7 @@ class FaultOutput final : public IProcessOutputHandler
     }
 
     [[nodiscard]] foundation::Result<void> Cancel(const PreparedProcessOutput &output, const ProcessInstance &,
-                                                  GameplayContext) override
-    {
+                                                  GameplayContext) override {
         ++cancel_calls;
         last_cancelled_token = output.provider_token;
         if (cancel_mode == CallbackMode::Throw)
@@ -165,8 +151,7 @@ class FaultOutput final : public IProcessOutputHandler
     }
 };
 
-struct ConfiguredProcess
-{
+struct ConfiguredProcess {
     ProcessDefinition definition;
     ProcessRecipe recipe;
     ProcessRecipeId recipe_id{};
@@ -174,17 +159,18 @@ struct ConfiguredProcess
 
 [[nodiscard]] ConfiguredProcess Configure(ProcessesService &service, ProcessTimingPolicy timing,
                                           ProcessPersistencePolicy persistence, int input_count,
-                                          std::vector<OutputDeliveryPolicy> outputs,
-                                          std::int64_t timed_duration = 10)
-{
+                                          std::vector<OutputDeliveryPolicy> outputs, std::int64_t timed_duration = 10) {
     ConfiguredProcess configured;
     configured.definition.canonical_name = "test.process";
     configured.definition.kind = ProcessKindId::FromString("test.kind");
     configured.definition.timing = timing;
     configured.definition.persistence = persistence;
     if (timing == ProcessTimingPolicy::Timed)
-        configured.definition.steps.push_back(
-            {ProcessStepId::FromString("test.step"), TypeId::FromString("test.step.kind"), GameplayDuration{timed_duration}, {}, {}});
+        configured.definition.steps.push_back({ProcessStepId::FromString("test.step"),
+                                               TypeId::FromString("test.step.kind"),
+                                               GameplayDuration{timed_duration},
+                                               {},
+                                               {}});
     auto definition_id = service.RegisterDefinition(configured.definition);
     if (!definition_id)
         return configured;
@@ -192,8 +178,7 @@ struct ConfiguredProcess
 
     configured.recipe.canonical_name = "test.recipe";
     configured.recipe.process = definition_id.Value();
-    for (int i = 0; i < input_count; ++i)
-    {
+    for (int i = 0; i < input_count; ++i) {
         const auto input_name = i == 0 ? "test.input.0" : "test.input.1";
         configured.recipe.inputs.push_back({ProcessInputId::FromString(input_name),
                                             ProcessInputTypeId::FromString("test.input"),
@@ -202,8 +187,7 @@ struct ConfiguredProcess
                                             {},
                                             {}});
     }
-    for (std::size_t i = 0; i < outputs.size(); ++i)
-    {
+    for (std::size_t i = 0; i < outputs.size(); ++i) {
         const auto output_name = i == 0 ? "test.output.0" : "test.output.1";
         configured.recipe.outputs.push_back({ProcessOutputId::FromString(output_name),
                                              ProcessOutputTypeId::FromString("test.output"),
@@ -220,8 +204,7 @@ struct ConfiguredProcess
     return configured;
 }
 
-[[nodiscard]] StartProcessRequest Request(ProcessRecipeId recipe, GameplayObjectRef actor, GameplayTimePoint now = {})
-{
+[[nodiscard]] StartProcessRequest Request(ProcessRecipeId recipe, GameplayObjectRef actor, GameplayTimePoint now = {}) {
     StartProcessRequest request;
     request.recipe = recipe;
     request.actor = actor;
@@ -230,8 +213,7 @@ struct ConfiguredProcess
     return request;
 }
 
-[[nodiscard]] bool TestReservationIdExhaustionBeforeExternalCall()
-{
+[[nodiscard]] bool TestReservationIdExhaustionBeforeExternalCall() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 1, {});
     if (!configured.recipe_id.IsValid())
@@ -242,13 +224,13 @@ struct ConfiguredProcess
         return false;
     FaultInput input;
     service.SetInputProvider(&input);
-    const GameplayObjectRef actor{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.exhaustion")};
+    const GameplayObjectRef actor{GameplayDomainId::FromString("test"),
+                                  GameplayObjectId::FromString("actor.exhaustion")};
     auto started = service.StartProcess(Request(configured.recipe_id, actor));
     return !started && input.reserve_calls == 0 && service.FindProcessesByActor(actor).empty();
 }
 
-[[nodiscard]] bool TestProviderReservationIdsAreCanonicalized()
-{
+[[nodiscard]] bool TestProviderReservationIdsAreCanonicalized() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 2, {});
     if (!configured.recipe_id.IsValid())
@@ -266,21 +248,20 @@ struct ConfiguredProcess
         return false;
 
     ProcessesService invalid_id_service;
-    const auto invalid_config = Configure(invalid_id_service, ProcessTimingPolicy::Timed,
-                                          ProcessPersistencePolicy::Persistent, 1, {});
+    const auto invalid_config =
+        Configure(invalid_id_service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 1, {});
     FaultInput invalid_input;
     invalid_input.id_mode = ProviderIdMode::Invalid;
     invalid_id_service.SetInputProvider(&invalid_input);
     auto invalid_started = invalid_id_service.StartProcess(
-        Request(invalid_config.recipe_id,
-                GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.invalid_id")}));
+        Request(invalid_config.recipe_id, GameplayObjectRef{GameplayDomainId::FromString("test"),
+                                                            GameplayObjectId::FromString("actor.invalid_id")}));
     const auto *invalid_instance = invalid_started ? invalid_id_service.FindInstance(invalid_started.Value()) : nullptr;
     return invalid_started && invalid_instance && invalid_instance->reserved_inputs.size() == 1 &&
            invalid_instance->reserved_inputs.front().id.IsValid();
 }
 
-[[nodiscard]] bool TestNonPortableInputCompensation(CallbackMode mode)
-{
+[[nodiscard]] bool TestNonPortableInputCompensation(CallbackMode mode) {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 1, {});
     FaultInput input;
@@ -288,9 +269,10 @@ struct ConfiguredProcess
     input.release_mode = mode;
     service.SetInputProvider(&input);
     const GameplayObjectRef actor{GameplayDomainId::FromString("test"),
-                                  GameplayObjectId::FromString(mode == CallbackMode::Success ? "actor.input.release_ok" :
-                                                               mode == CallbackMode::Failure ? "actor.input.release_fail" :
-                                                                                               "actor.input.release_throw")};
+                                  GameplayObjectId::FromString(mode == CallbackMode::Success ? "actor.input.release_ok"
+                                                               : mode == CallbackMode::Failure
+                                                                   ? "actor.input.release_fail"
+                                                                   : "actor.input.release_throw")};
     auto started = service.StartProcess(Request(configured.recipe_id, actor));
     if (mode == CallbackMode::Success)
         return !started && input.release_calls == 1 && service.FindProcessesByActor(actor).empty() &&
@@ -301,7 +283,8 @@ struct ConfiguredProcess
     const auto id = started.Value();
     const auto *instance = service.FindInstance(id);
     if (!instance || instance->state != ProcessInstanceState::ReconciliationRequired ||
-        instance->reserved_inputs.size() != 1 || instance->reserved_inputs.front().state != ProcessInputCommitState::Reserved ||
+        instance->reserved_inputs.size() != 1 ||
+        instance->reserved_inputs.front().state != ProcessInputCommitState::Reserved ||
         !SamePayload(instance->reserved_inputs.front().provider_token, input.last_reserved_token))
         return false;
     input.release_mode = CallbackMode::Success;
@@ -311,8 +294,7 @@ struct ConfiguredProcess
            SamePayload(input.last_reserved_token, input.last_released_token);
 }
 
-[[nodiscard]] bool TestNonPortableOutputCompensation(CallbackMode mode)
-{
+[[nodiscard]] bool TestNonPortableOutputCompensation(CallbackMode mode) {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 0,
                                       {OutputDeliveryPolicy::Immediate});
@@ -321,9 +303,10 @@ struct ConfiguredProcess
     output.cancel_mode = mode;
     service.AddOutputHandler(&output);
     const GameplayObjectRef actor{GameplayDomainId::FromString("test"),
-                                  GameplayObjectId::FromString(mode == CallbackMode::Success ? "actor.output.cancel_ok" :
-                                                               mode == CallbackMode::Failure ? "actor.output.cancel_fail" :
-                                                                                               "actor.output.cancel_throw")};
+                                  GameplayObjectId::FromString(mode == CallbackMode::Success ? "actor.output.cancel_ok"
+                                                               : mode == CallbackMode::Failure
+                                                                   ? "actor.output.cancel_fail"
+                                                                   : "actor.output.cancel_throw")};
     auto started = service.StartProcess(Request(configured.recipe_id, actor));
     if (mode == CallbackMode::Success)
         return !started && output.cancel_calls == 1 && service.FindProcessesByActor(actor).empty() &&
@@ -345,8 +328,7 @@ struct ConfiguredProcess
            SamePayload(output.last_prepared_token, output.last_cancelled_token);
 }
 
-[[nodiscard]] bool TestImmediatePrepareFailureWithInputRollbackFailure()
-{
+[[nodiscard]] bool TestImmediatePrepareFailureWithInputRollbackFailure() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 1,
                                       {OutputDeliveryPolicy::Immediate});
@@ -356,18 +338,18 @@ struct ConfiguredProcess
     output.fail_prepare_on_call = 1;
     service.SetInputProvider(&input);
     service.AddOutputHandler(&output);
-    auto started = service.StartProcess(Request(
-        configured.recipe_id,
-        GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.prepare_input_rollback")}));
+    auto started = service.StartProcess(
+        Request(configured.recipe_id, GameplayObjectRef{GameplayDomainId::FromString("test"),
+                                                        GameplayObjectId::FromString("actor.prepare_input_rollback")}));
     if (!started)
         return false;
     const auto *instance = service.FindInstance(started.Value());
     return instance && instance->state == ProcessInstanceState::ReconciliationRequired &&
-           instance->reserved_inputs.size() == 1 && instance->reserved_inputs.front().state == ProcessInputCommitState::Reserved;
+           instance->reserved_inputs.size() == 1 &&
+           instance->reserved_inputs.front().state == ProcessInputCommitState::Reserved;
 }
 
-[[nodiscard]] bool TestEarlierPreparedOutputCancelFailureIsDurable()
-{
+[[nodiscard]] bool TestEarlierPreparedOutputCancelFailureIsDurable() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Persistent, 1,
                                       {OutputDeliveryPolicy::Immediate, OutputDeliveryPolicy::Immediate});
@@ -378,19 +360,19 @@ struct ConfiguredProcess
     service.SetInputProvider(&input);
     service.AddOutputHandler(&output);
     auto started = service.StartProcess(Request(
-        configured.recipe_id,
-        GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.prepared_cancel_failure")}));
+        configured.recipe_id, GameplayObjectRef{GameplayDomainId::FromString("test"),
+                                                GameplayObjectId::FromString("actor.prepared_cancel_failure")}));
     if (!started)
         return false;
     const auto *instance = service.FindInstance(started.Value());
     return instance && instance->state == ProcessInstanceState::ReconciliationRequired &&
            instance->prepared_outputs.size() == 1 &&
            instance->prepared_outputs.front().state == ProcessOutputCommitState::Prepared &&
-           instance->reserved_inputs.size() == 1 && instance->reserved_inputs.front().state == ProcessInputCommitState::Released;
+           instance->reserved_inputs.size() == 1 &&
+           instance->reserved_inputs.front().state == ProcessInputCommitState::Released;
 }
 
-[[nodiscard]] bool TestInstantCompletionFailureKeepsOperationIdentity()
-{
+[[nodiscard]] bool TestInstantCompletionFailureKeepsOperationIdentity() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Instant, ProcessPersistencePolicy::Persistent, 0,
                                       {OutputDeliveryPolicy::OnCompletion});
@@ -413,13 +395,12 @@ struct ConfiguredProcess
            service.FindProcessesByActor(actor).size() == 1 && output.commit_calls == 2;
 }
 
-[[nodiscard]] bool TestCheckedTimeBoundaries()
-{
+[[nodiscard]] bool TestCheckedTimeBoundaries() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {});
     const GameplayObjectRef actor{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.time")};
-    auto started = service.StartProcess(Request(configured.recipe_id, actor,
-                                                GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 5}));
+    auto started = service.StartProcess(
+        Request(configured.recipe_id, actor, GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 5}));
     if (!started)
         return false;
     if (service.EvaluateProgress(started.Value(), GameplayTimePoint{std::numeric_limits<std::int64_t>::min()}) != 0)
@@ -432,8 +413,8 @@ struct ConfiguredProcess
         return false;
 
     ProcessesService completed_service;
-    const auto completed_config = Configure(completed_service, ProcessTimingPolicy::Timed,
-                                            ProcessPersistencePolicy::Transient, 0, {});
+    const auto completed_config =
+        Configure(completed_service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {});
     auto early = completed_service.StartProcess(Request(
         completed_config.recipe_id,
         GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.time.complete")},
@@ -442,8 +423,7 @@ struct ConfiguredProcess
                         early.Value(), GameplayTimePoint{std::numeric_limits<std::int64_t>::max()}) == 1'000'000;
 }
 
-[[nodiscard]] bool TestExactProgressScaling()
-{
+[[nodiscard]] bool TestExactProgressScaling() {
     const GameplayObjectRef actor{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.progress")};
 
     ProcessesService huge;
@@ -461,13 +441,15 @@ struct ConfiguredProcess
         return false;
 
     ProcessesService half;
-    const auto half_config = Configure(half, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {}, 12);
+    const auto half_config =
+        Configure(half, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {}, 12);
     auto half_started = half.StartProcess(Request(half_config.recipe_id, actor, GameplayTimePoint{0}));
     if (!half_started || half.EvaluateProgress(half_started.Value(), GameplayTimePoint{6}) != 500'000)
         return false;
 
     ProcessesService third;
-    const auto third_config = Configure(third, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {}, 3);
+    const auto third_config =
+        Configure(third, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {}, 3);
     auto third_started = third.StartProcess(Request(third_config.recipe_id, actor, GameplayTimePoint{0}));
     if (!third_started || third.EvaluateProgress(third_started.Value(), GameplayTimePoint{1}) != 333'333 ||
         third.EvaluateProgress(third_started.Value(), GameplayTimePoint{2}) != 666'666)
@@ -478,13 +460,12 @@ struct ConfiguredProcess
     return first_partition == 333'333 && second_partition == 666'666;
 }
 
-[[nodiscard]] bool TestJournalSequenceSurvivesSnapshot()
-{
+[[nodiscard]] bool TestJournalSequenceSurvivesSnapshot() {
     ProcessesService service;
     const auto configured = Configure(service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {});
-    auto started = service.StartProcess(Request(
-        configured.recipe_id,
-        GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.journal")}));
+    auto started = service.StartProcess(
+        Request(configured.recipe_id, GameplayObjectRef{GameplayDomainId::FromString("test"),
+                                                        GameplayObjectId::FromString("actor.journal")}));
     if (!started)
         return false;
     auto snapshot = service.CaptureSnapshot();
@@ -493,19 +474,19 @@ struct ConfiguredProcess
     const auto expected_latest_sequence = snapshot.next_change_sequence - 1;
 
     ProcessesService restored;
-    const auto restored_config = Configure(restored, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {});
+    const auto restored_config =
+        Configure(restored, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {});
     (void)restored_config;
     if (!restored.RestoreSnapshot(std::move(snapshot)))
         return false;
     const auto stale = restored.ReadChangesSince(ChangeCursor{});
     const auto current = restored.ReadChangesSince(restored.LatestChangeCursor());
-    return stale.snapshot_required && stale.latest_cursor.sequence == expected_latest_sequence && !current.snapshot_required &&
-           current.changes.empty();
+    return stale.snapshot_required && stale.latest_cursor.sequence == expected_latest_sequence &&
+           !current.snapshot_required && current.changes.empty();
 }
 } // namespace
 
-int main()
-{
+int main() {
     if (!TestReservationIdExhaustionBeforeExternalCall())
         return 1;
     if (!TestProviderReservationIdsAreCanonicalized())
@@ -537,13 +518,13 @@ int main()
 
     ProcessesService restore_fault_service;
     (void)Configure(restore_fault_service, ProcessTimingPolicy::Timed, ProcessPersistencePolicy::Transient, 0, {});
-    auto restore_actor = GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.restore")};
+    auto restore_actor =
+        GameplayObjectRef{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor.restore")};
     if (!restore_fault_service.StartProcess(Request(ProcessRecipeId::FromString("test.recipe"), restore_actor)))
         return 937;
     const auto allocation_before = restore_fault_service.CaptureSnapshot();
     for (const auto point : {internal_test::AllocationFaultPoint::RestoreStations,
-                             internal_test::AllocationFaultPoint::RestoreInstances})
-    {
+                             internal_test::AllocationFaultPoint::RestoreInstances}) {
         auto allocation_target = allocation_before;
         internal_test::ArmAllocationFault(point);
         const auto restored_under_fault = restore_fault_service.RestoreSnapshot(std::move(allocation_target));

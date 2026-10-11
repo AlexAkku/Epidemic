@@ -87,3 +87,28 @@ class ModuleRegistry
 };
 } // namespace epidemic::core
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Core/frame_context.h`, `Epidemic/Core/imodule.h`, `Epidemic/Diagnostics/logger.h`, `Epidemic/Foundation/string_id.h`.
+
+### Перечисления и допустимые категории
+
+- `LifecycleState`: `Empty`, `Registered`, `Bootstrapped`, `Initialized`, `Failed`, `ShutDown`
+
+### Состав типов и операции
+
+#### `ModuleRegistry` (строка заголовка 20)
+
+Внутреннее состояние (не часть публичного API): `std::vector<std::unique_ptr<IModule>> modules_`, `std::unordered_map<foundation::ModuleId, std::size_t> module_index_by_id_`, `std::unordered_map<foundation::ModuleId, std::string> canonical_module_name_by_id_`, `std::vector<std::size_t> execution_plan_`, `std::vector<std::uint8_t> shutdown_completed_`.
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

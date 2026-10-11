@@ -70,3 +70,41 @@ struct AssetMetadata
 };
 }
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Assets/asset_location.h`, `Epidemic/Runtime/Assets/asset_state.h`, `Epidemic/Runtime/Assets/asset_type.h`, `Epidemic/Runtime/Foundation/runtime_ids.h`.
+
+### Состав типов и операции
+
+#### `AssetDependency` (строка заголовка 24)
+
+Публичные поля и значения по умолчанию:
+
+- `bool required = true`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const AssetDependency&) const noexcept = default;
+```
+
+#### `AssetMetadata` (строка заголовка 32)
+
+Публичные поля и значения по умолчанию:
+
+- `AssetState state = AssetState::Unknown`
+- `std::vector<AssetDependency> dependencies`
+- `std::vector<foundation::StringId> tags`
+- `std::uint64_t content_hash = 0`
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

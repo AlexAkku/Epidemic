@@ -1,7 +1,6 @@
 #pragma once
 
-namespace epidemic::input::testing
-{
+namespace epidemic::input::testing {
 // Test-only deterministic boundary for PublishSnapshot candidate allocation.
 void FailNextCandidateEventAllocation() noexcept;
 void ClearInputFaults() noexcept;

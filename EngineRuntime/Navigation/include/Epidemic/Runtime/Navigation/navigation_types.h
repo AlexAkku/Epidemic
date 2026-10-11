@@ -9,46 +9,48 @@
 #include <chrono>
 #include <vector>
 
-namespace epidemic::runtime::navigation
-{
+namespace epidemic::runtime::navigation {
 // Public value types for the Navigation major. The types describe navigation tiles,
 // path query lifecycle, traversal costs and obstacle projections without encoding AI decisions or movement rules.
 
-struct NavTileId
-{
+struct NavTileId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
-    [[nodiscard]] constexpr bool operator==(const NavTileId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const NavTileId &) const noexcept = default;
 };
 
-struct PathQueryId
-{
+struct PathQueryId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
-    [[nodiscard]] constexpr bool operator==(const PathQueryId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const PathQueryId &) const noexcept = default;
 };
 
-struct PathQueryHandle
-{
+struct PathQueryHandle {
     PathQueryId id{};
     std::uint32_t generation = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return id.IsValid() && generation != 0; }
-    [[nodiscard]] constexpr bool operator==(const PathQueryHandle&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return id.IsValid() && generation != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const PathQueryHandle &) const noexcept = default;
 };
 
-struct DynamicObstacleId
-{
+struct DynamicObstacleId {
     std::uint64_t value = 0;
 
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value != 0; }
-    [[nodiscard]] constexpr bool operator==(const DynamicObstacleId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value != 0;
+    }
+    [[nodiscard]] constexpr bool operator==(const DynamicObstacleId &) const noexcept = default;
 };
 
-enum class NavTileState
-{
+enum class NavTileState {
     Missing,
     Queued,
     Loading,
@@ -59,8 +61,7 @@ enum class NavTileState
     Unloaded
 };
 
-enum class PathQueryState
-{
+enum class PathQueryState {
     Pending,
     Running,
     PartiallyComplete,
@@ -70,8 +71,7 @@ enum class PathQueryState
     Stale
 };
 
-struct PathRequest
-{
+struct PathRequest {
     Vec3 start{};
     Vec3 target{};
     RegionId region{};
@@ -79,8 +79,7 @@ struct PathRequest
     std::chrono::microseconds result_ttl{};
 };
 
-struct PathResult
-{
+struct PathResult {
     PathQueryHandle handle{};
     PathQueryState state = PathQueryState::Pending;
     std::vector<Vec3> points;
@@ -88,20 +87,17 @@ struct PathResult
     std::uint64_t revision = 0;
 };
 
-struct NavigationRevision
-{
+struct NavigationRevision {
     std::uint64_t value = 0;
 };
 
-struct NavCostQuery
-{
+struct NavCostQuery {
     RegionId region{};
     SurfaceId surface{};
     Vec3 position{};
 };
 
-struct DynamicObstacle
-{
+struct DynamicObstacle {
     DynamicObstacleId id{};
     RegionId region{};
     Aabb bounds{};
@@ -109,34 +105,26 @@ struct DynamicObstacle
     float cost_multiplier = 1.0f;
 };
 
-struct NavigationOptions
-{
+struct NavigationOptions {
     bool enable_mock_queries = true;
 };
 } // namespace epidemic::runtime::navigation
 
-namespace std
-{
-template <> struct hash<epidemic::runtime::navigation::NavTileId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::navigation::NavTileId value) const noexcept
-    {
+namespace std {
+template <> struct hash<epidemic::runtime::navigation::NavTileId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::navigation::NavTileId value) const noexcept {
         return hash<std::uint64_t>{}(value.value);
     }
 };
 
-template <> struct hash<epidemic::runtime::navigation::PathQueryId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::navigation::PathQueryId value) const noexcept
-    {
+template <> struct hash<epidemic::runtime::navigation::PathQueryId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::navigation::PathQueryId value) const noexcept {
         return hash<std::uint64_t>{}(value.value);
     }
 };
 
-template <> struct hash<epidemic::runtime::navigation::DynamicObstacleId>
-{
-    [[nodiscard]] size_t operator()(epidemic::runtime::navigation::DynamicObstacleId value) const noexcept
-    {
+template <> struct hash<epidemic::runtime::navigation::DynamicObstacleId> {
+    [[nodiscard]] size_t operator()(epidemic::runtime::navigation::DynamicObstacleId value) const noexcept {
         return hash<std::uint64_t>{}(value.value);
     }
 };

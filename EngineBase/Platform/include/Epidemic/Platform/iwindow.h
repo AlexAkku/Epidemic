@@ -5,13 +5,11 @@
 
 #include <string_view>
 
-namespace epidemic::platform
-{
+namespace epidemic::platform {
 // This file defines the platform window abstraction consumed by EngineBase and smoke apps.
 // A window exposes identity, size/focus state, and a minimal set of imperative lifecycle actions.
 
-class IWindow
-{
+class IWindow {
   public:
     virtual ~IWindow() = default;
 

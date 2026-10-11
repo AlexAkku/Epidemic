@@ -82,3 +82,48 @@ struct AssetLocation
 [[nodiscard]] bool IsValidAssetLocation(const AssetLocation& location) noexcept;
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/string_id.h`.
+
+### Перечисления и допустимые категории
+
+- `AssetLocationKind`: `FilePath`, `PackageEntry`, `VirtualPath`, `Generated`
+
+### Состав типов и операции
+
+#### `AssetLocation` (строка заголовка 31)
+
+Публичные поля и значения по умолчанию:
+
+- `AssetLocationKind kind = AssetLocationKind::FilePath`
+- `std::string path`
+
+Публичные сигнатуры операций:
+
+```cpp
+AssetLocation() = default;
+AssetLocation(AssetLocationKind location_kind, std::string location_path) : kind(location_kind), path(std::move(location_path));
+[[nodiscard]] bool Empty() const noexcept;
+[[nodiscard]] bool operator==(const AssetLocation&) const = default;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Empty`: `EngineRuntime/Assets/tests/assets_tests.cpp:73`
+

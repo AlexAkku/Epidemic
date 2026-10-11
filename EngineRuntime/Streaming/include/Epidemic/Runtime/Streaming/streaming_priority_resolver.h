@@ -2,12 +2,10 @@
 
 #include "Epidemic/Runtime/Streaming/streaming_types.h"
 
-namespace epidemic::runtime::streaming
-{
+namespace epidemic::runtime::streaming {
 // Optional policy interface that lets integrations derive request priority from external
 // context such as player position, camera focus or region importance.
-class IStreamingPriorityResolver
-{
+class IStreamingPriorityResolver {
   public:
     virtual ~IStreamingPriorityResolver() = default;
 

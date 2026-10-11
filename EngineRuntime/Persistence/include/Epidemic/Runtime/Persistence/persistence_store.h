@@ -13,10 +13,11 @@
 #include <optional>
 #include <vector>
 
-namespace epidemic::runtime
-{
-class IPersistenceQuery : public IPersistentObjectStore, public IDirtyTracker, public ITombstoneStore, public IZoneOverrideStore
-{
+namespace epidemic::runtime {
+class IPersistenceQuery : public IPersistentObjectStore,
+                          public IDirtyTracker,
+                          public ITombstoneStore,
+                          public IZoneOverrideStore {
   public:
     virtual ~IPersistenceQuery() = default;
 
@@ -27,8 +28,7 @@ class IPersistenceQuery : public IPersistentObjectStore, public IDirtyTracker, p
     [[nodiscard]] virtual PersistenceRevision GetRevision() const = 0;
 };
 
-class IPersistenceStore : public IPersistenceQuery
-{
+class IPersistenceStore : public IPersistenceQuery {
   public:
     virtual ~IPersistenceStore() = default;
 
@@ -36,4 +36,3 @@ class IPersistenceStore : public IPersistenceQuery
     [[nodiscard]] virtual std::unique_ptr<ISaveTransaction> OpenTransaction(PersistenceRevision base_revision) = 0;
 };
 } // namespace epidemic::runtime
-

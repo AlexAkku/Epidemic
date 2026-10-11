@@ -11,19 +11,16 @@
 #include <optional>
 #include <vector>
 
-namespace epidemic::runtime
-{
-struct EnvironmentUpdateInput
-{
+namespace epidemic::runtime {
+struct EnvironmentUpdateInput {
     GameTimePoint game_time{};
     GameDuration game_delta{};
     RegionId region_id{};
 
-    [[nodiscard]] constexpr bool operator==(const EnvironmentUpdateInput&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const EnvironmentUpdateInput &) const noexcept = default;
 };
 
-struct EnvironmentStateUpdate
-{
+struct EnvironmentStateUpdate {
     RegionId region{};
     std::uint64_t source_revision = 0;
     std::optional<WeatherState> weather;

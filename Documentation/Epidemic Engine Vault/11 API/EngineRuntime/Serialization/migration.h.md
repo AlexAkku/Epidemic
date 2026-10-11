@@ -72,3 +72,50 @@ template <> struct hash<epidemic::runtime::MigrationKey>
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Foundation/string_id.h`, `Epidemic/Runtime/Serialization/archive_reader.h`, `Epidemic/Runtime/Serialization/archive_writer.h`, `Epidemic/Runtime/Serialization/schema_version.h`.
+
+### Состав типов и операции
+
+#### `MigrationKey` (строка заголовка 13)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const MigrationKey&) const noexcept = default;
+```
+
+#### `IMigration` (строка заголовка 22)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IMigration() = default;
+[[nodiscard]] virtual MigrationKey GetKey() const = 0;
+[[nodiscard]] virtual foundation::Result<void> Apply(IArchiveReader& input, IArchiveWriter& output) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `hash` (строка заголовка 34)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] size_t operator()(const epidemic::runtime::MigrationKey& key) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+

@@ -720,3 +720,294 @@ class GameplayFactsService
 };
 } // namespace epidemic::gameplay::facts
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `HistoryPolicy`: `None`, `Recent`, `Persistent`, `PersistentCompactable`
+- `FactPersistence`: 
+- `FactChangeKind`: `Created`, `Updated`, `Removed`
+- `MutationKind`: `Set`, `Remove`
+
+### Состав типов и операции
+
+#### `EventEnvelope` (строка заголовка 47)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+
+#### `EventRecord` (строка заголовка 60)
+
+Публичные поля и значения по умолчанию:
+
+- `std::any payload`
+
+#### `FactKey` (строка заголовка 67)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const FactKey&) const noexcept = default;
+```
+
+#### `FactKeyHash` (строка заголовка 77)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const FactKey& key) const noexcept;
+```
+
+#### `FactRecord` (строка заголовка 90)
+
+Публичные поля и значения по умолчанию:
+
+- `FactPersistence persistence = FactPersistence::Session`
+- `std::any value`
+
+#### `FactChange` (строка заголовка 113)
+
+Публичные поля и значения по умолчанию:
+
+- `FactChangeKind kind = FactChangeKind::Created`
+- `std::optional<FactRecord> before`
+- `std::optional<FactRecord> after`
+
+#### `EventDispatchLimits` (строка заголовка 135)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t max_events = 100000`
+- `std::uint32_t max_waves = 64`
+
+#### `FactsDiagnostics` (строка заголовка 141)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t published_events = 0`
+- `std::uint64_t dispatched_events = 0`
+- `std::uint64_t dispatch_waves = 0`
+- `std::uint64_t rejected_events = 0`
+- `std::uint64_t subscriber_failures = 0`
+- `std::uint64_t fact_count = 0`
+- `std::uint64_t persistent_fact_count = 0`
+- `std::uint64_t history_count = 0`
+
+#### `IHistoryCompactor` (строка заголовка 153)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IHistoryCompactor() = default;
+[[nodiscard]] virtual std::vector<EventRecord> Compact(std::span<const EventRecord> records) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `GameplayEventBatch` (строка заголовка 160)
+
+Публичные сигнатуры операций:
+
+```cpp
+GameplayEventBatch() = default;
+GameplayEventBatch(ProducerId producer, std::uint64_t batch_order) : producer_(producer), batch_order_(batch_order);
+template <typename TPayload> void Publish(EventTypeId type, GameplayContext context, GameplayObjectRef subject, TPayload payload);
+template <typename TPayload> void Publish(EventTypeId type, GameplayContext context, GameplayObjectRef scope, GameplayObjectRef subject, TPayload payload);
+[[nodiscard]] ProducerId Producer() const noexcept;
+[[nodiscard]] std::uint64_t BatchOrder() const noexcept;
+[[nodiscard]] bool Empty() const noexcept;
+```
+
+#### `PendingEvent` (строка заголовка 197)
+
+Публичные поля и значения по умолчанию:
+
+- `std::any payload`
+- `std::uint64_t local_sequence = 0`
+
+#### `FactTransaction` (строка заголовка 217)
+
+Публичные сигнатуры операций:
+
+```cpp
+) : owner_(owner);
+template <typename TValue> void Set(FactTypeId type, GameplayObjectRef subject, GameplayObjectRef scope, TValue value, FactPersistence persistence = FactPersistence::Session, std::optional<GameplayTimePoint> expires_at = std::nullopt);
+void Remove(FactKey key);
+[[nodiscard]] GameplayDomainId Owner() const noexcept;
+[[nodiscard]] bool Empty() const noexcept;
+```
+
+#### `Mutation` (строка заголовка 253)
+
+Публичные поля и значения по умолчанию:
+
+- `MutationKind kind = MutationKind::Set`
+- `std::any value`
+- `FactPersistence persistence = FactPersistence::Session`
+
+#### `FactsSnapshot` (строка заголовка 269)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<FactRecord> facts`
+- `std::vector<EventRecord> history`
+- `std::uint64_t next_event_sequence = 1`
+
+#### `PersistentFactRecord` (строка заголовка 279)
+
+Публичные поля и значения по умолчанию:
+
+- `FactPersistence persistence = FactPersistence::Persistent`
+- `std::uint32_t payload_version = 0`
+- `std::vector<std::byte> payload`
+
+#### `PersistentEventRecord` (строка заголовка 296)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t payload_version = 0`
+- `std::vector<std::byte> payload`
+
+#### `FactsPersistenceSnapshot` (строка заголовка 304)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<PersistentFactRecord> facts`
+- `std::vector<PersistentEventRecord> history`
+- `std::uint64_t next_event_sequence = 1`
+
+#### `GameplayFactsService` (строка заголовка 314)
+
+Внутреннее состояние (не часть публичного API): `static constexpr std::string_view kFactChangedEventName = "framework.fact.changed"`, `static constexpr std::string_view kFactsDomainName = "framework.facts"`, `std::unordered_map<EventTypeId, EventTypeInfo> event_types_`, `std::unordered_map<FactTypeId, FactTypeInfo> fact_types_`, `std::unordered_map<EventTypeId, PayloadCodec> event_codecs_`, `std::unordered_map<FactTypeId, PayloadCodec> fact_codecs_`, `std::unordered_map<EventTypeId, std::vector<Subscriber>> subscribers_`, `std::unordered_map<FactKey, FactRecord, FactKeyHash> facts_`, `std::vector<EventRecord> history_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+GameplayFactsService();
+template <typename TPayload> [[nodiscard]] foundation::Result<EventTypeId> RegisterEventType( std::string_view canonical_name, GameplayDomainId owner, HistoryPolicy history_policy = HistoryPolicy::None, std::size_t recent_limit = 256);
+template <typename TValue> [[nodiscard]] foundation::Result<FactTypeId> RegisterFactType(std::string_view canonical_name, GameplayDomainId owner);
+template <typename TValue, typename TEncode, typename TDecode> [[nodiscard]] foundation::Result<void> RegisterFactCodec( FactTypeId type, std::string_view schema_name, std::uint32_t version, TEncode&& encode, TDecode&& decode);
+template <typename TPayload, typename TEncode, typename TDecode> [[nodiscard]] foundation::Result<void> RegisterEventCodec( EventTypeId type, std::string_view schema_name, std::uint32_t version, TEncode&& encode, TDecode&& decode);
+template <typename TPayload, typename TCallback> [[nodiscard]] foundation::Result<void> Subscribe(EventTypeId type, SubscriberId subscriber, int priority, TCallback&& callback);
+void Freeze();
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] GameplayEventBatch CreateBatch(ProducerId producer, std::uint64_t batch_order) const;
+[[nodiscard]] foundation::Result<void> SubmitBatch(GameplayEventBatch batch);
+[[nodiscard]] FactTransaction BeginTransaction(GameplayDomainId owner) const;
+[[nodiscard]] std::optional<FactRecord> FindFact(const FactKey& key) const;
+[[nodiscard]] std::optional<FactRecord> FindFactCopy(const FactKey& key) const;
+template <typename TValue> [[nodiscard]] std::optional<TValue> FindFactValueCopy(const FactKey& key) const;
+[[nodiscard]] foundation::Result<std::uint64_t> ExpireDueFacts(GameplayTimePoint now, GameplayContext context);
+[[nodiscard]] std::uint64_t HistoryCount() const noexcept;
+[[nodiscard]] std::vector<EventRecord> FindHistory(const HistoryQuery& query) const;
+[[nodiscard]] foundation::Result<void> CompactHistory(EventTypeId type, const IHistoryCompactor& compactor);
+[[nodiscard]] foundation::Result<FactsSnapshot> CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(FactsSnapshot snapshot);
+[[nodiscard]] foundation::Result<FactsPersistenceSnapshot> CapturePersistenceSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestorePersistenceSnapshot(FactsPersistenceSnapshot snapshot);
+[[nodiscard]] Revision FactRevision() const noexcept;
+[[nodiscard]] EventTypeId FactChangedEventType() const noexcept;
+[[nodiscard]] FactsDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `PayloadCodec` (строка заголовка 613)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t version = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+std::function<foundation::Result<std::vector<std::byte>>(const std::any&)> encode;
+std::function<foundation::Result<std::any>(std::span<const std::byte>, std::uint32_t)> decode;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `EventTypeInfo` (строка заголовка 622)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `HistoryPolicy history_policy = HistoryPolicy::None`
+- `std::size_t recent_limit = 256`
+
+#### `FactTypeInfo` (строка заголовка 632)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+
+#### `Subscriber` (строка заголовка 640)
+
+Публичные поля и значения по умолчанию:
+
+- `int priority = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+std::function<void(const EventRecord&)> callback;
+```
+
+#### `PendingEvent` (строка заголовка 647)
+
+Публичные поля и значения по умолчанию:
+
+- `std::any payload`
+- `std::uint64_t order = 0`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `GameplayFactsService` | `GameplayFactsService::GameplayFactsService` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:43` |
+| `Freeze` | `GameplayFactsService::Freeze` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:55` |
+| `SubmitBatch` | `GameplayFactsService::SubmitBatch` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:86` |
+| `FindFact` | `GameplayFactsService::FindFact` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:526` |
+| `ExpireDueFacts` | `GameplayFactsService::ExpireDueFacts` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:565` |
+| `FindHistory` | `GameplayFactsService::FindHistory` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:620` |
+| `CompactHistory` | `GameplayFactsService::CompactHistory` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:719` |
+| `CaptureSnapshot` | `GameplayFactsService::CaptureSnapshot` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:775` |
+| `RestoreSnapshot` | `GameplayFactsService::RestoreSnapshot` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:903` |
+| `CapturePersistenceSnapshot` | `GameplayFactsService::CapturePersistenceSnapshot` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:937` |
+| `RestorePersistenceSnapshot` | `GameplayFactsService::RestorePersistenceSnapshot` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:1002` |
+| `GetDiagnostics` | `GameplayFactsService::GetDiagnostics` | `EngineFramework/BaseInfrastructure/Facts/src/gameplay_facts.cpp:1068` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `BeginTransaction`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:67`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:77`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:89`
+- `FactChangedEventType`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:92`
+- `ExpireDueFacts`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:99`
+- `CreateBatch`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:119`
+- `SubmitBatch`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:121`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:122`
+- `Publish`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:129`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:168`
+- `HistoryCount`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:185`
+- `FindHistory`: `EngineFramework/DevelopmentInfrastructure/Tests/facts_tests.cpp:200`
+

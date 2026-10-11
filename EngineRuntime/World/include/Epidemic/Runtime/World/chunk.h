@@ -6,37 +6,31 @@
 #include <cstdint>
 #include <optional>
 
-namespace epidemic::runtime
-{
-struct ChunkDescriptor
-{
+namespace epidemic::runtime {
+struct ChunkDescriptor {
     ChunkId id{};
     RegionId region_id{};
     std::int32_t x = 0;
     std::int32_t y = 0;
     std::int32_t z = 0;
 
-    [[nodiscard]] constexpr bool operator==(const ChunkDescriptor&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const ChunkDescriptor &) const noexcept = default;
 };
 
-struct ChangeChunkStateCommand
-{
+struct ChangeChunkStateCommand {
     ChunkId chunk{};
     std::uint64_t expected_revision = 0;
     ChunkState state = ChunkState::Unloaded;
 };
 
-struct ChunkSnapshot
-{
+struct ChunkSnapshot {
     ChunkDescriptor descriptor{};
     ChunkState state = ChunkState::Unloaded;
     std::uint64_t revision = 0;
 };
 
-[[nodiscard]] constexpr bool CanTransition(ChunkState from, ChunkState to) noexcept
-{
-    switch (from)
-    {
+[[nodiscard]] constexpr bool CanTransition(ChunkState from, ChunkState to) noexcept {
+    switch (from) {
     case ChunkState::Unloaded:
         return to == ChunkState::Unloaded || to == ChunkState::Loading;
     case ChunkState::Loading:
@@ -56,8 +50,7 @@ struct ChunkSnapshot
     return false;
 }
 
-class IChunkRegistry
-{
+class IChunkRegistry {
   public:
     virtual ~IChunkRegistry() = default;
     [[nodiscard]] virtual foundation::Result<void> RegisterChunk(ChunkDescriptor chunk) = 0;

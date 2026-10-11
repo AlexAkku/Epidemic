@@ -303,3 +303,82 @@ template <> class Result<void>
 };
 } // namespace epidemic::foundation
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`.
+
+### Состав типов и операции
+
+#### `Result` (строка заголовка 18)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Wraps a success payload into Result<TValue>. // Input: owned success value. // Output: successful result instance. [[nodiscard]] static Result Success(TValue value);
+// Wraps an Error into Result<TValue>. // Input: owned failure payload. // Output: failed result instance. [[nodiscard]] static Result Failure(Error error);
+// Returns true when the result currently stores TValue. [[nodiscard]] bool HasValue() const noexcept;
+// Returns a mutable reference to the success value. // Throws if the result currently stores an Error. [[nodiscard]] TValue &Value() &;
+// Returns a read-only reference to the success value. // Throws if the result currently stores an Error. [[nodiscard]] const TValue &Value() const &;
+// Moves the success value out of the result. // Relationship: this overload is important for move-only or large payload types. [[nodiscard]] TValue &&Value() &&;
+// Returns a mutable reference to the stored Error. // Throws if the result currently stores a success value. [[nodiscard]] Error &GetError() &;
+// Returns a read-only reference to the stored Error. // Throws if the result currently stores a success value. [[nodiscard]] const Error &GetError() const &;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `Storage` (строка заголовка 117)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit Storage(TValue value) : value_(std::in_place_type<TValue>, std::move(value));
+explicit Storage(Error error) : value_(std::in_place_type<Error>, std::move(error));
+Storage(const Storage &) = default;
+Storage(Storage &&) noexcept(std::is_nothrow_move_constructible_v<Variant>) = default;
+Storage &operator=(const Storage &other) requires(std::is_copy_constructible_v<Variant> && std::is_nothrow_move_assignable_v<Variant>);
+Storage &operator=(const Storage &) requires(!(std::is_copy_constructible_v<Variant> && std::is_nothrow_move_assignable_v<Variant>)) = delete;
+Storage &operator=(Storage &&) noexcept requires(std::is_nothrow_move_assignable_v<Variant>) = default;
+Storage &operator=(Storage &&) requires(!std::is_nothrow_move_assignable_v<Variant>) = delete;
+[[nodiscard]] Variant &Get() noexcept;
+[[nodiscard]] const Variant &Get() const noexcept;
+```
+
+#### `Result` (строка заголовка 181)
+
+Публичные сигнатуры операций:
+
+```cpp
+// Builds a successful Result<void>. [[nodiscard]] static Result Success();
+// Builds a failed Result<void>. [[nodiscard]] static Result Failure(Error error);
+// Returns true when the represented operation succeeded. [[nodiscard]] bool HasValue() const noexcept;
+// Validates that the result is successful. // Throws if the represented operation failed. // Relationship: mirrors Value() from the generic specialization. void Value() const;
+// Returns the stored failure payload. // Throws if the represented operation actually succeeded. [[nodiscard]] const Error &GetError() const;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `Storage` (строка заголовка 233)
+
+Публичные сигнатуры операций:
+
+```cpp
+Storage(bool has_value, Error error) : has_value_(has_value), error_(std::move(error));
+Storage(const Storage &) = default;
+Storage(Storage &&) noexcept = default;
+Storage &operator=(const Storage &other);
+Storage &operator=(Storage &&) noexcept = default;
+[[nodiscard]] bool HasValue() const noexcept;
+[[nodiscard]] const Error &GetError() const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+

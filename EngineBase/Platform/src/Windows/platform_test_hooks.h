@@ -1,9 +1,7 @@
 #pragma once
 
-namespace epidemic::platform::testing
-{
-enum class FaultPoint
-{
+namespace epidemic::platform::testing {
+enum class FaultPoint {
     EventQueueCommit,
     WindowTrackingCommit,
     AfterWindowIdInsert,

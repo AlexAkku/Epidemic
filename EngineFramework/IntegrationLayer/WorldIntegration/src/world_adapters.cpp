@@ -4,37 +4,30 @@
 #include <cstdint>
 #include <string_view>
 
-namespace epidemic::gameplay::world_integration
-{
-namespace
-{
-[[nodiscard]] constexpr std::uint64_t MixRevision(std::uint64_t value) noexcept
-{
+namespace epidemic::gameplay::world_integration {
+namespace {
+[[nodiscard]] constexpr std::uint64_t MixRevision(std::uint64_t value) noexcept {
     value += 0x9e3779b97f4a7c15ull;
     value = (value ^ (value >> 30u)) * 0xbf58476d1ce4e5b9ull;
     value = (value ^ (value >> 27u)) * 0x94d049bb133111ebull;
     return value ^ (value >> 31u);
 }
 
-[[nodiscard]] constexpr Revision CompositeRevision(Revision first, Revision second) noexcept
-{
+[[nodiscard]] constexpr Revision CompositeRevision(Revision first, Revision second) noexcept {
     // Queries currently expose one scalar revision. Preserve both owner dependencies in a stable
     // composite stamp so a change to either owner invalidates equality-based query caches.
     return Revision{MixRevision(first.Raw()) ^ (MixRevision(second.Raw()) + 0x517cc1b727220a95ull)};
 }
 
-[[nodiscard]] constexpr GameplayObjectRef SubjectForWorldChange(const world::WorldChange& change) noexcept
-{
-    switch (change.kind)
-    {
+[[nodiscard]] constexpr GameplayObjectRef SubjectForWorldChange(const world::WorldChange &change) noexcept {
+    switch (change.kind) {
     case world::WorldChangeKind::AlterationCreated:
     case world::WorldChangeKind::AlterationUpdated:
     case world::WorldChangeKind::AlterationExpired:
     case world::WorldChangeKind::AlterationRemoved:
     case world::WorldChangeKind::AlterationCompacted:
-        return change.alteration.IsValid()
-                   ? GameplayObjectRef{world::WorldService::Domain(), change.alteration.value}
-                   : GlobalWorldScope();
+        return change.alteration.IsValid() ? GameplayObjectRef{world::WorldService::Domain(), change.alteration.value}
+                                           : GlobalWorldScope();
     case world::WorldChangeKind::FeatureChanged:
     case world::WorldChangeKind::FeatureRemoved:
         return change.feature.IsValid() ? GameplayObjectRef{world::WorldService::Domain(), change.feature.value}
@@ -46,8 +39,7 @@ namespace
     return GlobalWorldScope();
 }
 }
-foundation::Result<void> WorldQueryAdapter::RegisterProviders()
-{
+foundation::Result<void> WorldQueryAdapter::RegisterProviders() {
     const queries::QueryProviderCapabilities caps{true, false, false, false};
     auto a = queries_.RegisterProvider<AreasAtPositionQuery>(
         "framework.query.world.areas_at", caps, [this](const AreasAtPositionQuery &q, const queries::QueryContext &) {
@@ -78,11 +70,9 @@ foundation::Result<void> WorldQueryAdapter::RegisterProviders()
             const auto environment_revision = environment_.CurrentRevision();
             auto scopes = q.scopes;
             const world::WorldPosition world_position{q.position.x_mm, q.position.y_mm, q.position.z_mm};
-            for (const auto &area : world_.FindAreasAt(world_position))
-            {
+            for (const auto &area : world_.FindAreasAt(world_position)) {
                 scopes.push_back(GameplayObjectRef{world::WorldService::Domain(), area.id.value});
-                for (const auto region : area.regions)
-                {
+                for (const auto region : area.regions) {
                     scopes.push_back(GameplayObjectRef{world::WorldService::Domain(), region.value});
                 }
             }
@@ -98,8 +88,7 @@ foundation::Result<void> WorldQueryAdapter::RegisterProviders()
                                               "World or Environment changed during a cross-owner query"));
             const auto dependency_revision = CompositeRevision(world_revision, environment_revision);
             return foundation::Result<queries::QueryResponse<EnvironmentSampleQuery::ResultType>>::Success(
-                {std::move(sample).Value(),
-                 {{}, dependency_revision, queries::QueryCoverage::Complete, 1, 1, true}});
+                {std::move(sample).Value(), {{}, dependency_revision, queries::QueryCoverage::Complete, 1, 1, true}});
         });
     if (!c)
         return c;
@@ -112,8 +101,7 @@ foundation::Result<void> WorldQueryAdapter::RegisterProviders()
                 {std::move(v), {{}, interaction_.CurrentRevision(), queries::QueryCoverage::Complete, n, n, true}});
         });
 }
-foundation::Result<void> WorldFactsAdapter::RegisterContracts()
-{
+foundation::Result<void> WorldFactsAdapter::RegisterContracts() {
     auto w = facts_.RegisterEventType<world::WorldChange>("framework.world.changed", world::WorldService::Domain(),
                                                           facts::HistoryPolicy::Recent, 4096);
     if (!w)
@@ -131,8 +119,7 @@ foundation::Result<void> WorldFactsAdapter::RegisterContracts()
     interaction_event_ = i.Value();
     return foundation::Result<void>::Success();
 }
-foundation::Result<std::uint64_t> WorldFactsAdapter::PublishPending(GameplayContext context)
-{
+foundation::Result<std::uint64_t> WorldFactsAdapter::PublishPending(GameplayContext context) {
     std::uint64_t n = 0;
     const auto producer = ProducerId::FromString("framework.world_integration");
     const auto world_changes = world_.ReadChangesSince(wc_);
@@ -140,10 +127,9 @@ foundation::Result<std::uint64_t> WorldFactsAdapter::PublishPending(GameplayCont
         return foundation::Result<std::uint64_t>::Failure(
             foundation::Error::Create("gameplay.world_integration.snapshot_required",
                                       "world change journal no longer contains the requested sequence"));
-    for (const auto &c : world_changes.changes)
-    {
-        auto r = facts_.Publish(world_event_, c.context.tick.IsValid() ? c.context : context,
-                                SubjectForWorldChange(c), c, producer);
+    for (const auto &c : world_changes.changes) {
+        auto r = facts_.Publish(world_event_, c.context.tick.IsValid() ? c.context : context, SubjectForWorldChange(c),
+                                c, producer);
         if (!r)
             return foundation::Result<std::uint64_t>::Failure(r.GetError());
         wc_ = {world_changes.latest_cursor.epoch, c.sequence};
@@ -151,11 +137,10 @@ foundation::Result<std::uint64_t> WorldFactsAdapter::PublishPending(GameplayCont
     }
     const auto environment_changes = environment_.ReadChangesSince(ec_);
     if (environment_changes.snapshot_required)
-        return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-            "gameplay.world_integration.environment_snapshot_required",
-            "environment change journal no longer contains the requested sequence"));
-    for (const auto &c : environment_changes.changes)
-    {
+        return foundation::Result<std::uint64_t>::Failure(
+            foundation::Error::Create("gameplay.world_integration.environment_snapshot_required",
+                                      "environment change journal no longer contains the requested sequence"));
+    for (const auto &c : environment_changes.changes) {
         auto r =
             facts_.Publish(environment_event_, c.context.tick.IsValid() ? c.context : context,
                            GameplayObjectRef{environment::EnvironmentService::Domain(), c.layer.value}, c, producer);
@@ -166,11 +151,10 @@ foundation::Result<std::uint64_t> WorldFactsAdapter::PublishPending(GameplayCont
     }
     const auto interaction_changes = interaction_.ReadChangesSince(ic_);
     if (interaction_changes.snapshot_required)
-        return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-            "gameplay.world_integration.interaction_snapshot_required",
-            "interaction change journal no longer contains the requested sequence"));
-    for (const auto &c : interaction_changes.changes)
-    {
+        return foundation::Result<std::uint64_t>::Failure(
+            foundation::Error::Create("gameplay.world_integration.interaction_snapshot_required",
+                                      "interaction change journal no longer contains the requested sequence"));
+    for (const auto &c : interaction_changes.changes) {
         auto r =
             facts_.Publish(interaction_event_, c.context.tick.IsValid() ? c.context : context, c.actor, c, producer);
         if (!r)
@@ -178,14 +162,16 @@ foundation::Result<std::uint64_t> WorldFactsAdapter::PublishPending(GameplayCont
         ic_ = {interaction_changes.latest_cursor.epoch, c.sequence};
         ++n;
     }
-    if (!wc_.IsValid()) wc_.epoch = world_changes.latest_cursor.epoch;
-    if (!ec_.IsValid()) ec_.epoch = environment_changes.latest_cursor.epoch;
-    if (!ic_.IsValid()) ic_.epoch = interaction_changes.latest_cursor.epoch;
+    if (!wc_.IsValid())
+        wc_.epoch = world_changes.latest_cursor.epoch;
+    if (!ec_.IsValid())
+        ec_.epoch = environment_changes.latest_cursor.epoch;
+    if (!ic_.IsValid())
+        ic_.epoch = interaction_changes.latest_cursor.epoch;
     return foundation::Result<std::uint64_t>::Success(n);
 }
 
-WorldFactsCheckpoint WorldFactsAdapter::CaptureCheckpoint() const noexcept
-{
+WorldFactsCheckpoint WorldFactsAdapter::CaptureCheckpoint() const noexcept {
     return WorldFactsCheckpoint{WorldFactsCheckpoint::kSchemaVersion,
                                 wc_.sequence,
                                 ec_.sequence,
@@ -198,18 +184,16 @@ WorldFactsCheckpoint WorldFactsAdapter::CaptureCheckpoint() const noexcept
                                 interaction_.CurrentRevision()};
 }
 
-foundation::Result<void> WorldFactsAdapter::RestoreCheckpoint(WorldFactsCheckpoint checkpoint)
-{
+foundation::Result<void> WorldFactsAdapter::RestoreCheckpoint(WorldFactsCheckpoint checkpoint) {
     if (checkpoint.schema_version != WorldFactsCheckpoint::kSchemaVersion)
         return foundation::Result<void>::Failure(foundation::Error::Create(
             "gameplay.world_integration.checkpoint_version", "unsupported WorldFacts checkpoint schema version"));
 
     const auto restore_cursor = [](ChangeCursor saved_cursor, Revision saved_revision, Revision current_revision,
-                                   ChangeCursor latest_cursor, bool snapshot_required, std::string_view code)
-        -> foundation::Result<ChangeCursor> {
+                                   ChangeCursor latest_cursor, bool snapshot_required,
+                                   std::string_view code) -> foundation::Result<ChangeCursor> {
         if (!snapshot_required && saved_cursor.epoch == latest_cursor.epoch &&
-            saved_cursor.sequence <= latest_cursor.sequence)
-        {
+            saved_cursor.sequence <= latest_cursor.sequence) {
             return foundation::Result<ChangeCursor>::Success(saved_cursor);
         }
 
@@ -224,9 +208,9 @@ foundation::Result<void> WorldFactsAdapter::RestoreCheckpoint(WorldFactsCheckpoi
 
     const ChangeCursor saved_world{checkpoint.world_epoch, checkpoint.world_sequence};
     const auto world_batch = world_.ReadChangesSince(saved_world);
-    auto world_cursor = restore_cursor(saved_world, checkpoint.world_revision, world_.CurrentRevision(),
-                                       world_.LatestChangeCursor(), world_batch.snapshot_required,
-                                       "gameplay.world_integration.world_checkpoint_gap");
+    auto world_cursor =
+        restore_cursor(saved_world, checkpoint.world_revision, world_.CurrentRevision(), world_.LatestChangeCursor(),
+                       world_batch.snapshot_required, "gameplay.world_integration.world_checkpoint_gap");
     if (!world_cursor)
         return foundation::Result<void>::Failure(world_cursor.GetError());
 
@@ -254,20 +238,17 @@ foundation::Result<void> WorldFactsAdapter::RestoreCheckpoint(WorldFactsCheckpoi
     return foundation::Result<void>::Success();
 }
 
-void WorldFactsAdapter::ResetCursorsToLatest() noexcept
-{
+void WorldFactsAdapter::ResetCursorsToLatest() noexcept {
     wc_ = world_.LatestChangeCursor();
     ec_ = environment_.LatestChangeCursor();
     ic_ = interaction_.LatestChangeCursor();
 }
-bool EntityInteractionStateProvider::IsMaterialized(GameplayObjectRef object) const
-{
+bool EntityInteractionStateProvider::IsMaterialized(GameplayObjectRef object) const {
     auto id = entities::EntityService::FromGameplayObjectRef(object);
     const auto r = entities_.Find(id);
     return r && r->materialization == entities::EntityMaterializationState::Materialized;
 }
-Revision EntityInteractionStateProvider::RevisionOf(GameplayObjectRef object) const
-{
+Revision EntityInteractionStateProvider::RevisionOf(GameplayObjectRef object) const {
     auto id = entities::EntityService::FromGameplayObjectRef(object);
     const auto r = entities_.Find(id);
     return r ? r->revision : Revision{};

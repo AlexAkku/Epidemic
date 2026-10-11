@@ -34,10 +34,8 @@
 
 using namespace epidemic::gameplay;
 
-namespace
-{
-void PublicHeadersAreSelfContained()
-{
+namespace {
+void PublicHeadersAreSelfContained() {
     static_assert(std::is_trivially_copyable_v<GameplayTickId>);
     static_assert(std::is_trivially_copyable_v<GameplayTimePoint>);
     static_assert(std::is_destructible_v<entities::EntityService>);
@@ -50,8 +48,7 @@ void PublicHeadersAreSelfContained()
     TRUTH_REQUIRE(true);
 }
 
-void OwnerDomainsRemainDistinct()
-{
+void OwnerDomainsRemainDistinct() {
     const std::array domains{
         entities::EntityService::Domain(),
         items::ItemsInventoryService::Domain(),
@@ -63,17 +60,16 @@ void OwnerDomainsRemainDistinct()
     };
     const std::set<GameplayDomainId> unique{domains.begin(), domains.end()};
     TRUTH_REQUIRE(unique.size() == domains.size());
-    for (const auto domain : domains)
-    {
+    for (const auto domain : domains) {
         TRUTH_REQUIRE(domain.IsValid());
     }
 }
 } // namespace
 
-int main()
-{
-    return epidemic::truth_tests::Run("framework-public-api", {
-        {"public headers are self-contained", &PublicHeadersAreSelfContained},
-        {"state owners have distinct domains", &OwnerDomainsRemainDistinct},
-    });
+int main() {
+    return epidemic::truth_tests::Run("framework-public-api",
+                                      {
+                                          {"public headers are self-contained", &PublicHeadersAreSelfContained},
+                                          {"state owners have distinct domains", &OwnerDomainsRemainDistinct},
+                                      });
 }

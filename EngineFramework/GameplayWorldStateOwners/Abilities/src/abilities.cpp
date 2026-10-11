@@ -9,20 +9,15 @@
 #include <unordered_set>
 #include <utility>
 
-namespace epidemic::gameplay::abilities
-{
-namespace
-{
-[[nodiscard]] foundation::Error Error(std::string c, std::string m)
-{
+namespace epidemic::gameplay::abilities {
+namespace {
+[[nodiscard]] foundation::Error Error(std::string c, std::string m) {
     return foundation::Error::Create(std::move(c), std::move(m));
 }
-[[nodiscard]] GameplayTimePoint Add(GameplayTimePoint p, GameplayDuration d) noexcept
-{
+[[nodiscard]] GameplayTimePoint Add(GameplayTimePoint p, GameplayDuration d) noexcept {
     return SaturatingAdd(p, d);
 }
-[[nodiscard]] GameplayDuration ScaleDuration(GameplayDuration d, std::uint64_t count) noexcept
-{
+[[nodiscard]] GameplayDuration ScaleDuration(GameplayDuration d, std::uint64_t count) noexcept {
     if (d.ticks <= 0 || count == 0)
         return {};
     const auto max = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
@@ -30,33 +25,27 @@ namespace
         return GameplayDuration{std::numeric_limits<std::int64_t>::max()};
     return GameplayDuration{d.ticks * static_cast<std::int64_t>(count)};
 }
-[[nodiscard]] bool HasEntityTargets(const AbilityTargetSet &targets) noexcept
-{
+[[nodiscard]] bool HasEntityTargets(const AbilityTargetSet &targets) noexcept {
     return targets.primary.IsValid() || !targets.targets.empty();
 }
-[[nodiscard]] bool DirectionValid(const std::optional<std::array<std::int64_t, 3>> &direction) noexcept
-{
+[[nodiscard]] bool DirectionValid(const std::optional<std::array<std::int64_t, 3>> &direction) noexcept {
     return direction && ((*direction)[0] != 0 || (*direction)[1] != 0 || (*direction)[2] != 0);
 }
 template <class Snapshot>
 [[nodiscard]] bool ValidGeneratorSnapshot(const Snapshot &snapshot, std::uint64_t expected_scope,
-                                          std::uint64_t max_restored_low) noexcept
-{
+                                          std::uint64_t max_restored_low) noexcept {
     if (snapshot.scope != expected_scope || snapshot.scope == 0)
         return false;
     return snapshot.next == 0 || snapshot.next > max_restored_low;
 }
 
-struct CooldownKey
-{
+struct CooldownKey {
     GameplayObjectRef owner{};
     CooldownGroupId group{};
     [[nodiscard]] bool operator==(const CooldownKey &) const noexcept = default;
 };
-struct CooldownKeyHash
-{
-    [[nodiscard]] std::size_t operator()(const CooldownKey &key) const noexcept
-    {
+struct CooldownKeyHash {
+    [[nodiscard]] std::size_t operator()(const CooldownKey &key) const noexcept {
         const auto a = std::hash<GameplayObjectRef>{}(key.owner);
         const auto b = std::hash<TypeId>{}(key.group.value);
         return a ^ (b + 0x9E3779B97F4A7C15ull + (a << 6u) + (a >> 2u));
@@ -66,13 +55,11 @@ struct CooldownKeyHash
 
 AbilityService::AbilityService()
     : instance_ids_(GameplayObjectId::FromString("framework.abilities.instances").High()),
-      execution_ids_(GameplayObjectId::FromString("framework.abilities.executions").High())
-{
+      execution_ids_(GameplayObjectId::FromString("framework.abilities.executions").High()) {
     changes_.reserve(kChangeJournalCapacity);
 }
 
-foundation::Result<AbilityDefinitionId> AbilityService::RegisterDefinition(AbilityDefinition d)
-{
+foundation::Result<AbilityDefinitionId> AbilityService::RegisterDefinition(AbilityDefinition d) {
     if (frozen_)
         return foundation::Result<AbilityDefinitionId>::Failure(
             Error("gameplay.registry_frozen", "ability registry frozen"));
@@ -101,14 +88,12 @@ foundation::Result<AbilityDefinitionId> AbilityService::RegisterDefinition(Abili
     return foundation::Result<AbilityDefinitionId>::Success(id);
 }
 
-const AbilityDefinition *AbilityService::FindDefinition(AbilityDefinitionId id) const noexcept
-{
+const AbilityDefinition *AbilityService::FindDefinition(AbilityDefinitionId id) const noexcept {
     auto it = definitions_.find(id);
     return it == definitions_.end() ? nullptr : &it->second;
 }
 
-bool AbilityService::CanRecord(std::size_t count) const noexcept
-{
+bool AbilityService::CanRecord(std::size_t count) const noexcept {
     if (count == 0)
         return true;
     if (next_change_sequence_ == 0)
@@ -116,8 +101,7 @@ bool AbilityService::CanRecord(std::size_t count) const noexcept
     return count - 1 <= std::numeric_limits<std::uint64_t>::max() - next_change_sequence_;
 }
 
-void AbilityService::Record(AbilityChange c) noexcept
-{
+void AbilityService::Record(AbilityChange c) noexcept {
     c.sequence = next_change_sequence_;
     if (changes_.size() == kChangeJournalCapacity)
         changes_.erase(changes_.begin());
@@ -128,8 +112,7 @@ void AbilityService::Record(AbilityChange c) noexcept
         ++next_change_sequence_;
 }
 
-bool AbilityService::IsTerminal(AbilityExecutionState state) noexcept
-{
+bool AbilityService::IsTerminal(AbilityExecutionState state) noexcept {
     return state == AbilityExecutionState::Completed || state == AbilityExecutionState::Cancelled ||
            state == AbilityExecutionState::Interrupted || state == AbilityExecutionState::Failed;
 }
@@ -137,8 +120,7 @@ bool AbilityService::IsTerminal(AbilityExecutionState state) noexcept
 foundation::Result<AbilityInstanceId> AbilityService::Grant(GameplayObjectRef owner, AbilityDefinitionId def,
                                                             GameplayObjectRef source,
                                                             AbilityGrantPersistence persistence,
-                                                            GameplayContext context)
-{
+                                                            GameplayContext context) {
     if (!owner.IsValid() || !definitions_.contains(def))
         return foundation::Result<AbilityInstanceId>::Failure(
             Error("gameplay.ability.grant_invalid", "invalid owner or definition"));
@@ -152,17 +134,12 @@ foundation::Result<AbilityInstanceId> AbilityService::Grant(GameplayObjectRef ow
             Error("gameplay.ability.id_exhausted", "ability instance id exhausted"));
     AbilityInstance instance{{generated}, def, owner, source, persistence, true, {1}};
     const auto id = instance.id;
-    try
-    {
+    try {
         instances_.emplace(id, instance);
-    }
-    catch (const std::exception &)
-    {
+    } catch (const std::exception &) {
         return foundation::Result<AbilityInstanceId>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to publish ability instance"));
-    }
-    catch (...)
-    {
+    } catch (...) {
         return foundation::Result<AbilityInstanceId>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to publish ability instance"));
     }
@@ -173,14 +150,12 @@ foundation::Result<AbilityInstanceId> AbilityService::Grant(GameplayObjectRef ow
     return foundation::Result<AbilityInstanceId>::Success(id);
 }
 
-foundation::Result<void> AbilityService::Revoke(AbilityInstanceId id, GameplayContext context)
-{
+foundation::Result<void> AbilityService::Revoke(AbilityInstanceId id, GameplayContext context) {
     auto it = instances_.find(id);
     if (it == instances_.end())
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.instance_missing", "ability instance missing"));
-    for (const auto &[execution_id, execution] : executions_)
-    {
+    for (const auto &[execution_id, execution] : executions_) {
         (void)execution_id;
         if (execution.ability == id && !IsTerminal(execution.state))
             return foundation::Result<void>::Failure(Error("gameplay.ability.active", "cannot revoke active ability"));
@@ -196,8 +171,8 @@ foundation::Result<void> AbilityService::Revoke(AbilityInstanceId id, GameplayCo
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> AbilityService::SetAbilityEnabled(AbilityInstanceId id, bool enabled, GameplayContext context)
-{
+foundation::Result<void> AbilityService::SetAbilityEnabled(AbilityInstanceId id, bool enabled,
+                                                           GameplayContext context) {
     auto it = instances_.find(id);
     if (it == instances_.end())
         return foundation::Result<void>::Failure(
@@ -217,11 +192,12 @@ foundation::Result<void> AbilityService::SetAbilityEnabled(AbilityInstanceId id,
     return foundation::Result<void>::Success();
 }
 
-std::uint64_t AbilityService::RevokeBySource(GameplayObjectRef owner, GameplayObjectRef source, GameplayContext context)
-{
+std::uint64_t AbilityService::RevokeBySource(GameplayObjectRef owner, GameplayObjectRef source,
+                                             GameplayContext context) {
     std::vector<AbilityInstanceId> ids;
     for (const auto &[id, instance] : instances_)
-        if (instance.owner == owner && instance.source == source && instance.persistence == AbilityGrantPersistence::SourceBound)
+        if (instance.owner == owner && instance.source == source &&
+            instance.persistence == AbilityGrantPersistence::SourceBound)
             ids.push_back(id);
     std::uint64_t count = 0;
     for (auto id : ids)
@@ -230,28 +206,26 @@ std::uint64_t AbilityService::RevokeBySource(GameplayObjectRef owner, GameplayOb
     return count;
 }
 
-const AbilityInstance *AbilityService::FindInstance(AbilityInstanceId id) const noexcept
-{
+const AbilityInstance *AbilityService::FindInstance(AbilityInstanceId id) const noexcept {
     auto it = instances_.find(id);
     return it == instances_.end() ? nullptr : &it->second;
 }
 
-std::vector<AbilityInstance> AbilityService::GetAbilities(GameplayObjectRef owner) const
-{
+std::vector<AbilityInstance> AbilityService::GetAbilities(GameplayObjectRef owner) const {
     std::vector<AbilityInstance> out;
-    for (const auto &[id, instance] : instances_)
-    {
+    for (const auto &[id, instance] : instances_) {
         (void)id;
         if (instance.owner == owner)
             out.push_back(instance);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
     return out;
 }
 
 GameplayDuration AbilityService::CooldownRemaining(GameplayObjectRef owner, CooldownGroupId group,
-                                                   GameplayTimePoint now) const noexcept
-{
+                                                   GameplayTimePoint now) const noexcept {
     GameplayTimePoint end{};
     for (const auto &cooldown : cooldowns_)
         if (cooldown.owner == owner && cooldown.group == group && cooldown.ends_at.ticks > end.ticks)
@@ -263,8 +237,7 @@ GameplayDuration AbilityService::CooldownRemaining(GameplayObjectRef owner, Cool
 
 AbilityAvailabilityResult AbilityService::ValidateTargets(const AbilityDefinition &definition,
                                                           const AbilityInstance &instance,
-                                                          const AbilityTargetSet &targets) const
-{
+                                                          const AbilityTargetSet &targets) const {
     const bool has_entities = HasEntityTargets(targets);
     const bool has_point = targets.point_micro.has_value();
     const bool has_direction = targets.direction_micro.has_value();
@@ -276,8 +249,7 @@ AbilityAvailabilityResult AbilityService::ValidateTargets(const AbilityDefinitio
         if (!target.IsValid())
             return invalid("ability.target_invalid");
 
-    switch (definition.targeting)
-    {
+    switch (definition.targeting) {
     case AbilityTargetPolicy::Self:
         if ((targets.primary.IsValid() && targets.primary != instance.owner) || !targets.targets.empty() || has_point ||
             has_direction || has_area)
@@ -309,24 +281,20 @@ AbilityAvailabilityResult AbilityService::ValidateTargets(const AbilityDefinitio
         break;
     }
 
-    if (definition.requires_materialized_owner)
-    {
+    if (definition.requires_materialized_owner) {
         if (!materialization_ || !materialization_->IsMaterialized(instance.owner))
             return invalid("ability.owner_not_materialized");
     }
-    if (definition.requires_materialized_target)
-    {
+    if (definition.requires_materialized_target) {
         if (!materialization_)
             return invalid("ability.materialization_provider_missing");
         bool any = false;
-        if (targets.primary.IsValid())
-        {
+        if (targets.primary.IsValid()) {
             any = true;
             if (!materialization_->IsMaterialized(targets.primary))
                 return invalid("ability.target_not_materialized");
         }
-        for (const auto &target : targets.targets)
-        {
+        for (const auto &target : targets.targets) {
             any = true;
             if (!materialization_->IsMaterialized(target))
                 return invalid("ability.target_not_materialized");
@@ -338,8 +306,7 @@ AbilityAvailabilityResult AbilityService::ValidateTargets(const AbilityDefinitio
 }
 
 AbilityAvailabilityResult AbilityService::CanActivate(AbilityInstanceId id, const AbilityTargetSet &targets,
-                                                      GameplayTimePoint now) const
-{
+                                                      GameplayTimePoint now) const {
     const auto *instance = FindInstance(id);
     if (!instance || !instance->enabled)
         return {AbilityAvailability::Unavailable, TypeId::FromString("ability.instance_unavailable")};
@@ -349,20 +316,18 @@ AbilityAvailabilityResult AbilityService::CanActivate(AbilityInstanceId id, cons
     const auto targeting = ValidateTargets(*definition, *instance, targets);
     if (targeting.availability != AbilityAvailability::Available)
         return targeting;
-    if (definition->cooldown.group.IsValid() && CooldownRemaining(instance->owner, definition->cooldown.group, now).ticks > 0)
+    if (definition->cooldown.group.IsValid() &&
+        CooldownRemaining(instance->owner, definition->cooldown.group, now).ticks > 0)
         return {AbilityAvailability::Unavailable, TypeId::FromString("ability.cooldown")};
     const bool has_start_costs = std::any_of(definition->costs.begin(), definition->costs.end(), [](const auto &cost) {
         return cost.policy == AbilityCostPolicy::PayOnStart || cost.policy == AbilityCostPolicy::ReserveThenCommit;
     });
     if (has_start_costs && !resources_)
         return {AbilityAvailability::Unavailable, TypeId::FromString("ability.resource_provider_missing")};
-    if (resources_)
-    {
-        try
-        {
+    if (resources_) {
+        try {
             std::unordered_map<AbilityResourceTypeId, std::int64_t, IdHash> totals;
-            for (const auto &cost : definition->costs)
-            {
+            for (const auto &cost : definition->costs) {
                 if (cost.policy != AbilityCostPolicy::PayOnStart && cost.policy != AbilityCostPolicy::ReserveThenCommit)
                     continue;
                 auto [it, inserted] = totals.try_emplace(cost.resource, 0);
@@ -374,22 +339,16 @@ AbilityAvailabilityResult AbilityService::CanActivate(AbilityInstanceId id, cons
             for (const auto &[resource, amount] : totals)
                 if (!resources_->CanAfford(instance->owner, resource, amount))
                     return {AbilityAvailability::Unavailable, TypeId::FromString("ability.resource_missing")};
-        }
-        catch (...)
-        {
+        } catch (...) {
             return {AbilityAvailability::Unavailable, TypeId::FromString("ability.internal_allocation_failed")};
         }
     }
-    if (requirements_)
-    {
-        try
-        {
+    if (requirements_) {
+        try {
             auto result = requirements_->Check(*definition, *instance, targets, now);
             if (result.availability != AbilityAvailability::Available)
                 return result;
-        }
-        catch (...)
-        {
+        } catch (...) {
             return {AbilityAvailability::Unavailable, TypeId::FromString("ability.requirement_provider_failed")};
         }
     }
@@ -397,31 +356,25 @@ AbilityAvailabilityResult AbilityService::CanActivate(AbilityInstanceId id, cons
 }
 
 AbilityAvailabilityResult AbilityService::CheckContinuity(const AbilityDefinition &definition,
-                                                        const AbilityInstance &instance,
-                                                        const AbilityExecution &execution,
-                                                        GameplayTimePoint now) const
-{
+                                                          const AbilityInstance &instance,
+                                                          const AbilityExecution &execution,
+                                                          GameplayTimePoint now) const {
     if (definition.continuity == AbilityContinuityPolicy::ActivationOnly)
         return {AbilityAvailability::Available, {}};
     const auto targets = ValidateTargets(definition, instance, execution.targets);
     if (targets.availability != AbilityAvailability::Available)
         return targets;
-    if (requirements_)
-    {
-        try
-        {
+    if (requirements_) {
+        try {
             return requirements_->Check(definition, instance, execution.targets, now);
-        }
-        catch (...)
-        {
+        } catch (...) {
             return {AbilityAvailability::Unavailable, TypeId::FromString("ability.requirement_provider_failed")};
         }
     }
     return {AbilityAvailability::Available, {}};
 }
 
-void AbilityService::ReleaseReservations(AbilityExecution &execution, GameplayContext context) noexcept
-{
+void AbilityService::ReleaseReservations(AbilityExecution &execution, GameplayContext context) noexcept {
     if (resources_)
         for (const auto &reservation : execution.reservations)
             resources_->Release(reservation, context);
@@ -429,14 +382,12 @@ void AbilityService::ReleaseReservations(AbilityExecution &execution, GameplayCo
 }
 
 foundation::Result<void> AbilityService::FinalizeExecution(AbilityExecutionId id, AbilityExecutionState terminal_state,
-                                                               AbilityChangeKind change_kind, GameplayTimePoint now,
-                                                               GameplayContext context, TypeId reason)
-{
+                                                           AbilityChangeKind change_kind, GameplayTimePoint now,
+                                                           GameplayContext context, TypeId reason) {
     (void)terminal_state;
     auto it = executions_.find(id);
     if (it == executions_.end())
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ability.execution_missing", "execution missing"));
+        return foundation::Result<void>::Failure(Error("gameplay.ability.execution_missing", "execution missing"));
     const auto next_revision = CheckedNext(it->second.revision);
     if (!next_revision)
         return foundation::Result<void>::Failure(
@@ -453,31 +404,27 @@ foundation::Result<void> AbilityService::FinalizeExecution(AbilityExecutionId id
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> AbilityService::AcquireStartCosts(
-    const AbilityDefinition &definition, AbilityExecution &execution,
-    std::vector<AbilityResourceReservation> &pay_on_start)
-{
+foundation::Result<void> AbilityService::AcquireStartCosts(const AbilityDefinition &definition,
+                                                           AbilityExecution &execution,
+                                                           std::vector<AbilityResourceReservation> &pay_on_start) {
     if (definition.costs.empty())
         return foundation::Result<void>::Success();
     if (!resources_)
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_provider_missing", "ability costs require resource provider"));
 
-    const auto start_count = static_cast<std::size_t>(std::count_if(
-        definition.costs.begin(), definition.costs.end(), [](const auto &cost) {
+    const auto start_count =
+        static_cast<std::size_t>(std::count_if(definition.costs.begin(), definition.costs.end(), [](const auto &cost) {
             return cost.policy == AbilityCostPolicy::PayOnStart;
         }));
-    const auto held_count = static_cast<std::size_t>(std::count_if(
-        definition.costs.begin(), definition.costs.end(), [](const auto &cost) {
+    const auto held_count =
+        static_cast<std::size_t>(std::count_if(definition.costs.begin(), definition.costs.end(), [](const auto &cost) {
             return cost.policy == AbilityCostPolicy::ReserveThenCommit;
         }));
-    try
-    {
+    try {
         pay_on_start.reserve(start_count);
         execution.reservations.reserve(held_count);
-    }
-    catch (...)
-    {
+    } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to prepare ability reservation storage"));
     }
@@ -490,15 +437,13 @@ foundation::Result<void> AbilityService::AcquireStartCosts(
         pay_on_start.clear();
         execution.reservations.clear();
     };
-    try
-    {
-        for (const auto &cost : definition.costs)
-        {
+    try {
+        for (const auto &cost : definition.costs) {
             if (cost.policy != AbilityCostPolicy::PayOnStart && cost.policy != AbilityCostPolicy::ReserveThenCommit)
                 continue;
-            auto reservation = resources_->Reserve(execution.owner, cost.resource, cost.amount_micro, execution.context);
-            if (!reservation)
-            {
+            auto reservation =
+                resources_->Reserve(execution.owner, cost.resource, cost.amount_micro, execution.context);
+            if (!reservation) {
                 rollback();
                 return foundation::Result<void>::Failure(reservation.GetError());
             }
@@ -507,15 +452,11 @@ foundation::Result<void> AbilityService::AcquireStartCosts(
             else
                 execution.reservations.push_back(std::move(reservation).Value());
         }
-    }
-    catch (const std::exception &)
-    {
+    } catch (const std::exception &) {
         rollback();
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_provider_exception", "ability resource provider threw while reserving"));
-    }
-    catch (...)
-    {
+    } catch (...) {
         rollback();
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_provider_exception", "ability resource provider threw while reserving"));
@@ -523,12 +464,11 @@ foundation::Result<void> AbilityService::AcquireStartCosts(
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> AbilityService::AcquireExecuteCosts(
-    const AbilityDefinition &definition, AbilityExecution &execution,
-    std::vector<AbilityResourceReservation> &pay_on_execute)
-{
-    const auto count = static_cast<std::size_t>(std::count_if(
-        definition.costs.begin(), definition.costs.end(), [](const auto &cost) {
+foundation::Result<void> AbilityService::AcquireExecuteCosts(const AbilityDefinition &definition,
+                                                             AbilityExecution &execution,
+                                                             std::vector<AbilityResourceReservation> &pay_on_execute) {
+    const auto count =
+        static_cast<std::size_t>(std::count_if(definition.costs.begin(), definition.costs.end(), [](const auto &cost) {
             return cost.policy == AbilityCostPolicy::PayOnExecute;
         }));
     if (count == 0)
@@ -536,12 +476,9 @@ foundation::Result<void> AbilityService::AcquireExecuteCosts(
     if (!resources_)
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_provider_missing", "ability execute costs require resource provider"));
-    try
-    {
+    try {
         pay_on_execute.reserve(count);
-    }
-    catch (...)
-    {
+    } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to prepare execute reservation storage"));
     }
@@ -550,29 +487,23 @@ foundation::Result<void> AbilityService::AcquireExecuteCosts(
             resources_->Release(reservation, execution.context);
         pay_on_execute.clear();
     };
-    try
-    {
-        for (const auto &cost : definition.costs)
-        {
+    try {
+        for (const auto &cost : definition.costs) {
             if (cost.policy != AbilityCostPolicy::PayOnExecute)
                 continue;
-            auto reservation = resources_->Reserve(execution.owner, cost.resource, cost.amount_micro, execution.context);
-            if (!reservation)
-            {
+            auto reservation =
+                resources_->Reserve(execution.owner, cost.resource, cost.amount_micro, execution.context);
+            if (!reservation) {
                 rollback();
                 return foundation::Result<void>::Failure(reservation.GetError());
             }
             pay_on_execute.push_back(std::move(reservation).Value());
         }
-    }
-    catch (const std::exception &)
-    {
+    } catch (const std::exception &) {
         rollback();
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_provider_exception", "ability resource provider threw while reserving"));
-    }
-    catch (...)
-    {
+    } catch (...) {
         rollback();
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_provider_exception", "ability resource provider threw while reserving"));
@@ -580,8 +511,7 @@ foundation::Result<void> AbilityService::AcquireExecuteCosts(
     return foundation::Result<void>::Success();
 }
 
-void AbilityService::CommitReservations(AbilityExecution &execution) noexcept
-{
+void AbilityService::CommitReservations(AbilityExecution &execution) noexcept {
     if (!resources_)
         return;
     for (const auto &reservation : execution.reservations)
@@ -590,13 +520,13 @@ void AbilityService::CommitReservations(AbilityExecution &execution) noexcept
 }
 
 void AbilityService::StartCooldown(const AbilityDefinition &definition, GameplayObjectRef owner, GameplayTimePoint now,
-                                   GameplayContext context, AbilityInstanceId ability, AbilityExecutionId execution)
-{
+                                   GameplayContext context, AbilityInstanceId ability, AbilityExecutionId execution) {
     if (!definition.cooldown.group.IsValid() || definition.cooldown.duration.ticks <= 0)
         return;
     const auto end = Add(now, definition.cooldown.duration);
-    auto it = std::find_if(cooldowns_.begin(), cooldowns_.end(),
-                           [&](const auto &c) { return c.owner == owner && c.group == definition.cooldown.group; });
+    auto it = std::find_if(cooldowns_.begin(), cooldowns_.end(), [&](const auto &c) {
+        return c.owner == owner && c.group == definition.cooldown.group;
+    });
     if (it == cooldowns_.end())
         cooldowns_.push_back({owner, definition.cooldown.group, end});
     else if (end.ticks > it->ends_at.ticks)
@@ -605,8 +535,7 @@ void AbilityService::StartCooldown(const AbilityDefinition &definition, Gameplay
     Record({0, AbilityChangeKind::CooldownStarted, owner, ability, execution, now, context});
 }
 
-foundation::Result<AbilityExecutionId> AbilityService::BeginActivation(AbilityActivationRequest request)
-{
+foundation::Result<AbilityExecutionId> AbilityService::BeginActivation(AbilityActivationRequest request) {
     if (resource_reconciliation_required_)
         return foundation::Result<AbilityExecutionId>::Failure(
             Error("gameplay.ability.resource_reconciliation_required",
@@ -642,8 +571,7 @@ foundation::Result<AbilityExecutionId> AbilityService::BeginActivation(AbilityAc
     execution.context = request.context;
     execution.context.actor = instance->owner;
     execution.revision = {1};
-    switch (definition->timing.kind)
-    {
+    switch (definition->timing.kind) {
     case AbilityTimingKind::Instant:
         execution.state = AbilityExecutionState::Executing;
         execution.due_at = request.now;
@@ -679,22 +607,19 @@ foundation::Result<AbilityExecutionId> AbilityService::BeginActivation(AbilityAc
     bool execution_inserted = false;
     std::optional<std::size_t> existing_cooldown;
     const auto cooldown_end = starts_cooldown ? Add(request.now, definition->cooldown.duration) : GameplayTimePoint{};
-    if (starts_cooldown)
-    {
+    if (starts_cooldown) {
         const auto cooldown = std::find_if(cooldowns_.begin(), cooldowns_.end(), [&](const auto &state) {
             return state.owner == instance->owner && state.group == definition->cooldown.group;
         });
         if (cooldown != cooldowns_.end())
             existing_cooldown = static_cast<std::size_t>(std::distance(cooldowns_.begin(), cooldown));
     }
-    try
-    {
+    try {
         if (test_seam::Consume(test_seam::FaultPoint::BeginActivationBeforePublish))
             throw std::bad_alloc{};
         const auto [execution_it, inserted] = executions_.emplace(execution.id, execution);
         (void)execution_it;
-        if (!inserted)
-        {
+        if (!inserted) {
             rollback_resources();
             return foundation::Result<AbilityExecutionId>::Failure(
                 Error("gameplay.ability.execution_collision", "ability execution id already exists"));
@@ -702,9 +627,7 @@ foundation::Result<AbilityExecutionId> AbilityService::BeginActivation(AbilityAc
         execution_inserted = true;
         if (starts_cooldown && !existing_cooldown)
             cooldowns_.push_back({instance->owner, definition->cooldown.group, cooldown_end});
-    }
-    catch (const std::bad_alloc &)
-    {
+    } catch (const std::bad_alloc &) {
         if (execution_inserted)
             executions_.erase(execution.id);
         rollback_resources();
@@ -727,18 +650,17 @@ foundation::Result<AbilityExecutionId> AbilityService::BeginActivation(AbilityAc
     const auto id = execution.id;
     Record({0, AbilityChangeKind::Started, instance->owner, instance->id, id, request.now, request.context});
     if (starts_cooldown)
-        Record({0, AbilityChangeKind::CooldownStarted, instance->owner, instance->id, id, request.now, request.context});
+        Record(
+            {0, AbilityChangeKind::CooldownStarted, instance->owner, instance->id, id, request.now, request.context});
     return foundation::Result<AbilityExecutionId>::Success(id);
 }
 
 std::vector<AbilityOutput> AbilityService::BuildOutputs(const AbilityDefinition &definition,
                                                         const AbilityExecution &execution,
-                                                        GameplayTimePoint occurrence_at) const
-{
+                                                        GameplayTimePoint occurrence_at) const {
     std::vector<AbilityOutput> out;
     out.reserve(definition.outputs.size());
-    for (std::uint32_t index = 0; index < definition.outputs.size(); ++index)
-    {
+    for (std::uint32_t index = 0; index < definition.outputs.size(); ++index) {
         const auto &output = definition.outputs[index];
         out.push_back({execution.id, occurrence_at, index, output.action, execution.owner, execution.targets,
                        output.magnitude_micro, output.payload, execution.context});
@@ -747,8 +669,7 @@ std::vector<AbilityOutput> AbilityService::BuildOutputs(const AbilityDefinition 
 }
 
 foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution(AbilityExecutionId id,
-                                                                                GameplayTimePoint now)
-{
+                                                                                 GameplayTimePoint now) {
     auto it = executions_.find(id);
     if (it == executions_.end())
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
@@ -759,7 +680,8 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution
             Error("gameplay.ability.execution_finished", "ability already finished"));
     if (execution.state == AbilityExecutionState::Channeling)
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
-            Error("gameplay.ability.channel_requires_tick_or_cancel", "channel executions complete through channel lifecycle"));
+            Error("gameplay.ability.channel_requires_tick_or_cancel",
+                  "channel executions complete through channel lifecycle"));
     const auto *instance = FindInstance(execution.ability);
     const auto *definition = instance ? FindDefinition(instance->definition) : nullptr;
     if (!instance || !definition)
@@ -774,27 +696,26 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution
             Error("gameplay.ability.not_due", "ability execution not due"));
 
     const auto continuity = CheckContinuity(*definition, *instance, execution, now);
-    if (continuity.availability != AbilityAvailability::Available)
-    {
+    if (continuity.availability != AbilityAvailability::Available) {
         if (!CheckedNext(execution.revision) || !CanRecord())
             return foundation::Result<std::vector<AbilityOutput>>::Failure(
                 Error("gameplay.revision_exhausted", "ability execution cannot publish terminal state"));
-        const auto reason = continuity.reason.IsValid() ? continuity.reason : TypeId::FromString("ability.requirements_lost");
+        const auto reason =
+            continuity.reason.IsValid() ? continuity.reason : TypeId::FromString("ability.requirements_lost");
         const auto context = execution.context;
         ReleaseReservations(execution, context);
         if (diagnostics_.interrupts != std::numeric_limits<std::uint64_t>::max())
             ++diagnostics_.interrupts;
-        (void)FinalizeExecution(id, AbilityExecutionState::Interrupted, AbilityChangeKind::Interrupted, now, context, reason);
+        (void)FinalizeExecution(id, AbilityExecutionState::Interrupted, AbilityChangeKind::Interrupted, now, context,
+                                reason);
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
             Error("gameplay.ability.continuity_lost", "ability requirements or materialization were lost"));
     }
 
     std::vector<AbilityResourceReservation> pay_on_execute;
     auto pay = AcquireExecuteCosts(*definition, execution, pay_on_execute);
-    if (!pay)
-    {
-        if (CheckedNext(execution.revision) && CanRecord())
-        {
+    if (!pay) {
+        if (CheckedNext(execution.revision) && CanRecord()) {
             const auto context = execution.context;
             ReleaseReservations(execution, context);
             if (diagnostics_.failed != std::numeric_limits<std::uint64_t>::max())
@@ -812,8 +733,7 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution
 
     const bool starts_cooldown = !definition->cooldown.starts_on_begin && definition->cooldown.group.IsValid() &&
                                  definition->cooldown.duration.ticks > 0;
-    if (!CheckedNext(execution.revision) || !CanRecord(starts_cooldown ? 2 : 1))
-    {
+    if (!CheckedNext(execution.revision) || !CanRecord(starts_cooldown ? 2 : 1)) {
         release_execute();
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
             Error("gameplay.revision_exhausted", "ability execution cannot publish completion"));
@@ -821,14 +741,12 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution
 
     std::vector<AbilityOutput> out;
     std::vector<AbilityCooldownState> staged_cooldowns;
-    try
-    {
+    try {
         if (test_seam::Consume(test_seam::FaultPoint::CompleteExecutionBeforeOutputs))
             throw std::bad_alloc{};
         out = BuildOutputs(*definition, execution, execution.due_at);
         staged_cooldowns = cooldowns_;
-        if (starts_cooldown)
-        {
+        if (starts_cooldown) {
             const auto end = Add(now, definition->cooldown.duration);
             auto cooldown = std::find_if(staged_cooldowns.begin(), staged_cooldowns.end(), [&](const auto &c) {
                 return c.owner == execution.owner && c.group == definition->cooldown.group;
@@ -838,9 +756,7 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution
             else if (end.ticks > cooldown->ends_at.ticks)
                 cooldown->ends_at = end;
         }
-    }
-    catch (...)
-    {
+    } catch (...) {
         release_execute();
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to prepare ability completion outputs"));
@@ -867,15 +783,14 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::CompleteExecution
 }
 
 foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(AbilityExecutionId id, GameplayTimePoint now,
-                                                                           std::uint64_t occurrences)
-{
+                                                                           std::uint64_t occurrences) {
     auto it = executions_.find(id);
     if (it == executions_.end() || it->second.state != AbilityExecutionState::Channeling)
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
             Error("gameplay.ability.channel_invalid", "channel execution missing or inactive"));
     if (occurrences == 0 || occurrences > kMaxChannelOccurrencesPerCall)
-        return foundation::Result<std::vector<AbilityOutput>>::Failure(
-            Error("gameplay.ability.channel_occurrences_invalid", "channel occurrence count is outside supported bounds"));
+        return foundation::Result<std::vector<AbilityOutput>>::Failure(Error(
+            "gameplay.ability.channel_occurrences_invalid", "channel occurrence count is outside supported bounds"));
     auto &execution = it->second;
     const auto *instance = FindInstance(execution.ability);
     const auto *definition = instance ? FindDefinition(instance->definition) : nullptr;
@@ -888,28 +803,27 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
             Error("gameplay.ability.resource_reconciliation_required",
                   "restored ability reservations must be reconciled before channel execution"));
 
-    if (definition->continuity == AbilityContinuityPolicy::ThroughoutExecution)
-    {
+    if (definition->continuity == AbilityContinuityPolicy::ThroughoutExecution) {
         const auto continuity = CheckContinuity(*definition, *instance, execution, now);
-        if (continuity.availability != AbilityAvailability::Available)
-        {
+        if (continuity.availability != AbilityAvailability::Available) {
             if (!CheckedNext(execution.revision) || !CanRecord())
                 return foundation::Result<std::vector<AbilityOutput>>::Failure(
                     Error("gameplay.revision_exhausted", "ability execution cannot publish interruption"));
-            const auto reason = continuity.reason.IsValid() ? continuity.reason : TypeId::FromString("ability.requirements_lost");
+            const auto reason =
+                continuity.reason.IsValid() ? continuity.reason : TypeId::FromString("ability.requirements_lost");
             const auto context = execution.context;
             ReleaseReservations(execution, context);
             if (diagnostics_.interrupts != std::numeric_limits<std::uint64_t>::max())
                 ++diagnostics_.interrupts;
-            (void)FinalizeExecution(id, AbilityExecutionState::Interrupted, AbilityChangeKind::Interrupted, now, context, reason);
+            (void)FinalizeExecution(id, AbilityExecutionState::Interrupted, AbilityChangeKind::Interrupted, now,
+                                    context, reason);
             return foundation::Result<std::vector<AbilityOutput>>::Failure(
                 Error("gameplay.ability.continuity_lost", "channel requirements or materialization were lost"));
         }
     }
 
     const bool bounded = definition->timing.max_channel_duration.ticks > 0;
-    if (bounded && execution.next_channel_at.ticks > execution.due_at.ticks)
-    {
+    if (bounded && execution.next_channel_at.ticks > execution.due_at.ticks) {
         if (now.ticks < execution.due_at.ticks)
             return foundation::Result<std::vector<AbilityOutput>>::Failure(
                 Error("gameplay.ability.not_due", "channel completion not due"));
@@ -919,11 +833,9 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
             return foundation::Result<std::vector<AbilityOutput>>::Failure(
                 Error("gameplay.revision_exhausted", "ability execution cannot publish completion"));
         std::vector<AbilityCooldownState> staged_cooldowns;
-        try
-        {
+        try {
             staged_cooldowns = cooldowns_;
-            if (starts_cooldown)
-            {
+            if (starts_cooldown) {
                 const auto end = Add(now, definition->cooldown.duration);
                 auto cooldown = std::find_if(staged_cooldowns.begin(), staged_cooldowns.end(), [&](const auto &c) {
                     return c.owner == execution.owner && c.group == definition->cooldown.group;
@@ -933,9 +845,7 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
                 else if (end.ticks > cooldown->ends_at.ticks)
                     cooldown->ends_at = end;
             }
-        }
-        catch (...)
-        {
+        } catch (...) {
             return foundation::Result<std::vector<AbilityOutput>>::Failure(
                 Error("gameplay.ability.allocation_failed", "failed to prepare channel completion"));
         }
@@ -947,7 +857,8 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
         diagnostics_.cooldowns = cooldowns_.size();
         if (starts_cooldown)
             Record({0, AbilityChangeKind::CooldownStarted, owner, ability, id, now, context});
-        auto finalized = FinalizeExecution(id, AbilityExecutionState::Completed, AbilityChangeKind::Executed, now, context);
+        auto finalized =
+            FinalizeExecution(id, AbilityExecutionState::Completed, AbilityChangeKind::Executed, now, context);
         if (!finalized)
             return foundation::Result<std::vector<AbilityOutput>>::Failure(finalized.GetError());
         return foundation::Result<std::vector<AbilityOutput>>::Success({});
@@ -957,18 +868,18 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
             Error("gameplay.ability.not_due", "channel tick not due"));
 
     std::uint64_t count = occurrences;
-    if (bounded)
-    {
+    if (bounded) {
         const auto remaining_ticks = SaturatingDifference(execution.due_at, execution.next_channel_at).ticks;
         if (remaining_ticks < 0)
             count = 0;
-        else
-        {
-            const auto remaining = static_cast<std::uint64_t>(remaining_ticks / definition->timing.channel_interval.ticks) + 1;
+        else {
+            const auto remaining =
+                static_cast<std::uint64_t>(remaining_ticks / definition->timing.channel_interval.ticks) + 1;
             count = std::min(count, remaining);
         }
     }
-    if (count > 0 && definition->outputs.size() > std::numeric_limits<std::size_t>::max() / static_cast<std::size_t>(count))
+    if (count > 0 &&
+        definition->outputs.size() > std::numeric_limits<std::size_t>::max() / static_cast<std::size_t>(count))
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
             Error("gameplay.ability.output_overflow", "channel output batch is too large"));
 
@@ -986,23 +897,20 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
     std::vector<AbilityOutput> all;
     std::vector<AbilityResourceReservation> tick_reservations;
     std::vector<AbilityCooldownState> staged_cooldowns;
-    const auto tick_cost_count = static_cast<std::size_t>(std::count_if(
-        definition->costs.begin(), definition->costs.end(), [](const auto &cost) {
+    const auto tick_cost_count = static_cast<std::size_t>(
+        std::count_if(definition->costs.begin(), definition->costs.end(), [](const auto &cost) {
             return cost.policy == AbilityCostPolicy::PayPerChannelTick;
         }));
-    try
-    {
+    try {
         all.reserve(definition->outputs.size() * static_cast<std::size_t>(count));
         tick_reservations.reserve(tick_cost_count * static_cast<std::size_t>(count));
-        for (std::uint64_t n = 0; n < count; ++n)
-        {
-            const auto occurrence_at = Add(execution.next_channel_at,
-                                           ScaleDuration(definition->timing.channel_interval, n));
+        for (std::uint64_t n = 0; n < count; ++n) {
+            const auto occurrence_at =
+                Add(execution.next_channel_at, ScaleDuration(definition->timing.channel_interval, n));
             auto one = BuildOutputs(*definition, execution, occurrence_at);
             all.insert(all.end(), one.begin(), one.end());
         }
-        if (starts_cooldown)
-        {
+        if (starts_cooldown) {
             staged_cooldowns = cooldowns_;
             const auto end = Add(now, definition->cooldown.duration);
             auto cooldown = std::find_if(staged_cooldowns.begin(), staged_cooldowns.end(), [&](const auto &c) {
@@ -1013,9 +921,7 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
             else if (end.ticks > cooldown->ends_at.ticks)
                 cooldown->ends_at = end;
         }
-    }
-    catch (...)
-    {
+    } catch (...) {
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to prepare channel output batch"));
     }
@@ -1028,43 +934,37 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
             for (const auto &reservation : tick_reservations)
                 resources_->Release(reservation, execution.context);
     };
-    try
-    {
-        for (std::uint64_t n = 0; n < count; ++n)
-        {
+    try {
+        for (std::uint64_t n = 0; n < count; ++n) {
             (void)n;
-            for (const auto &cost : definition->costs)
-            {
+            for (const auto &cost : definition->costs) {
                 if (cost.policy != AbilityCostPolicy::PayPerChannelTick)
                     continue;
-                auto reservation = resources_->Reserve(execution.owner, cost.resource, cost.amount_micro, execution.context);
-                if (!reservation)
-                {
+                auto reservation =
+                    resources_->Reserve(execution.owner, cost.resource, cost.amount_micro, execution.context);
+                if (!reservation) {
                     release_ticks();
                     return foundation::Result<std::vector<AbilityOutput>>::Failure(reservation.GetError());
                 }
                 tick_reservations.push_back(std::move(reservation).Value());
             }
         }
-    }
-    catch (...)
-    {
+    } catch (...) {
         release_ticks();
         return foundation::Result<std::vector<AbilityOutput>>::Failure(
-            Error("gameplay.ability.resource_provider_exception", "ability resource provider threw while reserving channel cost"));
+            Error("gameplay.ability.resource_provider_exception",
+                  "ability resource provider threw while reserving channel cost"));
     }
 
     for (const auto &reservation : tick_reservations)
         resources_->Commit(reservation, execution.context);
     if (completes)
         CommitReservations(execution);
-    else
-    {
+    else {
         execution.next_channel_at = next_channel;
         execution.revision = *CheckedNext(execution.revision);
     }
-    if (starts_cooldown)
-    {
+    if (starts_cooldown) {
         cooldowns_.swap(staged_cooldowns);
         diagnostics_.cooldowns = cooldowns_.size();
         Record({0, AbilityChangeKind::CooldownStarted, execution.owner, execution.ability, id, now, execution.context});
@@ -1073,18 +973,17 @@ foundation::Result<std::vector<AbilityOutput>> AbilityService::ChannelTick(Abili
         diagnostics_.outputs += all.size();
     else
         diagnostics_.outputs = std::numeric_limits<std::uint64_t>::max();
-    if (completes)
-    {
+    if (completes) {
         const auto context = execution.context;
-        auto finalized = FinalizeExecution(id, AbilityExecutionState::Completed, AbilityChangeKind::Executed, now, context);
+        auto finalized =
+            FinalizeExecution(id, AbilityExecutionState::Completed, AbilityChangeKind::Executed, now, context);
         if (!finalized)
             return foundation::Result<std::vector<AbilityOutput>>::Failure(finalized.GetError());
     }
     return foundation::Result<std::vector<AbilityOutput>>::Success(std::move(all));
 }
 
-foundation::Result<void> AbilityService::Cancel(AbilityExecutionId id, GameplayTimePoint now, GameplayContext context)
-{
+foundation::Result<void> AbilityService::Cancel(AbilityExecutionId id, GameplayTimePoint now, GameplayContext context) {
     if (resource_reconciliation_required_)
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_reconciliation_required",
@@ -1100,8 +999,7 @@ foundation::Result<void> AbilityService::Cancel(AbilityExecutionId id, GameplayT
 }
 
 foundation::Result<void> AbilityService::Interrupt(AbilityExecutionId id, TypeId reason, GameplayTimePoint now,
-                                                   GameplayContext context)
-{
+                                                   GameplayContext context) {
     if (resource_reconciliation_required_)
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_reconciliation_required",
@@ -1115,11 +1013,11 @@ foundation::Result<void> AbilityService::Interrupt(AbilityExecutionId id, TypeId
     ReleaseReservations(it->second, context);
     if (diagnostics_.interrupts != std::numeric_limits<std::uint64_t>::max())
         ++diagnostics_.interrupts;
-    return FinalizeExecution(id, AbilityExecutionState::Interrupted, AbilityChangeKind::Interrupted, now, context, reason);
+    return FinalizeExecution(id, AbilityExecutionState::Interrupted, AbilityChangeKind::Interrupted, now, context,
+                             reason);
 }
 
-foundation::Result<void> AbilityService::BindSchedule(AbilityExecutionId id, ScheduleId schedule)
-{
+foundation::Result<void> AbilityService::BindSchedule(AbilityExecutionId id, ScheduleId schedule) {
     auto it = executions_.find(id);
     if (it == executions_.end() || !schedule.IsValid() || IsTerminal(it->second.state))
         return foundation::Result<void>::Failure(
@@ -1134,8 +1032,7 @@ foundation::Result<void> AbilityService::BindSchedule(AbilityExecutionId id, Sch
     if (!next_revision)
         return foundation::Result<void>::Failure(
             Error("gameplay.revision_exhausted", "ability execution revision exhausted"));
-    try
-    {
+    try {
         if (test_seam::Consume(test_seam::FaultPoint::BindScheduleBeforePublish))
             throw std::bad_alloc{};
         auto [inserted_it, inserted] = schedule_to_execution_.try_emplace(schedule, id);
@@ -1143,9 +1040,7 @@ foundation::Result<void> AbilityService::BindSchedule(AbilityExecutionId id, Sch
         if (!inserted && inserted_it->second != id)
             return foundation::Result<void>::Failure(
                 Error("gameplay.ability.schedule_duplicate", "schedule is already bound to another execution"));
-    }
-    catch (...)
-    {
+    } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to publish ability schedule binding"));
     }
@@ -1158,8 +1053,7 @@ foundation::Result<void> AbilityService::BindSchedule(AbilityExecutionId id, Sch
 }
 
 foundation::Result<void> AbilityService::NotifyScheduleDue(ScheduleId schedule, GameplayTimePoint now,
-                                                           std::vector<AbilityOutput> &outputs)
-{
+                                                           std::vector<AbilityOutput> &outputs) {
     if (resource_reconciliation_required_)
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.resource_reconciliation_required",
@@ -1186,8 +1080,7 @@ foundation::Result<void> AbilityService::NotifyScheduleDue(ScheduleId schedule, 
 
     schedule_to_execution_.erase(schedule);
     const auto remaining = executions_.find(execution_id);
-    if (remaining != executions_.end() && remaining->second.schedule && *remaining->second.schedule == schedule)
-    {
+    if (remaining != executions_.end() && remaining->second.schedule && *remaining->second.schedule == schedule) {
         const auto next_revision = CheckedNext(remaining->second.revision);
         if (!next_revision)
             return foundation::Result<void>::Failure(
@@ -1199,28 +1092,24 @@ foundation::Result<void> AbilityService::NotifyScheduleDue(ScheduleId schedule, 
     return foundation::Result<void>::Success();
 }
 
-void AbilityService::SweepCooldowns(GameplayTimePoint now, GameplayContext context)
-{
-    const auto due = static_cast<std::size_t>(std::count_if(cooldowns_.begin(), cooldowns_.end(),
-                                                            [&](const auto &c) { return c.ends_at.ticks <= now.ticks; }));
+void AbilityService::SweepCooldowns(GameplayTimePoint now, GameplayContext context) {
+    const auto due = static_cast<std::size_t>(std::count_if(cooldowns_.begin(), cooldowns_.end(), [&](const auto &c) {
+        return c.ends_at.ticks <= now.ticks;
+    }));
     if (due == 0 || !CanRecord(due))
         return;
     std::vector<AbilityCooldownState> remaining;
     std::vector<GameplayObjectRef> finished;
-    try
-    {
+    try {
         remaining.reserve(cooldowns_.size() - due);
         finished.reserve(due);
-        for (const auto &cooldown : cooldowns_)
-        {
+        for (const auto &cooldown : cooldowns_) {
             if (cooldown.ends_at.ticks <= now.ticks)
                 finished.push_back(cooldown.owner);
             else
                 remaining.push_back(cooldown);
         }
-    }
-    catch (...)
-    {
+    } catch (...) {
         return;
     }
     cooldowns_.swap(remaining);
@@ -1229,8 +1118,7 @@ void AbilityService::SweepCooldowns(GameplayTimePoint now, GameplayContext conte
     diagnostics_.cooldowns = cooldowns_.size();
 }
 
-foundation::Result<void> AbilityService::ReconcileRestoredReservations(GameplayContext context)
-{
+foundation::Result<void> AbilityService::ReconcileRestoredReservations(GameplayContext context) {
     if (!resource_reconciliation_required_)
         return foundation::Result<void>::Success();
     if (!resources_)
@@ -1238,11 +1126,9 @@ foundation::Result<void> AbilityService::ReconcileRestoredReservations(GameplayC
             Error("gameplay.ability.resource_provider_missing", "resource provider is required for reconciliation"));
 
     std::vector<std::pair<AbilityExecutionId, AbilityResourceReservation>> pending;
-    try
-    {
+    try {
         std::size_t total = 0;
-        for (const auto &[id, execution] : executions_)
-        {
+        for (const auto &[id, execution] : executions_) {
             (void)id;
             total += execution.reservations.size();
         }
@@ -1256,29 +1142,23 @@ foundation::Result<void> AbilityService::ReconcileRestoredReservations(GameplayC
                 return a.first < b.first;
             return a.second.id < b.second.id;
         });
-    }
-    catch (...)
-    {
+    } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to prepare reservation reconciliation"));
     }
 
-    for (const auto &[execution_id, reservation] : pending)
-    {
+    for (const auto &[execution_id, reservation] : pending) {
         if (std::find(reconciled_reservations_.begin(), reconciled_reservations_.end(), reservation.id) !=
             reconciled_reservations_.end())
             continue;
         const auto execution = executions_.find(execution_id);
         if (execution == executions_.end())
             continue;
-        try
-        {
+        try {
             auto reconciled = resources_->ReconcileReservation(reservation, execution->second.owner, context);
             if (!reconciled)
                 return foundation::Result<void>::Failure(reconciled.GetError());
-        }
-        catch (...)
-        {
+        } catch (...) {
             return foundation::Result<void>::Failure(
                 Error("gameplay.ability.resource_provider_exception", "resource provider threw during reconciliation"));
         }
@@ -1289,31 +1169,28 @@ foundation::Result<void> AbilityService::ReconcileRestoredReservations(GameplayC
     return foundation::Result<void>::Success();
 }
 
-const AbilityExecution *AbilityService::FindExecution(AbilityExecutionId id) const noexcept
-{
+const AbilityExecution *AbilityService::FindExecution(AbilityExecutionId id) const noexcept {
     auto it = executions_.find(id);
     return it == executions_.end() ? nullptr : &it->second;
 }
 
-std::vector<AbilityChange> AbilityService::ChangesSinceSequence(std::uint64_t sequence) const
-{
+std::vector<AbilityChange> AbilityService::ChangesSinceSequence(std::uint64_t sequence) const {
     return ReadChangesSinceSequence(sequence).changes;
 }
 
-AbilityChangeBatch AbilityService::ReadChangesSinceSequence(std::uint64_t sequence) const
-{
+AbilityChangeBatch AbilityService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     AbilityChangeBatch batch;
     batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
     batch.snapshot_required = batch.oldest_available_sequence > 0 && sequence < batch.oldest_available_sequence - 1;
     if (batch.snapshot_required)
         return batch;
-    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes),
-                 [&](const auto &change) { return change.sequence > sequence; });
+    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes), [&](const auto &change) {
+        return change.sequence > sequence;
+    });
     return batch;
 }
 
-AbilitiesSnapshot AbilityService::CaptureSnapshot() const
-{
+AbilitiesSnapshot AbilityService::CaptureSnapshot() const {
     AbilitiesSnapshot snapshot;
     snapshot.instance_ids = instance_ids_.GetSnapshot();
     snapshot.execution_ids = execution_ids_.GetSnapshot();
@@ -1321,23 +1198,24 @@ AbilitiesSnapshot AbilityService::CaptureSnapshot() const
     snapshot.journal.assign(changes_.begin(), changes_.end());
 
     std::unordered_set<AbilityInstanceId, IdHash> active_instances;
-    for (const auto &[id, execution] : executions_)
-    {
+    for (const auto &[id, execution] : executions_) {
         (void)id;
-        if (!IsTerminal(execution.state))
-        {
+        if (!IsTerminal(execution.state)) {
             snapshot.executions.push_back(execution);
             active_instances.insert(execution.ability);
         }
     }
-    for (const auto &[id, instance] : instances_)
-    {
+    for (const auto &[id, instance] : instances_) {
         if (instance.persistence != AbilityGrantPersistence::Temporary || active_instances.contains(id))
             snapshot.instances.push_back(instance);
     }
     snapshot.cooldowns = cooldowns_;
-    std::sort(snapshot.instances.begin(), snapshot.instances.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
-    std::sort(snapshot.executions.begin(), snapshot.executions.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.instances.begin(), snapshot.instances.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
+    std::sort(snapshot.executions.begin(), snapshot.executions.end(), [](const auto &a, const auto &b) {
+        return a.id < b.id;
+    });
     std::sort(snapshot.cooldowns.begin(), snapshot.cooldowns.end(), [](const auto &a, const auto &b) {
         if (a.owner != b.owner)
             return a.owner < b.owner;
@@ -1347,136 +1225,127 @@ AbilitiesSnapshot AbilityService::CaptureSnapshot() const
     return snapshot;
 }
 
-foundation::Result<void> AbilityService::RestoreSnapshot(AbilitiesSnapshot snapshot)
-{
-    const auto next_journal_epoch = CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
-    if (!next_journal_epoch)
-    {
+foundation::Result<void> AbilityService::RestoreSnapshot(AbilitiesSnapshot snapshot) {
+    const auto next_journal_epoch =
+        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
             foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
     }
     if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.allocation_failed", "injected restore candidate allocation failure"));
-    try
-    {
-    std::unordered_map<AbilityInstanceId, AbilityInstance, IdHash> instances;
-    std::unordered_map<AbilityExecutionId, AbilityExecution, IdHash> executions;
-    std::unordered_map<ScheduleId, AbilityExecutionId> schedules;
-    std::vector<AbilityCooldownState> cooldowns;
-    std::vector<AbilityChange> journal;
-    journal.reserve(std::min(snapshot.journal.size(), kChangeJournalCapacity));
-    std::uint64_t max_instance_low = 0;
-    std::uint64_t max_execution_low = 0;
+    try {
+        std::unordered_map<AbilityInstanceId, AbilityInstance, IdHash> instances;
+        std::unordered_map<AbilityExecutionId, AbilityExecution, IdHash> executions;
+        std::unordered_map<ScheduleId, AbilityExecutionId> schedules;
+        std::vector<AbilityCooldownState> cooldowns;
+        std::vector<AbilityChange> journal;
+        journal.reserve(std::min(snapshot.journal.size(), kChangeJournalCapacity));
+        std::uint64_t max_instance_low = 0;
+        std::uint64_t max_execution_low = 0;
 
-    instances.reserve(snapshot.instances.size());
-    for (auto &instance : snapshot.instances)
-    {
-        if (!instance.id.IsValid() || !definitions_.contains(instance.definition) || !instance.owner.IsValid() ||
-            instance.revision.value == 0 || instances.contains(instance.id))
-            return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "invalid or duplicate ability instance"));
-        max_instance_low = std::max(max_instance_low, instance.id.value.Low());
-        instances.emplace(instance.id, std::move(instance));
-    }
-    std::unordered_set<AbilityReservationId, IdHash> reservation_ids;
-    executions.reserve(snapshot.executions.size());
-    for (auto &execution : snapshot.executions)
-    {
-        auto ability = instances.find(execution.ability);
-        if (!execution.id.IsValid() || ability == instances.end() || execution.owner != ability->second.owner ||
-            execution.revision.value == 0 || IsTerminal(execution.state) || executions.contains(execution.id))
-            return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "invalid ability execution"));
-        const auto *definition = FindDefinition(ability->second.definition);
-        if (!definition)
-            return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "execution definition is missing"));
-        if (execution.state == AbilityExecutionState::Channeling &&
-            (definition->timing.kind != AbilityTimingKind::Channel || definition->timing.channel_interval.ticks <= 0))
-            return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "invalid channel execution"));
-        for (const auto &reservation : execution.reservations)
-        {
-            if (!reservation.id.IsValid() || !reservation.resource.IsValid() ||
-                !reservation_ids.insert(reservation.id).second)
+        instances.reserve(snapshot.instances.size());
+        for (auto &instance : snapshot.instances) {
+            if (!instance.id.IsValid() || !definitions_.contains(instance.definition) || !instance.owner.IsValid() ||
+                instance.revision.value == 0 || instances.contains(instance.id))
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.ability.restore_invalid", "invalid or duplicate ability resource reservation"));
+                    Error("gameplay.ability.restore_invalid", "invalid or duplicate ability instance"));
+            max_instance_low = std::max(max_instance_low, instance.id.value.Low());
+            instances.emplace(instance.id, std::move(instance));
         }
-        if (execution.schedule)
-        {
-            if (!execution.schedule->IsValid() || schedules.contains(*execution.schedule))
+        std::unordered_set<AbilityReservationId, IdHash> reservation_ids;
+        executions.reserve(snapshot.executions.size());
+        for (auto &execution : snapshot.executions) {
+            auto ability = instances.find(execution.ability);
+            if (!execution.id.IsValid() || ability == instances.end() || execution.owner != ability->second.owner ||
+                execution.revision.value == 0 || IsTerminal(execution.state) || executions.contains(execution.id))
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.ability.restore_invalid", "duplicate or invalid ability schedule"));
-            schedules.emplace(*execution.schedule, execution.id);
+                    Error("gameplay.ability.restore_invalid", "invalid ability execution"));
+            const auto *definition = FindDefinition(ability->second.definition);
+            if (!definition)
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.ability.restore_invalid", "execution definition is missing"));
+            if (execution.state == AbilityExecutionState::Channeling &&
+                (definition->timing.kind != AbilityTimingKind::Channel ||
+                 definition->timing.channel_interval.ticks <= 0))
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.ability.restore_invalid", "invalid channel execution"));
+            for (const auto &reservation : execution.reservations) {
+                if (!reservation.id.IsValid() || !reservation.resource.IsValid() ||
+                    !reservation_ids.insert(reservation.id).second)
+                    return foundation::Result<void>::Failure(
+                        Error("gameplay.ability.restore_invalid", "invalid or duplicate ability resource reservation"));
+            }
+            if (execution.schedule) {
+                if (!execution.schedule->IsValid() || schedules.contains(*execution.schedule))
+                    return foundation::Result<void>::Failure(
+                        Error("gameplay.ability.restore_invalid", "duplicate or invalid ability schedule"));
+                schedules.emplace(*execution.schedule, execution.id);
+            }
+            max_execution_low = std::max(max_execution_low, execution.id.value.Low());
+            executions.emplace(execution.id, std::move(execution));
         }
-        max_execution_low = std::max(max_execution_low, execution.id.value.Low());
-        executions.emplace(execution.id, std::move(execution));
-    }
 
-    std::unordered_set<CooldownKey, CooldownKeyHash> cooldown_keys;
-    cooldowns.reserve(snapshot.cooldowns.size());
-    for (const auto &cooldown : snapshot.cooldowns)
-    {
-        if (!cooldown.owner.IsValid() || !cooldown.group.IsValid())
-            return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "invalid cooldown"));
-        if (!cooldown_keys.insert(CooldownKey{cooldown.owner, cooldown.group}).second)
-            return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "duplicate cooldown"));
-        cooldowns.push_back(cooldown);
-    }
+        std::unordered_set<CooldownKey, CooldownKeyHash> cooldown_keys;
+        cooldowns.reserve(snapshot.cooldowns.size());
+        for (const auto &cooldown : snapshot.cooldowns) {
+            if (!cooldown.owner.IsValid() || !cooldown.group.IsValid())
+                return foundation::Result<void>::Failure(Error("gameplay.ability.restore_invalid", "invalid cooldown"));
+            if (!cooldown_keys.insert(CooldownKey{cooldown.owner, cooldown.group}).second)
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.ability.restore_invalid", "duplicate cooldown"));
+            cooldowns.push_back(cooldown);
+        }
 
-    if (snapshot.journal.size() > kChangeJournalCapacity)
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ability.restore_invalid", "ability journal exceeds retention"));
-    std::uint64_t previous = 0;
-    for (const auto &change : snapshot.journal)
-    {
-        if (change.sequence == 0 || change.sequence <= previous)
+        if (snapshot.journal.size() > kChangeJournalCapacity)
             return foundation::Result<void>::Failure(
-                Error("gameplay.ability.restore_invalid", "invalid ability journal sequence"));
-        previous = change.sequence;
-        journal.push_back(change);
-    }
-    if (snapshot.next_change_sequence == 0 || (!journal.empty() && snapshot.next_change_sequence <= journal.back().sequence))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ability.restore_invalid", "invalid next ability change sequence"));
-    const auto expected_instance_scope = GameplayObjectId::FromString("framework.abilities.instances").High();
-    const auto expected_execution_scope = GameplayObjectId::FromString("framework.abilities.executions").High();
-    if (!ValidGeneratorSnapshot(snapshot.instance_ids, expected_instance_scope, max_instance_low) ||
-        !ValidGeneratorSnapshot(snapshot.execution_ids, expected_execution_scope, max_execution_low))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ability.restore_invalid", "invalid ability id generator snapshot"));
+                Error("gameplay.ability.restore_invalid", "ability journal exceeds retention"));
+        std::uint64_t previous = 0;
+        for (const auto &change : snapshot.journal) {
+            if (change.sequence == 0 || change.sequence <= previous)
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.ability.restore_invalid", "invalid ability journal sequence"));
+            previous = change.sequence;
+            journal.push_back(change);
+        }
+        if (snapshot.next_change_sequence == 0 ||
+            (!journal.empty() && snapshot.next_change_sequence <= journal.back().sequence))
+            return foundation::Result<void>::Failure(
+                Error("gameplay.ability.restore_invalid", "invalid next ability change sequence"));
+        const auto expected_instance_scope = GameplayObjectId::FromString("framework.abilities.instances").High();
+        const auto expected_execution_scope = GameplayObjectId::FromString("framework.abilities.executions").High();
+        if (!ValidGeneratorSnapshot(snapshot.instance_ids, expected_instance_scope, max_instance_low) ||
+            !ValidGeneratorSnapshot(snapshot.execution_ids, expected_execution_scope, max_execution_low))
+            return foundation::Result<void>::Failure(
+                Error("gameplay.ability.restore_invalid", "invalid ability id generator snapshot"));
 
-    if (test_seam::Consume(test_seam::FaultPoint::RestoreBeforeCommit))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ability.allocation_failed", "injected restore pre-commit allocation failure"));
-    instances_.swap(instances);
-    executions_.swap(executions);
-    schedule_to_execution_.swap(schedules);
-    cooldowns_.swap(cooldowns);
-    changes_.swap(journal);
-    (void)instance_ids_.Restore(snapshot.instance_ids);
-    (void)execution_ids_.Restore(snapshot.execution_ids);
-    next_change_sequence_ = snapshot.next_change_sequence;
-    resource_reconciliation_required_ = std::any_of(
-        executions_.begin(), executions_.end(), [](const auto &entry) { return !entry.second.reservations.empty(); });
-    reconciled_reservations_.clear();
-    diagnostics_.instances = instances_.size();
-    diagnostics_.cooldowns = cooldowns_.size();
-    journal_epoch_ = *next_journal_epoch;
-    return foundation::Result<void>::Success();
-    }
-    catch (const std::bad_alloc&)
-    {
+        if (test_seam::Consume(test_seam::FaultPoint::RestoreBeforeCommit))
+            return foundation::Result<void>::Failure(
+                Error("gameplay.ability.allocation_failed", "injected restore pre-commit allocation failure"));
+        instances_.swap(instances);
+        executions_.swap(executions);
+        schedule_to_execution_.swap(schedules);
+        cooldowns_.swap(cooldowns);
+        changes_.swap(journal);
+        (void)instance_ids_.Restore(snapshot.instance_ids);
+        (void)execution_ids_.Restore(snapshot.execution_ids);
+        next_change_sequence_ = snapshot.next_change_sequence;
+        resource_reconciliation_required_ = std::any_of(executions_.begin(), executions_.end(), [](const auto &entry) {
+            return !entry.second.reservations.empty();
+        });
+        reconciled_reservations_.clear();
+        diagnostics_.instances = instances_.size();
+        diagnostics_.cooldowns = cooldowns_.size();
+        journal_epoch_ = *next_journal_epoch;
+        return foundation::Result<void>::Success();
+    } catch (const std::bad_alloc &) {
         return foundation::Result<void>::Failure(
             Error("gameplay.ability.allocation_failed", "failed to stage ability restore"));
     }
 }
 
-AbilitiesDiagnostics AbilityService::GetDiagnostics() const noexcept
-{
+AbilitiesDiagnostics AbilityService::GetDiagnostics() const noexcept {
     return diagnostics_;
 }
 } // namespace epidemic::gameplay::abilities

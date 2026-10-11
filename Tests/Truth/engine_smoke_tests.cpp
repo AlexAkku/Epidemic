@@ -13,10 +13,8 @@
 
 using namespace epidemic::gameplay;
 
-namespace
-{
-void HeadlessApplicationBootsRunsAndStops()
-{
+namespace {
+void HeadlessApplicationBootsRunsAndStops() {
     epidemic::core::Application application({"TruthSmokeBase"});
     const auto logger = epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "TruthSmokeBase", .log_module = "TruthSmoke", .worker_count = 2});
@@ -28,8 +26,7 @@ void HeadlessApplicationBootsRunsAndStops()
     TRUTH_REQUIRE(application.Shutdown() == 0);
 }
 
-void RuntimeClockProjectsIntoGameplayClock()
-{
+void RuntimeClockProjectsIntoGameplayClock() {
     epidemic::runtime::TimeOptions runtime_options;
     runtime_options.game_ticks_per_real_second = 60;
     const auto runtime_time = epidemic::runtime::CreateTimeServices(runtime_options);
@@ -52,8 +49,7 @@ void RuntimeClockProjectsIntoGameplayClock()
     TRUTH_REQUIRE(triggers && triggers.Value().size() == 1);
 }
 
-void SavedGameplaySessionContinuesAfterRestore()
-{
+void SavedGameplaySessionContinuesAfterRestore() {
     using namespace entities;
     using namespace progression;
 
@@ -97,16 +93,14 @@ void SavedGameplaySessionContinuesAfterRestore()
     TRUTH_REQUIRE(state.Value().rank == 1);
 }
 
-void CompleteRuntimeCompositionTicksAndShutsDown()
-{
+void CompleteRuntimeCompositionTicksAndShutsDown() {
     epidemic::core::Application application({"TruthSmokeRuntime"});
     const auto runtime = epidemic::runtime::RegisterDefaultEngineRuntime(application);
     TRUTH_REQUIRE(runtime);
     TRUTH_REQUIRE(runtime.Value().registered_majors.size() == 16);
     epidemic::runtime::RuntimeFrameInput frame;
     frame.real_delta = epidemic::runtime::RuntimeFrameDuration{std::chrono::microseconds{16'667}};
-    for (int index = 0; index < 8; ++index)
-    {
+    for (int index = 0; index < 8; ++index) {
         const auto result = runtime.Value().coordinator->Tick(frame);
         TRUTH_REQUIRE(result);
         TRUTH_REQUIRE(!result.Value().executed_steps.empty());
@@ -115,12 +109,13 @@ void CompleteRuntimeCompositionTicksAndShutsDown()
 }
 } // namespace
 
-int main()
-{
-    return epidemic::truth_tests::Run("engine-smoke", {
-        {"headless application boots runs and stops", &HeadlessApplicationBootsRunsAndStops},
-        {"runtime clock projects into gameplay clock", &RuntimeClockProjectsIntoGameplayClock},
-        {"saved gameplay session continues after restore", &SavedGameplaySessionContinuesAfterRestore},
-        {"complete runtime composition ticks and shuts down", &CompleteRuntimeCompositionTicksAndShutsDown},
-    });
+int main() {
+    return epidemic::truth_tests::Run(
+        "engine-smoke",
+        {
+            {"headless application boots runs and stops", &HeadlessApplicationBootsRunsAndStops},
+            {"runtime clock projects into gameplay clock", &RuntimeClockProjectsIntoGameplayClock},
+            {"saved gameplay session continues after restore", &SavedGameplaySessionContinuesAfterRestore},
+            {"complete runtime composition ticks and shuts down", &CompleteRuntimeCompositionTicksAndShutsDown},
+        });
 }

@@ -5,30 +5,24 @@
 #include <utility>
 #include <vector>
 
-namespace epidemic::runtime
-{
-class IResourcePayload
-{
+namespace epidemic::runtime {
+class IResourcePayload {
   public:
     virtual ~IResourcePayload() = default;
 
     [[nodiscard]] virtual std::size_t GetSizeBytes() const noexcept = 0;
 };
 
-class ByteResourcePayload final : public IResourcePayload
-{
+class ByteResourcePayload final : public IResourcePayload {
   public:
-    explicit ByteResourcePayload(std::vector<std::byte> bytes = {}) : bytes_(std::move(bytes))
-    {
+    explicit ByteResourcePayload(std::vector<std::byte> bytes = {}) : bytes_(std::move(bytes)) {
     }
 
-    [[nodiscard]] std::size_t GetSizeBytes() const noexcept override
-    {
+    [[nodiscard]] std::size_t GetSizeBytes() const noexcept override {
         return bytes_.size();
     }
 
-    [[nodiscard]] const std::vector<std::byte>& Bytes() const noexcept
-    {
+    [[nodiscard]] const std::vector<std::byte> &Bytes() const noexcept {
         return bytes_;
     }
 
@@ -38,4 +32,3 @@ class ByteResourcePayload final : public IResourcePayload
 
 using ResourcePayloadPtr = std::shared_ptr<const IResourcePayload>;
 } // namespace epidemic::runtime
-

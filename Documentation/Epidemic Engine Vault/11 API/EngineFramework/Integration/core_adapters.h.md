@@ -537,3 +537,396 @@ class WholeEngineRestoreCoordinator
 };
 } // namespace epidemic::gameplay::integration
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Foundation/path.h`, `Epidemic/GameFramework/Facts/gameplay_facts.h`, `Epidemic/GameFramework/Queries/gameplay_queries.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Time/gameplay_time.h`, `Epidemic/Runtime/Time/time_runtime.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Facts/gameplay_facts.h`, `Epidemic/GameFramework/Time/gameplay_time.h`.
+
+### Перечисления и допустимые категории
+
+- `ScheduledTriggerDisposition`: `Ack`, `Retry`, `DiscardTerminal`
+- `ScheduledTriggerActionDeliveryMode`: `RequiresActionHandler`, `ObserverOnly`
+- `WholeRestorePhase`: `AwaitLoad`, `Precommit`, `CommittedSemantic`, `RebuildTransient`, `ReconcileExternal`, `MaterializeRuntime`, `ReconciliationRequired`, `ReadyToResume`
+
+### Состав типов и операции
+
+#### `FileSavePackageStore` (строка заголовка 24)
+
+Внутреннее состояние (не часть публичного API): `std::filesystem::path path_`, `savegame::SaveWireLimits limits_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+) : path_(foundation::Path(std::move(path)).Native()), limits_(limits);
+[[nodiscard]] foundation::Result<std::vector<std::byte>> Load() override;
+[[nodiscard]] foundation::Result<void> Commit(std::span<const std::byte> package) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `FindFactsQuery` (строка заголовка 36)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `FindHistoryQuery` (строка заголовка 49)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr QueryTypeId Type() noexcept;
+```
+
+#### `FactsQueryAdapter` (строка заголовка 61)
+
+Публичные сигнатуры операций:
+
+```cpp
+FactsQueryAdapter(facts::GameplayFactsService& facts_service, queries::GameplayQueryService& query_service) : facts_(facts_service), queries_(query_service);
+[[nodiscard]] bool IsRegistered() const noexcept;
+```
+
+#### `RuntimeTimeAdapter` (строка заголовка 79)
+
+Публичные сигнатуры операций:
+
+```cpp
+RuntimeTimeAdapter(runtime::IGameClock& runtime_clock, time::GameplayTimeService& gameplay_time, ClockId clock) : runtime_clock_(runtime_clock), gameplay_time_(gameplay_time), clock_(clock);
+[[nodiscard]] foundation::Result<void> Synchronize();
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `ScheduledTriggerDispatcherPolicy` (строка заголовка 110)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_pending_deliveries = 16384`
+- `std::uint64_t max_delivery_attempts_per_pump = 16384`
+
+#### `ScheduledTriggerDeliveryRecord` (строка заголовка 116)
+
+Публичные поля и значения по умолчанию:
+
+- `bool action_declared = false`
+- `ScheduledTriggerActionDeliveryMode action_mode = ScheduledTriggerActionDeliveryMode::RequiresActionHandler`
+- `std::vector<ScheduledTriggerHandlerId> completed_handlers`
+
+#### `ScheduledTriggerDispatcherSnapshot` (строка заголовка 126)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ScheduledTriggerDeliveryRecord> pending`
+
+#### `ScheduledTriggerPumpReport` (строка заголовка 134)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t collected = 0`
+- `std::uint64_t acknowledged = 0`
+- `std::uint64_t discarded_terminal = 0`
+- `std::uint64_t retry_requests = 0`
+- `std::uint64_t handler_failures = 0`
+- `std::uint64_t unhandled = 0`
+- `std::uint64_t pending = 0`
+
+#### `ScheduledTriggerDispatcher` (строка заголовка 147)
+
+Публичные сигнатуры операций:
+
+```cpp
+) : time_(time_service), policy_(policy);
+[[nodiscard]] foundation::Result<void> DeclareRequiresActionHandler(ActionTypeId action);
+[[nodiscard]] foundation::Result<void> DeclareObserverOnlyAction(ActionTypeId action);
+[[nodiscard]] foundation::Result<void> RegisterActionHandler(ActionTypeId action, ScheduledTriggerHandlerId id, Handler handler);
+foundation::Result<void> Freeze();
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] ScheduledTriggerPumpReport DispatchPending( std::uint64_t max_attempts = 0);
+[[nodiscard]] ScheduledTriggerDispatcherSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(ScheduledTriggerDispatcherSnapshot snapshot);
+[[nodiscard]] std::size_t PendingCount() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `RegisteredHandler` (строка заголовка 189)
+
+Публичные поля и значения по умолчанию:
+
+- `int priority = 0`
+- `Handler callback`
+
+#### `ScheduledTriggerDispatcherSaveParticipant` (строка заголовка 216)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ScheduledTriggerDispatcherSaveParticipant(ScheduledTriggerDispatcher& dispatcher) noexcept : dispatcher_(dispatcher);
+[[nodiscard]] savegame::SaveParticipantId Id() const noexcept override;
+[[nodiscard]] savegame::SaveSchemaVersion SchemaVersion() const noexcept override;
+[[nodiscard]] std::vector<savegame::SaveParticipantId> Dependencies() const override;
+[[nodiscard]] foundation::Result<savegame::SaveSection> CaptureSnapshot( const savegame::SaveContext& context) const override;
+[[nodiscard]] foundation::Result<void> ValidateSnapshot( const savegame::SaveSection& section, const savegame::RestoreContext& context) const override;
+[[nodiscard]] foundation::Result<std::unique_ptr<savegame::IRestoreStage>> StageRestore( const savegame::SaveSection& section, const savegame::RestoreContext& context) override;
+void CommitRestore(savegame::IRestoreStage& stage) noexcept override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `TimeFactsAdapter` (строка заголовка 239)
+
+Публичные сигнатуры операций:
+
+```cpp
+TimeFactsAdapter(facts::GameplayFactsService& facts_service) : facts_(facts_service);
+[[nodiscard]] foundation::Result<ScheduledTriggerDisposition> PublishTrigger( const time::ScheduledTrigger& trigger, const GameplayContext& context);
+[[nodiscard]] foundation::Result<std::uint64_t> ExpireTimedFacts(GameplayContext context);
+[[nodiscard]] EventTypeId ScheduledDueEventType() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `SaveGenerationId` (строка заголовка 285)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr SaveGenerationId FromRaw(std::uint64_t raw) noexcept;
+[[nodiscard]] constexpr std::uint64_t Raw() const noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SaveGenerationId&) const noexcept = default;
+```
+
+#### `SaveGenerationLimits` (строка заголовка 295)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_framework_savegame_bytes = 600ull * 1024ull * 1024ull`
+- `std::size_t max_runtime_time_bytes = 64ull * 1024ull * 1024ull`
+- `std::size_t max_runtime_persistence_bytes = 64ull * 1024ull * 1024ull`
+- `std::size_t max_wire_bytes = 768ull * 1024ull * 1024ull`
+
+#### `RuntimeSaveGenerationCapture` (строка заголовка 303)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> time_package`
+- `std::vector<std::byte> persistence_package`
+
+#### `IRuntimeSaveGenerationPort` (строка заголовка 311)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimeSaveGenerationPort() = default;
+[[nodiscard]] virtual foundation::Result<RuntimeSaveGenerationCapture> Capture( SaveGenerationId generation) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `CallbackRuntimeSaveGenerationPort` (строка заголовка 322)
+
+Публичные сигнатуры операций:
+
+```cpp
+CallbackRuntimeSaveGenerationPort(PlaneCapture time_capture, PlaneCapture persistence_capture) : time_capture_(std::move(time_capture)), persistence_capture_(std::move(persistence_capture));
+[[nodiscard]] foundation::Result<RuntimeSaveGenerationCapture> Capture( SaveGenerationId generation) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SaveGenerationPackage` (строка заголовка 338)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> framework_savegame`
+- `std::vector<std::byte> runtime_time`
+- `std::vector<std::byte> runtime_persistence`
+
+#### `ISaveGenerationStore` (строка заголовка 354)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISaveGenerationStore() = default;
+[[nodiscard]] virtual foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent() = 0;
+[[nodiscard]] virtual foundation::Result<void> CommitCurrent(std::span<const std::byte> package) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `FileSaveGenerationStore` (строка заголовка 362)
+
+Внутреннее состояние (не часть публичного API): `std::filesystem::path path_`, `SaveGenerationLimits limits_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+) : path_(foundation::Path(std::move(path)).Native()), limits_(limits);
+[[nodiscard]] foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent() override;
+[[nodiscard]] foundation::Result<void> CommitCurrent(std::span<const std::byte> package) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SaveGenerationBarrierCallbacks` (строка заголовка 375)
+
+Публичные поля и значения по умолчанию:
+
+- `LeaseFactory acquire_restore_quiescence`
+
+Публичные сигнатуры операций:
+
+```cpp
+std::function<foundation::Result<void>()> capture_preflight;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `SaveGenerationBarrier` (строка заголовка 390)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit SaveGenerationBarrier(SaveGenerationBarrierCallbacks callbacks);
+~SaveGenerationBarrier() override;
+SaveGenerationBarrier(const SaveGenerationBarrier&) = delete;
+SaveGenerationBarrier& operator=(const SaveGenerationBarrier&) = delete;
+[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireGenerationLease( SaveGenerationId generation);
+[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireCaptureLease() override;
+[[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireRestoreLease() override;
+[[nodiscard]] SaveGenerationId ActiveGeneration() const noexcept;
+[[nodiscard]] bool IsCaptureActive() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SaveGenerationCoordinator` (строка заголовка 410)
+
+Внутреннее состояние (не часть публичного API): `savegame::SaveGameOrchestrator& framework_`, `IRuntimeSaveGenerationPort& runtime_`, `SaveGenerationBarrier& barrier_`, `ISaveGenerationStore& store_`, `SaveGenerationLimits limits_`, `savegame::SaveWireLimits framework_limits_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<SaveGenerationId> CaptureAndCommit( const savegame::SaveContext& context);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `IRuntimeGenerationRestoreStage` (строка заголовка 439)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimeGenerationRestoreStage() = default;
+virtual void Commit() noexcept = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IRuntimeGenerationRestorePort` (строка заголовка 446)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimeGenerationRestorePort() = default;
+[[nodiscard]] virtual foundation::Result<std::unique_ptr<IRuntimeGenerationRestoreStage>> Prepare( const SaveGenerationPackage& package) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `WholeRestoreCallbacks` (строка заголовка 466)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::function<foundation::Result<void>()> reconcile_external;
+std::function<foundation::Result<void>()> materialize_runtime;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `WholeEngineRestoreCoordinator` (строка заголовка 478)
+
+Внутреннее состояние (не часть публичного API): `savegame::SaveGameOrchestrator& framework_`, `IRuntimeGenerationRestorePort& runtime_`, `SaveGenerationBarrier& barrier_`, `ISaveGenerationStore& store_`, `WholeRestoreCallbacks callbacks_`, `SaveGenerationLimits limits_`, `savegame::SaveWireLimits framework_limits_`, `std::unique_ptr<savegame::ISaveBarrierLease> lease_`, `WholeRestorePhase phase_ = WholeRestorePhase::AwaitLoad`.
+
+Публичные сигнатуры операций:
+
+```cpp
+~WholeEngineRestoreCoordinator();
+WholeEngineRestoreCoordinator(const WholeEngineRestoreCoordinator&) = delete;
+WholeEngineRestoreCoordinator& operator=(const WholeEngineRestoreCoordinator&) = delete;
+[[nodiscard]] foundation::Result<SaveGenerationId> LoadAndRestore(const savegame::RestoreContext& context);
+[[nodiscard]] foundation::Result<void> RetryReconciliation();
+[[nodiscard]] bool CanResume() const noexcept;
+[[nodiscard]] WholeRestorePhase Phase() const noexcept;
+[[nodiscard]] SaveGenerationId RestoredGeneration() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Load` | `FileSavePackageStore::Load` | `EngineFramework/IntegrationLayer/Integration/src/save_package_store.cpp:18` |
+| `Commit` | `FileSavePackageStore::Commit` | `EngineFramework/IntegrationLayer/Integration/src/save_package_store.cpp:20` |
+| `Synchronize` | `RuntimeTimeAdapter::Synchronize` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:471` |
+| `DeclareRequiresActionHandler` | `ScheduledTriggerDispatcher::DeclareRequiresActionHandler` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:550` |
+| `DeclareObserverOnlyAction` | `ScheduledTriggerDispatcher::DeclareObserverOnlyAction` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:555` |
+| `RegisterActionHandler` | `ScheduledTriggerDispatcher::RegisterActionHandler` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:560` |
+| `Freeze` | `ScheduledTriggerDispatcher::Freeze` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:590` |
+| `DispatchPending` | `ScheduledTriggerDispatcher::DispatchPending` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:741` |
+| `CaptureSnapshot` | `ScheduledTriggerDispatcher::CaptureSnapshot` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:915` |
+| `ValidateSnapshot` | `ScheduledTriggerDispatcher::ValidateSnapshot` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:928` |
+| `RestoreSnapshot` | `ScheduledTriggerDispatcher::RestoreSnapshot` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:1025` |
+| `Id` | `ScheduledTriggerDispatcherSaveParticipant::Id` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:1037` |
+| `CaptureSnapshot` | `ScheduledTriggerDispatcherSaveParticipant::CaptureSnapshot` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:1042` |
+| `ValidateSnapshot` | `ScheduledTriggerDispatcherSaveParticipant::ValidateSnapshot` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:1083` |
+| `StageRestore` | `ScheduledTriggerDispatcherSaveParticipant::StageRestore` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:1117` |
+| `CommitRestore` | `ScheduledTriggerDispatcherSaveParticipant::CommitRestore` | `EngineFramework/IntegrationLayer/Integration/src/core_adapters.cpp:1166` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Commit`: `EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:21`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:38`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/integration_save_participant_tests.cpp:39`
+

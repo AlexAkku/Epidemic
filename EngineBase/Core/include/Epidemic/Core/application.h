@@ -14,13 +14,11 @@
 #include <string>
 #include <vector>
 
-namespace epidemic::diagnostics
-{
+namespace epidemic::diagnostics {
 class ILogger;
 }
 
-namespace epidemic::core
-{
+namespace epidemic::core {
 // This file declares the central EngineBase application shell.
 // Application owns the service container, module registry, frame loop orchestration,
 // stop request state, and the phase hooks used by support wiring.
@@ -29,20 +27,17 @@ namespace epidemic::core
 // Приложение владеет контейнером сервисов, реестром модулей, оркестрацией цикла кадра,
 // состоянием запроса остановки и хуками фаз, используемыми вспомогательной обвязкой.
 
-struct ApplicationOptions
-{
+struct ApplicationOptions {
     std::string application_name = "Epidemic Engine v1.0";
     std::optional<std::uint64_t> frame_limit;
 };
 
-class Application
-{
+class Application {
   public:
     using MainThreadTask = std::function<void()>;
     using FramePhaseCallback = std::function<void(const FrameContext &)>;
 
-    struct FramePhaseHandlerRegistration
-    {
+    struct FramePhaseHandlerRegistration {
         FramePhase phase{FramePhase::BeginFrame};
         FramePhaseCallback callback;
         std::string debug_name;
@@ -123,14 +118,12 @@ class Application
     [[nodiscard]] const FrameContext &CurrentFrameContext() const noexcept;
 
   private:
-    struct PhaseHandler
-    {
+    struct PhaseHandler {
         FramePhaseCallback callback;
         std::string debug_name;
     };
 
-    enum class State
-    {
+    enum class State {
         Constructed,
         Bootstrapped,
         Initialized,

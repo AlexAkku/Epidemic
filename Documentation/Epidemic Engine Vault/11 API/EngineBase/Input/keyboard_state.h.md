@@ -114,3 +114,39 @@ class KeyboardState
 };
 }
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Input/key_code.h`.
+
+### Состав типов и операции
+
+#### `KeyboardState` (строка заголовка 14)
+
+Публичные поля и значения по умолчанию:
+
+- `static constexpr std::size_t KeyCount = 256`
+
+Публичные сигнатуры операций:
+
+```cpp
+// Returns whether the key is currently held down. [[nodiscard]] bool IsKeyDown(KeyCode key_code) const noexcept;
+// Returns whether the key transitioned to pressed during the current frame. [[nodiscard]] bool WasPressedThisFrame(KeyCode key_code) const noexcept;
+// Returns whether the key transitioned to released during the current frame. [[nodiscard]] bool WasReleasedThisFrame(KeyCode key_code) const noexcept;
+// Sets the persistent down/up state for a key. void SetKeyDown(KeyCode key_code, bool down) noexcept;
+// Marks a key as newly pressed for the current frame. void MarkPressed(KeyCode key_code) noexcept;
+// Marks a key as newly released for the current frame. void MarkReleased(KeyCode key_code) noexcept;
+// Clears only the per-frame pressed/released flags. void ClearTransient() noexcept;
+// Clears both persistent and transient key state. void ClearAll() noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

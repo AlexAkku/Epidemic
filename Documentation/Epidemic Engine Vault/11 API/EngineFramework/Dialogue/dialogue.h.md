@@ -389,3 +389,263 @@ class DialogueService
 };
 } // namespace epidemic::gameplay::dialogue
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `ConversationState`: `Active`, `WaitingForChoice`, `WaitingForExternalAction`, `Completed`, `Interrupted`, `Failed`
+- `DialogueConditionState`: `Satisfied`, `Unsatisfied`, `Unknown`, `Unavailable`
+- `DialogueConsequenceState`: `Pending`, `Applied`, `Deferred`, `Failed`, `ReconciliationRequired`
+- `DialogueOptionRepeatPolicy`: `Repeatable`, `OncePerConversation`
+- `DialogueChangeKind`: `ConversationStarted`, `NodeEntered`, `OptionSelected`, `ConversationCompleted`, `ConversationInterrupted`, `ConsequencePlanned`, `ConsequenceApplied`, `ConsequenceDeferred`, `ConsequenceFailed`, `ConsequenceResumed`, `ConsequenceReconciliationRequired`
+
+### Состав типов и операции
+
+#### `name` (строка заголовка 15)
+
+Публичные сигнатуры операций:
+
+```cpp
+\ static constexpr name FromString(std::string_view s) noexcept \;
+\ [[nodiscard]] constexpr bool IsValid() const noexcept \;
+\ [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;
+\ [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;
+```
+
+#### `name` (строка заголовка 30)
+
+Публичные сигнатуры операций:
+
+```cpp
+\ static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept \;
+\ [[nodiscard]] constexpr bool IsValid() const noexcept \;
+\ [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;
+\ [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 55)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 57)
+
+#### `DialogueTextRef` (строка заголовка 107)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<TypeId> parameter_keys`
+
+#### `DialogueConditionDefinition` (строка заголовка 112)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> payload`
+
+#### `DialogueConsequenceDefinition` (строка заголовка 118)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> payload`
+- `std::int32_t priority = 0`
+
+#### `DialogueOptionDefinition` (строка заголовка 125)
+
+Публичные поля и значения по умолчанию:
+
+- `DialogueTextRef text`
+- `std::vector<TypeId> conditions`
+- `std::vector<TypeId> consequences`
+- `DialogueOptionRepeatPolicy repeat_policy = DialogueOptionRepeatPolicy::Repeatable`
+- `GameplayTagSet tags`
+
+#### `DialogueNodeDefinition` (строка заголовка 135)
+
+Публичные поля и значения по умолчанию:
+
+- `DialogueTextRef utterance`
+- `std::vector<TypeId> conditions`
+- `std::vector<DialogueOptionDefinition> options`
+- `std::vector<TypeId> consequences`
+
+#### `ConversationDefinition` (строка заголовка 145)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `std::vector<TypeId> participant_roles`
+- `std::vector<DialogueNodeDefinition> nodes`
+
+#### `ConversationParticipant` (строка заголовка 155)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const ConversationParticipant &) const noexcept = default;
+```
+
+#### `ConversationContext` (строка заголовка 161)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet tags`
+
+#### `ConversationSession` (строка заголовка 167)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<GameplayObjectRef> participants`
+- `std::vector<ConversationParticipant> participant_bindings`
+- `ConversationState state = ConversationState::Active`
+- `std::vector<TypeId> resolved_once_per_conversation_options`
+
+#### `DialogueConditionResult` (строка заголовка 188)
+
+Публичные поля и значения по умолчанию:
+
+- `DialogueConditionState state = DialogueConditionState::Unknown`
+
+#### `DialogueConsequenceExecution` (строка заголовка 192)
+
+Публичные поля и значения по умолчанию:
+
+- `DialogueConsequenceState state = DialogueConsequenceState::Pending`
+
+#### `DialogueChange` (строка заголовка 203)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `DialogueChangeKind kind = DialogueChangeKind::ConversationStarted`
+- `DialogueConsequenceState consequence_state = DialogueConsequenceState::Pending`
+
+#### `DialogueChangeBatch` (строка заголовка 217)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<DialogueChange> changes`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `bool snapshot_required = false`
+
+#### `DialogueSnapshot` (строка заголовка 227)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ConversationSession> sessions`
+- `std::vector<DialogueConsequenceExecution> consequences`
+- `std::uint64_t change_epoch = 1`
+
+#### `DialogueDiagnostics` (строка заголовка 237)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t definitions = 0`
+- `std::uint64_t active_sessions = 0`
+- `std::uint64_t options_selected = 0`
+- `std::uint64_t interruptions = 0`
+- `std::uint64_t consequences = 0`
+
+#### `IDialogueConditionResolver` (строка заголовка 246)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IDialogueConditionResolver() = default;
+[[nodiscard]] virtual DialogueConditionResult Evaluate(const DialogueConditionDefinition &, const DialogueConditionContext &) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `IDialogueConsequenceHandler` (строка заголовка 253)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IDialogueConsequenceHandler() = default;
+[[nodiscard]] virtual DialogueConsequenceState Execute(const DialogueConsequenceDefinition &, const DialogueConsequenceExecution &, const ConversationSession &) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `DialogueService` (строка заголовка 262)
+
+Внутреннее состояние (не часть публичного API): `bool frozen_ = false`, `std::unordered_map<ConversationDefinitionId, ConversationDefinition, IdHash> definitions_`, `std::unordered_map<TypeId, DialogueConditionDefinition> conditions_`, `std::unordered_map<TypeId, DialogueConsequenceDefinition> consequence_defs_`, `std::unordered_map<DialogueConditionTypeId, const IDialogueConditionResolver *, IdHash> conditi`, `std::unordered_map<DialogueConsequenceTypeId, const IDialogueConsequenceHandler *, IdHash> cons`, `std::unordered_map<ConversationSessionId, ConversationSession, IdHash> sessions_`, `std::unordered_map<DialogueConsequenceExecutionId, DialogueConsequenceExecution, IdHash> conseq`, `std::deque<DialogueChange> changes_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterCondition(DialogueConditionDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterConsequence(DialogueConsequenceDefinition definition);
+[[nodiscard]] foundation::Result<ConversationDefinitionId> RegisterConversation(ConversationDefinition definition);
+[[nodiscard]] foundation::Result<void> RegisterConditionResolver(DialogueConditionTypeId type, const IDialogueConditionResolver &resolver);
+[[nodiscard]] foundation::Result<void> RegisterConsequenceHandler(DialogueConsequenceTypeId type, const IDialogueConsequenceHandler &handler);
+[[nodiscard]] foundation::Result<void> FreezeDefinitions();
+[[nodiscard]] std::vector<DialogueOptionDefinition> GetAvailableOptions(ConversationSessionId session, GameplayObjectRef actor) const;
+[[nodiscard]] std::optional<ConversationSession> GetSession(ConversationSessionId id) const noexcept;
+[[nodiscard]] const ConversationDefinition *GetDefinition(ConversationDefinitionId id) const noexcept;
+[[nodiscard]] std::vector<DialogueConsequenceExecutionId> ExecutePendingConsequences(std::size_t budget = 128);
+[[nodiscard]] DialogueChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] DialogueSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(DialogueSnapshot snapshot);
+[[nodiscard]] DialogueDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterCondition` | `DialogueService::RegisterCondition` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:74` |
+| `RegisterConsequence` | `DialogueService::RegisterConsequence` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:82` |
+| `RegisterConversation` | `DialogueService::RegisterConversation` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:90` |
+| `RegisterConditionResolver` | `DialogueService::RegisterConditionResolver` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:136` |
+| `RegisterConsequenceHandler` | `DialogueService::RegisterConsequenceHandler` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:145` |
+| `FreezeDefinitions` | `DialogueService::FreezeDefinitions` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:154` |
+| `GetDefinition` | `DialogueService::GetDefinition` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:221` |
+| `GetSession` | `DialogueService::GetSession` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:226` |
+| `GetAvailableOptions` | `DialogueService::GetAvailableOptions` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:547` |
+| `ExecutePendingConsequences` | `DialogueService::ExecutePendingConsequences` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:731` |
+| `CaptureSnapshot` | `DialogueService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:922` |
+| `RestoreSnapshot` | `DialogueService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:947` |
+| `GetDiagnostics` | `DialogueService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Dialogue/src/dialogue.cpp:1078` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterConditionResolver`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:97`
+- `RegisterConsequenceHandler`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:98`
+- `RegisterCondition`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:101`
+- `RegisterConsequence`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:102`
+- `RegisterConversation`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:121`
+- `FreezeDefinitions`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:131`
+- `GetAvailableOptions`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:135`
+- `GetSession`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:137`
+- `ExecutePendingConsequences`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:138`
+- `GetDiagnostics`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:142`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:143`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/dialogue_tests.cpp:152`
+

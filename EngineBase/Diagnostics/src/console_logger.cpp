@@ -8,16 +8,13 @@
 #include <sstream>
 #include <system_error>
 
-namespace epidemic::diagnostics
-{
+namespace epidemic::diagnostics {
 // This file implements the default console-and-file logger used by EngineBase.
 // The logger detects the repository root from stable markers and writes logs to logs/epidemic.log.
 
-namespace
-{
+namespace {
 // Returns true when the supplied directory looks like the repository root expected by EngineBase.
-[[nodiscard]] bool IsProjectRootCandidate(const std::filesystem::path &path)
-{
+[[nodiscard]] bool IsProjectRootCandidate(const std::filesystem::path &path) {
     const bool has_engine_base_directory = std::filesystem::exists(path / "EngineBase");
     const bool has_root_cmake = std::filesystem::exists(path / "CMakeLists.txt");
     const bool has_api_stability = std::filesystem::exists(path / "EngineBase" / "API_STABILITY.md");
@@ -26,19 +23,15 @@ namespace
 
 // Walks upward from the current working directory until a repository root marker is found.
 // Output: resolved project root, or current_path() as a safe fallback when detection fails.
-std::filesystem::path FindProjectRoot()
-{
+std::filesystem::path FindProjectRoot() {
     auto current = std::filesystem::current_path();
-    while (!current.empty())
-    {
-        if (IsProjectRootCandidate(current))
-        {
+    while (!current.empty()) {
+        if (IsProjectRootCandidate(current)) {
             return current;
         }
 
         const auto parent = current.parent_path();
-        if (parent == current)
-        {
+        if (parent == current) {
             break;
         }
 
@@ -50,10 +43,8 @@ std::filesystem::path FindProjectRoot()
 } // namespace
 
 // Opens the log file lazily so simple test runs do not pay setup cost until the first log write.
-void ConsoleLogger::EnsureLogFileInitialized()
-{
-    if (file_initialized_)
-    {
+void ConsoleLogger::EnsureLogFileInitialized() {
+    if (file_initialized_) {
         return;
     }
 
@@ -62,8 +53,7 @@ void ConsoleLogger::EnsureLogFileInitialized()
     const auto logs_directory = FindProjectRoot() / "logs";
     std::error_code error;
     std::filesystem::create_directories(logs_directory, error);
-    if (error)
-    {
+    if (error) {
         return;
     }
 
@@ -71,10 +61,10 @@ void ConsoleLogger::EnsureLogFileInitialized()
 }
 
 // Formats one log line, writes it to stdout, and mirrors it to the persistent log file when available.
-void ConsoleLogger::Write(const LogMessage &message)
-{
+void ConsoleLogger::Write(const LogMessage &message) {
     const auto time = std::chrono::system_clock::to_time_t(message.timestamp);
-    const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(message.timestamp.time_since_epoch()) % 1000;
+    const auto milliseconds =
+        std::chrono::duration_cast<std::chrono::milliseconds>(message.timestamp.time_since_epoch()) % 1000;
 
     std::tm local_time{};
 #if defined(_WIN32)
@@ -89,21 +79,16 @@ void ConsoleLogger::Write(const LogMessage &message)
     std::ostringstream line;
     line << '[' << std::put_time(&local_time, "%H:%M:%S") << '.' << std::setw(3) << std::setfill('0')
          << milliseconds.count() << "]"
-         << " [" << ToString(message.level) << ']'
-         << " [" << message.module_name << ']';
+         << " [" << ToString(message.level) << ']' << " [" << message.module_name << ']';
 
-    if (!message.category.empty())
-    {
+    if (!message.category.empty()) {
         line << " [" << message.category << ']';
     }
 
     line << " [thread=";
-    if (!message.thread_name.empty())
-    {
+    if (!message.thread_name.empty()) {
         line << message.thread_name;
-    }
-    else
-    {
+    } else {
         line << thread_stream.str();
     }
     line << "] " << message.message;
@@ -114,10 +99,9 @@ void ConsoleLogger::Write(const LogMessage &message)
     const auto formatted_line = line.str();
     std::cout << formatted_line << '\n';
 
-    if (file_.is_open())
-    {
+    if (file_.is_open()) {
         file_ << formatted_line << '\n';
         file_.flush();
     }
 }
-} 
+}

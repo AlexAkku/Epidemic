@@ -2,10 +2,8 @@
 
 #include "Epidemic/Runtime/Time/time_snapshot.h"
 
-namespace epidemic::runtime
-{
-enum class TimeEventKind
-{
+namespace epidemic::runtime {
+enum class TimeEventKind {
     TimeAdvanced,
     TimeScaleChanged,
     Paused,
@@ -15,11 +13,10 @@ enum class TimeEventKind
     DayPhaseChanged,
 };
 
-struct TimeEvent
-{
+struct TimeEvent {
     TimeEventKind kind = TimeEventKind::TimeAdvanced;
     TimeSnapshot snapshot{};
 
-    [[nodiscard]] constexpr bool operator==(const TimeEvent&) const noexcept = default;
+    [[nodiscard]] constexpr bool operator==(const TimeEvent &) const noexcept = default;
 };
 } // namespace epidemic::runtime

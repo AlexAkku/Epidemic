@@ -13,50 +13,40 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::world_integration
-{
-struct AreasAtPositionQuery
-{
+namespace epidemic::gameplay::world_integration {
+struct AreasAtPositionQuery {
     using ResultType = std::vector<world::WorldAreaDefinition>;
     world::WorldPosition position{};
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept
-    {
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
         return QueryTypeId::FromString("framework.query.world.areas_at");
     }
 };
-struct AlterationsInAreaQuery
-{
+struct AlterationsInAreaQuery {
     using ResultType = std::vector<world::WorldAlterationRecord>;
     world::WorldAabb area{};
     std::optional<world::WorldAlterationTypeId> type{};
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept
-    {
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
         return QueryTypeId::FromString("framework.query.world.alterations");
     }
 };
-struct EnvironmentSampleQuery
-{
+struct EnvironmentSampleQuery {
     using ResultType = environment::EnvironmentSample;
     environment::EnvironmentPosition position{};
     GameplayTimePoint time{};
     std::vector<GameplayObjectRef> scopes;
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept
-    {
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
         return QueryTypeId::FromString("framework.query.environment.sample");
     }
 };
-struct ActiveInteractionsQuery
-{
+struct ActiveInteractionsQuery {
     using ResultType = std::vector<interaction::InteractionSession>;
     GameplayObjectRef actor{};
-    [[nodiscard]] static constexpr QueryTypeId Type() noexcept
-    {
+    [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
         return QueryTypeId::FromString("framework.query.interaction.active");
     }
 };
 
-struct WorldFactsCheckpoint
-{
+struct WorldFactsCheckpoint {
     static constexpr std::uint32_t kSchemaVersion = 2;
 
     std::uint32_t schema_version = kSchemaVersion;
@@ -71,20 +61,17 @@ struct WorldFactsCheckpoint
     Revision interaction_revision{};
 };
 
-[[nodiscard]] constexpr GameplayObjectRef GlobalWorldScope() noexcept
-{
+[[nodiscard]] constexpr GameplayObjectRef GlobalWorldScope() noexcept {
     return {world::WorldService::Domain(), GameplayObjectId::FromString("framework.world.scope.global")};
 }
 
 // Current-state providers are intended to run inside the composition gameplay read phase.
 // World/Environment/Interaction mutations must not execute concurrently with these reads.
-class WorldQueryAdapter
-{
+class WorldQueryAdapter {
   public:
     WorldQueryAdapter(world::WorldService &w, environment::EnvironmentService &e, interaction::InteractionService &i,
                       queries::GameplayQueryService &q)
-        : world_(w), environment_(e), interaction_(i), queries_(q)
-    {
+        : world_(w), environment_(e), interaction_(i), queries_(q) {
     }
     [[nodiscard]] foundation::Result<void> RegisterProviders();
 
@@ -95,15 +82,13 @@ class WorldQueryAdapter
     queries::GameplayQueryService &queries_;
 };
 
-class WorldFactsAdapter
-{
+class WorldFactsAdapter {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<WorldFactsAdapter>;
 
   public:
     WorldFactsAdapter(world::WorldService &w, environment::EnvironmentService &e, interaction::InteractionService &i,
                       facts::GameplayFactsService &f)
-        : world_(w), environment_(e), interaction_(i), facts_(f)
-    {
+        : world_(w), environment_(e), interaction_(i), facts_(f) {
     }
     [[nodiscard]] foundation::Result<void> RegisterContracts();
     [[nodiscard]] foundation::Result<std::uint64_t> PublishPending(GameplayContext context = {});
@@ -122,11 +107,9 @@ class WorldFactsAdapter
     ChangeCursor wc_{}, ec_{}, ic_{};
 };
 
-class EntityInteractionStateProvider final : public interaction::IInteractionStateProvider
-{
+class EntityInteractionStateProvider final : public interaction::IInteractionStateProvider {
   public:
-    explicit EntityInteractionStateProvider(const entities::EntityService &e) : entities_(e)
-    {
+    explicit EntityInteractionStateProvider(const entities::EntityService &e) : entities_(e) {
     }
     [[nodiscard]] bool IsMaterialized(GameplayObjectRef object) const override;
     [[nodiscard]] Revision RevisionOf(GameplayObjectRef object) const override;
@@ -142,11 +125,17 @@ class EntityInteractionStateProvider final : public interaction::IInteractionSta
 #include "Epidemic/GameFramework/Environment/environment.h"
 #include "Epidemic/GameFramework/Interaction/interaction.h"
 #include "Epidemic/GameFramework/World/world.h"
-namespace epidemic::gameplay::savegame
-{
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateEnvironmentServiceSaveParticipant(epidemic::gameplay::environment::EnvironmentService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateInteractionServiceSaveParticipant(epidemic::gameplay::interaction::InteractionService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateWorldServiceSaveParticipant(epidemic::gameplay::world::WorldService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateWorldFactsAdapterSaveParticipant(epidemic::gameplay::world_integration::WorldFactsAdapter& owner, SaveRestoreWorkspace& workspace);
+namespace epidemic::gameplay::savegame {
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateEnvironmentServiceSaveParticipant(epidemic::gameplay::environment::EnvironmentService &owner,
+                                        SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateInteractionServiceSaveParticipant(epidemic::gameplay::interaction::InteractionService &owner,
+                                        SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateWorldServiceSaveParticipant(epidemic::gameplay::world::WorldService &owner, SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateWorldFactsAdapterSaveParticipant(epidemic::gameplay::world_integration::WorldFactsAdapter &owner,
+                                       SaveRestoreWorkspace &workspace);
 }
 // END GENERATED GOAL5 PARTICIPANTS

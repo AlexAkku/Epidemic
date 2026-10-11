@@ -6,22 +6,19 @@
 
 #include <memory>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Persistence backend/schema composition is fixed when services are created.
 // Runtime object data remains mutable transactionally; there is no hot schema/migration registry in this module.
-struct PersistenceOptions
-{
+struct PersistenceOptions {
     std::shared_ptr<IPersistenceBackend> backend;
     // CreatePersistenceServices rejects values outside the PersistenceDurability enum domain.
     PersistenceDurability durability = PersistenceDurability::MemoryOnly;
 };
 
-struct PersistenceServices
-{
+struct PersistenceServices {
     std::shared_ptr<IPersistenceStore> store;
     std::shared_ptr<IPersistenceQuery> query;
 };
 
-[[nodiscard]] foundation::Result<PersistenceServices> CreatePersistenceServices(const PersistenceOptions& options = {});
+[[nodiscard]] foundation::Result<PersistenceServices> CreatePersistenceServices(const PersistenceOptions &options = {});
 } // namespace epidemic::runtime

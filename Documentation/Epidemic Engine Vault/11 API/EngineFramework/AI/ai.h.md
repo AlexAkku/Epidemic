@@ -602,3 +602,431 @@ class AIService
 };
 } // namespace epidemic::gameplay::ai
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `AIAgentActivity`: `Idle`, `Thinking`, `ExecutingIntent`, `Suspended`, `Disabled`
+- `AIMaterializationPolicy`: `AbstractCapable`, `RequiresMaterialized`, `RequiresRuntimeProjection`
+- `AIIntentStatus`: `Issued`, `Accepted`, `Running`, `Succeeded`, `Failed`, `Cancelled`, `TimedOut`
+- `AITargetPolicy`: `Targetless`, `Optional`, `Required`
+- `AIConsiderationScope`: `Context`, `Target`
+- `AITargetSource`: `Perceived`, `Known`, `Public`, `Group`, `LastKnown`, `CurrentPerception`, `Knowledge`
+- `AIInputValueKind`: `Fixed`, `Boolean`, `Type`, `Object`, `Payload`
+- `BlackboardPersistencePolicy`: `Session`, `Persistent`
+- `AIThinkDeferReason`: `None`, `NotDue`, `Suspended`, `Disabled`, `MaterializationUnavailable`, `ActiveIntent`, `BudgetExceeded`
+- `AIChangeKind`: `AgentRegistered`, `AgentUnregistered`, `AgentEnabled`, `AgentDisabled`, `AgentSuspended`, `AgentResumed`, `ThinkScheduled`, `ThinkStarted`, `ThinkCompleted`, `GoalSelected`, `GoalCompleted`, `GoalFailed`, `IntentIssued`, `IntentAccepted`, `IntentRunning`, `IntentSucceeded`, `IntentFailed`, `IntentCancelled`, `IntentTimedOut`, `ReplanRequested`, `BlackboardChanged`, `BlackboardRemoved`, `BudgetExceeded`
+- `AIAccessFlag`: `SelfState`, `PerceivedState`, `KnownState`, `PublicFacts`, `GroupKnowledge`, `OmniscientDebug`
+
+### Состав типов и операции
+
+#### `AIProfileId` (строка заголовка 19)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIProfileId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIProfileId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIProfileId &) const noexcept = default;
+```
+
+#### `AIGoalId` (строка заголовка 27)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIGoalId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIGoalId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIGoalId &) const noexcept = default;
+```
+
+#### `AIIntentTypeId` (строка заголовка 35)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIIntentTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIIntentTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIIntentTypeId &) const noexcept = default;
+```
+
+#### `AIIntentId` (строка заголовка 43)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIIntentId FromString(std::string_view s) noexcept;
+static constexpr AIIntentId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIIntentId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIIntentId &) const noexcept = default;
+```
+
+#### `AIConsiderationId` (строка заголовка 55)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIConsiderationId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIConsiderationId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIConsiderationId &) const noexcept = default;
+```
+
+#### `AIConsiderationEvaluatorId` (строка заголовка 63)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIConsiderationEvaluatorId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIConsiderationEvaluatorId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIConsiderationEvaluatorId &) const noexcept = default;
+```
+
+#### `AIInputKeyId` (строка заголовка 74)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIInputKeyId FromString(std::string_view s) noexcept;
+static constexpr AIInputKeyId FromType(TypeId value) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIInputKeyId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIInputKeyId &) const noexcept = default;
+```
+
+#### `AIAccessPolicyId` (строка заголовка 83)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIAccessPolicyId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIAccessPolicyId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIAccessPolicyId &) const noexcept = default;
+```
+
+#### `BlackboardKeyId` (строка заголовка 91)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr BlackboardKeyId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const BlackboardKeyId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const BlackboardKeyId &) const noexcept = default;
+```
+
+#### `AIReplanReasonId` (строка заголовка 99)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr AIReplanReasonId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const AIReplanReasonId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const AIReplanReasonId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 107)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 109)
+
+#### `RefHash` (строка заголовка 114)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(GameplayObjectRef r) const noexcept;
+```
+
+#### `AIInputValue` (строка заголовка 232)
+
+Публичные поля и значения по умолчанию:
+
+- `AIInputValueKind kind = AIInputValueKind::Fixed`
+- `AIAccessFlag access = AIAccessFlag::SelfState`
+- `Fixed fixed_value = 0`
+- `bool bool_value = false`
+- `std::vector<std::byte> payload`
+
+#### `AITargetCandidate` (строка заголовка 243)
+
+Публичные поля и значения по умолчанию:
+
+- `AITargetSource source = AITargetSource::Perceived`
+- `std::vector<AIInputValue> inputs`
+
+#### `AIConsideration` (строка заголовка 249)
+
+Публичные поля и значения по умолчанию:
+
+- `AIConsiderationScope scope = AIConsiderationScope::Context`
+- `Fixed weight_micro = kFixedOne`
+- `std::vector<std::byte> payload`
+
+#### `AIGoalDefinition` (строка заголовка 258)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `Fixed base_priority_micro = 0`
+- `AITargetPolicy target_policy = AITargetPolicy::Targetless`
+- `std::vector<AIConsideration> considerations`
+- `std::vector<std::byte> payload`
+
+#### `AIAccessPolicy` (строка заголовка 269)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+
+Публичные сигнатуры операций:
+
+```cpp
+std::uint32_t flags = static_cast<std::uint32_t>(AIAccessFlag::SelfState) | static_cast<std::uint32_t>(AIAccessFlag::PerceivedState) | static_cast<std::uint32_t>(AIAccessFlag::KnownState);
+```
+
+#### `AIProfile` (строка заголовка 277)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `std::vector<AIGoalId> default_goals`
+- `AIMaterializationPolicy materialization_policy = AIMaterializationPolicy::AbstractCapable`
+- `bool debug_profile = false`
+- `std::vector<std::byte> payload`
+
+#### `BlackboardKeyDefinition` (строка заголовка 291)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::size_t max_payload_bytes = 4096`
+- `BlackboardPersistencePolicy persistence = BlackboardPersistencePolicy::Session`
+
+#### `AIBlackboardEntry` (строка заголовка 299)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> value`
+
+#### `AIIntent` (строка заголовка 307)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed priority_micro = 0`
+- `AIIntentStatus status = AIIntentStatus::Issued`
+- `std::vector<std::byte> payload`
+
+#### `AIGoalInstance` (строка заголовка 319)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed score_micro = 0`
+
+#### `AIAgentState` (строка заголовка 325)
+
+Публичные поля и значения по умолчанию:
+
+- `AIAgentActivity activity = AIAgentActivity::Idle`
+- `std::vector<AIBlackboardEntry> blackboard`
+- `bool pending_replan = false`
+
+#### `AIContextSnapshot` (строка заголовка 341)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<AIInputValue> inputs`
+- `std::vector<AITargetCandidate> targets`
+- `bool materialized = false`
+- `bool runtime_projection_available = false`
+
+#### `AIThinkResult` (строка заголовка 349)
+
+Публичные поля и значения по умолчанию:
+
+- `bool deferred = false`
+- `AIThinkDeferReason defer_reason = AIThinkDeferReason::None`
+
+#### `AIBudget` (строка заголовка 358)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t max_agents_thinking_per_tick = 256`
+- `std::uint32_t max_goals_evaluated = 4096`
+- `std::uint32_t max_target_evaluations_per_tick = 8192`
+- `std::uint32_t max_intents_issued = 512`
+
+#### `AITickBudgetState` (строка заголовка 365)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t agents_thought = 0`
+- `std::uint32_t goals_evaluated = 0`
+- `std::uint32_t target_evaluations = 0`
+- `std::uint32_t intents_issued = 0`
+
+#### `AIChange` (строка заголовка 373)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `AIChangeKind kind = AIChangeKind::AgentRegistered`
+
+#### `AIChangeBatch` (строка заголовка 385)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<AIChange> changes`
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+
+#### `AISnapshot` (строка заголовка 395)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<AIAgentState> agents`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `AIDiagnostics` (строка заголовка 404)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t profiles = 0`
+- `std::uint64_t agents = 0`
+- `std::uint64_t agents_thinking = 0`
+- `std::uint64_t goals_evaluated = 0`
+- `std::uint64_t target_evaluations = 0`
+- `std::uint64_t intents_issued = 0`
+- `std::uint64_t intents_failed = 0`
+- `std::uint64_t replans_requested = 0`
+- `std::uint64_t evaluator_failures = 0`
+- `std::uint64_t budget_exhaustions = 0`
+
+#### `IAIConsiderationEvaluator` (строка заголовка 418)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IAIConsiderationEvaluator() = default;
+[[nodiscard]] virtual foundation::Result<Fixed> Evaluate(const AIConsideration &definition, const AIContextSnapshot &context, const AITargetCandidate *target) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `AIService` (строка заголовка 427)
+
+Внутреннее состояние (не часть публичного API): `bool frozen_ = false`, `std::unordered_map<AIAccessPolicyId, AIAccessPolicy, IdHash> policies_`, `std::unordered_map<AIConsiderationEvaluatorId, const IAIConsiderationEvaluator *, IdHash> evalu`, `std::unordered_map<AIGoalId, AIGoalDefinition, IdHash> goals_`, `std::unordered_map<AIProfileId, AIProfile, IdHash> profiles_`, `std::unordered_map<BlackboardKeyId, BlackboardKeyDefinition, IdHash> blackboard_keys_`, `std::unordered_map<GameplayObjectRef, AIAgentState, RefHash> agents_`, `std::unordered_map<AIIntentId, GameplayObjectRef, IdHash> intent_to_agent_`, `std::set<DueKey> due_agents_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+AIService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] static constexpr AIConsiderationEvaluatorId InputEvaluatorId() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterAccessPolicy(AIAccessPolicy policy);
+[[nodiscard]] foundation::Result<void> RegisterConsiderationEvaluator(AIConsiderationEvaluatorId id, const IAIConsiderationEvaluator &evaluator);
+[[nodiscard]] foundation::Result<void> RegisterGoal(AIGoalDefinition goal);
+[[nodiscard]] foundation::Result<void> RegisterProfile(AIProfile profile);
+[[nodiscard]] foundation::Result<void> RegisterBlackboardKey(BlackboardKeyDefinition definition);
+[[nodiscard]] foundation::Result<void> Freeze();
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] const AIAccessPolicy *FindAccessPolicy(AIAccessPolicyId id) const noexcept;
+[[nodiscard]] const AIGoalDefinition *FindGoal(AIGoalId id) const noexcept;
+[[nodiscard]] const AIProfile *FindProfile(AIProfileId id) const noexcept;
+[[nodiscard]] const BlackboardKeyDefinition *FindBlackboardKey(BlackboardKeyId id) const noexcept;
+[[nodiscard]] const AIAgentState *FindAgent(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] const AIBlackboardEntry *FindBlackboard(GameplayObjectRef subject, BlackboardKeyId key) const noexcept;
+void SetBudget(AIBudget budget) noexcept;
+void SetChangeJournalCapacity(std::size_t capacity) noexcept;
+[[nodiscard]] std::vector<AIAgentState> FindAgentsByActivity(AIAgentActivity activity) const;
+[[nodiscard]] std::vector<AIAgentState> FindAgentsWithGoal(AIGoalId goal) const;
+[[nodiscard]] std::vector<GameplayObjectRef> FindDueAgents(GameplayTimePoint now, std::size_t limit) const;
+[[nodiscard]] AIChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] AISnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(AISnapshot snapshot);
+[[nodiscard]] AIDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `DueKey` (строка заголовка 526)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator<(const DueKey &other) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `AIService` | `AIService::AIService` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:109` |
+| `RegisterAccessPolicy` | `AIService::RegisterAccessPolicy` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:120` |
+| `RegisterConsiderationEvaluator` | `AIService::RegisterConsiderationEvaluator` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:131` |
+| `RegisterGoal` | `AIService::RegisterGoal` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:143` |
+| `RegisterProfile` | `AIService::RegisterProfile` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:155` |
+| `RegisterBlackboardKey` | `AIService::RegisterBlackboardKey` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:186` |
+| `Freeze` | `AIService::Freeze` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:198` |
+| `FindAccessPolicy` | `AIService::FindAccessPolicy` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:258` |
+| `FindGoal` | `AIService::FindGoal` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:263` |
+| `FindProfile` | `AIService::FindProfile` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:268` |
+| `FindBlackboardKey` | `AIService::FindBlackboardKey` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:273` |
+| `FindAgent` | `AIService::FindAgent` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:377` |
+| `FindBlackboard` | `AIService::FindBlackboard` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:1130` |
+| `FindAgentsByActivity` | `AIService::FindAgentsByActivity` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:1141` |
+| `FindAgentsWithGoal` | `AIService::FindAgentsWithGoal` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:1154` |
+| `FindDueAgents` | `AIService::FindDueAgents` | `EngineFramework/GameplayWorldStateOwners/AI/src/ai.cpp:1167` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterGoal`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:77`
+- `RegisterProfile`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:87`
+- `RegisterBlackboardKey`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:115`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:125`
+- `FindDueAgents`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:146`
+- `FindAgent`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:169`
+- `FindBlackboard`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:183`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:186`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:197`
+- `CurrentRevision`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:205`
+- `SetBudget`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:227`
+- `RegisterConsiderationEvaluator`: `EngineFramework/DevelopmentInfrastructure/Tests/ai_tests.cpp:240`
+

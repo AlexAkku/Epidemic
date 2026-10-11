@@ -8,14 +8,12 @@
 #include <mutex>
 #include <optional>
 
-namespace epidemic::memory
-{
+namespace epidemic::memory {
 // This file declares the default IMemoryTracker implementation used by EngineBase.
 // MemoryTracker provides thread-safe accounting by allocation tag and is intentionally small:
 // it tracks usage, peaks, counts, and optional budgets, but does not own allocators.
 
-class MemoryTracker final : public IMemoryTracker
-{
+class MemoryTracker final : public IMemoryTracker {
   public:
     // Builds the tracker with tracking enabled or disabled from the start.
     explicit MemoryTracker(bool tracking_enabled = true) noexcept;

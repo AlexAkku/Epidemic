@@ -10,10 +10,8 @@
 
 #include <cstdint>
 
-namespace epidemic::runtime
-{
-struct PersistentObjectRecord
-{
+namespace epidemic::runtime {
+struct PersistentObjectRecord {
     PersistentObjectId persistent_id{};
     AssetId asset_id{};
     PersistentObjectKind kind = PersistentObjectKind::Unknown;

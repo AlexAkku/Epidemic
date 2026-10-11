@@ -19,14 +19,10 @@
 #include <string_view>
 #include <utility>
 
-namespace
-{
+namespace {
 // Unwraps a Result value for smoke-app code and throws with the contained error message on failure.
-template <typename TValue>
-TValue RequireValue(epidemic::foundation::Result<TValue> result)
-{
-    if (!result.HasValue())
-    {
+template <typename TValue> TValue RequireValue(epidemic::foundation::Result<TValue> result) {
+    if (!result.HasValue()) {
         throw std::runtime_error(result.GetError().message);
     }
 
@@ -34,12 +30,10 @@ TValue RequireValue(epidemic::foundation::Result<TValue> result)
 }
 
 // Formats one normalized input event into a readable log line.
-void LogInputEvent(epidemic::diagnostics::ILogger &logger, const epidemic::input::InputEvent &event)
-{
+void LogInputEvent(epidemic::diagnostics::ILogger &logger, const epidemic::input::InputEvent &event) {
     using epidemic::input::InputEventType;
 
-    switch (event.type)
-    {
+    switch (event.type) {
     case InputEventType::KeyPressed:
         logger.Info("InputSmokeApp", "Input",
                     "Key pressed: " + std::string(epidemic::input::ToString(event.key_code)) +
@@ -52,8 +46,7 @@ void LogInputEvent(epidemic::diagnostics::ILogger &logger, const epidemic::input
     case InputEventType::MouseMoved:
         logger.Info("InputSmokeApp", "Input",
                     "Mouse moved: x=" + std::to_string(event.mouse_x) + ", y=" + std::to_string(event.mouse_y) +
-                        ", dx=" + std::to_string(event.mouse_delta_x) + ", dy=" +
-                        std::to_string(event.mouse_delta_y));
+                        ", dx=" + std::to_string(event.mouse_delta_x) + ", dy=" + std::to_string(event.mouse_delta_y));
         break;
     case InputEventType::MouseButtonPressed:
         logger.Info("InputSmokeApp", "Input",
@@ -81,10 +74,8 @@ void LogInputEvent(epidemic::diagnostics::ILogger &logger, const epidemic::input
 } // namespace
 
 // Composes platform and input services, opens a window, and logs live normalized input until exit.
-int main(int argc, char **argv)
-{
-    try
-    {
+int main(int argc, char **argv) {
+    try {
         const bool smoke_mode = argc == 2 && std::string_view(argv[1]) == "--smoke";
         epidemic::core::Application application;
         static_cast<void>(epidemic::enginebase::RegisterEngineBase(
@@ -99,13 +90,12 @@ int main(int argc, char **argv)
 
         const auto window = RequireValue(epidemic::enginebase::CreateMainWindow(
             application,
-            epidemic::platform::WindowCreateInfo{"Epidemic Input Smoke",
-                                                 static_cast<std::uint32_t>(configuration->GetDefaultWindowWidth().value_or(1280)),
-                                                 static_cast<std::uint32_t>(configuration->GetDefaultWindowHeight().value_or(720)),
-                                                 !smoke_mode}));
+            epidemic::platform::WindowCreateInfo{
+                "Epidemic Input Smoke",
+                static_cast<std::uint32_t>(configuration->GetDefaultWindowWidth().value_or(1280)),
+                static_cast<std::uint32_t>(configuration->GetDefaultWindowHeight().value_or(720)), !smoke_mode}));
 
-        if (smoke_mode)
-        {
+        if (smoke_mode) {
             application.SetFrameLimit(1);
         }
 
@@ -122,11 +112,9 @@ int main(int argc, char **argv)
         application.AddFramePhaseHandler(
             epidemic::core::FramePhase::PumpPlatformEvents,
             [&application, frame_platform_events, logger, window](const epidemic::core::FrameContext &) {
-                for (const auto &event : frame_platform_events->events)
-                {
+                for (const auto &event : frame_platform_events->events) {
                     if (event.type == epidemic::platform::PlatformEventType::WindowCloseRequested &&
-                        event.window_id == window->Id())
-                    {
+                        event.window_id == window->Id()) {
                         logger->Info("InputSmokeApp", "Window", "Close requested");
                         window->Close();
                         application.RequestStop();
@@ -138,13 +126,11 @@ int main(int argc, char **argv)
         application.AddFramePhaseHandler(
             epidemic::core::FramePhase::UpdateInput,
             [&application, input_system, logger](const epidemic::core::FrameContext &) {
-                for (const auto &event : input_system->CurrentEvents())
-                {
+                for (const auto &event : input_system->CurrentEvents()) {
                     LogInputEvent(*logger, event);
                 }
 
-                if (input_system->CurrentSnapshot().keyboard.WasPressedThisFrame(epidemic::input::KeyCode::Escape))
-                {
+                if (input_system->CurrentSnapshot().keyboard.WasPressedThisFrame(epidemic::input::KeyCode::Escape)) {
                     logger->Info("InputSmokeApp", "Input", "Escape pressed, stopping application");
                     application.RequestStop();
                 }
@@ -156,9 +142,7 @@ int main(int argc, char **argv)
         application.Run();
         application.Shutdown();
         return 0;
-    }
-    catch (const std::exception &exception)
-    {
+    } catch (const std::exception &exception) {
         std::cerr << "EpidemicInputSmokeApp failed: " << exception.what() << '\n';
         return 1;
     }

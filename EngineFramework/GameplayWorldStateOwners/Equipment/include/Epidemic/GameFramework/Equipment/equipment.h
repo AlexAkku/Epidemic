@@ -12,33 +12,26 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::equipment
-{
+namespace epidemic::gameplay::equipment {
 #define EQ_TYPE(name)                                                                                                  \
-    struct name                                                                                                        \
-    {                                                                                                                  \
+    struct name {                                                                                                      \
         TypeId value{};                                                                                                \
-        static constexpr name FromString(std::string_view s) noexcept                                                  \
-        {                                                                                                              \
+        static constexpr name FromString(std::string_view s) noexcept {                                                \
             return {TypeId::FromString(s)};                                                                            \
         }                                                                                                              \
-        [[nodiscard]] constexpr bool IsValid() const noexcept                                                          \
-        {                                                                                                              \
+        [[nodiscard]] constexpr bool IsValid() const noexcept {                                                        \
             return value.IsValid();                                                                                    \
         }                                                                                                              \
         [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;                                \
         [[nodiscard]] constexpr auto operator<=>(const name &) const noexcept = default;                               \
     }
 #define EQ_OBJ(name)                                                                                                   \
-    struct name                                                                                                        \
-    {                                                                                                                  \
+    struct name {                                                                                                      \
         GameplayObjectId value{};                                                                                      \
-        static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept                                       \
-        {                                                                                                              \
+        static constexpr name FromRaw(std::uint64_t h, std::uint64_t l) noexcept {                                     \
             return {GameplayObjectId::FromRaw(h, l)};                                                                  \
         }                                                                                                              \
-        [[nodiscard]] constexpr bool IsValid() const noexcept                                                          \
-        {                                                                                                              \
+        [[nodiscard]] constexpr bool IsValid() const noexcept {                                                        \
             return value.IsValid();                                                                                    \
         }                                                                                                              \
         [[nodiscard]] constexpr bool operator==(const name &) const noexcept = default;                                \
@@ -55,22 +48,18 @@ EQ_OBJ(EquipmentLoadoutId);
 EQ_OBJ(EquipmentItemId);
 #undef EQ_TYPE
 #undef EQ_OBJ
-struct IdHash
-{
-    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept
-    {
+struct IdHash {
+    template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<decltype(id.value)>{}(id.value);
     }
 };
 
-enum class EquipmentBindingState
-{
+enum class EquipmentBindingState {
     Active,
     Disabled,
     Broken
 };
-enum class EquipmentChangeKind
-{
+enum class EquipmentChangeKind {
     ProfileCreated,
     SlotAdded,
     BindingCreated,
@@ -79,19 +68,16 @@ enum class EquipmentChangeKind
     LoadoutSaved
 };
 
-enum class EquipmentReconciliationState
-{
+enum class EquipmentReconciliationState {
     Ready,
     NeedsReconciliation
 };
-struct EquipmentGrantDescriptor
-{
+struct EquipmentGrantDescriptor {
     EquipmentGrantTypeId type{};
     TypeId value_type{};
     std::vector<std::byte> payload;
 };
-struct EquipmentSlotDefinition
-{
+struct EquipmentSlotDefinition {
     EquipmentSlotId id{};
     EquipmentSlotTypeId type{};
     GameplayTagSet accepted_tags;
@@ -99,37 +85,32 @@ struct EquipmentSlotDefinition
     TypeId conflict_group{};
     Revision revision{};
 };
-struct EquipmentProfileDefinition
-{
+struct EquipmentProfileDefinition {
     EquipmentProfileDefinitionId id{};
     std::string canonical_name;
     std::vector<EquipmentSlotDefinition> slots;
 };
-struct EquipmentGrantSchema
-{
+struct EquipmentGrantSchema {
     EquipmentGrantTypeId type{};
     TypeId payload_type{};
     std::uint32_t schema_version = 1;
     std::size_t max_payload_bytes = 0;
 };
-struct EquipmentProfile
-{
+struct EquipmentProfile {
     EquipmentProfileId id{};
     GameplayObjectRef subject{};
     EquipmentProfileDefinitionId definition{};
     std::vector<EquipmentSlotDefinition> slots;
     Revision revision{};
 };
-struct EquipmentItemDescriptor
-{
+struct EquipmentItemDescriptor {
     EquipmentItemId id{};
     GameplayTagSet tags;
     Revision revision{};
     bool available = false;
     std::vector<EquipmentGrantDescriptor> grants;
 };
-struct EquipmentBinding
-{
+struct EquipmentBinding {
     EquipmentBindingId id{};
     GameplayObjectRef subject{};
     EquipmentItemId item{};
@@ -139,15 +120,13 @@ struct EquipmentBinding
     Revision item_revision{};
     Revision revision{};
 };
-struct EquipmentLoadout
-{
+struct EquipmentLoadout {
     EquipmentLoadoutId id{};
     GameplayObjectRef subject{};
     std::vector<std::pair<EquipmentSlotId, EquipmentItemId>> desired;
     Revision revision{};
 };
-struct EquipPlan
-{
+struct EquipPlan {
     EquipOperationId id{};
     GameplayObjectRef subject{};
     EquipmentItemId item{};
@@ -157,8 +136,7 @@ struct EquipPlan
     std::vector<EquipmentBindingId> conflicting_bindings;
     GameplayContext context{};
 };
-struct EquipmentChange
-{
+struct EquipmentChange {
     std::uint64_t sequence = 0;
     EquipmentChangeKind kind = EquipmentChangeKind::BindingCreated;
     GameplayObjectRef subject{};
@@ -171,8 +149,7 @@ struct EquipmentChange
     EquipmentBindingState old_state = EquipmentBindingState::Active;
     EquipmentBindingState new_state = EquipmentBindingState::Active;
 };
-struct EquipmentChangeBatch
-{
+struct EquipmentChangeBatch {
     std::vector<EquipmentChange> changes;
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
@@ -182,8 +159,7 @@ struct EquipmentChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct EquipmentSnapshot
-{
+struct EquipmentSnapshot {
     std::vector<EquipmentProfile> profiles;
     std::vector<EquipmentBinding> bindings;
     std::vector<EquipmentLoadout> loadouts;
@@ -196,16 +172,14 @@ struct EquipmentSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct EquipmentDiagnostics
-{
+struct EquipmentDiagnostics {
     std::uint64_t profiles = 0;
     std::uint64_t bindings = 0;
     std::uint64_t equip_operations = 0;
     std::uint64_t rejected_operations = 0;
 };
 
-class IEquipmentItemProvider
-{
+class IEquipmentItemProvider {
   public:
     virtual ~IEquipmentItemProvider() = default;
     [[nodiscard]] virtual std::optional<EquipmentItemDescriptor> Describe(EquipmentItemId item) const = 0;
@@ -216,21 +190,18 @@ class IEquipmentItemProvider
     // Restore reconciliation must be idempotent and must not create a second reservation.
     // Providers that persist reservation state should verify that the restored binding is backed by
     // exactly the reservation expected for this subject/item pair.
-    [[nodiscard]] virtual foundation::Result<void> ReconcileEquipmentReservation(
-        EquipmentItemId, GameplayObjectRef, EquipmentBindingId, GameplayContext)
-    {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.equipment.reconciliation_unsupported",
-            "item provider does not support equipment reservation reconciliation"));
+    [[nodiscard]] virtual foundation::Result<void> ReconcileEquipmentReservation(EquipmentItemId, GameplayObjectRef,
+                                                                                 EquipmentBindingId, GameplayContext) {
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.equipment.reconciliation_unsupported",
+                                      "item provider does not support equipment reservation reconciliation"));
     }
     // Override when the backing item owner can atomically exchange several equipment reservations.
     // The default path safely supports zero/one released binding and refuses larger swaps before mutation.
-    [[nodiscard]] virtual foundation::Result<void> ExchangeEquipmentReservations(
-        std::span<const EquipmentItemId> release_items,
-        std::optional<EquipmentItemId> reserve_item,
-        GameplayObjectRef subject,
-        GameplayContext context)
-    {
+    [[nodiscard]] virtual foundation::Result<void>
+    ExchangeEquipmentReservations(std::span<const EquipmentItemId> release_items,
+                                  std::optional<EquipmentItemId> reserve_item, GameplayObjectRef subject,
+                                  GameplayContext context) {
         if (!release_items.empty())
             return foundation::Result<void>::Failure(foundation::Error::Create(
                 "gameplay.equipment.atomic_exchange_unsupported",
@@ -241,32 +212,36 @@ class IEquipmentItemProvider
     }
 };
 
-class EquipmentService
-{
+class EquipmentService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<EquipmentService>;
 
   public:
     explicit EquipmentService(std::size_t change_capacity = 2048);
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.equipment");
     }
-    void SetItemProvider(IEquipmentItemProvider *provider) noexcept
-    {
+    void SetItemProvider(IEquipmentItemProvider *provider) noexcept {
         item_provider_ = provider;
     }
-    [[nodiscard]] foundation::Result<EquipmentProfileDefinitionId> RegisterProfileDefinition(EquipmentProfileDefinition definition);
+    [[nodiscard]] foundation::Result<EquipmentProfileDefinitionId>
+    RegisterProfileDefinition(EquipmentProfileDefinition definition);
     [[nodiscard]] foundation::Result<void> RegisterGrantSchema(EquipmentGrantSchema schema);
-    void Freeze() noexcept { frozen_ = true; }
-    [[nodiscard]] bool IsFrozen() const noexcept { return frozen_; }
-    [[nodiscard]] EquipmentReconciliationState ReconciliationState() const noexcept { return reconciliation_state_; }
-    [[nodiscard]] bool NeedsReconciliation() const noexcept
-    {
+    void Freeze() noexcept {
+        frozen_ = true;
+    }
+    [[nodiscard]] bool IsFrozen() const noexcept {
+        return frozen_;
+    }
+    [[nodiscard]] EquipmentReconciliationState ReconciliationState() const noexcept {
+        return reconciliation_state_;
+    }
+    [[nodiscard]] bool NeedsReconciliation() const noexcept {
         return reconciliation_state_ == EquipmentReconciliationState::NeedsReconciliation;
     }
     [[nodiscard]] foundation::Result<void> ReconcileRestoredBindings(GameplayContext context = {});
     [[nodiscard]] foundation::Result<EquipmentProfileId> CreateProfile(EquipmentProfile profile);
-    [[nodiscard]] foundation::Result<EquipmentProfileId> CreateProfileFromDefinition(GameplayObjectRef subject, EquipmentProfileDefinitionId definition);
+    [[nodiscard]] foundation::Result<EquipmentProfileId>
+    CreateProfileFromDefinition(GameplayObjectRef subject, EquipmentProfileDefinitionId definition);
     [[nodiscard]] foundation::Result<EquipmentSlotId> AddSlot(EquipmentProfileId profile, EquipmentSlotDefinition slot);
     [[nodiscard]] const EquipmentProfile *FindProfile(GameplayObjectRef subject) const noexcept;
     [[nodiscard]] const EquipmentBinding *FindBinding(EquipmentBindingId id) const noexcept;
@@ -285,30 +260,31 @@ class EquipmentService
     [[nodiscard]] bool CanEquip(GameplayObjectRef subject, EquipmentItemId item,
                                 const std::vector<EquipmentSlotId> &slots) const;
     [[nodiscard]] foundation::Result<EquipmentLoadoutId> SaveLoadout(EquipmentLoadout loadout);
-    private:
-        [[nodiscard]] EquipmentChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] EquipmentChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+
+  private:
+    [[nodiscard]] EquipmentChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] EquipmentChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
-    private:
-        [[nodiscard]] std::vector<EquipmentChange> ChangesSinceSequence(std::uint64_t sequence) const;
-    public:
+
+  private:
+    [[nodiscard]] std::vector<EquipmentChange> ChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
     [[nodiscard]] EquipmentSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(EquipmentSnapshot snapshot);
     [[nodiscard]] EquipmentDiagnostics GetDiagnostics() const noexcept;
@@ -319,10 +295,11 @@ class EquipmentService
     [[nodiscard]] EquipmentProfile *MutableProfile(EquipmentProfileId id) noexcept;
     [[nodiscard]] bool SlotAccepts(const EquipmentSlotDefinition &slot,
                                    const EquipmentItemDescriptor &item) const noexcept;
-    [[nodiscard]] std::vector<EquipmentBindingId> ComputeConflicts(const EquipmentProfile& profile, GameplayObjectRef subject,
-                                                                    const std::vector<EquipmentSlotId>& slots) const;
-    [[nodiscard]] bool ValidateGrants(const std::vector<EquipmentGrantDescriptor>& grants) const;
-    [[nodiscard]] foundation::Result<void> ValidateAndCanonicalizeLoadout(EquipmentLoadout& loadout) const;
+    [[nodiscard]] std::vector<EquipmentBindingId> ComputeConflicts(const EquipmentProfile &profile,
+                                                                   GameplayObjectRef subject,
+                                                                   const std::vector<EquipmentSlotId> &slots) const;
+    [[nodiscard]] bool ValidateGrants(const std::vector<EquipmentGrantDescriptor> &grants) const;
+    [[nodiscard]] foundation::Result<void> ValidateAndCanonicalizeLoadout(EquipmentLoadout &loadout) const;
     [[nodiscard]] foundation::Result<void> EnsureMutationReady() const;
     Revision revision_{};
     bool frozen_ = false;

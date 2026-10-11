@@ -132,3 +132,42 @@ template <typename TInteger>
 
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`.
+
+### Состав типов и операции
+
+#### `MonotonicIdReservation` (строка заголовка 70)
+
+Публичные сигнатуры операций:
+
+```cpp
+MonotonicIdReservation() = default;
+MonotonicIdReservation(TInteger* owner, TInteger value) noexcept : owner_(owner), value_(value);
+[[nodiscard]] TInteger Value() const noexcept;
+[[nodiscard]] bool IsValid() const noexcept;
+void Commit() noexcept;
+void Rollback() noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Value`: `EngineRuntime/RuntimeFoundation/tests/runtime_foundation_tests.cpp:58`
+

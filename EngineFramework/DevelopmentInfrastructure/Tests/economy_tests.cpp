@@ -4,25 +4,19 @@
 #include <limits>
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::economy;
-namespace
-{
-void Check(bool v, const char *m)
-{
-    if (!v)
-    {
+namespace {
+void Check(bool v, const char *m) {
+    if (!v) {
         std::cerr << m << '\n';
         std::exit(1);
     }
 }
-GameplayObjectRef Ref(const char *d, const char *i)
-{
+GameplayObjectRef Ref(const char *d, const char *i) {
     return {GameplayDomainId::FromString(d), GameplayObjectId::FromString(i)};
 }
-class Price final : public IPriceProvider
-{
+class Price final : public IPriceProvider {
   public:
-    std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const override
-    {
+    std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const override {
         PriceQuote quote;
         quote.subject = request.subject;
         quote.currency = request.currency;
@@ -35,11 +29,9 @@ class Price final : public IPriceProvider
         return quote;
     }
 };
-class BadPrice final : public IPriceProvider
-{
+class BadPrice final : public IPriceProvider {
   public:
-    std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const override
-    {
+    std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const override {
         PriceQuote quote;
         quote.subject = request.subject;
         quote.currency = request.currency;
@@ -50,9 +42,9 @@ class BadPrice final : public IPriceProvider
         quote.unit_amount = 1;
         return quote;
     }
-};} // namespace
-int main()
-{
+};
+} // namespace
+int main() {
     EconomyService s;
     CurrencyDefinition coin;
     coin.canonical_name = "currency.coin";
@@ -60,9 +52,12 @@ int main()
     Check(static_cast<bool>(cid), "currency");
     Price price;
     BadPrice bad_price;
-    Check(static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.bad"), 100, &bad_price)), "bad provider registered");
-    Check(static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 10, &price)), "price provider registered");
-    Check(!static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 0, &price)), "duplicate provider id rejected");
+    Check(static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.bad"), 100, &bad_price)),
+          "bad provider registered");
+    Check(static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 10, &price)),
+          "price provider registered");
+    Check(!static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 0, &price)),
+          "duplicate provider id rejected");
     ContractTermsSchema terms_schema;
     terms_schema.type = ContractTypeId::FromString("contract.payload");
     terms_schema.schema = TypeId::FromString("contract.payload.v1");
@@ -108,7 +103,8 @@ int main()
     // checked again after reservation, before final balance mutation.
     Check(static_cast<bool>(s.SetAccountState(bid.Value(), AccountState::Frozen)), "freeze buyer after reserve");
     Check(!static_cast<bool>(s.CommitTrade(tx.Value())), "frozen source invalidates reserved trade");
-    Check(s.GetBalance(bid.Value()) == 800 && s.GetBalance(sid.Value()) == 250, "failed commit leaves balances unchanged");
+    Check(s.GetBalance(bid.Value()) == 800 && s.GetBalance(sid.Value()) == 250,
+          "failed commit leaves balances unchanged");
     Check(static_cast<bool>(s.SetAccountState(bid.Value(), AccountState::Active)), "unfreeze buyer");
     Check(static_cast<bool>(s.CommitTrade(tx.Value())), "commit trade");
     Check(s.GetBalance(bid.Value()) == 700 && s.GetBalance(sid.Value()) == 350, "trade funds moved");
@@ -119,7 +115,8 @@ int main()
     auto closable_id = s.CreateAccount(closable);
     Check(static_cast<bool>(closable_id), "create closable account");
     Check(static_cast<bool>(s.SetAccountState(closable_id.Value(), AccountState::Closed)), "close account");
-    Check(!static_cast<bool>(s.SetAccountState(closable_id.Value(), AccountState::Active)), "closed account cannot reopen");
+    Check(!static_cast<bool>(s.SetAccountState(closable_id.Value(), AccountState::Active)),
+          "closed account cannot reopen");
     MarketState market;
     market.area = Ref("area", "city");
     auto mid = s.CreateMarket(market);
@@ -201,27 +198,32 @@ int main()
     Check(s.FindOffers(seller.owner).empty(), "accepted offer removed from active query");
     const auto *accepted_tx = s.FindTransaction(offer_tx.Value());
     Check(accepted_tx != nullptr, "accepted offer creates trade transaction");
-    Check(accepted_tx->source_offer == scoped_offer_id.Value() && accepted_tx->accepted_quantity == 1, "trade records offer provenance");
+    Check(accepted_tx->source_offer == scoped_offer_id.Value() && accepted_tx->accepted_quantity == 1,
+          "trade records offer provenance");
     Check(accepted_tx->plan.monetary_transfers.size() == 1 && accepted_tx->plan.monetary_transfers.front().amount == 10,
           "offer settlement amount is canonical and cannot be caller supplied");
     auto snap = s.CaptureSnapshot();
     Check(snap.offers.empty(), "terminal offers omitted from snapshot");
     Check(snap.reservations.empty(), "terminal reservations omitted from snapshot");
     Check(snap.transactions.size() == 1 && snap.transactions.front().id == offer_tx.Value() &&
-          snap.transactions.front().state == TradeTransactionState::Prepared, "only live trades kept in snapshot");
+              snap.transactions.front().state == TradeTransactionState::Prepared,
+          "only live trades kept in snapshot");
     auto duplicate_debt_snapshot = snap;
     duplicate_debt_snapshot.debts.push_back(duplicate_debt_snapshot.debts.front());
     EconomyService invalid_restore;
     Check(static_cast<bool>(invalid_restore.RegisterCurrency(coin)), "invalid restore currency def");
-    Check(static_cast<bool>(invalid_restore.RegisterContractTermsSchema(terms_schema)), "invalid restore contract schema");
+    Check(static_cast<bool>(invalid_restore.RegisterContractTermsSchema(terms_schema)),
+          "invalid restore contract schema");
     invalid_restore.Freeze();
-    Check(!static_cast<bool>(invalid_restore.RestoreSnapshot(std::move(duplicate_debt_snapshot))), "duplicate debt snapshot rejected");
+    Check(!static_cast<bool>(invalid_restore.RestoreSnapshot(std::move(duplicate_debt_snapshot))),
+          "duplicate debt snapshot rejected");
     auto invalid_generator_snapshot = snap;
     invalid_generator_snapshot.account_ids.scope = 0xDEAD;
     EconomyService invalid_generator_restore;
     Check(static_cast<bool>(invalid_generator_restore.RegisterCurrency(coin)), "generator restore currency def");
     invalid_generator_restore.Freeze();
-    Check(!static_cast<bool>(invalid_generator_restore.RestoreSnapshot(std::move(invalid_generator_snapshot))), "foreign generator scope rejected");
+    Check(!static_cast<bool>(invalid_generator_restore.RestoreSnapshot(std::move(invalid_generator_snapshot))),
+          "foreign generator scope rejected");
 
     EconomyService restored;
     Check(static_cast<bool>(restored.RegisterCurrency(coin)), "restore currency def");
@@ -250,8 +252,10 @@ int main()
     journal_account.currency = cid.Value();
     auto journal_id = journal.CreateAccount(journal_account);
     Check(static_cast<bool>(journal_id), "journal account");
-    for (int i = 0; i < 4200; ++i) Check(static_cast<bool>(journal.Credit(journal_id.Value(), 1)), "journal credit");
-    Check(journal.ReadChangesSince(ChangeCursor{}).snapshot_required, "bounded journal requires snapshot for stale reader");
+    for (int i = 0; i < 4200; ++i)
+        Check(static_cast<bool>(journal.Credit(journal_id.Value(), 1)), "journal credit");
+    Check(journal.ReadChangesSince(ChangeCursor{}).snapshot_required,
+          "bounded journal requires snapshot for stale reader");
 
     auto overflow_snapshot = restored.CaptureSnapshot();
     overflow_snapshot.revision = Revision{std::numeric_limits<std::uint64_t>::max()};
@@ -259,7 +263,8 @@ int main()
     Check(static_cast<bool>(exhausted.RegisterCurrency(coin)), "exhausted restore currency def");
     Check(static_cast<bool>(exhausted.RegisterContractTermsSchema(terms_schema)), "exhausted restore contract schema");
     exhausted.Freeze();
-    Check(static_cast<bool>(exhausted.RestoreSnapshot(std::move(overflow_snapshot))), "max revision snapshot restores read-only state");
+    Check(static_cast<bool>(exhausted.RestoreSnapshot(std::move(overflow_snapshot))),
+          "max revision snapshot restores read-only state");
     const auto markets_before = exhausted.CaptureSnapshot().markets.size();
     MarketState overflow_market;
     overflow_market.area = Ref("area", "overflow");
@@ -376,7 +381,7 @@ int main()
     Check(static_cast<bool>(expiring_offer_id), "expiring offer created");
     auto expiration_snapshot = expiration_seed.CaptureSnapshot();
     expiration_snapshot.revision = Revision{std::numeric_limits<std::uint64_t>::max()};
-    for (auto& offer_record : expiration_snapshot.offers)
+    for (auto &offer_record : expiration_snapshot.offers)
         offer_record.revision = expiration_snapshot.revision;
     EconomyService expiration_exhausted;
     auto expiration_exhausted_currency = expiration_exhausted.RegisterCurrency(coin);

@@ -10,25 +10,21 @@
 #include <thread>
 #include <vector>
 
-namespace epidemic::diagnostics
-{
-struct ProfileEvent
-{
+namespace epidemic::diagnostics {
+struct ProfileEvent {
     std::string name;
     std::chrono::nanoseconds duration{};
     std::thread::id thread_id{std::this_thread::get_id()};
     std::string thread_name;
 };
 
-class IProfileCollector
-{
+class IProfileCollector {
   public:
     virtual ~IProfileCollector() = default;
     virtual void Record(ProfileEvent event) = 0;
 };
 
-class InMemoryProfileCollector final : public IProfileCollector
-{
+class InMemoryProfileCollector final : public IProfileCollector {
   public:
     void Record(ProfileEvent event) override;
     [[nodiscard]] std::vector<ProfileEvent> Snapshot() const;
@@ -49,8 +45,7 @@ void SetProfilingEnabled(bool enabled) noexcept;
 
 // A scope captures the collector at construction. Replacing/clearing the global collector while a scope
 // is active cannot redirect that already-started event to another sink. Collector failures are contained.
-class ProfileScope
-{
+class ProfileScope {
   public:
     explicit ProfileScope(std::string_view scope_name);
     ~ProfileScope() noexcept;

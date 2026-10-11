@@ -11,14 +11,12 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::core
-{
+namespace epidemic::core {
 // This file declares the module registry and dependency planner used by Application.
 // ModuleRegistry owns module instances, validates dependency graphs, and executes lifecycle
 // callbacks in dependency order with reverse-order shutdown.
 
-class ModuleRegistry
-{
+class ModuleRegistry {
   public:
     // Adds a module instance before bootstrap begins.
     void Register(std::unique_ptr<IModule> module);
@@ -39,8 +37,7 @@ class ModuleRegistry
     [[nodiscard]] std::size_t Size() const noexcept;
 
   private:
-    enum class LifecycleState
-    {
+    enum class LifecycleState {
         Empty,
         Registered,
         Bootstrapped,

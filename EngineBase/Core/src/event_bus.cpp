@@ -10,37 +10,33 @@
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 #include <atomic>
 #include <shadow_probe.h>
-namespace { std::atomic<std::uint64_t> next_auditor_event_id{1}; }
+namespace {
+std::atomic<std::uint64_t> next_auditor_event_id{1};
+}
 #endif
 
-namespace epidemic::core::events
-{
+namespace epidemic::core::events {
 // This file implements the baseline event bus.
 // Delivery copies the current handler list before invocation so handlers run outside the internal mutex.
 
 // Registers a type-erased handler in the sync or queued subscription table.
-IEventBus::HandlerToken EventBus::SubscribeImpl(std::type_index event_type, EventDispatchMode mode, AnyEventHandler handler)
-{
-    if (!handler)
-    {
+IEventBus::HandlerToken EventBus::SubscribeImpl(std::type_index event_type, EventDispatchMode mode,
+                                                AnyEventHandler handler) {
+    if (!handler) {
         throw std::invalid_argument("Event handler must be valid");
     }
 
     std::scoped_lock lock(mutex_);
 
-    if (!detail::CanAllocateHandlerToken(next_token_))
-    {
+    if (!detail::CanAllocateHandlerToken(next_token_)) {
         throw std::overflow_error("EventBus handler token space is exhausted");
     }
 
     auto &subscriptions = mode == EventDispatchMode::Sync ? sync_subscriptions_ : queued_subscriptions_;
     const auto token = next_token_;
-    if (const auto existing = subscriptions.find(event_type); existing != subscriptions.end())
-    {
+    if (const auto existing = subscriptions.find(event_type); existing != subscriptions.end()) {
         existing->second.push_back(Subscription{token, std::move(handler)});
-    }
-    else
-    {
+    } else {
         std::vector<Subscription> candidate_bucket;
         candidate_bucket.push_back(Subscription{token, std::move(handler)});
         subscriptions.emplace(event_type, std::move(candidate_bucket));
@@ -50,14 +46,12 @@ IEventBus::HandlerToken EventBus::SubscribeImpl(std::type_index event_type, Even
 }
 
 // Immediately dispatches a type-erased event to synchronous subscribers.
-void EventBus::PublishSyncImpl(std::type_index event_type, std::any event)
-{
+void EventBus::PublishSyncImpl(std::type_index event_type, std::any event) {
     DispatchSync(event_type, event);
 }
 
 // Stores a type-erased event for delivery during DrainQueued().
-void EventBus::EnqueueImpl(std::type_index event_type, std::any event)
-{
+void EventBus::EnqueueImpl(std::type_index event_type, std::any event) {
     std::scoped_lock lock(mutex_);
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     const auto correlation = next_auditor_event_id.fetch_add(1, std::memory_order_relaxed);
@@ -73,8 +67,7 @@ void EventBus::EnqueueImpl(std::type_index event_type, std::any event)
 }
 
 // Drains queued events in FIFO order and returns the number dispatched.
-std::size_t EventBus::DrainQueued()
-{
+std::size_t EventBus::DrainQueued() {
     EPIDEMIC_PROFILE_SCOPE("EventBus::DrainQueued");
     std::scoped_lock drain_lock(drain_mutex_);
     std::size_t drained = 0;
@@ -84,25 +77,22 @@ std::size_t EventBus::DrainQueued()
         drain_budget = queued_events_.size();
     }
 
-    while (drained < drain_budget)
-    {
+    while (drained < drain_budget) {
         QueuedEvent next_event;
         std::vector<AnyEventHandler> handlers;
         {
             std::scoped_lock lock(mutex_);
-            if (queued_events_.empty())
-            {
+            if (queued_events_.empty()) {
                 break;
             }
 
             // Copy every potentially throwing subscriber before removing the event. If copying fails,
             // the queued event remains authoritative and a later DrainQueued() can retry it.
             const auto &front = queued_events_.front();
-            if (const auto subscriptions = queued_subscriptions_.find(front.type); subscriptions != queued_subscriptions_.end())
-            {
+            if (const auto subscriptions = queued_subscriptions_.find(front.type);
+                subscriptions != queued_subscriptions_.end()) {
                 handlers.reserve(subscriptions->second.size());
-                for (const auto &subscription : subscriptions->second)
-                {
+                for (const auto &subscription : subscriptions->second) {
                     handlers.push_back(subscription.handler);
                 }
             }
@@ -119,8 +109,7 @@ std::size_t EventBus::DrainQueued()
         const auditor::shadow::ContextScope auditor_scope(next_event.auditor_context);
         auditor::shadow::flow("event.handle", next_event.auditor_correlation);
 #endif
-        for (const auto &handler : handlers)
-        {
+        for (const auto &handler : handlers) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
             auto handler_context = auditor::shadow::child_context();
             const auto handler_id = auditor::shadow::identity();
@@ -137,21 +126,16 @@ std::size_t EventBus::DrainQueued()
 }
 
 // Removes a handler token from either subscription table.
-bool EventBus::Unsubscribe(HandlerToken token)
-{
+bool EventBus::Unsubscribe(HandlerToken token) {
     std::scoped_lock lock(mutex_);
 
     auto erase_from_subscriptions = [token](auto &subscriptions) {
-        for (auto subscription_it = subscriptions.begin(); subscription_it != subscriptions.end(); ++subscription_it)
-        {
+        for (auto subscription_it = subscriptions.begin(); subscription_it != subscriptions.end(); ++subscription_it) {
             auto &bucket = subscription_it->second;
-            for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it)
-            {
-                if (bucket_it->token == token)
-                {
+            for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
+                if (bucket_it->token == token) {
                     bucket.erase(bucket_it);
-                    if (bucket.empty())
-                    {
+                    if (bucket.empty()) {
                         subscriptions.erase(subscription_it);
                     }
                     return true;
@@ -166,8 +150,7 @@ bool EventBus::Unsubscribe(HandlerToken token)
 }
 
 // Copies synchronous subscribers and invokes them outside the lock.
-void EventBus::DispatchSync(std::type_index event_type, const std::any &event)
-{
+void EventBus::DispatchSync(std::type_index event_type, const std::any &event) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     auto event_context = auditor::shadow::child_context();
     const auto event_id = auditor::shadow::identity();
@@ -179,20 +162,17 @@ void EventBus::DispatchSync(std::type_index event_type, const std::any &event)
     {
         std::scoped_lock lock(mutex_);
         const auto it = sync_subscriptions_.find(event_type);
-        if (it == sync_subscriptions_.end())
-        {
+        if (it == sync_subscriptions_.end()) {
             return;
         }
 
         handlers.reserve(it->second.size());
-        for (const auto &subscription : it->second)
-        {
+        for (const auto &subscription : it->second) {
             handlers.push_back(subscription.handler);
         }
     }
 
-    for (const auto &handler : handlers)
-    {
+    for (const auto &handler : handlers) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
         auto handler_context = auditor::shadow::child_context();
         const auto handler_id = auditor::shadow::identity();
@@ -205,26 +185,22 @@ void EventBus::DispatchSync(std::type_index event_type, const std::any &event)
 }
 
 // Copies queued subscribers and invokes them outside the lock.
-void EventBus::DispatchQueued(std::type_index event_type, const std::any &event)
-{
+void EventBus::DispatchQueued(std::type_index event_type, const std::any &event) {
     std::vector<AnyEventHandler> handlers;
     {
         std::scoped_lock lock(mutex_);
         const auto it = queued_subscriptions_.find(event_type);
-        if (it == queued_subscriptions_.end())
-        {
+        if (it == queued_subscriptions_.end()) {
             return;
         }
 
         handlers.reserve(it->second.size());
-        for (const auto &subscription : it->second)
-        {
+        for (const auto &subscription : it->second) {
             handlers.push_back(subscription.handler);
         }
     }
 
-    for (const auto &handler : handlers)
-    {
+    for (const auto &handler : handlers) {
         handler(event);
     }
 }

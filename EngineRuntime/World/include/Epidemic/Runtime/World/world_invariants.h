@@ -6,12 +6,9 @@
 #include "Epidemic/Runtime/World/region.h"
 #include "Epidemic/Runtime/World/world_query.h"
 
-namespace epidemic::runtime
-{
-[[nodiscard]] constexpr bool IsValidResidencyState(ResidencyState state) noexcept
-{
-    switch (state)
-    {
+namespace epidemic::runtime {
+[[nodiscard]] constexpr bool IsValidResidencyState(ResidencyState state) noexcept {
+    switch (state) {
     case ResidencyState::Unloaded:
     case ResidencyState::Loading:
     case ResidencyState::Resident:
@@ -23,10 +20,8 @@ namespace epidemic::runtime
     return false;
 }
 
-[[nodiscard]] constexpr bool IsValidObjectRealityLevel(ObjectRealityLevel level) noexcept
-{
-    switch (level)
-    {
+[[nodiscard]] constexpr bool IsValidObjectRealityLevel(ObjectRealityLevel level) noexcept {
+    switch (level) {
     case ObjectRealityLevel::AbstractFact:
     case ObjectRealityLevel::Logical:
     case ObjectRealityLevel::Physical:
@@ -35,10 +30,8 @@ namespace epidemic::runtime
     return false;
 }
 
-[[nodiscard]] constexpr bool IsValidPersistenceTier(PersistenceTier tier) noexcept
-{
-    switch (tier)
-    {
+[[nodiscard]] constexpr bool IsValidPersistenceTier(PersistenceTier tier) noexcept {
+    switch (tier) {
     case PersistenceTier::Disposable:
     case PersistenceTier::TemporaryObserved:
     case PersistenceTier::PlayerTouched:
@@ -49,11 +42,11 @@ namespace epidemic::runtime
     return false;
 }
 
-[[nodiscard]] foundation::Result<void> ValidateRealityResidencyCombination(ObjectRealityLevel reality, ResidencyState residency);
+[[nodiscard]] foundation::Result<void> ValidateRealityResidencyCombination(ObjectRealityLevel reality,
+                                                                           ResidencyState residency);
 
-[[nodiscard]] foundation::Result<void> ValidateWorldObjectInvariant(
-    const WorldObjectSnapshot& object,
-    const IRegionRegistry& regions,
-    const IChunkRegistry& chunks,
-    const IWorldQuery& objects);
+[[nodiscard]] foundation::Result<void> ValidateWorldObjectInvariant(const WorldObjectSnapshot &object,
+                                                                    const IRegionRegistry &regions,
+                                                                    const IChunkRegistry &chunks,
+                                                                    const IWorldQuery &objects);
 } // namespace epidemic::runtime

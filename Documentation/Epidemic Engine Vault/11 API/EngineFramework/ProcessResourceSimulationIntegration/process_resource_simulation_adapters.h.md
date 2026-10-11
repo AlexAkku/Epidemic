@@ -114,3 +114,96 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/GameFramework/Processes/processes.h`, `Epidemic/GameFramework/ResourcesProduction/resources_production.h`, `Epidemic/GameFramework/Simulation/simulation.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Processes/processes.h`, `Epidemic/GameFramework/ResourcesProduction/resources_production.h`, `Epidemic/GameFramework/Simulation/simulation.h`.
+
+### Состав типов и операции
+
+#### `PreparedProcessResourceOutputPayload` (строка заголовка 21)
+
+Публичные поля и значения по умолчанию:
+
+- `processes::Fixed amount = 0`
+
+#### `ResourceProcessInputProvider` (строка заголовка 36)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ResourceProcessInputProvider(resources::ResourcesProductionService& resources) : resources_(resources);
+[[nodiscard]] static constexpr TypeId PayloadType() noexcept;
+[[nodiscard]] static constexpr TypeId ReservationPayloadType() noexcept;
+[[nodiscard]] foundation::Result<void> Validate(const processes::ProcessInputDefinition& input, const processes::StartProcessRequest& request, processes::ProcessInstanceId instance) override;
+[[nodiscard]] foundation::Result<processes::ReservedProcessInput> Reserve(const processes::ProcessInputDefinition& input, const processes::StartProcessRequest& request, processes::ProcessInstanceId instance) override;
+[[nodiscard]] foundation::Result<void> Consume(const processes::ReservedProcessInput& reservation, GameplayContext context) override;
+[[nodiscard]] foundation::Result<void> Release(const processes::ReservedProcessInput& reservation, GameplayContext context) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ResourceProcessOutputHandler` (строка заголовка 50)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ResourceProcessOutputHandler(resources::ResourcesProductionService& resources) : resources_(resources);
+[[nodiscard]] static constexpr processes::ProcessOutputTypeId OutputType() noexcept;
+[[nodiscard]] bool Supports(processes::ProcessOutputTypeId type) const noexcept override;
+[[nodiscard]] foundation::Result<processes::PreparedProcessOutput> Prepare(const processes::ProcessOutputDefinition& output, const processes::ProcessInstance& instance, GameplayContext context) override;
+[[nodiscard]] foundation::Result<void> Commit(const processes::PreparedProcessOutput& output, const processes::ProcessInstance& instance, GameplayContext context) override;
+[[nodiscard]] foundation::Result<void> Cancel(const processes::PreparedProcessOutput& output, const processes::ProcessInstance& instance, GameplayContext context) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ProcessesSimulationLayer` (строка заголовка 66)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit ProcessesSimulationLayer(processes::ProcessesService& processes) : processes_(processes);
+[[nodiscard]] static constexpr simulation::SimulationLayerId StaticLayer() noexcept;
+[[nodiscard]] simulation::SimulationLayerId Layer() const noexcept override;
+[[nodiscard]] foundation::Result<simulation::SimulationLayerSummary> Prepare(const simulation::SimulationTask& task) override;
+[[nodiscard]] foundation::Result<void> Commit(const simulation::SimulationTask& task, const simulation::SimulationLayerSummary& summary) override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `PayloadType` | `ResourceProcessInputProvider::PayloadType` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:80` |
+| `ReservationPayloadType` | `ResourceProcessInputProvider::ReservationPayloadType` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:122` |
+| `Validate` | `ResourceProcessInputProvider::Validate` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:159` |
+| `Reserve` | `ResourceProcessInputProvider::Reserve` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:175` |
+| `Consume` | `ResourceProcessInputProvider::Consume` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:218` |
+| `Release` | `ResourceProcessInputProvider::Release` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:224` |
+| `Prepare` | `ResourceProcessOutputHandler::Prepare` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:278` |
+| `Commit` | `ResourceProcessOutputHandler::Commit` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:294` |
+| `Cancel` | `ResourceProcessOutputHandler::Cancel` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:304` |
+| `Prepare` | `ProcessesSimulationLayer::Prepare` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:309` |
+| `Commit` | `ProcessesSimulationLayer::Commit` | `EngineFramework/IntegrationLayer/ProcessResourceSimulationIntegration/src/process_resource_simulation_adapters.cpp:332` |
+

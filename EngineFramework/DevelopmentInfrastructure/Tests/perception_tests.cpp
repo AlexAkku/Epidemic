@@ -12,14 +12,11 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::perception;
 
-namespace
-{
-GameplayObjectRef Ref(const char *name)
-{
+namespace {
+GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
 }
-PerceiverEvaluationSample Sample(GameplayObjectRef subject, WorldPosition position = {}, WorldDirection forward = {})
-{
+PerceiverEvaluationSample Sample(GameplayObjectRef subject, WorldPosition position = {}, WorldDirection forward = {}) {
     PerceiverEvaluationSample sample;
     sample.subject = subject;
     sample.position = position;
@@ -28,20 +25,16 @@ PerceiverEvaluationSample Sample(GameplayObjectRef subject, WorldPosition positi
     sample.runtime_projection_available = true;
     return sample;
 }
-class ThrowingEvaluator final : public ISenseEvaluator
-{
+class ThrowingEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override
-    {
+    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override {
         throw std::runtime_error("test");
     }
 };
 
-class AbstractNoSampleEvaluator final : public ISenseEvaluator
-{
+class AbstractNoSampleEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const override
-    {
+    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const override {
         SenseEvaluationResult result;
         result.score_micro = 1'000'000;
         result.identified_subject = true;
@@ -51,41 +44,33 @@ class AbstractNoSampleEvaluator final : public ISenseEvaluator
     }
 };
 
-class ZeroEvaluator final : public ISenseEvaluator
-{
+class ZeroEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override
-    {
+    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override {
         SenseEvaluationResult result;
         return epidemic::foundation::Result<SenseEvaluationResult>::Success(result);
     }
 };
 
-class FailingEvaluator final : public ISenseEvaluator
-{
+class FailingEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override
-    {
+    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override {
         return epidemic::foundation::Result<SenseEvaluationResult>::Failure(
             epidemic::foundation::Error::Create("test.perception.evaluator_failure", "expected evaluator failure"));
     }
 };
 
-class CountingEvaluator final : public ISenseEvaluator
-{
+class CountingEvaluator final : public ISenseEvaluator {
   public:
     mutable std::vector<GameplayObjectRef> subjects;
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const override
-    {
+    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const override {
         subjects.push_back(input.perceiver.subject);
         SenseEvaluationResult result;
         return epidemic::foundation::Result<SenseEvaluationResult>::Success(result);
     }
 };
 
-
-bool TestSpatialBoundaryMath()
-{
+bool TestSpatialBoundaryMath() {
     const auto hearing = SenseTypeId::FromString("test.boundary.hearing");
     const auto vision = SenseTypeId::FromString("test.boundary.vision");
     const auto profile_id = PerceiverProfileId::FromString("test.boundary.profile");
@@ -210,27 +195,24 @@ bool TestSpatialBoundaryMath()
     // on MSVC where long double has binary64 precision.
     constexpr Fixed kTwoTo53 = 9'007'199'254'740'992LL;
     const auto shifted_sample = Sample(observer, {kTwoTo53, kTwoTo53, 0}, {1'000'000, 0, 0});
-    const auto exact_forward = service.EvaluateVisibility(observer, source, shifted_sample,
-                                                           {kTwoTo53 + 1, kTwoTo53, 0});
+    const auto exact_forward =
+        service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53 + 1, kTwoTo53, 0});
     if (exact_forward.state == PerceptionVisibilityState::Hidden || exact_forward.score_micro <= 0)
         return false;
-    const auto diagonal_fov = service.EvaluateVisibility(observer, source, shifted_sample,
-                                                          {kTwoTo53 + 1, kTwoTo53 + 1, 0});
+    const auto diagonal_fov =
+        service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53 + 1, kTwoTo53 + 1, 0});
     if (diagonal_fov.state != PerceptionVisibilityState::Hidden)
         return false;
-    const auto zero_vector = service.EvaluateVisibility(observer, source, shifted_sample,
-                                                         {kTwoTo53, kTwoTo53, 0});
+    const auto zero_vector = service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53, kTwoTo53, 0});
     if (zero_vector.state != PerceptionVisibilityState::Hidden)
         return false;
-    const auto extreme = service.EvaluateVisibility(observer, source,
-                                                     Sample(observer, {std::numeric_limits<Fixed>::min(), 0, 0},
-                                                            {1'000'000, 0, 0}),
-                                                     {std::numeric_limits<Fixed>::max(), 0, 0});
+    const auto extreme = service.EvaluateVisibility(
+        observer, source, Sample(observer, {std::numeric_limits<Fixed>::min(), 0, 0}, {1'000'000, 0, 0}),
+        {std::numeric_limits<Fixed>::max(), 0, 0});
     return extreme.state == PerceptionVisibilityState::Hidden && extreme.score_micro == 0;
 }
 
-bool TestDecayBoundaryArithmetic()
-{
+bool TestDecayBoundaryArithmetic() {
     const auto hearing = SenseTypeId::FromString("test.decay.hearing");
     const auto profile_id = PerceiverProfileId::FromString("test.decay.profile");
     const auto observer = Ref("decay.observer");
@@ -266,9 +248,9 @@ bool TestDecayBoundaryArithmetic()
         stimulus.lifetime = {std::numeric_limits<Fixed>::max()};
         auto id = service.CreateStimulus(stimulus);
         if (id)
-            (void)service.ProcessStimulus(id.Value(),
-                                          PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{0}, {},
-                                                                      {Sample(observer)}});
+            (void)service.ProcessStimulus(
+                id.Value(),
+                PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{0}, {}, {Sample(observer)}});
         return service;
     };
 
@@ -295,8 +277,7 @@ bool TestDecayBoundaryArithmetic()
 
 } // namespace
 
-int main()
-{
+int main() {
     const auto hearing = SenseTypeId::FromString("framework.sense.hearing");
     const auto vision = SenseTypeId::FromString("framework.sense.vision");
     const auto custom = SenseTypeId::FromString("test.sense.custom");
@@ -592,7 +573,9 @@ int main()
         return 92;
     auto materialized_prefilter_out = materialized_prefilter.ProcessStimulus(
         materialized_prefilter_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {},
+        PerceptionProcessingContext{GameplayTickId{1},
+                                    GameplayTimePoint{1},
+                                    {},
                                     {unavailable_materialized_sample, Sample(materialized_higher)}});
     if (!materialized_prefilter_out || materialized_prefilter_out.Value().size() != 1 ||
         materialized_prefilter_out.Value().front().perceiver != materialized_higher ||
@@ -609,7 +592,8 @@ int main()
     abstract_custom_definition.evaluation_model = SenseEvaluationModel::Custom;
     abstract_custom_definition.evaluator = abstract_custom_evaluator_id;
     abstract_custom_definition.requires_spatial_sample = false;
-    if (!abstract_custom.RegisterEvaluator(abstract_custom_evaluator_id, std::make_shared<AbstractNoSampleEvaluator>()) ||
+    if (!abstract_custom.RegisterEvaluator(abstract_custom_evaluator_id,
+                                           std::make_shared<AbstractNoSampleEvaluator>()) ||
         !abstract_custom.RegisterSense(abstract_custom_definition))
         return 94;
     PerceiverProfileDefinition abstract_custom_profile;
@@ -630,8 +614,7 @@ int main()
     if (!abstract_custom_sid)
         return 97;
     auto abstract_custom_out = abstract_custom.ProcessStimulus(
-        abstract_custom_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {}});
+        abstract_custom_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {}});
     if (!abstract_custom_out || abstract_custom_out.Value().size() != 1 ||
         abstract_custom_out.Value().front().perceiver != npc || abstract_custom.GetDiagnostics().custom_tests != 1)
         return 98;
@@ -758,8 +741,8 @@ int main()
     const auto duplicate_revision = duplicate_samples.CurrentRevision();
     auto duplicate_out = duplicate_samples.ProcessStimulus(
         duplicate_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{50}, {},
-                                    {Sample(npc, {0, 0, 0}), Sample(npc, {9'000, 0, 0})}});
+        PerceptionProcessingContext{
+            GameplayTickId{1}, GameplayTimePoint{50}, {}, {Sample(npc, {0, 0, 0}), Sample(npc, {9'000, 0, 0})}});
     if (duplicate_out || duplicate_samples.CurrentRevision() != duplicate_revision ||
         duplicate_samples.GetAwareness(npc, player) || !duplicate_samples.FindObservationsByPerceiver(npc).empty())
         return 115;
@@ -786,8 +769,7 @@ int main()
         return 117;
     indexed_candidates.Freeze();
     std::vector<GameplayObjectRef> many_perceivers;
-    for (int i = 0; i < 256; ++i)
-    {
+    for (int i = 0; i < 256; ++i) {
         const auto name = "indexed_" + std::to_string(i);
         many_perceivers.push_back(Ref(name.c_str()));
         if (!indexed_candidates.RegisterPerceiver(many_perceivers.back(), counted_profile.id))
@@ -799,16 +781,14 @@ int main()
     auto counted_sid = indexed_candidates.CreateStimulus(counted_stimulus);
     if (!counted_sid)
         return 119;
-    const auto indexed_lower =
-        many_perceivers[17] < many_perceivers[201] ? many_perceivers[17] : many_perceivers[201];
-    const auto indexed_higher =
-        many_perceivers[17] < many_perceivers[201] ? many_perceivers[201] : many_perceivers[17];
+    const auto indexed_lower = many_perceivers[17] < many_perceivers[201] ? many_perceivers[17] : many_perceivers[201];
+    const auto indexed_higher = many_perceivers[17] < many_perceivers[201] ? many_perceivers[201] : many_perceivers[17];
     auto counted_out = indexed_candidates.ProcessStimulus(
-        counted_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {},
-                                                         {Sample(indexed_higher), Sample(indexed_lower)}});
-    if (!counted_out || counted_evaluator->subjects.size() != 2 ||
-        counted_evaluator->subjects[0] != indexed_lower || counted_evaluator->subjects[1] != indexed_higher ||
-        indexed_candidates.GetDiagnostics().detection_tests != 2)
+        counted_sid.Value(),
+        PerceptionProcessingContext{
+            GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(indexed_higher), Sample(indexed_lower)}});
+    if (!counted_out || counted_evaluator->subjects.size() != 2 || counted_evaluator->subjects[0] != indexed_lower ||
+        counted_evaluator->subjects[1] != indexed_higher || indexed_candidates.GetDiagnostics().detection_tests != 2)
         return 120;
 
     // Snapshot contains runtime perceivers and pending state, not definitions, and restore is transactional.
@@ -820,7 +800,8 @@ int main()
     auto pending_before_save = delayed.ProcessStimulus(
         delayed_again_sid.Value(),
         PerceptionProcessingContext{GameplayTickId{2}, GameplayTimePoint{20}, {}, {Sample(npc)}});
-    if (!pending_before_save || !pending_before_save.Value().empty() || delayed.GetDiagnostics().pending_observations != 1)
+    if (!pending_before_save || !pending_before_save.Value().empty() ||
+        delayed.GetDiagnostics().pending_observations != 1)
         return 67;
     const auto saved_change_cursor = delayed.ReadChangesSince(ChangeCursor{}).latest_cursor;
     auto snapshot = delayed.CaptureSnapshot();
@@ -836,14 +817,16 @@ int main()
         return 121;
     const auto restored_change_cursor = restored.LatestChangeCursor();
     auto restored_pending = restored.AdvanceTime({25});
-    if (!restored_pending || restored_pending.Value().size() != 1 || restored.GetDiagnostics().pending_observations != 0)
+    if (!restored_pending || restored_pending.Value().size() != 1 ||
+        restored.GetDiagnostics().pending_observations != 0)
         return 68;
     const auto resumed_changes = restored.ReadChangesSince(restored_change_cursor);
     if (resumed_changes.snapshot_required || resumed_changes.changes.empty() ||
         resumed_changes.changes.front().sequence <= restored_change_cursor.sequence)
         return 122;
     if (restored_change_cursor.sequence > 0 &&
-        !restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1)).snapshot_required)
+        !restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
+             .snapshot_required)
         return 123;
     const auto restored_latest = resumed_changes.latest_cursor;
     if (restored_latest.sequence != std::numeric_limits<std::uint64_t>::max() &&
@@ -862,7 +845,8 @@ int main()
     const auto exhausted_subject = Ref("sequence.max");
     if (!exhausted_sequence.RegisterPerceiver(exhausted_subject, delayed_profile.id))
         return 126;
-    auto max_batch = exhausted_sequence.ReadChangesSince(exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
+    auto max_batch = exhausted_sequence.ReadChangesSince(
+        exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
     if (max_batch.snapshot_required || max_batch.changes.size() != 1 ||
         max_batch.changes.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 127;
@@ -940,10 +924,9 @@ int main()
     // Goal 4: deterministic module-local restore fault seams replace process-global allocator overrides.
     const auto allocation_before = restored.CaptureSnapshot();
     using FaultPoint = epidemic::gameplay::perception::internal_test::AllocationFaultPoint;
-    for (const auto point : {FaultPoint::RestorePerceivers, FaultPoint::RestoreStimuli,
-                             FaultPoint::RestorePendingObservations, FaultPoint::RestoreObservations,
-                             FaultPoint::RestoreAwareness})
-    {
+    for (const auto point :
+         {FaultPoint::RestorePerceivers, FaultPoint::RestoreStimuli, FaultPoint::RestorePendingObservations,
+          FaultPoint::RestoreObservations, FaultPoint::RestoreAwareness}) {
         auto allocation_target = allocation_before;
         epidemic::gameplay::perception::internal_test::ArmAllocationFault(point);
         const auto restored_under_fault = restored.RestoreSnapshot(std::move(allocation_target));

@@ -47,22 +47,17 @@ using epidemic::runtime::simulation::WorldMemoryEvent;
 using epidemic::runtime::simulation::WorldMemoryEventId;
 using epidemic::runtime::simulation::WorldMemoryQuery;
 
-namespace
-{
-struct TestCommitTarget final : ISimulationCommitTarget
-{
+namespace {
+struct TestCommitTarget final : ISimulationCommitTarget {
     bool fail = false;
     bool throw_on_commit = false;
     std::vector<SimulationProposalBatch> committed;
 
-    epidemic::foundation::Result<void> Commit(const SimulationProposalBatch& batch) override
-    {
-        if (throw_on_commit)
-        {
+    epidemic::foundation::Result<void> Commit(const SimulationProposalBatch &batch) override {
+        if (throw_on_commit) {
             throw std::runtime_error("commit target throw");
         }
-        if (fail)
-        {
+        if (fail) {
             return epidemic::foundation::Result<void>::Failure(
                 epidemic::foundation::Error::Create("simulation.stale_revision", "test stale revision"));
         }
@@ -71,35 +66,29 @@ struct TestCommitTarget final : ISimulationCommitTarget
     }
 };
 
-struct TestRelevancePolicy final : IRelevancePolicy
-{
+struct TestRelevancePolicy final : IRelevancePolicy {
     SimulationZoneState state = SimulationZoneState::Relevant;
     int calls = 0;
     bool throw_on_classify = false;
 
-    SimulationZoneState ClassifyZone(RegionId, AttentionScore) const override
-    {
-        ++const_cast<TestRelevancePolicy*>(this)->calls;
-        if (throw_on_classify)
-        {
+    SimulationZoneState ClassifyZone(RegionId, AttentionScore) const override {
+        ++const_cast<TestRelevancePolicy *>(this)->calls;
+        if (throw_on_classify) {
             throw std::runtime_error("relevance throw");
         }
         return state;
     }
 };
 
-struct TestClock final : ISimulationClock
-{
+struct TestClock final : ISimulationClock {
     SimulationTime now{};
 
-    SimulationTime Now() const override
-    {
+    SimulationTime Now() const override {
         return now;
     }
 };
 
-struct TestSimulationJob final : ISimulationJob
-{
+struct TestSimulationJob final : ISimulationJob {
     SimulationJobDesc desc{};
     std::uint32_t pending_work_units = 1;
     bool fail_step = false;
@@ -113,79 +102,66 @@ struct TestSimulationJob final : ISimulationJob
     bool throw_cancel = false;
     bool return_out_of_domain_state = false;
 
-    explicit TestSimulationJob(SimulationJobDesc metadata)
-        : desc(metadata), pending_work_units(metadata.work_units)
-    {
+    explicit TestSimulationJob(SimulationJobDesc metadata) : desc(metadata), pending_work_units(metadata.work_units) {
     }
 
-    epidemic::foundation::Result<SimulationStepResult> ExecuteStep(const epidemic::runtime::RuntimeBudget& budget) override
-    {
-        if (throw_step)
-        {
+    epidemic::foundation::Result<SimulationStepResult>
+    ExecuteStep(const epidemic::runtime::RuntimeBudget &budget) override {
+        if (throw_step) {
             throw std::runtime_error("step throw");
         }
-        if (throw_after_mutation)
-        {
-            if (pending_work_units != 0)
-            {
+        if (throw_after_mutation) {
+            if (pending_work_units != 0) {
                 --pending_work_units;
             }
             throw std::runtime_error("step throw after internal mutation");
         }
-        if (fail_step)
-        {
+        if (fail_step) {
             return epidemic::foundation::Result<SimulationStepResult>::Failure(
                 epidemic::foundation::Error::Create("simulation.test_failed", "test job step failed"));
         }
 
-        const std::uint32_t work_budget = budget.max_items == 0 ? pending_work_units : std::min<std::uint32_t>(budget.max_items, pending_work_units);
+        const std::uint32_t work_budget =
+            budget.max_items == 0 ? pending_work_units : std::min<std::uint32_t>(budget.max_items, pending_work_units);
         pending_work_units -= work_budget;
 
         SimulationStepResult result{};
         result.consumed_work_units = work_budget;
-        if (exceed_budget)
-        {
+        if (exceed_budget) {
             result.consumed_work_units = budget.max_items + 1;
         }
         result.proposals.zone = desc.zone;
         result.proposals.source_revision = desc.source_revision;
-        if (return_out_of_domain_state)
-        {
+        if (return_out_of_domain_state) {
             result.state = static_cast<SimulationJobState>(999);
             return epidemic::foundation::Result<SimulationStepResult>::Success(std::move(result));
         }
-        if (return_invalid_state)
-        {
+        if (return_invalid_state) {
             result.state = SimulationJobState::Scheduled;
             return epidemic::foundation::Result<SimulationStepResult>::Success(std::move(result));
         }
-        if (pending_work_units == 0)
-        {
-            result.state = wait_for_main_thread ? SimulationJobState::WaitingForMainThread : SimulationJobState::Completed;
-            result.proposals.proposals.push_back(SimulationProposal{
-                epidemic::foundation::StringId::FromString("simulation"),
-                epidemic::foundation::StringId::FromString("test"),
-                desc.subject,
-                epidemic::foundation::StringId::FromString("simulation.test.v1"),
-                1,
-                {}});
-        }
-        else
-        {
+        if (pending_work_units == 0) {
+            result.state =
+                wait_for_main_thread ? SimulationJobState::WaitingForMainThread : SimulationJobState::Completed;
+            result.proposals.proposals.push_back(
+                SimulationProposal{epidemic::foundation::StringId::FromString("simulation"),
+                                   epidemic::foundation::StringId::FromString("test"),
+                                   desc.subject,
+                                   epidemic::foundation::StringId::FromString("simulation.test.v1"),
+                                   1,
+                                   {}});
+        } else {
             result.state = SimulationJobState::PartiallyComplete;
         }
         return epidemic::foundation::Result<SimulationStepResult>::Success(std::move(result));
     }
 
-    epidemic::foundation::Result<void> Cancel() override
-    {
+    epidemic::foundation::Result<void> Cancel() override {
         cancel_called = true;
-        if (throw_cancel)
-        {
+        if (throw_cancel) {
             throw std::runtime_error("cancel throw");
         }
-        if (fail_cancel)
-        {
+        if (fail_cancel) {
             return epidemic::foundation::Result<void>::Failure(
                 epidemic::foundation::Error::Create("simulation.cancel_failed", "test job cancel failed"));
         }
@@ -194,88 +170,75 @@ struct TestSimulationJob final : ISimulationJob
     }
 };
 
-struct CountingSuccessJob final : ISimulationJob
-{
+struct CountingSuccessJob final : ISimulationJob {
     SimulationStepResult first{};
     SimulationStepResult second{};
     int execute_count = 0;
 
-    CountingSuccessJob(const SimulationJobDesc& desc, bool with_proposal)
-    {
-        auto initialize = [&](SimulationStepResult& result) {
+    CountingSuccessJob(const SimulationJobDesc &desc, bool with_proposal) {
+        auto initialize = [&](SimulationStepResult &result) {
             result.state = SimulationJobState::Completed;
             result.consumed_work_units = 1;
             result.proposals.zone = desc.zone;
             result.proposals.source_revision = desc.source_revision;
-            if (with_proposal)
-            {
-                result.proposals.proposals.push_back(SimulationProposal{
-                    epidemic::foundation::StringId::FromString("simulation"),
-                    epidemic::foundation::StringId::FromString("fault_test"),
-                    desc.subject,
-                    epidemic::foundation::StringId::FromString("simulation.fault_test.v1"),
-                    1,
-                    {}});
+            if (with_proposal) {
+                result.proposals.proposals.push_back(
+                    SimulationProposal{epidemic::foundation::StringId::FromString("simulation"),
+                                       epidemic::foundation::StringId::FromString("fault_test"),
+                                       desc.subject,
+                                       epidemic::foundation::StringId::FromString("simulation.fault_test.v1"),
+                                       1,
+                                       {}});
             }
         };
         initialize(first);
         initialize(second);
     }
 
-    epidemic::foundation::Result<SimulationStepResult> ExecuteStep(const epidemic::runtime::RuntimeBudget&) override
-    {
+    epidemic::foundation::Result<SimulationStepResult> ExecuteStep(const epidemic::runtime::RuntimeBudget &) override {
         ++execute_count;
         SimulationStepResult result = execute_count == 1 ? std::move(first) : std::move(second);
         return epidemic::foundation::Result<SimulationStepResult>::Success(std::move(result));
     }
 
-    epidemic::foundation::Result<void> Cancel() override
-    {
+    epidemic::foundation::Result<void> Cancel() override {
         return epidemic::foundation::Result<void>::Success();
     }
 };
 
-struct CountingFailureJob final : ISimulationJob
-{
+struct CountingFailureJob final : ISimulationJob {
     int execute_count = 0;
 
-    epidemic::foundation::Result<SimulationStepResult> ExecuteStep(const epidemic::runtime::RuntimeBudget&) override
-    {
+    epidemic::foundation::Result<SimulationStepResult> ExecuteStep(const epidemic::runtime::RuntimeBudget &) override {
         ++execute_count;
         auto error = epidemic::foundation::Error::Create("simulation.test_failed", "fault-armed semantic failure");
         return epidemic::foundation::Result<SimulationStepResult>::Failure(std::move(error));
     }
 
-    epidemic::foundation::Result<void> Cancel() override
-    {
+    epidemic::foundation::Result<void> Cancel() override {
         return epidemic::foundation::Result<void>::Success();
     }
 };
 
-bool Expect(bool condition, std::string_view message)
-{
-    if (!condition)
-    {
+bool Expect(bool condition, std::string_view message) {
+    if (!condition) {
         std::cerr << message << '\n';
     }
 
     return condition;
 }
 
-SimulationJobDesc MakeJob(std::uint32_t work_units = 1)
-{
+SimulationJobDesc MakeJob(std::uint32_t work_units = 1) {
     return SimulationJobDesc{SimulationZoneId{5}, RuntimeObjectId{77}, work_units};
 }
 
-std::shared_ptr<TestSimulationJob> MakeExecutableJob(const SimulationJobDesc& desc, bool wait_for_main_thread = false)
-{
+std::shared_ptr<TestSimulationJob> MakeExecutableJob(const SimulationJobDesc &desc, bool wait_for_main_thread = false) {
     auto job = std::make_shared<TestSimulationJob>(desc);
     job->wait_for_main_thread = wait_for_main_thread;
     return job;
 }
 
-bool TestSubmitJobAndCompletion()
-{
+bool TestSubmitJobAndCompletion() {
     SimulationRuntime runtime{{}};
     runtime.SetBudget(SimulationBudget{1, 2});
     const auto desc = MakeJob(2);
@@ -284,28 +247,30 @@ bool TestSubmitJobAndCompletion()
     ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Pending, "new job should be pending");
     const auto tick = runtime.Tick();
     ok &= Expect(tick.HasValue() && tick.Value().processed_jobs == 1, "tick should advance one job");
-    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Completed, "job should complete within budget");
+    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Completed,
+                 "job should complete within budget");
     return ok;
 }
 
-bool TestPartialCompletionByBudget()
-{
+bool TestPartialCompletionByBudget() {
     SimulationRuntime runtime{{}};
     runtime.SetBudget(SimulationBudget{1, 1});
     const auto desc = MakeJob(3);
     const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
     bool ok = Expect(job.HasValue(), "valid job should submit");
     ok &= Expect(runtime.Tick().Value().processed_jobs == 1, "first tick should do partial work");
-    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::PartiallyComplete, "job should be partial when budget ends");
+    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::PartiallyComplete,
+                 "job should be partial when budget ends");
     ok &= Expect(runtime.Tick().Value().processed_jobs == 1, "second tick should do more partial work");
-    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::PartiallyComplete, "job should remain partial until final work unit");
+    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::PartiallyComplete,
+                 "job should remain partial until final work unit");
     ok &= Expect(runtime.Tick().Value().processed_jobs == 1, "third tick should finish remaining work");
-    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Completed, "job should complete after enough budget");
+    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Completed,
+                 "job should complete after enough budget");
     return ok;
 }
 
-bool TestJobBudgetOrderIsDeterministic()
-{
+bool TestJobBudgetOrderIsDeterministic() {
     SimulationRuntime runtime{{}};
     runtime.SetBudget(SimulationBudget{1, 1});
     const auto first_desc = MakeJob(2);
@@ -314,13 +279,13 @@ bool TestJobBudgetOrderIsDeterministic()
     const auto second = runtime.SubmitJob(MakeExecutableJob(second_desc), second_desc);
     bool ok = Expect(first.HasValue() && second.HasValue(), "jobs should submit");
     ok &= Expect(runtime.Tick().Value().processed_jobs == 1, "budget should advance one job");
-    ok &= Expect(runtime.GetJobState(first.Value()).Value() == SimulationJobState::PartiallyComplete, "first job should advance first");
+    ok &= Expect(runtime.GetJobState(first.Value()).Value() == SimulationJobState::PartiallyComplete,
+                 "first job should advance first");
     ok &= Expect(runtime.GetJobState(second.Value()).Value() == SimulationJobState::Pending, "second job should wait");
     return ok;
 }
 
-bool TestCancellation()
-{
+bool TestCancellation() {
     SimulationRuntime runtime{{}};
     const auto desc = MakeJob(2);
     const auto executable = MakeExecutableJob(desc);
@@ -328,29 +293,39 @@ bool TestCancellation()
     bool ok = Expect(job.HasValue(), "valid job should submit");
     ok &= Expect(runtime.CancelJob(job.Value()).HasValue(), "pending job should cancel");
     ok &= Expect(executable->cancel_called, "job cancel should call executable cancellation");
-    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Cancelled, "cancelled job should report cancelled");
+    ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Cancelled,
+                 "cancelled job should report cancelled");
     ok &= Expect(runtime.Tick().Value().processed_jobs == 0, "cancelled job should not consume work");
     return ok;
 }
 
-bool TestWorldMemoryTtlAndStates()
-{
+bool TestWorldMemoryTtlAndStates() {
     SimulationRuntime runtime{{}};
-    const auto observed = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{10}, GameDuration{5}, MemoryLifetime::Temporary, ObservationState::Observed});
-    const auto marked = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{11}, GameDuration{0}, MemoryLifetime::Persistent, ObservationState::PlayerAffected});
+    const auto observed = runtime.RecordEvent(WorldMemoryEvent{
+        {}, RegionId{1}, SimulationTime{10}, GameDuration{5}, MemoryLifetime::Temporary, ObservationState::Observed});
+    const auto marked = runtime.RecordEvent(WorldMemoryEvent{{},
+                                                             RegionId{1},
+                                                             SimulationTime{11},
+                                                             GameDuration{0},
+                                                             MemoryLifetime::Persistent,
+                                                             ObservationState::PlayerAffected});
     bool ok = Expect(observed.HasValue() && marked.HasValue(), "memory events should record");
-    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).size() == 2, "query should return active events");
+    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).size() == 2,
+                 "query should return active events");
     runtime.ExpireOldEvents(SimulationTime{16});
-    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).size() == 1, "expired TTL event should be hidden by default");
-    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, true}).size() == 2, "include expired should return both events");
+    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).size() == 1,
+                 "expired TTL event should be hidden by default");
+    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, true}).size() == 2,
+                 "include expired should return both events");
     return ok;
 }
 
-bool TestWorldMemoryExpirationBudget()
-{
+bool TestWorldMemoryExpirationBudget() {
     SimulationRuntime runtime{{}};
-    const auto first = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{10}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
-    const auto second = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{11}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
+    const auto first = runtime.RecordEvent(WorldMemoryEvent{
+        {}, RegionId{1}, SimulationTime{10}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
+    const auto second = runtime.RecordEvent(WorldMemoryEvent{
+        {}, RegionId{1}, SimulationTime{11}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
     bool ok = Expect(first.HasValue() && second.HasValue(), "memory events should record");
     ok &= Expect(runtime.ExpireOldEvents(SimulationTime{20}, 1) == 1, "expiration budget should expire one event");
     const auto after_first_expiration = runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, true});
@@ -358,49 +333,62 @@ bool TestWorldMemoryExpirationBudget()
                      after_first_expiration[0].expired && after_first_expiration[1].id == second.Value() &&
                      !after_first_expiration[1].expired,
                  "budgeted expiration should process memory identities in deterministic ascending order");
-    ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).size() == 1, "one event should remain active");
+    ok &=
+        Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).size() == 1, "one event should remain active");
     ok &= Expect(runtime.ExpireOldEvents(SimulationTime{20}, 1) == 1, "second budgeted pass should expire next event");
     ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false}).empty(), "no active events should remain");
     return ok;
 }
 
-bool TestWorldMemoryIdAndTtlValidation()
-{
+bool TestWorldMemoryIdAndTtlValidation() {
     SimulationRuntime runtime{{}};
-    WorldMemoryEvent explicit_event{WorldMemoryEventId{10}, RegionId{1}, SimulationTime{10}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved};
+    WorldMemoryEvent explicit_event{WorldMemoryEventId{10},    RegionId{1},
+                                    SimulationTime{10},        GameDuration{1},
+                                    MemoryLifetime::Temporary, ObservationState::Unobserved};
     const auto first = runtime.RecordEvent(explicit_event);
     const auto duplicate = runtime.RecordEvent(explicit_event);
-    const auto generated = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{11}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
-    const auto negative_ttl = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{12}, GameDuration{-1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
-    const auto negative_time = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{-1}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
-    return first && first.Value().value == 10 &&
-           !duplicate && duplicate.GetError().HasCode("simulation.memory_event_already_exists") &&
-           generated && generated.Value().value == 11 &&
-           !negative_ttl && negative_ttl.GetError().HasCode("simulation.invalid_memory_ttl") &&
-           !negative_time && negative_time.GetError().HasCode("simulation.invalid_memory_time");
+    const auto generated = runtime.RecordEvent(WorldMemoryEvent{
+        {}, RegionId{1}, SimulationTime{11}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
+    const auto negative_ttl = runtime.RecordEvent(WorldMemoryEvent{{},
+                                                                   RegionId{1},
+                                                                   SimulationTime{12},
+                                                                   GameDuration{-1},
+                                                                   MemoryLifetime::Temporary,
+                                                                   ObservationState::Unobserved});
+    const auto negative_time = runtime.RecordEvent(WorldMemoryEvent{
+        {}, RegionId{1}, SimulationTime{-1}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Unobserved});
+    return first && first.Value().value == 10 && !duplicate &&
+           duplicate.GetError().HasCode("simulation.memory_event_already_exists") && generated &&
+           generated.Value().value == 11 && !negative_ttl &&
+           negative_ttl.GetError().HasCode("simulation.invalid_memory_ttl") && !negative_time &&
+           negative_time.GetError().HasCode("simulation.invalid_memory_time");
 }
 
-bool TestAttentionAndValidationFailures()
-{
+bool TestAttentionAndValidationFailures() {
     SimulationRuntime runtime{{}};
-    bool ok = Expect(runtime.SetAttention(RuntimeObjectId{7}, AttentionScore{0.75f}).HasValue(), "object attention should set");
+    bool ok = Expect(runtime.SetAttention(RuntimeObjectId{7}, AttentionScore{0.75f}).HasValue(),
+                     "object attention should set");
     ok &= Expect(runtime.GetAttention(RuntimeObjectId{7}).value == 0.75f, "object attention should read");
-    ok &= Expect(runtime.SetRegionAttention(RegionId{3}, AttentionScore{0.25f}).HasValue(), "region attention should set");
+    ok &= Expect(runtime.SetRegionAttention(RegionId{3}, AttentionScore{0.25f}).HasValue(),
+                 "region attention should set");
     ok &= Expect(runtime.GetRegionAttention(RegionId{3}).value == 0.25f, "region attention should read");
-    ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(MakeJob()), SimulationJobDesc{}).HasValue(), "invalid job should fail");
+    ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(MakeJob()), SimulationJobDesc{}).HasValue(),
+                 "invalid job should fail");
     ok &= Expect(!runtime.SubmitJob(nullptr, MakeJob()).HasValue(), "null executable job should fail");
     ok &= Expect(!runtime.RecordEvent(WorldMemoryEvent{}).HasValue(), "invalid memory event should fail");
-    ok &= Expect(!runtime.SetAttention(RuntimeObjectId{7}, AttentionScore{std::numeric_limits<float>::quiet_NaN()}).HasValue(),
-                 "NaN attention should fail");
-    ok &= Expect(!runtime.SetAttention(RuntimeObjectId{7}, AttentionScore{std::numeric_limits<float>::infinity()}).HasValue(),
-                 "positive infinity attention should fail");
-    ok &= Expect(!runtime.SetRegionAttention(RegionId{3}, AttentionScore{-std::numeric_limits<float>::infinity()}).HasValue(),
-                 "negative infinity attention should fail");
+    ok &= Expect(
+        !runtime.SetAttention(RuntimeObjectId{7}, AttentionScore{std::numeric_limits<float>::quiet_NaN()}).HasValue(),
+        "NaN attention should fail");
+    ok &= Expect(
+        !runtime.SetAttention(RuntimeObjectId{7}, AttentionScore{std::numeric_limits<float>::infinity()}).HasValue(),
+        "positive infinity attention should fail");
+    ok &= Expect(
+        !runtime.SetRegionAttention(RegionId{3}, AttentionScore{-std::numeric_limits<float>::infinity()}).HasValue(),
+        "negative infinity attention should fail");
     return ok;
 }
 
-bool TestBackendOrientedContractsAndServices()
-{
+bool TestBackendOrientedContractsAndServices() {
     SimulationRuntime runtime{{}};
     const auto desc = SimulationJobDesc{SimulationZoneId{5}, RuntimeObjectId{77}, 2, SimulationLane::Object, 12};
     const auto handle = runtime.SubmitJob(MakeExecutableJob(desc), desc);
@@ -414,31 +402,24 @@ bool TestBackendOrientedContractsAndServices()
     ok &= Expect(runtime.CancelJob(handle.Value()).HasValue(), "fresh job handle should cancel");
 
     const auto persistent = runtime.RecordEvent(WorldMemoryEvent{
-        {},
-        RegionId{2},
-        SimulationTime{1},
-        GameDuration{1},
-        MemoryLifetime::Persistent,
-        ObservationState::Observed});
+        {}, RegionId{2}, SimulationTime{1}, GameDuration{1}, MemoryLifetime::Persistent, ObservationState::Observed});
     ok &= Expect(persistent.HasValue(), "persistent memory event should record");
     ok &= Expect(runtime.ExpireOldEvents(SimulationTime{10}, 1) == 0, "persistent lifetime should not expire");
 
-    SimulationProposal proposal{
-        epidemic::foundation::StringId::FromString("simulation"),
-        epidemic::foundation::StringId::FromString("test"),
-        RuntimeObjectId{77},
-        epidemic::foundation::StringId::FromString("simulation.test.v1"),
-        1,
-        {}};
+    SimulationProposal proposal{epidemic::foundation::StringId::FromString("simulation"),
+                                epidemic::foundation::StringId::FromString("test"),
+                                RuntimeObjectId{77},
+                                epidemic::foundation::StringId::FromString("simulation.test.v1"),
+                                1,
+                                {}};
     SimulationProposalBatch batch{handle.Value(), desc.zone, desc.source_revision, {proposal}};
     ScheduledSimulationTask task{{}, handle.Value(), SimulationTime{25}, SimulationLane::Background};
-    AbstractFact fact{
-        epidemic::foundation::StringId::FromString("simulation"),
-        epidemic::foundation::StringId::FromString("test"),
-        1,
-        RuntimeObjectId{77},
-        SimulationZoneId{5},
-        SimulationTime{25}};
+    AbstractFact fact{epidemic::foundation::StringId::FromString("simulation"),
+                      epidemic::foundation::StringId::FromString("test"),
+                      1,
+                      RuntimeObjectId{77},
+                      SimulationZoneId{5},
+                      SimulationTime{25}};
     ok &= Expect(batch.proposals.size() == 1 && task.job == handle.Value() && fact.subject == RuntimeObjectId{77},
                  "proposal, task and fact contracts should be value-stable");
 
@@ -452,8 +433,7 @@ bool TestBackendOrientedContractsAndServices()
     return ok;
 }
 
-bool TestProposalCommitAtomicityAndFaultIsolation()
-{
+bool TestProposalCommitAtomicityAndFaultIsolation() {
     auto commit = std::make_shared<TestCommitTarget>();
     SimulationRuntime runtime{{}, SimulationDependencies{{}, commit, {}}};
     runtime.SetBudget(SimulationBudget{1, 1});
@@ -485,39 +465,51 @@ bool TestProposalCommitAtomicityAndFaultIsolation()
     return ok;
 }
 
-SimulationProposal MakeValidProposal(RuntimeObjectId target = RuntimeObjectId{77})
-{
-    return SimulationProposal{
-        epidemic::foundation::StringId::FromString("simulation"),
-        epidemic::foundation::StringId::FromString("test"),
-        target,
-        epidemic::foundation::StringId::FromString("simulation.test.v1"),
-        1,
-        {}};
+SimulationProposal MakeValidProposal(RuntimeObjectId target = RuntimeObjectId{77}) {
+    return SimulationProposal{epidemic::foundation::StringId::FromString("simulation"),
+                              epidemic::foundation::StringId::FromString("test"),
+                              target,
+                              epidemic::foundation::StringId::FromString("simulation.test.v1"),
+                              1,
+                              {}};
 }
 
-bool TestProposalPublicationStateMatrix()
-{
+bool TestProposalPublicationStateMatrix() {
     SimulationRuntime runtime{{}};
     const auto pending_desc = MakeJob(1);
     const auto pending = runtime.SubmitJob(MakeExecutableJob(pending_desc), pending_desc);
     bool ok = Expect(pending.HasValue(), "pending matrix job should submit");
-    ok &= Expect(!runtime.Publish(SimulationProposalBatch{pending.Value(), pending_desc.zone, pending_desc.source_revision, {MakeValidProposal()}}).HasValue(),
+    ok &= Expect(!runtime
+                      .Publish(SimulationProposalBatch{
+                          pending.Value(), pending_desc.zone, pending_desc.source_revision, {MakeValidProposal()}})
+                      .HasValue(),
                  "pending job should not publish proposals");
 
     const auto scheduled_desc = SimulationJobDesc{SimulationZoneId{5}, RuntimeObjectId{78}, 1};
     const auto scheduled = runtime.SubmitJob(MakeExecutableJob(scheduled_desc), scheduled_desc);
     ok &= Expect(scheduled.HasValue(), "scheduled matrix job should submit");
-    ok &= Expect(runtime.Schedule(ScheduledSimulationTask{{}, scheduled.Value(), SimulationTime{10}, SimulationLane::Background}).HasValue(),
-                 "scheduled matrix job should schedule");
-    ok &= Expect(!runtime.Publish(SimulationProposalBatch{scheduled.Value(), scheduled_desc.zone, scheduled_desc.source_revision, {MakeValidProposal(RuntimeObjectId{78})}}).HasValue(),
+    ok &= Expect(
+        runtime.Schedule(ScheduledSimulationTask{{}, scheduled.Value(), SimulationTime{10}, SimulationLane::Background})
+            .HasValue(),
+        "scheduled matrix job should schedule");
+    ok &= Expect(!runtime
+                      .Publish(SimulationProposalBatch{scheduled.Value(),
+                                                       scheduled_desc.zone,
+                                                       scheduled_desc.source_revision,
+                                                       {MakeValidProposal(RuntimeObjectId{78})}})
+                      .HasValue(),
                  "scheduled job should not publish proposals");
 
     const auto running_desc = SimulationJobDesc{SimulationZoneId{5}, RuntimeObjectId{81}, 1};
     const auto running = runtime.SubmitJob(MakeExecutableJob(running_desc), running_desc);
     ok &= Expect(running.HasValue(), "running matrix job should submit");
     runtime.SetJobStateForTesting(running.Value(), SimulationJobState::Running);
-    ok &= Expect(!runtime.Publish(SimulationProposalBatch{running.Value(), running_desc.zone, running_desc.source_revision, {MakeValidProposal(RuntimeObjectId{81})}}).HasValue(),
+    ok &= Expect(!runtime
+                      .Publish(SimulationProposalBatch{running.Value(),
+                                                       running_desc.zone,
+                                                       running_desc.source_revision,
+                                                       {MakeValidProposal(RuntimeObjectId{81})}})
+                      .HasValue(),
                  "running job should not publish proposals");
 
     SimulationRuntime failed_runtime{{}};
@@ -527,41 +519,56 @@ bool TestProposalPublicationStateMatrix()
     const auto failed = failed_runtime.SubmitJob(failed_job, failed_desc);
     ok &= Expect(failed.HasValue(), "failed matrix job should submit");
     ok &= Expect(failed_runtime.Tick().HasValue(), "failed matrix job should tick");
-    ok &= Expect(!failed_runtime.Publish(SimulationProposalBatch{failed.Value(), failed_desc.zone, failed_desc.source_revision, {MakeValidProposal(RuntimeObjectId{79})}}).HasValue(),
+    ok &= Expect(!failed_runtime
+                      .Publish(SimulationProposalBatch{failed.Value(),
+                                                       failed_desc.zone,
+                                                       failed_desc.source_revision,
+                                                       {MakeValidProposal(RuntimeObjectId{79})}})
+                      .HasValue(),
                  "failed job should not publish proposals");
 
     const auto cancelled_desc = SimulationJobDesc{SimulationZoneId{5}, RuntimeObjectId{80}, 1};
     const auto cancelled = runtime.SubmitJob(MakeExecutableJob(cancelled_desc), cancelled_desc);
-    ok &= Expect(cancelled.HasValue() && runtime.CancelJob(cancelled.Value()).HasValue(), "cancelled matrix job should cancel");
-    ok &= Expect(!runtime.Publish(SimulationProposalBatch{cancelled.Value(), cancelled_desc.zone, cancelled_desc.source_revision, {MakeValidProposal(RuntimeObjectId{80})}}).HasValue(),
+    ok &= Expect(cancelled.HasValue() && runtime.CancelJob(cancelled.Value()).HasValue(),
+                 "cancelled matrix job should cancel");
+    ok &= Expect(!runtime
+                      .Publish(SimulationProposalBatch{cancelled.Value(),
+                                                       cancelled_desc.zone,
+                                                       cancelled_desc.source_revision,
+                                                       {MakeValidProposal(RuntimeObjectId{80})}})
+                      .HasValue(),
                  "cancelled job should not publish proposals");
 
     SimulationRuntime completed_runtime{{}};
     const auto completed_desc = MakeJob(1);
     const auto completed = completed_runtime.SubmitJob(MakeExecutableJob(completed_desc), completed_desc);
     ok &= Expect(completed.HasValue() && completed_runtime.Tick().HasValue(), "completed matrix job should complete");
-    ok &= Expect(completed_runtime.Publish(SimulationProposalBatch{completed.Value(), completed_desc.zone, completed_desc.source_revision, {MakeValidProposal()}}).HasValue(),
+    ok &= Expect(completed_runtime
+                     .Publish(SimulationProposalBatch{
+                         completed.Value(), completed_desc.zone, completed_desc.source_revision, {MakeValidProposal()}})
+                     .HasValue(),
                  "completed job should publish proposals");
 
     SimulationRuntime main_runtime{{}};
     const auto main_desc = MakeJob(1);
     const auto main_job = main_runtime.SubmitJob(MakeExecutableJob(main_desc, true), main_desc);
     ok &= Expect(main_job.HasValue() && main_runtime.Tick().HasValue(), "main-thread matrix job should wait");
-    ok &= Expect(main_runtime.Publish(SimulationProposalBatch{main_job.Value(), main_desc.zone, main_desc.source_revision, {MakeValidProposal()}}).HasValue(),
+    ok &= Expect(main_runtime
+                     .Publish(SimulationProposalBatch{
+                         main_job.Value(), main_desc.zone, main_desc.source_revision, {MakeValidProposal()}})
+                     .HasValue(),
                  "main-thread waiting job should publish proposals");
     return ok;
 }
 
-bool TestAbstractFactRevision()
-{
+bool TestAbstractFactRevision() {
     SimulationRuntime runtime{{}};
-    AbstractFact first{
-        epidemic::foundation::StringId::FromString("simulation"),
-        epidemic::foundation::StringId::FromString("fact"),
-        1,
-        RuntimeObjectId{77},
-        SimulationZoneId{5},
-        SimulationTime{10}};
+    AbstractFact first{epidemic::foundation::StringId::FromString("simulation"),
+                       epidemic::foundation::StringId::FromString("fact"),
+                       1,
+                       RuntimeObjectId{77},
+                       SimulationZoneId{5},
+                       SimulationTime{10}};
     AbstractFact second = first;
     second.fact_type = 2;
 
@@ -574,30 +581,34 @@ bool TestAbstractFactRevision()
     return ok;
 }
 
-bool TestScheduledTaskBudget()
-{
+bool TestScheduledTaskBudget() {
     SimulationRuntime runtime{{}};
     const auto first_desc = MakeJob(1);
     const auto second_desc = MakeJob(1);
     const auto first_job = runtime.SubmitJob(MakeExecutableJob(first_desc), first_desc);
     const auto second_job = runtime.SubmitJob(MakeExecutableJob(second_desc), second_desc);
     bool ok = Expect(first_job.HasValue() && second_job.HasValue(), "jobs should submit for scheduled tasks");
-    const auto first = runtime.Schedule(ScheduledSimulationTask{{}, first_job.Value(), SimulationTime{10}, SimulationLane::Background});
-    const auto second = runtime.Schedule(ScheduledSimulationTask{{}, second_job.Value(), SimulationTime{10}, SimulationLane::Background});
+    const auto first = runtime.Schedule(
+        ScheduledSimulationTask{{}, first_job.Value(), SimulationTime{10}, SimulationLane::Background});
+    const auto second = runtime.Schedule(
+        ScheduledSimulationTask{{}, second_job.Value(), SimulationTime{10}, SimulationLane::Background});
     ok &= Expect(first.HasValue() && second.HasValue(), "scheduled tasks should register");
-    ok &= Expect(!runtime.Schedule(ScheduledSimulationTask{{}, first_job.Value(), SimulationTime{11}, SimulationLane::Background}).HasValue(),
-                 "duplicate scheduled task for same job should fail");
+    ok &= Expect(
+        !runtime
+             .Schedule(ScheduledSimulationTask{{}, first_job.Value(), SimulationTime{11}, SimulationLane::Background})
+             .HasValue(),
+        "duplicate scheduled task for same job should fail");
     ok &= Expect(runtime.QueryDue(SimulationTime{9}).empty(), "tasks should not be due early");
     const auto due = runtime.QueryDue(SimulationTime{10});
     ok &= Expect(due.size() == 2, "both tasks should be due");
     ok &= Expect(due.size() == 2 && due[0].id == first.Value() && due[1].id == second.Value(),
                  "equal-due scheduled tasks should retain deterministic id order");
     const auto executed = runtime.ExecuteDueWithinBudget(SimulationTime{10}, SimulationBudget{1, 0});
-    ok &= Expect(executed.activated == 1 && executed.failures.empty(),
-                 "scheduled task budget should execute one");
+    ok &= Expect(executed.activated == 1 && executed.failures.empty(), "scheduled task budget should execute one");
     ok &= Expect(runtime.GetJobState(first_job.Value()).Value() == SimulationJobState::Pending,
                  "due scheduled task should make job runnable instead of cancelling it");
-    ok &= Expect(runtime.QueryDue(SimulationTime{10}).size() == 1, "one scheduled task should remain after budgeted execution");
+    ok &= Expect(runtime.QueryDue(SimulationTime{10}).size() == 1,
+                 "one scheduled task should remain after budgeted execution");
     ok &= Expect(runtime.Cancel(second.Value()).HasValue(), "remaining scheduled task should cancel");
     ok &= Expect(runtime.GetJobState(second_job.Value()).Value() == SimulationJobState::Pending,
                  "cancelled scheduled task should return job to pending");
@@ -608,13 +619,13 @@ bool TestScheduledTaskBudget()
     return ok;
 }
 
-bool TestCancelJobRemovesScheduledTask()
-{
+bool TestCancelJobRemovesScheduledTask() {
     SimulationRuntime runtime{{}};
     const auto desc = MakeJob(1);
     const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
     bool ok = Expect(job.HasValue(), "scheduled cancellation job should submit");
-    const auto scheduled = runtime.Schedule(ScheduledSimulationTask{{}, job.Value(), SimulationTime{10}, SimulationLane::Background});
+    const auto scheduled =
+        runtime.Schedule(ScheduledSimulationTask{{}, job.Value(), SimulationTime{10}, SimulationLane::Background});
     ok &= Expect(scheduled.HasValue(), "job should schedule before direct cancellation");
     ok &= Expect(runtime.CancelJob(job.Value()).HasValue(), "direct job cancellation should succeed");
     ok &= Expect(runtime.QueryDue(SimulationTime{10}).empty(), "direct job cancellation should remove active schedule");
@@ -623,13 +634,13 @@ bool TestCancelJobRemovesScheduledTask()
     return ok;
 }
 
-bool TestInvalidDueTaskClearsActiveSchedule()
-{
+bool TestInvalidDueTaskClearsActiveSchedule() {
     SimulationRuntime runtime{{}};
     const auto desc = MakeJob(1);
     const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
     bool ok = Expect(job.HasValue(), "invalid due task job should submit");
-    const auto scheduled = runtime.Schedule(ScheduledSimulationTask{{}, job.Value(), SimulationTime{10}, SimulationLane::Background});
+    const auto scheduled =
+        runtime.Schedule(ScheduledSimulationTask{{}, job.Value(), SimulationTime{10}, SimulationLane::Background});
     ok &= Expect(scheduled.HasValue(), "invalid due task job should schedule");
     runtime.SetJobStateForTesting(job.Value(), SimulationJobState::Pending);
 
@@ -638,13 +649,14 @@ bool TestInvalidDueTaskClearsActiveSchedule()
                  "invalid scheduled task should report a failure without activation");
     ok &= Expect(!runtime.ActiveScheduleForTesting(job.Value()).has_value(),
                  "invalid scheduled task should clear active schedule");
-    ok &= Expect(runtime.Schedule(ScheduledSimulationTask{{}, job.Value(), SimulationTime{20}, SimulationLane::Background}).HasValue(),
-                 "job should be schedulable again after invalid due cleanup");
+    ok &= Expect(
+        runtime.Schedule(ScheduledSimulationTask{{}, job.Value(), SimulationTime{20}, SimulationLane::Background})
+            .HasValue(),
+        "job should be schedulable again after invalid due cleanup");
     return ok;
 }
 
-bool TestTickFailuresCancellationAndMainThreadCommits()
-{
+bool TestTickFailuresCancellationAndMainThreadCommits() {
     SimulationRuntime runtime{{}};
     const auto failing_desc = MakeJob(1);
     auto failing_job = MakeExecutableJob(failing_desc);
@@ -652,8 +664,8 @@ bool TestTickFailuresCancellationAndMainThreadCommits()
     const auto failing = runtime.SubmitJob(failing_job, failing_desc);
     bool ok = Expect(failing.HasValue(), "failing job should submit");
     const auto failed_tick = runtime.Tick();
-    ok &= Expect(failed_tick.HasValue() && failed_tick.Value().failures.size() == 1,
-                 "tick should surface job failures");
+    ok &=
+        Expect(failed_tick.HasValue() && failed_tick.Value().failures.size() == 1, "tick should surface job failures");
     ok &= Expect(failed_tick.Value().failures[0].error.HasCode("simulation.test_failed"),
                  "tick failure should carry executable error");
 
@@ -706,8 +718,7 @@ bool TestTickFailuresCancellationAndMainThreadCommits()
     return ok;
 }
 
-bool TestProposalValidationClockRelevanceAndCleanup()
-{
+bool TestProposalValidationClockRelevanceAndCleanup() {
     auto relevance = std::make_shared<TestRelevancePolicy>();
     auto clock = std::make_shared<TestClock>();
     clock->now = SimulationTime{10};
@@ -726,7 +737,10 @@ bool TestProposalValidationClockRelevanceAndCleanup()
     const auto scheduled_desc = MakeJob(1);
     const auto scheduled_job = runtime.SubmitJob(MakeExecutableJob(scheduled_desc), scheduled_desc);
     ok &= Expect(scheduled_job.HasValue(), "scheduled job should submit");
-    ok &= Expect(runtime.Schedule(ScheduledSimulationTask{{}, scheduled_job.Value(), SimulationTime{10}, SimulationLane::Background}).HasValue(),
+    ok &= Expect(runtime
+                     .Schedule(ScheduledSimulationTask{
+                         {}, scheduled_job.Value(), SimulationTime{10}, SimulationLane::Background})
+                     .HasValue(),
                  "scheduled job should register");
     ok &= Expect(runtime.GetJobState(scheduled_job.Value()).Value() == SimulationJobState::Scheduled,
                  "scheduled job should wait until due");
@@ -739,54 +753,64 @@ bool TestProposalValidationClockRelevanceAndCleanup()
     const auto desc = MakeJob(1);
     const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
     ok &= Expect(job.HasValue(), "proposal validation job should submit");
-    SimulationProposal valid{
-        epidemic::foundation::StringId::FromString("simulation"),
-        epidemic::foundation::StringId::FromString("test"),
-        RuntimeObjectId{77},
-        epidemic::foundation::StringId::FromString("simulation.test.v1"),
-        1,
-        {}};
-    ok &= Expect(!runtime.Publish(SimulationProposalBatch{job.Value(), SimulationZoneId{99}, desc.source_revision, {valid}}).HasValue(),
-                 "proposal zone mismatch should fail");
+    SimulationProposal valid{epidemic::foundation::StringId::FromString("simulation"),
+                             epidemic::foundation::StringId::FromString("test"),
+                             RuntimeObjectId{77},
+                             epidemic::foundation::StringId::FromString("simulation.test.v1"),
+                             1,
+                             {}};
+    ok &= Expect(
+        !runtime.Publish(SimulationProposalBatch{job.Value(), SimulationZoneId{99}, desc.source_revision, {valid}})
+             .HasValue(),
+        "proposal zone mismatch should fail");
     SimulationProposal invalid_schema = valid;
     invalid_schema.schema_version = 0;
-    ok &= Expect(!runtime.Publish(SimulationProposalBatch{job.Value(), desc.zone, desc.source_revision, {invalid_schema}}).HasValue(),
-                 "proposal schema validation should fail");
+    ok &=
+        Expect(!runtime.Publish(SimulationProposalBatch{job.Value(), desc.zone, desc.source_revision, {invalid_schema}})
+                    .HasValue(),
+               "proposal schema validation should fail");
 
     SimulationRuntime queue_runtime{SimulationOptions{.max_proposal_batches = 1}};
     const auto queue_desc = MakeJob(1);
     const auto queue_job = queue_runtime.SubmitJob(MakeExecutableJob(queue_desc, true), queue_desc);
     ok &= Expect(queue_job.HasValue(), "queue-full job should submit");
     ok &= Expect(queue_runtime.Tick().HasValue(), "queue-full job should reach publishable state");
-    ok &= Expect(queue_runtime.Publish(SimulationProposalBatch{queue_job.Value(), queue_desc.zone, queue_desc.source_revision, {valid}}).HasValue(),
-                 "first proposal should fit bounded queue");
-    ok &= Expect(!queue_runtime.Publish(SimulationProposalBatch{queue_job.Value(), queue_desc.zone, queue_desc.source_revision, {valid}}).HasValue(),
-                 "bounded proposal queue should report overflow instead of discarding");
+    ok &= Expect(
+        queue_runtime
+            .Publish(SimulationProposalBatch{queue_job.Value(), queue_desc.zone, queue_desc.source_revision, {valid}})
+            .HasValue(),
+        "first proposal should fit bounded queue");
+    ok &= Expect(
+        !queue_runtime
+             .Publish(SimulationProposalBatch{queue_job.Value(), queue_desc.zone, queue_desc.source_revision, {valid}})
+             .HasValue(),
+        "bounded proposal queue should report overflow instead of discarding");
 
-    ok &= Expect(runtime.RecordFact(AbstractFact{
-                     epidemic::foundation::StringId::FromString("simulation"),
-                     epidemic::foundation::StringId::FromString("fact"),
-                     1,
-                     RuntimeObjectId{77},
-                     SimulationZoneId{5},
-                     SimulationTime{1}})
+    ok &= Expect(runtime
+                     .RecordFact(AbstractFact{epidemic::foundation::StringId::FromString("simulation"),
+                                              epidemic::foundation::StringId::FromString("fact"), 1,
+                                              RuntimeObjectId{77}, SimulationZoneId{5}, SimulationTime{1}})
                      .HasValue(),
                  "first fact should record");
     const auto overflow_fact = runtime.RecordFact(AbstractFact{
-        epidemic::foundation::StringId::FromString("simulation"),
-        epidemic::foundation::StringId::FromString("fact"),
-        2,
-        RuntimeObjectId{78},
-        SimulationZoneId{5},
-        SimulationTime{2}});
+        epidemic::foundation::StringId::FromString("simulation"), epidemic::foundation::StringId::FromString("fact"), 2,
+        RuntimeObjectId{78}, SimulationZoneId{5}, SimulationTime{2}});
     ok &= Expect(!overflow_fact.HasValue() && overflow_fact.GetError().HasCode("simulation.fact_store_full"),
                  "fact store should reject overflow instead of pruning authoritative facts");
-    ok &= Expect(runtime.QueryFacts(SimulationZoneId{5}).size() == 1, "fact store should retain existing authoritative fact");
+    ok &= Expect(runtime.QueryFacts(SimulationZoneId{5}).size() == 1,
+                 "fact store should retain existing authoritative fact");
 
-    ok &= Expect(runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{1}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed}).HasValue(),
+    ok &= Expect(runtime
+                     .RecordEvent(WorldMemoryEvent{{},
+                                                   RegionId{1},
+                                                   SimulationTime{1},
+                                                   GameDuration{1},
+                                                   MemoryLifetime::Temporary,
+                                                   ObservationState::Observed})
+                     .HasValue(),
                  "first bounded memory event should record");
-    const auto memory_overflow =
-        runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{2}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed});
+    const auto memory_overflow = runtime.RecordEvent(WorldMemoryEvent{
+        {}, RegionId{1}, SimulationTime{2}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed});
     ok &= Expect(!memory_overflow.HasValue() && memory_overflow.GetError().HasCode("simulation.memory_store_full"),
                  "bounded memory event store should reject active overflow");
     runtime.ExpireOldEvents(SimulationTime{10});
@@ -795,26 +819,36 @@ bool TestProposalValidationClockRelevanceAndCleanup()
     return ok;
 }
 
-bool TestMemoryFactShutdownAndProposalCleanupEdges()
-{
+bool TestMemoryFactShutdownAndProposalCleanupEdges() {
     bool ok = true;
     {
         SimulationRuntime runtime{SimulationOptions{.max_memory_events = 1}};
-        ok &= Expect(runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{1}, GameDuration{0}, MemoryLifetime::Persistent, ObservationState::Observed}).HasValue(),
+        ok &= Expect(runtime
+                         .RecordEvent(WorldMemoryEvent{{},
+                                                       RegionId{1},
+                                                       SimulationTime{1},
+                                                       GameDuration{0},
+                                                       MemoryLifetime::Persistent,
+                                                       ObservationState::Observed})
+                         .HasValue(),
                      "persistent memory event should record into bounded store");
-        const auto full = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{2}, GameDuration{0}, MemoryLifetime::Persistent, ObservationState::Observed});
+        const auto full = runtime.RecordEvent(WorldMemoryEvent{{},
+                                                               RegionId{1},
+                                                               SimulationTime{2},
+                                                               GameDuration{0},
+                                                               MemoryLifetime::Persistent,
+                                                               ObservationState::Observed});
         ok &= Expect(!full.HasValue() && full.GetError().HasCode("simulation.memory_store_full"),
                      "bounded memory store should not evict persistent events silently");
     }
     {
         SimulationRuntime runtime{{}};
-        AbstractFact valid{
-            epidemic::foundation::StringId::FromString("simulation"),
-            epidemic::foundation::StringId::FromString("fact"),
-            1,
-            RuntimeObjectId{77},
-            SimulationZoneId{5},
-            SimulationTime{1}};
+        AbstractFact valid{epidemic::foundation::StringId::FromString("simulation"),
+                           epidemic::foundation::StringId::FromString("fact"),
+                           1,
+                           RuntimeObjectId{77},
+                           SimulationZoneId{5},
+                           SimulationTime{1}};
         AbstractFact invalid = valid;
         invalid.domain = {};
         ok &= Expect(!runtime.RecordFact(invalid).HasValue(), "invalid fact domain should fail");
@@ -851,14 +885,17 @@ bool TestMemoryFactShutdownAndProposalCleanupEdges()
         ok &= Expect(first.HasValue() && second.HasValue(), "proposal retention jobs should submit");
         ok &= Expect(runtime.Tick().HasValue(), "first retention tick should complete jobs");
         ok &= Expect(runtime.PendingBatches().size() == 2, "terminal jobs should retain pending proposal batches");
-        ok &= Expect(runtime.GetJobState(first.Value()).HasValue(), "terminal job with pending proposal should not prune");
-        ok &= Expect(runtime.DiscardAll(ProposalDiscardReason::Shutdown).HasValue(), "administrative discard should clear proposals");
+        ok &= Expect(runtime.GetJobState(first.Value()).HasValue(),
+                     "terminal job with pending proposal should not prune");
+        ok &= Expect(runtime.DiscardAll(ProposalDiscardReason::Shutdown).HasValue(),
+                     "administrative discard should clear proposals");
         ok &= Expect(!runtime.GetJobState(first.Value()).HasValue() || !runtime.GetJobState(second.Value()).HasValue(),
                      "discarded proposal should immediately allow terminal job pruning");
     }
     {
         auto target = std::make_shared<TestCommitTarget>();
-        SimulationRuntime runtime{SimulationOptions{.max_terminal_jobs = 1}, SimulationDependencies{.relevance = {}, .commit_target = target, .clock = {}}};
+        SimulationRuntime runtime{SimulationOptions{.max_terminal_jobs = 1},
+                                  SimulationDependencies{.relevance = {}, .commit_target = target, .clock = {}}};
         runtime.SetBudget(SimulationBudget{2, 2});
         const auto first_desc = MakeJob(1);
         const auto second_desc = SimulationJobDesc{SimulationZoneId{5}, RuntimeObjectId{79}, 1};
@@ -867,20 +904,31 @@ bool TestMemoryFactShutdownAndProposalCleanupEdges()
         ok &= Expect(first.HasValue() && second.HasValue(), "commit-prune jobs should submit");
         ok &= Expect(runtime.Tick().HasValue(), "commit-prune tick should complete jobs");
         ok &= Expect(runtime.CommitNext().HasValue(), "first commit should succeed");
-        ok &= Expect(runtime.GetJobState(first.Value()).HasValue(), "first committed terminal job should remain within cap");
+        ok &= Expect(runtime.GetJobState(first.Value()).HasValue(),
+                     "first committed terminal job should remain within cap");
         ok &= Expect(runtime.CommitNext().HasValue(), "second commit should prune immediately");
-        ok &= Expect(!runtime.GetJobState(first.Value()).HasValue(), "commit should immediately allow terminal job pruning");
+        ok &= Expect(!runtime.GetJobState(first.Value()).HasValue(),
+                     "commit should immediately allow terminal job pruning");
     }
     return ok;
 }
-bool TestGoal3SimulationBoundaryAudit()
-{
+bool TestGoal3SimulationBoundaryAudit() {
     bool ok = true;
     {
         SimulationRuntime runtime{{}};
         runtime.SetNextMemoryIdForTesting(std::numeric_limits<std::uint64_t>::max());
-        const auto last = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{1}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed});
-        const auto exhausted = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{2}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed});
+        const auto last = runtime.RecordEvent(WorldMemoryEvent{{},
+                                                               RegionId{1},
+                                                               SimulationTime{1},
+                                                               GameDuration{1},
+                                                               MemoryLifetime::Temporary,
+                                                               ObservationState::Observed});
+        const auto exhausted = runtime.RecordEvent(WorldMemoryEvent{{},
+                                                                    RegionId{1},
+                                                                    SimulationTime{2},
+                                                                    GameDuration{1},
+                                                                    MemoryLifetime::Temporary,
+                                                                    ObservationState::Observed});
         ok &= Expect(last && last.Value().value == std::numeric_limits<std::uint64_t>::max(),
                      "final world-memory identity should be issued exactly once");
         ok &= Expect(!exhausted && exhausted.GetError().HasCode("simulation.memory_event_id_overflow") &&
@@ -894,8 +942,10 @@ bool TestGoal3SimulationBoundaryAudit()
         const auto first_job = runtime.SubmitJob(MakeExecutableJob(first_desc), first_desc);
         const auto second_job = runtime.SubmitJob(MakeExecutableJob(second_desc), second_desc);
         runtime.SetNextTaskIdForTesting(std::numeric_limits<std::uint64_t>::max());
-        const auto last = runtime.Schedule(ScheduledSimulationTask{{}, first_job.Value(), SimulationTime{10}, SimulationLane::Background});
-        const auto exhausted = runtime.Schedule(ScheduledSimulationTask{{}, second_job.Value(), SimulationTime{10}, SimulationLane::Background});
+        const auto last = runtime.Schedule(
+            ScheduledSimulationTask{{}, first_job.Value(), SimulationTime{10}, SimulationLane::Background});
+        const auto exhausted = runtime.Schedule(
+            ScheduledSimulationTask{{}, second_job.Value(), SimulationTime{10}, SimulationLane::Background});
         ok &= Expect(last && last.Value().value == std::numeric_limits<std::uint64_t>::max(),
                      "final scheduled-task identity should be issued exactly once");
         ok &= Expect(!exhausted && exhausted.GetError().HasCode("simulation.task_id_overflow") &&
@@ -905,7 +955,12 @@ bool TestGoal3SimulationBoundaryAudit()
     }
     {
         SimulationRuntime runtime{{}};
-        const auto zero_ttl = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{4}, SimulationTime{1}, GameDuration{0}, MemoryLifetime::Temporary, ObservationState::Observed});
+        const auto zero_ttl = runtime.RecordEvent(WorldMemoryEvent{{},
+                                                                   RegionId{4},
+                                                                   SimulationTime{1},
+                                                                   GameDuration{0},
+                                                                   MemoryLifetime::Temporary,
+                                                                   ObservationState::Observed});
         ok &= Expect(zero_ttl.HasValue(), "zero-TTL temporary memory event should record");
         runtime.ExpireOldEvents(SimulationTime{std::numeric_limits<std::int64_t>::max()});
         ok &= Expect(runtime.QueryEvents(WorldMemoryQuery{RegionId{4}, false}).size() == 1,
@@ -938,8 +993,7 @@ bool TestGoal3SimulationBoundaryAudit()
     return ok;
 }
 
-bool TestGoal3SimulationFaultAtomicity()
-{
+bool TestGoal3SimulationFaultAtomicity() {
     bool ok = true;
     {
         SimulationRuntime runtime{{}};
@@ -953,8 +1007,7 @@ bool TestGoal3SimulationFaultAtomicity()
         const auto first = runtime.Tick();
         ok &= Expect(!first && first.GetError().HasCode("simulation.allocation_failed"),
                      "named tick-result staging fault should surface without consuming the accepted result");
-        ok &= Expect(executable->execute_count == 1,
-                     "successful ExecuteStep must be called exactly once before retry");
+        ok &= Expect(executable->execute_count == 1, "successful ExecuteStep must be called exactly once before retry");
         ok &= Expect(runtime.GetJobState(handle.Value()).Value() == SimulationJobState::Pending &&
                          runtime.PendingBatches().empty(),
                      "tick-result staging failure must preserve authoritative job and proposal pre-state");
@@ -962,8 +1015,7 @@ bool TestGoal3SimulationFaultAtomicity()
         const auto retry = runtime.Tick();
         ok &= Expect(retry && retry.Value().processed_jobs == 1,
                      "retry should publish the retained successful step result");
-        ok &= Expect(executable->execute_count == 1,
-                     "retry must not re-run an already successful ExecuteStep");
+        ok &= Expect(executable->execute_count == 1, "retry must not re-run an already successful ExecuteStep");
         ok &= Expect(runtime.GetJobState(handle.Value()).Value() == SimulationJobState::Completed &&
                          runtime.PendingBatches().size() == 1,
                      "retained step result should commit to the same completed state and proposal queue");
@@ -1012,17 +1064,17 @@ bool TestGoal3SimulationFaultAtomicity()
         const auto desc = MakeJob(1);
         const auto handle = runtime.SubmitJob(MakeExecutableJob(desc), desc);
         runtime.SetJobStateForTesting(handle.Value(), SimulationJobState::Completed);
-        SimulationProposal proposal{
-            epidemic::foundation::StringId::FromString("simulation"),
-            epidemic::foundation::StringId::FromString("publish_fault"),
-            desc.subject,
-            epidemic::foundation::StringId::FromString("simulation.publish_fault.v1"),
-            1,
-            {}};
+        SimulationProposal proposal{epidemic::foundation::StringId::FromString("simulation"),
+                                    epidemic::foundation::StringId::FromString("publish_fault"),
+                                    desc.subject,
+                                    epidemic::foundation::StringId::FromString("simulation.publish_fault.v1"),
+                                    1,
+                                    {}};
         SimulationProposalBatch batch{handle.Value(), desc.zone, desc.source_revision, {proposal}};
         runtime.FailNextProposalPublicationForTesting();
         const auto published = runtime.Publish(batch);
-        ok &= Expect(!published && published.GetError().HasCode("simulation.allocation_failed") && runtime.PendingBatches().empty(),
+        ok &= Expect(!published && published.GetError().HasCode("simulation.allocation_failed") &&
+                         runtime.PendingBatches().empty(),
                      "proposal publication fault must be contained and leave the queue unchanged");
         ok &= Expect(runtime.Publish(batch).HasValue() && runtime.PendingBatches().size() == 1,
                      "proposal publication fault seam should be one-shot and preserve retryability");
@@ -1040,19 +1092,30 @@ bool TestGoal3SimulationFaultAtomicity()
     }
     {
         SimulationRuntime runtime{SimulationOptions{.max_memory_events = 2}};
-        ok &= Expect(runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{1}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed}).HasValue(),
+        ok &= Expect(runtime
+                         .RecordEvent(WorldMemoryEvent{{},
+                                                       RegionId{1},
+                                                       SimulationTime{1},
+                                                       GameDuration{1},
+                                                       MemoryLifetime::Temporary,
+                                                       ObservationState::Observed})
+                         .HasValue(),
                      "expiration fault event one should record");
-        ok &= Expect(runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{1}, SimulationTime{2}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed}).HasValue(),
+        ok &= Expect(runtime
+                         .RecordEvent(WorldMemoryEvent{{},
+                                                       RegionId{1},
+                                                       SimulationTime{2},
+                                                       GameDuration{1},
+                                                       MemoryLifetime::Temporary,
+                                                       ObservationState::Observed})
+                         .HasValue(),
                      "expiration fault event two should record");
         const auto before = runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false});
         runtime.FailNextMemoryWorkListPreparationForTesting();
         bool threw = false;
-        try
-        {
+        try {
             (void)runtime.ExpireOldEvents(SimulationTime{10}, 2);
-        }
-        catch (const std::bad_alloc&)
-        {
+        } catch (const std::bad_alloc &) {
             threw = true;
         }
         const auto after = runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, false});
@@ -1067,7 +1130,8 @@ bool TestGoal3SimulationFaultAtomicity()
         const auto desc = MakeJob(1);
         auto executable = MakeExecutableJob(desc);
         const auto handle = runtime.SubmitJob(executable, desc);
-        const auto scheduled = runtime.Schedule(ScheduledSimulationTask{{}, handle.Value(), SimulationTime{0}, SimulationLane::Background});
+        const auto scheduled = runtime.Schedule(
+            ScheduledSimulationTask{{}, handle.Value(), SimulationTime{0}, SimulationLane::Background});
         ok &= Expect(scheduled.HasValue(), "shutdown gate job should be scheduled before shutdown");
         executable->throw_cancel = true;
         const auto first_shutdown = runtime.Shutdown();
@@ -1078,8 +1142,10 @@ bool TestGoal3SimulationFaultAtomicity()
         const auto due = runtime.ExecuteDueWithinBudget(SimulationTime{10}, SimulationBudget{1, 1});
         ok &= Expect(due.activated == 0 && runtime.ActiveScheduleForTesting(handle.Value()) == scheduled.Value(),
                      "scheduled work must not activate after shutdown has started");
-        ok &= Expect(runtime.Cancel(scheduled.Value()).HasValue(), "scheduled cleanup should remain available during shutdown");
-        const auto reschedule = runtime.Schedule(ScheduledSimulationTask{{}, handle.Value(), SimulationTime{0}, SimulationLane::Background});
+        ok &= Expect(runtime.Cancel(scheduled.Value()).HasValue(),
+                     "scheduled cleanup should remain available during shutdown");
+        const auto reschedule = runtime.Schedule(
+            ScheduledSimulationTask{{}, handle.Value(), SimulationTime{0}, SimulationLane::Background});
         ok &= Expect(!reschedule && reschedule.GetError().HasCode("simulation.shutdown"),
                      "new schedules must be rejected after shutdown has started");
         const auto blocked_main_thread = runtime.ProcessMainThreadCommits();
@@ -1094,8 +1160,7 @@ bool TestGoal3SimulationFaultAtomicity()
     return ok;
 }
 
-bool TestDeepFreezeFailureContracts()
-{
+bool TestDeepFreezeFailureContracts() {
     bool ok = true;
     {
         SimulationRuntime runtime{{}};
@@ -1104,8 +1169,10 @@ bool TestDeepFreezeFailureContracts()
         throwing->throw_after_mutation = true;
         const auto job = runtime.SubmitJob(throwing, desc);
         const auto tick = runtime.Tick();
-        ok &= Expect(tick && tick.Value().failures.size() == 1, "throwing ExecuteStep should be normalized into tick failure");
-        ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Failed, "throwing ExecuteStep must not strand Running state");
+        ok &= Expect(tick && tick.Value().failures.size() == 1,
+                     "throwing ExecuteStep should be normalized into tick failure");
+        ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Failed,
+                     "throwing ExecuteStep must not strand Running state");
     }
     {
         SimulationRuntime runtime{{}};
@@ -1115,64 +1182,99 @@ bool TestDeepFreezeFailureContracts()
         const auto job = runtime.SubmitJob(invalid, desc);
         const auto tick = runtime.Tick();
         ok &= Expect(tick && !tick.Value().failures.empty(), "out-of-domain step state should fail deterministically");
-        ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Failed, "invalid step state should transition to Failed");
+        ok &= Expect(runtime.GetJobState(job.Value()).Value() == SimulationJobState::Failed,
+                     "invalid step state should transition to Failed");
     }
     {
         auto relevance = std::make_shared<TestRelevancePolicy>();
         SimulationRuntime runtime{{}, SimulationDependencies{.relevance = relevance, .commit_target = {}, .clock = {}}};
-        ok &= Expect(runtime.SetRegionAttention(RegionId{1}, AttentionScore{0.25f}).HasValue(), "initial region attention should set");
+        ok &= Expect(runtime.SetRegionAttention(RegionId{1}, AttentionScore{0.25f}).HasValue(),
+                     "initial region attention should set");
         const auto old_score = runtime.GetRegionAttention(RegionId{1});
         const auto old_zone = runtime.GetRegionZoneState(RegionId{1});
         relevance->throw_on_classify = true;
         const auto failed = runtime.SetRegionAttention(RegionId{1}, AttentionScore{0.75f});
-        ok &= Expect(!failed && runtime.GetRegionAttention(RegionId{1}).value == old_score.value && runtime.GetRegionZoneState(RegionId{1}) == old_zone,
+        ok &= Expect(!failed && runtime.GetRegionAttention(RegionId{1}).value == old_score.value &&
+                         runtime.GetRegionZoneState(RegionId{1}) == old_zone,
                      "throwing relevance policy must preserve old region record");
         relevance->throw_on_classify = false;
         relevance->state = static_cast<SimulationZoneState>(999);
         const auto invalid = runtime.SetRegionAttention(RegionId{1}, AttentionScore{0.5f});
-        ok &= Expect(!invalid && runtime.GetRegionAttention(RegionId{1}).value == old_score.value && runtime.GetRegionZoneState(RegionId{1}) == old_zone,
+        ok &= Expect(!invalid && runtime.GetRegionAttention(RegionId{1}).value == old_score.value &&
+                         runtime.GetRegionZoneState(RegionId{1}) == old_zone,
                      "invalid relevance enum must preserve old region record");
     }
     {
         SimulationRuntime runtime{{}};
-        WorldMemoryEvent valid{WorldMemoryEventId{7}, RegionId{1}, SimulationTime{1}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed};
+        WorldMemoryEvent valid{WorldMemoryEventId{7},     RegionId{1},
+                               SimulationTime{1},         GameDuration{1},
+                               MemoryLifetime::Temporary, ObservationState::Observed};
         ok &= Expect(runtime.RecordEvent(valid).HasValue(), "explicit memory id should record");
         runtime.ExpireOldEvents(SimulationTime{3});
         const auto before = runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, true});
         const auto duplicate = runtime.RecordEvent(valid);
         const auto after = runtime.QueryEvents(WorldMemoryQuery{RegionId{1}, true});
-        ok &= Expect(!duplicate && before.size() == after.size(), "failed duplicate RecordEvent must not prune unrelated expired records");
-        const auto overflow = runtime.RecordEvent(WorldMemoryEvent{{}, RegionId{2}, SimulationTime{std::numeric_limits<std::int64_t>::max()}, GameDuration{1}, MemoryLifetime::Temporary, ObservationState::Observed});
-        ok &= Expect(!overflow && overflow.GetError().HasCode("simulation.memory_expiration_overflow"), "unrepresentable memory expiration should be rejected");
-        WorldMemoryEvent bad_enum{{}, RegionId{2}, SimulationTime{1}, GameDuration{1}, static_cast<MemoryLifetime>(99), ObservationState::Observed};
+        ok &= Expect(!duplicate && before.size() == after.size(),
+                     "failed duplicate RecordEvent must not prune unrelated expired records");
+        const auto overflow =
+            runtime.RecordEvent(WorldMemoryEvent{{},
+                                                 RegionId{2},
+                                                 SimulationTime{std::numeric_limits<std::int64_t>::max()},
+                                                 GameDuration{1},
+                                                 MemoryLifetime::Temporary,
+                                                 ObservationState::Observed});
+        ok &= Expect(!overflow && overflow.GetError().HasCode("simulation.memory_expiration_overflow"),
+                     "unrepresentable memory expiration should be rejected");
+        WorldMemoryEvent bad_enum{{},
+                                  RegionId{2},
+                                  SimulationTime{1},
+                                  GameDuration{1},
+                                  static_cast<MemoryLifetime>(99),
+                                  ObservationState::Observed};
         ok &= Expect(!runtime.RecordEvent(bad_enum), "invalid memory lifetime enum should be rejected");
-        bad_enum.lifetime = MemoryLifetime::Temporary; bad_enum.observation = static_cast<ObservationState>(99);
+        bad_enum.lifetime = MemoryLifetime::Temporary;
+        bad_enum.observation = static_cast<ObservationState>(99);
         ok &= Expect(!runtime.RecordEvent(bad_enum), "invalid observation enum should be rejected");
     }
     {
         SimulationRuntime runtime{{}};
         runtime.SetFactRevisionForTesting(std::numeric_limits<std::uint64_t>::max());
-        const auto fact = runtime.RecordFact(AbstractFact{epidemic::foundation::StringId::FromString("simulation"), epidemic::foundation::StringId::FromString("fact"), 1, RuntimeObjectId{1}, SimulationZoneId{1}, SimulationTime{1}});
-        ok &= Expect(!fact && runtime.Revision() == std::numeric_limits<std::uint64_t>::max(), "fact revision exhaustion must not wrap");
+        const auto fact = runtime.RecordFact(AbstractFact{epidemic::foundation::StringId::FromString("simulation"),
+                                                          epidemic::foundation::StringId::FromString("fact"), 1,
+                                                          RuntimeObjectId{1}, SimulationZoneId{1}, SimulationTime{1}});
+        ok &= Expect(!fact && runtime.Revision() == std::numeric_limits<std::uint64_t>::max(),
+                     "fact revision exhaustion must not wrap");
     }
     {
         SimulationRuntime runtime{{}};
-        auto desc = MakeJob(1); desc.lane = static_cast<SimulationLane>(99);
-        ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(desc), desc), "invalid job lane should fail before publication");
+        auto desc = MakeJob(1);
+        desc.lane = static_cast<SimulationLane>(99);
+        ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(desc), desc),
+                     "invalid job lane should fail before publication");
         desc = MakeJob(1);
         const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
-        ScheduledSimulationTask bad_lane{}; bad_lane.job = job.Value(); bad_lane.due_at = SimulationTime{0}; bad_lane.lane = static_cast<SimulationLane>(99);
+        ScheduledSimulationTask bad_lane{};
+        bad_lane.job = job.Value();
+        bad_lane.due_at = SimulationTime{0};
+        bad_lane.lane = static_cast<SimulationLane>(99);
         ok &= Expect(!runtime.Schedule(bad_lane), "invalid scheduled lane should fail");
-        ScheduledSimulationTask negative{}; negative.job = job.Value(); negative.due_at = SimulationTime{-1}; negative.lane = SimulationLane::Background;
+        ScheduledSimulationTask negative{};
+        negative.job = job.Value();
+        negative.due_at = SimulationTime{-1};
+        negative.lane = SimulationLane::Background;
         ok &= Expect(!runtime.Schedule(negative), "negative scheduled due time should fail");
     }
     {
         SimulationRuntime runtime{{}};
-        const auto desc = MakeJob(1); auto job_impl = MakeExecutableJob(desc); job_impl->throw_cancel = true;
+        const auto desc = MakeJob(1);
+        auto job_impl = MakeExecutableJob(desc);
+        job_impl->throw_cancel = true;
         const auto job = runtime.SubmitJob(job_impl, desc);
         const auto first = runtime.Shutdown();
-        ok &= Expect(!first && first.GetError().HasCode("simulation.callback_exception"), "throwing cancel should leave explicit ShuttingDown lifecycle");
-        ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(desc), desc), "new jobs must be rejected once shutdown begins");
+        ok &= Expect(!first && first.GetError().HasCode("simulation.callback_exception"),
+                     "throwing cancel should leave explicit ShuttingDown lifecycle");
+        ok &=
+            Expect(!runtime.SubmitJob(MakeExecutableJob(desc), desc), "new jobs must be rejected once shutdown begins");
         job_impl->throw_cancel = false;
         ok &= Expect(runtime.Shutdown().HasValue(), "shutdown retry should continue cleanup");
         (void)job;
@@ -1180,28 +1282,34 @@ bool TestDeepFreezeFailureContracts()
     {
         auto target = std::make_shared<TestCommitTarget>();
         SimulationRuntime runtime{{}, SimulationDependencies{.relevance = {}, .commit_target = target, .clock = {}}};
-        runtime.SetBudget(SimulationBudget{1,1});
-        auto desc = MakeJob(1); const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
+        runtime.SetBudget(SimulationBudget{1, 1});
+        auto desc = MakeJob(1);
+        const auto job = runtime.SubmitJob(MakeExecutableJob(desc), desc);
         ok &= Expect(job && runtime.Tick(), "proposal-producing job should complete");
-        const auto count = runtime.PendingBatches().size(); target->throw_on_commit = true;
+        const auto count = runtime.PendingBatches().size();
+        target->throw_on_commit = true;
         const auto committed = runtime.CommitNext();
-        ok &= Expect(!committed && runtime.PendingBatches().size() == count, "throwing commit target must preserve retryable proposal queue");
+        ok &= Expect(!committed && runtime.PendingBatches().size() == count,
+                     "throwing commit target must preserve retryable proposal queue");
     }
     {
         SimulationRuntime runtime{{}};
-        runtime.SetNextJobIdentityForTesting(std::numeric_limits<std::uint64_t>::max(), std::numeric_limits<std::uint32_t>::max());
+        runtime.SetNextJobIdentityForTesting(std::numeric_limits<std::uint64_t>::max(),
+                                             std::numeric_limits<std::uint32_t>::max());
         const auto desc = MakeJob(1);
         const auto last = runtime.SubmitJob(MakeExecutableJob(desc), desc);
-        ok &= Expect(last && last.Value().id.value == std::numeric_limits<std::uint64_t>::max() && last.Value().generation == std::numeric_limits<std::uint32_t>::max(), "final job identity should be issued exactly once");
-        ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(desc), desc), "job allocator should be exhausted after final committed identity");
+        ok &= Expect(last && last.Value().id.value == std::numeric_limits<std::uint64_t>::max() &&
+                         last.Value().generation == std::numeric_limits<std::uint32_t>::max(),
+                     "final job identity should be issued exactly once");
+        ok &= Expect(!runtime.SubmitJob(MakeExecutableJob(desc), desc),
+                     "job allocator should be exhausted after final committed identity");
     }
     return ok;
 }
 
 } // namespace
 
-int main()
-{
+int main() {
     static_assert(std::is_abstract_v<IRelevancePolicy>);
     static_assert(std::is_abstract_v<ISimulationJob>);
     static_assert(std::is_abstract_v<ISimulationCommitTarget>);

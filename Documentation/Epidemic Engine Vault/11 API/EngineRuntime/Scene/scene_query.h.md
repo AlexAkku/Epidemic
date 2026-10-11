@@ -74,3 +74,72 @@ class ISceneSnapshotProvider
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Scene/bounds.h`, `Epidemic/Runtime/Scene/scene_node.h`, `Epidemic/Runtime/Scene/transform.h`.
+
+### Состав типов и операции
+
+#### `SceneNodeSnapshot` (строка заголовка 12)
+
+Публичные поля и значения по умолчанию:
+
+- `SceneAttachmentState attachment = SceneAttachmentState::Detached`
+- `SceneMobility mobility = SceneMobility::Dynamic`
+- `SceneVisibilityState visibility = SceneVisibilityState::Visible`
+- `std::uint64_t revision = 0`
+
+#### `SceneSnapshot` (строка заголовка 26)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t revision = 0`
+- `std::vector<SceneNodeSnapshot> nodes`
+
+#### `ISceneQuery` (строка заголовка 32)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISceneQuery() = default;
+[[nodiscard]] virtual std::vector<SceneNodeId> QueryAabb(const Aabb& bounds) const = 0;
+[[nodiscard]] virtual std::vector<SceneNodeId> QuerySphere(const Vec3& center, float radius) const = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `ISceneSnapshotProvider` (строка заголовка 41)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISceneSnapshotProvider() = default;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `QueryAabb` | `SceneRuntime::QueryAabb` | `EngineRuntime/Scene/src/scene_runtime_impl.cpp:724` |
+| `QuerySphere` | `SceneRuntime::QuerySphere` | `EngineRuntime/Scene/src/scene_runtime_impl.cpp:743` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `QueryAabb`: `EngineRuntime/Scene/tests/scene_tests.cpp:400`
+- `QuerySphere`: `EngineRuntime/Scene/tests/scene_tests.cpp:401`
+

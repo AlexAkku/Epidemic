@@ -436,3 +436,347 @@ class ProgressionService
 };
 } // namespace epidemic::gameplay::progression
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `ProgressionPrerequisiteKind`: `TrackProgressAtLeast`, `TrackRankAtLeast`, `HasPerk`, `HasUnlock`
+- `ModifierOperation`: `BaseAdd`, `BaseMultiply`, `FinalAdd`, `FinalMultiply`, `Override`, `ClampMin`, `ClampMax`
+- `ProgressionChangeKind`: `ProfileCreated`, `ProfileRemoved`, `AttributeChanged`, `ModifierAdded`, `ModifierRemoved`, `TrackProgressChanged`, `TrackRankChanged`, `PerkGranted`, `PerkRevoked`, `UnlockGranted`, `UnlockRevoked`, `MilestoneReached`
+
+### Состав типов и операции
+
+#### `AttributeTypeId` (строка заголовка 20)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr AttributeTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const AttributeTypeId&) const noexcept = default;
+```
+
+#### `ProgressionTrackId` (строка заголовка 27)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr ProgressionTrackId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const ProgressionTrackId&) const noexcept = default;
+```
+
+#### `PerkDefinitionId` (строка заголовка 34)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr PerkDefinitionId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const PerkDefinitionId&) const noexcept = default;
+```
+
+#### `UnlockTypeId` (строка заголовка 41)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr UnlockTypeId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const UnlockTypeId&) const noexcept = default;
+```
+
+#### `MilestoneId` (строка заголовка 48)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr MilestoneId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const MilestoneId&) const noexcept = default;
+```
+
+#### `UnlockDefinitionId` (строка заголовка 55)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr UnlockDefinitionId FromString(std::string_view name) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const UnlockDefinitionId&) const noexcept = default;
+```
+
+#### `ProgressionModifierId` (строка заголовка 62)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const ProgressionModifierId&) const noexcept = default;
+```
+
+#### `ProgressionGrantReservationId` (строка заголовка 68)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr auto operator<=>(const ProgressionGrantReservationId&) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 75)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <typename T> [[nodiscard]] std::size_t operator()(const T& id) const noexcept;
+```
+
+#### `DerivedTerm` (строка заголовка 84)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t coefficient_micro = 1'000'000`
+
+#### `AttributeDefinition` (строка заголовка 90)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::int64_t default_micro = 0`
+- `std::int64_t min_micro = INT64_MIN`
+- `std::int64_t max_micro = INT64_MAX`
+- `std::int64_t derived_bias_micro = 0`
+- `std::vector<DerivedTerm> derived_terms`
+
+#### `ProgressionTrackPolicy` (строка заголовка 101)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t min_progress_micro = 0`
+- `bool allow_decrease = false`
+- `bool allow_direct_set = false`
+
+Публичные сигнатуры операций:
+
+```cpp
+std::int64_t max_progress_micro = std::numeric_limits<std::int64_t>::max();
+```
+
+#### `ProgressionTrackDefinition` (строка заголовка 109)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::vector<std::int64_t> rank_thresholds_micro`
+
+#### `ProgressionPrerequisite` (строка заголовка 124)
+
+Публичные поля и значения по умолчанию:
+
+- `ProgressionPrerequisiteKind kind = ProgressionPrerequisiteKind::TrackProgressAtLeast`
+- `std::int64_t progress_micro = 0`
+- `std::uint32_t rank = 0`
+
+#### `UnlockDefinition` (строка заголовка 134)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+
+#### `MilestoneDefinition` (строка заголовка 141)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::int64_t threshold_micro = 0`
+- `std::vector<ProgressionPrerequisite> prerequisites`
+- `std::vector<UnlockDefinitionId> unlocks`
+
+#### `PrerequisiteEvaluation` (строка заголовка 150)
+
+Публичные поля и значения по умолчанию:
+
+- `bool satisfied = true`
+- `std::vector<std::size_t> unmet_indices`
+
+#### `PerkDefinition` (строка заголовка 156)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+
+#### `ProgressionModifier` (строка заголовка 174)
+
+Публичные поля и значения по умолчанию:
+
+- `ModifierOperation operation = ModifierOperation::BaseAdd`
+- `std::int64_t value_micro = 0`
+- `std::int32_t priority = 0`
+- `bool persistent = true`
+
+#### `ProgressionTrackState` (строка заголовка 186)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t progress_micro = 0`
+- `std::uint32_t rank = 0`
+
+#### `UnlockRecord` (строка заголовка 194)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const UnlockRecord&) const noexcept = default;
+```
+
+#### `ProgressionProfileSnapshot` (строка заголовка 202)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::pair<AttributeTypeId, std::int64_t>> base_attributes`
+- `std::vector<ProgressionTrackState> tracks`
+- `std::vector<ProgressionModifier> modifiers`
+- `std::vector<PerkDefinitionId> perks`
+- `std::vector<UnlockRecord> unlocks`
+- `std::vector<MilestoneId> achieved_milestones`
+
+#### `ProgressionChange` (строка заголовка 230)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `ProgressionChangeKind kind = ProgressionChangeKind::ProfileCreated`
+
+#### `ProgressionChangeBatch` (строка заголовка 246)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::vector<ProgressionChange> changes`
+
+#### `ProgressionSnapshot` (строка заголовка 256)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ProgressionProfileSnapshot> profiles`
+- `std::vector<ProgressionChange> journal`
+- `std::uint64_t next_change_sequence = 1`
+- `std::uint64_t change_epoch = 1`
+
+#### `ProgressionDiagnostics` (строка заголовка 268)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t profiles = 0`
+- `std::uint64_t attribute_reads = 0`
+- `std::uint64_t derived_evaluations = 0`
+- `std::uint64_t active_modifiers = 0`
+- `std::uint64_t track_grants = 0`
+- `std::uint64_t rank_changes = 0`
+
+#### `ProgressionService` (строка заголовка 278)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<AttributeTypeId, AttributeDefinition, IdHash> attributes_`, `std::unordered_map<ProgressionTrackId, ProgressionTrackDefinition, IdHash> tracks_`, `std::unordered_map<PerkDefinitionId, PerkDefinition, IdHash> perks_`, `std::unordered_map<UnlockDefinitionId, UnlockDefinition, IdHash> unlock_definitions_`, `std::unordered_map<MilestoneId, MilestoneDefinition, IdHash> milestones_`, `std::unordered_map<GameplayObjectRef, Profile> profiles_`, `MonotonicIdGenerator<GameplayObjectId> modifier_ids_`, `MonotonicIdGenerator<GameplayObjectId> grant_reservation_ids_`, `std::unordered_map<ProgressionGrantReservationId, PendingProgressGrant, IdHash> pending_progres`.
+
+Публичные сигнатуры операций:
+
+```cpp
+ProgressionService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<AttributeTypeId> RegisterAttribute(AttributeDefinition definition);
+[[nodiscard]] foundation::Result<ProgressionTrackId> RegisterTrack(ProgressionTrackDefinition definition);
+[[nodiscard]] foundation::Result<PerkDefinitionId> RegisterPerk(PerkDefinition definition);
+[[nodiscard]] foundation::Result<UnlockDefinitionId> RegisterUnlockDefinition(UnlockDefinition definition);
+[[nodiscard]] foundation::Result<MilestoneId> RegisterMilestone(MilestoneDefinition definition);
+[[nodiscard]] foundation::Result<void> Freeze();
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] bool HasProfile(GameplayObjectRef subject) const noexcept;
+[[nodiscard]] foundation::Result<std::int64_t> GetAttribute(GameplayObjectRef subject, AttributeTypeId attribute) const;
+[[nodiscard]] foundation::Result<ProgressionProfileSnapshot> GetProfileSnapshot(GameplayObjectRef subject) const;
+[[nodiscard]] foundation::Result<ProgressionTrackState> GetTrack(GameplayObjectRef subject, ProgressionTrackId track) const;
+void CommitProgressGrant(ProgressionGrantReservationId reservation) noexcept;
+void ReleaseProgressGrant(ProgressionGrantReservationId reservation) noexcept;
+[[nodiscard]] bool HasPerk(GameplayObjectRef subject, PerkDefinitionId perk) const noexcept;
+[[nodiscard]] bool HasUnlock(GameplayObjectRef subject, UnlockTypeId type, TypeId value) const noexcept;
+[[nodiscard]] PrerequisiteEvaluation QueryPrerequisites(GameplayObjectRef subject, const std::vector<ProgressionPrerequisite>& prerequisites) const;
+[[nodiscard]] ProgressionChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] ProgressionSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(ProgressionSnapshot snapshot);
+[[nodiscard]] ProgressionDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `PendingProgressGrant` (строка заголовка 360)
+
+Публичные поля и значения по умолчанию:
+
+- `bool track_existed = false`
+
+#### `Profile` (строка заголовка 370)
+
+Публичные поля и значения по умолчанию:
+
+- `std::unordered_map<AttributeTypeId, std::int64_t, IdHash> base_attributes`
+- `std::unordered_map<ProgressionTrackId, ProgressionTrackState, IdHash> tracks`
+- `std::vector<ProgressionModifier> modifiers`
+- `std::unordered_set<PerkDefinitionId, IdHash> perks`
+- `std::vector<UnlockRecord> unlocks`
+- `std::unordered_set<MilestoneId, IdHash> achieved_milestones`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `ProgressionService` | `ProgressionService::ProgressionService` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:125` |
+| `RegisterAttribute` | `ProgressionService::RegisterAttribute` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:131` |
+| `RegisterTrack` | `ProgressionService::RegisterTrack` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:154` |
+| `RegisterPerk` | `ProgressionService::RegisterPerk` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:179` |
+| `RegisterUnlockDefinition` | `ProgressionService::RegisterUnlockDefinition` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:198` |
+| `RegisterMilestone` | `ProgressionService::RegisterMilestone` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:217` |
+| `Freeze` | `ProgressionService::Freeze` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:236` |
+| `HasProfile` | `ProgressionService::HasProfile` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:345` |
+| `max` | `std::max` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:500` |
+| `GetAttribute` | `ProgressionService::GetAttribute` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:508` |
+| `GetTrack` | `ProgressionService::GetTrack` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:786` |
+| `CommitProgressGrant` | `ProgressionService::CommitProgressGrant` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:856` |
+| `ReleaseProgressGrant` | `ProgressionService::ReleaseProgressGrant` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:1049` |
+| `HasPerk` | `ProgressionService::HasPerk` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:1104` |
+| `HasUnlock` | `ProgressionService::HasUnlock` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:1195` |
+| `QueryPrerequisites` | `ProgressionService::QueryPrerequisites` | `EngineFramework/GameplayWorldStateOwners/Progression/src/progression.cpp:1202` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterAttribute`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:61`
+- `RegisterTrack`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:75`
+- `RegisterPerk`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:80`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:81`
+- `GetAttribute`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:86`
+- `HasPerk`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:103`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:105`
+- `GetTrack`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:121`
+- `ReleaseProgressGrant`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:137`
+- `CommitProgressGrant`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:145`
+- `HasProfile`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:159`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/progression_tests.cpp:198`
+

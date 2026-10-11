@@ -6,14 +6,12 @@
 
 #include <optional>
 
-namespace epidemic::runtime
-{
-class ISpatialIndex
-{
+namespace epidemic::runtime {
+class ISpatialIndex {
   public:
     virtual ~ISpatialIndex() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> SetLocalBounds(SceneNodeId node, const Aabb& bounds) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetLocalBounds(SceneNodeId node, const Aabb &bounds) = 0;
     [[nodiscard]] virtual std::optional<Aabb> GetLocalBounds(SceneNodeId node) const = 0;
     [[nodiscard]] virtual std::optional<Aabb> GetWorldBounds(SceneNodeId node) const = 0;
     [[nodiscard]] virtual foundation::Result<void> MarkBoundsClean(SceneNodeId node) = 0;

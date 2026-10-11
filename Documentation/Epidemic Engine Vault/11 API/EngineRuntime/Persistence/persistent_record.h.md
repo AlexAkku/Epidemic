@@ -54,3 +54,30 @@ struct PersistentObjectRecord
 };
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Foundation/runtime_ids.h`, `Epidemic/Runtime/Foundation/runtime_states.h`, `Epidemic/Runtime/Foundation/runtime_time.h`, `Epidemic/Runtime/Persistence/persistence_location.h`, `Epidemic/Runtime/Persistence/persistence_payload.h`, `Epidemic/Runtime/Persistence/persistence_policy.h`, `Epidemic/Runtime/Persistence/persistence_state.h`.
+
+### Состав типов и операции
+
+#### `PersistentObjectRecord` (строка заголовка 15)
+
+Публичные поля и значения по умолчанию:
+
+- `PersistentObjectKind kind = PersistentObjectKind::Unknown`
+- `PersistenceTier tier = PersistenceTier::Disposable`
+- `PersistenceState state = PersistenceState::Clean`
+- `std::uint64_t condition_hash = 0`
+- `std::uint64_t revision = 0`
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

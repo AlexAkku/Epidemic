@@ -3,12 +3,10 @@
 #include "Epidemic/Foundation/result.h"
 #include "Epidemic/Runtime/Assets/asset_metadata.h"
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Threading: mutation must occur on the runtime thread.
 // Concurrent reads/writes are not supported unless explicitly documented.
-class IAssetCatalogWriter
-{
+class IAssetCatalogWriter {
   public:
     virtual ~IAssetCatalogWriter() = default;
 
@@ -18,7 +16,7 @@ class IAssetCatalogWriter
     // is intentionally not translated into a module-specific recoverable error and also
     // leaves the pre-call catalog observable state unchanged. Registration stores one
     // normalized detached copy. Metadata version is per asset, not a global catalog revision.
-    [[nodiscard]] virtual foundation::Result<void> RegisterAsset(const AssetMetadata& metadata) = 0;
+    [[nodiscard]] virtual foundation::Result<void> RegisterAsset(const AssetMetadata &metadata) = 0;
     // Seal is idempotent. Once sealed, successful/failed registration attempts cannot
     // reopen or otherwise mutate the catalog. Calling Seal() on an already sealed catalog
     // is a semantic no-op that still returns success.

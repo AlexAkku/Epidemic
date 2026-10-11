@@ -13,8 +13,7 @@
 #include <string_view>
 #include <thread>
 
-namespace
-{
+namespace {
 using epidemic::foundation::Error;
 using epidemic::foundation::Result;
 using epidemic::runtime::Aabb;
@@ -55,14 +54,12 @@ using epidemic::runtime::physics::PhysicsTransformId;
 using epidemic::runtime::physics::RaycastHit;
 using epidemic::runtime::physics::RaycastQuery;
 
-bool RegisterDefaultShape(PhysicsRuntime& runtime, CollisionShapeId id, float max_extent = 1.0f)
-{
+bool RegisterDefaultShape(PhysicsRuntime &runtime, CollisionShapeId id, float max_extent = 1.0f) {
     const auto result = runtime.RegisterShape({id, Aabb{{0.0f, 0.0f, 0.0f}, {max_extent, max_extent, max_extent}}});
     return static_cast<bool>(result);
 }
 
-PhysicsBodyDesc MakeBodyDesc(CollisionShapeId shape, PhysicsBodyType type)
-{
+PhysicsBodyDesc MakeBodyDesc(CollisionShapeId shape, PhysicsBodyType type) {
     PhysicsBodyDesc desc{};
     desc.owner = RuntimeObjectId{42};
     desc.transform_node = PhysicsTransformId{7};
@@ -72,45 +69,58 @@ PhysicsBodyDesc MakeBodyDesc(CollisionShapeId shape, PhysicsBodyType type)
     return desc;
 }
 
-class FailingBackend final : public IPhysicsBackend
-{
+class FailingBackend final : public IPhysicsBackend {
   public:
-    Result<void> Initialize(const PhysicsBackendOptions&) override { return Result<void>::Success(); }
-    Result<BackendShapeHandle> CreateShape(const CollisionShapeDesc&) override { return Result<BackendShapeHandle>::Success(BackendShapeHandle{1}); }
-    Result<void> DestroyShape(BackendShapeHandle) override { return Result<void>::Success(); }
-    Result<BackendBodyHandle> CreateBody(const PhysicsBodyDesc&, BackendShapeHandle) override { return Result<BackendBodyHandle>::Success(BackendBodyHandle{2}); }
-    Result<void> DestroyBody(BackendBodyHandle) override { return Result<void>::Success(); }
-    Result<void> ApplyImpulse(BackendBodyHandle, const Vec3&) override { return Result<void>::Success(); }
-    Result<void> SimulateFixed(RuntimeFrameDuration) override
-    {
+    Result<void> Initialize(const PhysicsBackendOptions &) override {
+        return Result<void>::Success();
+    }
+    Result<BackendShapeHandle> CreateShape(const CollisionShapeDesc &) override {
+        return Result<BackendShapeHandle>::Success(BackendShapeHandle{1});
+    }
+    Result<void> DestroyShape(BackendShapeHandle) override {
+        return Result<void>::Success();
+    }
+    Result<BackendBodyHandle> CreateBody(const PhysicsBodyDesc &, BackendShapeHandle) override {
+        return Result<BackendBodyHandle>::Success(BackendBodyHandle{2});
+    }
+    Result<void> DestroyBody(BackendBodyHandle) override {
+        return Result<void>::Success();
+    }
+    Result<void> ApplyImpulse(BackendBodyHandle, const Vec3 &) override {
+        return Result<void>::Success();
+    }
+    Result<void> SimulateFixed(RuntimeFrameDuration) override {
         return Result<void>::Failure(Error::Create("physics.backend_failed", "backend failed for test"));
     }
-    Result<BackendBodySnapshot> GetBodySnapshot(BackendBodyHandle) const override { return Result<BackendBodySnapshot>::Success({}); }
-    Result<BackendRaycastHit> RaycastBackend(const RaycastQuery&) const override { return Result<BackendRaycastHit>::Success({}); }
-    Result<std::vector<BackendContactEvent>> ConsumeContactEvents() override { return Result<std::vector<BackendContactEvent>>::Success({}); }
+    Result<BackendBodySnapshot> GetBodySnapshot(BackendBodyHandle) const override {
+        return Result<BackendBodySnapshot>::Success({});
+    }
+    Result<BackendRaycastHit> RaycastBackend(const RaycastQuery &) const override {
+        return Result<BackendRaycastHit>::Success({});
+    }
+    Result<std::vector<BackendContactEvent>> ConsumeContactEvents() override {
+        return Result<std::vector<BackendContactEvent>>::Success({});
+    }
 };
 
-class TransformAdapter final : public IPhysicsTransformSource, public IPhysicsTransformSink
-{
+class TransformAdapter final : public IPhysicsTransformSource, public IPhysicsTransformSink {
   public:
-    Result<Transform> ReadTransform(PhysicsTransformId) const override
-    {
+    Result<Transform> ReadTransform(PhysicsTransformId) const override {
         ++reads;
-        if (fail_read)
-        {
-            return Result<Transform>::Failure(Error::Create("physics.transform_read_failed", "transform read failed for test"));
+        if (fail_read) {
+            return Result<Transform>::Failure(
+                Error::Create("physics.transform_read_failed", "transform read failed for test"));
         }
         Transform transform{};
         transform.position = Vec3{3.0f, 4.0f, 5.0f};
         return Result<Transform>::Success(transform);
     }
 
-    Result<void> WriteTransform(PhysicsTransformId, const Transform&) override
-    {
+    Result<void> WriteTransform(PhysicsTransformId, const Transform &) override {
         ++writes;
-        if (fail_write)
-        {
-            return Result<void>::Failure(Error::Create("physics.transform_write_failed", "transform write failed for test"));
+        if (fail_write) {
+            return Result<void>::Failure(
+                Error::Create("physics.transform_write_failed", "transform write failed for test"));
         }
         return Result<void>::Success();
     }
@@ -121,101 +131,102 @@ class TransformAdapter final : public IPhysicsTransformSource, public IPhysicsTr
     bool fail_write = false;
 };
 
-class JournalBackend final : public IPhysicsBackend
-{
+class JournalBackend final : public IPhysicsBackend {
   public:
-    Result<void> Initialize(const PhysicsBackendOptions&) override
-    {
+    Result<void> Initialize(const PhysicsBackendOptions &) override {
         ++initializes;
-        if (fail_initialize)
-        {
+        if (fail_initialize) {
             return Result<void>::Failure(Error::Create("physics.init_failed", "init failed for test"));
         }
         return Result<void>::Success();
     }
 
-    Result<BackendShapeHandle> CreateShape(const CollisionShapeDesc&) override
-    {
+    Result<BackendShapeHandle> CreateShape(const CollisionShapeDesc &) override {
         ++create_shapes;
-        if (throw_create_shape) throw std::runtime_error("create shape exception");
-        if (fail_create_shape) return Result<BackendShapeHandle>::Failure(Error::Create("physics.create_shape_failed", "create shape failed for test"));
-        return Result<BackendShapeHandle>::Success(duplicate_shape_handles ? shape : BackendShapeHandle{shape.value + static_cast<std::uint64_t>(create_shapes - 1)});
+        if (throw_create_shape)
+            throw std::runtime_error("create shape exception");
+        if (fail_create_shape)
+            return Result<BackendShapeHandle>::Failure(
+                Error::Create("physics.create_shape_failed", "create shape failed for test"));
+        return Result<BackendShapeHandle>::Success(
+            duplicate_shape_handles ? shape
+                                    : BackendShapeHandle{shape.value + static_cast<std::uint64_t>(create_shapes - 1)});
     }
 
-    Result<void> DestroyShape(BackendShapeHandle handle) override
-    {
+    Result<void> DestroyShape(BackendShapeHandle handle) override {
         ++destroy_shapes;
         last_destroyed_shape = handle;
-        if (throw_destroy_shape) throw std::runtime_error("destroy shape exception");
-        if (fail_destroy_shape)
-        {
-            return Result<void>::Failure(Error::Create("physics.destroy_shape_failed", "destroy shape failed for test"));
+        if (throw_destroy_shape)
+            throw std::runtime_error("destroy shape exception");
+        if (fail_destroy_shape) {
+            return Result<void>::Failure(
+                Error::Create("physics.destroy_shape_failed", "destroy shape failed for test"));
         }
         return Result<void>::Success();
     }
 
-    Result<BackendBodyHandle> CreateBody(const PhysicsBodyDesc& desc, BackendShapeHandle handle) override
-    {
+    Result<BackendBodyHandle> CreateBody(const PhysicsBodyDesc &desc, BackendShapeHandle handle) override {
         ++create_bodies;
         last_shape_for_body = handle;
         last_initial_transform = desc.initial_transform;
-        if (throw_create_body) throw std::runtime_error("create body exception");
-        if (fail_create_body) return Result<BackendBodyHandle>::Failure(Error::Create("physics.create_body_failed", "create body failed for test"));
-        return Result<BackendBodyHandle>::Success(duplicate_body_handles ? body : BackendBodyHandle{body.value + static_cast<std::uint64_t>(create_bodies)});
+        if (throw_create_body)
+            throw std::runtime_error("create body exception");
+        if (fail_create_body)
+            return Result<BackendBodyHandle>::Failure(
+                Error::Create("physics.create_body_failed", "create body failed for test"));
+        return Result<BackendBodyHandle>::Success(
+            duplicate_body_handles ? body : BackendBodyHandle{body.value + static_cast<std::uint64_t>(create_bodies)});
     }
 
-    Result<void> DestroyBody(BackendBodyHandle handle) override
-    {
+    Result<void> DestroyBody(BackendBodyHandle handle) override {
         ++destroy_bodies;
         last_destroyed_body = handle;
-        if (throw_destroy_body) throw std::runtime_error("destroy body exception");
-        if (fail_destroy_body)
-        {
+        if (throw_destroy_body)
+            throw std::runtime_error("destroy body exception");
+        if (fail_destroy_body) {
             return Result<void>::Failure(Error::Create("physics.destroy_body_failed", "destroy body failed for test"));
         }
         return Result<void>::Success();
     }
 
-    Result<void> ApplyImpulse(BackendBodyHandle, const Vec3&) override
-    {
+    Result<void> ApplyImpulse(BackendBodyHandle, const Vec3 &) override {
         ++impulses;
-        if (throw_impulse) throw std::runtime_error("impulse exception");
-        if (fail_impulse) return Result<void>::Failure(Error::Create("physics.impulse_failed", "impulse failed for test"));
+        if (throw_impulse)
+            throw std::runtime_error("impulse exception");
+        if (fail_impulse)
+            return Result<void>::Failure(Error::Create("physics.impulse_failed", "impulse failed for test"));
         return Result<void>::Success();
     }
 
-    Result<void> SimulateFixed(RuntimeFrameDuration) override
-    {
+    Result<void> SimulateFixed(RuntimeFrameDuration) override {
         ++simulates;
-        if (throw_simulate) throw std::runtime_error("simulate exception");
-        if (fail_simulate || (fail_simulate_at != 0 && simulates == fail_simulate_at))
-        {
+        if (throw_simulate)
+            throw std::runtime_error("simulate exception");
+        if (fail_simulate || (fail_simulate_at != 0 && simulates == fail_simulate_at)) {
             return Result<void>::Failure(Error::Create("physics.simulate_failed", "simulate failed for test"));
         }
         snapshot.world_transform.position.x += 2.0f;
         return Result<void>::Success();
     }
 
-    Result<BackendBodySnapshot> GetBodySnapshot(BackendBodyHandle) const override
-    {
+    Result<BackendBodySnapshot> GetBodySnapshot(BackendBodyHandle) const override {
         ++snapshots;
-        if (throw_snapshot) throw std::runtime_error("snapshot exception");
-        if (fail_snapshot || (fail_snapshot_at != 0 && snapshots == fail_snapshot_at))
-        {
-            return Result<BackendBodySnapshot>::Failure(Error::Create("physics.snapshot_failed", "snapshot failed for test"));
+        if (throw_snapshot)
+            throw std::runtime_error("snapshot exception");
+        if (fail_snapshot || (fail_snapshot_at != 0 && snapshots == fail_snapshot_at)) {
+            return Result<BackendBodySnapshot>::Failure(
+                Error::Create("physics.snapshot_failed", "snapshot failed for test"));
         }
         return Result<BackendBodySnapshot>::Success(snapshot);
     }
 
-    Result<BackendRaycastHit> RaycastBackend(const RaycastQuery& query) const override
-    {
+    Result<BackendRaycastHit> RaycastBackend(const RaycastQuery &query) const override {
         ++raycasts;
         last_raycast_direction = query.direction;
         return Result<BackendRaycastHit>::Success(raycast_hit);
     }
 
-    Result<std::vector<BackendContactEvent>> ConsumeContactEvents() override
-    {
+    Result<std::vector<BackendContactEvent>> ConsumeContactEvents() override {
         ++contact_consumes;
         std::vector<BackendContactEvent> result = std::move(contact_events);
         contact_events.clear();
@@ -263,25 +274,20 @@ class JournalBackend final : public IPhysicsBackend
     std::vector<BackendContactEvent> contact_events{};
 };
 
-bool TestGenerationSnapshotAndDestroyLifecycle()
-{
+bool TestGenerationSnapshotAndDestroyLifecycle() {
     PhysicsRuntime runtime;
     const CollisionShapeId shape{1};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
 
     const auto body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    if (!body || !body.Value().IsValid())
-    {
+    if (!body || !body.Value().IsValid()) {
         return false;
     }
     const auto snapshot = runtime.GetBodySnapshot(body.Value());
     if (!snapshot || snapshot.Value().handle != body.Value() ||
-        snapshot.Value().activity != PhysicsActivityState::Awake ||
-        snapshot.Value().type != PhysicsBodyType::Dynamic)
-    {
+        snapshot.Value().activity != PhysicsActivityState::Awake || snapshot.Value().type != PhysicsBodyType::Dynamic) {
         return false;
     }
 
@@ -289,22 +295,19 @@ bool TestGenerationSnapshotAndDestroyLifecycle()
     const auto stale_snapshot = runtime.GetBodySnapshot(stale);
     const auto destroy = runtime.DestroyBody(body.Value());
     const auto unknown_snapshot = runtime.GetBodySnapshot(body.Value());
-    return !stale_snapshot && stale_snapshot.GetError().HasCode("physics.stale_handle") &&
-           destroy && !unknown_snapshot && unknown_snapshot.GetError().HasCode("physics.unknown_handle");
+    return !stale_snapshot && stale_snapshot.GetError().HasCode("physics.stale_handle") && destroy &&
+           !unknown_snapshot && unknown_snapshot.GetError().HasCode("physics.unknown_handle");
 }
 
-bool TestUnknownHandleAndImpulseRules()
-{
+bool TestUnknownHandleAndImpulseRules() {
     PhysicsRuntime runtime;
     const auto invalid = runtime.ApplyImpulse(PhysicsBodyHandle{PhysicsBodyId{999}, 1}, Vec3{1.0f, 0.0f, 0.0f});
-    if (invalid || !invalid.GetError().HasCode("physics.unknown_handle"))
-    {
+    if (invalid || !invalid.GetError().HasCode("physics.unknown_handle")) {
         return false;
     }
 
     const CollisionShapeId shape{2};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
     const auto static_body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
@@ -313,8 +316,7 @@ bool TestUnknownHandleAndImpulseRules()
            runtime.Contacts().empty();
 }
 
-bool TestFixedStepAccumulatorAndMaxSubsteps()
-{
+bool TestFixedStepAccumulatorAndMaxSubsteps() {
     PhysicsRuntime runtime;
     runtime.SetFixedStep(RuntimeFrameDuration{std::chrono::microseconds{10}});
     runtime.SetMaxSubsteps(2);
@@ -322,19 +324,18 @@ bool TestFixedStepAccumulatorAndMaxSubsteps()
     const auto second = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{25}});
     const auto invalid = runtime.StepFixed(RuntimeFrameDuration{std::chrono::microseconds{0}});
     return first && first.Value().substeps == 2 && first.Value().step_index == 2 &&
-           first.Value().accumulated_time.value.count() == 5 &&
-           second && second.Value().substeps == 2 && second.Value().dropped_time.value.count() == 10 &&
-           !invalid && invalid.GetError().HasCode("physics.invalid_step");
+           first.Value().accumulated_time.value.count() == 5 && second && second.Value().substeps == 2 &&
+           second.Value().dropped_time.value.count() == 10 && !invalid &&
+           invalid.GetError().HasCode("physics.invalid_step");
 }
 
-bool TestDefaultAndConfiguredFixedStep()
-{
+bool TestDefaultAndConfiguredFixedStep() {
     PhysicsRuntime runtime;
     const auto default_tick = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{16667}});
     auto backend = std::make_shared<JournalBackend>();
-    const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr, PhysicsOptions{RuntimeFrameDuration{std::chrono::microseconds{10}}, 2}});
-    if (!default_tick || default_tick.Value().substeps != 1 || !services)
-    {
+    const auto services = CreatePhysicsServices(PhysicsDependencies{
+        backend, nullptr, nullptr, PhysicsOptions{RuntimeFrameDuration{std::chrono::microseconds{10}}, 2}});
+    if (!default_tick || default_tick.Value().substeps != 1 || !services) {
         return false;
     }
 
@@ -344,14 +345,12 @@ bool TestDefaultAndConfiguredFixedStep()
            configured_tick.Value().dropped_time.value.count() == 0;
 }
 
-bool TestInitialTransformFallsBackToDescWithoutSource()
-{
+bool TestInitialTransformFallsBackToDescWithoutSource() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
     const CollisionShapeId shape{11};
-    if (!runtime || !runtime->RegisterShape({shape, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}}))
-    {
+    if (!runtime || !runtime->RegisterShape({shape, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}})) {
         return false;
     }
 
@@ -359,37 +358,33 @@ bool TestInitialTransformFallsBackToDescWithoutSource()
     desc.initial_transform.position = Vec3{8.0f, 9.0f, 10.0f};
     const auto body = runtime->CreateBody(desc);
     return body && backend->last_initial_transform.position.x == 8.0f &&
-           backend->last_initial_transform.position.y == 9.0f &&
-           backend->last_initial_transform.position.z == 10.0f;
+           backend->last_initial_transform.position.y == 9.0f && backend->last_initial_transform.position.z == 10.0f;
 }
 
-bool TestUnregisterShapeRejectsInUseAndDestroysFreeShape()
-{
+bool TestUnregisterShapeRejectsInUseAndDestroysFreeShape() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
     const CollisionShapeId shape{12};
-    if (!runtime || !runtime->RegisterShape({shape, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}}))
-    {
+    if (!runtime || !runtime->RegisterShape({shape, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}})) {
         return false;
     }
 
     const auto body = runtime->CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
     const auto rejected = runtime->UnregisterShape(shape);
-    const auto destroyed = body ? runtime->DestroyBody(body.Value()) : Result<void>::Failure(Error::Create("test.no_body", "body missing"));
+    const auto destroyed = body ? runtime->DestroyBody(body.Value())
+                                : Result<void>::Failure(Error::Create("test.no_body", "body missing"));
     const auto unregistered = runtime->UnregisterShape(shape);
-    return body && !rejected && rejected.GetError().HasCode("physics.shape_in_use") &&
-           destroyed && unregistered && !runtime->HasShape(shape) && backend->destroy_shapes == 1;
+    return body && !rejected && rejected.GetError().HasCode("physics.shape_in_use") && destroyed && unregistered &&
+           !runtime->HasShape(shape) && backend->destroy_shapes == 1;
 }
 
-bool TestShutdownBestEffortAndIdempotent()
-{
+bool TestShutdownBestEffortAndIdempotent() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
     if (!runtime || !runtime->RegisterShape({CollisionShapeId{13}, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}}) ||
-        !runtime->RegisterShape({CollisionShapeId{14}, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}}))
-    {
+        !runtime->RegisterShape({CollisionShapeId{14}, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}})) {
         return false;
     }
 
@@ -398,38 +393,35 @@ bool TestShutdownBestEffortAndIdempotent()
     const int first_destroy_count = backend->destroy_shapes;
     backend->fail_destroy_shape = false;
     const auto second_shutdown = runtime->Shutdown();
-    return !shutdown && shutdown.GetError().HasCode("physics.destroy_shape_failed") &&
-           first_destroy_count == 2 && second_shutdown && backend->destroy_shapes == first_destroy_count + 2;
+    return !shutdown && shutdown.GetError().HasCode("physics.destroy_shape_failed") && first_destroy_count == 2 &&
+           second_shutdown && backend->destroy_shapes == first_destroy_count + 2;
 }
 
-bool TestBackendFailurePropagation()
-{
+bool TestBackendFailurePropagation() {
     auto backend = std::make_shared<FailingBackend>();
     PhysicsRuntime runtime(backend);
     const auto step = runtime.StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
     return !step && step.GetError().HasCode("physics.backend_failed");
 }
 
-bool TestTransformSourceAndSinkSynchronization()
-{
+bool TestTransformSourceAndSinkSynchronization() {
     PhysicsRuntime runtime;
     TransformAdapter adapter;
     runtime.SetTransformSource(&adapter);
     runtime.SetTransformSink(&adapter);
     const CollisionShapeId shape{3};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
     const auto body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
     const auto step = runtime.StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
-    const auto snapshot = body ? runtime.GetBodySnapshot(body.Value()) : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing"));
+    const auto snapshot = body ? runtime.GetBodySnapshot(body.Value())
+                               : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing"));
     return body && step && snapshot && adapter.reads == 1 && adapter.writes == 1 &&
            snapshot.Value().world_transform.position.x == 3.0f;
 }
 
-bool TestContactBufferStoresExplicitBeginPersistEnd()
-{
+bool TestContactBufferStoresExplicitBeginPersistEnd() {
     PhysicsRuntime runtime;
     ContactEvent begin{};
     begin.a = PhysicsBodyHandle{PhysicsBodyId{1}, 1};
@@ -445,61 +437,58 @@ bool TestContactBufferStoresExplicitBeginPersistEnd()
     const auto contacts = runtime.Contacts();
     if (contacts.size() != 3 || contacts[0].state != epidemic::runtime::physics::PhysicsEventState::Begin ||
         contacts[1].state != epidemic::runtime::physics::PhysicsEventState::Persist ||
-        contacts[2].state != epidemic::runtime::physics::PhysicsEventState::End)
-    {
+        contacts[2].state != epidemic::runtime::physics::PhysicsEventState::End) {
         return false;
     }
     runtime.Clear();
     return runtime.Contacts().empty();
 }
 
-bool TestRaycastRespectsDirectionAndMaxDistance()
-{
+bool TestRaycastRespectsDirectionAndMaxDistance() {
     PhysicsRuntime runtime;
     const CollisionShapeId shape{4};
-    if (!RegisterDefaultShape(runtime, shape, 2.0f))
-    {
+    if (!RegisterDefaultShape(runtime, shape, 2.0f)) {
         return false;
     }
     const auto body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
     const auto hit = runtime.Raycast(RaycastQuery{Vec3{-5.0f, 1.0f, 1.0f}, Vec3{1.0f, 0.0f, 0.0f}, 10.0f});
     const auto miss_direction = runtime.Raycast(RaycastQuery{Vec3{-5.0f, 1.0f, 1.0f}, Vec3{-1.0f, 0.0f, 0.0f}, 10.0f});
     const auto miss_distance = runtime.Raycast(RaycastQuery{Vec3{-5.0f, 1.0f, 1.0f}, Vec3{1.0f, 0.0f, 0.0f}, 2.0f});
-    return body && hit && hit.Value().hit && hit.Value().body == body.Value() &&
-           miss_direction && !miss_direction.Value().hit &&
-           miss_distance && !miss_distance.Value().hit;
+    return body && hit && hit.Value().hit && hit.Value().body == body.Value() && miss_direction &&
+           !miss_direction.Value().hit && miss_distance && !miss_distance.Value().hit;
 }
 
-bool TestEqualDistanceRaycastUsesStableBodyOrder()
-{
+bool TestEqualDistanceRaycastUsesStableBodyOrder() {
     PhysicsRuntime runtime;
     const CollisionShapeId shape{404};
-    if (!RegisterDefaultShape(runtime, shape, 2.0f)) return false;
+    if (!RegisterDefaultShape(runtime, shape, 2.0f))
+        return false;
     runtime.SetAllocatorStateForTesting(1001, 1, 9001);
     const auto first = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
     runtime.SetAllocatorStateForTesting(1, 2, 9002);
     const auto second = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
-    if (!first || !second) return false;
+    if (!first || !second)
+        return false;
     const RaycastQuery ray{Vec3{-5.0f, 1.0f, 1.0f}, Vec3{1.0f, 0.0f, 0.0f}, 10.0f};
     const auto verify = [&] {
         const auto native = runtime.Raycast(ray);
         const auto backend = runtime.RaycastBackend(ray);
         return native && backend && native.Value().hit && backend.Value().hit &&
-               native.Value().body == second.Value() &&
-               backend.Value().body == BackendBodyHandle{9002};
+               native.Value().body == second.Value() && backend.Value().body == BackendBodyHandle{9002};
     };
-    if (!verify()) return false;
-    for (std::uint64_t i = 0; i != 128; ++i)
-    {
+    if (!verify())
+        return false;
+    for (std::uint64_t i = 0; i != 128; ++i) {
         auto desc = MakeBodyDesc(shape, PhysicsBodyType::Static);
-        if (!runtime.CreateBody(desc)) return false;
-        if (!verify()) return false;
+        if (!runtime.CreateBody(desc))
+            return false;
+        if (!verify())
+            return false;
     }
     return verify();
 }
 
-bool TestExternalBackendLifecycleAndSynchronization()
-{
+bool TestExternalBackendLifecycleAndSynchronization() {
     auto backend = std::make_shared<JournalBackend>();
     backend->snapshot.activity = PhysicsActivityState::Awake;
     backend->snapshot.world_transform.position = Vec3{10.0f, 0.0f, 0.0f};
@@ -508,25 +497,22 @@ bool TestExternalBackendLifecycleAndSynchronization()
     {
         auto adapter = std::make_shared<TransformAdapter>();
         const auto services = CreatePhysicsServices(PhysicsDependencies{backend, adapter, adapter});
-        if (!services || backend->initializes != 1)
-        {
+        if (!services || backend->initializes != 1) {
             return false;
         }
 
         auto runtime = std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene);
-        if (!runtime)
-        {
+        if (!runtime) {
             return false;
         }
 
         const CollisionShapeId shape{9};
-        if (!runtime->RegisterShape({shape, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}}))
-        {
+        if (!runtime->RegisterShape({shape, Aabb{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}})) {
             return false;
         }
         const auto body = runtime->CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-        if (!body || backend->create_shapes != 1 || backend->create_bodies != 1 || backend->last_shape_for_body != backend->shape)
-        {
+        if (!body || backend->create_shapes != 1 || backend->create_bodies != 1 ||
+            backend->last_shape_for_body != backend->shape) {
             return false;
         }
         backend->raycast_hit.body = BackendBodyHandle{backend->body.value + 1u};
@@ -535,27 +521,24 @@ bool TestExternalBackendLifecycleAndSynchronization()
         const auto snapshot = runtime->GetBodySnapshot(body.Value());
         const auto raycast = runtime->Raycast(RaycastQuery{Vec3{0.0f, 0.0f, 0.0f}, Vec3{2.0f, 0.0f, 0.0f}, 5.0f});
         const auto destroyed = runtime->DestroyBody(body.Value());
-        ok = step && snapshot && raycast && backend->simulates == 1 && backend->snapshots >= 2 && adapter->writes == 1 &&
-             snapshot.Value().world_transform.position.x == 12.0f && backend->raycasts == 1 &&
-             backend->last_initial_transform.position.x == 3.0f && backend->last_raycast_direction.x == 1.0f && destroyed && backend->destroy_bodies >= 1 &&
-             services.Value().backend == backend;
+        ok = step && snapshot && raycast && backend->simulates == 1 && backend->snapshots >= 2 &&
+             adapter->writes == 1 && snapshot.Value().world_transform.position.x == 12.0f && backend->raycasts == 1 &&
+             backend->last_initial_transform.position.x == 3.0f && backend->last_raycast_direction.x == 1.0f &&
+             destroyed && backend->destroy_bodies >= 1 && services.Value().backend == backend;
     }
     return ok && backend->destroy_shapes == 1 && backend->last_destroyed_shape == backend->shape;
 }
 
-bool TestExternalBackendContactsArePublished()
-{
+bool TestExternalBackendContactsArePublished() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{15}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{15})) {
         return false;
     }
     const auto first = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{15}, PhysicsBodyType::Dynamic));
     const auto second = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{15}, PhysicsBodyType::Dynamic));
-    if (!first || !second)
-    {
+    if (!first || !second) {
         return false;
     }
     BackendContactEvent event{};
@@ -568,19 +551,16 @@ bool TestExternalBackendContactsArePublished()
            runtime->Contacts()[0].state == epidemic::runtime::physics::PhysicsEventState::Begin;
 }
 
-bool TestExternalBackendInvalidContactIsDroppedAtomically()
-{
+bool TestExternalBackendInvalidContactIsDroppedAtomically() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{16}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{16})) {
         return false;
     }
     const auto first = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{16}, PhysicsBodyType::Dynamic));
     const auto second = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{16}, PhysicsBodyType::Dynamic));
-    if (!first || !second)
-    {
+    if (!first || !second) {
         return false;
     }
 
@@ -598,13 +578,11 @@ bool TestExternalBackendInvalidContactIsDroppedAtomically()
            runtime->Contacts()[0].b == second.Value();
 }
 
-bool TestExternalBackendRaycastRejectsUnknownBody()
-{
+bool TestExternalBackendRaycastRejectsUnknownBody() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{17}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{17})) {
         return false;
     }
     const auto body = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{17}, PhysicsBodyType::Dynamic));
@@ -614,14 +592,12 @@ bool TestExternalBackendRaycastRejectsUnknownBody()
     return body && !raycast && raycast.GetError().HasCode("physics.unknown_backend_handle");
 }
 
-bool TestBackendSyncFailureDoesNotResimulateBeforeRetry()
-{
+bool TestBackendSyncFailureDoesNotResimulateBeforeRetry() {
     auto backend = std::make_shared<JournalBackend>();
     backend->fail_snapshot = true;
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{18}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{18})) {
         return false;
     }
     const auto body = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{18}, PhysicsBodyType::Dynamic));
@@ -629,57 +605,75 @@ bool TestBackendSyncFailureDoesNotResimulateBeforeRetry()
     const int simulates_after_failure = backend->simulates;
     backend->fail_snapshot = false;
     const auto retried = runtime->StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
-    return body && !failed && failed.GetError().HasCode("physics.snapshot_failed") &&
-           retried && simulates_after_failure == 1 && backend->simulates == 1;
+    return body && !failed && failed.GetError().HasCode("physics.snapshot_failed") && retried &&
+           simulates_after_failure == 1 && backend->simulates == 1;
 }
 
-bool TestInvalidBackendSnapshotDoesNotMutateBody()
-{
+bool TestInvalidBackendSnapshotDoesNotMutateBody() {
     auto backend = std::make_shared<JournalBackend>();
     auto adapter = std::make_shared<TransformAdapter>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, adapter, adapter});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{20}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{20})) {
         return false;
     }
     const auto body = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{20}, PhysicsBodyType::Dynamic));
-    const auto before = body ? runtime->GetBodySnapshot(body.Value()) : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing body"));
+    const auto before = body ? runtime->GetBodySnapshot(body.Value())
+                             : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing body"));
     const int writes_before_failed_step = adapter->writes;
     backend->snapshot.world_transform.position.x = std::numeric_limits<float>::quiet_NaN();
     const auto failed = runtime->StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
     const int simulates_after_failure = backend->simulates;
-    if (!before.HasValue()) { std::cerr << "before snapshot missing\n"; return false; }
-    if (failed.HasValue() || !failed.GetError().HasCode("physics.invalid_backend_snapshot")) { std::cerr << "invalid snapshot did not fail as expected\n"; return false; }
-    if (adapter->writes != writes_before_failed_step) { std::cerr << "invalid snapshot reached sink\n"; return false; }
+    if (!before.HasValue()) {
+        std::cerr << "before snapshot missing\n";
+        return false;
+    }
+    if (failed.HasValue() || !failed.GetError().HasCode("physics.invalid_backend_snapshot")) {
+        std::cerr << "invalid snapshot did not fail as expected\n";
+        return false;
+    }
+    if (adapter->writes != writes_before_failed_step) {
+        std::cerr << "invalid snapshot reached sink\n";
+        return false;
+    }
     backend->snapshot.world_transform.position = Vec3{9.0f, 0.0f, 0.0f};
     backend->snapshot.world_transform.rotation = {};
     backend->snapshot.world_transform.scale = Vec3{1.0f, 1.0f, 1.0f};
     backend->snapshot.activity = PhysicsActivityState::Awake;
     const auto retried = runtime->StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
-    if (!retried.HasValue()) { std::cerr << "valid retry failed\n"; return false; }
-    if (backend->simulates != simulates_after_failure) { std::cerr << "retry simulated again\n"; return false; }
-    if (adapter->writes != writes_before_failed_step + 1) { std::cerr << "valid retry did not write sink\n"; return false; }
+    if (!retried.HasValue()) {
+        std::cerr << "valid retry failed\n";
+        return false;
+    }
+    if (backend->simulates != simulates_after_failure) {
+        std::cerr << "retry simulated again\n";
+        return false;
+    }
+    if (adapter->writes != writes_before_failed_step + 1) {
+        std::cerr << "valid retry did not write sink\n";
+        return false;
+    }
     return true;
 }
 
-bool TestBatchInvalidBackendSnapshotHasNoPartialWrites()
-{
+bool TestBatchInvalidBackendSnapshotHasNoPartialWrites() {
     auto backend = std::make_shared<JournalBackend>();
     auto adapter = std::make_shared<TransformAdapter>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, adapter, adapter}};
     const CollisionShapeId shape{37};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
 
     const auto first = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
     const auto second = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    const auto first_before = first ? runtime.GetBodySnapshot(first.Value()) : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing first"));
-    const auto second_before = second ? runtime.GetBodySnapshot(second.Value()) : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing second"));
-    if (!first || !second || !first_before || !second_before)
-    {
+    const auto first_before =
+        first ? runtime.GetBodySnapshot(first.Value())
+              : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing first"));
+    const auto second_before =
+        second ? runtime.GetBodySnapshot(second.Value())
+               : Result<PhysicsBodySnapshot>::Failure(Error::Create("test.no_body", "missing second"));
+    if (!first || !second || !first_before || !second_before) {
         return false;
     }
 
@@ -694,24 +688,22 @@ bool TestBatchInvalidBackendSnapshotHasNoPartialWrites()
     return !failed && failed.GetError().HasCode("physics.snapshot_failed") && adapter->writes == 0 &&
            first_local_before && second_local_before && first_local_after && second_local_after &&
            first_local_before.Value().world_transform.position == first_local_after.Value().world_transform.position &&
-           second_local_before.Value().world_transform.position == second_local_after.Value().world_transform.position &&
+           second_local_before.Value().world_transform.position ==
+               second_local_after.Value().world_transform.position &&
            first_local_before.Value().revision == first_local_after.Value().revision &&
            second_local_before.Value().revision == second_local_after.Value().revision;
 }
 
-bool TestInvalidBackendContactPayloadIsFiltered()
-{
+bool TestInvalidBackendContactPayloadIsFiltered() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{21}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{21})) {
         return false;
     }
     const auto first = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{21}, PhysicsBodyType::Dynamic));
     const auto second = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{21}, PhysicsBodyType::Dynamic));
-    if (!first || !second)
-    {
+    if (!first || !second) {
         return false;
     }
     BackendContactEvent valid{};
@@ -731,18 +723,15 @@ bool TestInvalidBackendContactPayloadIsFiltered()
     backend->contact_events = {valid, invalid_nan, invalid_impulse, invalid_state};
 
     const auto step = runtime->StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
-    return step && runtime->Contacts().size() == 1 &&
-           runtime->Contacts()[0].point.x == 1.0f &&
+    return step && runtime->Contacts().size() == 1 && runtime->Contacts()[0].point.x == 1.0f &&
            runtime->Contacts()[0].impulse == 2.0f;
 }
 
-bool TestShutdownRetriesBodyBeforeDestroyingShape()
-{
+bool TestShutdownRetriesBodyBeforeDestroyingShape() {
     auto backend = std::make_shared<JournalBackend>();
     const auto services = CreatePhysicsServices(PhysicsDependencies{backend, nullptr, nullptr});
     auto runtime = services ? std::dynamic_pointer_cast<PhysicsRuntime>(services.Value().scene) : nullptr;
-    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{19}))
-    {
+    if (!runtime || !RegisterDefaultShape(*runtime, CollisionShapeId{19})) {
         return false;
     }
     const auto body = runtime->CreateBody(MakeBodyDesc(CollisionShapeId{19}, PhysicsBodyType::Dynamic));
@@ -752,16 +741,16 @@ bool TestShutdownRetriesBodyBeforeDestroyingShape()
     backend->fail_destroy_body = false;
     const auto retried = runtime->Shutdown();
     return body && !failed && failed.GetError().HasCode("physics.destroy_body_failed") &&
-           destroyed_shapes_after_failure == 0 && retried && backend->destroy_bodies >= 2 && backend->destroy_shapes == 1;
+           destroyed_shapes_after_failure == 0 && retried && backend->destroy_bodies >= 2 &&
+           backend->destroy_shapes == 1;
 }
 
-
-bool TestInvalidBodyInputsAreRejectedBeforeBackend()
-{
+bool TestInvalidBodyInputsAreRejectedBeforeBackend() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const CollisionShapeId shape{41};
-    if (!RegisterDefaultShape(runtime, shape)) return false;
+    if (!RegisterDefaultShape(runtime, shape))
+        return false;
     const int creates_before = backend->create_bodies;
     const auto rev_before = runtime.RevisionForTesting();
 
@@ -782,24 +771,25 @@ bool TestInvalidBodyInputsAreRejectedBeforeBackend()
     const auto mass_result = runtime.CreateBody(invalid_mass);
     auto unknown_shape = MakeBodyDesc(CollisionShapeId{99999}, PhysicsBodyType::Dynamic);
     const auto shape_result = runtime.CreateBody(unknown_shape);
-    return !type_result && type_result.GetError().HasCode("physics.invalid_body_type") &&
-           !transform_result && transform_result.GetError().HasCode("physics.invalid_transform") &&
-           !owner_result && owner_result.GetError().HasCode("physics.invalid_owner") &&
-           !node_result && node_result.GetError().HasCode("physics.invalid_transform") &&
-           !mass_result && mass_result.GetError().HasCode("physics.invalid_mass") &&
-           !shape_result && shape_result.GetError().HasCode("physics.shape_not_found") &&
-           backend->create_bodies == creates_before && runtime.RevisionForTesting() == rev_before;
+    return !type_result && type_result.GetError().HasCode("physics.invalid_body_type") && !transform_result &&
+           transform_result.GetError().HasCode("physics.invalid_transform") && !owner_result &&
+           owner_result.GetError().HasCode("physics.invalid_owner") && !node_result &&
+           node_result.GetError().HasCode("physics.invalid_transform") && !mass_result &&
+           mass_result.GetError().HasCode("physics.invalid_mass") && !shape_result &&
+           shape_result.GetError().HasCode("physics.shape_not_found") && backend->create_bodies == creates_before &&
+           runtime.RevisionForTesting() == rev_before;
 }
 
-bool TestBackendPublicationRollbackAndDuplicateHandles()
-{
+bool TestBackendPublicationRollbackAndDuplicateHandles() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     runtime.FailNextShapePublicationForTesting();
-    const auto failed_shape = runtime.RegisterShape({CollisionShapeId{42}, Aabb{{0,0,0},{1,1,1}}});
-    if (failed_shape || !failed_shape.GetError().HasCode("physics.allocation_failure") || backend->destroy_shapes != 1 || runtime.HasShape(CollisionShapeId{42}))
+    const auto failed_shape = runtime.RegisterShape({CollisionShapeId{42}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    if (failed_shape || !failed_shape.GetError().HasCode("physics.allocation_failure") ||
+        backend->destroy_shapes != 1 || runtime.HasShape(CollisionShapeId{42}))
         return false;
-    if (!RegisterDefaultShape(runtime, CollisionShapeId{42})) return false;
+    if (!RegisterDefaultShape(runtime, CollisionShapeId{42}))
+        return false;
 
     runtime.FailNextBodyPublicationForTesting();
     const auto rev_before = runtime.RevisionForTesting();
@@ -818,45 +808,48 @@ bool TestBackendPublicationRollbackAndDuplicateHandles()
            runtime.RevisionForTesting() == after_first && backend->destroy_bodies == destroys_before_duplicate;
 }
 
-bool TestRevisionAndAllocatorExhaustionAreAtomic()
-{
+bool TestRevisionAndAllocatorExhaustionAreAtomic() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const CollisionShapeId shape{43};
-    if (!RegisterDefaultShape(runtime, shape)) return false;
+    if (!RegisterDefaultShape(runtime, shape))
+        return false;
     const auto body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    if (!body) return false;
+    if (!body)
+        return false;
 
     const auto local_before = runtime.GetLocalBodySnapshotForTesting(body.Value());
     runtime.SetRevisionForTesting(std::numeric_limits<std::uint64_t>::max());
     const int impulses_before = backend->impulses;
     const int destroys_before = backend->destroy_bodies;
     const int simulates_before = backend->simulates;
-    const auto impulse = runtime.ApplyImpulse(body.Value(), Vec3{1,0,0});
+    const auto impulse = runtime.ApplyImpulse(body.Value(), Vec3{1, 0, 0});
     const auto destroy = runtime.DestroyBody(body.Value());
     const auto step = runtime.StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
     const auto local_after = runtime.GetLocalBodySnapshotForTesting(body.Value());
-    if (impulse || destroy || step || backend->impulses != impulses_before || backend->destroy_bodies != destroys_before ||
-        backend->simulates != simulates_before || !local_before || !local_after ||
-        local_before.Value().world_transform.position != local_after.Value().world_transform.position)
+    if (impulse || destroy || step || backend->impulses != impulses_before ||
+        backend->destroy_bodies != destroys_before || backend->simulates != simulates_before || !local_before ||
+        !local_after || local_before.Value().world_transform.position != local_after.Value().world_transform.position)
         return false;
 
     PhysicsRuntime exhausted;
-    if (!RegisterDefaultShape(exhausted, CollisionShapeId{44})) return false;
+    if (!RegisterDefaultShape(exhausted, CollisionShapeId{44}))
+        return false;
     exhausted.SetAllocatorStateForTesting(0, 1, 1);
     const auto create = exhausted.CreateBody(MakeBodyDesc(CollisionShapeId{44}, PhysicsBodyType::Dynamic));
     return !create && create.GetError().HasCode("physics.body_id_overflow");
 }
 
-bool TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit()
-{
+bool TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit() {
     auto backend = std::make_shared<JournalBackend>();
     auto adapter = std::make_shared<TransformAdapter>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, adapter, adapter}};
     const CollisionShapeId shape{45};
-    if (!RegisterDefaultShape(runtime, shape)) return false;
+    if (!RegisterDefaultShape(runtime, shape))
+        return false;
     const auto body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    if (!body) return false;
+    if (!body)
+        return false;
     adapter->fail_write = true;
     const auto first = runtime.StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
     const auto snapshot = runtime.GetLocalBodySnapshotForTesting(body.Value());
@@ -868,65 +861,70 @@ bool TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit()
     return second && runtime.PendingProjectionCountForTesting() == 0 && adapter->writes >= 3;
 }
 
-bool TestTimeAndStepCounterOverflowAreRejectedBeforeMutation()
-{
+bool TestTimeAndStepCounterOverflowAreRejectedBeforeMutation() {
     PhysicsRuntime runtime;
     runtime.SetFixedStep(RuntimeFrameDuration{std::chrono::microseconds{10}});
-    runtime.SetTimingStateForTesting(RuntimeFrameDuration{std::chrono::microseconds{std::numeric_limits<std::int64_t>::max()}},
-                                     RuntimeFrameDuration{std::chrono::microseconds{0}});
+    runtime.SetTimingStateForTesting(
+        RuntimeFrameDuration{std::chrono::microseconds{std::numeric_limits<std::int64_t>::max()}},
+        RuntimeFrameDuration{std::chrono::microseconds{0}});
     const auto accumulator_before = runtime.AccumulatorForTesting();
     const auto overflow = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{1}});
-    if (overflow || !overflow.GetError().HasCode("physics.time_overflow") || runtime.AccumulatorForTesting().value != accumulator_before.value)
+    if (overflow || !overflow.GetError().HasCode("physics.time_overflow") ||
+        runtime.AccumulatorForTesting().value != accumulator_before.value)
         return false;
-    runtime.SetTimingStateForTesting({}, RuntimeFrameDuration{std::chrono::microseconds{std::numeric_limits<std::int64_t>::max()}});
+    runtime.SetTimingStateForTesting(
+        {}, RuntimeFrameDuration{std::chrono::microseconds{std::numeric_limits<std::int64_t>::max()}});
     runtime.SetFixedStep(RuntimeFrameDuration{std::chrono::microseconds{10}});
     runtime.SetMaxSubsteps(1);
     const auto dropped_before = runtime.DroppedTimeForTesting();
     const auto dropped_overflow = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{20}});
     if (dropped_overflow || !dropped_overflow.GetError().HasCode("physics.time_overflow") ||
-        runtime.AccumulatorForTesting().value.count() != 0 || runtime.DroppedTimeForTesting().value != dropped_before.value)
-    {
+        runtime.AccumulatorForTesting().value.count() != 0 ||
+        runtime.DroppedTimeForTesting().value != dropped_before.value) {
         return false;
     }
     runtime.SetTimingStateForTesting({}, {});
     runtime.SetFixedStepCountForTesting(std::numeric_limits<std::uint64_t>::max());
     const auto step = runtime.StepFixed(RuntimeFrameDuration{std::chrono::microseconds{1}});
-    if (step || !step.GetError().HasCode("physics.step_overflow"))
-    {
+    if (step || !step.GetError().HasCode("physics.step_overflow")) {
         return false;
     }
     PhysicsRuntime shape_exhausted;
     shape_exhausted.SetBackendShapeAllocatorForTesting(0);
-    const auto shape = shape_exhausted.RegisterShape({CollisionShapeId{999}, Aabb{{0,0,0},{1,1,1}}});
-    return !shape && shape.GetError().HasCode("physics.backend_shape_id_overflow") && !shape_exhausted.HasShape(CollisionShapeId{999});
+    const auto shape = shape_exhausted.RegisterShape({CollisionShapeId{999}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    return !shape && shape.GetError().HasCode("physics.backend_shape_id_overflow") &&
+           !shape_exhausted.HasShape(CollisionShapeId{999});
 }
 
-bool TestBackendExceptionsStayInsideResultBoundary()
-{
+bool TestBackendExceptionsStayInsideResultBoundary() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     backend->throw_create_shape = true;
-    const auto shape = runtime.RegisterShape({CollisionShapeId{46}, Aabb{{0,0,0},{1,1,1}}});
-    if (shape || !shape.GetError().HasCode("physics.backend_exception")) return false;
+    const auto shape = runtime.RegisterShape({CollisionShapeId{46}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    if (shape || !shape.GetError().HasCode("physics.backend_exception"))
+        return false;
     backend->throw_create_shape = false;
-    if (!RegisterDefaultShape(runtime, CollisionShapeId{46})) return false;
+    if (!RegisterDefaultShape(runtime, CollisionShapeId{46}))
+        return false;
     const auto body = runtime.CreateBody(MakeBodyDesc(CollisionShapeId{46}, PhysicsBodyType::Dynamic));
-    if (!body) return false;
+    if (!body)
+        return false;
     backend->throw_impulse = true;
     const auto rev = runtime.RevisionForTesting();
-    const auto impulse = runtime.ApplyImpulse(body.Value(), Vec3{1,0,0});
+    const auto impulse = runtime.ApplyImpulse(body.Value(), Vec3{1, 0, 0});
     return !impulse && impulse.GetError().HasCode("physics.backend_exception") && runtime.RevisionForTesting() == rev;
 }
 
-bool TestDefaultStaleAndRepeatedMutatorHandles()
-{
+bool TestDefaultStaleAndRepeatedMutatorHandles() {
     PhysicsRuntime runtime;
     const CollisionShapeId shape{47};
-    if (!RegisterDefaultShape(runtime, shape)) return false;
+    if (!RegisterDefaultShape(runtime, shape))
+        return false;
     const auto body = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    if (!body) return false;
+    if (!body)
+        return false;
     const PhysicsBodyHandle stale{body.Value().id, body.Value().generation + 1};
-    const auto default_impulse = runtime.ApplyImpulse(PhysicsBodyHandle{}, Vec3{1,0,0});
+    const auto default_impulse = runtime.ApplyImpulse(PhysicsBodyHandle{}, Vec3{1, 0, 0});
     const auto stale_destroy = runtime.DestroyBody(stale);
     const auto first_destroy = runtime.DestroyBody(body.Value());
     const auto second_destroy = runtime.DestroyBody(body.Value());
@@ -934,8 +932,7 @@ bool TestDefaultStaleAndRepeatedMutatorHandles()
            first_destroy && !second_destroy && second_destroy.GetError().HasCode("physics.unknown_handle");
 }
 
-bool TestTickFirstStepFailureKeepsAcceptedDeltaForZeroDeltaRetry()
-{
+bool TestTickFirstStepFailureKeepsAcceptedDeltaForZeroDeltaRetry() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     runtime.SetFixedStep(RuntimeFrameDuration{std::chrono::microseconds{10}});
@@ -943,8 +940,8 @@ bool TestTickFirstStepFailureKeepsAcceptedDeltaForZeroDeltaRetry()
     backend->fail_simulate = true;
     const auto failed = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{25}});
     if (failed || !failed.GetError().HasCode("physics.simulate_failed") ||
-        runtime.AccumulatorForTesting().value.count() != 25 || runtime.FixedStepCountForTesting() != 0 || backend->simulates != 1)
-    {
+        runtime.AccumulatorForTesting().value.count() != 25 || runtime.FixedStepCountForTesting() != 0 ||
+        backend->simulates != 1) {
         return false;
     }
     backend->fail_simulate = false;
@@ -953,8 +950,7 @@ bool TestTickFirstStepFailureKeepsAcceptedDeltaForZeroDeltaRetry()
            runtime.FixedStepCountForTesting() == 2 && backend->simulates == 3;
 }
 
-bool TestTickSecondStepFailurePreservesSuccessfulPrefix()
-{
+bool TestTickSecondStepFailurePreservesSuccessfulPrefix() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     runtime.SetFixedStep(RuntimeFrameDuration{std::chrono::microseconds{10}});
@@ -962,8 +958,8 @@ bool TestTickSecondStepFailurePreservesSuccessfulPrefix()
     backend->fail_simulate_at = 2;
     const auto failed = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{25}});
     if (failed || !failed.GetError().HasCode("physics.simulate_failed") ||
-        runtime.AccumulatorForTesting().value.count() != 15 || runtime.FixedStepCountForTesting() != 1 || backend->simulates != 2)
-    {
+        runtime.AccumulatorForTesting().value.count() != 15 || runtime.FixedStepCountForTesting() != 1 ||
+        backend->simulates != 2) {
         return false;
     }
     backend->fail_simulate_at = 0;
@@ -972,21 +968,18 @@ bool TestTickSecondStepFailurePreservesSuccessfulPrefix()
            runtime.FixedStepCountForTesting() == 2 && backend->simulates == 3;
 }
 
-bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation()
-{
+bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const CollisionShapeId shape{48};
-    if (!RegisterDefaultShape(runtime, shape) || !runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic)))
-    {
+    if (!RegisterDefaultShape(runtime, shape) || !runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic))) {
         return false;
     }
     runtime.SetFixedStep(RuntimeFrameDuration{std::chrono::microseconds{10}});
     backend->fail_snapshot = true;
     const auto failed = runtime.Tick(RuntimeFrameDuration{std::chrono::microseconds{10}});
     if (failed || !failed.GetError().HasCode("physics.snapshot_failed") || backend->simulates != 1 ||
-        runtime.AccumulatorForTesting().value.count() != 10 || runtime.FixedStepCountForTesting() != 0)
-    {
+        runtime.AccumulatorForTesting().value.count() != 10 || runtime.FixedStepCountForTesting() != 0) {
         return false;
     }
     backend->fail_snapshot = false;
@@ -995,14 +988,12 @@ bool TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation()
            runtime.FixedStepCountForTesting() == 1;
 }
 
-bool TestTransformSourceFailureStopsBeforeBackendBodyCreation()
-{
+bool TestTransformSourceFailureStopsBeforeBackendBodyCreation() {
     auto backend = std::make_shared<JournalBackend>();
     auto adapter = std::make_shared<TransformAdapter>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, adapter, adapter}};
     const CollisionShapeId shape{49};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
     adapter->fail_read = true;
@@ -1013,15 +1004,13 @@ bool TestTransformSourceFailureStopsBeforeBackendBodyCreation()
            backend->create_bodies == creates_before && runtime.RevisionForTesting() == revision_before;
 }
 
-bool TestShutdownCleansIndependentShapesAfterBodyFailure()
-{
+bool TestShutdownCleansIndependentShapesAfterBodyFailure() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const CollisionShapeId used_shape{50};
     const CollisionShapeId free_shape{51};
     if (!RegisterDefaultShape(runtime, used_shape) || !RegisterDefaultShape(runtime, free_shape) ||
-        !runtime.CreateBody(MakeBodyDesc(used_shape, PhysicsBodyType::Dynamic)))
-    {
+        !runtime.CreateBody(MakeBodyDesc(used_shape, PhysicsBodyType::Dynamic))) {
         return false;
     }
     backend->fail_destroy_body = true;
@@ -1029,53 +1018,47 @@ bool TestShutdownCleansIndependentShapesAfterBodyFailure()
     const int shape_destroys_after_failure = backend->destroy_shapes;
     backend->fail_destroy_body = false;
     const auto retried = runtime.Shutdown();
-    return !failed && failed.GetError().HasCode("physics.destroy_body_failed") &&
-           shape_destroys_after_failure == 1 && retried && backend->destroy_shapes == 2;
+    return !failed && failed.GetError().HasCode("physics.destroy_body_failed") && shape_destroys_after_failure == 1 &&
+           retried && backend->destroy_shapes == 2;
 }
 
-bool TestShapeRegistrationValidationAndBackendFailureAtomicity()
-{
+bool TestShapeRegistrationValidationAndBackendFailureAtomicity() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const int creates_before = backend->create_shapes;
-    const auto invalid_id = runtime.RegisterShape({CollisionShapeId{}, Aabb{{0,0,0},{1,1,1}}});
-    const auto invalid_bounds = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{2,0,0},{1,1,1}}});
-    if (invalid_id || invalid_bounds || backend->create_shapes != creates_before)
-    {
+    const auto invalid_id = runtime.RegisterShape({CollisionShapeId{}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    const auto invalid_bounds = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{2, 0, 0}, {1, 1, 1}}});
+    if (invalid_id || invalid_bounds || backend->create_shapes != creates_before) {
         return false;
     }
     backend->fail_create_shape = true;
-    const auto failed = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{0,0,0},{1,1,1}}});
+    const auto failed = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{0, 0, 0}, {1, 1, 1}}});
     backend->fail_create_shape = false;
-    if (failed || !failed.GetError().HasCode("physics.create_shape_failed") || runtime.HasShape(CollisionShapeId{52}))
-    {
+    if (failed || !failed.GetError().HasCode("physics.create_shape_failed") || runtime.HasShape(CollisionShapeId{52})) {
         return false;
     }
-    const auto created = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{0,0,0},{1,1,1}}});
-    const auto duplicate = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{0,0,0},{1,1,1}}});
+    const auto created = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    const auto duplicate = runtime.RegisterShape({CollisionShapeId{52}, Aabb{{0, 0, 0}, {1, 1, 1}}});
     return created && !duplicate && duplicate.GetError().HasCode("physics.duplicate_shape");
 }
 
-bool TestDuplicateBackendContactsPreserveBackendOrder()
-{
+bool TestDuplicateBackendContactsPreserveBackendOrder() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const CollisionShapeId shape{53};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
     const auto first = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
     const auto second = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    if (!first || !second)
-    {
+    if (!first || !second) {
         return false;
     }
     BackendContactEvent duplicate{};
     duplicate.a = BackendBodyHandle{backend->body.value + 1u};
     duplicate.b = BackendBodyHandle{backend->body.value + 2u};
-    duplicate.point = Vec3{1,2,3};
-    duplicate.normal = Vec3{0,1,0};
+    duplicate.point = Vec3{1, 2, 3};
+    duplicate.normal = Vec3{0, 1, 0};
     duplicate.impulse = 4.0f;
     duplicate.state = epidemic::runtime::physics::PhysicsEventState::Persist;
     backend->contact_events = {duplicate, duplicate};
@@ -1085,28 +1068,26 @@ bool TestDuplicateBackendContactsPreserveBackendOrder()
            runtime.Contacts()[1].state == epidemic::runtime::physics::PhysicsEventState::Persist;
 }
 
-bool TestRaycastRejectsInvalidInputAndInvalidBackendPayload()
-{
+bool TestRaycastRejectsInvalidInputAndInvalidBackendPayload() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const int raycasts_before = backend->raycasts;
     const auto zero_direction = runtime.Raycast(RaycastQuery{Vec3{}, Vec3{}, 10.0f});
-    const auto non_finite = runtime.Raycast(RaycastQuery{Vec3{std::numeric_limits<float>::quiet_NaN(),0,0}, Vec3{1,0,0}, 10.0f});
-    if (zero_direction || non_finite || backend->raycasts != raycasts_before)
-    {
+    const auto non_finite =
+        runtime.Raycast(RaycastQuery{Vec3{std::numeric_limits<float>::quiet_NaN(), 0, 0}, Vec3{1, 0, 0}, 10.0f});
+    if (zero_direction || non_finite || backend->raycasts != raycasts_before) {
         return false;
     }
     backend->raycast_hit.hit = true;
     backend->raycast_hit.body = BackendBodyHandle{999};
     backend->raycast_hit.point = Vec3{std::numeric_limits<float>::quiet_NaN(), 0, 0};
-    backend->raycast_hit.normal = Vec3{0,1,0};
+    backend->raycast_hit.normal = Vec3{0, 1, 0};
     backend->raycast_hit.distance = 1.0f;
-    const auto invalid_hit = runtime.Raycast(RaycastQuery{Vec3{}, Vec3{1,0,0}, 10.0f});
+    const auto invalid_hit = runtime.Raycast(RaycastQuery{Vec3{}, Vec3{1, 0, 0}, 10.0f});
     return !invalid_hit && invalid_hit.GetError().HasCode("physics.invalid_backend_hit");
 }
 
-bool TestRaycastLargeFiniteDirectionNormalizesSafely()
-{
+bool TestRaycastLargeFiniteDirectionNormalizesSafely() {
     constexpr float max_value = std::numeric_limits<float>::max();
     constexpr float epsilon = std::numeric_limits<float>::epsilon();
 
@@ -1117,53 +1098,49 @@ bool TestRaycastLargeFiniteDirectionNormalizesSafely()
     if (!axis || backend->raycasts != 1 || !std::isfinite(backend->last_raycast_direction.x) ||
         !std::isfinite(backend->last_raycast_direction.y) || !std::isfinite(backend->last_raycast_direction.z) ||
         backend->last_raycast_direction.x <= 0.0f || backend->last_raycast_direction.y != 0.0f ||
-        backend->last_raycast_direction.z != 0.0f || std::fabs(backend->last_raycast_direction.x - 1.0f) > 1.0e-6f)
-    {
+        backend->last_raycast_direction.z != 0.0f || std::fabs(backend->last_raycast_direction.x - 1.0f) > 1.0e-6f) {
         return false;
     }
 
     const auto diagonal = external.Raycast(RaycastQuery{Vec3{}, Vec3{max_value, max_value, max_value}, 10.0f});
     const Vec3 normalized = backend->last_raycast_direction;
-    const double normalized_length = std::sqrt(
-        static_cast<double>(normalized.x) * normalized.x +
-        static_cast<double>(normalized.y) * normalized.y +
-        static_cast<double>(normalized.z) * normalized.z);
+    const double normalized_length =
+        std::sqrt(static_cast<double>(normalized.x) * normalized.x + static_cast<double>(normalized.y) * normalized.y +
+                  static_cast<double>(normalized.z) * normalized.z);
     if (!diagonal || backend->raycasts != 2 || !std::isfinite(normalized_length) || normalized_length <= 0.0 ||
-        std::fabs(normalized_length - 1.0) > 1.0e-6)
-    {
+        std::fabs(normalized_length - 1.0) > 1.0e-6) {
         return false;
     }
 
     const auto at_epsilon = external.Raycast(RaycastQuery{Vec3{}, Vec3{epsilon, 0.0f, 0.0f}, 10.0f});
     const float above_epsilon = std::nextafter(epsilon, std::numeric_limits<float>::infinity());
     const auto above = external.Raycast(RaycastQuery{Vec3{}, Vec3{above_epsilon, 0.0f, 0.0f}, 10.0f});
-    const auto infinite = external.Raycast(RaycastQuery{Vec3{}, Vec3{std::numeric_limits<float>::infinity(), 0.0f, 0.0f}, 10.0f});
-    const auto nan_direction = external.Raycast(RaycastQuery{Vec3{}, Vec3{std::numeric_limits<float>::quiet_NaN(), 0.0f, 0.0f}, 10.0f});
+    const auto infinite =
+        external.Raycast(RaycastQuery{Vec3{}, Vec3{std::numeric_limits<float>::infinity(), 0.0f, 0.0f}, 10.0f});
+    const auto nan_direction =
+        external.Raycast(RaycastQuery{Vec3{}, Vec3{std::numeric_limits<float>::quiet_NaN(), 0.0f, 0.0f}, 10.0f});
     if (at_epsilon || !above || infinite || nan_direction || backend->raycasts != 3 ||
-        std::fabs(backend->last_raycast_direction.x - 1.0f) > 1.0e-6f)
-    {
+        std::fabs(backend->last_raycast_direction.x - 1.0f) > 1.0e-6f) {
         return false;
     }
 
     PhysicsRuntime reference;
     const CollisionShapeId shape{59};
-    if (!RegisterDefaultShape(reference, shape) || !reference.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static)))
-    {
+    if (!RegisterDefaultShape(reference, shape) ||
+        !reference.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static))) {
         return false;
     }
-    const auto reference_hit = reference.RaycastBackend(
-        RaycastQuery{Vec3{-1.0f, 0.5f, 0.5f}, Vec3{max_value, 0.0f, 0.0f}, 10.0f});
+    const auto reference_hit =
+        reference.RaycastBackend(RaycastQuery{Vec3{-1.0f, 0.5f, 0.5f}, Vec3{max_value, 0.0f, 0.0f}, 10.0f});
     return reference_hit && reference_hit.Value().hit && std::isfinite(reference_hit.Value().distance) &&
            reference_hit.Value().distance > 0.0f;
 }
 
-bool TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity()
-{
+bool TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     const CollisionShapeId shape{54};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
     backend->fail_create_body = true;
@@ -1173,35 +1150,32 @@ bool TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity()
     const auto thrown = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
     backend->throw_create_body = false;
     const auto created = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-    return !failed && failed.GetError().HasCode("physics.create_body_failed") &&
-           !thrown && thrown.GetError().HasCode("physics.backend_exception") && created &&
-           created.Value().id.value == 1 && created.Value().generation == 1;
+    return !failed && failed.GetError().HasCode("physics.create_body_failed") && !thrown &&
+           thrown.GetError().HasCode("physics.backend_exception") && created && created.Value().id.value == 1 &&
+           created.Value().generation == 1;
 }
 
-bool TestPublicationRollbackFailureRetainsCleanupOwnership()
-{
+bool TestPublicationRollbackFailureRetainsCleanupOwnership() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     backend->fail_destroy_shape = true;
     runtime.FailNextShapePublicationForTesting();
-    const auto failed_shape = runtime.RegisterShape({CollisionShapeId{55}, Aabb{{0,0,0},{1,1,1}}});
-    if (failed_shape || !failed_shape.GetError().HasCode("physics.cleanup_pending") || runtime.HasShape(CollisionShapeId{55}))
-    {
+    const auto failed_shape = runtime.RegisterShape({CollisionShapeId{55}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    if (failed_shape || !failed_shape.GetError().HasCode("physics.cleanup_pending") ||
+        runtime.HasShape(CollisionShapeId{55})) {
         return false;
     }
     backend->fail_destroy_shape = false;
     const int destroys_before_retry = backend->destroy_shapes;
-    const auto retried_shape = runtime.RegisterShape({CollisionShapeId{55}, Aabb{{0,0,0},{1,1,1}}});
-    if (!retried_shape || backend->destroy_shapes != destroys_before_retry + 1)
-    {
+    const auto retried_shape = runtime.RegisterShape({CollisionShapeId{55}, Aabb{{0, 0, 0}, {1, 1, 1}}});
+    if (!retried_shape || backend->destroy_shapes != destroys_before_retry + 1) {
         return false;
     }
 
     backend->fail_destroy_body = true;
     runtime.FailNextBodyPublicationForTesting();
     const auto failed_body = runtime.CreateBody(MakeBodyDesc(CollisionShapeId{55}, PhysicsBodyType::Dynamic));
-    if (failed_body || !failed_body.GetError().HasCode("physics.cleanup_pending"))
-    {
+    if (failed_body || !failed_body.GetError().HasCode("physics.cleanup_pending")) {
         return false;
     }
     backend->fail_destroy_body = false;
@@ -1210,12 +1184,10 @@ bool TestPublicationRollbackFailureRetainsCleanupOwnership()
     return retried_body && backend->destroy_bodies == body_destroys_before_retry + 1;
 }
 
-bool TestOverlapResultsAreDeterministicAndDetached()
-{
+bool TestOverlapResultsAreDeterministicAndDetached() {
     PhysicsRuntime runtime;
     const CollisionShapeId shape{56};
-    if (!RegisterDefaultShape(runtime, shape))
-    {
+    if (!RegisterDefaultShape(runtime, shape)) {
         return false;
     }
     const auto first = runtime.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
@@ -1223,100 +1195,92 @@ bool TestOverlapResultsAreDeterministicAndDetached()
     second_desc.owner = RuntimeObjectId{43};
     second_desc.transform_node = PhysicsTransformId{8};
     const auto second = runtime.CreateBody(second_desc);
-    if (!first || !second)
-    {
+    if (!first || !second) {
         return false;
     }
-    const auto result = runtime.Overlap(OverlapQuery{Aabb{{-1,-1,-1},{2,2,2}}});
+    const auto result = runtime.Overlap(OverlapQuery{Aabb{{-1, -1, -1}, {2, 2, 2}}});
     if (!result || result.Value().bodies.size() != 2 ||
-        result.Value().bodies[0].id.value >= result.Value().bodies[1].id.value)
-    {
+        result.Value().bodies[0].id.value >= result.Value().bodies[1].id.value) {
         return false;
     }
     const auto detached = result.Value();
-    if (!runtime.DestroyBody(first.Value()))
-    {
+    if (!runtime.DestroyBody(first.Value())) {
         return false;
     }
-    const auto after = runtime.Overlap(OverlapQuery{Aabb{{-1,-1,-1},{2,2,2}}});
+    const auto after = runtime.Overlap(OverlapQuery{Aabb{{-1, -1, -1}, {2, 2, 2}}});
     return detached.bodies.size() == 2 && after && after.Value().bodies.size() == 1;
 }
 
-bool TestDuplicateBackendShapeHandleDoesNotDestroyExistingOwnership()
-{
+bool TestDuplicateBackendShapeHandleDoesNotDestroyExistingOwnership() {
     auto backend = std::make_shared<JournalBackend>();
     PhysicsRuntime runtime{PhysicsDependencies{backend, nullptr, nullptr}};
     backend->duplicate_shape_handles = true;
-    const auto first = runtime.RegisterShape({CollisionShapeId{57}, Aabb{{0,0,0},{1,1,1}}});
+    const auto first = runtime.RegisterShape({CollisionShapeId{57}, Aabb{{0, 0, 0}, {1, 1, 1}}});
     const int destroys_before = backend->destroy_shapes;
-    const auto second = runtime.RegisterShape({CollisionShapeId{58}, Aabb{{0,0,0},{1,1,1}}});
+    const auto second = runtime.RegisterShape({CollisionShapeId{58}, Aabb{{0, 0, 0}, {1, 1, 1}}});
     return first && !second && second.GetError().HasCode("physics.duplicate_backend_shape_handle") &&
-           backend->destroy_shapes == destroys_before && runtime.HasShape(CollisionShapeId{57}) && !runtime.HasShape(CollisionShapeId{58});
+           backend->destroy_shapes == destroys_before && runtime.HasShape(CollisionShapeId{57}) &&
+           !runtime.HasShape(CollisionShapeId{58});
 }
 
-bool TestFactoryReportsBackendInitializationFailure()
-{
+bool TestFactoryReportsBackendInitializationFailure() {
     auto backend = std::make_shared<JournalBackend>();
     backend->fail_initialize = true;
     const auto services = CreatePhysicsServices(backend);
     return !services && services.GetError().HasCode("physics.init_failed");
 }
 
-bool TestDirtyFlagsAndServicesFactory()
-{
+bool TestDirtyFlagsAndServicesFactory() {
     const auto flags = PhysicsDirtyFlags::Transform | PhysicsDirtyFlags::Shape;
     const auto services = CreatePhysicsServices();
     return HasFlag(flags, PhysicsDirtyFlags::Transform) && HasFlag(flags, PhysicsDirtyFlags::Shape) &&
-           !HasFlag(flags, PhysicsDirtyFlags::Material) && services &&
-           services.Value().shapes != nullptr && services.Value().scene != nullptr &&
-           services.Value().stepper != nullptr && services.Value().query != nullptr &&
-           services.Value().events != nullptr && services.Value().backend != nullptr;
+           !HasFlag(flags, PhysicsDirtyFlags::Material) && services && services.Value().shapes != nullptr &&
+           services.Value().scene != nullptr && services.Value().stepper != nullptr &&
+           services.Value().query != nullptr && services.Value().events != nullptr &&
+           services.Value().backend != nullptr;
 }
 
-template <typename T, typename = void>
-struct HasBackendSnapshotBody : std::false_type
-{
-};
+template <typename T, typename = void> struct HasBackendSnapshotBody : std::false_type {};
 
 template <typename T>
-struct HasBackendSnapshotBody<T, std::void_t<decltype(std::declval<T>().body)>> : std::true_type
-{
-};
+struct HasBackendSnapshotBody<T, std::void_t<decltype(std::declval<T>().body)>> : std::true_type {};
 } // namespace
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     if (argc == 2 && std::string_view(argv[1]) == "--auditor-physics") {
         using namespace epidemic::auditor::shadow;
         action("action.start", "physics-action");
         scenario("scenario.start", "physics-scenario");
         PhysicsRuntime owner;
-          const CollisionShapeId shape{1};
-          if (!RegisterDefaultShape(owner, shape)) return 2;
-          const auto left = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
-          const auto right = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
-          if (!left || !right) return 3;
+        const CollisionShapeId shape{1};
+        if (!RegisterDefaultShape(owner, shape))
+            return 2;
+        const auto left = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Dynamic));
+        const auto right = owner.CreateBody(MakeBodyDesc(shape, PhysicsBodyType::Static));
+        if (!left || !right)
+            return 3;
         const auto inherited = child_context();
         std::thread producer([&] {
             const ContextScope scope(inherited);
             ContactEvent contact{};
-              contact.a = left.Value();
-              contact.b = right.Value();
+            contact.a = left.Value();
+            contact.b = right.Value();
             contact.state = epidemic::runtime::physics::PhysicsEventState::Begin;
             owner.QueueContact(contact);
         });
         producer.join();
-          const auto consumed = owner.ConsumeContactEvents();
-          const bool delivered = consumed && consumed.Value().size() == 1
-              && consumed.Value()[0].state == epidemic::runtime::physics::PhysicsEventState::Begin;
+        const auto consumed = owner.ConsumeContactEvents();
+        const bool delivered = consumed && consumed.Value().size() == 1 &&
+                               consumed.Value()[0].state == epidemic::runtime::physics::PhysicsEventState::Begin;
         owner.Clear();
         scenario("scenario.end", "physics-scenario");
         action("action.end", "physics-action");
-          return delivered ? 0 : 4;
+        return delivered ? 0 : 4;
     }
 #else
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 #endif
     static_assert(std::is_abstract_v<ICollisionShapeRegistry>);
     static_assert(std::is_abstract_v<IPhysicsScene>);
@@ -1329,48 +1293,91 @@ int main(int argc, char** argv)
     static_assert(std::is_same_v<decltype(PhysicsBodyHandle{}.generation), std::uint32_t>);
     static_assert(!HasBackendSnapshotBody<BackendBodySnapshot>::value);
 
-    if (!TestGenerationSnapshotAndDestroyLifecycle()) return 1;
-    if (!TestUnknownHandleAndImpulseRules()) return 2;
-    if (!TestFixedStepAccumulatorAndMaxSubsteps()) return 3;
-    if (!TestDefaultAndConfiguredFixedStep()) return 11;
-    if (!TestInitialTransformFallsBackToDescWithoutSource()) return 12;
-    if (!TestUnregisterShapeRejectsInUseAndDestroysFreeShape()) return 13;
-    if (!TestShutdownBestEffortAndIdempotent()) return 14;
-    if (!TestBackendFailurePropagation()) return 4;
-    if (!TestTransformSourceAndSinkSynchronization()) return 5;
-    if (!TestContactBufferStoresExplicitBeginPersistEnd()) return 6;
-    if (!TestRaycastRespectsDirectionAndMaxDistance()) return 7;
-    if (!TestEqualDistanceRaycastUsesStableBodyOrder()) return 67;
-    if (!TestExternalBackendLifecycleAndSynchronization()) return 8;
-    if (!TestExternalBackendContactsArePublished()) return 15;
-    if (!TestExternalBackendInvalidContactIsDroppedAtomically()) return 16;
-    if (!TestExternalBackendRaycastRejectsUnknownBody()) return 17;
-    if (!TestBackendSyncFailureDoesNotResimulateBeforeRetry()) return 18;
-    if (!TestInvalidBackendSnapshotDoesNotMutateBody()) return 20;
-    if (!TestInvalidBackendContactPayloadIsFiltered()) return 21;
-    if (!TestBatchInvalidBackendSnapshotHasNoPartialWrites()) return 22;
-    if (!TestShutdownRetriesBodyBeforeDestroyingShape()) return 19;
-    if (!TestFactoryReportsBackendInitializationFailure()) return 9;
-    if (!TestDirtyFlagsAndServicesFactory()) return 10;
-    if (!TestInvalidBodyInputsAreRejectedBeforeBackend()) return 23;
-    if (!TestBackendPublicationRollbackAndDuplicateHandles()) return 24;
-    if (!TestRevisionAndAllocatorExhaustionAreAtomic()) return 25;
-    if (!TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit()) return 26;
-    if (!TestTimeAndStepCounterOverflowAreRejectedBeforeMutation()) return 27;
-    if (!TestBackendExceptionsStayInsideResultBoundary()) return 28;
-    if (!TestDefaultStaleAndRepeatedMutatorHandles()) return 29;
-    if (!TestTickFirstStepFailureKeepsAcceptedDeltaForZeroDeltaRetry()) return 30;
-    if (!TestTickSecondStepFailurePreservesSuccessfulPrefix()) return 31;
-    if (!TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation()) return 32;
-    if (!TestTransformSourceFailureStopsBeforeBackendBodyCreation()) return 33;
-    if (!TestShutdownCleansIndependentShapesAfterBodyFailure()) return 34;
-    if (!TestShapeRegistrationValidationAndBackendFailureAtomicity()) return 35;
-    if (!TestDuplicateBackendContactsPreserveBackendOrder()) return 36;
-    if (!TestRaycastRejectsInvalidInputAndInvalidBackendPayload()) return 37;
-    if (!TestRaycastLargeFiniteDirectionNormalizesSafely()) return 42;
-    if (!TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity()) return 38;
-    if (!TestPublicationRollbackFailureRetainsCleanupOwnership()) return 39;
-    if (!TestOverlapResultsAreDeterministicAndDetached()) return 40;
-    if (!TestDuplicateBackendShapeHandleDoesNotDestroyExistingOwnership()) return 41;
+    if (!TestGenerationSnapshotAndDestroyLifecycle())
+        return 1;
+    if (!TestUnknownHandleAndImpulseRules())
+        return 2;
+    if (!TestFixedStepAccumulatorAndMaxSubsteps())
+        return 3;
+    if (!TestDefaultAndConfiguredFixedStep())
+        return 11;
+    if (!TestInitialTransformFallsBackToDescWithoutSource())
+        return 12;
+    if (!TestUnregisterShapeRejectsInUseAndDestroysFreeShape())
+        return 13;
+    if (!TestShutdownBestEffortAndIdempotent())
+        return 14;
+    if (!TestBackendFailurePropagation())
+        return 4;
+    if (!TestTransformSourceAndSinkSynchronization())
+        return 5;
+    if (!TestContactBufferStoresExplicitBeginPersistEnd())
+        return 6;
+    if (!TestRaycastRespectsDirectionAndMaxDistance())
+        return 7;
+    if (!TestEqualDistanceRaycastUsesStableBodyOrder())
+        return 67;
+    if (!TestExternalBackendLifecycleAndSynchronization())
+        return 8;
+    if (!TestExternalBackendContactsArePublished())
+        return 15;
+    if (!TestExternalBackendInvalidContactIsDroppedAtomically())
+        return 16;
+    if (!TestExternalBackendRaycastRejectsUnknownBody())
+        return 17;
+    if (!TestBackendSyncFailureDoesNotResimulateBeforeRetry())
+        return 18;
+    if (!TestInvalidBackendSnapshotDoesNotMutateBody())
+        return 20;
+    if (!TestInvalidBackendContactPayloadIsFiltered())
+        return 21;
+    if (!TestBatchInvalidBackendSnapshotHasNoPartialWrites())
+        return 22;
+    if (!TestShutdownRetriesBodyBeforeDestroyingShape())
+        return 19;
+    if (!TestFactoryReportsBackendInitializationFailure())
+        return 9;
+    if (!TestDirtyFlagsAndServicesFactory())
+        return 10;
+    if (!TestInvalidBodyInputsAreRejectedBeforeBackend())
+        return 23;
+    if (!TestBackendPublicationRollbackAndDuplicateHandles())
+        return 24;
+    if (!TestRevisionAndAllocatorExhaustionAreAtomic())
+        return 25;
+    if (!TestTransformProjectionFailureIsRetryableAfterAuthoritativeCommit())
+        return 26;
+    if (!TestTimeAndStepCounterOverflowAreRejectedBeforeMutation())
+        return 27;
+    if (!TestBackendExceptionsStayInsideResultBoundary())
+        return 28;
+    if (!TestDefaultStaleAndRepeatedMutatorHandles())
+        return 29;
+    if (!TestTickFirstStepFailureKeepsAcceptedDeltaForZeroDeltaRetry())
+        return 30;
+    if (!TestTickSecondStepFailurePreservesSuccessfulPrefix())
+        return 31;
+    if (!TestTickSyncFailureRetriesAcceptedBackendStepWithoutResimulation())
+        return 32;
+    if (!TestTransformSourceFailureStopsBeforeBackendBodyCreation())
+        return 33;
+    if (!TestShutdownCleansIndependentShapesAfterBodyFailure())
+        return 34;
+    if (!TestShapeRegistrationValidationAndBackendFailureAtomicity())
+        return 35;
+    if (!TestDuplicateBackendContactsPreserveBackendOrder())
+        return 36;
+    if (!TestRaycastRejectsInvalidInputAndInvalidBackendPayload())
+        return 37;
+    if (!TestRaycastLargeFiniteDirectionNormalizesSafely())
+        return 42;
+    if (!TestBackendBodyCreationFailureAndExceptionDoNotConsumeRuntimeIdentity())
+        return 38;
+    if (!TestPublicationRollbackFailureRetainsCleanupOwnership())
+        return 39;
+    if (!TestOverlapResultsAreDeterministicAndDetached())
+        return 40;
+    if (!TestDuplicateBackendShapeHandleDoesNotDestroyExistingOwnership())
+        return 41;
     return 0;
 }

@@ -98,3 +98,54 @@ class InteractionTimeAdapter
 };
 } // namespace epidemic::gameplay::interaction_time_integration
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/GameFramework/Integration/core_adapters.h`, `Epidemic/GameFramework/Interaction/interaction.h`, `Epidemic/GameFramework/Time/gameplay_time.h`.
+
+### Перечисления и допустимые категории
+
+- `InteractionTimeReconciliationKind`: `OrphanScheduleCancellation`
+
+### Состав типов и операции
+
+#### `InteractionTimeReconciliationRecord` (строка заголовка 17)
+
+Публичные поля и значения по умолчанию:
+
+- `InteractionTimeReconciliationKind kind = InteractionTimeReconciliationKind::OrphanScheduleCancellation`
+
+#### `InteractionTimeAdapter` (строка заголовка 24)
+
+Публичные сигнатуры операций:
+
+```cpp
+InteractionTimeAdapter(interaction::InteractionService& interactions, time::GameplayTimeService& time) : interactions_(interactions), time_(time);
+[[nodiscard]] foundation::Result<void> RegisterWithDispatcher(integration::ScheduledTriggerDispatcher& dispatcher);
+correctness never depends on retaining cursor history. [[nodiscard]] foundation::Result<std::uint64_t> Synchronize(ClockId clock);
+[[nodiscard]] ActionTypeId CompleteAction() const noexcept;
+[[nodiscard]] ChangeCursor Cursor() const noexcept;
+[[nodiscard]] const std::vector<InteractionTimeReconciliationRecord>& PendingReconciliations() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterWithDispatcher` | `InteractionTimeAdapter::RegisterWithDispatcher` | `EngineFramework/IntegrationLayer/InteractionTimeIntegration/src/interaction_time_adapter.cpp:39` |
+| `Synchronize` | `InteractionTimeAdapter::Synchronize` | `EngineFramework/IntegrationLayer/InteractionTimeIntegration/src/interaction_time_adapter.cpp:279` |
+

@@ -605,3 +605,378 @@ class ResourcesProductionService
 };
 } // namespace epidemic::gameplay::resources
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `ResourceStoragePolicy`: `Abstract`, `Stockpile`, `Node`, `Virtual`
+- `ResourceDecayPolicy`: `None`, `Linear`, `External`
+- `StockpileState`: `Active`, `Locked`, `Disabled`, `Destroyed`
+- `ResourceNodeState`: `Active`, `Depleted`, `Disabled`, `Regenerating`
+- `ProductionSiteState`: `Active`, `Paused`, `Disabled`, `Destroyed`
+- `ResourceReservationState`: `Active`, `Consumed`, `Released`
+- `ProductionPlanState`: `Planned`, `Active`, `Satisfied`, `Paused`, `Cancelled`
+- `ResourceChangeKind`: `StockpileCreated`, `ResourceAdded`, `ResourceRemoved`, `ResourceTransferred`, `ResourceReserved`, `ResourceReservationReleased`, `ResourceReservationConsumed`, `StockpileStateChanged`, `NodeCreated`, `NodeDepleted`, `NodeRegenerated`, `ProductionSiteCreated`, `ProductionCapabilityCreated`, `ProductionPlanCreated`, `ProductionPlanChanged`, `ShortageDetected`, `SurplusDetected`
+- `StockpileOperation`: `Add`, `Remove`, `Reserve`, `TransferSource`, `TransferDestination`
+
+### Состав типов и операции
+
+#### `ResourceTypeId` (строка заголовка 20)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceTypeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceTypeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceTypeId &) const noexcept = default;
+```
+
+#### `ResourceUnitId` (строка заголовка 34)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceUnitId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceUnitId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceUnitId &) const noexcept = default;
+```
+
+#### `ResourceStockpileId` (строка заголовка 48)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceStockpileId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceStockpileId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceStockpileId &) const noexcept = default;
+```
+
+#### `ResourceNodeId` (строка заголовка 62)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceNodeId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceNodeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceNodeId &) const noexcept = default;
+```
+
+#### `ProductionSiteId` (строка заголовка 76)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ProductionSiteId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ProductionSiteId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ProductionSiteId &) const noexcept = default;
+```
+
+#### `ProductionRecipeId` (строка заголовка 90)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ProductionRecipeId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ProductionRecipeId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ProductionRecipeId &) const noexcept = default;
+```
+
+#### `ResourceTransactionId` (строка заголовка 104)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceTransactionId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceTransactionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceTransactionId &) const noexcept = default;
+```
+
+#### `ResourceSourceId` (строка заголовка 118)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceSourceId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceSourceId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceSourceId &) const noexcept = default;
+```
+
+#### `ResourceSinkId` (строка заголовка 132)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceSinkId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceSinkId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceSinkId &) const noexcept = default;
+```
+
+#### `ResourceReservationId` (строка заголовка 146)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ResourceReservationId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ResourceReservationId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ResourceReservationId &) const noexcept = default;
+```
+
+#### `ProductionCapabilityId` (строка заголовка 160)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ProductionCapabilityId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ProductionCapabilityId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ProductionCapabilityId &) const noexcept = default;
+```
+
+#### `ProductionPlanId` (строка заголовка 174)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr ProductionPlanId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const ProductionPlanId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const ProductionPlanId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 188)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 190)
+
+#### `ResourceType` (строка заголовка 265)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `ResourceStoragePolicy storage_policy = ResourceStoragePolicy::Stockpile`
+- `ResourceDecayPolicy decay_policy = ResourceDecayPolicy::None`
+
+#### `ResourceQuantity` (строка заголовка 275)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed amount = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+```
+
+#### `ResourceStockpile` (строка заголовка 284)
+
+Публичные поля и значения по умолчанию:
+
+- `StockpileState state = StockpileState::Active`
+
+#### `ResourceNode` (строка заголовка 293)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed remaining_amount = 0`
+- `Fixed regeneration_rate_per_tick = 0`
+- `ResourceNodeState state = ResourceNodeState::Active`
+- `Fixed maximum_amount = 0`
+
+#### `ProductionSite` (строка заголовка 305)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet capabilities`
+- `ProductionSiteState state = ProductionSiteState::Active`
+- `Fixed efficiency_micro = 1'000'000`
+
+#### `ProductionRecipe` (строка заголовка 315)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `std::vector<ResourceQuantity> inputs`
+- `std::vector<ResourceQuantity> outputs`
+
+#### `ResourceReservation` (строка заголовка 324)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ResourceQuantity> quantities`
+- `ResourceReservationState state = ResourceReservationState::Active`
+
+#### `ProductionCapability` (строка заголовка 334)
+
+Публичные поля и значения по умолчанию:
+
+- `GameplayTagSet process_tags`
+- `Fixed capacity = 0`
+
+#### `ProductionPlan` (строка заголовка 342)
+
+Публичные поля и значения по умолчанию:
+
+- `Fixed target_quantity = 0`
+- `std::int32_t priority = 0`
+- `ProductionPlanState state = ProductionPlanState::Planned`
+
+#### `ResourceTransaction` (строка заголовка 352)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ResourceQuantity> quantities`
+
+#### `ResourceChange` (строка заголовка 363)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `ResourceChangeKind kind = ResourceChangeKind::ResourceAdded`
+- `Fixed amount = 0`
+
+#### `ResourceChangeBatch` (строка заголовка 376)
+
+Публичные поля и значения по умолчанию:
+
+- `bool snapshot_required = false`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `std::vector<ResourceChange> changes`
+
+#### `ResourcesSnapshot` (строка заголовка 387)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<ResourceStockpile> stockpiles`
+- `std::vector<std::pair<ResourceStockpileId, ResourceQuantity>> amounts`
+- `std::vector<ResourceNode> nodes`
+- `std::vector<ProductionSite> sites`
+- `std::vector<ResourceReservation> reservations`
+- `std::vector<ProductionCapability> capabilities`
+- `std::vector<ProductionPlan> plans`
+- `std::vector<ResourceTransaction> transactions`
+- `std::uint64_t change_epoch = 1`
+
+#### `ResourcesDiagnostics` (строка заголовка 408)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t stockpiles = 0`
+- `std::uint64_t resource_records = 0`
+- `std::uint64_t nodes = 0`
+- `std::uint64_t production_sites = 0`
+- `std::uint64_t active_reservations = 0`
+- `std::uint64_t production_capabilities = 0`
+- `std::uint64_t production_plans = 0`
+- `std::uint64_t transactions = 0`
+- `std::uint64_t shortages = 0`
+
+#### `ResourcesProductionService` (строка заголовка 421)
+
+Внутреннее состояние (не часть публичного API): `bool frozen_ = false`, `std::unordered_map<ResourceTypeId, ResourceType, IdHash> types_`, `std::unordered_map<ResourceStockpileId, ResourceStockpile, IdHash> stockpiles_`, `std::unordered_map<AmountKey, Fixed, AmountKeyHash> amounts_`, `std::unordered_map<AmountKey, Fixed, AmountKeyHash> reserved_amounts_`, `std::unordered_map<ResourceNodeId, ResourceNode, IdHash> nodes_`, `std::unordered_map<ProductionSiteId, ProductionSite, IdHash> sites_`, `std::unordered_map<ResourceReservationId, ResourceReservation, IdHash> reservations_`, `std::unordered_map<ProductionCapabilityId, ProductionCapability, IdHash> capabilities_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+ResourcesProductionService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+[[nodiscard]] foundation::Result<ResourceTypeId> RegisterResourceType(ResourceType type);
+[[nodiscard]] foundation::Result<ProductionRecipeId> RegisterProductionRecipe(ProductionRecipe recipe);
+void Freeze() noexcept;
+[[nodiscard]] const ResourceType *FindResourceType(ResourceTypeId id) const noexcept;
+[[nodiscard]] const ProductionRecipe *FindProductionRecipe(ProductionRecipeId id) const noexcept;
+[[nodiscard]] foundation::Result<ResourceStockpileId> CreateStockpile(ResourceStockpile stockpile);
+[[nodiscard]] foundation::Result<ResourceNodeId> CreateNode(ResourceNode node);
+[[nodiscard]] foundation::Result<ProductionSiteId> CreateProductionSite(ProductionSite site);
+[[nodiscard]] const ResourceStockpile *FindStockpile(ResourceStockpileId id) const noexcept;
+[[nodiscard]] Fixed GetAmount(ResourceStockpileId stockpile, ResourceTypeId type) const noexcept;
+[[nodiscard]] Fixed GetReservedAmount(ResourceStockpileId stockpile, ResourceTypeId type) const noexcept;
+[[nodiscard]] Fixed GetAvailableAmount(ResourceStockpileId stockpile, ResourceTypeId type) const noexcept;
+[[nodiscard]] bool CanReserve(ResourceStockpileId stockpile, std::span<const ResourceQuantity> quantities) const;
+[[nodiscard]] const ResourceReservation *FindReservation(ResourceReservationId reservation) const noexcept;
+[[nodiscard]] foundation::Result<ProductionCapabilityId> CreateProductionCapability( ProductionCapability capability);
+[[nodiscard]] const ProductionCapability *FindProductionCapability(ProductionCapabilityId id) const noexcept;
+[[nodiscard]] foundation::Result<ProductionPlanId> CreateProductionPlan(ProductionPlan plan);
+[[nodiscard]] const ProductionPlan *FindProductionPlan(ProductionPlanId id) const noexcept;
+[[nodiscard]] ResourceChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] std::uint64_t OldestChangeSequence() const noexcept;
+void PruneChangesBefore(std::uint64_t sequence) noexcept;
+[[nodiscard]] ResourcesSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(ResourcesSnapshot snapshot);
+[[nodiscard]] ResourcesDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `AmountKey` (строка заголовка 512)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const AmountKey &) const noexcept = default;
+```
+
+#### `AmountKeyHash` (строка заголовка 518)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const AmountKey &k) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `ResourcesProductionService` | `ResourcesProductionService::ResourcesProductionService` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:218` |
+| `RegisterResourceType` | `ResourcesProductionService::RegisterResourceType` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:223` |
+| `RegisterProductionRecipe` | `ResourcesProductionService::RegisterProductionRecipe` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:259` |
+| `FindResourceType` | `ResourcesProductionService::FindResourceType` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:307` |
+| `FindProductionRecipe` | `ResourcesProductionService::FindProductionRecipe` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:313` |
+| `CreateStockpile` | `ResourcesProductionService::CreateStockpile` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:431` |
+| `CreateNode` | `ResourcesProductionService::CreateNode` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:483` |
+| `CreateProductionSite` | `ResourcesProductionService::CreateProductionSite` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:545` |
+| `FindStockpile` | `ResourcesProductionService::FindStockpile` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:594` |
+| `GetAmount` | `ResourcesProductionService::GetAmount` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:639` |
+| `GetReservedAmount` | `ResourcesProductionService::GetReservedAmount` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:645` |
+| `GetAvailableAmount` | `ResourcesProductionService::GetAvailableAmount` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:651` |
+| `CanReserve` | `ResourcesProductionService::CanReserve` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:750` |
+| `FindReservation` | `ResourcesProductionService::FindReservation` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:894` |
+| `CreateProductionCapability` | `ResourcesProductionService::CreateProductionCapability` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:1261` |
+| `FindProductionCapability` | `ResourcesProductionService::FindProductionCapability` | `EngineFramework/GameplayWorldStateOwners/ResourcesProduction/src/resources_production.cpp:1311` |
+

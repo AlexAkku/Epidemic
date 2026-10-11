@@ -151,3 +151,22 @@ class DiagnosticsCounters
 [[nodiscard]] DiagnosticsCounters &GlobalCounters() noexcept;
 } // namespace epidemic::diagnostics
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Перечисления и допустимые категории
+
+- `CounterId`: `Frames`, `TasksScheduled`, `TasksCompleted`, `WorkerCount`, `CurrentFrameIndex`, `FrameTimeMicros`, `PlatformPumpTimeMicros`, `InputUpdateTimeMicros`, `ModuleTickTimeMicros`, `PresentTimeMicros`, `MainThreadTasksExecuted`, `EventBusQueuedEvents`, `EventBusDispatchedEvents`, `PlatformEventsThisFrame`, `InputEventsThisFrame`, `MemoryUsedBytes`, `MemoryPeakBytes`, `RhiFrames`, `RhiPresents`, `RhiResizeCount`, `Count`
+
+### Состав типов и операции
+
+#### `DiagnosticsCounters` (строка заголовка 99)
+
+### Интеграция и безопасность вызовов
+
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+

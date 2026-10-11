@@ -29,3 +29,9 @@ source_snapshot: "2026-10-10"
 [[06 EngineFramework/Модуль SaveGame]] и [[06 EngineFramework/Модуль World]]. Упражнение: различить Runtime World и gameplay World, а также authoritative и derived state.
 
 При чтении кода ориентируйтесь на реальные сигнатуры в приложенных header-снимках. Это учебный маршрут, а не набор компилируемых примеров.
+
+---
+
+## Рабочее упражнение с реальным API
+
+Найдите `SceneNodeId`, `ISceneNodeRegistry::CreateNode`, `DestroyNode`, `GetRevision`. В `scene_runtime_impl.cpp` определите, где генерируется ID, где проверяется overflow и когда поднимается revision. Затем откройте `scene_tests.cpp` и проверьте `TestCreateDestroyAndRevision`. Повторите тот же маршрут для `Result<T>` в Foundation и `Application::Bootstrap/Initialize` в Core.

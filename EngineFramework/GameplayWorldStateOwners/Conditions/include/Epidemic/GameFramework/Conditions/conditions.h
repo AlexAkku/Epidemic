@@ -17,56 +17,62 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::conditions
-{
-struct ConditionTypeId
-{
+namespace epidemic::gameplay::conditions {
+struct ConditionTypeId {
     TypeId value{};
-    [[nodiscard]] static constexpr ConditionTypeId FromString(std::string_view name) noexcept { return ConditionTypeId{TypeId::FromString(name)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr std::uint64_t Raw() const noexcept { return value.Raw(); }
-    [[nodiscard]] constexpr bool operator==(const ConditionTypeId&) const noexcept = default;
-    [[nodiscard]] constexpr auto operator<=>(const ConditionTypeId&) const noexcept = default;
+    [[nodiscard]] static constexpr ConditionTypeId FromString(std::string_view name) noexcept {
+        return ConditionTypeId{TypeId::FromString(name)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
+        return value.Raw();
+    }
+    [[nodiscard]] constexpr bool operator==(const ConditionTypeId &) const noexcept = default;
+    [[nodiscard]] constexpr auto operator<=>(const ConditionTypeId &) const noexcept = default;
 };
 
-struct ConditionInstanceId
-{
+struct ConditionInstanceId {
     GameplayObjectId value{};
-    [[nodiscard]] static constexpr ConditionInstanceId FromRaw(std::uint64_t high, std::uint64_t low) noexcept
-    {
+    [[nodiscard]] static constexpr ConditionInstanceId FromRaw(std::uint64_t high, std::uint64_t low) noexcept {
         return ConditionInstanceId{GameplayObjectId::FromRaw(high, low)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr std::uint64_t High() const noexcept { return value.High(); }
-    [[nodiscard]] constexpr std::uint64_t Low() const noexcept { return value.Low(); }
-    [[nodiscard]] constexpr bool operator==(const ConditionInstanceId&) const noexcept = default;
-    [[nodiscard]] constexpr auto operator<=>(const ConditionInstanceId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr std::uint64_t High() const noexcept {
+        return value.High();
+    }
+    [[nodiscard]] constexpr std::uint64_t Low() const noexcept {
+        return value.Low();
+    }
+    [[nodiscard]] constexpr bool operator==(const ConditionInstanceId &) const noexcept = default;
+    [[nodiscard]] constexpr auto operator<=>(const ConditionInstanceId &) const noexcept = default;
 };
 
-struct ConditionTypeIdHash
-{
-    [[nodiscard]] std::size_t operator()(ConditionTypeId id) const noexcept { return std::hash<TypeId>{}(id.value); }
+struct ConditionTypeIdHash {
+    [[nodiscard]] std::size_t operator()(ConditionTypeId id) const noexcept {
+        return std::hash<TypeId>{}(id.value);
+    }
 };
 
-struct ConditionInstanceIdHash
-{
-    [[nodiscard]] std::size_t operator()(const ConditionInstanceId& id) const noexcept
-    {
+struct ConditionInstanceIdHash {
+    [[nodiscard]] std::size_t operator()(const ConditionInstanceId &id) const noexcept {
         return std::hash<GameplayObjectId>{}(id.value);
     }
 };
 
-struct RegisteredConditionPayload
-{
+struct RegisteredConditionPayload {
     TypeId type{};
     std::uint32_t schema_version = 1;
     std::vector<std::byte> bytes;
 
-    [[nodiscard]] bool Empty() const noexcept { return bytes.empty(); }
+    [[nodiscard]] bool Empty() const noexcept {
+        return bytes.empty();
+    }
 
-    template <typename T>
-    [[nodiscard]] static RegisteredConditionPayload FromTrivial(TypeId type_id, const T& value)
-    {
+    template <typename T> [[nodiscard]] static RegisteredConditionPayload FromTrivial(TypeId type_id, const T &value) {
         static_assert(std::is_trivially_copyable_v<T>);
         RegisteredConditionPayload result;
         result.type = type_id;
@@ -76,11 +82,9 @@ struct RegisteredConditionPayload
         return result;
     }
 
-    template <typename T> [[nodiscard]] std::optional<T> AsTrivial(TypeId expected_type) const
-    {
+    template <typename T> [[nodiscard]] std::optional<T> AsTrivial(TypeId expected_type) const {
         static_assert(std::is_trivially_copyable_v<T>);
-        if (type != expected_type || bytes.size() != sizeof(T))
-        {
+        if (type != expected_type || bytes.size() != sizeof(T)) {
             return std::nullopt;
         }
         T value{};
@@ -89,8 +93,7 @@ struct RegisteredConditionPayload
     }
 };
 
-enum class ConditionStackingPolicy
-{
+enum class ConditionStackingPolicy {
     Independent,
     UniquePerSubject,
     UniquePerSource,
@@ -101,37 +104,32 @@ enum class ConditionStackingPolicy
     ReplaceExisting,
 };
 
-enum class ConditionPersistencePolicy
-{
+enum class ConditionPersistencePolicy {
     Transient,
     Session,
     Persistent,
 };
 
-enum class ConditionMaterializationPolicy
-{
+enum class ConditionMaterializationPolicy {
     Always,
     AbstractCapable,
     MaterializedOnly,
 };
 
-enum class ConditionDematerializationPolicy
-{
+enum class ConditionDematerializationPolicy {
     Pause,
     Remove,
     RejectDematerialization,
 };
 
-enum class PeriodicCatchUpPolicy
-{
+enum class PeriodicCatchUpPolicy {
     FireEach,
     FireOnce,
     Aggregate,
     Skip,
 };
 
-struct ConditionDefinition
-{
+struct ConditionDefinition {
     ConditionTypeId id{};
     std::string canonical_name;
     GameplayTagSet tags;
@@ -153,8 +151,7 @@ struct ConditionDefinition
     PeriodicCatchUpPolicy periodic_catch_up = PeriodicCatchUpPolicy::Aggregate;
 };
 
-struct ConditionInstance
-{
+struct ConditionInstance {
     ConditionInstanceId id{};
     ConditionTypeId type{};
     GameplayObjectRef subject{};
@@ -172,8 +169,7 @@ struct ConditionInstance
     Revision revision{};
 };
 
-struct ApplyConditionRequest
-{
+struct ApplyConditionRequest {
     ConditionTypeId type{};
     GameplayObjectRef subject{};
     GameplayObjectRef source{};
@@ -184,8 +180,7 @@ struct ApplyConditionRequest
     GameplayContext context{};
 };
 
-enum class ConditionApplyDisposition
-{
+enum class ConditionApplyDisposition {
     Added,
     Refreshed,
     Stacked,
@@ -194,15 +189,13 @@ enum class ConditionApplyDisposition
     NoOp,
 };
 
-struct ApplyConditionResult
-{
+struct ApplyConditionResult {
     ConditionApplyDisposition disposition = ConditionApplyDisposition::Rejected;
     ConditionInstanceId instance{};
     std::optional<ConditionInstanceId> replaced_instance{};
 };
 
-enum class ConditionRemovalReason
-{
+enum class ConditionRemovalReason {
     Expired,
     Dispelled,
     RemovedByEffect,
@@ -211,8 +204,7 @@ enum class ConditionRemovalReason
     SystemCleanup,
 };
 
-enum class ConditionChangeKind
-{
+enum class ConditionChangeKind {
     Added,
     Refreshed,
     DurationExtended,
@@ -224,8 +216,7 @@ enum class ConditionChangeKind
     MaterializationPauseChanged,
 };
 
-struct ConditionChange
-{
+struct ConditionChange {
     std::uint64_t sequence = 0;
     ConditionChangeKind kind = ConditionChangeKind::Added;
     ConditionInstanceId instance{};
@@ -243,8 +234,7 @@ struct ConditionChange
     std::uint32_t stacks = 0;
 };
 
-struct ConditionChangeBatch
-{
+struct ConditionChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::vector<ConditionChange> changes;
@@ -253,8 +243,7 @@ struct ConditionChangeBatch
     ChangeCursor latest_cursor{};
 };
 
-struct ConditionsSnapshot
-{
+struct ConditionsSnapshot {
     std::vector<ConditionInstance> instances;
     MonotonicIdGenerator<GameplayObjectId>::Snapshot id_generator{};
     Revision revision{};
@@ -264,8 +253,7 @@ struct ConditionsSnapshot
     std::uint64_t change_epoch = 1;
 };
 
-struct ConditionsDiagnostics
-{
+struct ConditionsDiagnostics {
     std::uint64_t active_conditions = 0;
     std::uint64_t applied = 0;
     std::uint64_t expired = 0;
@@ -275,22 +263,20 @@ struct ConditionsDiagnostics
     std::uint64_t paused_for_materialization = 0;
 };
 
-enum class ConditionSubjectMaterializationState
-{
+enum class ConditionSubjectMaterializationState {
     Unavailable,
     Abstract,
     Materialized,
 };
 
-class IConditionSubjectStateProvider
-{
+class IConditionSubjectStateProvider {
   public:
     virtual ~IConditionSubjectStateProvider() = default;
-    [[nodiscard]] virtual ConditionSubjectMaterializationState GetMaterializationState(GameplayObjectRef subject) const = 0;
+    [[nodiscard]] virtual ConditionSubjectMaterializationState
+    GetMaterializationState(GameplayObjectRef subject) const = 0;
 };
 
-class ConditionService
-{
+class ConditionService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<ConditionService>;
 
   public:
@@ -298,126 +284,112 @@ class ConditionService
 
     ConditionService();
 
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept
-    {
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
         return GameplayDomainId::FromString("framework.conditions");
     }
 
-    [[nodiscard]] foundation::Result<ConditionTypeId> RegisterCondition(
-        ConditionDefinition definition,
-        PayloadValidator validator = {});
-    [[nodiscard]] foundation::Result<void> SetSubjectStateProvider(const IConditionSubjectStateProvider* provider);
-    void Freeze() noexcept { frozen_ = true; }
-    [[nodiscard]] bool IsFrozen() const noexcept { return frozen_; }
+    [[nodiscard]] foundation::Result<ConditionTypeId> RegisterCondition(ConditionDefinition definition,
+                                                                        PayloadValidator validator = {});
+    [[nodiscard]] foundation::Result<void> SetSubjectStateProvider(const IConditionSubjectStateProvider *provider);
+    void Freeze() noexcept {
+        frozen_ = true;
+    }
+    [[nodiscard]] bool IsFrozen() const noexcept {
+        return frozen_;
+    }
 
-    [[nodiscard]] const ConditionDefinition* FindDefinition(ConditionTypeId id) const noexcept;
+    [[nodiscard]] const ConditionDefinition *FindDefinition(ConditionTypeId id) const noexcept;
 
     [[nodiscard]] foundation::Result<ApplyConditionResult> Apply(ApplyConditionRequest request);
-    [[nodiscard]] foundation::Result<void> Remove(
-        ConditionInstanceId instance,
-        ConditionRemovalReason reason,
-        GameplayContext context = {});
-    [[nodiscard]] std::uint64_t RemoveByType(
-        GameplayObjectRef subject,
-        ConditionTypeId type,
-        ConditionRemovalReason reason,
-        GameplayContext context = {});
-    [[nodiscard]] std::uint64_t RemoveBySource(
-        GameplayObjectRef subject,
-        GameplayObjectRef source,
-        ConditionRemovalReason reason,
-        GameplayContext context = {});
-    [[nodiscard]] std::uint64_t RemoveByTag(
-        GameplayObjectRef subject,
-        TagId tag,
-        const GameplayTagRegistry& tags,
-        ConditionRemovalReason reason,
-        GameplayContext context = {});
-    [[nodiscard]] std::uint64_t RemoveSubject(
-        GameplayObjectRef subject,
-        ConditionRemovalReason reason = ConditionRemovalReason::SubjectDestroyed,
-        GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> Remove(ConditionInstanceId instance, ConditionRemovalReason reason,
+                                                  GameplayContext context = {});
+    [[nodiscard]] std::uint64_t RemoveByType(GameplayObjectRef subject, ConditionTypeId type,
+                                             ConditionRemovalReason reason, GameplayContext context = {});
+    [[nodiscard]] std::uint64_t RemoveBySource(GameplayObjectRef subject, GameplayObjectRef source,
+                                               ConditionRemovalReason reason, GameplayContext context = {});
+    [[nodiscard]] std::uint64_t RemoveByTag(GameplayObjectRef subject, TagId tag, const GameplayTagRegistry &tags,
+                                            ConditionRemovalReason reason, GameplayContext context = {});
+    [[nodiscard]] std::uint64_t RemoveSubject(GameplayObjectRef subject,
+                                              ConditionRemovalReason reason = ConditionRemovalReason::SubjectDestroyed,
+                                              GameplayContext context = {});
 
-    [[nodiscard]] foundation::Result<void> SetScheduleLinks(
-        ConditionInstanceId instance,
-        std::optional<ScheduleId> expiration,
-        std::optional<ScheduleId> periodic,
-        GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> HandleExpirationDue(
-        ConditionInstanceId instance,
-        GameplayTimePoint observed_at,
-        GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> HandlePeriodicDue(
-        ConditionInstanceId instance,
-        std::uint64_t occurrence_count,
-        GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> SetScheduleLinks(ConditionInstanceId instance,
+                                                            std::optional<ScheduleId> expiration,
+                                                            std::optional<ScheduleId> periodic,
+                                                            GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void>
+    HandleExpirationDue(ConditionInstanceId instance, GameplayTimePoint observed_at, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void>
+    HandlePeriodicDue(ConditionInstanceId instance, std::uint64_t occurrence_count, GameplayContext context = {});
 
-    [[nodiscard]] foundation::Result<void> NotifySubjectMaterialization(
-        GameplayObjectRef subject,
-        bool materialized,
-        GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> NotifySubjectMaterialization(GameplayObjectRef subject, bool materialized,
+                                                                        GameplayContext context = {});
 
-    [[nodiscard]] const ConditionInstance* Find(ConditionInstanceId id) const noexcept;
+    [[nodiscard]] const ConditionInstance *Find(ConditionInstanceId id) const noexcept;
     [[nodiscard]] std::optional<ConditionInstance> FindCopy(ConditionInstanceId id) const noexcept;
     [[nodiscard]] std::vector<ConditionInstance> GetConditions(GameplayObjectRef subject) const;
     [[nodiscard]] std::vector<ConditionInstance> AllConditions() const;
     [[nodiscard]] bool HasCondition(GameplayObjectRef subject, ConditionTypeId type) const;
-    [[nodiscard]] bool HasConditionTag(GameplayObjectRef subject, TagId tag, const GameplayTagRegistry& tags) const;
+    [[nodiscard]] bool HasConditionTag(GameplayObjectRef subject, TagId tag, const GameplayTagRegistry &tags) const;
     [[nodiscard]] std::vector<ConditionInstance> FindByType(ConditionTypeId type) const;
     [[nodiscard]] std::vector<ConditionInstance> FindBySource(GameplayObjectRef source) const;
 
-    private:
-        [[nodiscard]] std::vector<ConditionChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] ConditionChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] ConditionChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+  private:
+    [[nodiscard]] std::vector<ConditionChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] ConditionChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] ConditionChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
+                                                                          : next_change_sequence_ - 1};
         if (!batch.snapshot_required && cursor.sequence < batch.latest_cursor.sequence && batch.changes.empty())
             batch.snapshot_required = true;
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     void PruneChangesBefore(std::uint64_t sequence);
 
     [[nodiscard]] ConditionsSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(ConditionsSnapshot snapshot);
     [[nodiscard]] ConditionsDiagnostics GetDiagnostics() const noexcept;
-    [[nodiscard]] Revision CurrentRevision() const noexcept { return revision_; }
+    [[nodiscard]] Revision CurrentRevision() const noexcept {
+        return revision_;
+    }
 
   private:
     static constexpr std::size_t kChangeJournalCapacity = 4096;
 
-    struct DefinitionEntry
-    {
+    struct DefinitionEntry {
         ConditionDefinition definition;
         PayloadValidator validator;
     };
 
-    [[nodiscard]] foundation::Result<void> ValidatePayload(const DefinitionEntry& definition, const RegisteredConditionPayload& payload) const;
-    [[nodiscard]] std::vector<ConditionInstanceId> MatchingInstances(const ApplyConditionRequest& request, const ConditionDefinition& definition) const;
-    [[nodiscard]] foundation::Result<ConditionInstanceId> AddNew(const ApplyConditionRequest& request, const ConditionDefinition& definition);
-    [[nodiscard]] foundation::Result<void> RemoveAtIndex(std::size_t index, ConditionRemovalReason reason, GameplayContext context);
-    [[nodiscard]] std::optional<GameplayTimePoint> ComputeExpiration(GameplayTimePoint now, GameplayDuration duration) const noexcept;
-    void IndexInstance(const ConditionInstance& instance);
-    void UnindexInstance(const ConditionInstance& instance);
+    [[nodiscard]] foundation::Result<void> ValidatePayload(const DefinitionEntry &definition,
+                                                           const RegisteredConditionPayload &payload) const;
+    [[nodiscard]] std::vector<ConditionInstanceId> MatchingInstances(const ApplyConditionRequest &request,
+                                                                     const ConditionDefinition &definition) const;
+    [[nodiscard]] foundation::Result<ConditionInstanceId> AddNew(const ApplyConditionRequest &request,
+                                                                 const ConditionDefinition &definition);
+    [[nodiscard]] foundation::Result<void> RemoveAtIndex(std::size_t index, ConditionRemovalReason reason,
+                                                         GameplayContext context);
+    [[nodiscard]] std::optional<GameplayTimePoint> ComputeExpiration(GameplayTimePoint now,
+                                                                     GameplayDuration duration) const noexcept;
+    void IndexInstance(const ConditionInstance &instance);
+    void UnindexInstance(const ConditionInstance &instance);
     void RecordChange(ConditionChange change) noexcept;
     [[nodiscard]] std::optional<Revision> NextRevision() const noexcept;
 
     std::unordered_map<ConditionTypeId, DefinitionEntry, ConditionTypeIdHash> definitions_;
-    const IConditionSubjectStateProvider* subject_state_provider_ = nullptr;
+    const IConditionSubjectStateProvider *subject_state_provider_ = nullptr;
     std::vector<ConditionInstance> instances_;
     std::unordered_map<ConditionInstanceId, std::size_t, ConditionInstanceIdHash> id_to_index_;
     std::unordered_map<GameplayObjectRef, std::vector<ConditionInstanceId>> subject_index_;
@@ -437,4 +409,3 @@ class ConditionService
     std::uint64_t stack_merges_ = 0;
 };
 } // namespace epidemic::gameplay::conditions
-

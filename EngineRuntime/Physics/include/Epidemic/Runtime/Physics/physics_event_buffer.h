@@ -4,11 +4,9 @@
 
 #include <span>
 
-namespace epidemic::runtime::physics
-{
+namespace epidemic::runtime::physics {
 // Event boundary contract for publishing contacts out of Physics without mutating World directly.
-class IPhysicsEventBuffer
-{
+class IPhysicsEventBuffer {
   public:
     virtual ~IPhysicsEventBuffer() = default;
 

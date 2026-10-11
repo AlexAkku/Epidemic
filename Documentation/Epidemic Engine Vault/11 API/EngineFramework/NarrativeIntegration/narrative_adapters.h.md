@@ -282,3 +282,162 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Knowledge/knowledge.h`, `Epidemic/GameFramework/Narrative/narrative.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/Narrative/narrative.h`.
+
+### Перечисления и допустимые категории
+
+- `ExternalConsequenceDeliveryState`: `Pending`, `Retryable`, `Applied`, `FailedTerminal`
+
+### Состав типов и операции
+
+#### `NarrativeIntegrationContractRegistry` (строка заголовка 23)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<TypeId, NarrativeEventContract> contracts_`, `bool frozen_ = false`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] static constexpr TypeId DiscoveryContractId() noexcept;
+[[nodiscard]] static constexpr TypeId WorldEventContractId() noexcept;
+[[nodiscard]] static constexpr TypeId EncounterCompletedContractId() noexcept;
+[[nodiscard]] static constexpr narrative::NarrativeEventTypeId DiscoveryEventType() noexcept;
+[[nodiscard]] static constexpr narrative::NarrativeEventTypeId WorldEventType() noexcept;
+[[nodiscard]] static constexpr narrative::NarrativeEventTypeId EncounterCompletedEventType() noexcept;
+[[nodiscard]] static constexpr TagId DiscoveryTag() noexcept;
+[[nodiscard]] static constexpr TagId EncounterCompletedTag() noexcept;
+[[nodiscard]] foundation::Result<void> RegisterContract(NarrativeEventContract contract);
+[[nodiscard]] foundation::Result<void> RegisterStandardContracts();
+[[nodiscard]] foundation::Result<void> Freeze();
+[[nodiscard]] const NarrativeEventContract *Find(TypeId id) const noexcept;
+[[nodiscard]] bool Frozen() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `NarrativeSemanticEventAdapter` (строка заголовка 70)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit NarrativeSemanticEventAdapter(const NarrativeIntegrationContractRegistry &contracts) noexcept : contracts_(contracts);
+```
+
+#### `NarrativeExternalConsequenceDelivery` (строка заголовка 117)
+
+Публичные поля и значения по умолчанию:
+
+- `ExternalConsequenceDeliveryState state = ExternalConsequenceDeliveryState::Pending`
+- `std::vector<std::byte> payload`
+
+#### `NarrativeExternalConsequenceSnapshot` (строка заголовка 134)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<NarrativeExternalConsequenceDelivery> deliveries`
+
+#### `NarrativeExternalConsequenceOutbox` (строка заголовка 140)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit NarrativeExternalConsequenceOutbox(std::size_t max_records = 4096) noexcept : max_records_(max_records);
+[[nodiscard]] narrative::NarrativeConsequenceResult Execute( const narrative::NarrativeConsequenceDefinition &definition, const narrative::NarrativeConsequenceExecution &execution, const narrative::NarrativeExecutionContext &context) const override;
+[[nodiscard]] std::vector<NarrativeExternalConsequenceDelivery> PendingDeliveries() const;
+[[nodiscard]] const NarrativeExternalConsequenceDelivery *FindDelivery( narrative::NarrativeConsequenceExecutionId execution) const noexcept;
+[[nodiscard]] NarrativeExternalConsequenceSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> ValidateSnapshot(const NarrativeExternalConsequenceSnapshot &snapshot) const;
+[[nodiscard]] foundation::Result<NarrativeExternalConsequenceSnapshot> PrepareSnapshotForRestore( NarrativeExternalConsequenceSnapshot snapshot) const;
+void PublishPreparedSnapshot(NarrativeExternalConsequenceSnapshot &&snapshot) noexcept;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(NarrativeExternalConsequenceSnapshot snapshot);
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+[[nodiscard]] std::size_t Capacity() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `NarrativeExternalConsequenceSaveParticipant` (строка заголовка 185)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit NarrativeExternalConsequenceSaveParticipant(NarrativeExternalConsequenceOutbox &outbox) noexcept : outbox_(outbox);
+[[nodiscard]] savegame::SaveParticipantId Id() const noexcept override;
+[[nodiscard]] savegame::SaveSchemaVersion SchemaVersion() const noexcept override;
+[[nodiscard]] std::vector<savegame::SaveParticipantId> Dependencies() const override;
+[[nodiscard]] foundation::Result<savegame::SaveSection> CaptureSnapshot( const savegame::SaveContext &context) const override;
+[[nodiscard]] foundation::Result<void> ValidateSnapshot(const savegame::SaveSection &section, const savegame::RestoreContext &context) const override;
+[[nodiscard]] foundation::Result<std::unique_ptr<savegame::IRestoreStage>> StageRestore( const savegame::SaveSection &section, const savegame::RestoreContext &context) override;
+void CommitRestore(savegame::IRestoreStage &stage) noexcept override;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `KnowledgeNarrativeReference` (строка заголовка 209)
+
+Публичные поля и значения по умолчанию:
+
+- `static constexpr std::uint32_t kSchemaVersion = 1`
+- `std::uint32_t schema_version = kSchemaVersion`
+- `knowledge::KnowledgeAssertionValue assertion = knowledge::KnowledgeAssertionValue::Unknown`
+- `knowledge::KnowledgeEpistemicState epistemic_state = knowledge::KnowledgeEpistemicState::Suspected`
+- `knowledge::KnowledgeConfidence confidence = knowledge::KnowledgeConfidence::None`
+- `std::uint32_t transmission_depth = 0`
+
+#### `KnowledgeNarrativeAdapter` (строка заголовка 228)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<narrative::ClueId> CreateClueFromKnowledge( narrative::NarrativeService &narrative_service, const knowledge::KnowledgeService &knowledge_service, knowledge::KnowledgeRecordId record, GameplayObjectRef area, GameplayContext context) const;
+[[nodiscard]] foundation::Result<narrative::RumorId> CreateRumorFromKnowledge( narrative::NarrativeService &narrative_service, const knowledge::KnowledgeService &knowledge_service, knowledge::KnowledgeRecordId record, GameplayObjectRef scope, GameplayDuration lifetime, GameplayContext context) const;
+[[nodiscard]] static foundation::Result<KnowledgeNarrativeReference> DecodeReference( std::span<const std::byte> payload);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterContract` | `NarrativeIntegrationContractRegistry::RegisterContract` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:372` |
+| `RegisterStandardContracts` | `NarrativeIntegrationContractRegistry::RegisterStandardContracts` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:394` |
+| `Freeze` | `NarrativeIntegrationContractRegistry::Freeze` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:420` |
+| `Find` | `NarrativeIntegrationContractRegistry::Find` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:440` |
+| `DiscoveryContractId` | `NarrativeIntegrationContractRegistry::DiscoveryContractId` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:470` |
+| `WorldEventContractId` | `NarrativeIntegrationContractRegistry::WorldEventContractId` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:519` |
+| `EncounterCompletedContractId` | `NarrativeIntegrationContractRegistry::EncounterCompletedContractId` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:544` |
+| `FindDelivery` | `NarrativeExternalConsequenceOutbox::FindDelivery` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:568` |
+| `Execute` | `NarrativeExternalConsequenceOutbox::Execute` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:585` |
+| `PendingDeliveries` | `NarrativeExternalConsequenceOutbox::PendingDeliveries` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:644` |
+| `CaptureSnapshot` | `NarrativeExternalConsequenceOutbox::CaptureSnapshot` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:766` |
+| `ValidateSnapshot` | `NarrativeExternalConsequenceOutbox::ValidateSnapshot` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:775` |
+| `PrepareSnapshotForRestore` | `NarrativeExternalConsequenceOutbox::PrepareSnapshotForRestore` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:797` |
+| `PublishPreparedSnapshot` | `NarrativeExternalConsequenceOutbox::PublishPreparedSnapshot` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:807` |
+| `RestoreSnapshot` | `NarrativeExternalConsequenceOutbox::RestoreSnapshot` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:814` |
+| `Id` | `NarrativeExternalConsequenceSaveParticipant::Id` | `EngineFramework/IntegrationLayer/NarrativeIntegration/src/narrative_adapters.cpp:825` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp:16`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/narrativeintegration_save_participant_tests.cpp:17`
+

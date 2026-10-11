@@ -4,24 +4,20 @@
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::ownership;
 
-static GameplayObjectRef Ref(const char *n)
-{
+static GameplayObjectRef Ref(const char *n) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(n)};
 }
 
-class TestRoles final : public IOwnershipRoleProvider
-{
+class TestRoles final : public IOwnershipRoleProvider {
   public:
     GameplayObjectRef member{};
     TypeId role{};
-    bool HasRole(GameplayObjectRef subject, TypeId required, const GameplayContext &) const noexcept override
-    {
+    bool HasRole(GameplayObjectRef subject, TypeId required, const GameplayContext &) const noexcept override {
         return subject == member && required == role;
     }
 };
 
-int main()
-{
+int main() {
     OwnershipService o;
     const auto player = Ref("player");
     const auto npc = Ref("npc");
@@ -251,8 +247,8 @@ int main()
 
     // Goal 4: module-local restore fault seam replaces process-global allocation override.
     const auto restore_before = restored.CaptureSnapshot();
-    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit})
-    {
+    for (const auto fault :
+         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         if (restored.RestoreSnapshot(restore_before))
             return 931;

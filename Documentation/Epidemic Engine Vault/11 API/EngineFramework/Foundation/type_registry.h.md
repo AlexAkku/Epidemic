@@ -120,3 +120,61 @@ template <typename TId> class StableTypeRegistry
 };
 } // namespace epidemic::gameplay
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/ids.h`.
+
+### Состав типов и операции
+
+#### `StableTypeRegistry` (строка заголовка 16)
+
+Внутреннее состояние (не часть публичного API): `std::unordered_map<std::uint64_t, Entry> entries_`, `bool frozen_ = false`.
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<TId> Register(std::string_view canonical_name);
+[[nodiscard]] const Entry* Find(TId id) const noexcept;
+[[nodiscard]] const Entry* Find(std::string_view canonical_name) const noexcept;
+void Freeze() noexcept;
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] std::size_t Size() const noexcept;
+[[nodiscard]] std::vector<Entry> Entries() const;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `Entry` (строка заголовка 19)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Register` | `GameplayTagRegistry::Register` | `EngineFramework/BaseInfrastructure/Foundation/src/gameplay_foundation.cpp:32` |
+| `Find` | `GameplayTagRegistry::Find` | `EngineFramework/BaseInfrastructure/Foundation/src/gameplay_foundation.cpp:115` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Register`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:269`
+- `Size`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:270`
+- `Find`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:303`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/foundation_tests.cpp:316`
+

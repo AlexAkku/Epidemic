@@ -6,12 +6,10 @@
 #include <cstdint>
 #include <string_view>
 
-namespace epidemic::diagnostics
-{
+namespace epidemic::diagnostics {
 // Process-wide numeric diagnostics counters. Arithmetic saturates instead of wrapping so observability
 // cannot publish nonsensical values after an integer boundary is reached.
-enum class CounterId : std::uint8_t
-{
+enum class CounterId : std::uint8_t {
     Frames,
     TasksScheduled,
     TasksCompleted,
@@ -35,20 +33,16 @@ enum class CounterId : std::uint8_t
     Count,
 };
 
-[[nodiscard]] constexpr std::size_t CounterCount() noexcept
-{
+[[nodiscard]] constexpr std::size_t CounterCount() noexcept {
     return static_cast<std::size_t>(CounterId::Count);
 }
 
-[[nodiscard]] constexpr bool IsValidCounterId(CounterId counter_id) noexcept
-{
+[[nodiscard]] constexpr bool IsValidCounterId(CounterId counter_id) noexcept {
     return static_cast<std::size_t>(counter_id) < CounterCount();
 }
 
-[[nodiscard]] inline std::string_view ToString(CounterId counter_id) noexcept
-{
-    switch (counter_id)
-    {
+[[nodiscard]] inline std::string_view ToString(CounterId counter_id) noexcept {
+    switch (counter_id) {
     case CounterId::Frames:
         return "frames";
     case CounterId::TasksScheduled:
@@ -96,8 +90,7 @@ enum class CounterId : std::uint8_t
     return "unknown";
 }
 
-class DiagnosticsCounters
-{
+class DiagnosticsCounters {
   public:
     // Adds delta with signed saturation. Invalid CounterId values are rejected as a no-op.
     void Increment(CounterId counter_id, std::int64_t delta = 1) noexcept;
@@ -115,8 +108,7 @@ class DiagnosticsCounters
     void Reset() noexcept;
 
   private:
-    [[nodiscard]] static constexpr std::size_t ToIndex(CounterId counter_id) noexcept
-    {
+    [[nodiscard]] static constexpr std::size_t ToIndex(CounterId counter_id) noexcept {
         return static_cast<std::size_t>(counter_id);
     }
 

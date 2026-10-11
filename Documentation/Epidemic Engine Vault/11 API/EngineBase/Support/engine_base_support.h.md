@@ -134,3 +134,34 @@ void RegisterRhiFrameLoop(core::Application &application,
 void RegisterFrameThrottle(core::Application &application, std::chrono::milliseconds duration);
 } // namespace epidemic::enginebase
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Core/application.h`, `Epidemic/EngineBase/graphics_backend.h`, `Epidemic/Foundation/result.h`, `Epidemic/Input/iinput_system.h`, `Epidemic/Platform/iplatform_runtime.h`, `Epidemic/Platform/iwindow.h`, `Epidemic/Platform/iwindow_system.h`, `Epidemic/Platform/platform_event.h`, `Epidemic/RHI/descriptors.h`, `Epidemic/RHI/irhi_command_context.h`, `Epidemic/RHI/irhi_device.h`, `Epidemic/RHI/irhi_swap_chain.h`.
+
+### Состав типов и операции
+
+#### `GraphicsRuntimeServices` (строка заголовка 51)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<rhi::IRhiDevice> device`
+- `std::shared_ptr<rhi::IRhiCommandContext> command_context`
+
+#### `FramePlatformEvents` (строка заголовка 58)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<platform::PlatformEvent> events`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+

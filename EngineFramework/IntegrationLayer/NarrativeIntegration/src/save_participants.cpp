@@ -1,46 +1,60 @@
 // Generated owner bindings; gameplay state remains authoritative in its original owner.
 #include "Epidemic/GameFramework/NarrativeIntegration/narrative_adapters.h"
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
-namespace epidemic::gameplay::savegame::detail
-{
-template <> struct SnapshotValueCodec<narrative::NarrativeValue>
-{
-    template <typename IO> static void Transfer(IO& io, narrative::NarrativeValue& value)
-    {
+namespace epidemic::gameplay::savegame::detail {
+template <> struct SnapshotValueCodec<narrative::NarrativeValue> {
+    template <typename IO> static void Transfer(IO &io, narrative::NarrativeValue &value) {
         std::uint8_t alternative = static_cast<std::uint8_t>(value.index());
         TransferSnapshot(io, alternative);
-        if (alternative >= 5) throw std::runtime_error("invalid NarrativeValue alternative");
-        if constexpr (IO::reading)
-        {
-            switch (alternative)
-            {
-            case 0: value.emplace<0>(); break;
-            case 1: value.emplace<1>(); break;
-            case 2: value.emplace<2>(); break;
-            case 3: value.emplace<3>(); break;
-            case 4: value.emplace<4>(); break;
+        if (alternative >= 5)
+            throw std::runtime_error("invalid NarrativeValue alternative");
+        if constexpr (IO::reading) {
+            switch (alternative) {
+            case 0:
+                value.emplace<0>();
+                break;
+            case 1:
+                value.emplace<1>();
+                break;
+            case 2:
+                value.emplace<2>();
+                break;
+            case 3:
+                value.emplace<3>();
+                break;
+            case 4:
+                value.emplace<4>();
+                break;
             }
         }
-        std::visit([&](auto& field) { TransferSnapshot(io, field); }, value);
+        std::visit(
+            [&](auto &field) {
+                TransferSnapshot(io, field);
+            },
+            value);
     }
 };
 }
 
-namespace epidemic::gameplay
-{
-template <> struct SnapshotRestoreAccess<epidemic::gameplay::narrative::NarrativeService>
-{
+namespace epidemic::gameplay {
+template <> struct SnapshotRestoreAccess<epidemic::gameplay::narrative::NarrativeService> {
     using Owner = epidemic::gameplay::narrative::NarrativeService;
     using Snapshot = epidemic::gameplay::narrative::NarrativeSnapshot;
-    static Snapshot Capture(const Owner& o) { return o.CaptureSnapshot(); }
-    static std::unique_ptr<Owner> Clone(const Owner& o, savegame::SaveRestoreWorkspace& w)
-    {
-        (void)w; return std::make_unique<Owner>(o);
+    static Snapshot Capture(const Owner &o) {
+        return o.CaptureSnapshot();
     }
-    static ::epidemic::foundation::Result<void> Restore(Owner& o, Snapshot s, savegame::SaveRestoreWorkspace& w) { (void)w; return o.RestoreSnapshot(std::move(s)); }
-    static Owner& View(Owner& o) noexcept { return o; }
-    static void Commit(Owner& live, Owner& candidate) noexcept
-    {
+    static std::unique_ptr<Owner> Clone(const Owner &o, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return std::make_unique<Owner>(o);
+    }
+    static ::epidemic::foundation::Result<void> Restore(Owner &o, Snapshot s, savegame::SaveRestoreWorkspace &w) {
+        (void)w;
+        return o.RestoreSnapshot(std::move(s));
+    }
+    static Owner &View(Owner &o) noexcept {
+        return o;
+    }
+    static void Commit(Owner &live, Owner &candidate) noexcept {
         savegame::detail::SwapPreparedMember(live.activated_beats_, candidate.activated_beats_);
         savegame::detail::SwapPreparedMember(live.changes_, candidate.changes_);
         savegame::detail::SwapPreparedMember(live.choice_ids_, candidate.choice_ids_);
@@ -72,10 +86,11 @@ template <> struct SnapshotRestoreAccess<epidemic::gameplay::narrative::Narrativ
     }
 };
 }
-namespace epidemic::gameplay::savegame
-{
-std::unique_ptr<ISaveParticipant> CreateNarrativeServiceSaveParticipant(epidemic::gameplay::narrative::NarrativeService& owner, SaveRestoreWorkspace& workspace)
-{
-    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::narrative::NarrativeService>>(owner, workspace, "framework.narrative", std::vector<SaveParticipantId>{});
+namespace epidemic::gameplay::savegame {
+std::unique_ptr<ISaveParticipant>
+CreateNarrativeServiceSaveParticipant(epidemic::gameplay::narrative::NarrativeService &owner,
+                                      SaveRestoreWorkspace &workspace) {
+    return std::make_unique<detail::SnapshotParticipant<epidemic::gameplay::narrative::NarrativeService>>(
+        owner, workspace, "framework.narrative", std::vector<SaveParticipantId>{});
 }
 }

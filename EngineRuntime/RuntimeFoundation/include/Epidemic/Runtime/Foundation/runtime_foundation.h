@@ -8,4 +8,3 @@
 #include "Epidemic/Runtime/Foundation/runtime_states.h"
 #include "Epidemic/Runtime/Foundation/runtime_time.h"
 #include "Epidemic/Runtime/Foundation/spatial.h"
-

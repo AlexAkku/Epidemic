@@ -5,14 +5,12 @@
 #include <cstddef>
 #include <optional>
 
-namespace epidemic::memory
-{
+namespace epidemic::memory {
 // This file defines the public memory tracking interface consumed by EngineBase services.
 // The interface abstracts accounting so allocators and support code can depend on behavior
 // rather than on MemoryTracker's concrete implementation.
 
-struct MemoryTagStatistics
-{
+struct MemoryTagStatistics {
     std::size_t allocated_bytes{};
     std::size_t peak_allocated_bytes{};
     // Counts successful allocation records over time, not the number of active allocations.
@@ -20,8 +18,7 @@ struct MemoryTagStatistics
 };
 
 // Public memory accounting interface.
-class IMemoryTracker
-{
+class IMemoryTracker {
   public:
     virtual ~IMemoryTracker() = default;
 

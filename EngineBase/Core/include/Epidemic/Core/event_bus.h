@@ -14,20 +14,17 @@
 #include <utility>
 #include <vector>
 
-namespace epidemic::core::events
-{
+namespace epidemic::core::events {
 // This file defines the minimal in-process event bus used by EngineBase.
 // The bus supports immediate dispatch and queued dispatch so systems can choose whether
 // handlers run synchronously at publish time or later during the frame loop drain phase.
 
-enum class EventDispatchMode
-{
+enum class EventDispatchMode {
     Sync,
     Queued,
 };
 
-class IEventBus
-{
+class IEventBus {
   public:
     using HandlerToken = std::uint64_t;
     using AnyEventHandler = std::function<void(const std::any &)>;
@@ -35,11 +32,9 @@ class IEventBus
     virtual ~IEventBus() = default;
 
     // Registers a synchronous handler for EventT.
-    template <typename EventT, typename HandlerT> HandlerToken SubscribeSync(HandlerT &&handler)
-    {
+    template <typename EventT, typename HandlerT> HandlerToken SubscribeSync(HandlerT &&handler) {
         auto typed_handler = std::function<void(const EventT &)>(std::forward<HandlerT>(handler));
-        if (!typed_handler)
-        {
+        if (!typed_handler) {
             throw std::invalid_argument("Event handler must be valid");
         }
 
@@ -50,11 +45,9 @@ class IEventBus
     }
 
     // Registers a queued handler for EventT.
-    template <typename EventT, typename HandlerT> HandlerToken SubscribeQueued(HandlerT &&handler)
-    {
+    template <typename EventT, typename HandlerT> HandlerToken SubscribeQueued(HandlerT &&handler) {
         auto typed_handler = std::function<void(const EventT &)>(std::forward<HandlerT>(handler));
-        if (!typed_handler)
-        {
+        if (!typed_handler) {
             throw std::invalid_argument("Event handler must be valid");
         }
 
@@ -65,14 +58,12 @@ class IEventBus
     }
 
     // Immediately dispatches one event to synchronous subscribers of EventT.
-    template <typename EventT> void PublishSync(const EventT &event)
-    {
+    template <typename EventT> void PublishSync(const EventT &event) {
         PublishSyncImpl(typeid(EventT), std::any(event));
     }
 
     // Queues one event for later delivery to queued subscribers of EventT.
-    template <typename EventT> void Enqueue(const EventT &event)
-    {
+    template <typename EventT> void Enqueue(const EventT &event) {
         EnqueueImpl(typeid(EventT), std::any(event));
     }
 
@@ -93,8 +84,7 @@ class IEventBus
     virtual void EnqueueImpl(std::type_index event_type, std::any event) = 0;
 };
 
-class EventBus final : public IEventBus
-{
+class EventBus final : public IEventBus {
   public:
     // Drains queued events in FIFO order and returns the number processed.
     [[nodiscard]] std::size_t DrainQueued() override;
@@ -103,14 +93,12 @@ class EventBus final : public IEventBus
     [[nodiscard]] bool Unsubscribe(HandlerToken token) override;
 
   private:
-    struct Subscription
-    {
+    struct Subscription {
         HandlerToken token{};
         AnyEventHandler handler;
     };
 
-    struct QueuedEvent
-    {
+    struct QueuedEvent {
         std::type_index type{typeid(void)};
         std::any payload;
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES

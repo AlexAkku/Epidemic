@@ -13,10 +13,8 @@
 
 #include <memory>
 
-namespace epidemic::runtime
-{
-foundation::Result<WorldServices> CreateWorldServices(const WorldOptions& options)
-{
+namespace epidemic::runtime {
+foundation::Result<WorldServices> CreateWorldServices(const WorldOptions &options) {
     (void)options;
     auto runtime = std::make_shared<WorldRuntime>();
     WorldServices services{};

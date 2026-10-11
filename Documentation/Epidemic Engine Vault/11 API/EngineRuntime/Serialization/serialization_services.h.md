@@ -106,3 +106,56 @@ template <typename TObject>
 }
 } // namespace epidemic::runtime
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/Runtime/Serialization/archive_reader.h`, `Epidemic/Runtime/Serialization/archive_writer.h`, `Epidemic/Runtime/Serialization/migration_registry.h`, `Epidemic/Runtime/Serialization/serializer_registry.h`.
+
+### Состав типов и операции
+
+#### `IArchiveFactory` (строка заголовка 21)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IArchiveFactory() = default;
+[[nodiscard]] virtual std::unique_ptr<IArchiveWriter> CreateWriter() const = 0;
+[[nodiscard]] virtual foundation::Result<std::unique_ptr<IArchiveReader>> CreateReader(const SerializedDocument& document) const = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SerializationServices` (строка заголовка 30)
+
+Публичные поля и значения по умолчанию:
+
+- `std::shared_ptr<ISerializerRegistry> serializers`
+- `std::shared_ptr<IMigrationRegistry> migrations`
+- `std::shared_ptr<IArchiveFactory> archives`
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- Для `std::shared_ptr` отдельно проверяйте циклы владения и контракт передачи внешних объектов.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `CreateWriter` | `InMemoryArchiveFactory::CreateWriter` | `EngineRuntime/Serialization/src/in_memory_archive.cpp:558` |
+| `CreateReader` | `InMemoryArchiveFactory::CreateReader` | `EngineRuntime/Serialization/src/in_memory_archive.cpp:563` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `CreateReader`: `EngineRuntime/Serialization/tests/serialization_tests.cpp:394`
+

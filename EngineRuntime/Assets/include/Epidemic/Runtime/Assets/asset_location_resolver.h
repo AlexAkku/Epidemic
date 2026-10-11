@@ -4,12 +4,10 @@
 #include "Epidemic/Runtime/Assets/asset_location.h"
 #include "Epidemic/Runtime/Foundation/runtime_ids.h"
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Small resolver interface that returns the registered logical location for an
 // asset id without exposing the full asset catalog implementation.
-class IAssetLocationResolver
-{
+class IAssetLocationResolver {
   public:
     virtual ~IAssetLocationResolver() = default;
 

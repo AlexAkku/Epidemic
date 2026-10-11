@@ -55,3 +55,34 @@ struct InputSnapshot
 };
 }
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Input/keyboard_state.h`, `Epidemic/Input/mouse_state.h`.
+
+### Состав типов и операции
+
+#### `InputSnapshot` (строка заголовка 13)
+
+Публичные поля и значения по умолчанию:
+
+- `KeyboardState keyboard`
+- `MouseState mouse`
+
+Публичные сигнатуры операций:
+
+```cpp
+// Returns whether the owning window had focus when this snapshot was published. [[nodiscard]] bool HasFocus() const noexcept;
+// Returns whether the owning window had mouse capture when this snapshot was published. [[nodiscard]] bool HasCapture() const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Перед вызовом проверяйте валидность идентификаторов и соответствие объекта жизненному циклу сервисов; гарантии конкретной операции зафиксированы в заголовке и тестах.
+

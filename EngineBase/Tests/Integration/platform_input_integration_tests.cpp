@@ -44,110 +44,28 @@
 #undef CreateWindow
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-namespace
-{
+namespace {
 using epidemic::tests::Assert;
 using epidemic::platform::PlatformEvent;
 using epidemic::platform::PlatformEventType;
 
 // Unwraps a Result inside the test and throws with the contained error message on failure.
-template <typename TValue>
-TValue RequireValue(epidemic::foundation::Result<TValue> result)
-{
-    if (!result.HasValue())
-    {
+template <typename TValue> TValue RequireValue(epidemic::foundation::Result<TValue> result) {
+    if (!result.HasValue()) {
         throw std::runtime_error(result.GetError().message);
     }
 
     return std::move(result).Value();
 }
 
-epidemic::platform::PlatformEvent MakeInputEvent(epidemic::platform::PlatformEventType type)
-{
+epidemic::platform::PlatformEvent MakeInputEvent(epidemic::platform::PlatformEventType type) {
     epidemic::platform::PlatformEvent event;
     event.type = type;
     return event;
 }
 
 // Verifies publication boundaries, keyboard transitions, focus reset, and Reset semantics without Win32.
-void TestInputKeyboardContracts()
-{
+void TestInputKeyboardContracts() {
     epidemic::input::InputSystem input;
 
     auto press = MakeInputEvent(epidemic::platform::PlatformEventType::KeyPressed);
@@ -160,8 +78,7 @@ void TestInputKeyboardContracts()
 
     input.PublishSnapshot();
     Assert(input.CurrentSnapshot().update_index == 0, "First publication must use update index zero");
-    Assert(input.CurrentSnapshot().keyboard.IsKeyDown(epidemic::input::KeyCode::A),
-           "Key press must set held state");
+    Assert(input.CurrentSnapshot().keyboard.IsKeyDown(epidemic::input::KeyCode::A), "Key press must set held state");
     Assert(input.CurrentSnapshot().keyboard.WasPressedThisFrame(epidemic::input::KeyCode::A),
            "Key press must set the transient pressed flag");
     Assert(!input.CurrentSnapshot().keyboard.WasReleasedThisFrame(epidemic::input::KeyCode::A),
@@ -209,8 +126,7 @@ void TestInputKeyboardContracts()
 }
 
 // Verifies mouse transition ordering, per-event motion, wheel accumulation, and focus-reset behavior.
-void TestInputMouseContracts()
-{
+void TestInputMouseContracts() {
     epidemic::input::InputSystem input;
 
     auto move1 = MakeInputEvent(epidemic::platform::PlatformEventType::MouseMoved);
@@ -242,7 +158,8 @@ void TestInputMouseContracts()
            "Mouse snapshot must publish the final cursor position");
     Assert(input.CurrentSnapshot().mouse.DeltaX() == 13 && input.CurrentSnapshot().mouse.DeltaY() == 1,
            "Mouse snapshot must accumulate frame motion");
-    Assert(input.CurrentSnapshot().mouse.WheelDelta() == 80, "Mouse wheel contributions must accumulate within a frame");
+    Assert(input.CurrentSnapshot().mouse.WheelDelta() == 80,
+           "Mouse wheel contributions must accumulate within a frame");
     Assert(input.CurrentSnapshot().mouse.IsButtonDown(epidemic::input::MouseButton::Left),
            "Final mouse held state must match the final transition");
     Assert(input.CurrentSnapshot().mouse.WasPressedThisFrame(epidemic::input::MouseButton::Left) &&
@@ -265,8 +182,7 @@ void TestInputMouseContracts()
 }
 
 // Verifies malformed and duplicate raw transitions cannot corrupt normalized state.
-void TestInputInvalidAndDuplicateTransitions()
-{
+void TestInputInvalidAndDuplicateTransitions() {
     epidemic::input::KeyboardState keyboard;
     keyboard.SetKeyDown(epidemic::input::KeyCode::Unknown, true);
     keyboard.MarkPressed(epidemic::input::KeyCode::Unknown);
@@ -290,7 +206,8 @@ void TestInputInvalidAndDuplicateTransitions()
     invalid_button.mouse_button = 0xFFu;
     input.QueuePlatformEvents(std::array{invalid_key, invalid_button});
     input.PublishSnapshot();
-    Assert(input.CurrentEvents().empty(), "Unknown raw key/button values must be rejected without emitted input events");
+    Assert(input.CurrentEvents().empty(),
+           "Unknown raw key/button values must be rejected without emitted input events");
     Assert(!input.CurrentSnapshot().mouse.IsButtonDown(epidemic::input::MouseButton::Left),
            "Rejected raw mouse input must not damage normalized button state");
 
@@ -306,34 +223,28 @@ void TestInputInvalidAndDuplicateTransitions()
            "Release of a mouse button that was not held must not create a false transition");
 }
 
-[[nodiscard]] std::size_t CountEvents(const std::vector<PlatformEvent> &events, PlatformEventType type)
-{
-    return static_cast<std::size_t>(std::count_if(events.begin(), events.end(),
-                                                   [type](const PlatformEvent &event) { return event.type == type; }));
+[[nodiscard]] std::size_t CountEvents(const std::vector<PlatformEvent> &events, PlatformEventType type) {
+    return static_cast<std::size_t>(std::count_if(events.begin(), events.end(), [type](const PlatformEvent &event) {
+        return event.type == type;
+    }));
 }
 
-[[nodiscard]] std::filesystem::path CurrentExecutableDirectory()
-{
+[[nodiscard]] std::filesystem::path CurrentExecutableDirectory() {
     std::vector<wchar_t> buffer(MAX_PATH, L'\0');
-    for (;;)
-    {
+    for (;;) {
         const auto length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
-        if (length == 0)
-        {
+        if (length == 0) {
             throw std::runtime_error("GetModuleFileNameW failed in platform integration test");
         }
-        if (length < buffer.size())
-        {
+        if (length < buffer.size()) {
             return std::filesystem::path(std::wstring(buffer.data(), length)).parent_path();
         }
         buffer.resize(buffer.size() * 2, L'\0');
     }
 }
 
-
 // Verifies neutral value wrappers and process metadata exposed by the Platform public API.
-void TestNeutralPlatformValueContracts()
-{
+void TestNeutralPlatformValueContracts() {
     epidemic::platform::NativeWindowHandle empty_handle;
     int marker = 0;
     epidemic::platform::NativeWindowHandle wrapped_handle(&marker);
@@ -348,29 +259,30 @@ void TestNeutralPlatformValueContracts()
     const auto &process_info = runtime.GetProcessInfo();
     Assert(!process_info.executable_path.Empty(), "Platform runtime must capture the current executable path");
     Assert(!process_info.working_directory.Empty(), "Platform runtime must capture the current working directory");
-    Assert(!process_info.arguments.empty(), "Platform runtime must capture at least the executable command-line argument");
+    Assert(!process_info.arguments.empty(),
+           "Platform runtime must capture at least the executable command-line argument");
     runtime.Shutdown();
 }
 
 // Verifies the private WindowId generator policy at invalid, last-valid, and exhausted boundaries.
-void TestWindowIdBoundaryPolicy()
-{
+void TestWindowIdBoundaryPolicy() {
     using epidemic::platform::WindowId;
     using epidemic::platform::detail::AdvanceWindowId;
     using epidemic::platform::detail::CanAllocateWindowId;
 
     const auto exhausted = std::numeric_limits<WindowId>::max();
     const auto last_valid = exhausted - 1;
-    Assert(!CanAllocateWindowId(epidemic::platform::kInvalidWindowId), "WindowId zero must remain the invalid sentinel");
+    Assert(!CanAllocateWindowId(epidemic::platform::kInvalidWindowId),
+           "WindowId zero must remain the invalid sentinel");
     Assert(CanAllocateWindowId(1), "WindowId one must be allocatable on a fresh runtime");
     Assert(CanAllocateWindowId(last_valid), "The last non-sentinel WindowId must remain allocatable");
-    Assert(AdvanceWindowId(last_valid) == exhausted, "Last valid WindowId must advance to the exhausted sentinel without wrap");
+    Assert(AdvanceWindowId(last_valid) == exhausted,
+           "Last valid WindowId must advance to the exhausted sentinel without wrap");
     Assert(!CanAllocateWindowId(exhausted), "Exhausted WindowId sentinel must reject further allocation before wrap");
 }
 
 // Verifies invalid creation, create/destroy bookkeeping, idempotent close, and terminal exit state.
-void TestWindowLifecycleAndExitRequest()
-{
+void TestWindowLifecycleAndExitRequest() {
     epidemic::platform::WindowsPlatformRuntime runtime;
 
     const auto invalid_width = runtime.CreateWindow({"Invalid Width", 0, 240, false});
@@ -383,8 +295,8 @@ void TestWindowLifecycleAndExitRequest()
 
     auto first = RequireValue(runtime.CreateWindow({"Platform Lifecycle A", 320, 240, false}));
     auto second = RequireValue(runtime.CreateWindow({"Platform Lifecycle B", 320, 240, false}));
-    Assert(first->Id() != epidemic::platform::kInvalidWindowId && second->Id() != epidemic::platform::kInvalidWindowId &&
-               first->Id() != second->Id(),
+    Assert(first->Id() != epidemic::platform::kInvalidWindowId &&
+               second->Id() != epidemic::platform::kInvalidWindowId && first->Id() != second->Id(),
            "Created windows must receive distinct valid logical ids");
     Assert(first->GetNativeHandle().IsValid() && second->GetNativeHandle().IsValid(),
            "Created windows must expose valid native handles");
@@ -431,26 +343,23 @@ void TestWindowLifecycleAndExitRequest()
     Assert(!create_after_shutdown.HasValue() && create_after_shutdown.GetError().code == "platform.runtime_shutdown",
            "Terminal shutdown must reject new window creation with the shutdown error");
     bool pump_after_shutdown_rejected = false;
-    try
-    {
+    try {
         runtime.PumpEvents();
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         pump_after_shutdown_rejected = true;
     }
     Assert(pump_after_shutdown_rejected, "PumpEvents must reject work after terminal runtime shutdown");
 }
 
 // Verifies a surviving wrapper remains inert and non-dangling after its runtime has completed teardown.
-void TestWindowWrapperAfterRuntimeTeardown()
-{
+void TestWindowWrapperAfterRuntimeTeardown() {
     epidemic::platform::WindowPtr survivor;
     {
         auto runtime = std::make_unique<epidemic::platform::WindowsPlatformRuntime>();
         survivor = RequireValue(runtime->CreateWindow({"Surviving Wrapper", 320, 240, false}));
         runtime->Shutdown();
-        Assert(!survivor->GetNativeHandle().IsValid(), "Runtime shutdown must invalidate surviving wrapper native handles");
+        Assert(!survivor->GetNativeHandle().IsValid(),
+               "Runtime shutdown must invalidate surviving wrapper native handles");
     }
 
     survivor->Show();
@@ -460,8 +369,7 @@ void TestWindowWrapperAfterRuntimeTeardown()
 }
 
 // Verifies PublishSnapshot preserves the complete previous frame and raw pending queue on a deterministic failure.
-void TestInputPublishAllocationFailureAtomicity()
-{
+void TestInputPublishAllocationFailureAtomicity() {
     auto make_fixture = [] {
         epidemic::input::InputSystem input;
         PlatformEvent focus;
@@ -488,12 +396,17 @@ void TestInputPublishAllocationFailureAtomicity()
 
     auto input = make_fixture();
     const auto before_snapshot = input.CurrentSnapshot();
-    const std::vector<epidemic::input::InputEvent> before_events(input.CurrentEvents().begin(), input.CurrentEvents().end());
+    const std::vector<epidemic::input::InputEvent> before_events(input.CurrentEvents().begin(),
+                                                                 input.CurrentEvents().end());
     input.QueuePlatformEvent(key);
     input.QueuePlatformEvent(button);
     bool failed = false;
     epidemic::input::testing::FailNextCandidateEventAllocation();
-    try { input.PublishSnapshot(); } catch (const std::bad_alloc &) { failed = true; }
+    try {
+        input.PublishSnapshot();
+    } catch (const std::bad_alloc &) {
+        failed = true;
+    }
     epidemic::input::testing::ClearInputFaults();
     Assert(failed, "PublishSnapshot candidate allocation fault must surface as bad_alloc");
     Assert(input.CurrentSnapshot().update_index == before_snapshot.update_index,
@@ -506,15 +419,13 @@ void TestInputPublishAllocationFailureAtomicity()
                input.CurrentSnapshot().mouse.IsButtonDown(epidemic::input::MouseButton::Left) &&
                input.CurrentSnapshot().mouse.WasPressedThisFrame(epidemic::input::MouseButton::Left),
            "Retry after failed PublishSnapshot must preserve both held and edge state");
-    Assert(input.CurrentEvents().size() == clean_control.CurrentEvents().size() &&
-               input.CurrentEvents().size() == 2 &&
+    Assert(input.CurrentEvents().size() == clean_control.CurrentEvents().size() && input.CurrentEvents().size() == 2 &&
                input.CurrentEvents()[0].type == clean_control.CurrentEvents()[0].type &&
                input.CurrentEvents()[1].type == clean_control.CurrentEvents()[1].type,
            "Retry after failed PublishSnapshot must match clean normalized event sequencing");
 }
 
-void TestWin32CallbackAllocationFailurePreservesState()
-{
+void TestWin32CallbackAllocationFailurePreservesState() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto window = RequireValue(runtime.CreateWindow({"Callback Allocation", 320, 240, false}));
     auto *hwnd = static_cast<HWND>(window->GetNativeHandle().Value());
@@ -527,12 +438,9 @@ void TestWin32CallbackAllocationFailurePreservesState()
     Assert(runtime.DrainEvents().empty(), "Failed callback publication must not append a partial platform event");
 
     bool callback_failure_surfaced = false;
-    try
-    {
+    try {
         runtime.PumpEvents();
-    }
-    catch (const std::bad_alloc &)
-    {
+    } catch (const std::bad_alloc &) {
         callback_failure_surfaced = true;
     }
     Assert(callback_failure_surfaced,
@@ -541,30 +449,26 @@ void TestWin32CallbackAllocationFailurePreservesState()
     SendMessageW(hwnd, WM_SETFOCUS, 0, 0);
     Assert(window->HasFocus(), "A later callback must recover after the allocation failure");
     const auto recovered_events = runtime.DrainEvents();
-    Assert(std::count_if(recovered_events.begin(), recovered_events.end(), [](const PlatformEvent &event) {
-               return event.type == PlatformEventType::WindowFocusChanged && event.focused;
-           }) == 1,
+    Assert(std::count_if(recovered_events.begin(), recovered_events.end(),
+                         [](const PlatformEvent &event) {
+                             return event.type == PlatformEventType::WindowFocusChanged && event.focused;
+                         }) == 1,
            "Recovered focus callback must publish exactly one focus event");
 
     window->Close();
     runtime.Shutdown();
 }
 // Verifies no partial tracking/id commit survives a deterministic pre-commit failure.
-void TestWindowCreationAllocationFailureAtomicity()
-{
+void TestWindowCreationAllocationFailureAtomicity() {
     const epidemic::platform::WindowCreateInfo create_info{"Allocation Sweep Window", 320, 240, false};
     for (const auto fault_point : {epidemic::platform::testing::FaultPoint::WindowTrackingCommit,
-                                   epidemic::platform::testing::FaultPoint::AfterWindowIdInsert})
-    {
+                                   epidemic::platform::testing::FaultPoint::AfterWindowIdInsert}) {
         epidemic::platform::WindowsPlatformRuntime runtime;
         bool bad_alloc_seen = false;
         epidemic::platform::testing::FailNext(fault_point);
-        try
-        {
+        try {
             static_cast<void>(runtime.CreateWindow(create_info));
-        }
-        catch (const std::bad_alloc &)
-        {
+        } catch (const std::bad_alloc &) {
             bad_alloc_seen = true;
         }
         epidemic::platform::testing::ClearFaults();
@@ -580,81 +484,7 @@ void TestWindowCreationAllocationFailureAtomicity()
 
 // Verifies that public Input counters and accumulated motion never wrap at numeric boundaries.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void TestInputNumericBoundaries()
-{
+void TestInputNumericBoundaries() {
     const auto maximum_index = std::numeric_limits<std::uint64_t>::max();
     Assert(epidemic::input::detail::AdvanceUpdateIndex(maximum_index - 1) == maximum_index,
            "Input update index must reach the final representable value");
@@ -695,8 +525,7 @@ void TestInputNumericBoundaries()
 }
 
 // Verifies native close/destroy reflection and that duplicate WM_CLOSE does not duplicate events.
-void TestNativeCloseReflectionAndWrapperLifetime()
-{
+void TestNativeCloseReflectionAndWrapperLifetime() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto window = RequireValue(runtime.CreateWindow({"Native Close", 320, 240, false}));
     auto ownerless_window = RequireValue(runtime.CreateWindow({"Ownerless Native Destroy", 320, 240, false}));
@@ -710,7 +539,8 @@ void TestNativeCloseReflectionAndWrapperLifetime()
     Assert(CountEvents(close_events, PlatformEventType::WindowCloseRequested) == 1,
            "Repeated native WM_CLOSE must publish one close-request event");
     Assert(window->IsCloseRequested(), "Native WM_CLOSE must update the wrapper close-request state");
-    Assert(window->GetNativeHandle().IsValid(), "WM_CLOSE is a request and must not destroy the native window implicitly");
+    Assert(window->GetNativeHandle().IsValid(),
+           "WM_CLOSE is a request and must not destroy the native window implicitly");
 
     Assert(DestroyWindow(hwnd) != FALSE, "Native DestroyWindow must succeed for the integration-test window");
     Assert(!window->GetNativeHandle().IsValid(), "Native destruction must invalidate the wrapper handle immediately");
@@ -732,8 +562,7 @@ void TestNativeCloseReflectionAndWrapperLifetime()
 }
 
 // Verifies resize/minimize/restore/zero-area semantics and duplicate suppression.
-void TestWindowStateTransitionEvents()
-{
+void TestWindowStateTransitionEvents() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto window = RequireValue(runtime.CreateWindow({"Window State", 320, 240, false}));
     const HWND hwnd = window->GetNativeHandle().As<HWND>();
@@ -752,7 +581,8 @@ void TestWindowStateTransitionEvents()
            "Repeated minimized WM_SIZE must publish one minimize transition");
     Assert(CountEvents(before_restore, PlatformEventType::WindowRestored) == 0,
            "Zero client area must defer restoration instead of publishing an unusable restore");
-    Assert(window->IsMinimized(), "Zero-area restore must keep the wrapper logically minimized until usable dimensions arrive");
+    Assert(window->IsMinimized(),
+           "Zero-area restore must keep the wrapper logically minimized until usable dimensions arrive");
     Assert(window->ClientWidth() == 0 && window->ClientHeight() == 0,
            "Zero-area WM_SIZE must update cached dimensions without publishing a drawable resize");
 
@@ -770,8 +600,7 @@ void TestWindowStateTransitionEvents()
 }
 
 // Verifies focus transitions are edge-triggered rather than duplicate message-triggered.
-void TestFocusEventsAreNotDuplicated()
-{
+void TestFocusEventsAreNotDuplicated() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto window = RequireValue(runtime.CreateWindow({"Focus Events", 320, 240, false}));
     const HWND hwnd = window->GetNativeHandle().As<HWND>();
@@ -792,8 +621,7 @@ void TestFocusEventsAreNotDuplicated()
 }
 
 // Verifies mouse capture transitions do not duplicate under ReleaseCapture reentrancy.
-void TestMouseCaptureEventsAreNotDuplicated()
-{
+void TestMouseCaptureEventsAreNotDuplicated() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto window = RequireValue(runtime.CreateWindow({"Mouse Capture Events", 320, 240, false}));
     const HWND hwnd = window->GetNativeHandle().As<HWND>();
@@ -816,8 +644,7 @@ void TestMouseCaptureEventsAreNotDuplicated()
 }
 
 // Verifies PumpEvents consumes queued Win32 messages once and DrainEvents has no stale replay.
-void TestEventPumpDoesNotReplayStaleEvents()
-{
+void TestEventPumpDoesNotReplayStaleEvents() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto window = RequireValue(runtime.CreateWindow({"Pump Once", 320, 240, false}));
     const HWND hwnd = window->GetNativeHandle().As<HWND>();
@@ -831,19 +658,18 @@ void TestEventPumpDoesNotReplayStaleEvents()
            "First pump must publish the queued native mouse message exactly once");
 
     runtime.PumpEvents();
-    Assert(runtime.DrainEvents().empty(), "Second pump without new native messages must not replay stale platform events");
+    Assert(runtime.DrainEvents().empty(),
+           "Second pump without new native messages must not replay stale platform events");
 
     window->Close();
     runtime.Shutdown();
 }
 
 // Verifies the platform clock uses the Foundation steady clock contract and never moves backwards.
-void TestPlatformClockIsMonotonic()
-{
+void TestPlatformClockIsMonotonic() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto previous = runtime.Now();
-    for (int index = 0; index < 10000; ++index)
-    {
+    for (int index = 0; index < 10000; ++index) {
         const auto current = runtime.Now();
         Assert(current >= previous, "Platform high-resolution clock must be monotonic");
         previous = current;
@@ -852,23 +678,19 @@ void TestPlatformClockIsMonotonic()
 }
 
 // Verifies a fallible external cleanup can be retried without resurrecting tracked Platform state.
-void TestShutdownRetryAfterExternalCleanupFailure()
-{
+void TestShutdownRetryAfterExternalCleanupFailure() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     auto tracked = RequireValue(runtime.CreateWindow({"Tracked Before Shutdown Retry", 320, 240, false}));
     static_cast<void>(runtime.DrainEvents());
 
     const HWND foreign = CreateWindowExW(0, L"EpidemicEnginePlatformWindow", L"Foreign Class User", WS_OVERLAPPEDWINDOW,
-                                          0, 0, 64, 64, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+                                         0, 0, 64, 64, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
     Assert(foreign != nullptr, "Test must create an untracked native window that keeps the Platform class busy");
 
     bool cleanup_failure_seen = false;
-    try
-    {
+    try {
         runtime.Shutdown();
-    }
-    catch (const std::runtime_error &)
-    {
+    } catch (const std::runtime_error &) {
         cleanup_failure_seen = true;
     }
     Assert(cleanup_failure_seen, "UnregisterClassW failure must surface as a controlled retryable shutdown failure");
@@ -881,20 +703,21 @@ void TestShutdownRetryAfterExternalCleanupFailure()
 }
 
 // Verifies load failure atomicity, controlled missing-symbol failure, and HMODULE ownership lifetime.
-void TestDynamicLibraryContracts()
-{
+void TestDynamicLibraryContracts() {
     epidemic::platform::WindowsPlatformRuntime runtime;
     const auto test_library_path = CurrentExecutableDirectory() / L"EpidemicPlatformTestLibrary.dll";
     const auto missing_library_path = CurrentExecutableDirectory() / L"EpidemicPlatformDefinitelyMissing.dll";
 
-    Assert(std::filesystem::exists(test_library_path), "Platform test DLL must be built next to the integration executable");
+    Assert(std::filesystem::exists(test_library_path),
+           "Platform test DLL must be built next to the integration executable");
     Assert(GetModuleHandleW(L"EpidemicPlatformTestLibrary.dll") == nullptr,
            "Platform test DLL must not be loaded before the dynamic-library test starts");
 
     const auto empty = runtime.LoadDynamicLibrary(epidemic::foundation::Path{});
     Assert(!empty.HasValue() && empty.GetError().code == "platform.empty_library_path",
            "Empty dynamic-library path must return a controlled failure");
-    const auto relative = runtime.LoadDynamicLibrary(epidemic::foundation::Path(std::filesystem::path(L"relative.dll")));
+    const auto relative =
+        runtime.LoadDynamicLibrary(epidemic::foundation::Path(std::filesystem::path(L"relative.dll")));
     Assert(!relative.HasValue() && relative.GetError().code == "platform.relative_library_path",
            "Relative dynamic-library path must return a controlled failure");
     const auto missing = runtime.LoadDynamicLibrary(epidemic::foundation::Path(missing_library_path));
@@ -905,12 +728,9 @@ void TestDynamicLibraryContracts()
 
     bool post_load_failure_seen = false;
     epidemic::platform::testing::FailNext(epidemic::platform::testing::FaultPoint::AfterNativeLibraryLoad);
-    try
-    {
+    try {
         static_cast<void>(runtime.LoadDynamicLibrary(epidemic::foundation::Path(test_library_path)));
-    }
-    catch (const std::bad_alloc &)
-    {
+    } catch (const std::bad_alloc &) {
         post_load_failure_seen = true;
     }
     epidemic::platform::testing::ClearFaults();
@@ -942,9 +762,9 @@ void TestDynamicLibraryContracts()
 }
 
 // Verifies the real Win32 -> PlatformEvent -> InputSystem path and wrong-thread guards.
-void TestPlatformAndInputIntegration()
-{
-    epidemic::core::Application application({.application_name = "PlatformInputIntegration", .frame_limit = std::nullopt});
+void TestPlatformAndInputIntegration() {
+    epidemic::core::Application application(
+        {.application_name = "PlatformInputIntegration", .frame_limit = std::nullopt});
     static_cast<void>(epidemic::enginebase::RegisterEngineBase(
         application, {.runtime_name = "PlatformInputIntegration", .log_module = "PlatformInputIntegration"}));
     static_cast<void>(epidemic::enginebase::RegisterWindowsRuntime(application));
@@ -963,31 +783,22 @@ void TestPlatformAndInputIntegration()
     std::atomic_bool wrong_thread_pump_rejected{false};
     std::atomic_bool wrong_thread_load_rejected{false};
     std::thread wrong_thread([&] {
-        try
-        {
+        try {
             static_cast<void>(window_system->CreateWindow(
                 epidemic::platform::WindowCreateInfo{"Wrong Thread Window", 64, 64, false}));
-        }
-        catch (const std::runtime_error &)
-        {
+        } catch (const std::runtime_error &) {
             wrong_thread_create_rejected.store(true, std::memory_order_release);
         }
 
-        try
-        {
+        try {
             runtime->PumpEvents();
-        }
-        catch (const std::runtime_error &)
-        {
+        } catch (const std::runtime_error &) {
             wrong_thread_pump_rejected.store(true, std::memory_order_release);
         }
 
-        try
-        {
+        try {
             static_cast<void>(runtime->LoadDynamicLibrary(epidemic::foundation::Path{}));
-        }
-        catch (const std::runtime_error &)
-        {
+        } catch (const std::runtime_error &) {
             wrong_thread_load_rejected.store(true, std::memory_order_release);
         }
     });
@@ -1013,8 +824,7 @@ void TestPlatformAndInputIntegration()
     const auto first_events = window_system->DrainEvents();
     bool platform_key_seen = false;
     bool platform_mouse_seen = false;
-    for (const auto &event : first_events)
-    {
+    for (const auto &event : first_events) {
         platform_key_seen |= event.type == epidemic::platform::PlatformEventType::KeyPressed;
         platform_mouse_seen |= event.type == epidemic::platform::PlatformEventType::MouseMoved;
         input_system->QueuePlatformEvent(event);
@@ -1032,8 +842,7 @@ void TestPlatformAndInputIntegration()
 
     SendMessageW(hwnd, WM_KEYUP, VK_ESCAPE, 1);
     runtime->PumpEvents();
-    for (const auto &event : window_system->DrainEvents())
-    {
+    for (const auto &event : window_system->DrainEvents()) {
         input_system->QueuePlatformEvent(event);
     }
     input_system->PublishSnapshot();
@@ -1043,10 +852,9 @@ void TestPlatformAndInputIntegration()
     SendMessageW(hwnd, WM_CLOSE, 0, 0);
     runtime->PumpEvents();
     bool close_event_seen = false;
-    for (const auto &event : window_system->DrainEvents())
-    {
-        if (event.type == epidemic::platform::PlatformEventType::WindowCloseRequested && event.window_id == window->Id())
-        {
+    for (const auto &event : window_system->DrainEvents()) {
+        if (event.type == epidemic::platform::PlatformEventType::WindowCloseRequested &&
+            event.window_id == window->Id()) {
             close_event_seen = true;
         }
     }
@@ -1063,8 +871,7 @@ void TestPlatformAndInputIntegration()
 
 // Runs Platform contract and Platform/Input integration tests on real Win32 objects.
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-int RunAuditorInputScenario()
-{
+int RunAuditorInputScenario() {
     using namespace epidemic::auditor::shadow;
     epidemic::input::InputSystem input_system;
     epidemic::platform::PlatformEvent event;
@@ -1072,24 +879,26 @@ int RunAuditorInputScenario()
     event.key_code = 0;
     input_system.QueuePlatformEvent(event);
     input_system.PublishSnapshot();
-    if (!input_system.CurrentEvents().empty()) return 2;
+    if (!input_system.CurrentEvents().empty())
+        return 2;
     const auto start = std::chrono::steady_clock::now();
     event.key_code = 65;
     input_system.QueuePlatformEvent(event);
     event.key_code = 66;
     input_system.QueuePlatformEvent(event);
     input_system.PublishSnapshot();
-    frame(static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-        std::chrono::steady_clock::now() - start).count()));
+    frame(static_cast<std::uint64_t>(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count()));
     return input_system.CurrentEvents().size() == 2 ? 0 : 3;
 }
 #endif
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-    if (argc == 2 && std::string_view(argv[1]) == "--auditor-input") return RunAuditorInputScenario();
+    if (argc == 2 && std::string_view(argv[1]) == "--auditor-input")
+        return RunAuditorInputScenario();
 #else
-    (void)argc; (void)argv;
+    (void)argc;
+    (void)argv;
 #endif
     return epidemic::tests::RunNamedTests({
         {"InputKeyboardContracts", &TestInputKeyboardContracts},

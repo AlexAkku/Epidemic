@@ -6,14 +6,12 @@
 #include <string>
 #include <unordered_map>
 
-namespace epidemic::core::config
-{
+namespace epidemic::core::config {
 // This file declares the default in-memory configuration store used by EngineBase.
 // BasicConfiguration is intentionally small and thread-safe: it stores typed key/value maps
 // without schema validation, persistence, or layered overrides.
 
-class BasicConfiguration final : public IConfiguration
-{
+class BasicConfiguration final : public IConfiguration {
   public:
     // Returns the string value for a key, or nullopt when the key is absent.
     [[nodiscard]] std::optional<std::string> GetString(std::string_view key) const override;

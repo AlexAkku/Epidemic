@@ -4,14 +4,10 @@
 
 #include <new>
 
-namespace epidemic::runtime
-{
-namespace
-{
-[[nodiscard]] constexpr bool IsValidPersistenceDurability(PersistenceDurability durability) noexcept
-{
-    switch (durability)
-    {
+namespace epidemic::runtime {
+namespace {
+[[nodiscard]] constexpr bool IsValidPersistenceDurability(PersistenceDurability durability) noexcept {
+    switch (durability) {
     case PersistenceDurability::MemoryOnly:
     case PersistenceDurability::SaveRequired:
     case PersistenceDurability::SaveAndFlushRequired:
@@ -21,46 +17,36 @@ namespace
 }
 } // namespace
 
-foundation::Result<PersistenceServices> CreatePersistenceServices(const PersistenceOptions& options)
-{
-    if (!IsValidPersistenceDurability(options.durability))
-    {
-        return foundation::Result<PersistenceServices>::Failure(
-            foundation::Error::Create("persistence.invalid_durability", "persistence durability is outside the supported enum domain"));
+foundation::Result<PersistenceServices> CreatePersistenceServices(const PersistenceOptions &options) {
+    if (!IsValidPersistenceDurability(options.durability)) {
+        return foundation::Result<PersistenceServices>::Failure(foundation::Error::Create(
+            "persistence.invalid_durability", "persistence durability is outside the supported enum domain"));
     }
 
     PersistenceSnapshot snapshot{};
-    if (options.backend)
-    {
-        try
-        {
+    if (options.backend) {
+        try {
             const auto loaded = options.backend->Load();
-            if (!loaded)
-            {
+            if (!loaded) {
                 return foundation::Result<PersistenceServices>::Failure(loaded.GetError());
             }
             const auto valid = ValidatePersistenceSnapshot(loaded.Value());
-            if (!valid)
-            {
+            if (!valid) {
                 return foundation::Result<PersistenceServices>::Failure(valid.GetError());
             }
             snapshot = loaded.Value();
-        }
-        catch (...)
-        {
-            return foundation::Result<PersistenceServices>::Failure(
-                foundation::Error::Create("persistence.backend_exception", "persistence backend threw while loading snapshot"));
+        } catch (...) {
+            return foundation::Result<PersistenceServices>::Failure(foundation::Error::Create(
+                "persistence.backend_exception", "persistence backend threw while loading snapshot"));
         }
     }
 
     PersistenceServices services{};
-    try
-    {
-        services.store = std::make_shared<InMemoryPersistenceStore>(std::move(snapshot), options.backend, options.durability);
+    try {
+        services.store =
+            std::make_shared<InMemoryPersistenceStore>(std::move(snapshot), options.backend, options.durability);
         services.query = services.store;
-    }
-    catch (const std::bad_alloc&)
-    {
+    } catch (const std::bad_alloc &) {
         return foundation::Result<PersistenceServices>::Failure(
             foundation::Error::Create("persistence.allocation_failed", "failed to allocate persistence services"));
     }

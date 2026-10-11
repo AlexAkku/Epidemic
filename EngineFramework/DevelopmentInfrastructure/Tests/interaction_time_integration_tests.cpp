@@ -2,7 +2,11 @@
 
 #include <cstdlib>
 
-#define CHECK(expr) do { if (!(expr)) std::abort(); } while (false)
+#define CHECK(expr)                                                                                                    \
+    do {                                                                                                               \
+        if (!(expr))                                                                                                   \
+            std::abort();                                                                                              \
+    } while (false)
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::integration;
@@ -10,23 +14,21 @@ using namespace epidemic::gameplay::interaction;
 using namespace epidemic::gameplay::interaction_time_integration;
 using namespace epidemic::gameplay::time;
 
-namespace
-{
-struct TimedProvider final : IInteractionProvider
-{
+namespace {
+struct TimedProvider final : IInteractionProvider {
     InteractionTypeId type{};
     InteractionProviderId id = InteractionProviderId::FromString("test.interaction_time.provider");
 
-    [[nodiscard]] InteractionProviderId Id() const noexcept override { return id; }
+    [[nodiscard]] InteractionProviderId Id() const noexcept override {
+        return id;
+    }
 
-    [[nodiscard]] std::vector<InteractionCandidate> Collect(const InteractionContext& context) const override
-    {
+    [[nodiscard]] std::vector<InteractionCandidate> Collect(const InteractionContext &context) const override {
         return {{type, context.actor, context.target, id, 10, InteractionAvailability::Available, {}, {}}};
     }
 };
 
-struct Fixture
-{
+struct Fixture {
     GameplayTimeService time;
     InteractionService interactions;
     ScheduledTriggerDispatcher dispatcher;
@@ -35,9 +37,7 @@ struct Fixture
     ClockId clock{};
     InteractionTypeId type = InteractionTypeId::FromString("game.repair");
 
-    Fixture()
-        : dispatcher(time), adapter(interactions, time)
-    {
+    Fixture() : dispatcher(time), adapter(interactions, time) {
         const auto clock_result = time.RegisterClock("game.world");
         CHECK(clock_result);
         clock = clock_result.Value();
@@ -64,8 +64,7 @@ struct Fixture
         CHECK(time.SynchronizeClock(clock, GameplayTimePoint{0}, Revision{1}));
     }
 
-    [[nodiscard]] InteractionContext Context(std::uint64_t suffix = 1) const
-    {
+    [[nodiscard]] InteractionContext Context(std::uint64_t suffix = 1) const {
         InteractionContext context;
         context.actor = {GameplayDomainId::FromString("test.actor"), GameplayObjectId::FromRaw(1, suffix)};
         context.target = {GameplayDomainId::FromString("test.target"), GameplayObjectId::FromRaw(2, suffix)};
@@ -73,8 +72,7 @@ struct Fixture
         return context;
     }
 
-    [[nodiscard]] InteractionExecutionId Start(const InteractionContext& context)
-    {
+    [[nodiscard]] InteractionExecutionId Start(const InteractionContext &context) {
         const auto candidates = interactions.GetAvailableInteractions(context);
         CHECK(candidates.size() == 1);
         const auto plan = interactions.Prepare(context, candidates.front());
@@ -85,8 +83,7 @@ struct Fixture
     }
 };
 
-void TestDispatcherCompletionAndObservedTime()
-{
+void TestDispatcherCompletionAndObservedTime() {
     Fixture fixture;
     const auto context = fixture.Context();
     const auto execution = fixture.Start(context);
@@ -95,7 +92,7 @@ void TestDispatcherCompletionAndObservedTime()
     CHECK(synchronized);
     CHECK(synchronized.Value() == 1);
 
-    const auto* session = fixture.interactions.FindSession(execution);
+    const auto *session = fixture.interactions.FindSession(execution);
     CHECK(session != nullptr);
     CHECK(session->completion_schedule.has_value());
     const auto completion_schedule = *session->completion_schedule;
@@ -117,7 +114,7 @@ void TestDispatcherCompletionAndObservedTime()
     const auto changes = fixture.interactions.ReadChangesSince(ChangeCursor{});
     CHECK(!changes.snapshot_required);
     CHECK(!changes.changes.empty());
-    const auto& completed = changes.changes.back();
+    const auto &completed = changes.changes.back();
     CHECK(completed.kind == InteractionChangeKind::Completed);
     CHECK(completed.execution == execution);
     CHECK(completed.context.time == GameplayTimePoint{15});
@@ -128,14 +125,13 @@ void TestDispatcherCompletionAndObservedTime()
     CHECK(!fixture.time.HasSchedule(completion_schedule));
 }
 
-void TestRestoreReusesPersistentSchedule()
-{
+void TestRestoreReusesPersistentSchedule() {
     Fixture original;
     const auto context = original.Context(2);
     const auto execution = original.Start(context);
     CHECK(original.adapter.Synchronize(original.clock));
 
-    const auto* session = original.interactions.FindSession(execution);
+    const auto *session = original.interactions.FindSession(execution);
     CHECK(session != nullptr && session->completion_schedule.has_value());
     const auto original_schedule = *session->completion_schedule;
     const auto interaction_snapshot = original.interactions.CaptureSnapshot();
@@ -153,19 +149,18 @@ void TestRestoreReusesPersistentSchedule()
     const auto synchronized = restored.adapter.Synchronize(restored.clock);
     CHECK(synchronized);
     CHECK(restored.time.CaptureSnapshot().schedules.size() == 1);
-    const auto* restored_session = restored.interactions.FindSession(execution);
+    const auto *restored_session = restored.interactions.FindSession(execution);
     CHECK(restored_session != nullptr);
     CHECK(restored_session->completion_schedule.has_value());
     CHECK(*restored_session->completion_schedule == original_schedule);
 }
 
-void TestOrphanScheduleCleanup()
-{
+void TestOrphanScheduleCleanup() {
     Fixture fixture;
     const auto context = fixture.Context(3);
     const auto execution = fixture.Start(context);
     CHECK(fixture.adapter.Synchronize(fixture.clock));
-    const auto* session = fixture.interactions.FindSession(execution);
+    const auto *session = fixture.interactions.FindSession(execution);
     CHECK(session != nullptr && session->completion_schedule.has_value());
     const auto schedule = *session->completion_schedule;
 
@@ -177,13 +172,11 @@ void TestOrphanScheduleCleanup()
     CHECK(fixture.adapter.PendingReconciliations().empty());
 }
 
-void TestJournalGapFallsBackToAuthoritativeReconciliation()
-{
+void TestJournalGapFallsBackToAuthoritativeReconciliation() {
     Fixture fixture;
 
     // Overflow Interaction's bounded journal while this adapter remains at cursor 0.
-    for (std::uint64_t i = 10; i < 2200; ++i)
-    {
+    for (std::uint64_t i = 10; i < 2200; ++i) {
         const auto context = fixture.Context(i);
         const auto execution = fixture.Start(context);
         CHECK(fixture.interactions.Cancel(execution, TypeId::FromString("test.cancel"), GameplayContext{}));
@@ -196,13 +189,12 @@ void TestJournalGapFallsBackToAuthoritativeReconciliation()
     CHECK(synchronized);
     CHECK(fixture.adapter.Cursor().sequence != 0);
 
-    const auto* session = fixture.interactions.FindSession(live_execution);
+    const auto *session = fixture.interactions.FindSession(live_execution);
     CHECK(session != nullptr && session->completion_schedule.has_value());
     CHECK(fixture.time.HasSchedule(*session->completion_schedule));
 }
 
-void TestPendingDispatcherTriggerSurvivesRestore()
-{
+void TestPendingDispatcherTriggerSurvivesRestore() {
     Fixture original;
     const auto context = original.Context(4);
     const auto execution = original.Start(context);
@@ -237,8 +229,7 @@ void TestPendingDispatcherTriggerSurvivesRestore()
 }
 } // namespace
 
-int main()
-{
+int main() {
     TestDispatcherCompletionAndObservedTime();
     TestRestoreReusesPersistentSchedule();
     TestOrphanScheduleCleanup();

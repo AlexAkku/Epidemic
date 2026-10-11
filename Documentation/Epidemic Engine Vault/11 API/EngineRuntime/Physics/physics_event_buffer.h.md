@@ -42,3 +42,46 @@ class IPhysicsEventBuffer
 };
 } // namespace epidemic::runtime::physics
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Runtime/Physics/physics_types.h`.
+
+### Состав типов и операции
+
+#### `IPhysicsEventBuffer` (строка заголовка 10)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IPhysicsEventBuffer() = default;
+[[nodiscard]] virtual std::span<const ContactEvent> Contacts() const = 0;
+virtual void Clear() = 0;
+```
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+### Интеграция и безопасность вызовов
+
+- `std::span` является невладеющим представлением; вызывающий отвечает за срок жизни исходного буфера.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Contacts` | `PhysicsRuntime::Contacts` | `EngineRuntime/Physics/src/physics_runtime_impl.cpp:1007` |
+| `Clear` | `PhysicsRuntime::Clear` | `EngineRuntime/Physics/src/physics_runtime_impl.cpp:1012` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `Contacts`: `EngineRuntime/Physics/tests/physics_tests.cpp:313`
+- `Clear`: `EngineRuntime/Physics/tests/physics_tests.cpp:452`
+

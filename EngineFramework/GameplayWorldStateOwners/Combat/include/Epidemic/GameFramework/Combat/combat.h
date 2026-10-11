@@ -12,51 +12,60 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::combat
-{
-struct DamageTypeId
-{
+namespace epidemic::gameplay::combat {
+struct DamageTypeId {
     TypeId value{};
-    [[nodiscard]] static constexpr DamageTypeId FromString(std::string_view name) noexcept { return {TypeId::FromString(name)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr auto operator<=>(const DamageTypeId&) const noexcept = default;
+    [[nodiscard]] static constexpr DamageTypeId FromString(std::string_view name) noexcept {
+        return {TypeId::FromString(name)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr auto operator<=>(const DamageTypeId &) const noexcept = default;
 };
-struct DamageProfileId
-{
+struct DamageProfileId {
     TypeId value{};
-    [[nodiscard]] static constexpr DamageProfileId FromString(std::string_view name) noexcept { return {TypeId::FromString(name)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr auto operator<=>(const DamageProfileId&) const noexcept = default;
+    [[nodiscard]] static constexpr DamageProfileId FromString(std::string_view name) noexcept {
+        return {TypeId::FromString(name)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr auto operator<=>(const DamageProfileId &) const noexcept = default;
 };
-struct CombatResourceTypeId
-{
+struct CombatResourceTypeId {
     TypeId value{};
-    [[nodiscard]] static constexpr CombatResourceTypeId FromString(std::string_view name) noexcept { return {TypeId::FromString(name)}; }
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr auto operator<=>(const CombatResourceTypeId&) const noexcept = default;
+    [[nodiscard]] static constexpr CombatResourceTypeId FromString(std::string_view name) noexcept {
+        return {TypeId::FromString(name)};
+    }
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr auto operator<=>(const CombatResourceTypeId &) const noexcept = default;
 };
-struct CombatModifierTypeId
-{
+struct CombatModifierTypeId {
     TypeId value{};
-    [[nodiscard]] static constexpr CombatModifierTypeId FromString(std::string_view name) noexcept { return {TypeId::FromString(name)}; }
-    [[nodiscard]] constexpr auto operator<=>(const CombatModifierTypeId&) const noexcept = default;
+    [[nodiscard]] static constexpr CombatModifierTypeId FromString(std::string_view name) noexcept {
+        return {TypeId::FromString(name)};
+    }
+    [[nodiscard]] constexpr auto operator<=>(const CombatModifierTypeId &) const noexcept = default;
 };
-struct CombatResolutionId
-{
+struct CombatResolutionId {
     GameplayObjectId value{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr auto operator<=>(const CombatResolutionId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr auto operator<=>(const CombatResolutionId &) const noexcept = default;
 };
-struct CombatResourceReservationId
-{
+struct CombatResourceReservationId {
     GameplayObjectId value{};
-    [[nodiscard]] constexpr bool IsValid() const noexcept { return value.IsValid(); }
-    [[nodiscard]] constexpr auto operator<=>(const CombatResourceReservationId&) const noexcept = default;
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
+        return value.IsValid();
+    }
+    [[nodiscard]] constexpr auto operator<=>(const CombatResourceReservationId &) const noexcept = default;
 };
-struct IdHash
-{
-    template <typename T> [[nodiscard]] std::size_t operator()(const T& id) const noexcept
-    {
+struct IdHash {
+    template <typename T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         if constexpr (requires { id.value.Raw(); })
             return std::hash<TypeId>{}(id.value);
         else
@@ -64,10 +73,13 @@ struct IdHash
     }
 };
 
-enum class CombatResourceDepletionEffect { None, Downed, Dead };
+enum class CombatResourceDepletionEffect {
+    None,
+    Downed,
+    Dead
+};
 
-struct CombatResourceDefinition
-{
+struct CombatResourceDefinition {
     CombatResourceTypeId id{};
     std::string canonical_name;
     std::int64_t minimum_micro = 0;
@@ -75,8 +87,7 @@ struct CombatResourceDefinition
     CombatResourceDepletionEffect depletion_effect = CombatResourceDepletionEffect::None;
 };
 
-struct DamageProfile
-{
+struct DamageProfile {
     DamageProfileId id{};
     std::string canonical_name;
     CombatResourceTypeId target_resource{};
@@ -93,18 +104,25 @@ struct DamageProfile
     std::int64_t flat_mitigation_micro = 0;
 };
 
-enum class CombatLifeState { Alive, Downed, Dead, Disabled };
-enum class CombatEngagementState { OutOfCombat, Engaged, Disengaging };
+enum class CombatLifeState {
+    Alive,
+    Downed,
+    Dead,
+    Disabled
+};
+enum class CombatEngagementState {
+    OutOfCombat,
+    Engaged,
+    Disengaging
+};
 
-struct CombatResourceState
-{
+struct CombatResourceState {
     CombatResourceTypeId type{};
     std::int64_t current_micro = 0;
     std::int64_t maximum_micro = 0;
 };
 
-struct CombatResourceReservation
-{
+struct CombatResourceReservation {
     CombatResourceReservationId id{};
     GameplayObjectRef subject{};
     CombatResourceTypeId resource{};
@@ -112,8 +130,7 @@ struct CombatResourceReservation
     GameplayContext context{};
 };
 
-struct CombatantRecord
-{
+struct CombatantRecord {
     GameplayObjectRef subject{};
     CombatLifeState life_state = CombatLifeState::Alive;
     CombatEngagementState engagement = CombatEngagementState::OutOfCombat;
@@ -121,10 +138,22 @@ struct CombatantRecord
     Revision revision{};
 };
 
-enum class CombatModifierPhase { Base, Attacker, Target, Mitigation, Amplification, Final };
-enum class CombatModifierOperation { Add, Multiply, Override, ClampMin, ClampMax };
-struct CombatModifier
-{
+enum class CombatModifierPhase {
+    Base,
+    Attacker,
+    Target,
+    Mitigation,
+    Amplification,
+    Final
+};
+enum class CombatModifierOperation {
+    Add,
+    Multiply,
+    Override,
+    ClampMin,
+    ClampMax
+};
+struct CombatModifier {
     CombatModifierPhase phase = CombatModifierPhase::Base;
     CombatModifierOperation operation = CombatModifierOperation::Add;
     CombatModifierTypeId type{};
@@ -133,8 +162,7 @@ struct CombatModifier
     GameplayObjectRef source{};
 };
 
-struct DamageRequest
-{
+struct DamageRequest {
     GameplayObjectRef source{};
     GameplayObjectRef instigator{};
     GameplayObjectRef target{};
@@ -145,16 +173,14 @@ struct DamageRequest
     GameplayContext context{};
 };
 
-class ICombatModifierProvider
-{
+class ICombatModifierProvider {
   public:
     virtual ~ICombatModifierProvider() = default;
-    [[nodiscard]] virtual std::vector<CombatModifier> Collect(const DamageRequest& request) const = 0;
-    [[nodiscard]] virtual Revision RevisionFor(const DamageRequest& request) const noexcept = 0;
+    [[nodiscard]] virtual std::vector<CombatModifier> Collect(const DamageRequest &request) const = 0;
+    [[nodiscard]] virtual Revision RevisionFor(const DamageRequest &request) const noexcept = 0;
 };
 
-enum class CombatOutcome : std::uint32_t
-{
+enum class CombatOutcome : std::uint32_t {
     None = 0,
     Missed = 1u << 0u,
     Evaded = 1u << 1u,
@@ -163,11 +189,14 @@ enum class CombatOutcome : std::uint32_t
     Killed = 1u << 4u,
     Downed = 1u << 5u,
 };
-[[nodiscard]] constexpr CombatOutcome operator|(CombatOutcome a, CombatOutcome b) noexcept { return static_cast<CombatOutcome>(static_cast<std::uint32_t>(a)|static_cast<std::uint32_t>(b)); }
-[[nodiscard]] constexpr bool HasOutcome(CombatOutcome value, CombatOutcome flag) noexcept { return (static_cast<std::uint32_t>(value)&static_cast<std::uint32_t>(flag))!=0; }
+[[nodiscard]] constexpr CombatOutcome operator|(CombatOutcome a, CombatOutcome b) noexcept {
+    return static_cast<CombatOutcome>(static_cast<std::uint32_t>(a) | static_cast<std::uint32_t>(b));
+}
+[[nodiscard]] constexpr bool HasOutcome(CombatOutcome value, CombatOutcome flag) noexcept {
+    return (static_cast<std::uint32_t>(value) & static_cast<std::uint32_t>(flag)) != 0;
+}
 
-struct CombatPlan
-{
+struct CombatPlan {
     CombatResolutionId id{};
     DamageRequest request;
     CombatResourceTypeId resource{};
@@ -181,13 +210,11 @@ struct CombatPlan
     GameplayTimePoint expires_at{};
 };
 
-struct CombatPreparePolicy
-{
+struct CombatPreparePolicy {
     GameplayDuration lifetime{1};
 };
 
-struct CombatResult
-{
+struct CombatResult {
     CombatResolutionId id{};
     GameplayObjectRef target{};
     CombatResourceTypeId resource{};
@@ -201,9 +228,15 @@ struct CombatResult
     GameplayContext context{};
 };
 
-enum class CombatChangeKind { CombatantRegistered, CombatantRemoved, EngagementChanged, DamageResolved, ResourceChanged, LifeStateChanged };
-struct CombatChange
-{
+enum class CombatChangeKind {
+    CombatantRegistered,
+    CombatantRemoved,
+    EngagementChanged,
+    DamageResolved,
+    ResourceChanged,
+    LifeStateChanged
+};
+struct CombatChange {
     std::uint64_t sequence = 0;
     CombatChangeKind kind = CombatChangeKind::CombatantRegistered;
     GameplayObjectRef subject{};
@@ -214,8 +247,7 @@ struct CombatChange
     GameplayContext context{};
 };
 
-struct CombatChangeBatch
-{
+struct CombatChangeBatch {
     bool snapshot_required = false;
     std::uint64_t oldest_available_sequence = 0;
     std::vector<CombatChange> changes;
@@ -223,8 +255,7 @@ struct CombatChangeBatch
     ChangeCursor oldest_available_cursor{};
     ChangeCursor latest_cursor{};
 };
-struct CombatSnapshot
-{
+struct CombatSnapshot {
     std::vector<CombatantRecord> combatants;
     std::vector<CombatResourceReservation> resource_reservations;
     MonotonicIdGenerator<GameplayObjectId>::Snapshot resolution_ids{};
@@ -234,8 +265,7 @@ struct CombatSnapshot
 
     std::uint64_t change_epoch = 1;
 };
-struct CombatDiagnostics
-{
+struct CombatDiagnostics {
     std::uint64_t combatants = 0;
     std::uint64_t damage_requests = 0;
     std::uint64_t damage_resolved = 0;
@@ -246,81 +276,98 @@ struct CombatDiagnostics
     std::uint64_t stale_commits = 0;
 };
 
-class CombatService
-{
+class CombatService {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<CombatService>;
 
   public:
     CombatService();
-    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept { return GameplayDomainId::FromString("framework.combat"); }
+    [[nodiscard]] static constexpr GameplayDomainId Domain() noexcept {
+        return GameplayDomainId::FromString("framework.combat");
+    }
     [[nodiscard]] foundation::Result<CombatResourceTypeId> RegisterResource(CombatResourceDefinition definition);
     [[nodiscard]] foundation::Result<DamageTypeId> RegisterDamageType(std::string canonical_name);
     [[nodiscard]] foundation::Result<DamageProfileId> RegisterDamageProfile(DamageProfile profile);
-    void Freeze() noexcept { frozen_ = true; }
-    [[nodiscard]] bool IsFrozen() const noexcept { return frozen_; }
-    void SetModifierProvider(const ICombatModifierProvider* provider) noexcept;
+    void Freeze() noexcept {
+        frozen_ = true;
+    }
+    [[nodiscard]] bool IsFrozen() const noexcept {
+        return frozen_;
+    }
+    void SetModifierProvider(const ICombatModifierProvider *provider) noexcept;
 
-    [[nodiscard]] foundation::Result<void> RegisterCombatant(GameplayObjectRef subject, std::vector<CombatResourceState> resources, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> RegisterCombatant(GameplayObjectRef subject,
+                                                             std::vector<CombatResourceState> resources,
+                                                             GameplayContext context = {});
     [[nodiscard]] foundation::Result<void> RemoveCombatant(GameplayObjectRef subject, GameplayContext context = {});
-    [[nodiscard]] const CombatantRecord* FindCombatant(GameplayObjectRef subject) const noexcept;
-    [[nodiscard]] foundation::Result<CombatResourceState> GetResource(GameplayObjectRef subject, CombatResourceTypeId type) const;
-    [[nodiscard]] foundation::Result<void> SetResourceMaximum(GameplayObjectRef subject, CombatResourceTypeId type, std::int64_t maximum_micro, bool preserve_ratio, GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> ModifyResource(GameplayObjectRef subject, CombatResourceTypeId type, std::int64_t delta_micro, GameplayContext context = {});
+    [[nodiscard]] const CombatantRecord *FindCombatant(GameplayObjectRef subject) const noexcept;
+    [[nodiscard]] foundation::Result<CombatResourceState> GetResource(GameplayObjectRef subject,
+                                                                      CombatResourceTypeId type) const;
+    [[nodiscard]] foundation::Result<void> SetResourceMaximum(GameplayObjectRef subject, CombatResourceTypeId type,
+                                                              std::int64_t maximum_micro, bool preserve_ratio,
+                                                              GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> ModifyResource(GameplayObjectRef subject, CombatResourceTypeId type,
+                                                          std::int64_t delta_micro, GameplayContext context = {});
     // Resource reservations are authoritative Combat state. Reserve performs the tentative debit,
     // while Commit only finalizes it and Release restores it. Active reservations are persisted.
-    [[nodiscard]] foundation::Result<CombatResourceReservationId> ReserveResource(
-        GameplayObjectRef subject, CombatResourceTypeId type, std::int64_t amount_micro, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<CombatResourceReservationId> ReserveResource(GameplayObjectRef subject,
+                                                                                  CombatResourceTypeId type,
+                                                                                  std::int64_t amount_micro,
+                                                                                  GameplayContext context = {});
     void CommitResourceReservation(CombatResourceReservationId reservation) noexcept;
     void ReleaseResourceReservation(CombatResourceReservationId reservation, GameplayContext context = {}) noexcept;
-    [[nodiscard]] const CombatResourceReservation* FindResourceReservation(CombatResourceReservationId reservation) const noexcept;
-    [[nodiscard]] foundation::Result<void> SetEngagement(GameplayObjectRef subject, CombatEngagementState state, GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> TransitionLifeState(GameplayObjectRef subject, CombatLifeState state, GameplayContext context = {});
+    [[nodiscard]] const CombatResourceReservation *
+    FindResourceReservation(CombatResourceReservationId reservation) const noexcept;
+    [[nodiscard]] foundation::Result<void> SetEngagement(GameplayObjectRef subject, CombatEngagementState state,
+                                                         GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> TransitionLifeState(GameplayObjectRef subject, CombatLifeState state,
+                                                               GameplayContext context = {});
 
     [[nodiscard]] foundation::Result<void> SetPreparePolicy(CombatPreparePolicy policy);
-    [[nodiscard]] CombatPreparePolicy GetPreparePolicy() const noexcept { return prepare_policy_; }
+    [[nodiscard]] CombatPreparePolicy GetPreparePolicy() const noexcept {
+        return prepare_policy_;
+    }
     [[nodiscard]] foundation::Result<CombatPlan> PrepareDamage(DamageRequest request);
-    [[nodiscard]] foundation::Result<CombatResult> CommitDamage(const CombatPlan& plan, GameplayTimePoint now);
+    [[nodiscard]] foundation::Result<CombatResult> CommitDamage(const CombatPlan &plan, GameplayTimePoint now);
     [[nodiscard]] foundation::Result<void> CancelDamagePlan(CombatResolutionId id);
     [[nodiscard]] std::size_t ExpirePreparedPlans(GameplayTimePoint now) noexcept;
 
-    private:
-        [[nodiscard]] std::vector<CombatChange> ChangesSinceSequence(std::uint64_t sequence) const;
-        [[nodiscard]] CombatChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
-    public:
-    [[nodiscard]] CombatChangeBatch ReadChangesSince(ChangeCursor cursor) const
-    {
+  private:
+    [[nodiscard]] std::vector<CombatChange> ChangesSinceSequence(std::uint64_t sequence) const;
+    [[nodiscard]] CombatChangeBatch ReadChangesSinceSequence(std::uint64_t sequence) const;
+
+  public:
+    [[nodiscard]] CombatChangeBatch ReadChangesSince(ChangeCursor cursor) const {
         auto batch = ReadChangesSinceSequence(cursor.sequence);
         batch.oldest_available_cursor = {journal_epoch_, batch.oldest_available_sequence};
         batch.latest_cursor = {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                                    : next_change_sequence_ - 1};
-        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_))
-        {
+                                                                          : next_change_sequence_ - 1};
+        if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
             batch.changes.clear();
             batch.snapshot_required = true;
         }
         return batch;
     }
-    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept
-    {
-        return {journal_epoch_, next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
-                                                          : next_change_sequence_ - 1};
+    [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
+        return {journal_epoch_,
+                next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1};
     }
     [[nodiscard]] CombatSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(CombatSnapshot snapshot);
     [[nodiscard]] CombatDiagnostics GetDiagnostics() const noexcept;
 
   private:
-    [[nodiscard]] static std::optional<Revision> NextRevision(const CombatantRecord& record) noexcept;
+    [[nodiscard]] static std::optional<Revision> NextRevision(const CombatantRecord &record) noexcept;
     void Record(CombatChange change) noexcept;
-    [[nodiscard]] bool ReconcileLifeState(CombatantRecord& record, CombatResourceTypeId changed_resource) noexcept;
+    [[nodiscard]] bool ReconcileLifeState(CombatantRecord &record, CombatResourceTypeId changed_resource) noexcept;
     [[nodiscard]] static bool IsAllowedLifeTransition(CombatLifeState from, CombatLifeState to) noexcept;
-    [[nodiscard]] static std::int64_t ApplyModifiers(std::int64_t amount, std::vector<CombatModifier> modifiers) noexcept;
+    [[nodiscard]] static std::int64_t ApplyModifiers(std::int64_t amount,
+                                                     std::vector<CombatModifier> modifiers) noexcept;
 
     std::unordered_map<CombatResourceTypeId, CombatResourceDefinition, IdHash> resources_;
     std::unordered_map<DamageTypeId, std::string, IdHash> damage_types_;
     std::unordered_map<DamageProfileId, DamageProfile, IdHash> damage_profiles_;
     std::unordered_map<GameplayObjectRef, CombatantRecord> combatants_;
-    const ICombatModifierProvider* modifier_provider_ = nullptr;
+    const ICombatModifierProvider *modifier_provider_ = nullptr;
     std::uint64_t modifier_provider_epoch_ = 1;
     MonotonicIdGenerator<GameplayObjectId> resolution_ids_;
     MonotonicIdGenerator<GameplayObjectId> resource_reservation_ids_;

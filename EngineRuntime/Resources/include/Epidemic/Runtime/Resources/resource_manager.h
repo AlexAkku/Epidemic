@@ -10,10 +10,8 @@
 #include <cstdint>
 #include <optional>
 
-namespace epidemic::runtime
-{
-struct ResourceProcessingStats
-{
+namespace epidemic::runtime {
+struct ResourceProcessingStats {
     std::size_t attempted_jobs = 0;
     std::size_t processed_jobs = 0;
     std::size_t skipped_jobs = 0;
@@ -22,8 +20,7 @@ struct ResourceProcessingStats
     std::size_t bytes_loaded = 0;
 };
 
-struct ResourceMemoryStats
-{
+struct ResourceMemoryStats {
     std::size_t resident_bytes = 0;
     std::size_t budget_bytes = 0;
     std::size_t slot_count = 0;
@@ -36,13 +33,13 @@ struct ResourceMemoryStats
 
 // Threading: mutation must occur on the runtime thread.
 // Concurrent reads/writes are not supported unless explicitly documented.
-class IResourceManager
-{
+class IResourceManager {
   public:
     virtual ~IResourceManager() = default;
 
     [[nodiscard]] virtual foundation::Result<ResourceLease> RequestLease(ResourceRequest request) = 0;
-    [[nodiscard]] virtual foundation::Result<ResourceProcessingStats> ProcessPendingLoads(RuntimeBudget budget = {}) = 0;
+    [[nodiscard]] virtual foundation::Result<ResourceProcessingStats>
+    ProcessPendingLoads(RuntimeBudget budget = {}) = 0;
     [[nodiscard]] virtual foundation::Result<void> Release(ResourceLease lease) = 0;
     [[nodiscard]] virtual foundation::Result<void> Evict(ResourceId id) = 0;
     [[nodiscard]] virtual std::size_t EvictUnreferenced() = 0;

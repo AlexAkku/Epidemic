@@ -13,281 +13,347 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::gameplay::integration
-{
-struct CombatDamageEffectPayload
-{
+namespace epidemic::gameplay::integration {
+struct CombatDamageEffectPayload {
     combat::DamageTypeId damage_type{};
     combat::DamageProfileId profile{};
-    std::uint64_t seed_salt=0;
+    std::uint64_t seed_salt = 0;
 };
 
-class CombatDamageEffectHandler final : public effects::IEffectHandler
-{
+class CombatDamageEffectHandler final : public effects::IEffectHandler {
   public:
-    explicit CombatDamageEffectHandler(combat::CombatService& combat) : combat_(combat) {}
-    [[nodiscard]] static constexpr effects::EffectTypeId StaticType() noexcept { return effects::EffectTypeId::FromString("framework.combat.damage"); }
-    [[nodiscard]] static constexpr TypeId PayloadType() noexcept { return TypeId::FromString("framework.combat.damage.payload"); }
-    [[nodiscard]] static constexpr TypeId PlanTokenType() noexcept { return TypeId::FromString("framework.combat.damage.plan"); }
-    [[nodiscard]] effects::EffectTypeId Type() const noexcept override { return StaticType(); }
-    [[nodiscard]] effects::EffectHandlerCapabilities Capabilities() const noexcept override { return {}; }
-    [[nodiscard]] foundation::Result<effects::EffectPrepareResult> Prepare(const effects::EffectOperation& operation) const override;
-    [[nodiscard]] foundation::Result<effects::EffectCommitResult> Commit(const effects::EffectOperation& operation,const effects::RegisteredEffectPayload& token) noexcept override;
+    explicit CombatDamageEffectHandler(combat::CombatService &combat) : combat_(combat) {
+    }
+    [[nodiscard]] static constexpr effects::EffectTypeId StaticType() noexcept {
+        return effects::EffectTypeId::FromString("framework.combat.damage");
+    }
+    [[nodiscard]] static constexpr TypeId PayloadType() noexcept {
+        return TypeId::FromString("framework.combat.damage.payload");
+    }
+    [[nodiscard]] static constexpr TypeId PlanTokenType() noexcept {
+        return TypeId::FromString("framework.combat.damage.plan");
+    }
+    [[nodiscard]] effects::EffectTypeId Type() const noexcept override {
+        return StaticType();
+    }
+    [[nodiscard]] effects::EffectHandlerCapabilities Capabilities() const noexcept override {
+        return {};
+    }
+    [[nodiscard]] foundation::Result<effects::EffectPrepareResult>
+    Prepare(const effects::EffectOperation &operation) const override;
+    [[nodiscard]] foundation::Result<effects::EffectCommitResult>
+    Commit(const effects::EffectOperation &operation, const effects::RegisteredEffectPayload &token) noexcept override;
+
   private:
-    combat::CombatService& combat_;
+    combat::CombatService &combat_;
 };
 
-enum class ProgressionCombatRole { Attacker, Target };
-struct ProgressionCombatMapping
-{
-    progression::AttributeTypeId attribute{};
-    ProgressionCombatRole role=ProgressionCombatRole::Attacker;
-    combat::CombatModifierPhase phase=combat::CombatModifierPhase::Attacker;
-    combat::CombatModifierOperation operation=combat::CombatModifierOperation::Add;
-    combat::CombatModifierTypeId type{};
-    std::int32_t priority=0;
-    std::int64_t scale_micro=1'000'000;
+enum class ProgressionCombatRole {
+    Attacker,
+    Target
 };
-class ProgressionCombatModifierProvider final : public combat::ICombatModifierProvider
-{
+struct ProgressionCombatMapping {
+    progression::AttributeTypeId attribute{};
+    ProgressionCombatRole role = ProgressionCombatRole::Attacker;
+    combat::CombatModifierPhase phase = combat::CombatModifierPhase::Attacker;
+    combat::CombatModifierOperation operation = combat::CombatModifierOperation::Add;
+    combat::CombatModifierTypeId type{};
+    std::int32_t priority = 0;
+    std::int64_t scale_micro = 1'000'000;
+};
+class ProgressionCombatModifierProvider final : public combat::ICombatModifierProvider {
   public:
-    explicit ProgressionCombatModifierProvider(const progression::ProgressionService& progression) : progression_(progression) {}
+    explicit ProgressionCombatModifierProvider(const progression::ProgressionService &progression)
+        : progression_(progression) {
+    }
     [[nodiscard]] foundation::Result<void> AddMapping(ProgressionCombatMapping mapping);
     [[nodiscard]] foundation::Result<void> FreezeMappings();
-    [[nodiscard]] bool MappingsFrozen() const noexcept { return mappings_frozen_; }
-    [[nodiscard]] std::uint64_t MappingRevision() const noexcept { return mapping_revision_; }
-    [[nodiscard]] std::vector<combat::CombatModifier> Collect(const combat::DamageRequest& request) const override;
-    [[nodiscard]] Revision RevisionFor(const combat::DamageRequest& request) const noexcept override;
+    [[nodiscard]] bool MappingsFrozen() const noexcept {
+        return mappings_frozen_;
+    }
+    [[nodiscard]] std::uint64_t MappingRevision() const noexcept {
+        return mapping_revision_;
+    }
+    [[nodiscard]] std::vector<combat::CombatModifier> Collect(const combat::DamageRequest &request) const override;
+    [[nodiscard]] Revision RevisionFor(const combat::DamageRequest &request) const noexcept override;
+
   private:
-    const progression::ProgressionService& progression_;
+    const progression::ProgressionService &progression_;
     std::vector<ProgressionCombatMapping> mappings_;
     bool mappings_frozen_ = false;
     std::uint64_t mapping_revision_ = 0;
 };
 
-struct CombatAbilityResourceMapping
-{
+struct CombatAbilityResourceMapping {
     abilities::AbilityResourceTypeId ability{};
     combat::CombatResourceTypeId combat{};
 };
-class CombatAbilityResourceProvider final : public abilities::IAbilityResourceProvider
-{
+class CombatAbilityResourceProvider final : public abilities::IAbilityResourceProvider {
   public:
-    explicit CombatAbilityResourceProvider(combat::CombatService& combat) : combat_(combat) {}
+    explicit CombatAbilityResourceProvider(combat::CombatService &combat) : combat_(combat) {
+    }
     [[nodiscard]] foundation::Result<void> AddMapping(CombatAbilityResourceMapping mapping);
     [[nodiscard]] foundation::Result<void> FreezeMappings();
-    [[nodiscard]] bool MappingsFrozen() const noexcept { return mappings_frozen_; }
-    [[nodiscard]] std::uint64_t MappingRevision() const noexcept { return mapping_revision_; }
-    [[nodiscard]] bool CanAfford(GameplayObjectRef owner,abilities::AbilityResourceTypeId type,std::int64_t amount_micro) const override;
-    [[nodiscard]] foundation::Result<abilities::AbilityResourceReservation> Reserve(GameplayObjectRef owner,abilities::AbilityResourceTypeId type,std::int64_t amount_micro,GameplayContext context) override;
-    void Commit(const abilities::AbilityResourceReservation& reservation,GameplayContext context) noexcept override;
-    void Release(const abilities::AbilityResourceReservation& reservation,GameplayContext context) noexcept override;
-    [[nodiscard]] foundation::Result<void> ReconcileReservation(const abilities::AbilityResourceReservation& reservation,
-                                                                GameplayObjectRef owner,
-                                                                GameplayContext context) override;
+    [[nodiscard]] bool MappingsFrozen() const noexcept {
+        return mappings_frozen_;
+    }
+    [[nodiscard]] std::uint64_t MappingRevision() const noexcept {
+        return mapping_revision_;
+    }
+    [[nodiscard]] bool CanAfford(GameplayObjectRef owner, abilities::AbilityResourceTypeId type,
+                                 std::int64_t amount_micro) const override;
+    [[nodiscard]] foundation::Result<abilities::AbilityResourceReservation>
+    Reserve(GameplayObjectRef owner, abilities::AbilityResourceTypeId type, std::int64_t amount_micro,
+            GameplayContext context) override;
+    void Commit(const abilities::AbilityResourceReservation &reservation, GameplayContext context) noexcept override;
+    void Release(const abilities::AbilityResourceReservation &reservation, GameplayContext context) noexcept override;
+    [[nodiscard]] foundation::Result<void>
+    ReconcileReservation(const abilities::AbilityResourceReservation &reservation, GameplayObjectRef owner,
+                         GameplayContext context) override;
+
   private:
-    struct ReservationToken
-    {
+    struct ReservationToken {
         combat::CombatResourceReservationId reservation{};
         combat::CombatResourceTypeId resource{};
         std::int64_t amount_micro = 0;
     };
-    static constexpr TypeId TokenType() noexcept { return TypeId::FromString("framework.abilities.combat_resource.reservation.v2"); }
-    combat::CombatService& combat_;
-    std::unordered_map<abilities::AbilityResourceTypeId,combat::CombatResourceTypeId,abilities::IdHash> mappings_;
+    static constexpr TypeId TokenType() noexcept {
+        return TypeId::FromString("framework.abilities.combat_resource.reservation.v2");
+    }
+    combat::CombatService &combat_;
+    std::unordered_map<abilities::AbilityResourceTypeId, combat::CombatResourceTypeId, abilities::IdHash> mappings_;
     bool mappings_frozen_ = false;
     std::uint64_t mapping_revision_ = 0;
 };
 
-struct AbilityEffectDeliveryKey
-{
+struct AbilityEffectDeliveryKey {
     abilities::AbilityExecutionId execution{};
     GameplayTimePoint occurrence_at{};
     std::uint32_t output_index = 0;
-    [[nodiscard]] constexpr auto operator<=>(const AbilityEffectDeliveryKey&) const noexcept = default;
+    [[nodiscard]] constexpr auto operator<=>(const AbilityEffectDeliveryKey &) const noexcept = default;
 };
-struct AbilityEffectDeliveryRecord
-{
+struct AbilityEffectDeliveryRecord {
     AbilityEffectDeliveryKey key{};
     effects::EffectExecutionResult result;
 };
-struct AbilityEffectsCheckpoint
-{
+struct AbilityEffectsCheckpoint {
     std::uint64_t mapping_revision = 0;
     std::vector<AbilityEffectDeliveryRecord> delivered;
 };
-class AbilityEffectsDispatcher
-{
+class AbilityEffectsDispatcher {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<AbilityEffectsDispatcher>;
 
   public:
-    explicit AbilityEffectsDispatcher(effects::EffectService& effects) : effects_(effects) {}
-    [[nodiscard]] foundation::Result<void> Map(ActionTypeId action,effects::EffectDefinitionId definition);
+    explicit AbilityEffectsDispatcher(effects::EffectService &effects) : effects_(effects) {
+    }
+    [[nodiscard]] foundation::Result<void> Map(ActionTypeId action, effects::EffectDefinitionId definition);
     [[nodiscard]] foundation::Result<void> FreezeMappings();
-    [[nodiscard]] std::uint64_t MappingRevision() const noexcept { return mapping_revision_; }
-    [[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>> Dispatch(std::span<const abilities::AbilityOutput> outputs);
+    [[nodiscard]] std::uint64_t MappingRevision() const noexcept {
+        return mapping_revision_;
+    }
+    [[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>>
+    Dispatch(std::span<const abilities::AbilityOutput> outputs);
     [[nodiscard]] AbilityEffectsCheckpoint CaptureCheckpoint() const;
     [[nodiscard]] foundation::Result<void> RestoreCheckpoint(AbilityEffectsCheckpoint checkpoint);
+
   private:
     friend class AbilityOutputDeliveryCoordinator;
     std::uint64_t PruneDeliveriesForExecution(abilities::AbilityExecutionId execution) noexcept;
-    effects::EffectService& effects_;
-    std::unordered_map<ActionTypeId,effects::EffectDefinitionId> mappings_;
+    effects::EffectService &effects_;
+    std::unordered_map<ActionTypeId, effects::EffectDefinitionId> mappings_;
     bool mappings_frozen_ = false;
     std::uint64_t mapping_revision_ = 0;
     static constexpr std::size_t kDeliveryCapacity = 4096;
     std::vector<AbilityEffectDeliveryRecord> delivered_;
 };
 
-struct ConditionProgressionMapping
-{
+struct ConditionProgressionMapping {
     conditions::ConditionTypeId condition{};
     progression::AttributeTypeId attribute{};
-    progression::ModifierOperation operation=progression::ModifierOperation::FinalAdd;
+    progression::ModifierOperation operation = progression::ModifierOperation::FinalAdd;
     TypeId modifier_type{};
-    std::int32_t priority=0;
-    std::int64_t magnitude_scale_micro=1'000'000;
+    std::int32_t priority = 0;
+    std::int64_t magnitude_scale_micro = 1'000'000;
 };
-struct ConditionProgressionCheckpoint
-{
+struct ConditionProgressionCheckpoint {
     ChangeCursor cursor{};
     std::uint64_t mapping_revision = 0;
 };
-class ConditionProgressionAdapter
-{
+class ConditionProgressionAdapter {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<ConditionProgressionAdapter>;
 
   public:
-    ConditionProgressionAdapter(const conditions::ConditionService& conditions,progression::ProgressionService& progression) : conditions_(conditions),progression_(progression) {}
+    ConditionProgressionAdapter(const conditions::ConditionService &conditions,
+                                progression::ProgressionService &progression)
+        : conditions_(conditions), progression_(progression) {
+    }
     [[nodiscard]] foundation::Result<void> AddMapping(ConditionProgressionMapping mapping);
     [[nodiscard]] foundation::Result<void> FreezeMappings();
-    [[nodiscard]] std::uint64_t MappingRevision() const noexcept { return mapping_revision_; }
+    [[nodiscard]] std::uint64_t MappingRevision() const noexcept {
+        return mapping_revision_;
+    }
     [[nodiscard]] foundation::Result<void> ProcessChanges();
     [[nodiscard]] foundation::Result<void> ReconcileAll();
-    [[nodiscard]] ChangeCursor Cursor() const noexcept { return cursor_; }
-    void RestoreCursor(ChangeCursor cursor) noexcept { cursor_ = cursor; }
-    [[nodiscard]] ConditionProgressionCheckpoint CaptureCheckpoint() const noexcept { return {cursor_,mapping_revision_}; }
+    [[nodiscard]] ChangeCursor Cursor() const noexcept {
+        return cursor_;
+    }
+    void RestoreCursor(ChangeCursor cursor) noexcept {
+        cursor_ = cursor;
+    }
+    [[nodiscard]] ConditionProgressionCheckpoint CaptureCheckpoint() const noexcept {
+        return {cursor_, mapping_revision_};
+    }
     [[nodiscard]] foundation::Result<void> RestoreCheckpoint(ConditionProgressionCheckpoint checkpoint);
+
   private:
-    [[nodiscard]] static GameplayObjectRef ConditionSource(conditions::ConditionInstanceId id) noexcept { return {conditions::ConditionService::Domain(),id.value}; }
-    [[nodiscard]] foundation::Result<void> Project(const conditions::ConditionInstance& condition, GameplayContext context);
-    const conditions::ConditionService& conditions_;
-    progression::ProgressionService& progression_;
+    [[nodiscard]] static GameplayObjectRef ConditionSource(conditions::ConditionInstanceId id) noexcept {
+        return {conditions::ConditionService::Domain(), id.value};
+    }
+    [[nodiscard]] foundation::Result<void> Project(const conditions::ConditionInstance &condition,
+                                                   GameplayContext context);
+    const conditions::ConditionService &conditions_;
+    progression::ProgressionService &progression_;
     std::vector<ConditionProgressionMapping> mappings_;
     bool mappings_frozen_ = false;
     std::uint64_t mapping_revision_ = 0;
     ChangeCursor cursor_{};
 };
 
-struct AbilityTimePendingTrigger
-{
+struct AbilityTimePendingTrigger {
     ScheduleId trigger{};
     abilities::AbilityExecutionId execution{};
     GameplayTimePoint observed_at{};
     std::vector<abilities::AbilityOutput> outputs;
 };
-struct AbilityTimeCheckpoint
-{
+struct AbilityTimeCheckpoint {
     ClockId clock{};
     ActionTypeId action{};
     std::vector<AbilityTimePendingTrigger> pending;
 };
-class AbilityTimeAdapter
-{
+class AbilityTimeAdapter {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<AbilityTimeAdapter>;
 
   public:
-    AbilityTimeAdapter(time::GameplayTimeService& time,abilities::AbilityService& abilities,ClockId clock,ActionTypeId action) : time_(time),abilities_(abilities),clock_(clock),action_(action) {}
+    AbilityTimeAdapter(time::GameplayTimeService &time, abilities::AbilityService &abilities, ClockId clock,
+                       ActionTypeId action)
+        : time_(time), abilities_(abilities), clock_(clock), action_(action) {
+    }
     [[nodiscard]] foundation::Result<ScheduleId> ScheduleExecution(abilities::AbilityExecutionId execution);
-    [[nodiscard]] foundation::Result<std::vector<abilities::AbilityOutput>> ProcessTrigger(const time::ScheduledTrigger& trigger);
-    [[nodiscard]] const AbilityTimePendingTrigger* FindPendingOutputs(ScheduleId trigger) const noexcept;
+    [[nodiscard]] foundation::Result<std::vector<abilities::AbilityOutput>>
+    ProcessTrigger(const time::ScheduledTrigger &trigger);
+    [[nodiscard]] const AbilityTimePendingTrigger *FindPendingOutputs(ScheduleId trigger) const noexcept;
     [[nodiscard]] foundation::Result<void> AcknowledgeOutputs(ScheduleId trigger);
-    [[nodiscard]] AbilityTimeCheckpoint CaptureCheckpoint() const { return {clock_, action_, pending_}; }
+    [[nodiscard]] AbilityTimeCheckpoint CaptureCheckpoint() const {
+        return {clock_, action_, pending_};
+    }
     [[nodiscard]] foundation::Result<void> RestoreCheckpoint(AbilityTimeCheckpoint checkpoint);
-    [[nodiscard]] std::size_t PendingOutputCount() const noexcept { return pending_.size(); }
+    [[nodiscard]] std::size_t PendingOutputCount() const noexcept {
+        return pending_.size();
+    }
     [[nodiscard]] bool HasPendingOutputsForExecution(abilities::AbilityExecutionId execution) const noexcept;
+
   private:
-    time::GameplayTimeService& time_;
-    abilities::AbilityService& abilities_;
+    time::GameplayTimeService &time_;
+    abilities::AbilityService &abilities_;
     ClockId clock_{};
     ActionTypeId action_{};
     static constexpr std::size_t kPendingCapacity = 4096;
     std::vector<AbilityTimePendingTrigger> pending_;
 };
 
-class AbilityOutputDeliveryCoordinator
-{
+class AbilityOutputDeliveryCoordinator {
   public:
-    AbilityOutputDeliveryCoordinator(abilities::AbilityService& abilities,
-                                     AbilityTimeAdapter& time_adapter,
-                                     AbilityEffectsDispatcher& effects_dispatcher) noexcept
-        : abilities_(abilities), time_adapter_(time_adapter), effects_dispatcher_(effects_dispatcher) {}
+    AbilityOutputDeliveryCoordinator(abilities::AbilityService &abilities, AbilityTimeAdapter &time_adapter,
+                                     AbilityEffectsDispatcher &effects_dispatcher) noexcept
+        : abilities_(abilities), time_adapter_(time_adapter), effects_dispatcher_(effects_dispatcher) {
+    }
 
-    [[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>> DeliverPendingOutputs(
-        ScheduleId trigger);
+    [[nodiscard]] foundation::Result<std::vector<effects::EffectExecutionResult>>
+    DeliverPendingOutputs(ScheduleId trigger);
     std::uint64_t PruneSafeTerminalDeliveries(abilities::AbilityExecutionId execution) noexcept;
 
   private:
-    abilities::AbilityService& abilities_;
-    AbilityTimeAdapter& time_adapter_;
-    AbilityEffectsDispatcher& effects_dispatcher_;
+    abilities::AbilityService &abilities_;
+    AbilityTimeAdapter &time_adapter_;
+    AbilityEffectsDispatcher &effects_dispatcher_;
 };
 
-struct ProgressionRewardPayload { progression::ProgressionTrackId track{}; };
-class ProgressionRewardHandler final : public loot::IRewardHandler
-{
+struct ProgressionRewardPayload {
+    progression::ProgressionTrackId track{};
+};
+class ProgressionRewardHandler final : public loot::IRewardHandler {
   public:
-    explicit ProgressionRewardHandler(progression::ProgressionService& progression) : progression_(progression) {}
-    [[nodiscard]] static constexpr loot::RewardTypeId StaticType() noexcept { return loot::RewardTypeId::FromString("framework.reward.progression"); }
-    [[nodiscard]] static constexpr TypeId PayloadType() noexcept { return TypeId::FromString("framework.reward.progression.payload"); }
-    [[nodiscard]] loot::RewardTypeId Type() const noexcept override { return StaticType(); }
-    [[nodiscard]] foundation::Result<loot::RewardDeliveryStage> Prepare(const loot::RewardOperation& operation) override;
-    void Commit(loot::RewardDeliveryStage& stage) noexcept override;
-    void Cancel(loot::RewardDeliveryStage& stage) noexcept override;
+    explicit ProgressionRewardHandler(progression::ProgressionService &progression) : progression_(progression) {
+    }
+    [[nodiscard]] static constexpr loot::RewardTypeId StaticType() noexcept {
+        return loot::RewardTypeId::FromString("framework.reward.progression");
+    }
+    [[nodiscard]] static constexpr TypeId PayloadType() noexcept {
+        return TypeId::FromString("framework.reward.progression.payload");
+    }
+    [[nodiscard]] loot::RewardTypeId Type() const noexcept override {
+        return StaticType();
+    }
+    [[nodiscard]] foundation::Result<loot::RewardDeliveryStage>
+    Prepare(const loot::RewardOperation &operation) override;
+    void Commit(loot::RewardDeliveryStage &stage) noexcept override;
+    void Cancel(loot::RewardDeliveryStage &stage) noexcept override;
+
   private:
-    struct StagePayload { progression::ProgressionGrantReservationId reservation{}; };
-    [[nodiscard]] static constexpr TypeId StagePayloadType() noexcept { return TypeId::FromString("framework.reward.progression.stage"); }
-    progression::ProgressionService& progression_;
+    struct StagePayload {
+        progression::ProgressionGrantReservationId reservation{};
+    };
+    [[nodiscard]] static constexpr TypeId StagePayloadType() noexcept {
+        return TypeId::FromString("framework.reward.progression.stage");
+    }
+    progression::ProgressionService &progression_;
 };
 
-struct DeathRewardDeliveryKey
-{
+struct DeathRewardDeliveryKey {
     std::uint64_t combat_sequence = 0;
     GameplayObjectRef subject{};
     loot::LootTableId table{};
-    [[nodiscard]] constexpr auto operator<=>(const DeathRewardDeliveryKey&) const noexcept = default;
+    [[nodiscard]] constexpr auto operator<=>(const DeathRewardDeliveryKey &) const noexcept = default;
 };
-enum class DeathRewardDeliveryState { Generated, Pending };
-struct DeathRewardDeliveryRecord
-{
+enum class DeathRewardDeliveryState {
+    Generated,
+    Pending
+};
+struct DeathRewardDeliveryRecord {
     DeathRewardDeliveryKey key{};
     loot::RewardExecutionId reward{};
     DeathRewardDeliveryState state = DeathRewardDeliveryState::Generated;
 };
-struct DeathRewardCheckpoint
-{
+struct DeathRewardCheckpoint {
     ChangeCursor cursor{};
     std::uint64_t mapping_revision = 0;
     std::vector<DeathRewardDeliveryRecord> deliveries;
 };
-class DeathRewardAdapter
-{
+class DeathRewardAdapter {
     friend struct epidemic::gameplay::SnapshotRestoreAccess<DeathRewardAdapter>;
 
   public:
-    DeathRewardAdapter(const combat::CombatService& combat,loot::LootService& loot) : combat_(combat),loot_(loot) {}
-    [[nodiscard]] foundation::Result<void> SetTable(GameplayObjectRef subject,loot::LootTableId table);
+    DeathRewardAdapter(const combat::CombatService &combat, loot::LootService &loot) : combat_(combat), loot_(loot) {
+    }
+    [[nodiscard]] foundation::Result<void> SetTable(GameplayObjectRef subject, loot::LootTableId table);
     [[nodiscard]] foundation::Result<void> FreezeMappings();
-    [[nodiscard]] std::uint64_t MappingRevision() const noexcept { return mapping_revision_; }
+    [[nodiscard]] std::uint64_t MappingRevision() const noexcept {
+        return mapping_revision_;
+    }
     [[nodiscard]] foundation::Result<std::vector<loot::RewardExecutionId>> ProcessChanges();
-    [[nodiscard]] ChangeCursor Cursor() const noexcept { return cursor_; }
-    void RestoreCursor(ChangeCursor cursor) noexcept { cursor_ = cursor; }
+    [[nodiscard]] ChangeCursor Cursor() const noexcept {
+        return cursor_;
+    }
+    void RestoreCursor(ChangeCursor cursor) noexcept {
+        cursor_ = cursor;
+    }
     [[nodiscard]] DeathRewardCheckpoint CaptureCheckpoint() const;
     [[nodiscard]] foundation::Result<void> RestoreCheckpoint(DeathRewardCheckpoint checkpoint);
+
   private:
-    const combat::CombatService& combat_;
-    loot::LootService& loot_;
-    std::unordered_map<GameplayObjectRef,loot::LootTableId> tables_;
+    const combat::CombatService &combat_;
+    loot::LootService &loot_;
+    std::unordered_map<GameplayObjectRef, loot::LootTableId> tables_;
     bool mappings_frozen_ = false;
     std::uint64_t mapping_revision_ = 0;
     static constexpr std::size_t kDeliveryCapacity = 4096;
@@ -302,15 +368,28 @@ class DeathRewardAdapter
 #include "Epidemic/GameFramework/Combat/combat.h"
 #include "Epidemic/GameFramework/Loot/loot.h"
 #include "Epidemic/GameFramework/Progression/progression.h"
-namespace epidemic::gameplay::savegame
-{
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityServiceSaveParticipant(epidemic::gameplay::abilities::AbilityService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateCombatServiceSaveParticipant(epidemic::gameplay::combat::CombatService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateLootServiceSaveParticipant(epidemic::gameplay::loot::LootService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateProgressionServiceSaveParticipant(epidemic::gameplay::progression::ProgressionService& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityEffectsDispatcherSaveParticipant(epidemic::gameplay::integration::AbilityEffectsDispatcher& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateAbilityTimeAdapterSaveParticipant(epidemic::gameplay::integration::AbilityTimeAdapter& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateConditionProgressionAdapterSaveParticipant(epidemic::gameplay::integration::ConditionProgressionAdapter& owner, SaveRestoreWorkspace& workspace);
-[[nodiscard]] std::unique_ptr<ISaveParticipant> CreateDeathRewardAdapterSaveParticipant(epidemic::gameplay::integration::DeathRewardAdapter& owner, SaveRestoreWorkspace& workspace);
+namespace epidemic::gameplay::savegame {
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateAbilityServiceSaveParticipant(epidemic::gameplay::abilities::AbilityService &owner,
+                                    SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateCombatServiceSaveParticipant(epidemic::gameplay::combat::CombatService &owner, SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateLootServiceSaveParticipant(epidemic::gameplay::loot::LootService &owner, SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateProgressionServiceSaveParticipant(epidemic::gameplay::progression::ProgressionService &owner,
+                                        SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateAbilityEffectsDispatcherSaveParticipant(epidemic::gameplay::integration::AbilityEffectsDispatcher &owner,
+                                              SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateAbilityTimeAdapterSaveParticipant(epidemic::gameplay::integration::AbilityTimeAdapter &owner,
+                                        SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateConditionProgressionAdapterSaveParticipant(epidemic::gameplay::integration::ConditionProgressionAdapter &owner,
+                                                 SaveRestoreWorkspace &workspace);
+[[nodiscard]] std::unique_ptr<ISaveParticipant>
+CreateDeathRewardAdapterSaveParticipant(epidemic::gameplay::integration::DeathRewardAdapter &owner,
+                                        SaveRestoreWorkspace &workspace);
 }
 // END GENERATED GOAL5 PARTICIPANTS

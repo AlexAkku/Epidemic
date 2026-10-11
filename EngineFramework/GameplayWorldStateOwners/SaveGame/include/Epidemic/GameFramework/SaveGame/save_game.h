@@ -12,26 +12,20 @@
 #include <typeindex>
 #include <type_traits>
 
-namespace epidemic::gameplay::savegame
-{
-struct SaveParticipantId
-{
+namespace epidemic::gameplay::savegame {
+struct SaveParticipantId {
     TypeId value{};
-    static constexpr SaveParticipantId FromString(std::string_view s) noexcept
-    {
+    static constexpr SaveParticipantId FromString(std::string_view s) noexcept {
         return {TypeId::FromString(s)};
     }
-    [[nodiscard]] constexpr bool IsValid() const noexcept
-    {
+    [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
     [[nodiscard]] constexpr bool operator==(const SaveParticipantId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SaveParticipantId &) const noexcept = default;
 };
-struct IdHash
-{
-    [[nodiscard]] std::size_t operator()(SaveParticipantId id) const noexcept
-    {
+struct IdHash {
+    [[nodiscard]] std::size_t operator()(SaveParticipantId id) const noexcept {
         return std::hash<TypeId>{}(id.value);
     }
 };
@@ -39,8 +33,7 @@ using SaveSchemaVersion = std::uint32_t;
 using SaveGameVersion = std::uint32_t;
 using DataHash = std::uint64_t;
 
-enum class ContentCompatibilityPolicy
-{
+enum class ContentCompatibilityPolicy {
     // Requires exact save/content/engine/framework metadata, participant set and schemas.
     ExactRequired,
     // Requires the same content version and a save produced by no newer engine/framework.
@@ -58,13 +51,11 @@ enum class ContentCompatibilityPolicy
     // still be present and valid.
     DeveloperMode
 };
-enum class SaveParticipantRequirement
-{
+enum class SaveParticipantRequirement {
     Required,
     Optional
 };
-enum class SavePhase
-{
+enum class SavePhase {
     Idle,
     Barrier,
     Capturing,
@@ -74,23 +65,20 @@ enum class SavePhase
     Complete,
     Failed
 };
-struct SaveSection
-{
+struct SaveSection {
     SaveParticipantId participant{};
     SaveSchemaVersion schema_version = 0;
     std::vector<std::byte> payload;
     DataHash payload_hash = 0;
 };
-struct SaveParticipantManifest
-{
+struct SaveParticipantManifest {
     SaveParticipantId id{};
     SaveSchemaVersion schema_version = 0;
     DataHash payload_hash = 0;
     SaveParticipantRequirement requirement = SaveParticipantRequirement::Required;
     std::vector<SaveParticipantId> dependencies;
 };
-struct SaveGameManifest
-{
+struct SaveGameManifest {
     SaveGameVersion save_version = 1;
     std::uint64_t content_version = 0;
     DataHash content_hash = 0;
@@ -99,21 +87,18 @@ struct SaveGameManifest
     GameplayTimePoint saved_at{};
     std::vector<SaveParticipantManifest> participants;
 };
-struct SaveGameImage
-{
+struct SaveGameImage {
     SaveGameManifest manifest;
     std::vector<SaveSection> sections;
 };
-struct SaveContext
-{
+struct SaveContext {
     GameplayTimePoint now{};
     std::uint64_t content_version = 0;
     DataHash content_hash = 0;
     std::uint64_t engine_version = 0;
     std::uint64_t framework_version = 0;
 };
-struct RestoreContext
-{
+struct RestoreContext {
     ContentCompatibilityPolicy compatibility = ContentCompatibilityPolicy::ExactRequired;
     std::uint64_t current_content_version = 0;
     DataHash current_content_hash = 0;
@@ -121,14 +106,12 @@ struct RestoreContext
     std::uint64_t current_framework_version = 0;
     bool suppress_gameplay_events = true;
 };
-struct SaveFormatSupport
-{
+struct SaveFormatSupport {
     SaveGameVersion current = 1;
     SaveGameVersion minimum_supported = 1;
     SaveGameVersion maximum_supported = 1;
 };
-struct SaveResourceLimits
-{
+struct SaveResourceLimits {
     std::size_t max_participants = 1024;
     std::size_t max_section_bytes = 64ull * 1024ull * 1024ull;
     std::size_t max_total_payload_bytes = 512ull * 1024ull * 1024ull;
@@ -136,60 +119,54 @@ struct SaveResourceLimits
 };
 // Wire version 1 is an explicit field-wise representation, not native object memory.
 // Checksum detects accidental corruption; it is not authentication for untrusted saves.
-struct SaveWireLimits
-{
+struct SaveWireLimits {
     SaveResourceLimits resources{};
     std::size_t max_wire_bytes = 600ull * 1024ull * 1024ull;
 };
-[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeSaveGameImage(
-    const SaveGameImage& image, SaveWireLimits limits = {});
-[[nodiscard]] foundation::Result<SaveGameImage> DecodeSaveGameImage(
-    std::span<const std::byte> bytes, SaveWireLimits limits = {});
+[[nodiscard]] foundation::Result<std::vector<std::byte>> EncodeSaveGameImage(const SaveGameImage &image,
+                                                                             SaveWireLimits limits = {});
+[[nodiscard]] foundation::Result<SaveGameImage> DecodeSaveGameImage(std::span<const std::byte> bytes,
+                                                                    SaveWireLimits limits = {});
 // Semantic package operations: successful Commit atomically replaces the old
 // package. Implementations own I/O, synchronization and durability policy.
-class ISavePackageStore
-{
+class ISavePackageStore {
   public:
     virtual ~ISavePackageStore() = default;
     [[nodiscard]] virtual foundation::Result<std::vector<std::byte>> Load() = 0;
     [[nodiscard]] virtual foundation::Result<void> Commit(std::span<const std::byte> package) = 0;
 };
-[[nodiscard]] foundation::Result<void> CommitSaveGameImage(
-    ISavePackageStore& store, const SaveGameImage& image, SaveWireLimits limits = {});
-[[nodiscard]] foundation::Result<SaveGameImage> LoadSaveGameImage(
-    ISavePackageStore& store, SaveWireLimits limits = {});
-class ISaveBarrierLease
-{
+[[nodiscard]] foundation::Result<void> CommitSaveGameImage(ISavePackageStore &store, const SaveGameImage &image,
+                                                           SaveWireLimits limits = {});
+[[nodiscard]] foundation::Result<SaveGameImage> LoadSaveGameImage(ISavePackageStore &store, SaveWireLimits limits = {});
+class ISaveBarrierLease {
   public:
     virtual ~ISaveBarrierLease() = default;
 };
-class ISaveBarrier
-{
+class ISaveBarrier {
   public:
     virtual ~ISaveBarrier() = default;
     [[nodiscard]] virtual foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireCaptureLease() = 0;
     [[nodiscard]] virtual foundation::Result<std::unique_ptr<ISaveBarrierLease>> AcquireRestoreLease() = 0;
 };
-class IRestoreStage
-{
+class IRestoreStage {
   public:
     virtual ~IRestoreStage() = default;
 };
-class ISaveParticipant
-{
+class ISaveParticipant {
   public:
     virtual ~ISaveParticipant() = default;
     [[nodiscard]] virtual SaveParticipantId Id() const noexcept = 0;
     [[nodiscard]] virtual SaveSchemaVersion SchemaVersion() const noexcept = 0;
-    [[nodiscard]] virtual SaveParticipantRequirement Requirement() const noexcept
-    {
+    [[nodiscard]] virtual SaveParticipantRequirement Requirement() const noexcept {
         return SaveParticipantRequirement::Required;
     }
     [[nodiscard]] virtual std::vector<SaveParticipantId> Dependencies() const = 0;
     // A restore-wide private validation view follows Dependencies() order and
     // is discarded on every exit. It must never publish to gameplay owners.
-    virtual void BeginRestoreValidation() noexcept {}
-    virtual void EndRestoreValidation() noexcept {}
+    virtual void BeginRestoreValidation() noexcept {
+    }
+    virtual void EndRestoreValidation() noexcept {
+    }
     [[nodiscard]] virtual foundation::Result<SaveSection> CaptureSnapshot(const SaveContext &) const = 0;
     [[nodiscard]] virtual foundation::Result<void> ValidateSnapshot(const SaveSection &,
                                                                     const RestoreContext &) const = 0;
@@ -199,8 +176,7 @@ class ISaveParticipant
     // allocation-free/noexcept publication of the already validated state.
     virtual void CommitRestore(IRestoreStage &) noexcept = 0;
 };
-class ISaveMigration
-{
+class ISaveMigration {
   public:
     virtual ~ISaveMigration() = default;
     [[nodiscard]] virtual SaveParticipantId Participant() const noexcept = 0;
@@ -208,8 +184,7 @@ class ISaveMigration
     [[nodiscard]] virtual SaveSchemaVersion ToVersion() const noexcept = 0;
     [[nodiscard]] virtual foundation::Result<SaveSection> Migrate(const SaveSection &) const = 0;
 };
-struct SaveGameDiagnostics
-{
+struct SaveGameDiagnostics {
     SavePhase phase = SavePhase::Idle;
     SavePhase failure_phase = SavePhase::Idle;
     SaveParticipantId last_failed_participant{};
@@ -220,28 +195,24 @@ struct SaveGameDiagnostics
     std::uint64_t validation_failures = 0;
     std::uint64_t optional_participants_skipped = 0;
 };
-class SaveGameOrchestrator
-{
+class SaveGameOrchestrator {
   public:
     // Container construction can allocate; propagate failure instead of terminating.
     // Fixed-size scalar limits are copied into this owner's configuration; preserve the value API.
     // cppcheck-suppress passedByValue
     explicit SaveGameOrchestrator(SaveFormatSupport format = {}, SaveResourceLimits limits = {})
-        : format_(format), limits_(limits)
-    {
+        : format_(format), limits_(limits) {
     }
     [[nodiscard]] foundation::Result<void> SetBarrier(ISaveBarrier &barrier) noexcept;
     [[nodiscard]] foundation::Result<void> RegisterParticipant(ISaveParticipant &participant);
     [[nodiscard]] foundation::Result<void> RegisterMigration(const ISaveMigration &migration);
     // All-or-nothing bootstrap: exact reviewed metadata, migrations, graph validation,
     // then Freeze. Pointers must outlive this orchestrator. Requires an empty registry.
-    [[nodiscard]] foundation::Result<void> RegisterComposition(
-        std::span<ISaveParticipant* const> participants,
-        std::span<const ISaveMigration* const> migrations,
-        std::span<const SaveParticipantManifest> expected);
+    [[nodiscard]] foundation::Result<void> RegisterComposition(std::span<ISaveParticipant *const> participants,
+                                                               std::span<const ISaveMigration *const> migrations,
+                                                               std::span<const SaveParticipantManifest> expected);
     [[nodiscard]] foundation::Result<void> FreezeRegistry();
-    [[nodiscard]] bool RegistryFrozen() const noexcept
-    {
+    [[nodiscard]] bool RegistryFrozen() const noexcept {
         return registry_frozen_;
     }
     [[nodiscard]] foundation::Result<std::vector<SaveParticipantId>> ResolveOrder() const;
@@ -249,39 +220,34 @@ class SaveGameOrchestrator
     [[nodiscard]] foundation::Result<void> Restore(SaveGameImage image, const RestoreContext &context);
     // Return an owned point-in-time snapshot, not a reference changing during later operations.
     // cppcheck-suppress returnByReference
-    [[nodiscard]] SaveGameDiagnostics GetDiagnostics() const noexcept
-    {
+    [[nodiscard]] SaveGameDiagnostics GetDiagnostics() const noexcept {
         return diagnostics_;
     }
     [[nodiscard]] static DataHash HashBytes(std::span<const std::byte> bytes) noexcept;
 
   private:
-    struct ParticipantRegistration
-    {
+    struct ParticipantRegistration {
         ISaveParticipant *participant = nullptr;
         SaveSchemaVersion schema_version = 0;
         SaveParticipantRequirement requirement = SaveParticipantRequirement::Required;
         std::vector<SaveParticipantId> dependencies;
     };
-    struct MigrationKey
-    {
+    struct MigrationKey {
         SaveParticipantId participant{};
         SaveSchemaVersion from = 0;
         [[nodiscard]] bool operator==(const MigrationKey &) const noexcept = default;
     };
-    struct MigrationKeyHash
-    {
-        [[nodiscard]] std::size_t operator()(const MigrationKey &k) const noexcept
-        {
+    struct MigrationKeyHash {
+        [[nodiscard]] std::size_t operator()(const MigrationKey &k) const noexcept {
             return IdHash{}(k.participant) ^ (std::hash<std::uint32_t>{}(k.from) << 1u);
         }
     };
     [[nodiscard]] foundation::Result<void> EnsureFrozen();
     [[nodiscard]] foundation::Result<void> ValidateFormatConfiguration() const;
     [[nodiscard]] foundation::Result<void> ValidateImageStructure(const SaveGameImage &image,
-                                                                   const RestoreContext &context) const;
-    [[nodiscard]] foundation::Result<void> ValidateCompatibility(const SaveGameImage &image,
                                                                   const RestoreContext &context) const;
+    [[nodiscard]] foundation::Result<void> ValidateCompatibility(const SaveGameImage &image,
+                                                                 const RestoreContext &context) const;
     [[nodiscard]] foundation::Result<SaveSection> MigrateToCurrent(SaveSection section,
                                                                    const ParticipantRegistration &participant,
                                                                    ContentCompatibilityPolicy policy);
@@ -297,11 +263,8 @@ class SaveGameOrchestrator
 };
 } // namespace epidemic::gameplay::savegame
 
-
-namespace epidemic::gameplay::savegame
-{
-namespace detail
-{
+namespace epidemic::gameplay::savegame {
+namespace detail {
 template <typename Owner> class SnapshotParticipant;
 struct WorkspaceTestAccess;
 }
@@ -309,49 +272,45 @@ struct WorkspaceTestAccess;
 // Per-restore transaction workspace. Gameplay clients may own one workspace for
 // the participant set, but authoritative bindings and staged candidates are
 // intentionally private restore mechanics.
-class SaveRestoreWorkspace
-{
+class SaveRestoreWorkspace {
   public:
     SaveRestoreWorkspace() = default;
 
   private:
-    SaveRestoreWorkspace(const SaveRestoreWorkspace&) = delete;
-    SaveRestoreWorkspace& operator=(const SaveRestoreWorkspace&) = delete;
-    SaveRestoreWorkspace(SaveRestoreWorkspace&&) = delete;
-    SaveRestoreWorkspace& operator=(SaveRestoreWorkspace&&) = delete;
-    template <typename Owner> void Bind(Owner& live)
-    {
+    SaveRestoreWorkspace(const SaveRestoreWorkspace &) = delete;
+    SaveRestoreWorkspace &operator=(const SaveRestoreWorkspace &) = delete;
+    SaveRestoreWorkspace(SaveRestoreWorkspace &&) = delete;
+    SaveRestoreWorkspace &operator=(SaveRestoreWorkspace &&) = delete;
+    template <typename Owner> void Bind(Owner &live) {
         auto [entry, inserted] = live_.emplace(typeid(Owner), &live);
         if (!inserted && entry->second != &live)
             throw std::invalid_argument("duplicate authoritative owner binding");
     }
-    template <typename Owner> Owner& Require() const
-    {
+    template <typename Owner> Owner &Require() const {
         if (const auto staged = staged_.find(typeid(Owner)); staged != staged_.end())
-            return *static_cast<Owner*>(staged->second);
+            return *static_cast<Owner *>(staged->second);
         if (const auto validated = validated_.find(typeid(Owner)); validated != validated_.end())
-            return *static_cast<Owner*>(validated->second.view);
+            return *static_cast<Owner *>(validated->second.view);
         const auto found = live_.find(typeid(Owner));
         if (found == live_.end())
             throw std::runtime_error("missing restore owner binding");
-        return *static_cast<Owner*>(found->second);
+        return *static_cast<Owner *>(found->second);
     }
     // A dependency's validated candidate is visible to later restore stages,
     // never to gameplay readers. The live owner is the standalone fallback.
-    template <typename Owner> Owner& Resolve(Owner& live) const noexcept
-    {
+    template <typename Owner> Owner &Resolve(Owner &live) const noexcept {
         const auto found = staged_.find(typeid(std::remove_const_t<Owner>));
-        if (found != staged_.end()) return *static_cast<Owner*>(found->second);
+        if (found != staged_.end())
+            return *static_cast<Owner *>(found->second);
         const auto validated = validated_.find(typeid(std::remove_const_t<Owner>));
-        return validated == validated_.end() ? live : *static_cast<Owner*>(validated->second.view);
+        return validated == validated_.end() ? live : *static_cast<Owner *>(validated->second.view);
     }
 
-    std::unordered_map<std::type_index, void*> live_;
-    std::unordered_map<std::type_index, void*> staged_;
-    struct ValidationRecord
-    {
+    std::unordered_map<std::type_index, void *> live_;
+    std::unordered_map<std::type_index, void *> staged_;
+    struct ValidationRecord {
         std::shared_ptr<void> storage;
-        void* view = nullptr;
+        void *view = nullptr;
     };
     std::unordered_map<std::type_index, ValidationRecord> validated_;
     std::size_t validation_users_ = 0;

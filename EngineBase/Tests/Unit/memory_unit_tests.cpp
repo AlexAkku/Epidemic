@@ -15,8 +15,7 @@
 #include <new>
 #include <stdexcept>
 
-namespace
-{
+namespace {
 using epidemic::tests::Assert;
 using epidemic::memory::AllocationTag;
 using epidemic::memory::DefaultAllocator;
@@ -25,23 +24,19 @@ using epidemic::memory::IFrameAllocator;
 using epidemic::memory::MemoryTracker;
 using epidemic::memory::TrackingAllocator;
 
-class ProbeAllocator final : public IAllocator
-{
+class ProbeAllocator final : public IAllocator {
   public:
     // This override must preserve the IAllocator bytes/alignment/tag contract.
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    void *Allocate(std::size_t bytes, std::size_t alignment, AllocationTag tag) override
-    {
+    void *Allocate(std::size_t bytes, std::size_t alignment, AllocationTag tag) override {
         ++allocate_calls;
         last_bytes = bytes;
         last_alignment = alignment;
         last_tag = tag;
-        if (throw_on_allocate)
-        {
+        if (throw_on_allocate) {
             throw std::bad_alloc{};
         }
-        if (return_null)
-        {
+        if (return_null) {
             return nullptr;
         }
         return storage.data();
@@ -49,8 +44,7 @@ class ProbeAllocator final : public IAllocator
 
     // This override must preserve the same positional IAllocator contract.
     // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-    void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment, AllocationTag tag) noexcept override
-    {
+    void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment, AllocationTag tag) noexcept override {
         ++deallocate_calls;
         last_pointer = pointer;
         last_bytes = bytes;
@@ -69,47 +63,36 @@ class ProbeAllocator final : public IAllocator
     void *last_pointer{};
 };
 
-class ProbeFrameAllocator final : public IFrameAllocator
-{
+class ProbeFrameAllocator final : public IFrameAllocator {
   public:
-    void Reset() noexcept override
-    {
+    void Reset() noexcept override {
         ++generation;
     }
 
     std::size_t generation{};
 };
 
-void AssertThrowsInvalidArgument(IAllocator &allocator, std::size_t bytes, std::size_t alignment)
-{
+void AssertThrowsInvalidArgument(IAllocator &allocator, std::size_t bytes, std::size_t alignment) {
     bool threw = false;
-    try
-    {
+    try {
         static_cast<void>(allocator.Allocate(bytes, alignment, AllocationTag::Tests));
-    }
-    catch (const std::invalid_argument &)
-    {
+    } catch (const std::invalid_argument &) {
         threw = true;
     }
     Assert(threw, "Invalid alignment must be rejected with std::invalid_argument");
 }
 
-void AssertThrowsLengthError(IAllocator &allocator, std::size_t bytes)
-{
+void AssertThrowsLengthError(IAllocator &allocator, std::size_t bytes) {
     bool threw = false;
-    try
-    {
+    try {
         static_cast<void>(allocator.Allocate(bytes, alignof(std::max_align_t), AllocationTag::Tests));
-    }
-    catch (const std::length_error &)
-    {
+    } catch (const std::length_error &) {
         threw = true;
     }
     Assert(threw, "Unrepresentable object size must be rejected with std::length_error");
 }
 
-void TestAllocationContractAndAlignment()
-{
+void TestAllocationContractAndAlignment() {
     DefaultAllocator allocator;
 
     void *pointer = allocator.Allocate(64, 64, AllocationTag::Core);
@@ -124,8 +107,7 @@ void TestAllocationContractAndAlignment()
     allocator.Deallocate(zero_pointer, 0, alignof(std::max_align_t), AllocationTag::Core);
 }
 
-void TestInvalidAllocationArguments()
-{
+void TestInvalidAllocationArguments() {
     DefaultAllocator default_allocator;
     AssertThrowsInvalidArgument(default_allocator, 16, 0);
     AssertThrowsInvalidArgument(default_allocator, 16, 3);
@@ -147,8 +129,7 @@ void TestInvalidAllocationArguments()
     Assert(tracker.GetUsage(AllocationTag::Tests) == 0, "Rejected allocation must not change tracker usage");
 }
 
-void TestTrackingAllocatorExactlyOnce()
-{
+void TestTrackingAllocatorExactlyOnce() {
     MemoryTracker tracker;
     ProbeAllocator upstream;
     TrackingAllocator allocator(tracker, upstream);
@@ -169,20 +150,16 @@ void TestTrackingAllocatorExactlyOnce()
     Assert(tracker.GetUsage(AllocationTag::Tests) == 0, "Null deallocation must be a no-op for accounting");
 }
 
-void TestAllocationFailureAtomicity()
-{
+void TestAllocationFailureAtomicity() {
     MemoryTracker tracker;
     ProbeAllocator upstream;
     TrackingAllocator allocator(tracker, upstream);
 
     upstream.throw_on_allocate = true;
     bool threw_bad_alloc = false;
-    try
-    {
+    try {
         static_cast<void>(allocator.Allocate(48, alignof(std::max_align_t), AllocationTag::Core));
-    }
-    catch (const std::bad_alloc &)
-    {
+    } catch (const std::bad_alloc &) {
         threw_bad_alloc = true;
     }
     Assert(threw_bad_alloc, "TrackingAllocator must preserve upstream OOM failure");
@@ -201,8 +178,7 @@ void TestAllocationFailureAtomicity()
            "Null allocation failure must not increment allocation count");
 }
 
-void TestBudgetsPeakAndReset()
-{
+void TestBudgetsPeakAndReset() {
     MemoryTracker tracker;
     Assert(tracker.GetUsage(AllocationTag::Core) == 0, "Fresh tracker must start with empty usage");
     Assert(!tracker.GetBudget(AllocationTag::Core).has_value(), "Fresh tracker must start without a budget");
@@ -226,7 +202,8 @@ void TestBudgetsPeakAndReset()
     Assert(stats.allocated_bytes == 5, "Statistics reset must preserve live tracked usage");
     Assert(stats.peak_allocated_bytes == 5, "Statistics reset must restart peak from current live usage");
     Assert(stats.allocation_count == 0, "Statistics reset must clear historical allocation count");
-    Assert(tracker.GetBudget(AllocationTag::Core).value_or(0) == 10, "Statistics reset must preserve configured budgets");
+    Assert(tracker.GetBudget(AllocationTag::Core).value_or(0) == 10,
+           "Statistics reset must preserve configured budgets");
 
     tracker.RecordFree(AllocationTag::Core, 5);
     Assert(tracker.GetUsage(AllocationTag::Core) == 0, "Final free must return current usage to zero after reset");
@@ -234,8 +211,7 @@ void TestBudgetsPeakAndReset()
     Assert(tracker.GetUsage(AllocationTag::Core) == 0, "Over-free accounting must clamp at zero without underflow");
 }
 
-void TestAllocationTagIsolationAndInvalidTag()
-{
+void TestAllocationTagIsolationAndInvalidTag() {
     MemoryTracker tracker;
     tracker.RecordAllocate(AllocationTag::Core, 8);
     tracker.RecordAllocate(AllocationTag::Platform, 13);
@@ -257,8 +233,7 @@ void TestAllocationTagIsolationAndInvalidTag()
            "AllocationTagCount must match the valid accounting range");
 }
 
-void TestCounterOverflowDoesNotWrap()
-{
+void TestCounterOverflowDoesNotWrap() {
     MemoryTracker tracker;
     constexpr auto maximum = std::numeric_limits<std::size_t>::max();
 
@@ -272,14 +247,14 @@ void TestCounterOverflowDoesNotWrap()
     tracker.SetBudget(AllocationTag::Diagnostics, maximum - 1);
     Assert(tracker.IsOverBudget(AllocationTag::Diagnostics), "Saturated usage must compare correctly to lower budgets");
     tracker.SetBudget(AllocationTag::Diagnostics, maximum);
-    Assert(!tracker.IsOverBudget(AllocationTag::Diagnostics), "Usage at maximum budget must not wrap or report over-budget");
+    Assert(!tracker.IsOverBudget(AllocationTag::Diagnostics),
+           "Usage at maximum budget must not wrap or report over-budget");
 
     tracker.RecordFree(AllocationTag::Diagnostics, maximum);
     Assert(tracker.GetUsage(AllocationTag::Diagnostics) == 0, "Free from saturated usage must not underflow");
 }
 
-void TestTrackingEnableDisableAndFrameResetContract()
-{
+void TestTrackingEnableDisableAndFrameResetContract() {
     MemoryTracker tracker(false);
     Assert(!tracker.IsTrackingEnabled(), "Tracker must honor disabled construction state");
     tracker.RecordAllocate(AllocationTag::Tests, 32);
@@ -302,8 +277,7 @@ void TestTrackingEnableDisableAndFrameResetContract()
 }
 } // namespace
 
-int main() try
-{
+int main() try {
     return epidemic::tests::RunNamedTests({
         {"AllocationContractAndAlignment", &TestAllocationContractAndAlignment},
         {"InvalidAllocationArguments", &TestInvalidAllocationArguments},
@@ -314,7 +288,7 @@ int main() try
         {"CounterOverflowDoesNotWrap", &TestCounterOverflowDoesNotWrap},
         {"TrackingEnableDisableAndFrameResetContract", &TestTrackingEnableDisableAndFrameResetContract},
     });
-} catch (const std::exception& error) {
+} catch (const std::exception &error) {
     std::fprintf(stderr, "[FAIL] Memory test setup: %s\n", error.what());
     return 1;
 }

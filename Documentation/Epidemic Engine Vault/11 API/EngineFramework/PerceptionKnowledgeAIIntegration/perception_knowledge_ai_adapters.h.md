@@ -144,3 +144,74 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/AI/ai.h`, `Epidemic/GameFramework/Knowledge/knowledge.h`, `Epidemic/GameFramework/Perception/perception.h`, `Epidemic/GameFramework/SaveGame/save_game.h`, `Epidemic/GameFramework/AI/ai.h`, `Epidemic/GameFramework/Knowledge/knowledge.h`, `Epidemic/GameFramework/Perception/perception.h`.
+
+### Состав типов и операции
+
+#### `ObservationKnowledgeResult` (строка заголовка 23)
+
+Публичные поля и значения по умолчанию:
+
+- `std::optional<knowledge::MemoryRecordId> memory`
+- `bool memory_creation_failed = false`
+- `std::optional<foundation::Error> memory_error`
+
+#### `PerceptionKnowledgeAdapter` (строка заголовка 33)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] foundation::Result<ObservationKnowledgeResult> LearnFromObservation(const perception::PerceptionObservation &observation);
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `AIExecutionAvailability` (строка заголовка 46)
+
+Публичные поля и значения по умолчанию:
+
+- `bool materialized = false`
+- `bool runtime_projection_available = false`
+
+#### `KnowledgeAIAdapter` (строка заголовка 73)
+
+#### `AIIntentExecutionRecorder` (строка заголовка 87)
+
+Публичные сигнатуры операций:
+
+```cpp
+explicit AIIntentExecutionRecorder(std::size_t retention_capacity = 1024) noexcept;
+[[nodiscard]] foundation::Result<void> Accept(const ai::AIIntent &intent, ai::AIService &ai_service);
+[[nodiscard]] foundation::Result<void> Succeed(ai::AIIntentId intent, ai::AIService &ai_service);
+[[nodiscard]] const std::vector<ai::AIIntent> &AcceptedIntents() const noexcept;
+[[nodiscard]] std::size_t RetentionCapacity() const noexcept;
+void Clear() noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `LearnFromObservation` | `PerceptionKnowledgeAdapter::LearnFromObservation` | `EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/src/perception_knowledge_ai_adapters.cpp:208` |
+| `AIIntentExecutionRecorder` | `AIIntentExecutionRecorder::AIIntentExecutionRecorder` | `EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/src/perception_knowledge_ai_adapters.cpp:353` |
+| `Accept` | `AIIntentExecutionRecorder::Accept` | `EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/src/perception_knowledge_ai_adapters.cpp:371` |
+| `Succeed` | `AIIntentExecutionRecorder::Succeed` | `EngineFramework/IntegrationLayer/PerceptionKnowledgeAIIntegration/src/perception_knowledge_ai_adapters.cpp:380` |
+

@@ -542,3 +542,458 @@ template <> struct hash<epidemic::gameplay::runtime_bridge::RuntimePhysicsBodyHa
 };
 } // namespace std
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/error.h`, `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `RuntimeBindingState`: `Materializing`, `Active`, `Dematerializing`, `Failed`
+- `RuntimeProjectionPriority`: `Critical`, `High`, `Normal`, `Background`
+- `RuntimeNavigationPathState`: `Pending`, `Running`, `PartiallyComplete`, `Completed`, `Failed`, `Cancelled`, `Stale`
+
+### Состав типов и операции
+
+#### `RuntimeObjectHandle` (строка заголовка 16)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimeObjectHandle&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RuntimeObjectHandle&) const noexcept = default;
+```
+
+#### `RuntimePersistentObjectHandle` (строка заголовка 23)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimePersistentObjectHandle&) const noexcept = default;
+```
+
+#### `RuntimePhysicsBodyHandle` (строка заголовка 29)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimePhysicsBodyHandle&) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const RuntimePhysicsBodyHandle&) const noexcept = default;
+```
+
+#### `RuntimeRegionHandle` (строка заголовка 36)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimeRegionHandle&) const noexcept = default;
+```
+
+#### `RuntimeVector3` (строка заголовка 42)
+
+Публичные поля и значения по умолчанию:
+
+- `float x = 0.0f, y = 0.0f, z = 0.0f`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const RuntimeVector3&) const noexcept = default;
+```
+
+#### `RuntimeQuaternion` (строка заголовка 47)
+
+Публичные поля и значения по умолчанию:
+
+- `float x = 0.0f, y = 0.0f, z = 0.0f, w = 1.0f`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const RuntimeQuaternion&) const noexcept = default;
+```
+
+#### `RuntimeWorldPosition` (строка заголовка 52)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t x_mm = 0, y_mm = 0, z_mm = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool operator==(const RuntimeWorldPosition&) const noexcept = default;
+```
+
+#### `RuntimeWorldAabb` (строка заголовка 57)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+```
+
+#### `RuntimeEnvironmentValues` (строка заголовка 66)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int32_t temperature_milli_c = 0`
+- `std::int32_t humidity_milli = 0`
+- `std::int32_t precipitation_milli = 0`
+- `std::int32_t wind_strength_milli = 0`
+- `std::int32_t visibility_milli = 1000`
+- `std::int32_t light_exposure_milli = 1000`
+
+#### `RuntimeBindingGeneration` (строка заголовка 90)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimeBindingGeneration&) const noexcept = default;
+```
+
+#### `RuntimeBinding` (строка заголовка 113)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<RuntimePhysicsAttachment> physics_attachments`
+- `RuntimeBindingState state = RuntimeBindingState::Materializing`
+
+#### `MaterializeRequest` (строка заголовка 123)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+
+#### `DematerializeRequest` (строка заголовка 131)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+
+#### `DestroyRuntimeRequest` (строка заголовка 138)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+
+#### `ImpulseProjectionRequest` (строка заголовка 145)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::High`
+
+#### `EnvironmentProjectionRequest` (строка заголовка 154)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+
+#### `WorldAlterationProjectionRequest` (строка заголовка 162)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<std::byte> payload`
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+
+#### `RuntimeBridgeBudget` (строка заголовка 179)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t max_commands = 4096`
+- `std::uint32_t max_materializations = 128`
+- `std::uint32_t max_observations = 8192`
+
+#### `RuntimeBridgeQueuePolicy` (строка заголовка 185)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_projection_requests = 16384`
+- `std::size_t max_contact_backlog = 32768`
+- `std::uint32_t max_projection_attempts = 3`
+- `std::size_t max_reconciliation_requests = 4096`
+
+#### `RuntimeBridgeCapabilities` (строка заголовка 192)
+
+Публичные поля и значения по умолчанию:
+
+- `bool environment_temperature = true`
+- `bool environment_humidity = true`
+- `bool environment_precipitation = true`
+- `bool environment_wind = true`
+- `bool environment_visibility = true`
+- `bool environment_light_exposure = true`
+- `bool world_alteration_projection = false`
+
+#### `RuntimeBridgeProcessResult` (строка заголовка 202)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t processed = 0, deferred = 0, failed = 0, materialized = 0, dematerialized = 0, destroyed = 0`
+
+#### `RuntimeContactObservation` (строка заголовка 206)
+
+Публичные поля и значения по умолчанию:
+
+- `float impulse = 0.0f`
+
+#### `SemanticImpactObservation` (строка заголовка 212)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t impulse_milli = 0`
+
+#### `RuntimeProjectionReconciliationRecord` (строка заголовка 229)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+- `RuntimeProjectionRequest request`
+- `std::uint32_t attempts = 0`
+- `std::optional<foundation::Error> last_error`
+
+#### `RuntimeMaterializationResult` (строка заголовка 238)
+
+Публичные поля и значения по умолчанию:
+
+- `bool created = true`
+
+#### `RuntimeRayQuery` (строка заголовка 244)
+
+Публичные поля и значения по умолчанию:
+
+- `float max_distance = 0.0f`
+
+#### `RuntimeRayHit` (строка заголовка 250)
+
+Публичные поля и значения по умолчанию:
+
+- `float distance = 0.0f`
+
+#### `SemanticRayHit` (строка заголовка 257)
+
+Публичные поля и значения по умолчанию:
+
+- `std::int64_t distance_milli = 0`
+
+#### `RuntimeNavigationQueryHandle` (строка заголовка 275)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t value = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const RuntimeNavigationQueryHandle&) const noexcept = default;
+```
+
+#### `RuntimeNavigationPathQuery` (строка заголовка 291)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t source_revision = 0`
+
+#### `RuntimeNavigationPath` (строка заголовка 298)
+
+Публичные поля и значения по умолчанию:
+
+- `RuntimeNavigationPathState state = RuntimeNavigationPathState::Pending`
+- `std::vector<RuntimeWorldPosition> points`
+- `std::uint64_t navigation_revision = 0`
+- `std::uint64_t result_revision = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool IsComplete() const noexcept;
+```
+
+#### `IRuntimeBridgeBackend` (строка заголовка 312)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~IRuntimeBridgeBackend() = default;
+[[nodiscard]] virtual foundation::Result<RuntimeMaterializationResult> Materialize(RuntimePersistentObjectHandle persistent_id) = 0;
+[[nodiscard]] virtual foundation::Result<void> Dematerialize(RuntimeObjectHandle object) = 0;
+[[nodiscard]] virtual foundation::Result<void> Destroy(RuntimeObjectHandle object) = 0;
+[[nodiscard]] virtual foundation::Result<void> ApplyImpulse(RuntimePhysicsBodyHandle body, RuntimeVector3 impulse) = 0;
+[[nodiscard]] virtual foundation::Result<void> ProjectEnvironment( RuntimeRegionHandle region, const RuntimeEnvironmentValues& values, Revision revision) = 0;
+[[nodiscard]] virtual RuntimeBridgeCapabilities GetCapabilities() const noexcept;
+[[nodiscard]] virtual bool SupportsWorldAlterationProjection() const noexcept;
+[[nodiscard]] virtual foundation::Result<void> ProjectWorldAlteration(const WorldAlterationProjectionRequest&);
+[[nodiscard]] virtual std::vector<RuntimeContactObservation> ConsumeContacts() = 0;
+[[nodiscard]] virtual foundation::Result<std::vector<RuntimeRayHit>> Raycast(const RuntimeRayQuery&) const;
+[[nodiscard]] virtual foundation::Result<std::vector<RuntimePhysicsBodyHandle>> Overlap(const RuntimeOverlapQuery&) const;
+[[nodiscard]] virtual foundation::Result<bool> Visible(RuntimeObjectHandle, RuntimeObjectHandle) const;
+[[nodiscard]] virtual foundation::Result<RuntimeTransformObservation> ObserveTransform(RuntimeObjectHandle) const;
+[[nodiscard]] virtual foundation::Result<bool> IsRepresentationAlive(RuntimeObjectHandle) const;
+[[nodiscard]] virtual foundation::Result<RuntimeNavigationQueryHandle> RequestPath(const RuntimeNavigationPathQuery&);
+[[nodiscard]] virtual foundation::Result<RuntimeNavigationPathState> GetPathState(RuntimeNavigationQueryHandle) const;
+[[nodiscard]] virtual foundation::Result<RuntimeNavigationPath> GetPathResult(RuntimeNavigationQueryHandle) const;
+[[nodiscard]] virtual foundation::Result<void> CancelPath(RuntimeNavigationQueryHandle);
+[[nodiscard]] virtual foundation::Result<void> ReleasePath(RuntimeNavigationQueryHandle);
+[[nodiscard]] virtual foundation::Result<RuntimeEnvironmentSample> SampleEnvironment(RuntimeRegionHandle) const;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `RuntimeBridgeService` (строка заголовка 390)
+
+Внутреннее состояние (не часть публичного API): `IRuntimeBridgeBackend& backend_`, `std::unordered_map<GameplayObjectRef, RuntimeBinding, RefHash> bindings_`, `std::unordered_map<RuntimeObjectHandle, GameplayObjectRef, RuntimeHash> reverse_`, `std::unordered_map<RuntimePhysicsBodyHandle, BodyOwner, BodyHash> body_reverse_`, `std::unordered_map<GameplayObjectRef, std::uint32_t, RefHash> generations_`, `std::unordered_map<std::uint64_t, Revision> environment_projection_revision_`, `std::unordered_map<GameplayObjectId, Revision> world_projection_revision_`, `std::vector<Queued> queue_`, `std::vector<RuntimeProjectionReconciliationRecord> reconciliation_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+) : backend_(backend), queue_policy_(queue_policy);
+[[nodiscard]] foundation::Result<void> Enqueue(RuntimeProjectionRequest request);
+[[nodiscard]] std::optional<RuntimeBinding> GetBinding(GameplayObjectRef object) const noexcept;
+[[nodiscard]] std::optional<RuntimeBinding> GetBinding(RuntimeObjectHandle object) const noexcept;
+[[nodiscard]] foundation::Result<std::vector<SemanticRayHit>> Raycast(const RuntimeRayQuery& query) const;
+[[nodiscard]] foundation::Result<std::vector<SemanticOverlapHit>> Overlap(const RuntimeOverlapQuery& query) const;
+[[nodiscard]] foundation::Result<bool> Visible(GameplayObjectRef observer, GameplayObjectRef target) const;
+[[nodiscard]] foundation::Result<RuntimeTransformObservation> ObserveTransform(GameplayObjectRef object) const;
+[[nodiscard]] foundation::Result<void> ForgetObjectIdentity(GameplayObjectRef object);
+[[nodiscard]] foundation::Result<void> ForgetEnvironmentProjection(RuntimeRegionHandle region);
+[[nodiscard]] foundation::Result<void> ForgetWorldAlterationProjection(GameplayObjectId alteration);
+[[nodiscard]] RuntimeBridgeCapabilities GetCapabilities() const noexcept;
+[[nodiscard]] foundation::Result<RuntimeNavigationQueryHandle> RequestPath(const RuntimeNavigationPathQuery& query);
+[[nodiscard]] foundation::Result<RuntimeNavigationPathState> GetPathState(RuntimeNavigationQueryHandle handle) const;
+[[nodiscard]] foundation::Result<RuntimeNavigationPath> GetPathResult(RuntimeNavigationQueryHandle handle) const;
+[[nodiscard]] foundation::Result<void> CancelPath(RuntimeNavigationQueryHandle handle);
+[[nodiscard]] foundation::Result<void> ReleasePath(RuntimeNavigationQueryHandle handle);
+[[nodiscard]] foundation::Result<RuntimeEnvironmentSample> SampleEnvironment(RuntimeRegionHandle region) const;
+[[nodiscard]] std::vector<RuntimeProjectionReconciliationRecord> ReconciliationRequests() const;
+[[nodiscard]] foundation::Result<void> RetryReconciliation(std::uint64_t sequence);
+[[nodiscard]] foundation::Result<void> DiscardReconciliation(std::uint64_t sequence);
+[[nodiscard]] RuntimeBridgeDiagnostics GetDiagnostics() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+#### `RefHash` (строка заголовка 441)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(GameplayObjectRef r) const noexcept;
+```
+
+#### `RuntimeHash` (строка заголовка 445)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(RuntimeObjectHandle r) const noexcept;
+```
+
+#### `BodyHash` (строка заголовка 449)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(RuntimePhysicsBodyHandle b) const noexcept;
+```
+
+#### `Queued` (строка заголовка 458)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `RuntimeProjectionPriority priority = RuntimeProjectionPriority::Normal`
+- `RuntimeProjectionRequest request`
+- `std::uint32_t attempts = 0`
+- `std::optional<foundation::Error> last_error`
+
+#### `hash` (строка заголовка 490)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(epidemic::gameplay::runtime_bridge::RuntimeObjectHandle value) const noexcept;
+```
+
+#### `hash` (строка заголовка 497)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(epidemic::gameplay::runtime_bridge::RuntimePersistentObjectHandle value) const noexcept;
+```
+
+#### `hash` (строка заголовка 504)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(epidemic::gameplay::runtime_bridge::RuntimeRegionHandle value) const noexcept;
+```
+
+#### `hash` (строка заголовка 511)
+
+Публичные сигнатуры операций:
+
+```cpp
+std::size_t operator()(epidemic::gameplay::runtime_bridge::RuntimePhysicsBodyHandle value) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::optional<T>` означает возможное отсутствие значения; до разыменования требуется проверить наличие.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `Materialize` | `EngineRuntimeBridgeBackend::Materialize` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:278` |
+| `Dematerialize` | `EngineRuntimeBridgeBackend::Dematerialize` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:327` |
+| `Destroy` | `EngineRuntimeBridgeBackend::Destroy` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:367` |
+| `ApplyImpulse` | `EngineRuntimeBridgeBackend::ApplyImpulse` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:401` |
+| `ProjectEnvironment` | `EngineRuntimeBridgeBackend::ProjectEnvironment` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:415` |
+| `ConsumeContacts` | `EngineRuntimeBridgeBackend::ConsumeContacts` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:448` |
+| `Raycast` | `EngineRuntimeBridgeBackend::Raycast` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:477` |
+| `Overlap` | `EngineRuntimeBridgeBackend::Overlap` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:502` |
+| `Visible` | `EngineRuntimeBridgeBackend::Visible` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:534` |
+| `ObserveTransform` | `EngineRuntimeBridgeBackend::ObserveTransform` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:588` |
+| `IsRepresentationAlive` | `EngineRuntimeBridgeBackend::IsRepresentationAlive` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:635` |
+| `RequestPath` | `EngineRuntimeBridgeBackend::RequestPath` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:650` |
+| `GetPathState` | `EngineRuntimeBridgeBackend::GetPathState` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:688` |
+| `GetPathResult` | `EngineRuntimeBridgeBackend::GetPathResult` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:703` |
+| `CancelPath` | `EngineRuntimeBridgeBackend::CancelPath` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:732` |
+| `ReleasePath` | `EngineRuntimeBridgeBackend::ReleasePath` | `EngineFramework/RuntimeBoundary/RuntimeBridge/src/runtime_bridge.cpp:742` |
+

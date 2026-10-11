@@ -5,11 +5,9 @@
 #include <fstream>
 #include <mutex>
 
-namespace epidemic::diagnostics
-{
+namespace epidemic::diagnostics {
 // Default best-effort console/file sink. ILogger contains all sink exceptions at the public boundary.
-class ConsoleLogger final : public ILogger
-{
+class ConsoleLogger final : public ILogger {
   private:
     // Formats and writes one structured log message to the console and, when available, the log file.
     void Write(const LogMessage &message) override;

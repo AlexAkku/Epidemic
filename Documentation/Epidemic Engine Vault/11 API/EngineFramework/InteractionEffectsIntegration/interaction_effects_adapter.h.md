@@ -154,3 +154,110 @@ namespace epidemic::gameplay::savegame
 }
 // END GENERATED GOAL5 PARTICIPANTS
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/GameFramework/Effects/effects.h`, `Epidemic/GameFramework/Interaction/interaction.h`, `Epidemic/GameFramework/SaveGame/save_game.h`.
+
+### Перечисления и допустимые категории
+
+- `InteractionEffectDeliveryState`: `Pending`, `Applied`, `Rejected`, `ReconciliationRequired`
+- `InteractionEffectReconciliationOutcome`: `None`, `ConfirmedApplied`, `ConfirmedNotApplied`, `ConfirmedRejected`
+- `InteractionEffectReconciliationStatus`: `Resolved`, `AlreadyResolved`
+
+### Состав типов и операции
+
+#### `InteractionEffectReconciliationRequest` (строка заголовка 34)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t effect_index = 0`
+- `InteractionEffectReconciliationOutcome outcome = InteractionEffectReconciliationOutcome::None`
+
+#### `InteractionEffectDeliveryRecord` (строка заголовка 42)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t effect_index = 0`
+- `InteractionEffectDeliveryState state = InteractionEffectDeliveryState::Pending`
+- `InteractionEffectReconciliationOutcome reconciliation = InteractionEffectReconciliationOutcome::None`
+
+#### `InteractionEffectsSnapshot` (строка заголовка 53)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<InteractionEffectDeliveryRecord> deliveries`
+
+#### `InteractionEffectExecutor` (строка заголовка 64)
+
+Публичные сигнатуры операций:
+
+```cpp
+InteractionEffectExecutor(effects::EffectService& effects, interaction::InteractionTypeId interaction_type) : effects_(effects), interaction_type_(interaction_type);
+[[nodiscard]] foundation::Result<void> RegisterEffect(effects::EffectDefinitionId definition);
+[[nodiscard]] foundation::Result<void> Freeze(const interaction::InteractionService& interactions);
+[[nodiscard]] bool IsFrozen() const noexcept;
+[[nodiscard]] foundation::Result<void> Validate(const interaction::InteractionPlan& plan) const override;
+[[nodiscard]] foundation::Result<void> Commit( const interaction::InteractionPlan& plan, interaction::InteractionExecutionId execution) noexcept override;
+[[nodiscard]] InteractionEffectsSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(InteractionEffectsSnapshot snapshot);
+[[nodiscard]] foundation::Result<InteractionEffectReconciliationStatus> ReconcileDelivery( const InteractionEffectReconciliationRequest& request);
+[[nodiscard]] const InteractionEffectDeliveryRecord* FindDelivery( interaction::InteractionExecutionId execution, std::uint32_t effect_index) const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `DeliveryKey` (строка заголовка 96)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t effect_index = 0`
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] bool operator==(const DeliveryKey&) const noexcept = default;
+```
+
+#### `DeliveryKeyHash` (строка заголовка 104)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] std::size_t operator()(const DeliveryKey& key) const noexcept;
+```
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `RegisterEffect` | `InteractionEffectExecutor::RegisterEffect` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:46` |
+| `Freeze` | `InteractionEffectExecutor::Freeze` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:89` |
+| `Validate` | `InteractionEffectExecutor::Validate` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:114` |
+| `Commit` | `InteractionEffectExecutor::Commit` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:135` |
+| `CaptureSnapshot` | `InteractionEffectExecutor::CaptureSnapshot` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:277` |
+| `RestoreSnapshot` | `InteractionEffectExecutor::RestoreSnapshot` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:295` |
+| `ReconcileDelivery` | `InteractionEffectExecutor::ReconcileDelivery` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:385` |
+| `FindDelivery` | `InteractionEffectExecutor::FindDelivery` | `EngineFramework/IntegrationLayer/InteractionEffectsIntegration/src/interaction_effects_adapter.cpp:499` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `RegisterEffect`: `EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp:27`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp:28`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp:34`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/interactioneffectsintegration_save_participant_tests.cpp:43`
+

@@ -7,8 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace epidemic::runtime::simulation
-{
+namespace epidemic::runtime::simulation {
 // Internal in-memory Simulation runtime. It models scheduling, memory and effect queues without owning world data.
 
 class SimulationRuntime final : public ISimulationRuntime,
@@ -16,19 +15,18 @@ class SimulationRuntime final : public ISimulationRuntime,
                                 public IWorldMemory,
                                 public IAbstractFactStore,
                                 public ISimulationProposalQueue,
-                                public IScheduledSimulationTasks
-{
-public:
+                                public IScheduledSimulationTasks {
+  public:
     explicit SimulationRuntime(SimulationOptions options, SimulationDependencies dependencies = {});
 
-    [[nodiscard]] foundation::Result<SimulationJobHandle> SubmitJob(
-        std::shared_ptr<ISimulationJob> job,
-        SimulationJobDesc metadata) override;
+    [[nodiscard]] foundation::Result<SimulationJobHandle> SubmitJob(std::shared_ptr<ISimulationJob> job,
+                                                                    SimulationJobDesc metadata) override;
     [[nodiscard]] foundation::Result<void> CancelJob(SimulationJobHandle handle) override;
     [[nodiscard]] foundation::Result<SimulationJobState> GetJobState(SimulationJobHandle handle) const override;
-    void SetBudget(const SimulationBudget& budget) override;
+    void SetBudget(const SimulationBudget &budget) override;
     [[nodiscard]] foundation::Result<SimulationTickResult> Tick() override;
-    [[nodiscard]] foundation::Result<SimulationTickResult> ProcessMainThreadCommits(std::uint32_t max_jobs = 0) override;
+    [[nodiscard]] foundation::Result<SimulationTickResult>
+    ProcessMainThreadCommits(std::uint32_t max_jobs = 0) override;
     [[nodiscard]] foundation::Result<void> Shutdown() override;
 
     [[nodiscard]] foundation::Result<void> SetAttention(RuntimeObjectId object, AttentionScore score) override;
@@ -37,16 +35,16 @@ public:
     [[nodiscard]] AttentionScore GetRegionAttention(RegionId region) const override;
     [[nodiscard]] SimulationZoneState GetRegionZoneState(RegionId region) const override;
 
-    [[nodiscard]] foundation::Result<WorldMemoryEventId> RecordEvent(const WorldMemoryEvent& event) override;
-    [[nodiscard]] std::vector<WorldMemoryEvent> QueryEvents(const WorldMemoryQuery& query) const override;
+    [[nodiscard]] foundation::Result<WorldMemoryEventId> RecordEvent(const WorldMemoryEvent &event) override;
+    [[nodiscard]] std::vector<WorldMemoryEvent> QueryEvents(const WorldMemoryQuery &query) const override;
     void ExpireOldEvents(SimulationTime now) override;
     [[nodiscard]] std::size_t ExpireOldEvents(SimulationTime now, std::uint32_t max_events) override;
 
-    [[nodiscard]] foundation::Result<void> RecordFact(const AbstractFact& fact) override;
+    [[nodiscard]] foundation::Result<void> RecordFact(const AbstractFact &fact) override;
     [[nodiscard]] std::vector<AbstractFact> QueryFacts(SimulationZoneId zone) const override;
     [[nodiscard]] std::uint64_t Revision() const override;
 
-    [[nodiscard]] foundation::Result<void> Publish(const SimulationProposalBatch& batch) override;
+    [[nodiscard]] foundation::Result<void> Publish(const SimulationProposalBatch &batch) override;
     [[nodiscard]] std::span<const SimulationProposalBatch> PendingBatches() const override;
     [[nodiscard]] foundation::Result<void> CommitNext() override;
     [[nodiscard]] foundation::Result<void> DiscardAll(ProposalDiscardReason reason) override;
@@ -54,7 +52,8 @@ public:
     [[nodiscard]] foundation::Result<ScheduledSimulationTaskId> Schedule(ScheduledSimulationTask task) override;
     [[nodiscard]] foundation::Result<void> Cancel(ScheduledSimulationTaskId id) override;
     [[nodiscard]] std::vector<ScheduledSimulationTask> QueryDue(SimulationTime now) const override;
-    [[nodiscard]] ScheduledTaskExecutionResult ExecuteDueWithinBudget(SimulationTime now, const SimulationBudget& budget) override;
+    [[nodiscard]] ScheduledTaskExecutionResult ExecuteDueWithinBudget(SimulationTime now,
+                                                                      const SimulationBudget &budget) override;
 
     void SetJobStateForTesting(SimulationJobHandle handle, SimulationJobState state);
     [[nodiscard]] std::optional<ScheduledSimulationTaskId> ActiveScheduleForTesting(SimulationJobHandle handle) const;
@@ -62,28 +61,35 @@ public:
     void SetNextMemoryIdForTesting(std::uint64_t id) noexcept;
     void SetNextTaskIdForTesting(std::uint64_t id) noexcept;
     void SetFactRevisionForTesting(std::uint64_t revision) noexcept;
-    void FailNextTickWorkListPreparationForTesting() noexcept { fail_next_tick_work_list_preparation_for_testing_ = true; }
-    void FailNextTickResultStagingForTesting() noexcept { fail_next_tick_result_staging_for_testing_ = true; }
-    void FailNextAttentionPublicationForTesting() noexcept { fail_next_attention_publication_for_testing_ = true; }
-    void FailNextProposalPublicationForTesting() noexcept { fail_next_proposal_publication_for_testing_ = true; }
-    void FailNextMemoryWorkListPreparationForTesting() noexcept { fail_next_memory_work_list_preparation_for_testing_ = true; }
+    void FailNextTickWorkListPreparationForTesting() noexcept {
+        fail_next_tick_work_list_preparation_for_testing_ = true;
+    }
+    void FailNextTickResultStagingForTesting() noexcept {
+        fail_next_tick_result_staging_for_testing_ = true;
+    }
+    void FailNextAttentionPublicationForTesting() noexcept {
+        fail_next_attention_publication_for_testing_ = true;
+    }
+    void FailNextProposalPublicationForTesting() noexcept {
+        fail_next_proposal_publication_for_testing_ = true;
+    }
+    void FailNextMemoryWorkListPreparationForTesting() noexcept {
+        fail_next_memory_work_list_preparation_for_testing_ = true;
+    }
 
-private:
-    struct RegionAttentionRecord
-    {
+  private:
+    struct RegionAttentionRecord {
         AttentionScore score{};
         SimulationZoneState zone_state = SimulationZoneState::Dormant;
     };
 
-    enum class ShutdownState
-    {
+    enum class ShutdownState {
         Running,
         ShuttingDown,
         Shutdown
     };
 
-    struct JobRecord
-    {
+    struct JobRecord {
         SimulationJobDesc desc{};
         SimulationJobHandle handle{};
         SimulationJobState state = SimulationJobState::Pending;
@@ -96,17 +102,18 @@ private:
         std::optional<ScheduledSimulationTaskId> active_schedule{};
     };
 
-    [[nodiscard]] JobRecord* FindJob(SimulationJobId id);
-    [[nodiscard]] const JobRecord* FindJob(SimulationJobId id) const;
-    [[nodiscard]] JobRecord* FindJob(SimulationJobHandle handle);
-    [[nodiscard]] const JobRecord* FindJob(SimulationJobHandle handle) const;
+    [[nodiscard]] JobRecord *FindJob(SimulationJobId id);
+    [[nodiscard]] const JobRecord *FindJob(SimulationJobId id) const;
+    [[nodiscard]] JobRecord *FindJob(SimulationJobHandle handle);
+    [[nodiscard]] const JobRecord *FindJob(SimulationJobHandle handle) const;
     [[nodiscard]] std::vector<SimulationJobId> BuildJobWorkList() const;
     [[nodiscard]] std::vector<SimulationJobId> BuildMainThreadWorkList() const;
     [[nodiscard]] std::vector<WorldMemoryEventId> BuildMemoryWorkList() const;
     [[nodiscard]] std::vector<ScheduledSimulationTaskId> BuildTaskWorkList() const;
-    [[nodiscard]] foundation::Result<void> ValidateJobMetadata(const SimulationJobDesc& desc) const;
-    [[nodiscard]] foundation::Result<void> ValidateProposalBatch(const SimulationProposalBatch& batch) const;
-    [[nodiscard]] foundation::Result<void> ValidateStepResult(const JobRecord& job, const SimulationStepResult& result) const;
+    [[nodiscard]] foundation::Result<void> ValidateJobMetadata(const SimulationJobDesc &desc) const;
+    [[nodiscard]] foundation::Result<void> ValidateProposalBatch(const SimulationProposalBatch &batch) const;
+    [[nodiscard]] foundation::Result<void> ValidateStepResult(const JobRecord &job,
+                                                              const SimulationStepResult &result) const;
     void PruneTerminalJobs();
     void PruneExpiredMemoryEvents();
     [[nodiscard]] bool HasPendingProposal(SimulationJobId id) const;

@@ -1,12 +1,9 @@
 #pragma once
 
-
 // Header for runtime contracts or module-local helpers. Comments document how each
 // function participates in the module API and what state it observes or mutates.
-namespace epidemic::runtime
-{
-enum class AssetState
-{
+namespace epidemic::runtime {
+enum class AssetState {
     Unknown,
     Discovered,
     Indexed,
@@ -16,11 +13,8 @@ enum class AssetState
     Deprecated,
 };
 
-
-[[nodiscard]] constexpr bool IsValidAssetState(AssetState value) noexcept
-{
-    switch (value)
-    {
+[[nodiscard]] constexpr bool IsValidAssetState(AssetState value) noexcept {
+    switch (value) {
     case AssetState::Unknown:
     case AssetState::Discovered:
     case AssetState::Indexed:
@@ -32,4 +26,4 @@ enum class AssetState
     }
     return false;
 }
-} 
+}

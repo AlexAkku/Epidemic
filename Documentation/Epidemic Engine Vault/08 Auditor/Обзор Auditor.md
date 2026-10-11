@@ -28,3 +28,9 @@ flowchart TD
 **Статус:** текущий архив явно фиксирует MS6 как PARTIALLY COMPLETE и откладывает полную acceptance до MS8 и первой тестовой игры; полные системы и соответствующие физические проверки ещё требуют подтверждения. [[09 Качество и статус/Состояние MS6]].
 
 Исходник: [[90 Первоисточники/.epidemic-auditor/README|README Auditor]] · [[90 Первоисточники/.epidemic-auditor/ARCHITECTURE|архитектура Auditor]] (второй документ частично исторический, при расхождении используйте код и актуальный README).
+
+---
+
+## Что означает независимость
+
+Auditor не линкуется к production binaries для получения собственной process/CTest/OS evidence. Audit/Deep builds дополнительно встраивают помеченные probes: их сведения несут provenance `engine_probe` и не должны смешиваться с независимым OS sampling. Финальное заключение требует проверки raw evidence, metadata и отсутствия silent loss. GUI показывает лишь проекции того же run.

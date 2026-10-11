@@ -427,3 +427,277 @@ class SimulationService
 };
 } // namespace epidemic::gameplay::simulation
 ```
+
+---
+
+## Разбор опубликованного API
+
+Интерфейс ниже извлечён из объявлений заголовка. Это навигационный индекс сигнатур и полей, не замена компиляторному AST или проверки вызовов. Все значения по умолчанию и типы необходимо читать вместе с полным заголовком выше.
+
+### Прямые типовые зависимости
+
+Заголовок непосредственно подключает: `Epidemic/Foundation/result.h`, `Epidemic/GameFramework/Foundation/gameplay_foundation.h`.
+
+### Перечисления и допустимые категории
+
+- `SimulationDetailLevel`: `Disabled`, `Dormant`, `Abstract`, `Coarse`, `Detailed`, `Materialized`
+- `SimulationTaskState`: `Pending`, `Running`, `Completed`, `Failed`, `Skipped`, `Deferred`
+- `SimulationIntervalState`: `Pending`, `Completed`
+- `SimulationMaterializationPolicy`: `AbstractCapable`, `RequiresDetailed`, `RequiresMaterialized`
+- `SimulationChangeKind`: `RegionRegistered`, `LayerRegistered`, `IntervalStarted`, `TaskPrepared`, `TaskCommitted`, `TaskDeferred`, `TaskFailed`, `BudgetExceeded`, `SummaryGenerated`
+
+### Состав типов и операции
+
+#### `SimulationRegionId` (строка заголовка 19)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SimulationRegionId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SimulationRegionId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SimulationRegionId &) const noexcept = default;
+```
+
+#### `SimulationLayerId` (строка заголовка 33)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SimulationLayerId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SimulationLayerId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SimulationLayerId &) const noexcept = default;
+```
+
+#### `SimulationTaskId` (строка заголовка 47)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SimulationTaskId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SimulationTaskId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SimulationTaskId &) const noexcept = default;
+```
+
+#### `SimulationPolicyId` (строка заголовка 61)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SimulationPolicyId FromString(std::string_view s) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SimulationPolicyId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SimulationPolicyId &) const noexcept = default;
+```
+
+#### `SimulationSummaryId` (строка заголовка 75)
+
+Публичные сигнатуры операций:
+
+```cpp
+static constexpr SimulationSummaryId FromRaw(std::uint64_t h, std::uint64_t l) noexcept;
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+[[nodiscard]] constexpr bool operator==(const SimulationSummaryId &) const noexcept = default;
+[[nodiscard]] constexpr auto operator<=>(const SimulationSummaryId &) const noexcept = default;
+```
+
+#### `IdHash` (строка заголовка 89)
+
+Публичные сигнатуры операций:
+
+```cpp
+template <class T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept;
+```
+
+#### `T` (строка заголовка 91)
+
+#### `SimulationBudget` (строка заголовка 138)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint32_t max_layer_commits = 1024`
+- `std::int64_t max_interval_ticks = 86'400`
+
+#### `SimulationRetentionPolicy` (строка заголовка 147)
+
+Публичные поля и значения по умолчанию:
+
+- `std::size_t max_completed_summaries = 1024`
+- `std::size_t max_changes = 4096`
+
+#### `SimulationRegion` (строка заголовка 152)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `SimulationDetailLevel detail_level = SimulationDetailLevel::Abstract`
+
+#### `SimulationLayerDefinition` (строка заголовка 162)
+
+Публичные поля и значения по умолчанию:
+
+- `std::string canonical_name`
+- `GameplayTagSet tags`
+- `std::int32_t order = 0`
+- `SimulationMaterializationPolicy materialization_policy = SimulationMaterializationPolicy::AbstractCapable`
+
+#### `SimulationTask` (строка заголовка 171)
+
+Публичные поля и значения по умолчанию:
+
+- `SimulationDetailLevel detail = SimulationDetailLevel::Abstract`
+- `SimulationTaskState state = SimulationTaskState::Pending`
+
+#### `SimulationPreparedOperation` (строка заголовка 183)
+
+Публичные сигнатуры операций:
+
+```cpp
+[[nodiscard]] constexpr bool IsValid() const noexcept;
+```
+
+#### `SimulationLayerSummary` (строка заголовка 189)
+
+Публичные поля и значения по умолчанию:
+
+- `SimulationTaskState state = SimulationTaskState::Completed`
+- `std::uint64_t operations = 0`
+- `std::vector<SimulationPreparedOperation> prepared_operations`
+
+#### `SimulationLayerExecution` (строка заголовка 197)
+
+Публичные поля и значения по умолчанию:
+
+- `bool prepared = false`
+
+#### `SimulationIntervalExecution` (строка заголовка 203)
+
+Публичные поля и значения по умолчанию:
+
+- `SimulationDetailLevel detail = SimulationDetailLevel::Abstract`
+- `SimulationIntervalState state = SimulationIntervalState::Pending`
+- `std::vector<SimulationLayerExecution> layers`
+
+#### `SimulationSummary` (строка заголовка 216)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<SimulationLayerSummary> layers`
+
+#### `SimulationChange` (строка заголовка 225)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t sequence = 0`
+- `SimulationChangeKind kind = SimulationChangeKind::TaskPrepared`
+
+#### `SimulationChangeBatch` (строка заголовка 236)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<SimulationChange> changes`
+- `std::uint64_t oldest_available_sequence = 0`
+- `std::uint64_t latest_sequence = 0`
+- `bool snapshot_required = false`
+
+#### `SimulationSnapshot` (строка заголовка 246)
+
+Публичные поля и значения по умолчанию:
+
+- `std::vector<SimulationRegion> regions`
+- `std::vector<SimulationIntervalExecution> active_intervals`
+- `std::vector<SimulationSummary> summaries`
+- `std::uint64_t change_epoch = 1`
+- `std::uint64_t next_change_sequence = 1`
+
+#### `SimulationDiagnostics` (строка заголовка 258)
+
+Публичные поля и значения по умолчанию:
+
+- `std::uint64_t regions = 0`
+- `std::uint64_t layers = 0`
+- `std::uint64_t active_intervals = 0`
+- `std::uint64_t tasks_prepared = 0`
+- `std::uint64_t tasks_committed = 0`
+- `std::uint64_t tasks_deferred = 0`
+- `std::uint64_t budget_exhaustions = 0`
+- `std::uint64_t summaries = 0`
+
+#### `ISimulationLayerExecutor` (строка заголовка 270)
+
+Публичные сигнатуры операций:
+
+```cpp
+virtual ~ISimulationLayerExecutor() = default;
+[[nodiscard]] virtual SimulationLayerId Layer() const noexcept = 0;
+[[nodiscard]] virtual foundation::Result<void> Commit(const SimulationTask &task, const SimulationLayerSummary &summary) = 0;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+Присутствует полиморфный контракт: проверьте реализацию виртуальных методов и семантику времени жизни объекта, переданного потребителю.
+
+#### `SimulationService` (строка заголовка 284)
+
+Внутреннее состояние (не часть публичного API): `bool definitions_frozen_ = false`, `std::unordered_map<SimulationRegionId, SimulationRegion, IdHash> regions_`, `std::unordered_map<SimulationLayerId, SimulationLayerDefinition, IdHash> layers_`, `std::unordered_map<SimulationLayerId, ISimulationLayerExecutor *, IdHash> executors_`, `std::unordered_map<SimulationRegionId, SimulationIntervalExecution, IdHash> active_intervals_`, `std::list<SimulationSummary> summaries_`, `MonotonicIdGenerator<GameplayObjectId> task_ids_`, `MonotonicIdGenerator<GameplayObjectId> summary_ids_`, `std::list<SimulationChange> changes_`.
+
+Публичные сигнатуры операций:
+
+```cpp
+SimulationService();
+[[nodiscard]] static constexpr GameplayDomainId Domain() noexcept;
+void FreezeDefinitions() noexcept;
+void Freeze() noexcept;
+[[nodiscard]] bool DefinitionsFrozen() const noexcept;
+[[nodiscard]] const SimulationRegion *FindRegion(SimulationRegionId id) const noexcept;
+[[nodiscard]] const SimulationLayerDefinition *FindLayer(SimulationLayerId id) const noexcept;
+[[nodiscard]] const SimulationIntervalExecution *FindActiveInterval(SimulationRegionId region) const noexcept;
+void SetBudget(SimulationBudget budget) noexcept;
+void SetRetentionPolicy(SimulationRetentionPolicy policy) noexcept;
+[[nodiscard]] std::vector<SimulationSummary> FindSummaries(SimulationRegionId region) const;
+[[nodiscard]] SimulationChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+[[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept;
+[[nodiscard]] SimulationSnapshot CaptureSnapshot() const;
+[[nodiscard]] foundation::Result<void> RestoreSnapshot(SimulationSnapshot snapshot);
+[[nodiscard]] SimulationDiagnostics GetDiagnostics() const noexcept;
+[[nodiscard]] Revision CurrentRevision() const noexcept;
+```
+
+Возвраты `foundation::Result<T>` необходимо проверять: после ошибки нельзя обращаться к `Value()`. Код отказа и отсутствие частичной mutation уточняются по реализации и модульному контракту.
+
+### Интеграция и безопасность вызовов
+
+- Ошибки ожидаемых операций передаются через `Result`; проверяйте ветвь ошибки и `GetError()`.
+- `std::string_view` не владеет памятью; не сохраняйте его после уничтожения исходной строки без явного копирования.
+
+### Навигация от вызова к коду и тесту
+
+Это точные файловые позиции из того же архива. Совпадение имён методов между разными классами или overloads требует проверки через clangd: таблица не является окончательно разрешённым call graph.
+
+| Операция | Обнаруженная реализация | Строка |
+| --- | --- | --- |
+| `SimulationService` | `SimulationService::SimulationService` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:142` |
+| `FindRegion` | `SimulationService::FindRegion` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:242` |
+| `FindLayer` | `SimulationService::FindLayer` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:248` |
+| `FindActiveInterval` | `SimulationService::FindActiveInterval` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:254` |
+| `SetRetentionPolicy` | `SimulationService::SetRetentionPolicy` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:260` |
+| `FindSummaries` | `SimulationService::FindSummaries` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:804` |
+| `CaptureSnapshot` | `SimulationService::CaptureSnapshot` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:846` |
+| `RestoreSnapshot` | `SimulationService::RestoreSnapshot` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:874` |
+| `GetDiagnostics` | `SimulationService::GetDiagnostics` | `EngineFramework/GameplayWorldStateOwners/Simulation/src/simulation.cpp:1002` |
+
+Первые наблюдаемые вызовы операций из тестовых исходников:
+
+- `FreezeDefinitions`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:125`
+- `Freeze`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:156`
+- `FindRegion`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:160`
+- `FindActiveInterval`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:161`
+- `SetBudget`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:179`
+- `ReadChangesSince`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:202`
+- `CaptureSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:205`
+- `RestoreSnapshot`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:215`
+- `SetRetentionPolicy`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:269`
+- `FindSummaries`: `EngineFramework/DevelopmentInfrastructure/Tests/simulation_tests.cpp:274`
+

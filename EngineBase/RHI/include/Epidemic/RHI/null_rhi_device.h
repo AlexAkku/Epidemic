@@ -5,8 +5,7 @@
 
 #include <memory>
 
-namespace epidemic::rhi
-{
+namespace epidemic::rhi {
 // This file exposes the baseline software/null RHI backend used by tests and headless scenarios.
 // The null device validates descriptors and simulates clear/present flow without touching a GPU.
 

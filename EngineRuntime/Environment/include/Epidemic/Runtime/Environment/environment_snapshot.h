@@ -9,11 +9,9 @@
 #include <cstdint>
 #include <vector>
 
-namespace epidemic::runtime
-{
+namespace epidemic::runtime {
 // Detached runtime observation for one region. This type is not a persistence/restore format.
-struct EnvironmentSnapshot
-{
+struct EnvironmentSnapshot {
     RegionId region_id{};
     std::uint64_t revision = 0;
     WeatherState weather{};
@@ -23,6 +21,6 @@ struct EnvironmentSnapshot
     float humidity = 0.0f;
     std::vector<SurfaceState> surfaces;
 
-    [[nodiscard]] bool operator==(const EnvironmentSnapshot&) const = default;
+    [[nodiscard]] bool operator==(const EnvironmentSnapshot &) const = default;
 };
 } // namespace epidemic::runtime

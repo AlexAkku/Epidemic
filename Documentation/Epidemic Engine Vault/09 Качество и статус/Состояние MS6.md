@@ -13,3 +13,9 @@ README Auditor перечисляет текущие остаточные SRC г
 В исходной документации отдельно отмечены прошедшие 10.10 focused tests для Verifier/VirtualAlloc, async IO и GUI callback handling. Это ограниченные regressions, которые требуется включить в итоговую матрицу. Полные manual Self-Test, engine build matrix, static qualification и independent audit остаются отдельными gates.
 
 Детали спецификации/traceability доступны в [[90 Первоисточники/Development/Tasks/Milestone 6/README|исходном индексе MS6]]; comprehensive SRC-1..460 table в `Milestone_6_Auditor_Requirement_Traceability.md`. Текущий срез не является новым verdict. [[08 Auditor/Понимание evidence]].
+
+---
+
+## Как читать остаточный backlog
+
+Локальные фиксирующие тесты MS6.7–MS6.9 и отдельные профили Auditor не доказывают закрытие всего MS6. Требуются full matrix, unfiltered Self-Test, negative controls и independent review соответствующих production paths. Функции, отложенные до наличия Game или MS8, должны оставаться явными открытыми требованиями и не растворяться в суммарном PASS.
