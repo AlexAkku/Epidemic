@@ -27,6 +27,18 @@ Each production freeze unit owns one document in this directory or in `modules/`
 
 ## Module documents in this directory
 
+### SDK 1.0.1 client facades
+
+`Presentation` (`EngineFramework/RuntimeBoundary/Presentation`) provides the Win32
+Host, Canvas, input and audio facade used by the 2D client. `Session`
+(`EngineFramework/IntegrationLayer/Session`) provides profile payload persistence
+and shared state values. Both are exported as installed SDK components; game
+rules, payload schema and content remain the client's responsibility.
+See the [practical integration guide](<../../../03 Работа с движком/Практическая интеграция игры.md>)
+and the buildable `Examples/MinimalGame` in the engine repository. The module list
+below describes the older contract documentation and is not the complete list of
+installed SDK capabilities.
+
 - [Entities](Entities.md), [Materials](Materials.md), [Environment](Environment.md), [Conditions](Conditions.md), [Effects](Effects.md), [Interaction](Interaction.md), [Ownership](Ownership.md)
 - [ItemsInventory](ItemsInventory.md), [Equipment](Equipment.md), [Economy](Economy.md), [Processes](Processes.md), [ResourcesProduction](ResourcesProduction.md), [Loot](Loot.md)
 - [RolesJobs](RolesJobs.md), [NeedsLife](NeedsLife.md), [Population](Population.md), [Encounters](Encounters.md), [Society](Society.md), [Crime](Crime.md)

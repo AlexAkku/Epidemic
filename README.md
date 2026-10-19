@@ -22,6 +22,8 @@ Game
 
 ## Сборка
 
+Для новой игры начните с [практической интеграции SDK 1.0.1](<Documentation/Epidemic Engine Vault/03 Работа с движком/Практическая интеграция игры.md>): установка, внешний CMake-клиент, цикл окна, ресурсы, сохранения и адресные проверки. [Запуск Auditor](<Documentation/Epidemic Engine Vault/08 Auditor/Запуск Auditor.md>) описывает наблюдение готового EXE и отдельную диагностическую сборку. API-страницы Vault сохраняют снимок от 10 октября; новые фасады сверяйте с текущими headers.
+
 Из корня репозитория:
 
 ```powershell
@@ -31,7 +33,8 @@ cmake --build build --config Debug
 
 ## Установленный SDK
 
-`cmake --build build/full-release --config Release --target EpidemicSDK` собирает
+После конфигурации `cmake -S . -B build/full-release -A x64`
+команда `cmake --build build/full-release --config Release --target EpidemicSDK` собирает
 библиотеки без запуска/сборки всего набора тестов. Затем
 `cmake --install build/full-release --config Release --prefix <sdk>` создаёт
 переносимую поставку для `find_package(Epidemic 1.0.1 CONFIG REQUIRED)`.
@@ -44,11 +47,6 @@ cmake --build build --config Debug
 не требуются. Существующий SDK ASCENT собирается независимо.
 
 ## Тесты модулей
-
-В Auditor `capture.api_timeout_seconds` задаёт native exception/API-наблюдению
-бюджет до 60 секунд (по умолчанию 15). Внешний timeout оставляет ещё 10 секунд
-на завершение helper. Ограниченный verifier-профиль сохраняет отдельный бюджет;
-таймаут означает неполное наблюдение и сам по себе не доказывает crash/deadlock.
 
 ```powershell
 ctest --test-dir build -C Debug --output-on-failure
@@ -65,13 +63,13 @@ ctest --test-dir build -C Debug -R EpidemicRuntime --output-on-failure
 После Debug-сборки:
 
 ```powershell
-.\build\EngineBase\Apps\HeadlessCoreApp\EpidemicHeadlessCoreApp.exe
-.\build\EngineBase\Apps\WindowSmokeApp\EpidemicWindowSmokeApp.exe
-.\build\EngineBase\Apps\InputSmokeApp\EpidemicInputSmokeApp.exe
-.\build\EngineBase\Apps\RhiClearScreenApp\EpidemicRhiClearScreenApp.exe
+.\build\EngineBase\Apps\HeadlessCoreApp\Debug\EpidemicHeadlessCoreApp.exe
+.\build\EngineBase\Apps\WindowSmokeApp\Debug\EpidemicWindowSmokeApp.exe
+.\build\EngineBase\Apps\InputSmokeApp\Debug\EpidemicInputSmokeApp.exe
+.\build\EngineBase\Apps\RhiClearScreenApp\Debug\EpidemicRhiClearScreenApp.exe
 ```
 
-Логи запускаемых вручную smoke-приложений зависят от рабочего каталога; для разработки запускайте их с рабочим каталогом `.ai/`, чтобы логи оставались в `.ai/logs/`.
+Пути выше соответствуют Visual Studio generator; у Ninja нет подкаталога `Debug`. Логи запускаемых вручную smoke-приложений зависят от рабочего каталога; для разработки запускайте их с рабочим каталогом `.ai/`, чтобы логи оставались в `.ai/logs/`.
 
 ## Подготовка рабочего пространства
 
