@@ -7,6 +7,8 @@
 /.vscode/
 /.ai/
 /Temp/
+/tmp/
+/temp/
 /.codex/
 
 *.user
@@ -120,6 +122,22 @@ compile_commands.json
 **/logs/
 
 *.log
+
+# Local playable copies and generated Auditor/test reports. Keep source fixtures
+# and documentation visible: do not ignore JSON/Markdown reports by extension.
+/LocalGame/
+/reports/
+/test-results/
+/.epidemic-auditor/runs/
+/.epidemic-auditor/reports/
+/.epidemic-auditor/*.sqlite3
+/.epidemic-auditor/*.sqlite3-*
+/.coverage
+/.coverage.*
+/htmlcov/
+/coverage.xml
+*.profraw
+*.profdata
 
 
 # ----------------------------------------------------------------------------
