@@ -181,7 +181,7 @@ class RunManager:
             start_ns=now, end_ns=now, health={'capacity': 16 * 1024**2, 'observed': len(payload), 'dropped': 0,
                                             'incomplete_reason': None})
         self.storage.finish_run(record, status, {'outcomes': outcomes})
-        export_agent_pack(record.run_dir)
+        self._export_run(record.run_dir)
         self.events.emit('run_finished', run_id=record.run_id, status=record.status)
         return record
 
@@ -291,17 +291,19 @@ class RunManager:
             self.config.admit_project()
         record = self.storage.new_run(kind, title, capture_mode)
         self.events.emit("run_started", run_id=record.run_id, title=title)
-        result = operation(record.run_dir, capture_mode, self._log)
         static = scan_sources(self.config) if capture_mode.lower() in {"full", "deep"} else None
         if static:
             capture_scan(record.run_dir, static)
             self.storage.write_json(record.run_dir / "metrics" / "static_scan.json", static)
+        # BuildController seals its receipt. Retain source observations before
+        # invoking it, rather than appending to an already immutable capture.
+        result = operation(record.run_dir, capture_mode, self._log)
         samples = summarize_process_samples(record.run_dir)
         status = "PASS" if result.exit_code == 0 and not result.cancelled else ("CANCELLED" if result.cancelled else "FAIL")
         summary = {"process": result.to_dict(), "samples": samples, "static_scan": static or {}}
         self.storage.write_json(record.run_dir / "metrics" / "summary.json", summary)
         self.storage.finish_run(record, status, summary)
-        export_agent_pack(record.run_dir, record.to_dict(), summary, static_scan=static)
+        self._export_run(record.run_dir, record.to_dict(), summary, static_scan=static)
         self.events.emit("run_finished", run_id=record.run_id, status=record.status, summary=summary)
 
     def _run_tests(self, tests: list[TestCase], capture_mode: str, title: str) -> None:
@@ -331,7 +333,7 @@ class RunManager:
         summary = {"tests": test_summary, "batch": batch, "static_scan": static or {}}
         self.storage.write_json(record.run_dir / "metrics" / "summary.json", summary)
         self.storage.finish_run(record, status, summary)
-        export_agent_pack(record.run_dir, record.to_dict(), summary, tests=results, static_scan=static)
+        self._export_run(record.run_dir, record.to_dict(), summary, tests=results, static_scan=static)
         self.events.emit("run_finished", run_id=record.run_id, status=record.status, summary=summary)
 
     def _start_game(self, capture_mode: str) -> None:
@@ -370,7 +372,7 @@ class RunManager:
         summary = {"process": result.to_dict(), "samples": samples, "static_scan": static or {}}
         self.storage.write_json(record.run_dir / "metrics" / "summary.json", summary)
         self.storage.finish_run(record, status, summary)
-        export_agent_pack(record.run_dir, record.to_dict(), summary, static_scan=static)
+        self._export_run(record.run_dir, record.to_dict(), summary, static_scan=static)
         self.events.emit("run_finished", run_id=record.run_id, status=record.status, summary=summary)
 
     def _build_and_run(self, capture_mode: str) -> None:
@@ -381,7 +383,7 @@ class RunManager:
         summary = {"process": result.to_dict(), "samples": summarize_process_samples(build_record.run_dir)}
         self.storage.write_json(build_record.run_dir / "metrics" / "summary.json", summary)
         self.storage.finish_run(build_record, build_status, summary)
-        export_agent_pack(build_record.run_dir, build_record.to_dict(), summary)
+        self._export_run(build_record.run_dir, build_record.to_dict(), summary)
         self.events.emit("run_finished", run_id=build_record.run_id, status=build_record.status, summary=summary)
         if build_record.status != "PASS":
             return
@@ -396,8 +398,16 @@ class RunManager:
         summary = {"static_scan": result}
         self.storage.write_json(record.run_dir / "metrics" / "summary.json", summary)
         self.storage.finish_run(record, "PASS", summary)
-        export_agent_pack(record.run_dir, record.to_dict(), summary, static_scan=result)
+        self._export_run(record.run_dir, record.to_dict(), summary, static_scan=result)
         self.events.emit("run_finished", run_id=record.run_id, status=record.status, summary=summary)
+
+    def _export_run(self, *args, **kwargs):
+        # Sealing, verification and final status precede this optional projection.
+        enabled = self.config.data.get('storage', {}).get('auto_export_agent_pack', True)
+        if type(enabled) is not bool:
+            raise ValueError('auto_export_agent_pack must be boolean')
+        if enabled:
+            return export_agent_pack(*args, **kwargs)
 
     def _resolve_command_part(self, value: str) -> str:
         path = Path(value)

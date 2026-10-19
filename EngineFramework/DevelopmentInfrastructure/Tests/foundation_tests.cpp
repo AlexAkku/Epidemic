@@ -2,6 +2,8 @@
 #include "pre_state_verification.h"
 
 #include <cstdlib>
+#include <cstdio>
+#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -73,7 +75,12 @@ void TestFrameworkDocumentationRoot() {
     Check(!root.empty(), 935);
 
     const auto framework_readme = root / "EngineFramework" / "README.md";
-    const auto docs_root = root / "Documentation" / "EngineFramework" / "README.md";
+    // Keep the vault path independent of the compiler's source code page.
+    const auto docs_relative =
+        std::filesystem::path(u8"Documentation/Epidemic Engine Vault/90 "
+                              u8"\u041f\u0435\u0440\u0432\u043e\u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438"
+                              u8"/Documentation/EngineFramework/README.md");
+    const auto docs_root = root / docs_relative;
     Check(std::filesystem::is_regular_file(framework_readme), 936);
     Check(std::filesystem::is_regular_file(docs_root), 937);
 
@@ -82,18 +89,19 @@ void TestFrameworkDocumentationRoot() {
     std::ostringstream content;
     content << input.rdbuf();
     const auto text = content.str();
-    Check(text.find("Documentation/EngineFramework/README.md") != std::string::npos, 939);
+    const auto reference_utf8 = docs_relative.generic_u8string();
+    const std::string reference(reference_utf8.begin(), reference_utf8.end());
+    Check(text.find("](<../" + reference + ">)") != std::string::npos, 939);
     Check(text.find("Documentation/GameFramework/README.md") == std::string::npos, 940);
 
     for (const auto *module_doc :
          {"foundation.md", "support_random.md", "queries.md", "facts.md", "time.md", "runtime_bridge.md"}) {
-        Check(std::filesystem::is_regular_file(root / "Documentation" / "EngineFramework" / "modules" / module_doc),
-              941);
+        Check(std::filesystem::is_regular_file(docs_root.parent_path() / "modules" / module_doc), 941);
     }
 }
 } // namespace
 
-int main() {
+int main() try {
     TestFrameworkDocumentationRoot();
 
     static_assert(!std::is_same_v<GameplayObjectId, EventId>);
@@ -363,4 +371,10 @@ int main() {
     Check(valid_ref.IsValid() && !invalid_ref.IsValid(), 48);
 
     return 0;
+} catch (const std::exception &error) {
+    std::fprintf(stderr, "Foundation test exception: %s\n", error.what());
+    return 1;
+} catch (...) {
+    std::fputs("Unknown Foundation test exception\n", stderr);
+    return 1;
 }

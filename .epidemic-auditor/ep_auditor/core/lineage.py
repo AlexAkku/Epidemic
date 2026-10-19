@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -49,6 +50,27 @@ class EvidenceLineage:
         self._validated_inputs = {}
         self._verification_depth = 0
         self._verification_manifest = None
+
+    @contextmanager
+    def _verification(self):
+        outermost = self._verification_depth == 0
+        if outermost:
+            self._verification_manifest = self.raw.verify()
+        self._verification_depth += 1
+        try:
+            yield
+            if outermost and self.raw.verify() != self._verification_manifest:
+                raise EvidenceError('raw authority changed during lineage verification')
+        finally:
+            self._verification_depth -= 1
+            if outermost:
+                self._verification_manifest = None
+
+    def references(self, layer: str, paths) -> list[dict]:
+        # Verify the sealed authority at both batch boundaries; individual
+        # inputs still check their actual content hashes inside the batch.
+        with self._verification():
+            return [self.reference(layer, path) for path in paths]
 
     def reference(self, layer: str, path: str) -> dict:
         if layer not in LAYERS:
@@ -140,6 +162,12 @@ class EvidenceLineage:
 
     def write(self, layer: str, path: str, *, producer_version: str, producer_source: Path,
               inputs: list[dict], records: list[dict]) -> dict:
+        with self._verification():
+            return self._write(layer, path, producer_version=producer_version,
+                               producer_source=producer_source, inputs=inputs, records=records)
+
+    def _write(self, layer: str, path: str, *, producer_version: str, producer_source: Path,
+               inputs: list[dict], records: list[dict]) -> dict:
         if layer not in LAYERS[1:]:
             raise EvidenceError("derived output layer invalid")
         complete = all([self._input(ref, LAYERS.index(layer)) for ref in inputs])
@@ -168,19 +196,9 @@ class EvidenceLineage:
     def verify(self, layer: str, path: str, *, expected_sha256: str | None = None) -> dict:
         if layer not in LAYERS[1:]:
             raise EvidenceError("derived verification layer invalid")
-        outermost = self._verification_depth == 0
-        if outermost:
-            self._verification_manifest = self.raw.verify()
-        self._verification_depth += 1
-        try:
+        with self._verification():
             value = self._validate(load_json(checked_path(self.run_dir / layer, path), expected_sha256=expected_sha256), layer)
-            if outermost and self.raw.verify() != self._verification_manifest:
-                raise EvidenceError('raw authority changed during lineage verification')
             return value
-        finally:
-            self._verification_depth -= 1
-            if outermost:
-                self._verification_manifest = None
 
     def read_normalized(self, path: str, supported_types: set[str]) -> list[dict]:
         envelope = self.verify("normalized", path)

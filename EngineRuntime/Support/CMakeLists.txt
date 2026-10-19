@@ -31,6 +31,8 @@ target_link_libraries(EpidemicRuntimeSupport
 
 epidemic_configure_target(EpidemicRuntimeSupport)
 
+add_subdirectory(Presentation)
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()

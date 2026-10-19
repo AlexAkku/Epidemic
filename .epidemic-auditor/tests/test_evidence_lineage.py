@@ -1,8 +1,10 @@
 import copy
+import stat
 import sys
 import tempfile
 import unittest
 import uuid
+from unittest.mock import patch
 from pathlib import Path
 
 from ep_auditor.core.evidence import EvidenceError, RawEvidence, atomic_json, digest
@@ -10,6 +12,24 @@ from ep_auditor.core.lineage import EvidenceLineage, normalized_record
 
 
 class EvidenceLineageTests(unittest.TestCase):
+    def test_reference_batch_checks_authority_twice_and_detects_mid_batch_tampering(self):
+        self.seal()
+        with patch.object(self.lineage.raw, 'verify', wraps=self.lineage.raw.verify) as verify:
+            refs = self.lineage.references('raw', ['events.jsonl'] * 20)
+            self.assertEqual(len(refs), 20)
+            self.assertEqual(verify.call_count, 2)
+
+        def paths():
+            yield 'events.jsonl'
+            target = self.root / 'raw/events.jsonl'
+            target.chmod(stat.S_IWRITE | stat.S_IREAD)
+            target.write_bytes(b'changed')
+
+        with self.assertRaises(EvidenceError):
+            self.lineage.references('raw', paths())
+        self.assertEqual(self.lineage._verification_depth, 0)
+        self.assertIsNone(self.lineage._verification_manifest)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)

@@ -798,7 +798,9 @@ struct WindowsPlatformRuntime::Impl {
         bool events_enabled_{false};
     };
 
-    static constexpr wchar_t kWindowClassName[] = L"EpidemicEnginePlatformWindow";
+    // Each runtime owns its registration and may shut down independently.
+    const std::wstring window_class_name{L"EpidemicEnginePlatformWindow_" +
+                                         std::to_wstring(reinterpret_cast<std::uintptr_t>(this))};
 
     std::shared_ptr<RuntimeToken> runtime_token{std::make_shared<RuntimeToken>()};
     ProcessInfo process_info{BuildProcessInfo()};
@@ -832,7 +834,7 @@ struct WindowsPlatformRuntime::Impl {
             windows_by_handle.clear();
             windows_by_id.clear();
             if (class_registered) {
-                static_cast<void>(UnregisterClassW(kWindowClassName, instance_handle));
+                static_cast<void>(UnregisterClassW(window_class_name.c_str(), instance_handle));
             }
             class_registered = false;
             shutdown = true;
@@ -869,7 +871,7 @@ struct WindowsPlatformRuntime::Impl {
         }
 
         PumpMessages();
-        if (class_registered && !UnregisterClassW(kWindowClassName, instance_handle)) {
+        if (class_registered && !UnregisterClassW(window_class_name.c_str(), instance_handle)) {
             throw std::runtime_error("WindowsPlatformRuntime failed to unregister its window class");
         }
 
@@ -924,9 +926,9 @@ struct WindowsPlatformRuntime::Impl {
         AdjustWindowRectEx(&desired_rect, window_style, FALSE, 0);
 
         const auto hwnd =
-            CreateWindowExW(0, kWindowClassName, title_wide.c_str(), window_style, CW_USEDEFAULT, CW_USEDEFAULT,
-                            desired_rect.right - desired_rect.left, desired_rect.bottom - desired_rect.top, nullptr,
-                            nullptr, instance_handle, window.get());
+            CreateWindowExW(0, window_class_name.c_str(), title_wide.c_str(), window_style, CW_USEDEFAULT,
+                            CW_USEDEFAULT, desired_rect.right - desired_rect.left,
+                            desired_rect.bottom - desired_rect.top, nullptr, nullptr, instance_handle, window.get());
         if (hwnd == nullptr) {
             const auto error_code = GetLastError();
             return epidemic::foundation::Result<WindowPtr>::Failure(epidemic::foundation::Error::Create(
@@ -986,7 +988,7 @@ struct WindowsPlatformRuntime::Impl {
         window_class.cbSize = sizeof(window_class);
         window_class.hInstance = instance_handle;
         window_class.lpfnWndProc = &StaticWindowProc;
-        window_class.lpszClassName = kWindowClassName;
+        window_class.lpszClassName = window_class_name.c_str();
         window_class.hCursor = LoadCursorW(nullptr, reinterpret_cast<LPCWSTR>(IDC_ARROW));
         window_class.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
         window_class.style = CS_HREDRAW | CS_VREDRAW;

@@ -256,6 +256,21 @@ int wmain(int argc, wchar_t **argv) {
             (std::wstring(argv[1]) == L"--exceptions" || std::wstring(argv[1]) == L"--exceptions-verifier")) {
 
             const bool verifier = std::wstring(argv[1]) == L"--exceptions-verifier";
+            int binary_index = 2;
+            DWORD timeout_ms = verifier ? 90000UL : 15000UL;
+            if (!verifier && std::wstring(argv[2]) == L"--timeout-ms") {
+                if (argc < 5)
+                    throw std::runtime_error("--timeout-ms requires a value and binary");
+                const std::wstring value(argv[3]);
+                if (value.empty() || value.find_first_not_of(L"0123456789") != std::wstring::npos)
+                    throw std::runtime_error("invalid native observer timeout");
+                std::size_t consumed = 0;
+                const auto requested = std::stoull(value, &consumed);
+                if (consumed != value.size() || requested == 0 || requested > 60000)
+                    throw std::runtime_error("native observer timeout must be 1..60000 milliseconds");
+                timeout_ms = static_cast<DWORD>(requested);
+                binary_index = 4;
+            }
 
             if (verifier) {
                 const std::wstring path(argv[2]);
@@ -273,11 +288,11 @@ int wmain(int argc, wchar_t **argv) {
 
             std::vector<std::wstring> arguments;
 
-            for (int index = 3; index < argc; ++index) {
+            for (int index = binary_index + 1; index < argc; ++index) {
                 arguments.emplace_back(argv[index]);
             }
 
-            return observe_exceptions(argv[2], arguments, verifier ? 90000UL : 15000UL);
+            return observe_exceptions(argv[binary_index], arguments, timeout_ms);
         }
         DWORD pid = GetCurrentProcessId();
         DWORD64 address = reinterpret_cast<DWORD64>(&AuditorObservationFixture);

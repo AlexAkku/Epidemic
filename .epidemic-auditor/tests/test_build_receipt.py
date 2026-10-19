@@ -9,10 +9,30 @@ from ep_auditor.core.evidence import load_json
 from ep_auditor.core.lineage import EvidenceLineage
 from ep_auditor.core.process import ManagedProcessRunner
 from ep_auditor.core.storage import RunStorage
+from ep_auditor.core.events import EventBus
+from ep_auditor.core.run_manager import RunManager
+from ep_auditor.core.evidence import RawEvidence
 import test_core
 
 
 class BuildReceiptTests(unittest.TestCase):
+    def test_full_configure_retains_static_scan_before_build_receipt_is_sealed(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config, project = test_core.AuditorCoreTests._config(self, Path(temporary))
+            (project / 'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\nproject(StaticReceipt NONE)\n')
+            (project / 'src').mkdir()
+            (project / 'src/sample.cpp').write_text('int value() { return 1; }\n')
+            manager = RunManager(config, RunStorage(config), EventBus())
+            try:
+                manager.execute('configure', 'Full')
+                runs = manager.storage.list_runs()
+                self.assertEqual(runs[0]['status'], 'PASS')
+                raw = RawEvidence(Path(runs[0]['run_dir']))
+                raw.verify()
+                self.assertTrue(raw.read_bytes('static/architecture.json'))
+            finally:
+                manager.shutdown()
+
     def test_actual_cpp_configure_build_flags_compiler_and_timing_receipts(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

@@ -1,0 +1,8 @@
+#pragma once
+#include <string_view>
+namespace epidemic::build {
+inline constexpr std::string_view Version = "@PROJECT_VERSION@";
+inline constexpr unsigned AbiVersion = @EPIDEMIC_ABI_VERSION@;
+inline constexpr std::string_view BuildId = "@EPIDEMIC_BUILD_ID@";
+inline constexpr std::string_view SourceRevision = "@EPIDEMIC_SOURCE_REVISION@";
+}

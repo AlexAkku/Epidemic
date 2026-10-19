@@ -51,6 +51,29 @@ class AuditorCoreTests(unittest.TestCase):
             self.assertEqual(cfg.project_root, project.resolve())
             self.assertEqual(cfg.build_dir, (project / "build" / "audit").resolve())
 
+    def test_explicit_build_directory_placeholder_tracks_physical_run_profile(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg, project = self._config(Path(td))
+            cfg.data['run'] = {'command': ['{build_dir}/bin/Release/Game.exe', '--smoke'],
+                               'working_dir': '{build_dir}/bin/Release',
+                               'environment': {'BINARIES': '["{build_dir}/bin/Release/Game.exe"]'}}
+            for mode, profile in [('Full', 'audit'), ('Deep', 'audit-deep'), ('Memory', 'audit-memory'), ('Coverage', 'audit-coverage')]:
+                selected = cfg.for_mode(mode)
+                executable = (project / 'build' / profile / 'bin/Release/Game.exe').resolve()
+                self.assertEqual(Path(selected.run_command[0]), executable)
+                self.assertEqual(selected.run_working_dir, executable.parent)
+                self.assertEqual(Path(json.loads(selected.run_environment['BINARIES'])[0]), executable)
+            self.assertIn('{build_dir}', cfg.data['run']['command'][0])
+
+    def test_config_accepts_utf8_bom_without_changing_path_resolution(self):
+        with tempfile.TemporaryDirectory() as td:
+            cfg, project = self._config(Path(td))
+            text = cfg.config_path.read_text(encoding="utf-8")
+            cfg.config_path.write_text(text, encoding="utf-8-sig")
+            loaded = load_config(cfg.config_path)
+            self.assertEqual(loaded.project_root, project.resolve())
+            self.assertEqual(loaded.data, cfg.data)
+
     def test_run_storage_creates_agent_friendly_tree(self):
         with tempfile.TemporaryDirectory() as td:
             cfg, _ = self._config(Path(td))

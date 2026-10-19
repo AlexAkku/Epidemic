@@ -147,6 +147,19 @@ class DiagnosticAnalyzerTests(unittest.TestCase):
             with self.assertRaisesRegex(EvidenceError, 'activation and cleanup are NOT VERIFIED'):
                 _verifier_command(tool, '-enable', 'Heaps')
 
+    def test_native_timeout_is_forwarded_without_consuming_debuggee_arguments(self):
+        from ep_auditor.collectors.modules import _observer_command
+        command, timeout = _observer_command(Path('game.exe'), ['--smoke'], Path('observer.exe'), False, 30)
+        self.assertEqual(command, ['observer.exe', '--exceptions', '--timeout-ms', '30000', 'game.exe', '--smoke'])
+        self.assertEqual(timeout, 40)
+        for invalid in (True, 0, -1, 61, float('nan'), float('inf'), '30'):
+            with self.subTest(invalid=invalid), self.assertRaises(EvidenceError):
+                _observer_command(Path('game.exe'), [], Path('observer.exe'), False, invalid)
+        command, timeout = _observer_command(Path('EpidemicAuditorShadowFixture.exe'), ['verifier-good'],
+                                              Path('observer.exe'), True, 30)
+        self.assertNotIn('--timeout-ms', command)
+        self.assertEqual(timeout, 120)
+
     def test_verifier_long_budget_is_bounded_and_never_available_to_general_observation(self):
         from ep_auditor.collectors.modules import _observer_execution_plan
 

@@ -29,7 +29,7 @@ class AuditorWindow:
         self.root.title("Epidemic Auditor")
         self.root.geometry("1380x900")
         self.root.minsize(1050, 700)
-        self.capture_mode = tk.StringVar(value="Fast")
+        self.capture_mode = tk.StringVar(value=config.data.get("capture", {}).get("selected_mode", "Fast"))
         self.target_scope = tk.StringVar(value=", ".join(config.data.get("capture", {}).get("target_scope", [])))
         self.target_scope.trace_add("write", self._target_scope_changed)
         self.status_text = tk.StringVar(value="Ready")

@@ -9,6 +9,7 @@ add_subdirectory(BaseInfrastructure/Time)
 
 # Runtime boundary
 add_subdirectory(RuntimeBoundary/RuntimeBridge)
+add_subdirectory(RuntimeBoundary/Presentation)
 
 # Gameplay/world state owners
 add_subdirectory(GameplayWorldStateOwners/Entities)
@@ -59,6 +60,7 @@ add_subdirectory(IntegrationLayer/PopulationSimulationIntegration build/psi)
 add_subdirectory(IntegrationLayer/ProcessResourceSimulationIntegration build/prs)
 add_subdirectory(IntegrationLayer/SocialLegalIntegration)
 add_subdirectory(IntegrationLayer/NarrativeIntegration)
+add_subdirectory(IntegrationLayer/Session)
 
 epidemic_validate_framework_architecture()
 

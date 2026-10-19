@@ -97,6 +97,15 @@ The game/application command is intentionally empty by default. Set `run.command
 
 ## Capture modes
 
+`storage.auto_export_agent_pack` defaults to `true`. Set it to `false` to retain
+sealed, verified runs without automatically exporting every report after each
+operation; explicit CLI `export` remains available. This does not change capture
+validation or final run status.
+
+Explicit `{build_dir}` placeholders in `run.command`, `run.working_dir` and
+`run.environment` expand after physical-profile selection. GUI startup mode can
+be set with `capture.selected_mode`; ordinary fixed executable paths stay fixed.
+
 - `Fast`: process tree, CPU, RSS, threads, I/O, console, exit code.
 - `Full`: currently the same external sampling plus static scan and richer report generation.
 - `Deep`: Full plus WPR `GeneralProfile` capture when available.

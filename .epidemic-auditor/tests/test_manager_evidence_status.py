@@ -1,7 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from ep_auditor.core.run_manager import RunManager
 from ep_auditor.core.storage import RunStorage
@@ -10,6 +10,24 @@ import test_core
 
 
 class ManagerEvidenceStatusTests(unittest.TestCase):
+    def test_optional_export_does_not_promote_missing_evidence_to_pass(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config, _ = test_core.AuditorCoreTests._config(self, Path(temporary))
+            config.data['storage']['auto_export_agent_pack'] = False
+            manager = object.__new__(RunManager)
+            manager.config = config
+            manager.storage = RunStorage(config)
+            manager.events = Mock()
+            manager._log = Mock()
+            process = ProcessResult(command=['controlled-no-capture-fixture'], cwd=str(config.project_root),
+                                    exit_code=0, started_utc='2026-10-06T00:00:00Z',
+                                    finished_utc='2026-10-06T00:00:01Z', wall_seconds=1)
+            with patch('ep_auditor.core.run_manager.export_agent_pack') as export:
+                manager._run_process_operation('fixture', 'no capture', 'Fast', lambda *args: process)
+                export.assert_not_called()
+            finished = [call.kwargs for call in manager.events.emit.call_args_list if call.args[0] == 'run_finished']
+            self.assertEqual(finished[0]['status'], 'INCOMPLETE')
+
     def test_process_success_with_missing_evidence_emits_incomplete(self):
         with tempfile.TemporaryDirectory() as temporary:
             config, _ = test_core.AuditorCoreTests._config(self, Path(temporary))

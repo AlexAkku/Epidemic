@@ -1,0 +1,7 @@
+add_library(EpidemicGameFrameworkSession STATIC state_values.cpp profile_store.cpp)
+target_include_directories(EpidemicGameFrameworkSession PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(EpidemicGameFrameworkSession PRIVATE
+    EpidemicGameFrameworkEntities EpidemicGameFrameworkCombat EpidemicGameFrameworkEconomy
+    EpidemicGameFrameworkItemsInventory EpidemicGameFrameworkProgression EpidemicGameFrameworkSaveGame
+    EpidemicRuntimePresentation)
+epidemic_configure_target(EpidemicGameFrameworkSession)

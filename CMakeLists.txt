@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(EpidemicEngine VERSION 1.0.0 LANGUAGES CXX)
+project(EpidemicEngine VERSION 1.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -98,3 +98,6 @@ if(EPIDEMIC_ARCHITECTURE_FREEZE_CHECKS)
     epidemic_validate_architecture_freeze()
     epidemic_add_public_header_self_containment_target()
 endif()
+
+include(cmake/EpidemicSDK.cmake)
+epidemic_install_sdk()

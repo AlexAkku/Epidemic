@@ -18,7 +18,7 @@ Game
 
 `GameFramework` должен содержать переиспользуемые gameplay-системы, а `Game` — конкретные правила, контент и конечный composition root.
 
-Подробное устройство слоев описано в [`Documentation/architecture.md`](Documentation/architecture.md). Документация EngineBase находится в [`Documentation/EngineBase/README.md`](Documentation/EngineBase/README.md), практическое использование — в [`Documentation/EngineBase/using_enginebase.md`](Documentation/EngineBase/using_enginebase.md). Для Runtime аналогичные документы находятся в [`Documentation/EngineRuntime/README.md`](Documentation/EngineRuntime/README.md) и [`Documentation/EngineRuntime/using_engineruntime.md`](Documentation/EngineRuntime/using_engineruntime.md).
+Подробное устройство слоев описано в [архитектуре](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/architecture.md>). Документация EngineBase: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/using_enginebase.md>). Документация EngineRuntime: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/using_engineruntime.md>). Документация GameFramework: [обзор и правила использования](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineFramework/README.md>).
 
 ## Сборка
 
@@ -29,7 +29,26 @@ cmake -S . -B build
 cmake --build build --config Debug
 ```
 
-## Тесты
+## Установленный SDK
+
+`cmake --build build/full-release --config Release --target EpidemicSDK` собирает
+библиотеки без запуска/сборки всего набора тестов. Затем
+`cmake --install build/full-release --config Release --prefix <sdk>` создаёт
+переносимую поставку для `find_package(Epidemic 1.0.1 CONFIG REQUIRED)`.
+Пример независимого клиента находится в `Examples/MinimalGame`; задайте
+`CMAKE_PREFIX_PATH=<sdk>`. `--headless` не создаёт окно, `--tool` пропускает
+заставку, обычный запуск показывает её перед первым игровым кадром.
+`EPIDEMIC_REQUIRED_ABI=1` проверяет совместимость при конфигурации.
+Идентификаторы доступны в `Epidemic/build_info.h`, хеши библиотек — в
+`share/Epidemic/sdk.json`. SDK включает Presentation и Session, ресурсы ASCENT
+не требуются. Существующий SDK ASCENT собирается независимо.
+
+## Тесты модулей
+
+В Auditor `capture.api_timeout_seconds` задаёт native exception/API-наблюдению
+бюджет до 60 секунд (по умолчанию 15). Внешний timeout оставляет ещё 10 секунд
+на завершение helper. Ограниченный verifier-профиль сохраняет отдельный бюджет;
+таймаут означает неполное наблюдение и сам по себе не доказывает crash/deadlock.
 
 ```powershell
 ctest --test-dir build -C Debug --output-on-failure

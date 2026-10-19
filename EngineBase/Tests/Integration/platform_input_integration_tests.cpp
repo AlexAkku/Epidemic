@@ -683,8 +683,11 @@ void TestShutdownRetryAfterExternalCleanupFailure() {
     auto tracked = RequireValue(runtime.CreateWindow({"Tracked Before Shutdown Retry", 320, 240, false}));
     static_cast<void>(runtime.DrainEvents());
 
-    const HWND foreign = CreateWindowExW(0, L"EpidemicEnginePlatformWindow", L"Foreign Class User", WS_OVERLAPPEDWINDOW,
-                                         0, 0, 64, 64, nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
+    wchar_t window_class[256]{};
+    Assert(GetClassNameW(tracked->GetNativeHandle().As<HWND>(), window_class, 256) > 0,
+           "Tracked window must expose its registered class");
+    const HWND foreign = CreateWindowExW(0, window_class, L"Foreign Class User", WS_OVERLAPPEDWINDOW, 0, 0, 64, 64,
+                                         nullptr, nullptr, GetModuleHandleW(nullptr), nullptr);
     Assert(foreign != nullptr, "Test must create an untracked native window that keeps the Platform class busy");
 
     bool cleanup_failure_seen = false;
@@ -700,6 +703,22 @@ void TestShutdownRetryAfterExternalCleanupFailure() {
     Assert(DestroyWindow(foreign) != FALSE, "Removing the external class user must make shutdown retry possible");
     runtime.Shutdown();
     runtime.Shutdown();
+}
+
+void TestIndependentRuntimeWindows() {
+    epidemic::platform::WindowsPlatformRuntime first;
+    epidemic::platform::WindowsPlatformRuntime second;
+    auto first_window = RequireValue(first.CreateWindow({"Independent A", 64, 64, false}));
+    auto second_window = RequireValue(second.CreateWindow({"Independent B", 64, 64, false}));
+    first.Shutdown();
+    Assert(!first_window->GetNativeHandle().IsValid() && second_window->GetNativeHandle().IsValid(),
+           "Shutting down one runtime must preserve the other runtime's window and registration");
+    auto another = RequireValue(second.CreateWindow({"Independent C", 64, 64, false}));
+    Assert(another->GetNativeHandle().IsValid(), "Surviving runtime must still create windows");
+    second.Shutdown();
+    epidemic::platform::WindowsPlatformRuntime next;
+    Assert(RequireValue(next.CreateWindow({"Independent D", 64, 64, false}))->GetNativeHandle().IsValid(),
+           "A subsequent runtime must register and create its window");
 }
 
 // Verifies load failure atomicity, controlled missing-symbol failure, and HMODULE ownership lifetime.
@@ -919,6 +938,7 @@ int main(int argc, char **argv) {
         {"EventPumpDoesNotReplayStaleEvents", &TestEventPumpDoesNotReplayStaleEvents},
         {"PlatformClockIsMonotonic", &TestPlatformClockIsMonotonic},
         {"ShutdownRetryAfterExternalCleanupFailure", &TestShutdownRetryAfterExternalCleanupFailure},
+        {"IndependentRuntimeWindows", &TestIndependentRuntimeWindows},
         {"DynamicLibraryContracts", &TestDynamicLibraryContracts},
         {"PlatformAndInputIntegration", &TestPlatformAndInputIntegration},
     });

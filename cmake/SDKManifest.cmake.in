@@ -1,0 +1,24 @@
+set(_root "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}")
+set(_capabilities [==[@EPIDEMIC_SDK_CAPABILITIES@]==])
+file(GLOB _libraries "${_root}/@CMAKE_INSTALL_LIBDIR@/*.lib")
+list(SORT _libraries)
+set(_entries "")
+foreach(_library IN LISTS _libraries)
+    file(SHA256 "${_library}" _hash)
+    get_filename_component(_name "${_library}" NAME)
+    if(_entries)
+        string(APPEND _entries ",\n")
+    endif()
+    string(APPEND _entries "    \"${_name}\": \"${_hash}\"")
+endforeach()
+file(MAKE_DIRECTORY "${_root}/share/Epidemic")
+file(WRITE "${_root}/share/Epidemic/sdk.json"
+    "{\n"
+    "  \"version\": \"@PROJECT_VERSION@\",\n"
+    "  \"abi\": @EPIDEMIC_ABI_VERSION@,\n"
+    "  \"build_id\": \"@EPIDEMIC_BUILD_ID@\",\n"
+    "  \"source_revision\": \"@EPIDEMIC_SOURCE_REVISION@\",\n"
+    "  \"compiler\": \"@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@\",\n"
+    "  \"configuration\": \"${CMAKE_INSTALL_CONFIG_NAME}\",\n"
+    "  \"capabilities\": [${_capabilities}],\n"
+    "  \"libraries\": {\n${_entries}\n  }\n}\n")

@@ -183,8 +183,8 @@ def record_build(config, run_dir: Path, mode: str, operation: str, result, start
         _retain(raw, "build/compiler_identity.json", json.dumps(identities, sort_keys=True).encode())
     seal_run_capture(SimpleNamespace(run_dir=run_dir, run_id=header["run_id"]))
     lineage = EvidenceLineage(run_dir)
-    refs = [lineage.reference("raw", path.relative_to(run_dir / "raw").as_posix())
-            for path in sorted((run_dir / "raw").rglob("*")) if path.is_file()]
+    refs = lineage.references("raw", (path.relative_to(run_dir / "raw").as_posix()
+            for path in sorted((run_dir / "raw").rglob("*")) if path.is_file()))
     identity = json.dumps([header["run_id"], refs], sort_keys=True).encode()
     value = {**operation_value, "build_id": "BuildId:" + hashlib.sha256(identity).hexdigest(),
              "configure_command": configure_command, "build_command": result.command if operation == "build" else None,

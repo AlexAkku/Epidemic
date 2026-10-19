@@ -5,6 +5,7 @@ import sys
 import time
 import io
 import re
+import math
 
 from ep_auditor.core.evidence import EvidenceError, RawEvidence, digest
 from ep_auditor.core.identity import module_identity, function_identity
@@ -106,6 +107,20 @@ def _observer_execution_plan(
 
     return '--exceptions-verifier', 120
 
+def _observer_command(binary: Path, arguments: list[str], helper: Path,
+                      verifier_fixture: bool, native_seconds=15) -> tuple[list[str], float]:
+    mode, budget = _observer_execution_plan(binary, arguments, verifier_fixture)
+    command = [str(helper), mode]
+    if not verifier_fixture:
+        if type(native_seconds) not in (int, float) or not 0 < native_seconds <= 60:
+            raise EvidenceError('native API timeout must be between 0 and 60 seconds')
+        milliseconds = max(1, math.ceil(native_seconds * 1000))
+        command += ['--timeout-ms', str(milliseconds)]
+        budget = milliseconds / 1000 + 10  # retain time for helper finalization
+    command += [str(binary), *arguments]
+    return command, budget
+
+
 def capture_api_snapshot(
     config,
     run_dir: Path,
@@ -129,11 +144,8 @@ def capture_api_snapshot(
         raise EvidenceError(
             'invalid native API observation arguments'
         )
-    observer_mode, timeout = _observer_execution_plan(
-        binary,
-        arguments,
-        verifier_fixture
-    )
+    command, timeout = _observer_command(binary, arguments, helper, verifier_fixture,
+        config.data.get('capture', {}).get('api_timeout_seconds', 15))
 
     before = (digest(binary), digest(helper))
     if timeout_seconds is not None:
@@ -141,7 +153,7 @@ def capture_api_snapshot(
             raise EvidenceError('invalid shortened native observer timeout')
         timeout = timeout_seconds
     result = (runner or ManagedProcessRunner(config)).run(
-        [str(helper), observer_mode, str(binary), *arguments],
+        command,
         binary.parent,
         run_dir,
         capture_mode,

@@ -105,15 +105,20 @@ class AuditorConfig:
 
     @property
     def run_command(self) -> list[str]:
-        return [str(x) for x in self.data.get("run", {}).get("command", [])]
+        return [self._run_value(x) for x in self.data.get("run", {}).get("command", [])]
+
+    def _run_value(self, value) -> str:
+        # Explicit placeholders follow the admitted physical profile; no target
+        # discovery or rewriting of ordinary executable paths is performed.
+        return str(value).replace("{build_dir}", self.build_dir.as_posix())
 
     @property
     def run_working_dir(self) -> Path:
-        return self.resolve(self.data.get("run", {}).get("working_dir", ".."))
+        return self.resolve(self._run_value(self.data.get("run", {}).get("working_dir", "..")))
 
     @property
     def run_environment(self) -> dict[str, str]:
-        return {str(k): str(v) for k, v in self.data.get("run", {}).get("environment", {}).items()}
+        return {str(k): self._run_value(v) for k, v in self.data.get("run", {}).get("environment", {}).items()}
 
     @property
     def static_roots(self) -> list[Path]:
@@ -134,7 +139,7 @@ class AuditorConfig:
 def load_config(path: Path) -> AuditorConfig:
     if not path.exists():
         raise FileNotFoundError(f"Auditor config not found: {path}")
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
     cfg = AuditorConfig(path.resolve(), data)
     cfg.runs_dir.mkdir(parents=True, exist_ok=True)
     cfg.database_path.parent.mkdir(parents=True, exist_ok=True)

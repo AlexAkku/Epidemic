@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <initializer_list>
 #include <iostream>
 #include <span>
@@ -85,10 +86,13 @@ struct ComparisonReport {
         const auto passed = Passed();
         const auto covers = Covers(required_facets);
         if (!passed || !covers) {
-            std::cerr << scope << " pre-state comparison failed: passed=" << passed << " covers=" << covers << '\n';
+            std::fprintf(stderr, "%s pre-state comparison failed: passed=%d covers=%d\n", scope.c_str(), passed,
+                         covers);
             for (const auto &check : checks) {
                 if (!check.passed) {
-                    std::cerr << "  failed facet=" << ToString(check.facet) << " detail=" << check.detail << '\n';
+                    const auto facet = ToString(check.facet);
+                    std::fprintf(stderr, "  failed facet=%.*s detail=%s\n", static_cast<int>(facet.size()),
+                                 facet.data(), check.detail.c_str());
                 }
             }
         }
@@ -99,10 +103,13 @@ struct ComparisonReport {
         const auto passed = Passed();
         const auto covers = Covers(required_facets);
         if (!passed || !covers) {
-            std::cerr << scope << " pre-state comparison failed: passed=" << passed << " covers=" << covers << '\n';
+            std::fprintf(stderr, "%s pre-state comparison failed: passed=%d covers=%d\n", scope.c_str(), passed,
+                         covers);
             for (const auto &check : checks) {
                 if (!check.passed) {
-                    std::cerr << "  failed facet=" << ToString(check.facet) << " detail=" << check.detail << '\n';
+                    const auto facet = ToString(check.facet);
+                    std::fprintf(stderr, "  failed facet=%.*s detail=%s\n", static_cast<int>(facet.size()),
+                                 facet.data(), check.detail.c_str());
                 }
             }
         }

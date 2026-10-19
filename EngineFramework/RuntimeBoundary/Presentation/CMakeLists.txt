@@ -1,0 +1,6 @@
+add_library(EpidemicGameFrameworkPresentation STATIC presentation.cpp startup.cpp)
+target_include_directories(EpidemicGameFrameworkPresentation PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(EpidemicGameFrameworkPresentation PRIVATE EpidemicRuntimePresentation)
+target_compile_definitions(EpidemicGameFrameworkPresentation PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN UNICODE _UNICODE)
+target_compile_options(EpidemicGameFrameworkPresentation PRIVATE /utf-8)
+epidemic_configure_target(EpidemicGameFrameworkPresentation)
