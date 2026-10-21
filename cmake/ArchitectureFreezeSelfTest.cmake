@@ -120,6 +120,20 @@ _run_case(base_unknown_extension
     ""
     FAIL "Unknown production file extension '.hxx' requires registry review")
 
+_run_case(runtime_script_layer_violation
+    "add_subdirectory(EngineRuntime/Support)\n${_validate}"
+    "EngineRuntime/Support"
+    "file(WRITE \"\${CMAKE_CURRENT_SOURCE_DIR}/backend.js\" \"import 'Epidemic/GameFramework/forbidden.js';\\n\")\nadd_library(WebBackend INTERFACE)"
+    ""
+    FAIL "EngineRuntime source references Framework")
+
+_run_case(runtime_script_valid
+    "add_subdirectory(EngineRuntime/Support)\n${_validate}"
+    "EngineRuntime/Support"
+    "file(WRITE \"\${CMAKE_CURRENT_SOURCE_DIR}/backend.js\" \"Module.draw = function() {};\\n\")\nadd_library(WebBackend INTERFACE)"
+    ""
+    PASS "")
+
 _run_case(base_generated_runtime_include
     "add_library(EpidemicRuntimeForbidden INTERFACE)\nadd_subdirectory(EngineBase/Bad)\n${_validate}"
     "EngineBase/Bad"
@@ -156,4 +170,4 @@ _run_case(framework_horizontal_link
     FAIL "without central allowlist permission")
 
 file(REMOVE_RECURSE "${_sandbox}")
-message(STATUS "Architecture freeze self-test accepted the valid fixture and rejected all 14 forbidden dependency/include/source fixtures")
+message(STATUS "Architecture freeze self-test accepted valid fixtures including JavaScript and rejected all forbidden dependency/include/source fixtures")

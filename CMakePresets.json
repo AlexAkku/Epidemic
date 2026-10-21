@@ -36,16 +36,74 @@
         "EPIDEMIC_BUILD_FRAMEWORK": "ON",
         "EPIDEMIC_ARCHITECTURE_FREEZE_CHECKS": "ON"
       }
+    },
+    {
+      "name": "web-release",
+      "displayName": "Emscripten wasm32 / single thread",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/web-release",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTING": "OFF",
+        "EPIDEMIC_TARGET_PLATFORM": "Web",
+        "EPIDEMIC_BUILD_RUNTIME": "ON",
+        "EPIDEMIC_BUILD_FRAMEWORK": "ON",
+        "EPIDEMIC_ARCHITECTURE_FREEZE_CHECKS": "ON"
+      }
     }
   ],
   "buildPresets": [
-    { "name": "base-debug", "configurePreset": "base-debug", "configuration": "Debug" },
-    { "name": "runtime-debug", "configurePreset": "runtime-debug", "configuration": "Debug" },
-    { "name": "full-debug", "configurePreset": "full-debug", "configuration": "Debug" }
+    {
+      "name": "base-debug",
+      "configurePreset": "base-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "runtime-debug",
+      "configurePreset": "runtime-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "full-debug",
+      "configurePreset": "full-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "web-release",
+      "configurePreset": "web-release",
+      "targets": [
+        "EpidemicWebPlatformApp",
+        "EpidemicWebContracts"
+      ],
+      "jobs": 4
+    }
   ],
   "testPresets": [
-    { "name": "base-debug", "configurePreset": "base-debug", "configuration": "Debug", "output": { "outputOnFailure": true } },
-    { "name": "runtime-debug", "configurePreset": "runtime-debug", "configuration": "Debug", "output": { "outputOnFailure": true } },
-    { "name": "full-debug", "configurePreset": "full-debug", "configuration": "Debug", "output": { "outputOnFailure": true } }
+    {
+      "name": "base-debug",
+      "configurePreset": "base-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "runtime-debug",
+      "configurePreset": "runtime-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "full-debug",
+      "configurePreset": "full-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
   ]
 }

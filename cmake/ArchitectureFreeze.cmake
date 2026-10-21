@@ -159,10 +159,12 @@ function(_epidemic_scan root pattern rule)
         endif()
         get_filename_component(_extension "${_file}" LAST_EXT)
         if(NOT _extension IN_LIST EPIDEMIC_PRODUCTION_CXX_EXTENSIONS AND
+           NOT _extension IN_LIST EPIDEMIC_PRODUCTION_SCRIPT_EXTENSIONS AND
            NOT _extension IN_LIST EPIDEMIC_PRODUCTION_ANCILLARY_EXTENSIONS)
             message(FATAL_ERROR "Unknown production file extension '${_extension}' requires registry review: ${_file}")
         endif()
-        if(_extension IN_LIST EPIDEMIC_PRODUCTION_CXX_EXTENSIONS)
+        if(_extension IN_LIST EPIDEMIC_PRODUCTION_CXX_EXTENSIONS OR
+           _extension IN_LIST EPIDEMIC_PRODUCTION_SCRIPT_EXTENSIONS)
             list(APPEND _files "${_file}")
         endif()
     endforeach()
@@ -283,9 +285,9 @@ function(epidemic_validate_architecture_freeze)
     _epidemic_scan("${PROJECT_SOURCE_DIR}/EngineRuntime" "Epidemic/GameFramework/"
         "EngineRuntime source references Framework")
     _epidemic_scan("${PROJECT_SOURCE_DIR}/EngineFramework/BaseInfrastructure"
-        "Epidemic/(Runtime|Platform|RHI|RHI_D3D11)/" "Framework infrastructure bypasses a boundary")
+        "Epidemic/(Runtime|Platform|RHI|RHI_D3D11|RHI_WebGL)/" "Framework infrastructure bypasses a boundary")
     _epidemic_scan("${PROJECT_SOURCE_DIR}/EngineFramework/GameplayWorldStateOwners"
-        "Epidemic/(Runtime|Platform|RHI|RHI_D3D11)/" "Framework owner bypasses a boundary")
+        "Epidemic/(Runtime|Platform|RHI|RHI_D3D11|RHI_WebGL)/" "Framework owner bypasses a boundary")
 
     if(EPIDEMIC_BUILD_FRAMEWORK)
         file(GLOB_RECURSE _integration CONFIGURE_DEPENDS

@@ -1,0 +1,5 @@
+add_library(EpidemicRHI_WebGL STATIC src/webgl_rhi_device.cpp)
+target_include_directories(EpidemicRHI_WebGL PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(EpidemicRHI_WebGL PUBLIC EpidemicRHI)
+target_link_options(EpidemicRHI_WebGL INTERFACE -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2)
+epidemic_configure_target(EpidemicRHI_WebGL)

@@ -7,5 +7,6 @@ namespace epidemic::enginebase {
 enum class GraphicsBackend {
     Null,
     D3D11,
+    WebGL2,
 };
 } // namespace epidemic::enginebase

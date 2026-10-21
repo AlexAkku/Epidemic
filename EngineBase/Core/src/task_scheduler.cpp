@@ -16,6 +16,16 @@
 #endif
 
 namespace epidemic::core::tasks {
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+namespace {
+thread_local const SimpleTaskScheduler *web_executing_scheduler=nullptr;
+struct WebTaskScope {
+    const SimpleTaskScheduler *previous;
+    explicit WebTaskScope(const SimpleTaskScheduler *scheduler):previous(web_executing_scheduler){web_executing_scheduler=scheduler;}
+    ~WebTaskScope(){web_executing_scheduler=previous;}
+};
+}
+#endif
 #if defined(EPIDEMIC_CORE_ENABLE_TEST_HOOKS)
 namespace {
 thread_local testing::FaultPoint g_fault_point = testing::FaultPoint::None;
@@ -94,6 +104,11 @@ bool TaskGroup::IsValid() const noexcept {
 
 // Starts worker threads and assigns stable diagnostic names.
 SimpleTaskScheduler::SimpleTaskScheduler(std::size_t worker_count) : state_(std::make_shared<SharedState>()) {
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    // A browser main thread cannot spawn native workers or block waiting for them.
+    // Schedule executes bounded CPU work inline; asynchronous IO must use completions.
+    static_cast<void>(worker_count);
+#else
     if (worker_count == 0) {
         worker_count = 1;
     }
@@ -136,6 +151,8 @@ SimpleTaskScheduler::SimpleTaskScheduler(std::size_t worker_count) : state_(std:
         worker_names_.clear();
         throw;
     }
+
+#endif
 }
 
 // Requests shutdown during destruction so owned workers are released.
@@ -395,6 +412,10 @@ TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGrou
     }
 
     state_->cv.notify_one();
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    WebTaskScope executing(this);
+    WorkerLoop(state_, {});
+#endif
     return TaskHandle(std::move(handle_state));
 }
 
@@ -404,6 +425,9 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
         QueuedTask queued_task;
         {
             std::unique_lock lock(state->mutex);
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+            if(state->tasks.empty())return;
+#endif
             state->cv.wait(lock, [&state, &stop_token] {
                 return state->stopping || stop_token.stop_requested() || !state->tasks.empty();
             });
@@ -497,7 +521,12 @@ void SimpleTaskScheduler::DetachCurrentWorkerAndJoinOthers() noexcept {
 }
 // Returns whether a thread id belongs to one of the scheduler-owned workers.
 bool SimpleTaskScheduler::IsWorkerThread(std::thread::id thread_id) const noexcept {
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    static_cast<void>(thread_id);
+    return web_executing_scheduler==this;
+#else
     return std::find(worker_thread_ids_.begin(), worker_thread_ids_.end(), thread_id) != worker_thread_ids_.end();
+#endif
 }
 
 #if defined(EPIDEMIC_CORE_ENABLE_TEST_HOOKS)

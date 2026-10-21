@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASCENT 0.1.20</title><link rel="icon" href="data:,"><style>
+@font-face{font-family:'Epidemic UI';src:url(assets/NotoSans.ttf);font-weight:100 900;font-display:block}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#060d17;color:#e8eff5;font-family:'Epidemic UI',sans-serif;overflow:hidden}
+main{height:100%;display:grid;place-items:center}canvas{display:block;width:100%;height:100%;outline:none;object-fit:contain}canvas:fullscreen{width:100vw;height:100vh;max-width:none!important}
+#loading{position:fixed;inset:0;background:#060d17;display:grid;place-content:center;gap:20px;padding:24px;text-align:center;z-index:2}h1{letter-spacing:.12em;font-size:clamp(30px,7vw,64px);margin:0}button{font:inherit;border:1px solid #89e8cf;background:#10292d;color:#b8ffea;padding:16px 24px;cursor:pointer}button:disabled{opacity:.45;cursor:wait}#status{position:fixed;bottom:8px;left:12px;font-size:12px;color:#f2b777;pointer-events:none;z-index:3}#save{position:fixed;right:12px;bottom:8px;font-size:11px;color:#8ea6b7;pointer-events:none}
+</style></head><body><main><canvas id="canvas" tabindex="0" width="1280" height="720"></canvas></main>
+<section id="loading"><h1>ASCENT</h1><div>0.1.20 · Epidemic 1.0.1 · WebAssembly</div><p id="progress">Загрузка движка…</p><button id="start" disabled>Запустить со звуком</button></section><div id="status"></div><div id="save"></div>
+<svg width="0" height="0" style="position:absolute"><defs><filter id="epidemicEdges" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values="0"/><feConvolveMatrix order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true"/></filter></defs></svg>
+<script>
+var Module={canvas:document.getElementById('canvas'),noInitialRun:true,print:console.log,printErr:console.error,
+ onAbort:function(error){Module.epidemicError=String(error);console.error(error);document.getElementById('status').textContent='Ошибка: '+error;},
+ preRun:[function(){addRunDependency('presentation-assets');prepareBrowser().then(()=>removeRunDependency('presentation-assets')).catch(e=>{Module.onAbort(e.message);});}],
+ onRuntimeInitialized:function(){document.getElementById('progress').textContent='Готово. A/D — движение, Space — прыжок, Shift — рывок, Tab — колода.';document.getElementById('start').disabled=false;}
+};
+Module.canvas.addEventListener('mousemove',event=>{const r=Module.canvas.getBoundingClientRect();Module.epidemicMouse=[(event.clientX-r.left)*Module.canvas.width/r.width,(event.clientY-r.top)*Module.canvas.height/r.height];});
+Module.canvas.addEventListener('contextmenu',event=>event.preventDefault());
+Module.canvas.addEventListener('keydown',event=>{if(['Tab','Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','F3','F11'].includes(event.code))event.preventDefault();});
+async function checkedFetch(url){const response=await fetch(url);if(!response.ok)throw Error(response.status+' '+url);return response;}
+async function prepareBrowser(){
+ const manifest=Module.epidemicManifest=await (await checkedFetch('ascent-assets.json')).json();
+ const font=new FontFace('Epidemic UI',`url(${manifest.font})`,{weight:'100 900'});document.fonts.add(await font.load());
+ Module.epidemicImages={};let done=0;const count=Object.values(manifest.images).reduce((n,p)=>n+p.length,0)+manifest.locales.length;
+ const progress=()=>document.getElementById('progress').textContent='Ресурсы: '+(++done)+' / '+count;
+ // Bounded decode concurrency avoids a burst of duplicate decoded atlases.
+ const tasks=[];
+ for(const [id,pages]of Object.entries(manifest.images)){Module.epidemicImages[id]=new Array(pages.length);pages.forEach((page,index)=>tasks.push(async()=>{const blob=await(await checkedFetch(page.url)).blob();Module.epidemicImages[id][index]={image:await createImageBitmap(blob),y:page.y};progress();}));}
+ FS.mkdirTree('/Locales');for(const url of manifest.locales)tasks.push(async()=>{FS.writeFile('/'+url,new Uint8Array(await(await checkedFetch(url)).arrayBuffer()));progress();});
+ let cursor=0;await Promise.all(Array.from({length:3},async()=>{while(cursor<tasks.length){const task=tasks[cursor++];await task();}}));
+ FS.mkdirTree('/saves');FS.mount(Module.IDBFS,{},'/saves');
+ await new Promise((resolve,reject)=>FS.syncfs(true,error=>error?reject(error):resolve()));
+ let busy=false,last='',pending=false;
+ const fingerprint=()=>{let hash=2166136261;const walk=path=>{for(const name of FS.readdir(path).sort()){if(name==='.'||name==='..')continue;const file=path+'/'+name;if(FS.isDir(FS.stat(file).mode))walk(file);else{for(const c of file)hash=Math.imul(hash^c.charCodeAt(0),16777619);for(const byte of FS.readFile(file))hash=Math.imul(hash^byte,16777619);}}};walk('/saves');return String(hash>>>0);};
+ last=fingerprint();Module.epidemicSaveState='ready';
+ Module.epidemicSync=function(){
+   const state=fingerprint();if(state===last&&!pending)return;if(busy){pending=true;return;}busy=true;pending=false;
+   Module.epidemicSaveState='saving';document.getElementById('save').textContent='Сохранение…';
+   FS.syncfs(false,error=>{busy=false;if(error){Module.epidemicSaveState='failed';pending=true;document.getElementById('save').textContent='Не удалось сохранить: '+error.message;return;}last=state;Module.epidemicSaveState='saved';document.getElementById('save').textContent='Сохранено';if(pending)Module.epidemicSync();});
+ };
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)Module.epidemicSync();});
+ window.addEventListener('pagehide',()=>Module.epidemicSync());
+}
+document.getElementById('start').onclick=async function(){this.disabled=true;try{
+ document.getElementById('progress').textContent='Подготовка звука…';await Module.epidemicCreateAudio();
+ document.getElementById('loading').style.display='none';Module.canvas.focus();Module.callMain([]);
+}catch(error){this.disabled=false;Module.onAbort(error.message);}};
+</script>
+{{{ SCRIPT }}}
+</body></html>

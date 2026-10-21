@@ -1,4 +1,8 @@
 #pragma once
+#if defined(__EMSCRIPTEN__)
+#include "Web/renderer_web.h"
+#else
+#pragma once
 #include <windows.h>
 #include <d3d11.h>
 #include <dxgi.h>
@@ -14,6 +18,8 @@
 #include <map>
 
 namespace epidemic::runtime::presentation {
+using RendererPoint=D2D1_POINT_2F;
+using RendererMatrix=D2D1_MATRIX_3X2_F;
 struct SpriteEntry {
     std::string_view name;
     int x, y;
@@ -119,3 +125,5 @@ class Renderer {
     void Capture(const std::filesystem::path &path);
 };
 }
+
+#endif

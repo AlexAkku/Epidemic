@@ -15,8 +15,11 @@ target_link_libraries(EpidemicEngineBaseSupport
         EpidemicPlatform
         EpidemicInput
         EpidemicRHI
-    PRIVATE
-        EpidemicRHI_D3D11
 )
+if(WIN32)
+    target_link_libraries(EpidemicEngineBaseSupport PRIVATE EpidemicRHI_D3D11)
+elseif(EMSCRIPTEN)
+    target_link_libraries(EpidemicEngineBaseSupport PRIVATE EpidemicRHI_WebGL)
+endif()
 
 epidemic_configure_target(EpidemicEngineBaseSupport)

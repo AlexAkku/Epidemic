@@ -1,4 +1,6 @@
 add_subdirectory(HeadlessCoreApp)
+if(WIN32)
 add_subdirectory(WindowSmokeApp)
 add_subdirectory(InputSmokeApp)
 add_subdirectory(RhiClearScreenApp)
+endif()

@@ -26,10 +26,10 @@ void Host::SetAudioTick(std::function<void(double)> tick){impl_->audioTick=std::
 void Host::ConfigureStartup(bool enabled,bool motion,bool background){impl_->startupEnabled=enabled;impl_->startupMotion=motion;impl_->startupBackground=background;}
 double Host::StartupAge() const{return impl_->startupAge;}
 void Host::Run(std::function<void(const std::vector<WindowEvent> &)> events, std::function<void()> tick) {
-    auto previous=std::chrono::steady_clock::now();
-    auto active=[&]{return impl_->startupEnabled&&impl_->canvas&&!StartupSequence::At(impl_->startupAge,impl_->startupMotion).complete;};
+    auto previous=std::make_shared<std::chrono::steady_clock::time_point>(std::chrono::steady_clock::now());
+    auto active=[this]{return impl_->startupEnabled&&impl_->canvas&&!StartupSequence::At(impl_->startupAge,impl_->startupMotion).complete;};
     impl_->engine.Run(
-        [&](const auto &source) {
+        [active,events=std::move(events)](const auto &source) {
             std::vector<WindowEvent> result;
             for (const auto &e : source) {
                 if(active()&&e.type==3)continue; // Startup owns text/skip input.
@@ -37,9 +37,9 @@ void Host::Run(std::function<void(const std::vector<WindowEvent> &)> events, std
             }
             events(result);
         },
-        [&]{
+        [this,active,previous,tick=std::move(tick)]{
             const auto now=std::chrono::steady_clock::now();
-            const double dt=std::min(.1,std::chrono::duration<double>(now-previous).count());previous=now;
+            const double dt=std::min(.1,std::chrono::duration<double>(now-*previous).count());*previous=now;
             if(impl_->audioTick)impl_->audioTick(dt);
             if(active()){
                 const auto raw=impl_->engine.Input();
@@ -111,11 +111,11 @@ std::vector<rt::AudioEntry> Sounds(std::span<const AudioEntry> source) {
         result.push_back({s.id, s.resource, s.gain, s.gap});
     return result;
 }
-D2D1_POINT_2F Native(Point p) {
+rt::RendererPoint Native(Point p) {
     return {p.x, p.y};
 }
-std::vector<D2D1_POINT_2F> Native(const std::vector<Point> &source) {
-    std::vector<D2D1_POINT_2F> result;
+std::vector<rt::RendererPoint> Native(const std::vector<Point> &source) {
+    std::vector<rt::RendererPoint> result;
     for (auto p : source)
         result.push_back(Native(p));
     return result;

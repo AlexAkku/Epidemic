@@ -66,6 +66,9 @@ struct FramePlatformEvents {
 // Contract: the two service roles are preflighted as one composition bundle.
 [[nodiscard]] std::shared_ptr<platform::IPlatformRuntime> RegisterWindowsRuntime(core::Application &application);
 
+// Registers the browser canvas runtime as both platform service roles.
+[[nodiscard]] std::shared_ptr<platform::IPlatformRuntime> RegisterBrowserRuntime(core::Application &application);
+
 // Registers the baseline normalized input system.
 // Contract: duplicate/sealed registration is rejected without replacing the existing service.
 [[nodiscard]] std::shared_ptr<input::IInputSystem> RegisterInputRuntime(core::Application &application);

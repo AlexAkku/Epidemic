@@ -13,9 +13,17 @@
 #include <Epidemic/Input/input_system.h>
 #include <Epidemic/Memory/imemory_tracker.h>
 #include <Epidemic/Memory/memory_tracker.h>
+#if defined(_WIN32)
 #include <Epidemic/Platform/windows_platform_runtime.h>
+#else
+#include <Epidemic/Platform/browser_platform_runtime.h>
+#endif
 #include <Epidemic/RHI/null_rhi_device.h>
+#if defined(_WIN32)
 #include <Epidemic/RHI_D3D11/d3d11_rhi_device.h>
+#elif defined(__EMSCRIPTEN__)
+#include <Epidemic/RHI_WebGL/webgl_rhi_device.h>
+#endif
 
 #include <algorithm>
 #include <limits>
@@ -211,7 +219,7 @@ std::shared_ptr<diagnostics::ILogger> RegisterEngineBase(core::Application &appl
 
     try {
         logger->Info(options.log_module, "Startup", "Diagnostics baseline initialized");
-        logger->Info(options.log_module, "Startup", "Worker threads: " + std::to_string(normalized_worker_count));
+        logger->Info(options.log_module, "Startup", "Worker threads: " + std::to_string(task_scheduler->WorkerCount()));
         logger->Info(options.log_module, "Startup",
                      std::string("Memory tracking: ") + (options.memory_tracking_enabled ? "enabled" : "disabled"));
         logger->Info(options.log_module, "Startup", "Main-thread dispatcher: ready");
@@ -227,12 +235,29 @@ std::shared_ptr<platform::IPlatformRuntime> RegisterWindowsRuntime(core::Applica
     detail::EnsureRegistrationBundleAvailable<platform::IPlatformRuntime, platform::IWindowSystem>(
         services, "Windows platform runtime");
 
+#if defined(_WIN32)
     auto platform_runtime = std::make_shared<platform::WindowsPlatformRuntime>();
     detail::EnsureRegistrationBundleAvailable<platform::IPlatformRuntime, platform::IWindowSystem>(
         services, "Windows platform runtime");
     services.RegisterInstancesAtomic<platform::IPlatformRuntime, platform::IWindowSystem>(platform_runtime,
                                                                                           platform_runtime);
     return platform_runtime;
+#else
+    throw std::runtime_error("Windows runtime is unavailable on this platform");
+#endif
+}
+
+std::shared_ptr<platform::IPlatformRuntime> RegisterBrowserRuntime(core::Application &application) {
+#if defined(__EMSCRIPTEN__)
+    auto &services=application.Services();
+    detail::EnsureRegistrationBundleAvailable<platform::IPlatformRuntime,platform::IWindowSystem>(services,"Browser platform runtime");
+    auto runtime=std::make_shared<platform::BrowserPlatformRuntime>();
+    services.RegisterInstancesAtomic<platform::IPlatformRuntime,platform::IWindowSystem>(runtime,runtime);
+    return runtime;
+#else
+    static_cast<void>(application);
+    throw std::runtime_error("Browser runtime requires the Emscripten platform");
+#endif
 }
 
 // Registers the normalized input system service.
@@ -267,8 +292,21 @@ foundation::Result<GraphicsRuntimeServices> RegisterGraphicsRuntime(core::Applic
         device_result = rhi::CreateNullRhiDevice(device_desc);
         break;
     case GraphicsBackend::D3D11:
+#if defined(_WIN32)
         device_result = rhi::d3d11::CreateD3D11RhiDevice(device_desc);
+#else
+        return foundation::Result<GraphicsRuntimeServices>::Failure(foundation::Error::Create(
+            "engine_base.support.graphics_backend_unavailable", "D3D11 is unavailable on Web"));
+#endif
         break;
+    case GraphicsBackend::WebGL2:
+#if defined(__EMSCRIPTEN__)
+        device_result = rhi::webgl::CreateWebGL2RhiDevice(device_desc);
+        break;
+#else
+        return foundation::Result<GraphicsRuntimeServices>::Failure(foundation::Error::Create(
+            "engine_base.support.graphics_backend_unavailable", "WebGL2 requires the browser platform"));
+#endif
     default:
         return foundation::Result<GraphicsRuntimeServices>::Failure(device_result.GetError());
     }
