@@ -1,6 +1,6 @@
 # Epidemic Engine
 
-Epidemic Engine — Windows-only C++23 движок, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и зависят только от разрешённых нижних слоёв.
+Epidemic Engine — C++23 движок с основной Windows-платформой и экспериментальным WebAssembly backend, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и зависят только от разрешённых нижних слоёв.
 
 Порядок слоёв от нижнего к верхнему; разрешённые зависимости направлены сверху вниз (`Game → EngineFramework → EngineRuntime → EngineBase`):
 
@@ -20,10 +20,22 @@ Game
 
 Подробное устройство слоев описано в [архитектуре](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/architecture.md>). Документация EngineBase: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/using_enginebase.md>). Документация EngineRuntime: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/using_engineruntime.md>). Документация GameFramework: [обзор и правила использования](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineFramework/README.md>).
 
+## Быстрый старт разработки игры
+
+[Принципы создания игры и маршрут для ИИ-агента](Documentation/game-authoring.md):
+выбор SDK/платформы, composition root, владение, fixed-step/UI/audio clocks,
+ресурсы, сохранения, составные 2D-персонажи и UI. Начните с этой страницы;
+исторический Vault используйте как справочник. Новые helpers доступны в
+`Examples/MinimalGame --rig-preview` (в этом проходе не собирались и не запускались).
+
+[TODO по аудиту](Documentation/maintenance-todo.md) ·
+[Архив отчётов](Documentation/Reports/Archive/README.md).
+
 ## Сборка
 
-Экспериментальная цель WebAssembly (Emscripten 6.0.13, WebGL2) собирается
-отдельно от Windows: [запуск и ограничения](Documentation/web-platform.md),
+Экспериментальная цель WebAssembly (Emscripten 6.0.13) собирается
+отдельно от Windows. 2D Presentation использует Canvas2D, RHI-пример — WebGL2:
+[запуск и ограничения](Documentation/web-platform.md),
 [план переноса по коду ASCENT](Documentation/web-platform-roadmap.md).
 Полный браузерный target ASCENT 0.1.20 использует настоящие игровые экраны,
 спрайты, звук и профиль IndexedDB. Отдельный диагностический пример сохранён.

@@ -135,3 +135,63 @@ Auditor не ищет EXE автоматически. Фиксированный
 
 [[08 Auditor/Профили захвата]] · [[08 Auditor/Понимание evidence]] ·
 [[03 Работа с движком/Практическая интеграция игры]]
+
+
+## Сценарий и версия контента: current отдельно от legacy
+
+Добавлено 21.10.2026. Старый `run.command` поддерживается, но без явно выбранного
+сценария его metadata маркируется `unspecified`, а не автоматически current.
+Для воспроизводимых игровых замеров задайте `run.selected_scenario`:
+
+```json
+{
+  "run": {
+    "selected_scenario": "current-play",
+    "allow_legacy": false,
+    "working_dir": "E:/workspace/LocalGame/Ascent",
+    "scenarios": {
+      "current-play": {
+        "kind": "current",
+        "content_version": "Ascent 0.1.20 desktop",
+        "command": ["E:/workspace/LocalGame/Ascent/Pdoom.exe"]
+      },
+      "legacy-regression": {
+        "kind": "legacy",
+        "content_version": "Ascent 0.1.20 legacy smoke",
+        "command": ["E:/workspace/LocalGame/Ascent/Pdoom.exe", "--benchmark"]
+      }
+    }
+  }
+}
+```
+
+Пути замените на свою полную runnable-копию. Для legacy нужно одновременно выбрать
+его имя и явно задать `allow_legacy=true`; иначе admission отклоняется. Сценарий
+пишется в `scenario.json`, summary и название Run. Версия — декларация конфигурации,
+не автоматическое доказательство содержимого EXE. В текущем Ascent `--benchmark`
+запускает исторический смешанный smoke и может показывать удалённые игровые экраны.
+Не используйте его как доказательство обычного Play. Аргументы конкретной игры
+не являются встроенными командами движка.
+
+## Изменения и границы диагностики после аудита
+
+- Exact runtime защищён TLS guard до non-recursive lock, в том числе при
+  инициализации/flush. Recorder-internal повторные hooks не входят в наблюдаемую
+  игровую последовательность. После насыщения буфера без rolling kernel queries
+  пропускаются, но потери продолжают учитываться; COMPLETE при потере не обещается.
+- xperf processing: общий бюджет decoder jobs 90 с, этап не более 30 с;
+  tracestats не более 25 с, отдельный native header helper — до 20 с.
+  Мониторятся размеры reports и diagnostics; Stop отменяет текущий xperf stage.
+  `xperf/reports/progress.json` и UI log показывают этап. Незавершённый report
+  не публикуется как готовый; ETL и предыдущие готовые reports сохраняются.
+  Это бюджеты decoder subprocesses, а не гарантия полного wall time всего Run
+  при любом диске/ОС. Profile summary остаётся trace-wide; stack/cpudisk scoped по PID.
+- Architecture scanner принимает явно перечисленные внешние source files;
+  они помечаются `@external/…`. Это не автоматическое включение всего SDK/STL.
+- `EPIDEMIC_LOG_FRAME_EVENTS=1` в окружении процесса до старта включает старые текстовые frame
+  begin/end. По умолчанию они выключены; counters и probes независимы от текста.
+
+Изменения реализации не прогонялись заново по просьбе владельца. Исходные FAIL,
+TIMEOUT и INCOMPLETE в [архивном аудите](<../../Reports/Archive/Engine Audit 2026-10-21.md>)
+сохранены. Не объявляйте Deep/exact/coverage/ASan полностью квалифицированными
+по факту наличия этих исправлений. [Оставшиеся задачи](../../maintenance-todo.md).
