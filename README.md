@@ -20,6 +20,8 @@ Game
 
 Подробное устройство слоев описано в [архитектуре](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/architecture.md>). Документация EngineBase: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/using_enginebase.md>). Документация EngineRuntime: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/using_engineruntime.md>). Документация GameFramework: [обзор и правила использования](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineFramework/README.md>).
 
+Релиз: [Epidemic Engine 1.1](Documentation/release-1.1.md), CMake/SDK 1.1.0.
+
 ## Быстрый старт разработки игры
 
 [Принципы создания игры и маршрут для ИИ-агента](Documentation/game-authoring.md):
@@ -40,7 +42,7 @@ Game
 Полный браузерный target ASCENT 0.1.20 использует настоящие игровые экраны,
 спрайты, звук и профиль IndexedDB. Отдельный диагностический пример сохранён.
 
-Для новой игры начните с [практической интеграции SDK 1.0.1](<Documentation/Epidemic Engine Vault/03 Работа с движком/Практическая интеграция игры.md>): установка, внешний CMake-клиент, цикл окна, ресурсы, сохранения и адресные проверки. [Запуск Auditor](<Documentation/Epidemic Engine Vault/08 Auditor/Запуск Auditor.md>) описывает наблюдение готового EXE и отдельную диагностическую сборку. API-страницы Vault сохраняют снимок от 10 октября; новые фасады сверяйте с текущими headers.
+Для новой игры начните с [практической интеграции SDK 1.1](<Documentation/Epidemic Engine Vault/03 Работа с движком/Практическая интеграция игры.md>): установка, внешний CMake-клиент, цикл окна, ресурсы, сохранения и адресные проверки. [Запуск Auditor](<Documentation/Epidemic Engine Vault/08 Auditor/Запуск Auditor.md>) описывает наблюдение готового EXE и отдельную диагностическую сборку. API-страницы Vault сохраняют снимок от 10 октября; новые фасады сверяйте с текущими headers.
 
 Из корня репозитория:
 
@@ -55,7 +57,7 @@ cmake --build build --config Debug
 команда `cmake --build build/full-release --config Release --target EpidemicSDK` собирает
 библиотеки без запуска/сборки всего набора тестов. Затем
 `cmake --install build/full-release --config Release --prefix <sdk>` создаёт
-переносимую поставку для `find_package(Epidemic 1.0.1 CONFIG REQUIRED)`.
+переносимую поставку для `find_package(Epidemic 1.1.0 CONFIG REQUIRED)`.
 Пример независимого клиента находится в `Examples/MinimalGame`; задайте
 `CMAKE_PREFIX_PATH=<sdk>`. `--headless` не создаёт окно, `--tool` пропускает
 заставку, обычный запуск показывает её перед первым игровым кадром.

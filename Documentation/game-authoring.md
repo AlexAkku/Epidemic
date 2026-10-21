@@ -1,4 +1,4 @@
-# Создание игры на Epidemic 1.0.1
+# Создание игры на Epidemic 1.1
 
 Практическая точка входа для разработчика и ИИ-агента, обновлена 21.10.2026.
 Архитектура и публичные заголовки определяют контракт; исторические API-страницы
@@ -25,7 +25,7 @@ SDK устанавливается отдельно. Для Windows см. [ин�
 cmake_minimum_required(VERSION 3.25)
 project(MyGame LANGUAGES CXX)
 set(EPIDEMIC_REQUIRED_ABI 1)
-find_package(Epidemic 1.0.1 CONFIG REQUIRED COMPONENTS Presentation Session)
+find_package(Epidemic 1.1.0 CONFIG REQUIRED COMPONENTS Presentation Session)
 add_executable(MyGame main.cpp)
 target_compile_features(MyGame PRIVATE cxx_std_23)
 target_link_libraries(MyGame PRIVATE
