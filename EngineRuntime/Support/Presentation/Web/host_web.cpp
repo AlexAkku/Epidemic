@@ -108,11 +108,11 @@ void Host::Stop()
         if(Module.epidemicAudio){
             for(const music of Module.epidemicAudio.music.values())music.audio.pause();
             for(const voice of Module.epidemicAudio.voices)voice.stop();
-            Module.epidemicAudio.context.suspend();
+            Module.epidemicAudio.context.suspend().catch(console.error);
         }
         const status=document.querySelector('#status');
         if(status)status.textContent='Game stopped. Reload to restart.';
-        if(Module.epidemicOnExit)Promise.resolve(Module.epidemicOnExit()).catch(console.error);
+        if(Module.epidemicOnExit)Promise.resolve().then(()=>Module.epidemicOnExit()).catch(console.error);
         else if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(console.error);
     });
 }
