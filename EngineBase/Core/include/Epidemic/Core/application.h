@@ -30,6 +30,8 @@ namespace epidemic::core {
 struct ApplicationOptions {
     std::string application_name = "Epidemic Engine v1.0";
     std::optional<std::uint64_t> frame_limit;
+    // Opt-in text tracing; counters and Auditor probes remain independent.
+    bool log_frame_events = false;
 };
 
 class Application {

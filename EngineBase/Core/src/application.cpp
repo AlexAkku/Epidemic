@@ -366,7 +366,9 @@ void Application::ExecuteFrame() {
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::InputEventsThisFrame, 0);
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::EventBusDispatchedEvents, 0);
 
-    logger->Debug("Application", "Frame", "Frame " + std::to_string(frame_context.frame_index.Value()) + " started");
+    if (options_.log_frame_events) {
+        logger->Debug("Application", "Frame", "Frame " + std::to_string(frame_context.frame_index.Value()) + " started");
+    }
 
     for (const auto phase : FramePhaseOrder()) {
         if (phase == FramePhase::TickModules && StopRequested()) {
@@ -384,9 +386,11 @@ void Application::ExecuteFrame() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - tick_start).count()));
 #endif
 
-    logger->Debug("Application", "Frame",
-                  "Frame " + std::to_string(frame_context.frame_index.Value()) + " finished in " +
-                      std::to_string(frame_time_micros) + " us");
+    if (options_.log_frame_events) {
+        logger->Debug("Application", "Frame",
+                      "Frame " + std::to_string(frame_context.frame_index.Value()) + " finished in " +
+                          std::to_string(frame_time_micros) + " us");
+    }
     executed_frame_count_ = detail::AdvanceExecutedFrameCount(executed_frame_count_);
 }
 

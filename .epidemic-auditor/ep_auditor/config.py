@@ -104,8 +104,32 @@ class AuditorConfig:
         return str(self.data.get("capture", {}).get("wpr_profile", "GeneralProfile"))
 
     @property
+    def run_scenario(self) -> dict:
+        from ep_auditor.core.evidence import EvidenceError
+        run = self.data.get('run', {})
+        selected = run.get('selected_scenario')
+        if selected is None:
+            return {'id': 'unspecified', 'kind': 'unspecified', 'content_version': 'unspecified',
+                    'command': run.get('command', []), 'provenance': 'declared_configuration'}
+        scenarios = run.get('scenarios', {})
+        if not isinstance(selected, str) or selected not in scenarios:
+            raise EvidenceError('run.selected_scenario does not name a configured scenario')
+        row = scenarios[selected]
+        if not isinstance(row, dict) or row.get('kind') not in {'current', 'legacy'}:
+            raise EvidenceError('scenario kind must be current or legacy')
+        if row['kind'] == 'legacy' and run.get('allow_legacy') is not True:
+            raise EvidenceError('legacy scenario requires explicit run.allow_legacy=true')
+        version, command = row.get('content_version'), row.get('command')
+        if not isinstance(version, str) or not version.strip():
+            raise EvidenceError('scenario requires a declared content_version')
+        if not isinstance(command, list) or not command or any(not isinstance(x, str) for x in command):
+            raise EvidenceError('scenario requires a nonempty string command list')
+        return {'id': selected, 'kind': row['kind'], 'content_version': version,
+                'command': command, 'provenance': 'declared_configuration'}
+
+    @property
     def run_command(self) -> list[str]:
-        return [self._run_value(x) for x in self.data.get("run", {}).get("command", [])]
+        return [self._run_value(x) for x in self.run_scenario['command']]
 
     def _run_value(self, value) -> str:
         # Explicit placeholders follow the admitted physical profile; no target
