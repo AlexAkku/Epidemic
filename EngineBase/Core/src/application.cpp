@@ -30,8 +30,15 @@ namespace {
 // Process-start opt-in avoids changing the installed ApplicationOptions ABI.
 bool FrameTextLoggingEnabled() noexcept {
     static const bool enabled = [] {
+#if defined(_MSC_VER)
+        char value[2]{};
+        std::size_t required = 0;
+        return ::getenv_s(&required, value, sizeof(value), "EPIDEMIC_LOG_FRAME_EVENTS") == 0 &&
+               required == 2 && value[0] == '1';
+#else
         const auto *value = std::getenv("EPIDEMIC_LOG_FRAME_EVENTS");
         return value && value[0] == '1' && value[1] == '\0';
+#endif
     }();
     return enabled;
 }
