@@ -41,14 +41,27 @@ def cycles(edges):
 
 
 def static_architecture(paths: list[Path], root: Path):
-    inventory = {str(path.resolve().relative_to(root.resolve())).replace('\\', '/'): path for path in paths}
+    root = root.resolve()
+    def source_name(path):
+        absolute = path.resolve()
+        if absolute.is_relative_to(root):
+            return absolute.relative_to(root).as_posix()
+        return '@external/' + absolute.as_posix()
+
+    # Only explicitly inventoried external files are owned. Resolved SDK/STL
+    # symbols outside this inventory remain external in the runtime graph.
+    inventory = {source_name(path): path for path in paths}
+    source_modules = {str(path.resolve()): module_for(str(path), root) or
+                      '@external/' + path.resolve().parent.as_posix() + '/*'
+                      for path in inventory.values()}
+    modules = {name: source_modules[str(path.resolve())] for name, path in inventory.items()}
     includes, unresolved, namespaces, classes, apis, functions, ownership = [], [], {}, {}, [], [], []
     bodies, references = defaultdict(list), {}
     for name, path in sorted(inventory.items()):
         text = path.read_text(encoding='utf-8', errors='replace')
         for match in re.finditer(r'^\s*#\s*include\s*([<"])([^>"\n]+)', text, re.MULTILINE):
             target = match[2].replace('\\', '/')
-            relative = str((path.parent / target).resolve().relative_to(root.resolve())).replace('\\', '/') if (path.parent / target).resolve().is_relative_to(root.resolve()) else None
+            relative = source_name(path.parent / target)
             candidates = [relative] if relative in inventory else [file for file in inventory if file.endswith('/' + target) or file == target]
             if len(candidates) == 1:
                 includes.append((name, candidates[0]))
@@ -82,8 +95,8 @@ def static_architecture(paths: list[Path], root: Path):
         for match in re.finditer(r'\bnew\b|\bdelete\b|\breturn\s*&\s*\w+|\bshared_ptr\s*<', clean):
             ownership.append({'file': name, 'line': clean.count('\n', 0, match.start()) + 1,
                               'pattern': match[0], 'confidence': 'heuristic'})
-    module_edges = sorted({(module_for(str(inventory[source]), root), module_for(str(inventory[target]), root))
-                           for source, target in includes if module_for(str(inventory[source]), root) != module_for(str(inventory[target]), root)})
+    module_edges = sorted({(modules[source], modules[target])
+                           for source, target in includes if modules[source] != modules[target]})
     namespace_edges = sorted({(left, right) for source, target in includes for left in namespaces[source]
                               for right in namespaces[target] if left != right})
     class_edges = [{'source': name, 'target': other_file, 'class': declaration['name']}
@@ -92,6 +105,7 @@ def static_architecture(paths: list[Path], root: Path):
     api_files = {row['file'] for row in apis}
     return {'scope': 'lexical source inventory; conditional includes/type resolution are not compiler-proven',
         'complete': False, 'provenance': 'static_analysis', 'confidence': 'heuristic',
+        'source_modules': source_modules,
         'include_edges': [{'source': source, 'target': target} for source, target in includes],
         'edges': [{'source': source, 'target': target} for source, target in module_edges],
         'namespace_edges': [{'source': left, 'target': right} for left, right in namespace_edges],
@@ -113,7 +127,8 @@ def runtime_architecture(report: dict, root: Path, static: dict):
         if any(not source for source in sources):
             unknown += 1
             continue
-        modules = [module_for(source, root) for source in sources]
+        owned = static.get('source_modules', {})
+        modules = [owned.get(str(Path(source).resolve()), module_for(source, root)) for source in sources]
         if any(module is None for module in modules):
             external += 1  # Resolved SDK/STL sources are outside the owned graph scope.
             continue
