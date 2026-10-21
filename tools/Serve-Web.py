@@ -1,13 +1,17 @@
 """Serve a built Web SDK example on loopback, without requiring COOP/COEP."""
 import argparse
+import re
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 class Handler(SimpleHTTPRequestHandler):
     extensions_map={**SimpleHTTPRequestHandler.extensions_map,'.wasm':'application/wasm','.js':'text/javascript'}
     def end_headers(self):
-        self.send_header('Cache-Control','no-store')
+        # Content-addressed assets are immutable; HTML/catalogues and fixed-name WASM revalidate.
+        hashed=bool(re.search(r'/r\d+-[0-9a-f]{16}-[^/]+$',urlsplit(self.path).path))
+        self.send_header('Cache-Control','public, max-age=31536000, immutable' if hashed else 'no-cache')
         super().end_headers()
 
 if __name__=='__main__':

@@ -1,33 +1,39 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASCENT 0.1.20</title><link rel="icon" href="data:,"><style>
-@font-face{font-family:'Epidemic UI';src:url(assets/NotoSans.ttf);font-weight:100 900;font-display:block}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#060d17;color:#e8eff5;font-family:'Epidemic UI',sans-serif;overflow:hidden}
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASCENT 0.1.20b</title><link rel="icon" href="data:,"><style>
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{margin:0;width:100%;height:100%;background:#060d17;color:#e8eff5;font-family:'Epidemic UI',sans-serif;overflow:hidden}
 main{height:100%;display:grid;place-items:center}canvas{display:block;width:100%;height:100%;outline:none;object-fit:contain}canvas:fullscreen{width:100vw;height:100vh;max-width:none!important}
-#loading{position:fixed;inset:0;background:#060d17;display:grid;place-content:center;gap:20px;padding:24px;text-align:center;z-index:2}h1{letter-spacing:.12em;font-size:clamp(30px,7vw,64px);margin:0}button{font:inherit;border:1px solid #89e8cf;background:#10292d;color:#b8ffea;padding:16px 24px;cursor:pointer}button:disabled{opacity:.45;cursor:wait}#status{position:fixed;bottom:8px;left:12px;font-size:12px;color:#f2b777;pointer-events:none;z-index:3}#save{position:fixed;right:12px;bottom:8px;font-size:11px;color:#8ea6b7;pointer-events:none}
+#loading{position:fixed;inset:0;background:#060d17;display:grid;place-items:center;padding:24px;z-index:2;overflow:auto}.panel{width:min(100%,560px);text-align:center}#logo{display:block;width:min(100%,480px);height:clamp(90px,20vh,190px);object-fit:contain;margin:0 auto 24px}button,.return{font:inherit;border:1px solid #89e8cf;background:#10292d;color:#b8ffea;padding:16px 24px;cursor:pointer;display:inline-block;text-decoration:none}button:hover,.return:hover{background:#183e3e}button:focus-visible,.return:focus-visible{outline:2px solid #f2b777;outline-offset:5px}button:disabled{opacity:.45;cursor:wait}#start{min-width:220px;margin-top:24px}#progress{color:#b5c9d4;font-size:14px;min-height:40px;margin:12px 0}#resources{height:136px;text-align:left;font-size:12px;color:#b5c9d4;overflow:hidden}.resource{margin:0 0 10px}.caption{display:flex;justify-content:space-between;gap:12px;margin-bottom:5px}.name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.number{font-variant-numeric:tabular-nums;white-space:nowrap}progress{appearance:none;display:block;width:100%;height:4px;border:0;background:#20333f;accent-color:#89e8cf}progress::-webkit-progress-bar{background:#20333f}progress::-webkit-progress-value{background:#89e8cf}progress::-moz-progress-bar{background:#89e8cf}#total{height:9px}#overall{margin-top:18px;color:#e8eff5;font-size:13px}footer{position:fixed;bottom:14px;left:16px;right:16px;text-align:center;color:#a9bcc9;font-size:11px;z-index:2;pointer-events:none}#status{position:fixed;bottom:32px;left:12px;right:12px;font-size:12px;color:#f2b777;z-index:3;text-align:center}#save{position:fixed;right:12px;bottom:8px;font-size:11px;color:#a9bcc9;pointer-events:none}#retry,.return{margin-top:16px}[hidden]{display:none!important}@media(max-height:600px){#logo{height:70px;margin-bottom:12px}#resources{height:112px}.resource{margin-bottom:6px}#start{margin-top:12px}#progress{min-height:20px;margin:8px 0}.panel{padding-bottom:22px}}::selection{background:#89e8cf;color:#060d17}
 </style></head><body><main><canvas id="canvas" tabindex="0" width="1280" height="720"></canvas></main>
-<section id="loading"><h1>ASCENT</h1><div>0.1.20 · Epidemic 1.0.1 · WebAssembly</div><p id="progress">Загрузка движка…</p><button id="start" disabled>Запустить со звуком</button></section><div id="status"></div><div id="save"></div>
+<section id="loading" aria-label="Game launcher"><div class="panel"><img id="logo" src="assets/logo.webp" alt="ASCENT" width="680" height="260"><div id="resources" aria-label="Resource downloads"></div><div id="overall" class="caption"><label for="total">Total download</label><span id="total-value" class="number">0%</span></div><progress id="total" max="1" value="0"></progress><p id="progress" role="status">Loading engine and resources…</p><button id="start" disabled>Start Game</button><button id="retry" hidden onclick="location.reload()">Reload</button><a id="return" class="return" hidden target="_top" rel="noreferrer">Return to game page</a></div><footer>Game 0.1.20b · Epidemic Engine @PROJECT_VERSION@ · WebAssembly</footer></section><div id="status" role="alert"></div><div id="save" role="status"></div>
 <svg width="0" height="0" style="position:absolute"><defs><filter id="epidemicEdges" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values="0"/><feConvolveMatrix order="3" kernelMatrix="-1 -1 -1 -1 8 -1 -1 -1 -1" preserveAlpha="true"/></filter></defs></svg>
 <script>
 var Module={canvas:document.getElementById('canvas'),noInitialRun:true,print:console.log,printErr:console.error,
- onAbort:function(error){Module.epidemicError=String(error);console.error(error);document.getElementById('status').textContent='Ошибка: '+error;},
+ onAbort:function(error){Module.epidemicError=String(error);console.error(error);document.getElementById('status').textContent='Could not load the game: '+error;document.getElementById('retry').hidden=false;document.getElementById('start').disabled=true;},
  preRun:[function(){addRunDependency('presentation-assets');prepareBrowser().then(()=>removeRunDependency('presentation-assets')).catch(e=>{Module.onAbort(e.message);});}],
- onRuntimeInitialized:function(){document.getElementById('progress').textContent='Готово. A/D — движение, Space — прыжок, Shift — рывок, Tab — колода.';document.getElementById('start').disabled=false;}
+ instantiateWasm:function(imports,receive){manifestReady.then(()=>download('ascent-game.wasm')).then(bytes=>WebAssembly.instantiate(bytes,imports)).then(result=>receive(result.instance,result.module)).catch(e=>Module.onAbort(e.message));return {};},
+ onRuntimeInitialized:function(){Module.epidemicLoadStats.readyMs=performance.now();document.getElementById('progress').textContent='Ready. A/D to move · Space to jump · Shift to dash · Tab for cards';document.getElementById('start').disabled=false;document.getElementById('total').value=1;document.getElementById('total-value').textContent='100%';}
 };
+const files=new Map(),rows=document.getElementById('resources');let repaint=false;
+Module.epidemicLoadStats={startedMs:performance.now(),files:[],readyMs:0};
+const size=n=>n<1048576?(n/1024).toFixed(0)+' KiB':(n/1048576).toFixed(1)+' MiB';
+function progress(){if(repaint)return;repaint=true;requestAnimationFrame(()=>{repaint=false;let done=0,total=0;for(const f of files.values()){done+=f.loaded;total+=f.bytes;}const ratio=total?Math.min(1,done/total):0;document.getElementById('total').value=ratio;document.getElementById('total-value').textContent=Math.floor(ratio*100)+'% · '+size(done)+' / '+size(total);const active=[...files.values()].filter(f=>f.state==='downloading'||f.state==='decoding');const shown=active.length?active.slice(0,4):[...files.values()].filter(f=>f.state==='done').slice(-4);rows.replaceChildren(...shown.map(f=>{const row=document.createElement('div');row.className='resource';const caption=document.createElement('div');caption.className='caption';const name=document.createElement('span');name.className='name';name.textContent=f.label;const value=document.createElement('span');value.className='number';value.textContent=f.state==='decoding'?'Preparing…':size(f.loaded)+' / '+size(f.bytes);caption.append(name,value);const bar=document.createElement('progress');bar.max=Math.max(1,f.bytes);bar.value=f.loaded;bar.setAttribute('aria-label',f.label);row.append(caption,bar);return row;}));});}
+const manifestReady=fetch('ascent-assets.json').then(response=>{if(!response.ok)throw Error('Resource catalogue: HTTP '+response.status);return response.json();}).then(manifest=>{Module.epidemicManifest=manifest;for(const [url,f]of Object.entries(manifest.files))if(f.initial)files.set(url,{...f,loaded:0,state:'queued'});files.set('ascent-game.wasm',{label:'Epidemic engine',bytes:3000000,loaded:0,state:'queued'});progress();return manifest;});
+async function download(url){const f=files.get(url)||{label:url,bytes:0,loaded:0,state:'queued'};files.set(url,f);f.state='downloading';const started=performance.now(),controller=new AbortController();let timer;const timeout=()=>{clearTimeout(timer);timer=setTimeout(()=>controller.abort(),45000);};timeout();try{const response=await fetch(url,{signal:controller.signal});if(!response.ok)throw Error('HTTP '+response.status+' / '+f.label);if(!f.bytes)f.bytes=Number(response.headers.get('content-length'))||0;const chunks=[];if(response.body){const reader=response.body.getReader();while(true){const {value,done}=await reader.read();if(done)break;chunks.push(value);f.loaded+=value.length;timeout();progress();}}else{const value=new Uint8Array(await response.arrayBuffer());chunks.push(value);f.loaded=value.length;}f.bytes=f.loaded;f.state='done';const result=new Uint8Array(f.loaded);let offset=0;for(const chunk of chunks){result.set(chunk,offset);offset+=chunk.length;}Module.epidemicLoadStats.files.push({url,bytes:f.loaded,ms:performance.now()-started});progress();return result.buffer;}catch(error){throw Error(error.name==='AbortError'?'Download stalled / '+f.label:error.message);}finally{clearTimeout(timer);}}
 Module.canvas.addEventListener('mousemove',event=>{const r=Module.canvas.getBoundingClientRect();Module.epidemicMouse=[(event.clientX-r.left)*Module.canvas.width/r.width,(event.clientY-r.top)*Module.canvas.height/r.height];});
 Module.canvas.addEventListener('contextmenu',event=>event.preventDefault());
 Module.canvas.addEventListener('keydown',event=>{if(['Tab','Space','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','F3','F11'].includes(event.code))event.preventDefault();});
-async function checkedFetch(url){const response=await fetch(url);if(!response.ok)throw Error(response.status+' '+url);return response;}
 async function prepareBrowser(){
- const manifest=Module.epidemicManifest=await (await checkedFetch('ascent-assets.json')).json();
- const font=new FontFace('Epidemic UI',`url(${manifest.font})`,{weight:'100 900'});document.fonts.add(await font.load());
- Module.epidemicImages={};let done=0;const count=Object.values(manifest.images).reduce((n,p)=>n+p.length,0)+manifest.locales.length;
- const progress=()=>document.getElementById('progress').textContent='Ресурсы: '+(++done)+' / '+count;
- // Bounded decode concurrency avoids a burst of duplicate decoded atlases.
+ const manifest=await manifestReady;
+ Module.epidemicImages={};Module.epidemicAudioBytes={};
+ // Four downloads at a time; no unbounded image or audio decode burst.
  const tasks=[];
- for(const [id,pages]of Object.entries(manifest.images)){Module.epidemicImages[id]=new Array(pages.length);pages.forEach((page,index)=>tasks.push(async()=>{const blob=await(await checkedFetch(page.url)).blob();Module.epidemicImages[id][index]={image:await createImageBitmap(blob),y:page.y};progress();}));}
- FS.mkdirTree('/Locales');for(const url of manifest.locales)tasks.push(async()=>{FS.writeFile('/'+url,new Uint8Array(await(await checkedFetch(url)).arrayBuffer()));progress();});
- let cursor=0;await Promise.all(Array.from({length:3},async()=>{while(cursor<tasks.length){const task=tasks[cursor++];await task();}}));
+ tasks.push(async()=>{const font=new FontFace('Epidemic UI',await download(manifest.font),{weight:'100 900'});document.fonts.add(await font.load());});
+ for(const [id,pages]of Object.entries(manifest.images)){Module.epidemicImages[id]=new Array(pages.length);pages.forEach((page,index)=>tasks.push(async()=>{const bytes=await download(page.url),f=files.get(page.url);f.state='decoding';progress();Module.epidemicImages[id][index]={image:await createImageBitmap(new Blob([bytes])),y:page.y};f.state='done';progress();}));}
+ FS.mkdirTree('/Locales');for(const url of manifest.locales)tasks.push(async()=>FS.writeFile('/'+url,new Uint8Array(await download(url))));
+ for(const [id,a]of Object.entries(manifest.audio))if(!a.stream)tasks.push(async()=>{Module.epidemicAudioBytes[id]=await download(a.url);});
+ let cursor=0;await Promise.all(Array.from({length:4},async()=>{while(cursor<tasks.length){const task=tasks[cursor++];await task();}}));
+ document.getElementById('progress').textContent='Preparing your save…';
  FS.mkdirTree('/saves');FS.mount(Module.IDBFS,{},'/saves');
  await new Promise((resolve,reject)=>FS.syncfs(true,error=>error?reject(error):resolve()));
  let busy=false,last='',pending=false;
@@ -35,16 +41,34 @@ async function prepareBrowser(){
  last=fingerprint();Module.epidemicSaveState='ready';
  Module.epidemicSync=function(){
    const state=fingerprint();if(state===last&&!pending)return;if(busy){pending=true;return;}busy=true;pending=false;
-   Module.epidemicSaveState='saving';document.getElementById('save').textContent='Сохранение…';
-   FS.syncfs(false,error=>{busy=false;if(error){Module.epidemicSaveState='failed';pending=true;document.getElementById('save').textContent='Не удалось сохранить: '+error.message;return;}last=state;Module.epidemicSaveState='saved';document.getElementById('save').textContent='Сохранено';if(pending)Module.epidemicSync();});
+   Module.epidemicSaveState='saving';document.getElementById('save').textContent='Saving…';
+   FS.syncfs(false,error=>{busy=false;if(error){Module.epidemicSaveState='failed';pending=true;document.getElementById('save').textContent='Save failed: '+error.message;return;}last=state;Module.epidemicSaveState='saved';document.getElementById('save').textContent='Saved';if(pending)Module.epidemicSync();});
  };
  document.addEventListener('visibilitychange',()=>{if(document.hidden)Module.epidemicSync();});
  window.addEventListener('pagehide',()=>Module.epidemicSync());
 }
 document.getElementById('start').onclick=async function(){this.disabled=true;try{
- document.getElementById('progress').textContent='Подготовка звука…';await Module.epidemicCreateAudio();
+ document.getElementById('progress').textContent='Preparing audio…';await Module.epidemicCreateAudio();
  document.getElementById('loading').style.display='none';Module.canvas.focus();Module.callMain([]);
 }catch(error){this.disabled=false;Module.onAbort(error.message);}};
+Module.epidemicOnExit=async function(){
+ try{
+   if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen();
+   else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen();
+ }catch(error){console.warn('Could not leave fullscreen',error);}
+ if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock();
+ if(Module.epidemicSync)Module.epidemicSync();
+ document.getElementById('loading').style.display='grid';document.getElementById('progress').textContent='Game closed.';document.getElementById('start').hidden=true;document.getElementById('retry').hidden=false;document.getElementById('resources').hidden=true;document.getElementById('overall').hidden=true;document.getElementById('total').hidden=true;
+ // A cross-origin iframe cannot inspect the parent's maximized-frame history.
+ // Offer an explicit return link rather than blindly traversing the tab history.
+ try{
+   const page=new URL(document.referrer);
+   if(window.parent!==window&&page.protocol==='https:'&&page.hostname.endsWith('.itch.io')){
+     const link=document.getElementById('return');link.href=page.href;link.hidden=false;
+     link.textContent=page.pathname==='/'?'Return to itch.io':'Return to game page';
+   }
+ }catch(_){}
+};
 </script>
 {{{ SCRIPT }}}
 </body></html>

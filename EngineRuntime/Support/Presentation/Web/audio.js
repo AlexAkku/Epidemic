@@ -3,8 +3,10 @@ Module.epidemicCreateAudio=async function(){
   const api=Module.epidemicAudio={context,sfxGain,voices:new Set(),buffers:{},music:new Map(),nextMusicId:0,errors:[]};
   await context.resume();
   await Promise.all(Object.entries(Module.epidemicManifest.audio).filter(([,a])=>!a.stream).map(async([id,a])=>{
-    const response=await fetch(a.url);if(!response.ok)throw Error('Audio '+response.status+' '+a.url);
-    api.buffers[id]=await context.decodeAudioData(await response.arrayBuffer());
+    let bytes=Module.epidemicAudioBytes?.[id];
+    if(!bytes){const response=await fetch(a.url);if(!response.ok)throw Error('Audio '+response.status+' '+a.url);bytes=await response.arrayBuffer();}
+    api.buffers[id]=await context.decodeAudioData(bytes);
+    if(Module.epidemicAudioBytes)delete Module.epidemicAudioBytes[id];
   }));
   api.createMusic=()=>{if(api.nextMusicId>=2147483647)throw Error('Music handle capacity exhausted');const audio=new Audio();audio.preload='auto';const source=context.createMediaElementSource(audio),gain=context.createGain(),analyser=context.createAnalyser();source.connect(gain);gain.connect(analyser);analyser.connect(context.destination);analyser.fftSize=1024;const m={audio,source,gain,analyser,fft:new Uint8Array(512),bands:new Float32Array(8),wait:5,once:false,started:false,failed:false,finished:false,active:true};const id=api.nextMusicId++;api.music.set(id,m);return id;};
   api.loadUrl=(id,url,once,owned=false)=>{const m=api.music.get(id);if(!m){if(owned)URL.revokeObjectURL(url);return 0;}m.audio.pause();if(m.owned)URL.revokeObjectURL(m.audio.src);m.audio.src=url;m.owned=owned;m.once=once;m.duration=NaN;m.wait=once?0:5;m.started=false;m.failed=false;m.finished=false;m.active=true;m.audio.onerror=()=>{m.failed=true;api.errors.push('Media load '+url);};return 1;};

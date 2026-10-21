@@ -114,12 +114,24 @@ struct WindowEvent {
     char text = 0;
 };
 class Canvas;
+enum class BuildPlatform { Desktop, Browser };
+struct PlatformCapabilities {
+    BuildPlatform platform;
+    bool displayModes;
+};
 class Host {
     struct Impl;
     std::unique_ptr<Impl> impl_;
     friend class Canvas;
 
   public:
+    static constexpr PlatformCapabilities Capabilities() {
+#if defined(__EMSCRIPTEN__)
+        return {BuildPlatform::Browser, false};
+#else
+        return {BuildPlatform::Desktop, true};
+#endif
+    }
     explicit Host(std::string title);
     ~Host();
     Host(const Host &) = delete;

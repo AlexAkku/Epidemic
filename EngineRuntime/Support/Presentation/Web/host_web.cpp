@@ -106,11 +106,14 @@ void Host::Stop()
     impl_->browser->StopMainLoop();
     EM_ASM({
         if(Module.epidemicAudio){
-            for(const music of Module.epidemicAudio.music)music.audio.pause();
+            for(const music of Module.epidemicAudio.music.values())music.audio.pause();
             for(const voice of Module.epidemicAudio.voices)voice.stop();
             Module.epidemicAudio.context.suspend();
         }
-        document.querySelector('#status').textContent='Game stopped. Reload to restart.';
+        const status=document.querySelector('#status');
+        if(status)status.textContent='Game stopped. Reload to restart.';
+        if(Module.epidemicOnExit)Promise.resolve(Module.epidemicOnExit()).catch(console.error);
+        else if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(console.error);
     });
 }
 bool Host::Focused() const
