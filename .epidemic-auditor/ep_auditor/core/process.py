@@ -375,7 +375,10 @@ class ManagedProcessRunner:
                 rolling.finish(process_exited=code is not None)
         finally:
             stats.stop()
-            etl = wpr.stop()
+            def analysis_cancelled():
+                return (self._pending_stop_reason is not None or
+                        self.operation_cancel is not None and self.operation_cancel.is_set())
+            etl = wpr.stop(cancelled=analysis_cancelled)
             if wpr.note and wpr.note not in notes:
                 notes.append(wpr.note)
             if etl:
@@ -389,7 +392,10 @@ class ManagedProcessRunner:
                 if not executable.is_absolute():
                     executable = cwd / executable
                 xperf_meta = xperf.process(etl, proc.pid, run_dir / "xperf" / "reports",
-                                          symbol_dirs=(executable.parent, cwd))
+                                          symbol_dirs=(executable.parent, cwd),
+                                          cancelled=analysis_cancelled,
+                                          progress=lambda message: log_callback('stderr', '[Auditor ETW] ' + message)
+                                          if log_callback else None)
                 for name, report in list(xperf_meta["reports"].items()):
                     source = Path(report)
                     size = source.stat().st_size

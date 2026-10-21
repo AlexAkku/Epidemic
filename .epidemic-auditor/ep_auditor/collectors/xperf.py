@@ -8,6 +8,8 @@ import re
 from decimal import Decimal, InvalidOperation
 import shutil
 import subprocess
+import tempfile
+import time
 from pathlib import Path
 from typing import Any
 from ep_auditor.core.evidence import EvidenceError, digest
@@ -24,6 +26,41 @@ OBSERVATION_KINDS |= IO_KINDS
 # normalizer. Match the existing raw capture bound; analytical text stays small.
 REPORT_LIMIT_BYTES = 512 * 1024**2
 EVENT_DUMP_LIMIT_BYTES = 2 * 1024**3
+
+
+def run_bounded(command, *, timeout, report=None, capacity=1024**2,
+                env=None, cancelled=None):
+    """Bound decoder wall time, diagnostics and on-disk output while it runs.
+
+    Only the subprocess created here is terminated. Completed prior reports and
+    the immutable ETL are retained; a partial output is never published as PASS.
+    """
+    deadline = time.monotonic() + timeout
+    with tempfile.TemporaryFile() as diagnostics:
+        proc = subprocess.Popen(command, stdout=diagnostics, stderr=subprocess.STDOUT, env=env)
+        try:
+            while proc.poll() is None:
+                if cancelled and cancelled():
+                    raise RuntimeError('xperf postprocessing cancelled')
+                if time.monotonic() >= deadline:
+                    raise TimeoutError('xperf stage wall-time budget exhausted')
+                if diagnostics.tell() > 65536:
+                    raise RuntimeError('xperf diagnostic capacity exceeded')
+                if report and report.exists() and report.stat().st_size > capacity:
+                    raise RuntimeError('xperf report capacity exceeded')
+                try:
+                    proc.wait(timeout=0.1)
+                except subprocess.TimeoutExpired:
+                    pass
+            if diagnostics.tell() > 65536:
+                raise RuntimeError('xperf diagnostic capacity exceeded')
+            diagnostics.seek(0)
+            return subprocess.CompletedProcess(command, proc.returncode, '',
+                diagnostics.read(65536).decode('utf-8', errors='replace'))
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
 
 
 def process_id(value: str) -> int:
@@ -163,7 +200,7 @@ class XperfPostProcessor:
     def available(self) -> bool:
         return self.exe is not None
 
-    def trace_statistics(self, trace: Path, output_dir: Path) -> dict[str, Any]:
+    def trace_statistics(self, trace: Path, output_dir: Path, *, cancelled=None) -> dict[str, Any]:
         output_dir.mkdir(parents=True, exist_ok=True)
         report = output_dir / "trace_statistics.txt"
         result = {"trace_sha256": digest(trace), "trace_loss": None, "report": None,
@@ -189,7 +226,7 @@ class XperfPostProcessor:
             result["native_header"] = {"header": header, "helper_sha256": helper_sha, "command": header_command}
             trace_buffer_coverage(header, trace.stat().st_size)
             report.unlink(missing_ok=True)
-            proc = subprocess.run(command, capture_output=True, timeout=120, check=False)
+            proc = run_bounded(command, timeout=25, report=report, cancelled=cancelled)
             if report.is_file():
                 result["report"] = str(report)
             if proc.returncode or not report.is_file() or report.stat().st_size > 1024 * 1024:
@@ -204,7 +241,7 @@ class XperfPostProcessor:
             result["error"] = str(error)
         return result
 
-    def process(self, trace: Path, pid: int, output_dir: Path, *, symbol_dirs=()) -> dict[str, Any]:
+    def process(self, trace: Path, pid: int, output_dir: Path, *, symbol_dirs=(), cancelled=None, progress=None) -> dict[str, Any]:
         output_dir.mkdir(parents=True, exist_ok=True)
         environment = os.environ.copy()
         local_symbols = [str(Path(path).resolve()) for path in symbol_dirs if Path(path).is_dir()]
@@ -236,6 +273,9 @@ class XperfPostProcessor:
             ("profile_stacks", ["-a", "stack", "-pid", str(pid), "-event", "Profile", "-butterfly", "1"]),
             ("events", ["-a", "dumper"]),
         ]
+        deadline = time.monotonic() + 90
+        result['budget_seconds'] = 90
+        result['stages'] = {}
         for name, action in jobs:
             out = output_dir / ("events.csv" if name == 'events' else f"{name}.txt")
             cmd = [str(self.exe), "-i", str(trace), "-o", str(out)]
@@ -245,19 +285,33 @@ class XperfPostProcessor:
             result['decoder_commands'][name] = cmd
             try:
                 out.unlink(missing_ok=True)
-                proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                                      timeout=180, check=False, env=environment)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError('total xperf postprocessing budget exhausted')
                 bound = EVENT_DUMP_LIMIT_BYTES if name == 'events' else REPORT_LIMIT_BYTES
+                result['stages'][name] = 'running'
+                if progress:
+                    progress(name + ': running')
+                (output_dir / 'progress.json').write_text(json.dumps(result, sort_keys=True), encoding='utf-8')
+                proc = run_bounded(cmd, timeout=min(30, remaining), report=out,
+                                   capacity=bound, env=environment, cancelled=cancelled)
                 if (proc.returncode == 0 and out.is_file() and out.stat().st_size <= bound
                         and digest(self.exe) == result['decoder_sha256']):
                     result["reports"][name] = str(out)
+                    result["stages"][name] = "complete"
                 else:
+                    result["stages"][name] = "failed"
                     detail = (proc.stderr or proc.stdout or "").strip()
                     if out.is_file() and out.stat().st_size > bound:
                         detail = f'report capacity exceeded: {out.stat().st_size} > {bound} bytes; ' + detail
                     result["errors"].append(f"{name}: xperf exit {proc.returncode}: {detail[:4000]}")
             except Exception as exc:
+                result["stages"][name] = "incomplete"
                 result["errors"].append(f"{name}: {exc}")
+            finally:
+                (output_dir / 'progress.json').write_text(json.dumps(result, sort_keys=True), encoding='utf-8')
+                if progress:
+                    progress(name + ': ' + result['stages'][name])
         return result
 
     @staticmethod

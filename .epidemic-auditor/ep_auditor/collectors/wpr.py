@@ -37,7 +37,7 @@ class WprCollector:
                 health={"capacity": len(payload), "observed": len(payload), "dropped": 0,
                         "incomplete_reason": "etw_broker_capture_unavailable"})
 
-    def stop(self) -> Path | None:
+    def stop(self, *, cancelled=None) -> Path | None:
         if not self.active or not self._run_dir:
             return None
         try:
@@ -49,7 +49,7 @@ class WprCollector:
                 raise RuntimeError("completed broker trace missing or empty")
             raw = RawEvidence(self._run_dir)
             started = time.perf_counter_ns()
-            statistics = XperfPostProcessor().trace_statistics(source, self._run_dir / "xperf")
+            statistics = XperfPostProcessor().trace_statistics(source, self._run_dir / "xperf", cancelled=cancelled)
             self.metadata["trace_statistics"] = statistics
             loss = statistics["trace_loss"]
             loss_reason = ("trace_loss_not_yet_independently_verified" if loss is None else
