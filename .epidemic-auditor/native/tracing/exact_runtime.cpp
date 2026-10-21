@@ -28,6 +28,16 @@ struct Event {
 static_assert(sizeof(Header) == 80 && sizeof(Event) == 72);
 SRWLOCK lock = SRWLOCK_INIT;
 bool initialized = false;
+// An instrumented inline/CRT COMDAT can be selected from the observed image.
+// Guard before taking the non-recursive lock, including initialization/flush.
+// Such nested hooks describe recorder implementation, not application calls.
+thread_local bool inside_recorder = false;
+struct RecorderScope {
+    RecorderScope() noexcept { inside_recorder = true; }
+    ~RecorderScope() { inside_recorder = false; }
+    RecorderScope(const RecorderScope &) = delete;
+    RecorderScope &operator=(const RecorderScope &) = delete;
+};
 Header header;
 Event *events = nullptr;
 HANDLE output = INVALID_HANDLE_VALUE;
@@ -114,6 +124,9 @@ CapturePath make_capture_path(const wchar_t *directory, CapturePathKind kind) no
     return result;
 }
 void flush() noexcept {
+    if (inside_recorder)
+        return;
+    RecorderScope scope;
     AcquireSRWLockExclusive(&lock);
     if (output != INVALID_HANDLE_VALUE) {
         LARGE_INTEGER position{};
@@ -221,6 +234,9 @@ enum class RecordKind : std::uint8_t {
     exit = 2
 };
 void record(std::uint64_t address, RecordKind kind) noexcept {
+    if (inside_recorder)
+        return;
+    RecorderScope scope;
     AcquireSRWLockExclusive(&lock);
     if (!initialized) {
         initialize();
@@ -228,6 +244,13 @@ void record(std::uint64_t address, RecordKind kind) noexcept {
             InterlockedExchange(&auditor_exact_disabled, 1);
     }
     if (output != INVALID_HANDLE_VALUE) {
+        // Saturated non-rolling captures only need the loss count. Avoid all
+        // per-hook kernel queries after the bounded buffer is exhausted.
+        if (header.written == header.capacity && !rolling) {
+            ++header.dropped;
+            ReleaseSRWLockExclusive(&lock);
+            return;
+        }
         {
             LARGE_INTEGER timestamp{};
             FILETIME born{}, ended{}, kernel{}, user{};
@@ -292,6 +315,9 @@ extern "C" void auditor_exact_exit(std::uint64_t address) noexcept {
 }
 #if defined(EP_AUDITOR_SHADOW_EXACT_CONTEXT)
 extern "C" bool auditor_exact_current_call(std::uint64_t *ordinal, std::uint64_t *producer_base) noexcept {
+    if (inside_recorder)
+        return false;
+    RecorderScope scope;
     AcquireSRWLockShared(&lock);
     const bool valid = output != INVALID_HANDLE_VALUE && !header.dropped && active_depth && !active_call_unresolved;
     if (valid) {
