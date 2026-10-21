@@ -9,7 +9,7 @@ namespace
 {
 EM_JS(int,CreateMusic,(),{ return Module.epidemicAudio.createMusic();});
 EM_JS(int,LoadMusic,(int id,int resource,int once),{ return Module.epidemicAudio.load(id, resource, !!once);});
-EM_JS(double,MusicPosition,(int id),{const m=Module.epidemicAudio.music[id];return (m.audio.ended||m.finished)&&Number.isFinite(m.duration)?m.duration:m.audio.currentTime;});
+EM_JS(double,MusicPosition,(int id),{const m=Module.epidemicAudio.music.get(id);if(!m)return 0;return (m.audio.ended||m.finished)&&Number.isFinite(m.duration)?m.duration:m.audio.currentTime;});
 EM_JS(int,MusicState,(int id),{ return Module.epidemicAudio.state(id);});
 EM_JS(void,TickMusic,(int id,double dt,int active,double volume),{ Module.epidemicAudio.tick(id, dt, !!active, volume);});
 EM_JS(void,ReadBands,(int id,float *bands),{ Module.epidemicAudio.bands(id, bands);});
