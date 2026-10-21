@@ -300,7 +300,7 @@ class RunManager:
         result = operation(record.run_dir, capture_mode, self._log)
         samples = summarize_process_samples(record.run_dir)
         status = "PASS" if result.exit_code == 0 and not result.cancelled else ("CANCELLED" if result.cancelled else "FAIL")
-        summary = {"process": result.to_dict(), "samples": samples, "static_scan": static or {}, "scenario": scenario}
+        summary = {"process": result.to_dict(), "samples": samples, "static_scan": static or {}}
         self.storage.write_json(record.run_dir / "metrics" / "summary.json", summary)
         self.storage.finish_run(record, status, summary)
         self._export_run(record.run_dir, record.to_dict(), summary, static_scan=static)
