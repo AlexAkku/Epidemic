@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <stdexcept>
 #include <string>
@@ -26,6 +27,14 @@ namespace epidemic::core {
 // Большинство поведенческих контрактов документировано в application.h.
 
 namespace {
+// Process-start opt-in avoids changing the installed ApplicationOptions ABI.
+bool FrameTextLoggingEnabled() noexcept {
+    static const bool enabled = [] {
+        const auto *value = std::getenv("EPIDEMIC_LOG_FRAME_EVENTS");
+        return value && value[0] == '1' && value[1] == '\0';
+    }();
+    return enabled;
+}
 // Throws when a required core service is missing from the application service container.
 // Выбрасывается, когда запрошенный сервис ядра не найден в контейнере сервисов приложения.
 template <typename TService> void EnsureRegistered(const ServiceContainer &services, std::string_view service_name) {
@@ -366,7 +375,7 @@ void Application::ExecuteFrame() {
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::InputEventsThisFrame, 0);
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::EventBusDispatchedEvents, 0);
 
-    if (options_.log_frame_events) {
+    if (FrameTextLoggingEnabled()) {
         logger->Debug("Application", "Frame", "Frame " + std::to_string(frame_context.frame_index.Value()) + " started");
     }
 
@@ -386,7 +395,7 @@ void Application::ExecuteFrame() {
         std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - tick_start).count()));
 #endif
 
-    if (options_.log_frame_events) {
+    if (FrameTextLoggingEnabled()) {
         logger->Debug("Application", "Frame",
                       "Frame " + std::to_string(frame_context.frame_index.Value()) + " finished in " +
                           std::to_string(frame_time_micros) + " us");
