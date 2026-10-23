@@ -102,6 +102,37 @@ and take practical steps to correct past violations, within
 32 days of receiving notice.  Otherwise, all your licenses
 end immediately.
 
+## Mandatory Engine Attribution
+
+Any game or interactive application developed using Epidemic Engine, 
+in whole or in part, must display the official "Made with Epidemic 
+Engine" startup branding during its normal startup sequence.
+
+The attribution must comply with the following requirements:
+
+1. The official Epidemic Engine name and logo must remain 
+clearly visible and recognizable.
+2. The attribution must be displayed for at least three (3) 
+seconds during the application's startup sequence.
+3. The attribution may be animated, provided that its branding 
+remains recognizable and is not obscured, replaced, or materially altered.
+4. The attribution may be skipped by the end user through normal 
+application controls.
+5. Developers may display additional branding, including their own 
+studio logos, before or after the Epidemic Engine attribution.
+6. The attribution requirement does not apply to development tools, 
+automated tests, benchmarking utilities, command-line applications, 
+or other software that is not distributed as a game or interactive 
+graphical application.
+
+Removal, disabling, or modification of the required attribution in a 
+distributed application constitutes a violation of the license terms 
+unless expressly authorized in writing by the licensor.
+
+The licensor may grant exceptions to this requirement through a 
+separate written agreement.
+
+
 ## No Liability
 
 ***As far as the law allows, the software comes as is, without
