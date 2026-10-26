@@ -15,6 +15,10 @@ enum class ResourceState {
 };
 
 [[nodiscard]] constexpr bool CanTransition(ResourceState from, ResourceState to) noexcept {
+    // A transition changes state; re-entering the same state is not an edge.
+    if (from == to) {
+        return false;
+    }
     switch (from) {
     case ResourceState::Unknown:
         return to == ResourceState::Unloaded || to == ResourceState::Queued || to == ResourceState::Failed;

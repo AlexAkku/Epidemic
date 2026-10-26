@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cstddef>
 #include <iostream>
+#include <cstdio>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -235,6 +236,7 @@ class ArtifactOverrideLoader final : public IResourceLoader {
         ResourceResult<ResourceHandle>::Success(ResourceHandle{ResourceId::FromString("resources/a.mesh"), 2u});
     return !handle.IsValid() && !request.resource_id.IsValid() && result && result.Value().generation == 2u &&
            CanTransition(ResourceState::Unloaded, ResourceState::Queued) &&
+           !CanTransition(ResourceState::Ready, ResourceState::Ready) &&
            !CanTransition(ResourceState::Ready, ResourceState::Queued);
 }
 
@@ -982,7 +984,7 @@ class ArtifactOverrideLoader final : public IResourceLoader {
     for (int i = 0; i < kDepth; ++i) {
         manager.SetDependenciesForTesting(
             ids[static_cast<std::size_t>(i)],
-            {ResourceDependency{ids[static_cast<std::size_t>(i + 1)], Type("mesh"), true}});
+            {ResourceDependency{ids[static_cast<std::size_t>(i) + 1U], Type("mesh"), true}});
     }
     return manager.HasDependencyPathForTesting(ids.front(), ids.back()) &&
            !manager.HasDependencyPathForTesting(ids.back(), ids.front());
@@ -1241,7 +1243,7 @@ bool TestPublicApiEvidenceCoverage() {
 
 } // namespace
 
-int main() {
+int RunResourcesTests() {
     static_assert(std::is_same_v<decltype(ResourceHandle{}.generation), std::uint32_t>);
     static_assert(std::is_same_v<decltype(ResourceRequest{}.resource_id), ResourceId>);
     static_assert(std::is_abstract_v<IResourceManager>);
@@ -1313,4 +1315,13 @@ int main() {
     }
 
     return 0;
+}
+
+int main() {
+    try {
+        return RunResourcesTests();
+    } catch (...) {
+        std::fputs("Resources tests threw an exception\n", stderr);
+        return 1;
+    }
 }

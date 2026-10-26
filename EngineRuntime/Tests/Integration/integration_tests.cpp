@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstddef>
 #include <iostream>
+#include <cstdio>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -694,7 +695,7 @@ bool TestPhaseFailureDoesNotStopLaterPhases() {
 
 } // namespace
 
-int main() {
+int RunIntegrationTests() {
     bool ok = true;
     ok &= TestDefaultCompositionSmoke();
     ok &= TestProductionUsesStandardStreamingAdapter();
@@ -705,4 +706,9 @@ int main() {
     ok &= TestCoordinatorShutdownRetriesAdapterCleanup();
     ok &= TestPhaseFailureDoesNotStopLaterPhases();
     return ok ? 0 : 1;
+}
+
+int main() {
+    try { return RunIntegrationTests(); }
+    catch (...) { std::fputs("Integration tests threw\n", stderr); return 1; }
 }

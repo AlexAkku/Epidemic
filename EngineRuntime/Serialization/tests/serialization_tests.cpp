@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <cstdio>
 #include <memory>
 #include <new>
 #include <stdexcept>
@@ -171,7 +172,9 @@ struct ThrowingCommitData {
     ThrowingCommitData(const ThrowingCommitData &) = default;
     ThrowingCommitData &operator=(const ThrowingCommitData &) = default;
     ThrowingCommitData(ThrowingCommitData &&) noexcept = default;
-    ThrowingCommitData &operator=(ThrowingCommitData &&) {
+    // Deliberate fault injector: DeserializeObject must reject a throwing commit.
+    // NOLINTNEXTLINE(bugprone-unsafe-to-allow-exceptions)
+    ThrowingCommitData &operator=(ThrowingCommitData &&) noexcept(false) {
         value = 999;
         throw std::runtime_error("commit boom");
     }
@@ -255,7 +258,7 @@ class ProbeSerializer final : public epidemic::runtime::ISerializer {
 
 class ProbeMigration final : public IMigration {
   public:
-    explicit ProbeMigration(MigrationKey key) : key_(key) {
+    explicit ProbeMigration(const MigrationKey &key) : key_(key) {
     }
 
     [[nodiscard]] MigrationKey GetKey() const override {
@@ -1418,7 +1421,7 @@ bool TestPublicApiEvidenceCoverage() {
 
 } // namespace
 
-int main() {
+int RunSerializationTests() {
     struct NamedTest {
         const char *name;
         bool (*run)();
@@ -1470,4 +1473,13 @@ int main() {
     }
 
     return 0;
+}
+
+int main() {
+    try {
+        return RunSerializationTests();
+    } catch (...) {
+        std::fputs("Serialization tests threw an exception\n", stderr);
+        return 1;
+    }
 }

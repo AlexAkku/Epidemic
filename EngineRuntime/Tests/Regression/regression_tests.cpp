@@ -3,6 +3,7 @@
 #include <Epidemic/Core/application.h>
 
 #include <iostream>
+#include <cstdio>
 #include <string_view>
 
 namespace {
@@ -14,7 +15,7 @@ bool Expect(bool condition, std::string_view message) {
 }
 } // namespace
 
-int main() {
+int RunRegressionTests() {
     epidemic::core::Application app{};
     epidemic::runtime::EngineRuntimeOptions options{};
     options.enable_scene = false;
@@ -24,4 +25,9 @@ int main() {
     ok &= Expect(!app.Services().Contains<epidemic::runtime::RuntimeFoundationRegistration>(),
                  "preflight failure must not partially register services");
     return ok ? 0 : 1;
+}
+
+int main() {
+    try { return RunRegressionTests(); }
+    catch (...) { std::fputs("Regression tests threw\n", stderr); return 1; }
 }

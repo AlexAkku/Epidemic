@@ -24,6 +24,10 @@ struct OwnedResourceDependency {
     bool required = true;
 };
 
+// Keep aggregate construction and the STL members' inferred exception traits.
+// MSVC unordered_set move construction can allocate; it is intentionally allowed
+// to throw. Do not impose a new noexcept contract on the implicit move constructor.
+// NOLINTNEXTLINE(bugprone-exception-escape)
 struct ResourceSlot {
     ResourceId id{};
     ResourceType type{};

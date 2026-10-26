@@ -8,7 +8,7 @@
 #include <type_traits>
 namespace epidemic::runtime {
 namespace {
-constexpr std::size_t kPackageLimit = 64 * 1024 * 1024;
+constexpr std::size_t kPackageLimit = std::size_t{64} * 1024U * 1024U;
 constexpr std::size_t kRecordLimit = 10000;
 void Need(bool condition, const char *reason) {
     if (!condition)
@@ -35,16 +35,17 @@ class RuntimePackageArchive {
     template <class T> void Integer(T &value) {
         static_assert(std::is_integral_v<T> && !std::is_same_v<T, bool>);
         using U = std::make_unsigned_t<T>;
+        using Shift = std::conditional_t<(sizeof(U) < sizeof(unsigned)), unsigned, U>;
         U raw = std::bit_cast<U>(value);
         if (output_) {
             Need(output_->size() <= kPackageLimit - sizeof(T), "package size limit");
             for (std::size_t i = 0; i < sizeof(T); ++i)
-                output_->push_back(std::byte((raw >> (8 * i)) & 255));
+                output_->push_back(std::byte((static_cast<Shift>(raw) >> (8U * i)) & Shift{255U}));
         } else {
             Need(sizeof(T) <= input_.size() - position_, "truncated integer");
             raw = 0;
             for (std::size_t i = 0; i < sizeof(T); ++i)
-                raw |= static_cast<U>(std::to_integer<unsigned char>(input_[position_++])) << (8 * i);
+                raw |= static_cast<U>(static_cast<Shift>(std::to_integer<unsigned char>(input_[position_++])) << (8U * i));
             value = std::bit_cast<T>(raw);
         }
     }
@@ -77,10 +78,10 @@ class RuntimePackageArchive {
             transfer(value);
     }
     void Payload(std::vector<std::byte> &value) {
-        Need(!output_ || value.size() <= 1024 * 1024, "payload size limit");
+        Need(!output_ || value.size() <= std::size_t{1024} * 1024U, "payload size limit");
         auto size = static_cast<std::uint32_t>(value.size());
         Integer(size);
-        Need(size <= 1024 * 1024, "payload size limit");
+        Need(size <= std::size_t{1024} * 1024U, "payload size limit");
         if (output_) {
             Need(size <= kPackageLimit - output_->size(), "package size limit");
             output_->insert(output_->end(), value.begin(), value.end());
@@ -211,7 +212,7 @@ void Check(const PersistenceSnapshot &value) {
          "snapshot count limit");
     std::size_t bytes = 0;
     for (const auto &o : value.objects) {
-        Need(o.payload.bytes.size() <= 1024 * 1024 && o.payload.bytes.size() <= kPackageLimit - bytes,
+        Need(o.payload.bytes.size() <= std::size_t{1024} * 1024U && o.payload.bytes.size() <= kPackageLimit - bytes,
              "snapshot payload limit");
         bytes += o.payload.bytes.size();
     }

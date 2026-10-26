@@ -9,7 +9,7 @@ template <class T> T Require(foundation::Result<T> result) {
         throw std::runtime_error(result.GetError().message);
     return std::move(result).Value();
 }
-void Require(foundation::Result<void> result) {
+void Require(const foundation::Result<void> &result) {
     if (!result.HasValue())
         throw std::runtime_error(result.GetError().message);
 }

@@ -67,7 +67,7 @@ std::vector<std::byte> Bytes(const std::filesystem::path &path) {
     return bytes;
 }
 void Put(const std::filesystem::path &path, const std::vector<std::byte> &bytes) {
-    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+    std::ofstream file(path, std::ios::binary); // ofstream's out mode already truncates.
     Require(bool(file), "test package write");
     file.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
     Require(bool(file), "test complete write");
@@ -79,7 +79,7 @@ void RepairHash(std::vector<std::byte> &bytes) {
         hash *= 1099511628211ull;
     }
     for (std::size_t i = 0; i < 8; ++i)
-        bytes[bytes.size() - 8 + i] = std::byte((hash >> (8 * i)) & 255);
+        bytes[bytes.size() - 8 + i] = std::byte((hash >> (8U * i)) & 255U);
 }
 void WriteKnown(const std::filesystem::path &directory) {
     auto clock = CreateTimeServices(ClockOptions());
@@ -286,7 +286,7 @@ void TestRuntimeDurablePackages() {
         Require(!CommitRuntimeTimeCheckpoint(epidemic::foundation::Path(directory / "time.bin"), time.Value()),
                 "Runtime invalid clock commit preserves old generation");
         ReadKnown(directory);
-        std::ofstream corrupt(directory / "persistence.bin", std::ios::binary | std::ios::trunc);
+        std::ofstream corrupt(directory / "persistence.bin", std::ios::binary);
         corrupt << "truncated";
         corrupt.close();
         Require(!backend.Value()->Load(), "Runtime truncated package rejected");

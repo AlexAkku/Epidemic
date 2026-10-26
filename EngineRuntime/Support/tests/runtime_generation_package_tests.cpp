@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <iostream>
+#include <cstdio>
 
 using namespace epidemic;
 using namespace epidemic::runtime;
@@ -83,5 +84,6 @@ bool Run() {
 } // namespace
 
 int main() {
-    return Run() ? 0 : 1;
+    try { return Run() ? 0 : 1; }
+    catch (...) { std::fputs("Runtime generation tests threw\n", stderr); return 1; }
 }

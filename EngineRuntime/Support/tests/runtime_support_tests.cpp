@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <cstdio>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -1000,6 +1001,8 @@ bool TestCoordinatorAcceptedPrefixRetry() {
 
     const auto retry = runtime.Value().coordinator->Tick(input);
     return retry && retry.Value().executed_steps == GetRuntimeUpdateOrder() &&
+           // Tick mutates the clock through the coordinator; this is a fresh read.
+           // cppcheck-suppress identicalConditionAfterEarlyExit
            runtime.Value().time->clock->Now() == accepted;
 }
 
@@ -1245,7 +1248,7 @@ bool TestFullTickAndTerminalShutdown() {
 
 void TestRuntimeDurablePackages();
 int RuntimePackageProcessMode(int argc, char **argv);
-int main(int argc, char **argv) {
+int RunRuntimeSupportTests(int argc, char **argv) {
     if (argc > 1)
         return RuntimePackageProcessMode(argc, argv);
     TestRuntimeDurablePackages();
@@ -1274,4 +1277,9 @@ int main(int argc, char **argv) {
     ok &= TestStreamingWorldLifecycle();
     ok &= TestFullTickAndTerminalShutdown();
     return ok ? 0 : 1;
+}
+
+int main(int argc, char **argv) {
+    try { return RunRuntimeSupportTests(argc, argv); }
+    catch (...) { std::fputs("Runtime Support tests threw\n", stderr); return 1; }
 }

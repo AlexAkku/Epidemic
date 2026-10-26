@@ -702,7 +702,11 @@ foundation::Result<void> ResourceManager::LoadSlot(ResourceSlot &slot, const Res
 }
 
 foundation::Result<void> ResourceManager::FinishLoadedArtifact(ResourceSlot &slot, ResourceProcessingStats &stats) {
-    assert(slot.pending_artifact.has_value());
+    if (!slot.pending_artifact.has_value()) {
+        slot.state = ResourceState::Failed;
+        (void)RollbackLoadAttempt(slot);
+        return ResourceFailure("resource.missing_artifact", "load finalization requires a pending artifact");
+    }
     ResourceLoadArtifact &artifact = *slot.pending_artifact;
 
     if (artifact.resource_id != slot.id) {
@@ -912,7 +916,11 @@ bool ResourceManager::HasDependencyPath(ResourceId from, ResourceId to) const {
 }
 
 foundation::Result<void> ResourceManager::CommitReadyPayload(ResourceSlot &slot, ResourceProcessingStats &stats) {
-    assert(slot.pending_artifact.has_value());
+    if (!slot.pending_artifact.has_value()) {
+        slot.state = ResourceState::Failed;
+        (void)RollbackLoadAttempt(slot);
+        return ResourceFailure("resource.missing_artifact", "payload commit requires a pending artifact");
+    }
     ResourceLoadArtifact &artifact = *slot.pending_artifact;
     const std::size_t bytes = artifact.payload->GetSizeBytes();
     if (bytes > std::numeric_limits<std::size_t>::max() - resident_bytes_ ||

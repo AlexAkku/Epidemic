@@ -152,6 +152,8 @@ class RuntimeRenderMaterialResource final : public renderer::IRenderMaterialReso
 };
 
 class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge, public IRuntimeAdapterLifecycle {
+    struct PayloadIds { ResourceId mesh; ResourceId material; };
+
   public:
     explicit RuntimeRenderResourceBridge(std::shared_ptr<IResourceManager> manager) : manager_(std::move(manager)) {
     }
@@ -160,8 +162,14 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         // Explicit coordinator-driven Shutdown() is the ownership protocol. Destruction is
         // only an emergency best-effort fallback because a failed manager Release() must
         // remain retryable while the manager is still alive.
-        if (!shutdown_complete_) {
-            (void)Shutdown();
+        try {
+            if (!shutdown_complete_) {
+                (void)Shutdown();
+            }
+        } catch (...) {
+            // A destructor cannot transfer retry ownership after destruction.
+            // Keep unexpected cleanup exceptions fatal, as before, explicitly.
+            std::terminate();
         }
 #ifndef NDEBUG
         assert(leases_.empty() && "RuntimeRenderResourceBridge destroyed with unreleased resource leases");
@@ -169,6 +177,22 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
     }
 
     [[nodiscard]] foundation::Result<void> AcquirePayloads(ResourceId mesh, ResourceId material) override {
+        return AcquirePayloads(PayloadIds{mesh, material});
+    }
+
+    [[nodiscard]] foundation::Result<void> ReleasePayloads(ResourceId mesh, ResourceId material) override {
+        return ReleasePayloads(PayloadIds{mesh, material});
+    }
+
+    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads> GetPayloads(ResourceId mesh,
+                                                                               ResourceId material) const override {
+        return GetPayloads(PayloadIds{mesh, material});
+    }
+
+  private:
+    [[nodiscard]] foundation::Result<void> AcquirePayloads(const PayloadIds &ids) {
+        const auto mesh = ids.mesh;
+        const auto material = ids.material;
         if (shutdown_started_) {
             return FailureVoid("runtime_support.adapter_shutdown", "render resource bridge is shutting down");
         }
@@ -188,7 +212,9 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> ReleasePayloads(ResourceId mesh, ResourceId material) override {
+    [[nodiscard]] foundation::Result<void> ReleasePayloads(const PayloadIds &ids) {
+        const auto mesh = ids.mesh;
+        const auto material = ids.material;
         std::optional<foundation::Error> first;
         if (const auto released = ReleaseResource(mesh, MeshType()); !released) {
             first = released.GetError();
@@ -199,8 +225,9 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         return first ? foundation::Result<void>::Failure(*first) : foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads> GetPayloads(ResourceId mesh,
-                                                                                   ResourceId material) const override {
+    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads> GetPayloads(const PayloadIds &ids) const {
+        const auto mesh = ids.mesh;
+        const auto material = ids.material;
         const auto mesh_payload = GetPayload(mesh, MeshType());
         if (!mesh_payload) {
             return foundation::Result<renderer::RenderResourcePayloads>::Failure(mesh_payload.GetError());
@@ -215,6 +242,7 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         return foundation::Result<renderer::RenderResourcePayloads>::Success(std::move(result));
     }
 
+  public:
     [[nodiscard]] foundation::Result<void> Shutdown() override {
         shutdown_started_ = true;
         std::optional<foundation::Error> first;
@@ -679,7 +707,7 @@ class DefaultAnimationResourceMapper final : public IAnimationResourceMapper {
         }
         const std::string name = "animation.skeleton." + std::to_string(id.value);
         return foundation::Result<ResourceRequest>::Success(
-            ResourceRequest{ResourceId::FromString(name.c_str()), SkeletonType()});
+            ResourceRequest{ResourceId::FromString(name), SkeletonType()});
     }
 
     [[nodiscard]] foundation::Result<ResourceRequest> ResolveClip(animation::AnimationClipId id) const override {
@@ -688,7 +716,7 @@ class DefaultAnimationResourceMapper final : public IAnimationResourceMapper {
         }
         const std::string name = "animation.clip." + std::to_string(id.value);
         return foundation::Result<ResourceRequest>::Success(
-            ResourceRequest{ResourceId::FromString(name.c_str()), AnimationClipType()});
+            ResourceRequest{ResourceId::FromString(name), AnimationClipType()});
     }
 };
 
@@ -870,6 +898,7 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
             }
         } catch (...) {
             // The held map remains the durable retry owner.
+            return;
         }
     }
 
@@ -916,7 +945,7 @@ class DefaultAudioResourceMapper final : public IAudioResourceMapper {
         }
         const std::string name = "audio.clip." + std::to_string(id.value);
         return foundation::Result<ResourceRequest>::Success(
-            ResourceRequest{ResourceId::FromString(name.c_str()), AudioClipType()});
+            ResourceRequest{ResourceId::FromString(name), AudioClipType()});
     }
 };
 
@@ -1043,6 +1072,7 @@ class RuntimeAudioLeaseState {
         } catch (...) {
             // The pre-existing entry is the durable retry owner. Destructor paths do
             // not allocate, do not throw and never forget the lease.
+            return;
         }
     }
 
@@ -1283,6 +1313,7 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
             }
         } catch (...) {
             // held_ remains the durable retry owner.
+            return;
         }
     }
 
@@ -1525,6 +1556,8 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
           manifests_(std::move(manifests)) {
     }
 
+    // Test hook preserves request-ID/revision wire positions; it is not an SDK API.
+    // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
     [[nodiscard]] foundation::Result<void> SetPreparedRevisionForTesting(std::uint64_t request_id,
                                                                          std::uint64_t revision) {
         const auto iterator = records_.find(request_id);
@@ -1639,7 +1672,6 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         case streaming::StreamingPlanStep::PrepareResources:
             return PrepareResources(*record, step, available_budget);
         case streaming::StreamingPlanStep::Commit:
-            return CompletedStep(step, available_budget);
         case streaming::StreamingPlanStep::Rollback:
         case streaming::StreamingPlanStep::Release:
             return CompletedStep(step, available_budget);
@@ -3311,6 +3343,8 @@ foundation::Result<void> SetPreparedRevision(streaming::IStreamingDataSource &so
 } // namespace support_testing
 
 foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRuntimeOptions &options,
+    // Public SDK contract: capture a value snapshot; keep the existing signature.
+    // cppcheck-suppress passedByValue
                                                                EngineRuntimeDependencies dependencies) {
     if (const auto valid = ValidateOptionDependencies(options); !valid) {
         return foundation::Result<PreparedEngineRuntime>::Failure(valid.GetError());

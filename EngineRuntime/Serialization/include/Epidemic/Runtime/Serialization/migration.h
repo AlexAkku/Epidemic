@@ -30,12 +30,12 @@ namespace std {
 template <> struct hash<epidemic::runtime::MigrationKey> {
     [[nodiscard]] size_t operator()(const epidemic::runtime::MigrationKey &key) const noexcept {
         size_t seed = hash<std::uint64_t>{}(key.type_id.Raw());
-        seed ^= hash<std::uint32_t>{}(key.from.major) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        seed ^= hash<std::uint32_t>{}(key.from.minor) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        seed ^= hash<std::uint32_t>{}(key.from.patch) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        seed ^= hash<std::uint32_t>{}(key.to.major) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        seed ^= hash<std::uint32_t>{}(key.to.minor) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        seed ^= hash<std::uint32_t>{}(key.to.patch) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= hash<std::uint32_t>{}(key.from.major) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
+        seed ^= hash<std::uint32_t>{}(key.from.minor) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
+        seed ^= hash<std::uint32_t>{}(key.from.patch) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
+        seed ^= hash<std::uint32_t>{}(key.to.major) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
+        seed ^= hash<std::uint32_t>{}(key.to.minor) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
+        seed ^= hash<std::uint32_t>{}(key.to.patch) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
         return seed;
     }
 };

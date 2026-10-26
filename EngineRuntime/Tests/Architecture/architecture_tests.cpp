@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 #include <iterator>
 #include <string>
 #include <string_view>
@@ -224,7 +225,7 @@ bool TestPublicHeadersDeclarePragmaOnce() {
 }
 } // namespace
 
-int main() {
+int RunArchitectureTests() {
     epidemic::runtime::ResourceHandle handle{};
     static_assert(!std::is_same_v<epidemic::runtime::ResourceId, epidemic::runtime::ResourceHandle>);
 
@@ -238,4 +239,9 @@ int main() {
     ok &= TestSupportProfileContracts();
     ok &= TestPublicHeadersDeclarePragmaOnce();
     return ok ? 0 : 1;
+}
+
+int main() {
+    try { return RunArchitectureTests(); }
+    catch (...) { std::fputs("Architecture tests threw\n", stderr); return 1; }
 }
