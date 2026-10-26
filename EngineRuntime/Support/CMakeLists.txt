@@ -1,6 +1,7 @@
 add_library(EpidemicRuntimeSupport STATIC
     src/runtime_support.cpp
     src/runtime_packages.cpp
+    src/asset_element_reference.cpp
 )
 
 target_include_directories(EpidemicRuntimeSupport PUBLIC
