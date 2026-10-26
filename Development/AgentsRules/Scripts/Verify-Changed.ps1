@@ -1,11 +1,13 @@
 [CmdletBinding()]
-param([ValidateSet('Fast','Deep')][string]$Mode = 'Fast')
+param([ValidateSet('Fast','Deep')][string]$Mode = 'Fast',
+    [string]$CompilationDatabaseDirectory = 'build/clangd',
+    [string]$RuntimeDirectory = '.ai', [switch]$ShortOutput)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-ProjectRoot
 $quiet = Join-Path $PSScriptRoot 'Run-Quiet.ps1'
-$compdb = Join-Path $root 'build/clangd'
+$compdb = Join-Path $root $CompilationDatabaseDirectory
 
 function Full-Path([string]$Path, [string]$Base=$root) {
     if (-not [IO.Path]::IsPathRooted($Path)) { $Path = Join-Path $Base $Path }
@@ -61,9 +63,9 @@ foreach ($relative in $sources) {
 if ($headers.Count) {
     Import-VsDevEnvironment
     $scanner = Resolve-Tool 'clang-scan-deps.exe' @((Join-Path $env:ProgramFiles 'LLVM/bin/clang-scan-deps.exe'))
-    Set-AgentRuntimeEnvironment
-    $dependencyPath = Join-Path $root ".ai/tmp/changed-dependencies-$PID.json"
-    $filteredDbPath = Join-Path $root ".ai/tmp/changed-cpp-$PID.json"
+    Set-AgentRuntimeEnvironment -RuntimeDirectory $RuntimeDirectory
+    $dependencyPath = Join-Path $root "$RuntimeDirectory/tmp/changed-dependencies-$PID.json"
+    $filteredDbPath = Join-Path $root "$RuntimeDirectory/tmp/changed-cpp-$PID.json"
 
     $scanEntries = @(
         foreach ($entry in $entries) {
@@ -88,7 +90,8 @@ if ($headers.Count) {
             ' -compilation-database ' + (& $quote $filteredDbPath) +
             ' -format experimental-full -j 1 -o ' +
             (& $quote $dependencyPath)
-        & $quiet -Name 'changed-dependencies' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $cmd
+        & $quiet -Name 'changed-dependencies' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $cmd `
+            -RuntimeDirectory $RuntimeDirectory -LogDir "$RuntimeDirectory/logs" -ShortOutput:$ShortOutput
         if ($LASTEXITCODE -ne 0) { throw 'BLOCKED: compiler dependency discovery failed; consumers are unknown.' }
         $dependencies = Get-Content -LiteralPath $dependencyPath -Raw | ConvertFrom-Json
         $headerPaths = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
@@ -122,9 +125,11 @@ if ($headers.Count) {
         foreach ($header in $headerPaths) { if (-not $consumed.Contains($header)) { throw "BLOCKED: no compiled consumer for changed header: $header. Build public-header self-containment before qualifying it." } }
     }
     finally { 
-        if (Test-Path -LiteralPath $filteredDbPath) {
-    Remove-Item -LiteralPath $filteredDbPath -Force
-}
+        foreach ($temporaryPath in @($filteredDbPath, $dependencyPath)) {
+            if (Test-Path -LiteralPath $temporaryPath) {
+                Remove-Item -LiteralPath $temporaryPath -Force
+            }
+        }
      }
 }
 
@@ -159,13 +164,15 @@ $safe = $fullCanonical.Substring($rootPrefix.Length) -replace '[^A-Za-z0-9_.-]',
     $cmd = '& ' + (& $quote $clangTidy) + ' ' + (& $quote $full) + ' -p ' + (& $quote $compdb) +
         ' -header-filter=' + (& $quote $headerFilter) +
         " -checks='-*,clang-analyzer-*,bugprone-*' -warnings-as-errors='*'"
-    & $quiet -Name "tidy-$safe" -TimeoutSec 180 -MaxJobMemoryGB 3 -Command $cmd
+    & $quiet -Name "tidy-$safe" -TimeoutSec 180 -MaxJobMemoryGB 3 -Command $cmd `
+        -RuntimeDirectory $RuntimeDirectory -LogDir "$RuntimeDirectory/logs" -ShortOutput:$ShortOutput
     $checks++
     if ($LASTEXITCODE -ne 0) { $failures += "${full}:clang-tidy" }
     if ($Mode -eq 'Deep') {
         $cmd = '& ' + (& $quote $cppcheck) + ' --project=' + (& $quote $dbPath) +
             ' --file-filter=' + (& $quote $full) + ' --enable=warning,performance,portability --inline-suppr --error-exitcode=1'
-        & $quiet -Name "cppcheck-$safe" -TimeoutSec 120 -MaxJobMemoryGB 2 -Command $cmd
+        & $quiet -Name "cppcheck-$safe" -TimeoutSec 120 -MaxJobMemoryGB 2 -Command $cmd `
+            -RuntimeDirectory $RuntimeDirectory -LogDir "$RuntimeDirectory/logs" -ShortOutput:$ShortOutput
         $checks++
         if ($LASTEXITCODE -ne 0) { $failures += "${full}:cppcheck" }
     }

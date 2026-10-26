@@ -5,7 +5,8 @@ function Get-ProjectRoot {
 }
 
 function Set-AgentRuntimeEnvironment {
-    $runtime = Join-Path (Get-ProjectRoot) '.ai'
+    param([string]$RuntimeDirectory = '.ai')
+    $runtime = Join-Path (Get-ProjectRoot) $RuntimeDirectory
     $temporary = Join-Path $runtime 'tmp'
     New-Item -ItemType Directory -Force -Path $temporary | Out-Null
     $env:TEMP = $temporary

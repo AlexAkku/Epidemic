@@ -6,6 +6,8 @@ param(
     [string]$Command,
 
     [string]$LogDir = ".ai/logs",
+    [string]$RuntimeDirectory = '.ai',
+    [switch]$ShortOutput,
 
     [ValidateRange(1, 86400)]
     [int]$TimeoutSec = 1800,
@@ -61,7 +63,11 @@ try {
 }
 finally { $sha256.Dispose() }
 $tempId = (($hashBytes | ForEach-Object { $_.ToString('x2') }) -join '').Substring(0, 16)
-$criticalTempRoot = [IO.Path]::GetFullPath((Join-Path $root '.ai/tmp/jobs'))
+$runtimeRoot = [IO.Path]::GetFullPath((Join-Path $root $RuntimeDirectory))
+if (-not $runtimeRoot.StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) {
+    throw 'runtime directory escaped repository storage'
+}
+$criticalTempRoot = Join-Path $runtimeRoot 'tmp/jobs'
 $criticalTemp = [System.IO.Path]::GetFullPath((Join-Path $criticalTempRoot "job-$tempId"))
 if (-not $criticalTemp.StartsWith($criticalTempRoot + '\', [StringComparison]::OrdinalIgnoreCase)) {
     throw 'temporary target escaped repository .ai/tmp storage'
@@ -329,6 +335,7 @@ namespace AiQuiet
 }
 
 $escapedRoot = $root.Replace("'", "''")
+$escapedRuntime = $runtimeRoot.Replace("'", "''")
 $escapedGate = $gate.Replace("'", "''")
 $escapedCriticalTemp = $criticalTemp.Replace("'", "''")
 
@@ -347,10 +354,10 @@ Set-Location -LiteralPath '$escapedRoot'
 `$env:TEMP = '$escapedCriticalTemp'
 `$env:TMP = '$escapedCriticalTemp'
 `$env:PYTHONDONTWRITEBYTECODE = '1'
-`$env:PIP_CACHE_DIR = Join-Path '$escapedRoot' '.ai/cache/pip'
-`$env:npm_config_cache = Join-Path '$escapedRoot' '.ai/cache/npm'
-`$env:HF_HOME = Join-Path '$escapedRoot' '.ai/cache/huggingface'
-`$env:TORCH_HOME = Join-Path '$escapedRoot' '.ai/cache/torch'
+`$env:PIP_CACHE_DIR = Join-Path '$escapedRuntime' 'cache/pip'
+`$env:npm_config_cache = Join-Path '$escapedRuntime' 'cache/npm'
+`$env:HF_HOME = Join-Path '$escapedRuntime' 'cache/huggingface'
+`$env:TORCH_HOME = Join-Path '$escapedRuntime' 'cache/torch'
 
 # run-quiet attaches this process to its Windows Job Object before releasing us.
 `$gatePath = '$escapedGate'
@@ -629,6 +636,12 @@ if ($exitCode -ne 0) {
             Select-Object -First 12
         )
     }
+}
+
+if ($ShortOutput -and $exitCode -eq 0) {
+    Remove-Item -LiteralPath $stdout,$stderr -Force -ErrorAction SilentlyContinue
+    Write-Output ("PASS: {0} ({1:N2}s)" -f $Name,$watch.Elapsed.TotalSeconds)
+    exit 0
 }
 
 [ordered]@{

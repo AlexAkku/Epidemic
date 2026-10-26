@@ -25,6 +25,9 @@ jobs:
       - name: Architecture adversarial fixtures
         shell: pwsh
         run: cmake -P cmake/ArchitectureFreezeSelfTest.cmake
+      - name: Managed project-reference preflight
+        shell: pwsh
+        run: python -B tools/check_managed_architecture.py . --self-test Temp/b
   layer-matrix:
     needs: architecture-boundaries
     runs-on: windows-2025-vs2026

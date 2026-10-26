@@ -113,11 +113,15 @@ if(TARGET AuditorExactRuntime)
     endif()
 endif()
 
+include(cmake/ArchitectureFreeze.cmake)
 if(EPIDEMIC_ARCHITECTURE_FREEZE_CHECKS)
-    include(cmake/ArchitectureFreeze.cmake)
     epidemic_validate_architecture_freeze()
     epidemic_add_public_header_self_containment_target()
 endif()
+
+epidemic_require_architecture_freeze()
+include(cmake/ManagedArchitecture.cmake)
+epidemic_validate_managed_architecture()
 
 include(cmake/EpidemicSDK.cmake)
 epidemic_install_sdk()

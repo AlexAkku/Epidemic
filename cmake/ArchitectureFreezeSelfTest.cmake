@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.25)
 
 get_filename_component(_repository "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
-set(_sandbox "${_repository}/build/architecture-freeze-self-test")
+set(_sandbox "${_repository}/Temp/b/architecture-freeze-self-test")
 file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/ArchitectureFreeze.cmake" _validator)
 file(TO_CMAKE_PATH "${_repository}/EngineFramework/DevelopmentInfrastructure/cmake/FrameworkArchitecture.cmake" _framework_validator)
 
-file(TO_CMAKE_PATH "${_repository}/build" _build_root)
+file(TO_CMAKE_PATH "${_repository}/Temp/b" _build_root)
 file(TO_CMAKE_PATH "${_sandbox}" _normalized_sandbox)
 string(FIND "${_normalized_sandbox}" "${_build_root}/" _sandbox_prefix)
 if(NOT _sandbox_prefix EQUAL 0)
@@ -48,7 +48,12 @@ function(_run_case name root_body module_path module_body header_body expected_r
     endif()
 endfunction()
 
-set(_validate "include(\"${_validator}\")\nepidemic_validate_architecture_freeze()")
+set(_validate "include(\"${_validator}\")\nepidemic_validate_architecture_freeze()\nepidemic_require_architecture_freeze()")
+
+_run_case(gate_not_executed
+    "include(\"${_validator}\")\nepidemic_require_architecture_freeze()"
+    "EngineBase/Good" "add_library(GoodBase INTERFACE)" ""
+    FAIL "Architecture Freeze was not executed")
 
 _run_case(base_runtime_link
     "add_library(EpidemicRuntimeForbidden INTERFACE)\nadd_subdirectory(EngineBase/Bad)\n${_validate}"

@@ -9,6 +9,10 @@ param(
     [string]$Target,
     [string]$TestRegex,
     [switch]$Clean,
+    [string]$BuildDirectory,
+    [string]$RuntimeDirectory = '.ai',
+    [switch]$ShortOutput,
+    [ValidateRange(1,32)][int]$BuildJobs = 4,
     [ValidateRange(30,7200)]
     [int]$TimeoutSec = 1800
 )
@@ -25,8 +29,9 @@ if ($Action -eq 'Full') {
 $root = Get-ProjectRoot
 $quiet = Join-Path $PSScriptRoot 'Run-Quiet.ps1'
 $configKey = $Configuration.ToLowerInvariant()
-$build = [IO.Path]::GetFullPath((Join-Path $root "build/$Profile-$configKey"))
-Set-AgentRuntimeEnvironment
+if (-not $BuildDirectory) { $BuildDirectory = "build/$Profile-$configKey" }
+$build = [IO.Path]::GetFullPath((Join-Path $root $BuildDirectory))
+Set-AgentRuntimeEnvironment -RuntimeDirectory $RuntimeDirectory
 
 $options = switch ($Profile) {
     'base'    { @('-DEPIDEMIC_BUILD_RUNTIME=OFF','-DEPIDEMIC_BUILD_FRAMEWORK=OFF') }
@@ -35,7 +40,8 @@ $options = switch ($Profile) {
 }
 
 function Invoke-Step([string]$Name,[string]$Command,[int]$Seconds=$TimeoutSec,[double]$MemoryGB=8) {
-    & $quiet -Name $Name -TimeoutSec $Seconds -MaxJobMemoryGB $MemoryGB -Command $Command
+    & $quiet -Name $Name -TimeoutSec $Seconds -MaxJobMemoryGB $MemoryGB -Command $Command `
+        -RuntimeDirectory $RuntimeDirectory -LogDir "$RuntimeDirectory/logs" -ShortOutput:$ShortOutput
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
@@ -48,7 +54,7 @@ if ($Action -eq 'Configure' -or -not (Test-Path -LiteralPath $cache)) {
     if ($Action -eq 'Configure') { exit 0 }
 }
 
-$buildCommand = "cmake --build `"$build`" --config $Configuration --parallel"
+$buildCommand = "cmake --build `"$build`" --config $Configuration --parallel $BuildJobs"
 if ($Target) { $buildCommand += " --target `"$Target`"" }
 Invoke-Step "build-$Profile-$configKey" $buildCommand $TimeoutSec 8
 
@@ -56,7 +62,7 @@ if ($Action -eq 'Build') { exit 0 }
 
 if ($Action -eq 'Full') {
     Invoke-Step 'architecture-self-test' 'cmake -P cmake/ArchitectureFreezeSelfTest.cmake' 300 2
-    Invoke-Step "public-headers-$Profile-$configKey" ("cmake --build `"$build`" --config $Configuration --target EpidemicPublicHeaderSelfContainment --parallel") $TimeoutSec 8
+    Invoke-Step "public-headers-$Profile-$configKey" ("cmake --build `"$build`" --config $Configuration --target EpidemicPublicHeaderSelfContainment --parallel $BuildJobs") $TimeoutSec 8
 }
 
 $testCommand = "ctest --test-dir `"$build`" -C $Configuration --output-on-failure --no-tests=error --timeout 300"

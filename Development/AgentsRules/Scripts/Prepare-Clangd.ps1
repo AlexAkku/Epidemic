@@ -1,11 +1,12 @@
 [CmdletBinding()]
-param([switch]$Clean)
+param([switch]$Clean, [string]$BuildDirectory = 'build/clangd',
+    [string]$RuntimeDirectory = '.ai', [switch]$ShortOutput)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Common.ps1')
 $root = Get-ProjectRoot
-$build = [IO.Path]::GetFullPath((Join-Path $root 'build/clangd'))
-Set-AgentRuntimeEnvironment
+$build = [IO.Path]::GetFullPath((Join-Path $root $BuildDirectory))
+Set-AgentRuntimeEnvironment -RuntimeDirectory $RuntimeDirectory
 $quiet = Join-Path $PSScriptRoot 'Run-Quiet.ps1'
 
 Import-VsDevEnvironment
@@ -28,20 +29,22 @@ $cmd = @(
     '-DEPIDEMIC_BUILD_RUNTIME=ON',
     '-DEPIDEMIC_BUILD_FRAMEWORK=ON',
     '-DEPIDEMIC_WARNINGS_AS_ERRORS=OFF',
-    '-DEPIDEMIC_ARCHITECTURE_FREEZE_CHECKS=OFF'
+    '-DEPIDEMIC_ARCHITECTURE_FREEZE_CHECKS=ON'
 ) -join ' '
 
-& $quiet -Name 'clangd-configure' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $cmd
+& $quiet -Name 'clangd-configure' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $cmd `
+    -RuntimeDirectory $RuntimeDirectory -LogDir "$RuntimeDirectory/logs" -ShortOutput:$ShortOutput
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $db = Join-Path $build 'compile_commands.json'
 if (-not (Test-Path -LiteralPath $db -PathType Leaf)) { throw 'CMake did not generate compile_commands.json.' }
-$nativeBuild = Join-Path $root 'build/auditor-clangd'
+$nativeBuild = Join-Path (Split-Path -Parent $build) 'auditor-clangd'
 $nativeSource = Join-Path $root '.epidemic-auditor/native'
 if (Test-Path -LiteralPath (Join-Path $nativeSource 'CMakeLists.txt')) {
     $nativeCommand = ('cmake -S "' + $nativeSource + '" -B "' + $nativeBuild +
         '" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_EXPORT_COMPILE_COMMANDS=ON')
-    & $quiet -Name 'auditor-clangd-configure' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $nativeCommand
+    & $quiet -Name 'auditor-clangd-configure' -TimeoutSec 600 -MaxJobMemoryGB 4 -Command $nativeCommand `
+        -RuntimeDirectory $RuntimeDirectory -LogDir "$RuntimeDirectory/logs" -ShortOutput:$ShortOutput
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     $nativeDb = Join-Path $nativeBuild 'compile_commands.json'
     if (-not (Test-Path -LiteralPath $nativeDb -PathType Leaf)) { throw 'Auditor CMake did not generate compile_commands.json.' }
