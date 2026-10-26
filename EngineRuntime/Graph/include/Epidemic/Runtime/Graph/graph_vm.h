@@ -29,6 +29,7 @@ struct ExecutionReport {
 // never replay a prefix. Native state and registers belong to this instance.
 class GraphInstance final {
   public:
+    ~GraphInstance();
     GraphInstance(const GraphInstance &) = delete;
     GraphInstance &operator=(const GraphInstance &) = delete;
     GraphInstance(GraphInstance &&) = delete;
@@ -46,6 +47,8 @@ class GraphInstance final {
     [[nodiscard]] bool HasStarted() const noexcept { return started_; }
 
   private:
+    [[nodiscard]] foundation::Result<std::int64_t> InvokeNative(std::uint32_t site, std::int64_t value);
+    [[nodiscard]] static bool Arithmetic(Operation operation, std::int64_t left, std::int64_t right, std::int64_t &value);
     explicit GraphInstance(CompiledGraphPtr program);
     CompiledGraphPtr program_;
     std::vector<std::optional<std::int64_t>> values_;
@@ -63,5 +66,7 @@ class GraphInstance final {
     };
     std::optional<PendingWait> wait_;
     std::optional<ExecutionDiagnostic> failure_;
+    std::unique_ptr<detail::FlowInstance> flow_;
+    friend class detail::FlowInstance;
 };
 } // namespace epidemic::runtime::graph

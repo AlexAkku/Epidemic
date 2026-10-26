@@ -1,4 +1,5 @@
 #include "Epidemic/Runtime/Graph/graph_compiler.h"
+#include "graph_flow.h"
 
 #include <array>
 #include <queue>
@@ -20,6 +21,9 @@ Shape Expected(Operation operation) {
     case Operation::Multiply: return {2, 1};
     case Operation::NativeCall: return {1, 1};
     case Operation::Output: return {1, 0};
+    case Operation::Entry:
+    case Operation::Sequence:
+    case Operation::Branch: return {0, 0}; // Unused catalog bindings are valid in a data-only graph.
     }
     return {3, 3}; // Invalid binding; no supported node can have this shape.
 }
@@ -32,6 +36,7 @@ struct NodeInfo {
 } // namespace
 
 foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definition, std::span<const NodeBinding> bindings) {
+    if (detail::FlowCompiler::UsesFlow(definition, bindings)) return detail::FlowCompiler::Compile(definition, bindings);
     std::unordered_map<TypeId, const NodeBinding *> catalog;
     std::vector<TypeId> types{kI64Type};
     for (const auto &binding : bindings) {

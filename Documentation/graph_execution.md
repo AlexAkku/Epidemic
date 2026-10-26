@@ -88,5 +88,7 @@ the authority has not changed.
 Framework does not acquire a Graph/Support dependency. Existing Time, Simulation
 and Framework signatures are unchanged.
 
-Control/event execution, persisted suspended continuations, Editor UI, CLR and
-code generation remain outside this profile.
+Control execution has a separate [structured profile](graph_control.md); the
+original data DAG keeps its linear semantics. Persisted suspended continuations,
+Editor UI and code generation remain outside these profiles. The optional
+managed adapter is documented in [managed_bridge.md](managed_bridge.md).

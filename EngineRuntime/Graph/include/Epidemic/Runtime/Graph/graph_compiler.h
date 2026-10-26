@@ -4,9 +4,10 @@
 #include <memory>
 
 namespace epidemic::runtime::graph {
+namespace detail { struct FlowProgram; class FlowCompiler; class FlowInstance; }
 inline constexpr TypeId kI64Type = TypeId::FromString("epidemic.graph.i64");
 inline constexpr std::string_view kI64TypeName = "epidemic.graph.i64";
-enum class Operation : std::uint8_t { Input, Add, Multiply, NativeCall, Output, Wait };
+enum class Operation : std::uint8_t { Input, Add, Multiply, NativeCall, Output, Wait, Entry, Sequence, Branch };
 
 class INativeInvocation {
   public:
@@ -44,7 +45,7 @@ class CompiledGraph final {
   public:
     [[nodiscard]] AssetId Asset() const noexcept { return asset_; }
     [[nodiscard]] std::span<const Instruction> Instructions() const noexcept { return instructions_; }
-    [[nodiscard]] std::size_t RegisterCount() const noexcept { return slots_.size(); }
+    [[nodiscard]] std::size_t RegisterCount() const noexcept { return instructions_.size(); }
 
   private:
     CompiledGraph() = default;
@@ -54,7 +55,10 @@ class CompiledGraph final {
     std::vector<Instruction> instructions_;
     std::vector<Slot> slots_;
     std::vector<NativeSite> native_sites_;
+    std::shared_ptr<const detail::FlowProgram> flow_;
     friend foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &, std::span<const NodeBinding>);
     friend class GraphInstance;
+    friend class detail::FlowCompiler;
+    friend class detail::FlowInstance;
 };
 } // namespace epidemic::runtime::graph

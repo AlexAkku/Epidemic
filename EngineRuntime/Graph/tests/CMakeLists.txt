@@ -7,3 +7,8 @@ add_executable(EpidemicGraphVMTests graph_vm_tests.cpp)
 target_link_libraries(EpidemicGraphVMTests PRIVATE EpidemicRuntimeGraph)
 epidemic_configure_target(EpidemicGraphVMTests)
 epidemic_add_test(EpidemicGraphVMTests)
+
+add_executable(EpidemicGraphControlTests graph_control_tests.cpp)
+target_link_libraries(EpidemicGraphControlTests PRIVATE EpidemicRuntimeGraph)
+epidemic_configure_target(EpidemicGraphControlTests)
+epidemic_add_test(EpidemicGraphControlTests)

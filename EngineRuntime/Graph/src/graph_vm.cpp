@@ -1,4 +1,5 @@
 #include "Epidemic/Runtime/Graph/graph_vm.h"
+#include "graph_flow.h"
 
 #include <exception>
 #include <limits>
@@ -50,7 +51,16 @@ struct RunningGuard {
 } // namespace
 
 GraphInstance::GraphInstance(CompiledGraphPtr program)
-    : program_(std::move(program)), values_(program_->RegisterCount()) {}
+    : program_(std::move(program)), values_(program_->RegisterCount()) {
+    if (program_->flow_) flow_ = std::make_unique<detail::FlowInstance>(*this);
+}
+GraphInstance::~GraphInstance() = default;
+foundation::Result<std::int64_t> GraphInstance::InvokeNative(std::uint32_t site, std::int64_t value) {
+    return Invoke(*native_[site], value);
+}
+bool GraphInstance::Arithmetic(Operation operation, std::int64_t left, std::int64_t right, std::int64_t &value) {
+    return operation == Operation::Add ? Add(left, right, value) : Multiply(left, right, value);
+}
 
 foundation::Result<std::unique_ptr<GraphInstance>> GraphInstance::Create(CompiledGraphPtr program) {
     if (!program) return foundation::Result<std::unique_ptr<GraphInstance>>::Failure(Error("graph.vm.invalid_program"));
@@ -99,12 +109,14 @@ foundation::Result<void> GraphInstance::ResumeWait() {
     return foundation::Result<void>::Success();
 }
 void GraphInstance::Cancel() noexcept {
+    if (flow_) { flow_->Cancel(); return; }
     if (!failure_ && (wait_ || instruction_ < program_->instructions_.size())) {
         started_ = true;
         cancelled_ = true;
     }
 }
 ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
+    if (flow_) return flow_->Run(budget);
     if (running_) {
         failure_ = ExecutionDiagnostic{program_->Asset(), program_->instructions_[instruction_].node,
                                        instruction_, Error("graph.vm.reentrant")};
@@ -163,7 +175,7 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
             }
             case Operation::NativeCall: {
                 ++report.native_calls;
-                const auto invoked = Invoke(*native_[step.callable], left);
+                const auto invoked = InvokeNative(step.callable, left);
                 if (failure_) return {ExecutionStatus::Failed, report.instructions, report.native_calls, failure_};
                 if (cancelled_) return cancelled(report.instructions, report.native_calls);
                 if (!invoked) return fail(invoked.GetError());
@@ -179,7 +191,10 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
                 ++instruction_;
                 return waiting(report.instructions, report.native_calls);
             }
-            case Operation::Input: return fail(Error("graph.vm.invalid_instruction"));
+            case Operation::Input:
+            case Operation::Entry:
+            case Operation::Sequence:
+            case Operation::Branch: return fail(Error("graph.vm.invalid_instruction"));
             }
             values_[step.destination] = result;
         }
