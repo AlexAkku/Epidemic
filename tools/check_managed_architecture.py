@@ -59,6 +59,11 @@ def literal_path(project, value, root):
 def validate(root):
     root = root.resolve()
     projects = [p for layer in ROOTS for p in (root / layer).rglob('*.csproj')]
+    for layer in ROOTS:
+        for source_file in (root / layer).rglob('*.cs'):
+            owner(source_file, root)
+            if not any(project.parent in source_file.parents for project in projects):
+                raise ValueError('managed source requires an owning project')
     for project in projects:
         source = owner(project, root)
         tree = ET.parse(project)
@@ -113,6 +118,27 @@ def self_test(parent):
         case(projects[2], 'forbidden project reference')
         probe = root / projects[1]
         case(projects[0], None)
+        orphan = root / 'EngineRuntime/Probe/Managed/Orphan.cs'
+        orphan.parent.mkdir(parents=True)
+        orphan.write_text('class Orphan {}', encoding='utf-8')
+        try:
+            validate(root)
+        except ValueError as error:
+            if str(error) != 'managed source requires an owning project':
+                raise AssertionError(f'wrong source ownership failure: {error}') from error
+        else:
+            raise AssertionError('unowned managed source accepted')
+        orphan.unlink()
+        rogue = root / 'EngineRuntime/Probe/Rogue.cs'
+        rogue.write_text('class Rogue {}', encoding='utf-8')
+        try:
+            validate(root)
+        except ValueError as error:
+            if str(error) != 'managed source must have an owning layer/Managed directory':
+                raise AssertionError(f'wrong source layer failure: {error}') from error
+        else:
+            raise AssertionError('managed source outside Managed accepted')
+        rogue.unlink()
         shared = root / projects[2]
         shared.with_suffix('.cs').write_text('// owned by World', encoding='utf-8')
         import os

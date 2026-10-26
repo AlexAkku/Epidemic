@@ -158,6 +158,14 @@ function(_epidemic_scan root pattern rule)
             continue()
         endif()
         get_filename_component(_extension "${_file}" LAST_EXT)
+        if(_extension IN_LIST EPIDEMIC_PRODUCTION_MANAGED_EXTENSIONS)
+            file(TO_CMAKE_PATH "${_file}" _managed_file)
+            if(NOT _managed_file MATCHES "/Managed/")
+                message(FATAL_ERROR "Managed source must have an owning Managed directory: ${_file}")
+            endif()
+            # Root CMake always runs the separate managed project/source checker.
+            continue()
+        endif()
         if(NOT _extension IN_LIST EPIDEMIC_PRODUCTION_CXX_EXTENSIONS AND
            NOT _extension IN_LIST EPIDEMIC_PRODUCTION_SCRIPT_EXTENSIONS AND
            NOT _extension IN_LIST EPIDEMIC_PRODUCTION_ANCILLARY_EXTENSIONS)

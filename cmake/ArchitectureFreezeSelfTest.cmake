@@ -174,5 +174,13 @@ _run_case(framework_horizontal_link
     ""
     FAIL "without central allowlist permission")
 
+_run_case(managed_extension_routing
+    "file(MAKE_DIRECTORY \"\${CMAKE_CURRENT_SOURCE_DIR}/EngineRuntime/Support/Managed\")\nfile(WRITE \"\${CMAKE_CURRENT_SOURCE_DIR}/EngineRuntime/Support/Managed/Fixture.csproj\" \"<Project/>\")\nfile(WRITE \"\${CMAKE_CURRENT_SOURCE_DIR}/EngineRuntime/Support/Managed/Fixture.cs\" \"// #include <Epidemic/GameFramework/Forbidden.h>\")\nadd_subdirectory(EngineRuntime/Support)\n${_validate}"
+    "EngineRuntime/Support" "add_library(EpidemicRuntimeSupport INTERFACE)" "" PASS "")
+
+_run_case(managed_outside_owner
+    "file(WRITE \"\${CMAKE_CURRENT_SOURCE_DIR}/EngineRuntime/Support/Rogue.cs\" \"class Rogue {}\")\nadd_subdirectory(EngineRuntime/Support)\n${_validate}"
+    "EngineRuntime/Support" "add_library(EpidemicRuntimeSupport INTERFACE)" "" FAIL "Managed source must have an owning Managed directory")
+
 file(REMOVE_RECURSE "${_sandbox}")
-message(STATUS "Architecture freeze self-test accepted valid fixtures including JavaScript and rejected all forbidden dependency/include/source fixtures")
+message(STATUS "Architecture freeze self-test accepted native/script/managed routing and rejected forbidden dependency/include/source fixtures")
