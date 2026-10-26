@@ -1,0 +1,31 @@
+# Game composition
+
+EntityService remains the sole Entity/Parts/lifecycle owner. GraphScope is a
+capability for a generation-checked EntityHandle and optional existing Part;
+it neither allocates Entity identities nor restores or duplicates Entity state.
+PendingDestroy, removal, slot reuse and explicit invalidation expire the scope.
+Scopes and EntityService are externally synchronized on the gameplay thread;
+EntityService outlives its scopes.
+
+Framework exposes object context and activation lifetime interfaces without
+including Runtime Graph, Schema or Support headers. Game/Composition is the
+composition root above Framework and Runtime: GraphExecutionHost binds native
+operations to that context and delegates compilation/execution/waits to Runtime.
+This follows the existing layer direction; Architecture Freeze allowlists remain
+unchanged. No compiler, VM or scheduler is implemented in Framework.
+
+Compile creates a BoundGraph for one scope. Start derives its owner from that
+binding, preventing execution with another Entity's context. Native invocation
+state remains per activation. OperationContext exposes the existing RuntimeBridge
+service; runtime representations continue to use its normal projection lifecycle.
+The bridge, host scheduler and domain services outlive the host and its programs.
+
+Before the existing Simulation Tick, call GraphExecutionHost::Prepare. This is
+the lifecycle barrier for Entity changes made outside graph code, and delegates
+timer preparation to GraphScheduler. Domain calls validate their scope before
+execution and synchronize it on return/unwind. Destruction inside a native call
+therefore cancels all owned activations before the VM can run their suffixes.
+Cancellation does not roll back an already accepted domain operation.
+
+An authoring GraphDefinition may be shared, while its BoundGraph carries one
+object's context. Framework does not persist IR or active VM continuations.

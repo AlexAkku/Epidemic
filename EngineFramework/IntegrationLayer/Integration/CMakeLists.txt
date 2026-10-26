@@ -3,6 +3,7 @@ add_library(EpidemicGameFrameworkCoreIntegration STATIC
     src/save_package_store.cpp
     src/save_generation.cpp
     src/save_restore.cpp
+    src/graph_scope.cpp
 )
 
 target_include_directories(EpidemicGameFrameworkCoreIntegration PUBLIC
@@ -15,6 +16,7 @@ target_link_libraries(EpidemicGameFrameworkCoreIntegration
         EpidemicGameplayFacts
         EpidemicGameplayTime
         EpidemicGameFrameworkSaveGame
+        EpidemicGameFrameworkEntities
         EpidemicRuntimeTime
     PUBLIC EpidemicFoundation
 )

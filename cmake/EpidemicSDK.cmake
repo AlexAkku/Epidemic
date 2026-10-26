@@ -46,6 +46,8 @@ function(epidemic_install_sdk)
         "${PROJECT_SOURCE_DIR}/EngineBase/*.h" "${PROJECT_SOURCE_DIR}/EngineBase/*.cpp"
         "${PROJECT_SOURCE_DIR}/EngineRuntime/*.h" "${PROJECT_SOURCE_DIR}/EngineRuntime/*.cpp"
         "${PROJECT_SOURCE_DIR}/EngineFramework/*.h" "${PROJECT_SOURCE_DIR}/EngineFramework/*.cpp"
+        "${PROJECT_SOURCE_DIR}/Game/Composition/*.h" "${PROJECT_SOURCE_DIR}/Game/Composition/*.cpp"
+        "${PROJECT_SOURCE_DIR}/Game/Composition/CMakeLists.txt" "${PROJECT_SOURCE_DIR}/Game/Composition/*/CMakeLists.txt"
         "${PROJECT_SOURCE_DIR}/EngineBase/CMakeLists.txt" "${PROJECT_SOURCE_DIR}/EngineBase/*/CMakeLists.txt"
         "${PROJECT_SOURCE_DIR}/EngineRuntime/*/CMakeLists.txt" "${PROJECT_SOURCE_DIR}/EngineFramework/*/CMakeLists.txt"
         "${PROJECT_SOURCE_DIR}/cmake/*.cmake" "${PROJECT_SOURCE_DIR}/cmake/*.in")

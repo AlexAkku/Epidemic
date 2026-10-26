@@ -104,6 +104,7 @@ if(EPIDEMIC_BUILD_FRAMEWORK)
     endif()
 
     add_subdirectory(EngineFramework)
+    add_subdirectory(Game/Composition)
 endif()
 if(BUILD_TESTING AND EPIDEMIC_BUILD_RUNTIME AND EPIDEMIC_BUILD_FRAMEWORK)
     add_subdirectory(Tests/Truth)
