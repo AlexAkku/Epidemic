@@ -2,6 +2,7 @@ add_library(EpidemicRuntimeSupport STATIC
     src/runtime_support.cpp
     src/runtime_packages.cpp
     src/asset_element_reference.cpp
+    src/graph_serialization.cpp
 )
 
 target_include_directories(EpidemicRuntimeSupport PUBLIC
@@ -12,6 +13,7 @@ target_link_libraries(EpidemicRuntimeSupport
     PUBLIC EpidemicCore
     PRIVATE EpidemicPlatform
     PUBLIC EpidemicRuntimeFoundation
+    PUBLIC EpidemicRuntimeGraph
     PUBLIC EpidemicRuntimeAssets
     PUBLIC EpidemicRuntimeSerialization
     PUBLIC EpidemicRuntimeResources
