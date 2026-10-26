@@ -13,10 +13,12 @@ control ports have no payload. Shapes (data in/out, control in/out):
 | Input | 0/1 | 0/0 | Activation input, configured before Run |
 | Add / Multiply | 2/1 | 0/0 | Checked pure expression |
 | Entry | 0/0 | 0/1 | Immediate one-shot entry |
+| EventEntry | 0/1 | 0/1 | External i64 event input plus immutable payload output |
 | Sequence | 0/0 | 1/N | N positive; execute each output subtree in port order |
 | Branch | 1/0 | 1/2 | Nonzero selects first output; zero selects second |
 | NativeCall | 1/1 | 1/1 | Ordered action bound to an explicit native factory |
 | Output | 1/0 | 1/0 | Publish an output sink when reached |
+| Repeat | 1/1 | 1/2 | Captured count, current index; body then done |
 
 An unconnected control output ends that subtree; a control output has at most
 one connection. Use Sequence for explicit ordering. Raw control/data cycles,
@@ -37,3 +39,20 @@ native errors, reentrancy and cancellation keep asset/node/static IR diagnostics
 InstructionPointer is the current static node index for this profile. Exceptions
 from local allocations retain the existing discard-instance policy. Native calls
 are synchronous and cannot be preempted or rolled back.
+
+CreateForEvent selects an EventEntry by stable event-input port ID and supplies
+an i64 payload. Every delivery creates a fresh activation; program/native factory
+snapshots are shared, mutable state is not. A program can contain several event
+entries and at most one immediate Entry. Create requires that immediate Entry;
+an event-only program requires CreateForEvent. Event inputs are external delivery
+boundaries, not control transitions or an implicit global event bus.
+
+Repeat captures a count in [0, kMaxRepeatIterations] once. Its first control output
+is a subtree invoked for indices 0..count-1, its second is the continuation after
+the loop. Return from the body is implicit; explicit cyclic edges remain invalid.
+The index is available only inside the active loop, including nested loops.
+Each iteration invalidates body action results before execution, so a skipped
+branch cannot consume a previous iteration's effect. Pure expressions are freshly
+memoized at each control step. Iteration, invalidation and expression work consume
+the same instruction budget; even an empty/large loop yields. ReadValue observes
+the last materialized pure value, never evaluates an expression by itself.

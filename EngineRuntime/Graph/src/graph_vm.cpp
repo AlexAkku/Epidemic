@@ -63,8 +63,22 @@ bool GraphInstance::Arithmetic(Operation operation, std::int64_t left, std::int6
 }
 
 foundation::Result<std::unique_ptr<GraphInstance>> GraphInstance::Create(CompiledGraphPtr program) {
+    return CreateAt(std::move(program), {}, std::nullopt);
+}
+foundation::Result<std::unique_ptr<GraphInstance>> GraphInstance::CreateForEvent(CompiledGraphPtr program, ElementId event_port, std::int64_t payload) {
+    return CreateAt(std::move(program), event_port, payload);
+}
+foundation::Result<std::unique_ptr<GraphInstance>> GraphInstance::CreateAt(CompiledGraphPtr program, ElementId event_port, std::optional<std::int64_t> payload) {
     if (!program) return foundation::Result<std::unique_ptr<GraphInstance>>::Failure(Error("graph.vm.invalid_program"));
+    std::uint32_t entry = detail::kNoNode;
+    if (payload) {
+        if (program->flow_) for (const auto &candidate : program->flow_->events) if (candidate.port == event_port) entry = candidate.node;
+        if (entry == detail::kNoNode)
+            return foundation::Result<std::unique_ptr<GraphInstance>>::Failure(Error("graph.flow.unknown_event"));
+    } else if (program->flow_ && program->flow_->entry == detail::kNoNode)
+        return foundation::Result<std::unique_ptr<GraphInstance>>::Failure(Error("graph.flow.event_required"));
     auto instance = std::unique_ptr<GraphInstance>(new GraphInstance(std::move(program)));
+    if (payload) instance->flow_->Activate(entry, payload);
     for (const auto &site : instance->program_->native_sites_) {
         auto state = CreateState(*site.factory);
         if (!state) {
@@ -194,6 +208,8 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
             case Operation::Input:
             case Operation::Entry:
             case Operation::Sequence:
+            case Operation::EventEntry:
+            case Operation::Repeat:
             case Operation::Branch: return fail(Error("graph.vm.invalid_instruction"));
             }
             values_[step.destination] = result;

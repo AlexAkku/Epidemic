@@ -23,6 +23,8 @@ Shape Expected(Operation operation) {
     case Operation::Output: return {1, 0};
     case Operation::Entry:
     case Operation::Sequence:
+    case Operation::EventEntry:
+    case Operation::Repeat:
     case Operation::Branch: return {0, 0}; // Unused catalog bindings are valid in a data-only graph.
     }
     return {3, 3}; // Invalid binding; no supported node can have this shape.

@@ -3,8 +3,14 @@
 
 namespace epidemic::runtime::graph::detail {
 FlowInstance::FlowInstance(GraphInstance &owner) : owner_(owner), cache_(owner.values_.size()) {
-    owner_.instruction_ = owner_.program_->flow_->entry;
-    Push(owner_.program_->flow_->entry);
+    Activate(owner_.program_->flow_->entry, std::nullopt);
+}
+void FlowInstance::Activate(std::uint32_t entry, std::optional<std::int64_t> payload) {
+    work_.clear();
+    if (entry == kNoNode) return;
+    owner_.instruction_ = entry;
+    if (payload) owner_.values_[entry] = *payload;
+    Push(entry);
 }
 void FlowInstance::Push(std::uint32_t node) { if (node != kNoNode) work_.push_back({Kind::Execute, node}); }
 void FlowInstance::NextEpoch() {
@@ -41,6 +47,19 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
             report.status = ExecutionStatus::BudgetExhausted; report.diagnostic = Diagnostic("graph.vm.budget_exhausted"); return report;
         }
         ++report.instructions;
+        if (work.kind == Kind::Clear) { values[work.node].reset(); cache_[work.node] = 0; work_.pop_back(); continue; }
+        if (work.kind == Kind::Repeat) {
+            NextEpoch();
+            if (work.iteration == work.count) {
+                values[work.node].reset(); work_.pop_back(); Push(node.next[1]);
+            } else {
+                values[work.node] = work.iteration;
+                ++work_.back().iteration;
+                Push(node.next[0]);
+                for (auto i = node.clear.rbegin(); i != node.clear.rend(); ++i) work_.push_back({Kind::Clear, *i});
+            }
+            continue;
+        }
         if (work.kind == Kind::Execute) {
             NextEpoch(); work_.back().kind = Kind::Apply;
             for (auto i = node.data.rbegin(); i != node.data.rend(); ++i) work_.push_back({Kind::Evaluate, *i});
@@ -66,6 +85,7 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
         }
         switch (step.operation) {
         case Operation::Entry:
+        case Operation::EventEntry:
         case Operation::Sequence:
             work_.pop_back();
             for (auto i = node.next.rbegin(); i != node.next.rend(); ++i) Push(*i);
@@ -74,6 +94,12 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
             const auto &condition = values[node.data[0]];
             if (!condition) return Fail("graph.flow.value_unavailable", report);
             work_.pop_back(); Push(node.next[*condition != 0 ? 0 : 1]); break;
+        }
+        case Operation::Repeat: {
+            const auto &count = values[node.data[0]];
+            if (!count) return Fail("graph.flow.value_unavailable", report);
+            if (*count < 0 || *count > kMaxRepeatIterations) return Fail("graph.flow.repeat_count", report);
+            work_.pop_back(); work_.push_back({Kind::Repeat, work.node, *count, 0}); break;
         }
         case Operation::NativeCall: {
             const auto &input = values[node.data[0]];

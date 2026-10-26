@@ -6,13 +6,15 @@
 
 namespace epidemic::runtime::graph::detail {
 namespace {
-struct Shape { std::size_t data_in; std::size_t data_out; std::size_t control_in; std::size_t control_out; };
+struct Shape { std::size_t data_in = 0; std::size_t data_out = 0; std::size_t control_in = 0; std::size_t control_out = 0; std::size_t event_in = 0; };
 std::optional<Shape> Expected(Operation operation) {
     switch (operation) {
     case Operation::Input: return Shape{0, 1, 0, 0};
     case Operation::Add:
     case Operation::Multiply: return Shape{2, 1, 0, 0};
     case Operation::Entry: return Shape{0, 0, 0, 1};
+    case Operation::EventEntry: return Shape{0, 1, 0, 1, 1};
+    case Operation::Repeat: return Shape{1, 1, 1, 2};
     case Operation::Sequence: return Shape{0, 0, 1, 0}; // Variable nonempty ordered outputs.
     case Operation::Branch: return Shape{1, 0, 1, 2};
     case Operation::NativeCall: return Shape{1, 1, 1, 1};
@@ -40,13 +42,15 @@ struct Ports {
     std::vector<ElementId> data_out;
     std::vector<ElementId> control_in;
     std::vector<ElementId> control_out;
+    std::vector<ElementId> events;
 };
 struct PortOwner { std::uint32_t node = 0; PortKind kind = PortKind::Data; };
 } // namespace
 bool FlowCompiler::UsesFlow(const GraphDefinition &definition, std::span<const NodeBinding> bindings) {
     std::unordered_set<TypeId> control_types;
     for (const auto &binding : bindings)
-        if (binding.operation == Operation::Entry || binding.operation == Operation::Sequence || binding.operation == Operation::Branch)
+        if (binding.operation == Operation::Entry || binding.operation == Operation::Sequence || binding.operation == Operation::Branch ||
+            binding.operation == Operation::EventEntry || binding.operation == Operation::Repeat)
             control_types.insert(binding.node_type);
     for (const auto &node : definition.nodes) if (control_types.contains(node.type_id)) return true;
     return false;
@@ -56,7 +60,7 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
     std::vector<TypeId> types{kI64Type};
     for (const auto &binding : bindings) {
         if (!binding.node_type.IsValid() || !catalog.emplace(binding.node_type, &binding).second ||
-            static_cast<unsigned>(binding.operation) > static_cast<unsigned>(Operation::Branch) ||
+            static_cast<unsigned>(binding.operation) > static_cast<unsigned>(Operation::Repeat) ||
             ((binding.operation == Operation::NativeCall) != static_cast<bool>(binding.native))) return Reject("graph.compile.invalid_binding");
         types.push_back(binding.node_type);
     }
@@ -81,20 +85,24 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         const auto index = static_cast<std::uint32_t>(i);
         auto &p = ports[i];
         for (const auto &port : node.ports) {
-            if (port.kind == PortKind::Event) return Reject("graph.flow.unsupported_event", node.id);
-            if (port.kind == PortKind::Data) {
+            if (port.kind == PortKind::Event) {
+                if (binding.operation != Operation::EventEntry || port.direction != PortDirection::Input || port.type_id != kI64Type)
+                    return Reject("graph.flow.unsupported_event", node.id);
+                p.events.push_back(port.id);
+            } else if (port.kind == PortKind::Data) {
                 if (port.type_id != kI64Type) return Reject("graph.compile.unsupported_type", node.id);
                 (port.direction == PortDirection::Input ? p.data_in : p.data_out).push_back(port.id);
             } else (port.direction == PortDirection::Input ? p.control_in : p.control_out).push_back(port.id);
             owners.emplace(port.id, PortOwner{index, port.kind});
         }
-        if (p.data_in.size() != shape->data_in || p.data_out.size() != shape->data_out || p.control_in.size() != shape->control_in ||
+        if (p.data_in.size() != shape->data_in || p.data_out.size() != shape->data_out || p.control_in.size() != shape->control_in || p.events.size() != shape->event_in ||
             (binding.operation == Operation::Sequence ? p.control_out.empty() : p.control_out.size() != shape->control_out))
             return Reject("graph.compile.node_shape", node.id);
         if (binding.operation == Operation::Entry) {
             if (flow->entry != kNoNode) return Reject("graph.flow.multiple_entries", node.id);
             flow->entry = index;
         }
+        if (binding.operation == Operation::EventEntry) flow->events.push_back({p.events[0], index});
         Instruction instruction{binding.operation, node.id, index, 0, 0, 0};
         if (binding.operation == Operation::NativeCall) {
             instruction.callable = static_cast<std::uint32_t>(program->native_sites_.size());
@@ -105,7 +113,7 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         if (binding.operation == Operation::Output) program->slots_.push_back({p.data_in[0], index, false});
         flow->nodes[i].next.resize(p.control_out.size(), kNoNode);
     }
-    if (flow->entry == kNoNode) return Reject("graph.flow.missing_entry");
+    if (flow->entry == kNoNode && flow->events.empty()) return Reject("graph.flow.missing_entry");
     std::unordered_map<ElementId, ElementId> incoming;
     std::unordered_map<ElementId, std::uint32_t> outgoing;
     std::vector<std::vector<std::uint32_t>> data_edges(ordered.size()), control_edges(ordered.size());
@@ -114,15 +122,17 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         const auto source = owners.at(edge.output_port); const auto target = owners.at(edge.input_port);
         if (source.kind == PortKind::Data) {
             incoming.emplace(edge.input_port, edge.output_port); data_edges[source.node].push_back(target.node);
-        } else {
+        } else if (source.kind == PortKind::Control) {
             if (!outgoing.emplace(edge.output_port, target.node).second) return Reject("graph.flow.control_fanout", ordered[source.node]->id);
             control_edges[source.node].push_back(target.node); control_connected[target.node] = true;
-        }
+        } else return Reject("graph.flow.event_connection");
     }
     if (!Acyclic(data_edges)) return Reject("graph.compile.data_cycle");
     if (!Acyclic(control_edges)) return Reject("graph.flow.control_cycle");
     std::vector<bool> reached(ordered.size());
-    std::vector<std::uint32_t> pending{flow->entry};
+    std::vector<std::uint32_t> pending;
+    if (flow->entry != kNoNode) pending.push_back(flow->entry);
+    for (const auto &event : flow->events) pending.push_back(event.node);
     while (!pending.empty()) {
         const auto node = pending.back(); pending.pop_back();
         if (reached[node]) continue;
@@ -142,6 +152,16 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         for (std::size_t n = 0; n < p.control_out.size(); ++n) {
             const auto found = outgoing.find(p.control_out[n]);
             if (found != outgoing.end()) node.next[n] = found->second;
+        }
+        if (program->instructions_[i].operation == Operation::Repeat && node.next[0] != kNoNode) {
+            std::vector<bool> member(ordered.size());
+            std::vector<std::uint32_t> body{node.next[0]};
+            while (!body.empty()) {
+                const auto current = body.back(); body.pop_back();
+                if (member[current]) continue;
+                member[current] = true; node.clear.push_back(current);
+                for (const auto next : control_edges[current]) body.push_back(next);
+            }
         }
     }
     program->flow_ = std::move(flow);

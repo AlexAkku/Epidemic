@@ -7,7 +7,8 @@ namespace epidemic::runtime::graph {
 namespace detail { struct FlowProgram; class FlowCompiler; class FlowInstance; }
 inline constexpr TypeId kI64Type = TypeId::FromString("epidemic.graph.i64");
 inline constexpr std::string_view kI64TypeName = "epidemic.graph.i64";
-enum class Operation : std::uint8_t { Input, Add, Multiply, NativeCall, Output, Wait, Entry, Sequence, Branch };
+inline constexpr std::int64_t kMaxRepeatIterations = 1'000'000;
+enum class Operation : std::uint8_t { Input, Add, Multiply, NativeCall, Output, Wait, Entry, Sequence, Branch, EventEntry, Repeat };
 
 class INativeInvocation {
   public:

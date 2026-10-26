@@ -35,6 +35,8 @@ class GraphInstance final {
     GraphInstance(GraphInstance &&) = delete;
     GraphInstance &operator=(GraphInstance &&) = delete;
     [[nodiscard]] static foundation::Result<std::unique_ptr<GraphInstance>> Create(CompiledGraphPtr program);
+    [[nodiscard]] static foundation::Result<std::unique_ptr<GraphInstance>>
+    CreateForEvent(CompiledGraphPtr program, ElementId event_port, std::int64_t payload);
     [[nodiscard]] foundation::Result<void> SetInput(ElementId port, std::int64_t value);
     // Read a node's output port, or the input port of a builtin Output node.
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(ElementId port) const;
@@ -47,6 +49,8 @@ class GraphInstance final {
     [[nodiscard]] bool HasStarted() const noexcept { return started_; }
 
   private:
+    [[nodiscard]] static foundation::Result<std::unique_ptr<GraphInstance>>
+    CreateAt(CompiledGraphPtr program, ElementId event_port, std::optional<std::int64_t> payload);
     [[nodiscard]] foundation::Result<std::int64_t> InvokeNative(std::uint32_t site, std::int64_t value);
     [[nodiscard]] static bool Arithmetic(Operation operation, std::int64_t left, std::int64_t right, std::int64_t &value);
     explicit GraphInstance(CompiledGraphPtr program);

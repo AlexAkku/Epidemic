@@ -1,5 +1,6 @@
 #include "Epidemic/Runtime/Graph/graph_vm.h"
 #include <array>
+#include <algorithm>
 #include <cstdio>
 #include <limits>
 #include <stdexcept>
@@ -120,8 +121,113 @@ void InvalidControl() {
     example = Example{}; example.graph.connections[6].output_port = Id("double.out");
     ErrorIs(CompileGraph(example.graph, example.bindings), "graph.compile.data_cycle");
 }
+Example EventExample() {
+    Example example;
+    using D = PortDirection;
+    example.bindings[0].operation = Operation::EventEntry;
+    example.graph.nodes[0].ports = {{Id("event.in"), "Event", PortKind::Event, D::Input, kI64Type},
+                                   Data("event.payload", D::Output), Control("entry.next", D::Output)};
+    example.graph.nodes.push_back({Id("repeat"), Id("repeat.type"), "Repeat",
+        {Control("repeat.in", D::Input), Data("repeat.count", D::Input), Data("repeat.index", D::Output),
+         Control("repeat.body", D::Output), Control("repeat.done", D::Output)}});
+    example.bindings.push_back({Id("repeat.type"), Operation::Repeat, {}});
+    example.graph.connections[3].input_port = Id("repeat.in");
+    example.graph.connections[5].output_port = Id("event.payload");
+    example.graph.connections[6].output_port = Id("repeat.index");
+    example.graph.connections[7].output_port = Id("repeat.index");
+    example.graph.connections[9].output_port = Id("event.payload");
+    example.graph.connections[10].output_port = Id("event.payload");
+    example.graph.connections.push_back({Id("repeat.body.edge"), Id("repeat.body"), Id("true.in")});
+    example.graph.connections.push_back({Id("repeat.count.edge"), Id("event.payload"), Id("repeat.count")});
+    return example;
+}
+void EventsAndLoops() {
+    auto example = EventExample();
+    const auto program = CompileGraph(example.graph, example.bindings).Value();
+    ErrorIs(GraphInstance::Create(program), "graph.flow.event_required");
+    ErrorIs(GraphInstance::CreateForEvent(program, Id("unknown.event"), 1), "graph.flow.unknown_event");
+    auto first = GraphInstance::CreateForEvent(program, Id("event.in"), 3).Value();
+    auto second = GraphInstance::CreateForEvent(program, Id("event.in"), 2).Value();
+    Check(&first->Program() == &second->Program(), "event activations share immutable program");
+    ErrorIs(first->SetInput(Id("event.payload"), 7), "graph.vm.unknown_input");
+    const auto yielded = first->Run({1000, 1});
+    Check(yielded.status == ExecutionStatus::BudgetExhausted && yielded.native_calls == 1 && first->ReadValue(Id("repeat.index")).Value() == 1,
+          "Repeat resumes at next effect with its own loop variable");
+    Check(second->Run().status == ExecutionStatus::Completed && first->Run().status == ExecutionStatus::Completed &&
+          *example.log == Log{{10, 0}, {10, 0}, {10, 2}, {30, 2}, {10, 2}, {10, 4}, {30, 3}},
+          "independent event payloads, cursors, loop variables and pure-expression caches");
+    ErrorIs(first->ReadValue(Id("repeat.index")), "graph.vm.value_unavailable");
+    Check(first->ReadValue(Id("tail.out")).Value() == 3 && second->ReadValue(Id("tail.out")).Value() == 2, "independent event outputs");
+    example.log->clear();
+    auto zero = GraphInstance::CreateForEvent(program, Id("event.in"), 0).Value();
+    Check(zero->Run().status == ExecutionStatus::Completed && *example.log == Log{{20, 0}, {30, 0}}, "zero event chooses fallback without entering Repeat");
+    for (const auto count : {-1LL, static_cast<long long>(kMaxRepeatIterations + 1)}) {
+        auto bad = GraphInstance::CreateForEvent(program, Id("event.in"), count).Value();
+        const auto failure = bad->Run();
+        Check(failure.status == ExecutionStatus::Failed && failure.diagnostic && failure.diagnostic->node == Id("repeat") &&
+              failure.diagnostic->error.HasCode("graph.flow.repeat_count"), "Repeat count bounded and diagnosed");
+    }
+    using D = PortDirection;
+    example.graph.nodes.push_back({Id("other"), Id("entry.type"), "Other event",
+        {{Id("other.event"), "Other", PortKind::Event, D::Input, kI64Type}, Data("other.payload", D::Output), Control("other.next", D::Output)}});
+    auto other = GraphInstance::CreateForEvent(CompileGraph(example.graph, example.bindings).Value(), Id("other.event"), 9).Value();
+    Check(other->Run().status == ExecutionStatus::Completed && other->ReadValue(Id("other.payload")).Value() == 9, "select event by stable port ID");
+
+    auto nested = EventExample();
+    nested.graph.nodes.push_back({Id("inner"), Id("repeat.type"), "Inner",
+        {Control("inner.in", D::Input), Data("inner.count", D::Input), Data("inner.index", D::Output),
+         Control("inner.body", D::Output), Control("inner.done", D::Output)}});
+    nested.graph.connections[11].input_port = Id("inner.in");
+    nested.graph.connections[7].output_port = Id("inner.index");
+    nested.graph.connections.push_back({Id("inner.count.edge"), Id("event.payload"), Id("inner.count")});
+    nested.graph.connections.push_back({Id("inner.body.edge"), Id("inner.body"), Id("true.in")});
+    auto activation = GraphInstance::CreateForEvent(CompileGraph(nested.graph, nested.bindings).Value(), Id("event.in"), 3).Value();
+    ExecutionReport report; std::size_t total = 0;
+    do { report = activation->Run({4, 1}); total += report.instructions; Check(total < 1000, "nested loop makes bounded progress"); }
+    while (report.status == ExecutionStatus::BudgetExhausted);
+    Check(report.status == ExecutionStatus::Completed && *nested.log == Log{{10, 0}, {10, 1}, {10, 2}, {10, 1}, {10, 2}, {10, 3}, {10, 2}, {10, 3}, {10, 4}, {30, 3}},
+          "nested loop variables and ordered continuation stack");
+    auto empty = EventExample();
+    std::erase_if(empty.graph.nodes, [](const auto &node) { return node.id == Id("true"); });
+    std::erase_if(empty.graph.connections, [](const auto &edge) { return edge.input_port == Id("true.in") || edge.input_port == Id("true.value"); });
+    auto large = GraphInstance::CreateForEvent(CompileGraph(empty.graph, empty.bindings).Value(), Id("event.in"), kMaxRepeatIterations).Value();
+    const auto empty_yield = large->Run({100, 0});
+    Check(empty_yield.status == ExecutionStatus::BudgetExhausted && empty_yield.instructions == 100 &&
+          large->ReadValue(Id("repeat.index")).Value() > 1 && empty.log->empty(), "empty large Repeat cannot escape Run budget");
+    large->Cancel(); Check(large->Run().status == ExecutionStatus::Cancelled, "bounded activation can cancel");
+}
+void IterationValueScope() {
+    auto example = EventExample();
+    using D = PortDirection;
+    example.graph.nodes.push_back({Id("body.sequence"), Id("sequence.type"), "Body",
+        {Control("body.in", D::Input), Control("body.first", D::Output), Control("body.second", D::Output)}});
+    example.graph.nodes.push_back({Id("body.branch"), Id("branch.type"), "Body branch",
+        {Control("body.branch.in", D::Input), Data("body.condition", D::Input), Control("body.true", D::Output), Control("body.false", D::Output)}});
+    example.graph.nodes.push_back({Id("minus"), Id("input.type"), "Minus one", {Data("minus.out", D::Output)}});
+    example.graph.nodes.push_back({Id("condition.expr"), Id("add.type"), "Index minus one",
+        {Data("expr.a", D::Input), Data("expr.b", D::Input), Data("expr.out", D::Output)}});
+    example.graph.nodes.push_back({Id("consumer"), Id("tail.type"), "Consumer",
+        {Control("consumer.in", D::Input), Data("consumer.value", D::Input), Data("consumer.out", D::Output), Control("consumer.next", D::Output)}});
+    example.graph.connections[11].input_port = Id("body.in");
+    const auto edge = [&](std::string_view name, std::string_view source, std::string_view target) {
+        example.graph.connections.push_back({Id(name), Id(source), Id(target)});
+    };
+    edge("body.c1", "body.first", "body.branch.in"); edge("body.c2", "body.second", "consumer.in");
+    edge("body.c3", "body.true", "true.in"); edge("body.d1", "repeat.index", "expr.a");
+    edge("body.d2", "minus.out", "expr.b"); edge("body.d3", "expr.out", "body.condition"); edge("body.d4", "true.out", "consumer.value");
+    auto activation = GraphInstance::CreateForEvent(CompileGraph(example.graph, example.bindings).Value(), Id("event.in"), 2).Value();
+    Check(activation->SetInput(Id("minus.out"), -1).HasValue(), "loop condition constant");
+    const auto failure = activation->Run();
+    Check(failure.status == ExecutionStatus::Failed && failure.diagnostic && failure.diagnostic->error.HasCode("graph.flow.value_unavailable") &&
+          *example.log == Log{{10, 0}, {30, 0}}, "skipped action cannot leak its previous iteration value");
+    auto zero = EventExample();
+    zero.graph.connections[12].output_port = Id("value.out");
+    auto skipped = GraphInstance::CreateForEvent(CompileGraph(zero.graph, zero.bindings).Value(), Id("event.in"), 1).Value();
+    Check(skipped->SetInput(Id("value.out"), 0).HasValue() && skipped->Run().status == ExecutionStatus::Completed &&
+          *zero.log == Log{{30, 1}}, "zero Repeat runs done continuation without body");
+}
 } // namespace
 int main() {
-    try { ControlFlow(); InvalidControl(); return 0; }
+    try { ControlFlow(); InvalidControl(); EventsAndLoops(); IterationValueScope(); return 0; }
     catch (const std::exception &error) { std::fputs(error.what(), stderr); std::fputc('\n', stderr); return 1; }
 }
