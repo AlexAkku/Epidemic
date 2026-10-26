@@ -13,6 +13,11 @@
 namespace epidemic::runtime::schema {
 using SchemaId = foundation::StringId;
 
+struct NativeOperationRef {
+    SchemaId owner_type{};
+    SchemaId operation{};
+};
+
 struct NativeTypeInfo {
     SchemaId id;
     std::string canonical_name;
@@ -44,6 +49,15 @@ class NativeSchemaRegistry {
     }
 
     [[nodiscard]] const NativeTypeInfo *FindType(SchemaId type) const noexcept;
+
+    // Check a callable signature without executing it or mutating an owner.
+    template <typename Owner, typename Argument, typename Return>
+    [[nodiscard]] foundation::Result<void> CheckOperation(NativeOperationRef reference) const {
+        const auto binding = Resolve<Operation<Owner, Argument, Return>>(
+            reference.owner_type, reference.operation, typeid(Owner), true);
+        if (!binding) return foundation::Result<void>::Failure(binding.GetError());
+        return foundation::Result<void>::Success();
+    }
 
     template <typename Value, typename Owner>
     [[nodiscard]] foundation::Result<Value> Read(SchemaId type, SchemaId property, const Owner &object) const {

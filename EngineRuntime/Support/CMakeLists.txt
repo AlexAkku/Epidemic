@@ -14,6 +14,7 @@ target_link_libraries(EpidemicRuntimeSupport
     PRIVATE EpidemicPlatform
     PUBLIC EpidemicRuntimeFoundation
     PUBLIC EpidemicRuntimeGraph
+    PUBLIC EpidemicRuntimeSchema
     PUBLIC EpidemicRuntimeAssets
     PUBLIC EpidemicRuntimeSerialization
     PUBLIC EpidemicRuntimeResources
