@@ -47,3 +47,10 @@ the service snapshots definitions and assigns generation-checked behavior handle
 Send targets one behavior; SendTo explicitly targets an Entity/Part in stable
 attachment order. There is no implicit bus or polling of unrelated Facts. Runtime
 continues to own every compiled program, activation, budget and continuation.
+
+SystemInstance owns a Scene/World graph scope without allocating an Entity.
+A system has its own lifetime capability even when two instances share names,
+Scene/World owner and graph definitions. Stop/destruction invalidates children;
+an optional owner-liveness predicate lets the Game host bind Scene unload/World
+shutdown to the same pre-Tick/native-call lifecycle checks. Runtime services still
+belong to the host. System scopes expose owner metadata and no GameplayObjectRef.

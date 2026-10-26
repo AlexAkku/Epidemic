@@ -1,8 +1,11 @@
 #pragma once
 #include "Epidemic/GameFramework/Entities/entities.h"
 #include <memory>
+#include "Epidemic/Foundation/string_id.h"
+#include <functional>
 
 namespace epidemic::gameplay::composition {
+enum class GraphScopeKind { Entity, Scene, World };
 class IGraphActivation {
   public:
     virtual ~IGraphActivation() = default;
@@ -20,6 +23,11 @@ class GraphScope final {
     [[nodiscard]] static foundation::Result<std::shared_ptr<GraphScope>>
     ForEntity(entities::EntityService &entities, entities::EntityId entity, entities::EntityPartId part = {});
     [[nodiscard]] static foundation::Result<std::shared_ptr<GraphScope>> Child(const std::shared_ptr<GraphScope> &parent);
+    [[nodiscard]] static foundation::Result<std::shared_ptr<GraphScope>> ForSystem(
+        GraphScopeKind kind, GameplayObjectId owner, foundation::StringId instance, std::function<bool()> owner_alive = {});
+    [[nodiscard]] GraphScopeKind Kind() const noexcept { return kind_; }
+    [[nodiscard]] GameplayObjectId ScopeOwner() const noexcept { return scope_owner_; }
+    [[nodiscard]] foundation::StringId SystemId() const noexcept { return system_id_; }
     [[nodiscard]] bool IsAlive() const;
     [[nodiscard]] GameplayObjectRef Object() const noexcept;
     [[nodiscard]] entities::EntityHandle Handle() const noexcept { return handle_; }
@@ -29,8 +37,9 @@ class GraphScope final {
     void Synchronize() noexcept;
     void Invalidate() noexcept;
   private:
+    GraphScope() = default;
     GraphScope(entities::EntityService &entities, entities::EntityId entity, entities::EntityPartId part);
-    entities::EntityService &entities_;
+    entities::EntityService *entities_ = nullptr;
     entities::EntityId entity_{};
     entities::EntityHandle handle_{};
     entities::EntityPartId part_{};
@@ -39,5 +48,10 @@ class GraphScope final {
     std::weak_ptr<GraphScope> parent_;
     std::vector<std::weak_ptr<GraphScope>> children_;
     std::uint32_t depth_ = 0;
+    GraphScopeKind kind_ = GraphScopeKind::Entity;
+    GameplayObjectId scope_owner_{};
+    foundation::StringId system_id_{};
+    std::shared_ptr<const int> system_identity_;
+    std::function<bool()> owner_alive_;
 };
 } // namespace epidemic::gameplay::composition
