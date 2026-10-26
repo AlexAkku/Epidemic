@@ -34,6 +34,7 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
     if (owner_.running_) return Fail("graph.vm.reentrant", report);
     if (owner_.failure_) return {ExecutionStatus::Failed, 0, 0, owner_.failure_};
     if (owner_.cancelled_) return {ExecutionStatus::Cancelled, 0, 0, Diagnostic("graph.vm.cancelled")};
+    if (owner_.wait_) return {ExecutionStatus::Waiting, 0, 0, Diagnostic("graph.vm.waiting"), owner_.wait_->duration};
     owner_.started_ = true; owner_.running_ = true;
     struct Guard { bool &running; ~Guard() { running = false; } } guard{owner_.running_};
     const auto &program = *owner_.program_->flow_;
@@ -110,6 +111,17 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
             if (owner_.cancelled_) { report.status = ExecutionStatus::Cancelled; report.diagnostic = Diagnostic("graph.vm.cancelled"); return report; }
             if (!result) return Fail(result.GetError(), report);
             values[work.node] = result.Value(); work_.pop_back(); Push(node.next[0]); break;
+        }
+        case Operation::Wait: {
+            const auto &value = values[node.data[0]];
+            const auto &duration = values[node.data[1]];
+            if (!value || !duration) return Fail("graph.flow.value_unavailable", report);
+            if (*duration < 0) return Fail("graph.vm.negative_wait", report);
+            owner_.wait_ = GraphInstance::PendingWait{GameDuration{*duration}, step.node, owner_.instruction_, work.node, *value};
+            values[work.node].reset();
+            work_.pop_back(); Push(node.next[0]);
+            report.status = ExecutionStatus::Waiting; report.diagnostic = Diagnostic("graph.vm.waiting");
+            report.wait = owner_.wait_->duration; return report;
         }
         case Operation::Output: {
             const auto &input = values[node.data[0]];

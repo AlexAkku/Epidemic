@@ -1,7 +1,7 @@
 # Structured i64 graph execution
 
 This extends CompiledGraph/GraphInstance without changing the linear data DAG
-profile. Entry/Sequence/Branch select the control profile; unused control bindings
+profile. Entry/EventEntry/Sequence/Branch/Repeat select the control profile; unused control bindings
 in a catalog do not change an existing data graph. IR and authoring serialization
 remain separate. Graph still depends only on RuntimeFoundation.
 
@@ -19,6 +19,7 @@ control ports have no payload. Shapes (data in/out, control in/out):
 | NativeCall | 1/1 | 1/1 | Ordered action bound to an explicit native factory |
 | Output | 1/0 | 1/0 | Publish an output sink when reached |
 | Repeat | 1/1 | 1/2 | Captured count, current index; body then done |
+| Wait | 2/1 | 1/1 | Value plus nonnegative game ticks; publish value and continue on resume |
 
 An unconnected control output ends that subtree; a control output has at most
 one connection. Use Sequence for explicit ordering. Raw control/data cycles,
@@ -56,3 +57,25 @@ branch cannot consume a previous iteration's effect. Pure expressions are freshl
 memoized at each control step. Iteration, invalidation and expression work consume
 the same instruction budget; even an empty/large loop yields. ReadValue observes
 the last materialized pure value, never evaluates an expression by itself.
+
+Wait captures its inputs once, suspends the entire activation (including Sequence
+siblings and Repeat frames), and always yields, even for zero ticks. Run cannot
+acknowledge a wait; ResumeWait publishes its result and enables the continuation.
+The existing Runtime Support GraphScheduler uses the authoritative Time clock and
+Simulation job/timer services. Prepare precedes each host Tick; cancellation does
+not run any remaining action. Spawn in a wave graph is an ordinary NativeCall
+binding to a domain service, not a special engine or genre opcode.
+
+SubmitOwned associates an activation with a GraphActivationOwner lifetime scope.
+Invalidation/destruction requests immediate VM cancellation, including from an
+active native callback; Prepare acknowledges it in Simulation and removes queued
+timers. The accepted callback itself finishes; its suffix cannot run. Owners hold
+weak task registrations, do not keep jobs alive, and cannot accept new tasks after
+invalidation. Completed registrations are pruned on submission. Use one scope per
+host owner and invalidate it on the native-effect thread before releasing that
+owner's services. This is transient lifetime composition, not another entity-ID
+registry. Graph majors still do not depend on Time or Simulation.
+
+External events currently carry i64 payloads; there is no internal event emission,
+global event bus, parallel execution, arbitrary cyclic control flow, or persistence
+of a running activation. Save/load covers authoring definitions, not continuations.

@@ -15,6 +15,7 @@ std::optional<Shape> Expected(Operation operation) {
     case Operation::Entry: return Shape{0, 0, 0, 1};
     case Operation::EventEntry: return Shape{0, 1, 0, 1, 1};
     case Operation::Repeat: return Shape{1, 1, 1, 2};
+    case Operation::Wait: return Shape{2, 1, 1, 1};
     case Operation::Sequence: return Shape{0, 0, 1, 0}; // Variable nonempty ordered outputs.
     case Operation::Branch: return Shape{1, 0, 1, 2};
     case Operation::NativeCall: return Shape{1, 1, 1, 1};

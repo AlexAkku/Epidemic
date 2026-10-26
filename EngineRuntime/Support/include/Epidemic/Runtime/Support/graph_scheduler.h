@@ -13,6 +13,22 @@ struct GraphScheduleOptions {
 };
 
 class GraphScheduler;
+class GraphTask;
+// A transient lifetime scope, not an entity identity or event registry. Invalidate
+// on the native-effect thread; Prepare removes the host's queued work/timers.
+class GraphActivationOwner final {
+  public:
+    GraphActivationOwner() = default;
+    ~GraphActivationOwner();
+    GraphActivationOwner(const GraphActivationOwner &) = delete;
+    GraphActivationOwner &operator=(const GraphActivationOwner &) = delete;
+    void Invalidate() noexcept;
+    [[nodiscard]] bool IsAlive() const noexcept { return state_->alive; }
+  private:
+    struct State { bool alive = true; std::vector<std::weak_ptr<GraphTask>> tasks; };
+    std::shared_ptr<State> state_ = std::make_shared<State>();
+    friend class GraphScheduler;
+};
 class GraphTask final : public simulation::ISimulationJob {
   public:
     GraphTask(const GraphTask &) = delete;
@@ -26,6 +42,7 @@ class GraphTask final : public simulation::ISimulationJob {
     }
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(graph::ElementId port) const;
   private:
+    void RequestOwnerCancellation() noexcept;
     [[nodiscard]] foundation::Result<simulation::SimulationStepResult> ExecuteStep(const RuntimeBudget &budget) override;
     [[nodiscard]] foundation::Result<void> Cancel() override;
     GraphTask(std::unique_ptr<graph::GraphInstance> instance, std::shared_ptr<IGameClock> clock,
@@ -43,7 +60,9 @@ class GraphTask final : public simulation::ISimulationJob {
     bool needs_arm_ = true;
     bool running_ = false;
     bool terminal_ = false;
+    bool owner_cancel_ = false;
     friend class GraphScheduler;
+    friend class GraphActivationOwner;
 };
 
 // Composition only: never calls Simulation::Tick or advances a clock. The host
@@ -58,6 +77,9 @@ class GraphScheduler final {
     GraphScheduler &operator=(const GraphScheduler &) = delete;
     [[nodiscard]] foundation::Result<std::shared_ptr<GraphTask>>
     Submit(std::unique_ptr<graph::GraphInstance> instance, const GraphScheduleOptions &options = {});
+    [[nodiscard]] foundation::Result<std::shared_ptr<GraphTask>>
+    SubmitOwned(std::unique_ptr<graph::GraphInstance> instance, GraphActivationOwner &owner,
+                const GraphScheduleOptions &options = {});
     // Scheduling failure retains the pending request. Retry does not replay VM
     // instructions or previously accepted schedules. Does not run graph code.
     [[nodiscard]] foundation::Result<std::size_t> Prepare();

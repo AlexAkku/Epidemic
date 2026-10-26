@@ -40,6 +40,17 @@ std::optional<GameTimePoint> NextDue(GameTimePoint base, GameDuration delay, Gam
 }
 } // namespace
 
+GraphActivationOwner::~GraphActivationOwner() { Invalidate(); }
+void GraphActivationOwner::Invalidate() noexcept {
+    if (!state_->alive) return;
+    state_->alive = false;
+    for (const auto &entry : state_->tasks) if (const auto task = entry.lock()) task->RequestOwnerCancellation();
+    state_->tasks.clear();
+}
+void GraphTask::RequestOwnerCancellation() noexcept {
+    if (!terminal_) { owner_cancel_ = true; instance_->Cancel(); }
+}
+
 GraphTask::GraphTask(std::unique_ptr<graph::GraphInstance> instance, std::shared_ptr<IGameClock> clock,
                      std::shared_ptr<const int> owner, const GraphScheduleOptions &options, GameTimePoint now)
     : instance_(std::move(instance)), clock_(std::move(clock)), owner_(std::move(owner)), options_(options), due_(now) {}
@@ -74,6 +85,14 @@ foundation::Result<simulation::SimulationStepResult> GraphTask::ExecuteStep(cons
     if (needs_arm_) return Fail(Error("graph.scheduler.prepare_required"));
     running_ = true;
     RunningGuard guard{running_};
+    // A sibling callback may invalidate our owner after this host Tick already
+    // dequeued us. Observe cancellation before acknowledging an earlier wait.
+    if (owner_cancel_) {
+        report_ = instance_->Run({0, 0});
+        terminal_ = true;
+        needs_arm_ = false;
+        return Result::Success({State(report_->status), 0, {}});
+    }
     const auto now = ReadClock(clock_);
     if (!now) return Fail(now.GetError());
     if (observed_ && now.Value() < *observed_) return Fail(Error("graph.scheduler.clock_rewound"));
@@ -127,7 +146,7 @@ foundation::Result<std::shared_ptr<GraphTask>> GraphScheduler::Submit(std::uniqu
     if (!now) return Result::Failure(now.GetError());
     if (observed_ && now.Value() < *observed_) return Result::Failure(Error("graph.scheduler.clock_rewound"));
     observed_ = now.Value();
-    std::erase_if(tasks_, [](const auto &task) { return task->terminal_; });
+    std::erase_if(tasks_, [](const auto &task) { return task->terminal_ && !task->owner_cancel_; });
     if (tasks_.size() >= max_active_) return Result::Failure(Error("graph.scheduler.capacity"));
     tasks_.reserve(tasks_.size() + 1); // Before publishing a Simulation job.
     auto task = std::shared_ptr<GraphTask>(new GraphTask(std::move(instance), clock_, owner_, options, now.Value()));
@@ -140,6 +159,21 @@ foundation::Result<std::shared_ptr<GraphTask>> GraphScheduler::Submit(std::uniqu
     tasks_.push_back(task);
     return Result::Success(std::move(task));
 }
+foundation::Result<std::shared_ptr<GraphTask>> GraphScheduler::SubmitOwned(std::unique_ptr<graph::GraphInstance> instance,
+    GraphActivationOwner &owner, const GraphScheduleOptions &options) {
+    using Result = foundation::Result<std::shared_ptr<GraphTask>>;
+    const auto state = owner.state_;
+    if (!state->alive) return Result::Failure(Error("graph.scheduler.owner_expired"));
+    std::erase_if(state->tasks, [](const auto &entry) {
+        const auto task = entry.lock(); return !task || task->terminal_;
+    });
+    state->tasks.reserve(state->tasks.size() + 1); // Before publishing a job.
+    auto submitted = Submit(std::move(instance), options);
+    if (!submitted) return submitted;
+    state->tasks.emplace_back(submitted.Value());
+    if (!state->alive) submitted.Value()->RequestOwnerCancellation();
+    return submitted;
+}
 foundation::Result<std::size_t> GraphScheduler::Prepare() {
     using Result = foundation::Result<std::size_t>;
     if (std::any_of(tasks_.begin(), tasks_.end(), [](const auto &task) { return task->running_; }))
@@ -150,6 +184,19 @@ foundation::Result<std::size_t> GraphScheduler::Prepare() {
     observed_ = now.Value();
     std::size_t armed = 0;
     for (const auto &task : tasks_) {
+        if (task->owner_cancel_) {
+            const auto state = simulation_.scheduler->GetJobState(task->handle_);
+            if (!state) {
+                if (!task->terminal_) { (void)task->Fail(state.GetError()); return Result::Failure(state.GetError()); }
+            } else if (state.Value() == simulation::SimulationJobState::Completed || state.Value() == simulation::SimulationJobState::Failed ||
+                       state.Value() == simulation::SimulationJobState::Cancelled) {
+                if (!task->terminal_) (void)task->Fail(Error("graph.scheduler.host_terminal"));
+            } else {
+                const auto cancelled = simulation_.scheduler->CancelJob(task->handle_);
+                if (!cancelled) return Result::Failure(cancelled.GetError());
+            }
+            task->owner_cancel_ = false;
+        }
         if (task->terminal_) continue;
         const auto state = simulation_.scheduler->GetJobState(task->handle_);
         if (!state) { (void)task->Fail(state.GetError()); return Result::Failure(state.GetError()); }
@@ -166,7 +213,7 @@ foundation::Result<std::size_t> GraphScheduler::Prepare() {
         task->needs_arm_ = false;
         ++armed;
     }
-    std::erase_if(tasks_, [](const auto &task) { return task->terminal_; });
+    std::erase_if(tasks_, [](const auto &task) { return task->terminal_ && !task->owner_cancel_; });
     return Result::Success(armed);
 }
 foundation::Result<void> GraphScheduler::Cancel(GraphTask &task) {
