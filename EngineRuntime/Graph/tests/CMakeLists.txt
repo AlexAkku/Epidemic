@@ -2,3 +2,8 @@ add_executable(EpidemicRuntimeGraphTests graph_definition_tests.cpp)
 target_link_libraries(EpidemicRuntimeGraphTests PRIVATE EpidemicRuntimeGraph)
 epidemic_configure_target(EpidemicRuntimeGraphTests)
 epidemic_add_test(EpidemicRuntimeGraphTests)
+
+add_executable(EpidemicGraphVMTests graph_vm_tests.cpp)
+target_link_libraries(EpidemicGraphVMTests PRIVATE EpidemicRuntimeGraph)
+epidemic_configure_target(EpidemicGraphVMTests)
+epidemic_add_test(EpidemicGraphVMTests)

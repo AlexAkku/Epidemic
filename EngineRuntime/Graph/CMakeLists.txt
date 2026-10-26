@@ -1,4 +1,4 @@
-add_library(EpidemicRuntimeGraph STATIC src/graph_definition.cpp)
+add_library(EpidemicRuntimeGraph STATIC src/graph_definition.cpp src/graph_compiler.cpp src/graph_vm.cpp)
 target_include_directories(EpidemicRuntimeGraph PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(EpidemicRuntimeGraph PUBLIC EpidemicRuntimeFoundation)
 get_target_property(_graph_links EpidemicRuntimeGraph LINK_LIBRARIES)
