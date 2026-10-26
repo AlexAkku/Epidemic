@@ -1,6 +1,7 @@
 #include "test_support.h"
 
 using namespace composition_tests;
+void Components();
 void EntityIntegration() {
     Fixture f;
     const auto entity = f.Entity();
@@ -41,7 +42,7 @@ void EntityIntegration() {
     ErrorIs(gc::GraphScope::ForEntity(f.entities, part_entity, fw::entities::EntityPartId::FromString("missing")), "composition.invalid_entity");
 }
 int main() {
-    try { EntityIntegration(); }
+    try { EntityIntegration(); Components(); }
     catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
     return 0;
 }

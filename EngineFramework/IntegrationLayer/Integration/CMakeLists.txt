@@ -4,6 +4,7 @@ add_library(EpidemicGameFrameworkCoreIntegration STATIC
     src/save_generation.cpp
     src/save_restore.cpp
     src/graph_scope.cpp
+    src/components.cpp
 )
 
 target_include_directories(EpidemicGameFrameworkCoreIntegration PUBLIC

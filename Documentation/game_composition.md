@@ -29,3 +29,12 @@ Cancellation does not roll back an already accepted domain operation.
 
 An authoring GraphDefinition may be shared, while its BoundGraph carries one
 object's context. Framework does not persist IR or active VM continuations.
+
+ComponentRegistry extends the Framework StableTypeRegistry with typed member
+bindings (i64, double, bool, string) and validation. Freeze the registry before
+attaching components. ComponentStore attaches fresh user objects to existing
+EntityHandles/Parts; it allocates component generations, never Entity identities.
+Factories must return uniquely owned state. Definitions contain property values,
+not live component objects. Get returns a borrowed const pointer; it expires on
+removal/lifecycle reconciliation. Remove immediately invalidates the component
+scope, and Synchronize releases components whose Entity or Part expired.

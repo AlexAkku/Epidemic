@@ -1,4 +1,4 @@
-add_executable(EpidemicGameCompositionTests entity_integration_tests.cpp)
+add_executable(EpidemicGameCompositionTests entity_integration_tests.cpp components_tests.cpp)
 target_link_libraries(EpidemicGameCompositionTests PRIVATE EpidemicGameComposition)
 epidemic_configure_target(EpidemicGameCompositionTests)
 epidemic_add_test(EpidemicGameCompositionTests)
