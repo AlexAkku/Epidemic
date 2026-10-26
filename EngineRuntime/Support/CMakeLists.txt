@@ -38,6 +38,10 @@ epidemic_configure_target(EpidemicRuntimeSupport)
 
 add_subdirectory(Presentation)
 
+if(EPIDEMIC_BUILD_MANAGED_BRIDGE)
+    add_subdirectory(Managed)
+endif()
+
 if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
