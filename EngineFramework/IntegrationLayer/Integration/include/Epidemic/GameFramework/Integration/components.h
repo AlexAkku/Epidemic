@@ -18,6 +18,9 @@ struct ComponentTypeInfo { TypeId id{}; std::string name; std::vector<PropertyIn
 
 class ComponentRegistry final {
   public:
+    ComponentRegistry() = default;
+    ComponentRegistry(const ComponentRegistry &) = delete;
+    ComponentRegistry &operator=(const ComponentRegistry &) = delete;
     template <typename T> foundation::Result<TypeId> Register(std::string_view name,
         std::function<std::shared_ptr<T>()> create = [] { return std::make_shared<T>(); }) {
         using Result = foundation::Result<TypeId>;
@@ -101,6 +104,7 @@ class ComponentStore final {
         std::span<const PropertyAssignment> properties = {}, entities::EntityPartId part = {});
     [[nodiscard]] foundation::Result<void> Remove(const ComponentHandle &handle);
     void Synchronize();
+    [[nodiscard]] std::optional<ComponentHandle> Find(entities::EntityId entity, TypeId type, entities::EntityPartId part = {}) const;
     [[nodiscard]] foundation::Result<std::shared_ptr<GraphScope>> ScopeOf(const ComponentHandle &handle) const;
     [[nodiscard]] foundation::Result<PropertyValue> ReadProperty(const ComponentHandle &handle, PropertyId property) const;
     [[nodiscard]] foundation::Result<void> WriteProperty(const ComponentHandle &handle, const PropertyAssignment &property);

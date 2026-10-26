@@ -19,10 +19,12 @@ class GraphScope final {
     GraphScope &operator=(const GraphScope &) = delete;
     [[nodiscard]] static foundation::Result<std::shared_ptr<GraphScope>>
     ForEntity(entities::EntityService &entities, entities::EntityId entity, entities::EntityPartId part = {});
+    [[nodiscard]] static foundation::Result<std::shared_ptr<GraphScope>> Child(const std::shared_ptr<GraphScope> &parent);
     [[nodiscard]] bool IsAlive() const;
     [[nodiscard]] GameplayObjectRef Object() const noexcept;
     [[nodiscard]] entities::EntityHandle Handle() const noexcept { return handle_; }
     [[nodiscard]] entities::EntityPartId Part() const noexcept { return part_; }
+    [[nodiscard]] bool SameTarget(const GraphScope &other) const noexcept;
     [[nodiscard]] foundation::Result<void> Track(const std::shared_ptr<IGraphActivation> &activation);
     void Synchronize() noexcept;
     void Invalidate() noexcept;
@@ -34,5 +36,8 @@ class GraphScope final {
     entities::EntityPartId part_{};
     bool enabled_ = true;
     std::vector<std::weak_ptr<IGraphActivation>> activations_;
+    std::weak_ptr<GraphScope> parent_;
+    std::vector<std::weak_ptr<GraphScope>> children_;
+    std::uint32_t depth_ = 0;
 };
 } // namespace epidemic::gameplay::composition

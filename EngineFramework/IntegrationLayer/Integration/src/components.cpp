@@ -7,6 +7,11 @@ const ComponentTypeInfo *ComponentRegistry::Find(TypeId type) const noexcept {
     const auto found = types_.find(type.Raw()); return found == types_.end() ? nullptr : &found->second->info;
 }
 ComponentStore::~ComponentStore() { for (const auto &[_, entry] : entries_) entry.scope->Invalidate(); }
+std::optional<ComponentHandle> ComponentStore::Find(entities::EntityId entity, TypeId type, entities::EntityPartId part) const {
+    const auto handle = entities_.HandleOf(entity);
+    for (const auto &[_, entry] : entries_) if (entry.handle.entity == handle && entry.handle.type == type && entry.handle.part == part && entry.scope->IsAlive()) return entry.handle;
+    return std::nullopt;
+}
 const ComponentStore::Entry *ComponentStore::Resolve(const ComponentHandle &handle) const {
     const auto found = entries_.find(handle.generation);
     return found != entries_.end() && found->second.handle == handle && found->second.scope->IsAlive() ? &found->second : nullptr;

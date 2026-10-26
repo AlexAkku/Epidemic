@@ -38,3 +38,12 @@ Factories must return uniquely owned state. Definitions contain property values,
 not live component objects. Get returns a borrowed const pointer; it expires on
 removal/lifecycle reconciliation. Remove immediately invalidates the component
 scope, and Synchronize releases components whose Entity or Part expired.
+
+GraphBehaviorService binds registered GraphDefinitions through IGraphBehaviorHost.
+Each behavior has a child lifetime scope: detaching it cancels its activations,
+without disabling its Entity or sibling components. Removing a component also
+invalidates child behaviors. Event routes and input values are validated on bind;
+the service snapshots definitions and assigns generation-checked behavior handles.
+Send targets one behavior; SendTo explicitly targets an Entity/Part in stable
+attachment order. There is no implicit bus or polling of unrelated Facts. Runtime
+continues to own every compiled program, activation, budget and continuation.

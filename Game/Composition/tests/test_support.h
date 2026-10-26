@@ -94,4 +94,9 @@ inline graph::ExecutionStatus Status(const gc::GraphActivation &activation) {
     if (!report) throw std::runtime_error("missing execution report");
     return report->status;
 }
+inline graph::ExecutionStatus Status(const std::shared_ptr<fw::composition::IGraphActivation> &activation) {
+    const auto native = std::dynamic_pointer_cast<gc::GraphActivation>(activation);
+    if (!native) throw std::runtime_error("unexpected activation implementation");
+    return Status(*native);
+}
 } // namespace composition_tests
