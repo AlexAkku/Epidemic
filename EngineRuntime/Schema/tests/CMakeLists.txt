@@ -1,0 +1,4 @@
+add_executable(EpidemicRuntimeSchemaTests native_schema_tests.cpp)
+target_link_libraries(EpidemicRuntimeSchemaTests PRIVATE EpidemicRuntimeSchema)
+epidemic_configure_target(EpidemicRuntimeSchemaTests)
+epidemic_add_test(EpidemicRuntimeSchemaTests)
