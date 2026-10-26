@@ -3,6 +3,7 @@ add_library(EpidemicRuntimeSupport STATIC
     src/runtime_packages.cpp
     src/asset_element_reference.cpp
     src/graph_serialization.cpp
+    src/graph_scheduler.cpp
 )
 
 target_include_directories(EpidemicRuntimeSupport PUBLIC
