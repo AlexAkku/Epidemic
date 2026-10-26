@@ -33,7 +33,7 @@ GraphDefinition Example() {
                          {Id("e5"), Id("product.out"), Id("native.in")}, {Id("e6"), Id("native.out"), Id("result.in")}};
     return value;
 }
-enum class Mode { Count, DomainFailure, Throw, Reenter, FactoryThrow, NullState };
+enum class Mode { Count, DomainFailure, Throw, Reenter, Cancel, FactoryThrow, NullState };
 class Invocation final : public INativeInvocation {
   public:
     Invocation(Mode mode, GraphInstance **instance) : mode_(mode), instance_(instance) {}
@@ -42,6 +42,7 @@ class Invocation final : public INativeInvocation {
         if (mode_ == Mode::DomainFailure)
             return foundation::Result<std::int64_t>::Failure(foundation::Error::Create("test.native.rejected", "rejected"));
         if (mode_ == Mode::Reenter) (void)(*instance_)->Run();
+        if (mode_ == Mode::Cancel) (*instance_)->Cancel();
         return foundation::Result<std::int64_t>::Success(argument + ++calls_);
     }
   private:
@@ -198,8 +199,67 @@ void Arithmetic() {
               valid->ReadValue(Id("result.in")).Value() == (operation == Operation::Add ? maximum - 1 : minimum), "i64 boundary result");
     }
 }
+void WaitAndCancellation() {
+    auto bindings = Bindings();
+    bindings[2].operation = Operation::Wait;
+    const auto program = CompileGraph(Example(), bindings).Value();
+    auto instance = GraphInstance::Create(program).Value();
+    Inputs(*instance, {2, 3});
+    ErrorIs(instance->ResumeWait(), "graph.vm.invalid_wait_resume");
+    const auto wait = instance->Run();
+    Check(wait.status == ExecutionStatus::Waiting && wait.wait == GameDuration{3} &&
+          wait.diagnostic && wait.diagnostic->node == Id("product") && wait.native_calls == 0,
+          "Wait yields before downstream effects with authoring diagnostic");
+    const auto pointer = instance->InstructionPointer();
+    const auto blocked = instance->Run();
+    Check(blocked.status == ExecutionStatus::Waiting && blocked.instructions == 0 &&
+          instance->InstructionPointer() == pointer, "Run cannot bypass Wait");
+    ErrorIs(instance->ReadValue(Id("product.out")), "graph.vm.value_unavailable");
+    Check(instance->ResumeWait().HasValue(), "scheduler acknowledges Wait");
+    Check(instance->Run().status == ExecutionStatus::Completed && instance->ReadValue(Id("result.in")).Value() == 6,
+          "resume preserves registers and invokes native exactly once");
+    instance->Cancel();
+    Check(instance->Run().status == ExecutionStatus::Completed, "completed invocation stays completed");
+
+    auto negative = GraphInstance::Create(program).Value(); Inputs(*negative, {4, -1});
+    const auto rejected = negative->Run();
+    Check(rejected.status == ExecutionStatus::Failed && rejected.diagnostic &&
+          rejected.diagnostic->error.HasCode("graph.vm.negative_wait"), "negative Wait rejected");
+    auto zero = GraphInstance::Create(program).Value(); Inputs(*zero, {4, 0});
+    Check(zero->Run().status == ExecutionStatus::Waiting && zero->ResumeWait().HasValue() &&
+          zero->Run().status == ExecutionStatus::Completed, "zero Wait still yields once");
+
+    auto cancelled = GraphInstance::Create(program).Value(); Inputs(*cancelled, {2, 3});
+    Check(cancelled->Run().status == ExecutionStatus::Waiting, "cancel waiting fixture");
+    cancelled->Cancel();
+    const auto cancellation = cancelled->Run();
+    Check(cancellation.status == ExecutionStatus::Cancelled && cancellation.instructions == 0 &&
+          cancellation.diagnostic && cancellation.diagnostic->node == Id("product"), "cancel pending Wait");
+    ErrorIs(cancelled->ResumeWait(), "graph.vm.invalid_wait_resume");
+    Check(cancelled->Run().status == ExecutionStatus::Cancelled, "cancel is terminal");
+    auto unstarted = GraphInstance::Create(program).Value(); unstarted->Cancel();
+    Check(unstarted->Run().status == ExecutionStatus::Cancelled, "cancel before first run");
+    ErrorIs(unstarted->SetInput(Id("a.out"), 1), "graph.vm.inputs_sealed");
+
+    auto last_wait_definition = Example();
+    last_wait_definition.nodes.resize(4);
+    last_wait_definition.connections.resize(4);
+    auto last_wait = GraphInstance::Create(CompileGraph(last_wait_definition, bindings).Value()).Value();
+    Inputs(*last_wait, {2, 3});
+    Check(last_wait->Run().status == ExecutionStatus::Waiting, "final instruction can wait");
+    last_wait->Cancel();
+    Check(last_wait->Run().status == ExecutionStatus::Cancelled, "cancel Wait at end of IR");
+
+    GraphInstance *raw = nullptr;
+    auto self = GraphInstance::Create(CompileGraph(Example(), Bindings(std::make_shared<Factory>(Mode::Cancel, &raw))).Value()).Value();
+    raw = self.get(); Inputs(*self, {2, 3});
+    const auto self_cancelled = self->Run();
+    Check(self_cancelled.status == ExecutionStatus::Cancelled && self_cancelled.native_calls == 1 &&
+          self->Run().native_calls == 0, "native cancellation stops suffix without replay");
+    ErrorIs(self->ReadValue(Id("native.out")), "graph.vm.value_unavailable");
+}
 } // namespace
 int main() {
-    try { CompileFailures(); InstancesAndBudgets(); Failures(); MultipleCallSites(); Arithmetic(); return 0; }
+    try { CompileFailures(); InstancesAndBudgets(); Failures(); MultipleCallSites(); Arithmetic(); WaitAndCancellation(); return 0; }
     catch (...) { std::fputs("Graph Compiler/VM tests failed\n", stderr); return 1; }
 }

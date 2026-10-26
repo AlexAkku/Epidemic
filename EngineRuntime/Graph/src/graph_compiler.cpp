@@ -16,6 +16,7 @@ Shape Expected(Operation operation) {
     switch (operation) {
     case Operation::Input: return {0, 1};
     case Operation::Add:
+    case Operation::Wait:
     case Operation::Multiply: return {2, 1};
     case Operation::NativeCall: return {1, 1};
     case Operation::Output: return {1, 0};

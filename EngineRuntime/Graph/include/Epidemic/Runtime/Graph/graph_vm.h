@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Epidemic/Runtime/Graph/graph_compiler.h"
+#include "Epidemic/Runtime/Foundation/runtime_time.h"
 #include <optional>
 
 namespace epidemic::runtime::graph {
@@ -8,7 +9,7 @@ struct ExecutionBudget {
     std::size_t instructions = 1024;
     std::size_t native_calls = 64;
 };
-enum class ExecutionStatus : std::uint8_t { Completed, BudgetExhausted, Failed };
+enum class ExecutionStatus : std::uint8_t { Completed, BudgetExhausted, Failed, Waiting, Cancelled };
 struct ExecutionDiagnostic {
     AssetId asset{};
     ElementId node{};
@@ -20,6 +21,7 @@ struct ExecutionReport {
     std::size_t instructions = 0;
     std::size_t native_calls = 0;
     std::optional<ExecutionDiagnostic> diagnostic;
+    std::optional<GameDuration> wait{};
 };
 
 // One-shot, externally synchronized invocation. Run seals input values; budget
@@ -36,8 +38,12 @@ class GraphInstance final {
     // Read a node's output port, or the input port of a builtin Output node.
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(ElementId port) const;
     [[nodiscard]] ExecutionReport Run(ExecutionBudget budget = {});
+    // Only the host scheduler acknowledges a due wait. Run alone cannot skip it.
+    [[nodiscard]] foundation::Result<void> ResumeWait();
+    void Cancel() noexcept;
     [[nodiscard]] const CompiledGraph &Program() const noexcept { return *program_; }
     [[nodiscard]] std::size_t InstructionPointer() const noexcept { return instruction_; }
+    [[nodiscard]] bool HasStarted() const noexcept { return started_; }
 
   private:
     explicit GraphInstance(CompiledGraphPtr program);
@@ -47,6 +53,15 @@ class GraphInstance final {
     std::size_t instruction_ = 0;
     bool started_ = false;
     bool running_ = false;
+    bool cancelled_ = false;
+    struct PendingWait {
+        GameDuration duration{};
+        ElementId node{};
+        std::size_t instruction = 0;
+        std::uint32_t destination = 0;
+        std::int64_t value = 0;
+    };
+    std::optional<PendingWait> wait_;
     std::optional<ExecutionDiagnostic> failure_;
 };
 } // namespace epidemic::runtime::graph

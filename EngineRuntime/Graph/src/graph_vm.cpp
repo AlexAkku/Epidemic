@@ -91,6 +91,19 @@ foundation::Result<std::int64_t> GraphInstance::ReadValue(ElementId port) const 
     }
     return foundation::Result<std::int64_t>::Failure(Error("graph.vm.unknown_port"));
 }
+foundation::Result<void> GraphInstance::ResumeWait() {
+    if (running_ || cancelled_ || failure_ || !wait_)
+        return foundation::Result<void>::Failure(Error("graph.vm.invalid_wait_resume"));
+    values_[wait_->destination] = wait_->value;
+    wait_.reset();
+    return foundation::Result<void>::Success();
+}
+void GraphInstance::Cancel() noexcept {
+    if (!failure_ && (wait_ || instruction_ < program_->instructions_.size())) {
+        started_ = true;
+        cancelled_ = true;
+    }
+}
 ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
     if (running_) {
         failure_ = ExecutionDiagnostic{program_->Asset(), program_->instructions_[instruction_].node,
@@ -98,6 +111,19 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
         return {ExecutionStatus::Failed, 0, 0, failure_};
     }
     if (failure_) return {ExecutionStatus::Failed, 0, 0, failure_};
+    const auto cancelled = [&](std::size_t instructions, std::size_t calls) {
+        const auto node = wait_ ? wait_->node : program_->instructions_[instruction_].node;
+        const auto at = wait_ ? wait_->instruction : instruction_;
+        return ExecutionReport{ExecutionStatus::Cancelled, instructions, calls,
+                               ExecutionDiagnostic{program_->Asset(), node, at, Error("graph.vm.cancelled")}};
+    };
+    if (cancelled_) return cancelled(0, 0);
+    const auto waiting = [&](std::size_t instructions, std::size_t calls) {
+        return ExecutionReport{ExecutionStatus::Waiting, instructions, calls,
+                               ExecutionDiagnostic{program_->Asset(), wait_->node, wait_->instruction, Error("graph.vm.waiting")},
+                               wait_->duration};
+    };
+    if (wait_) return waiting(0, 0);
     started_ = true;
     running_ = true;
     RunningGuard guard{running_};
@@ -139,11 +165,20 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
                 ++report.native_calls;
                 const auto invoked = Invoke(*native_[step.callable], left);
                 if (failure_) return {ExecutionStatus::Failed, report.instructions, report.native_calls, failure_};
+                if (cancelled_) return cancelled(report.instructions, report.native_calls);
                 if (!invoked) return fail(invoked.GetError());
                 result = invoked.Value();
                 break;
             }
             case Operation::Output: result = left; break;
+            case Operation::Wait: {
+                const auto &duration = values_[step.right];
+                if (!duration) return fail(Error("graph.vm.value_unavailable"));
+                if (*duration < 0) return fail(Error("graph.vm.negative_wait"));
+                wait_ = PendingWait{GameDuration{*duration}, step.node, instruction_, step.destination, left};
+                ++instruction_;
+                return waiting(report.instructions, report.native_calls);
+            }
             case Operation::Input: return fail(Error("graph.vm.invalid_instruction"));
             }
             values_[step.destination] = result;

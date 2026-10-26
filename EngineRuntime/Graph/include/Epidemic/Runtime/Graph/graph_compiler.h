@@ -6,7 +6,7 @@
 namespace epidemic::runtime::graph {
 inline constexpr TypeId kI64Type = TypeId::FromString("epidemic.graph.i64");
 inline constexpr std::string_view kI64TypeName = "epidemic.graph.i64";
-enum class Operation : std::uint8_t { Input, Add, Multiply, NativeCall, Output };
+enum class Operation : std::uint8_t { Input, Add, Multiply, NativeCall, Output, Wait };
 
 class INativeInvocation {
   public:
