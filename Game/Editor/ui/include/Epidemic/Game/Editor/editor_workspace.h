@@ -3,11 +3,14 @@
 #include "Epidemic/Game/Editor/play_session.h"
 
 namespace epidemic::game::editor {
-enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection };
+enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection, PrefabComponent };
 struct UiSelection {
     runtime::AssetId document{};
     UiElement kind = UiElement::Document;
     std::uint64_t element = 0;
+    // Component selection addresses its owner node plus type/part; other kinds leave these empty.
+    gameplay::TypeId component{};
+    gameplay::entities::EntityPartId part{};
     [[nodiscard]] bool operator==(const UiSelection &) const = default;
 };
 // A command client and session owner. It never exposes mutable authoring state.
@@ -26,8 +29,12 @@ class EditorWorkspace final {
     [[nodiscard]] foundation::Result<void> Stop();
     [[nodiscard]] foundation::Result<void> Tick(runtime::GameDuration advance);
     [[nodiscard]] foundation::Result<std::size_t> Send(runtime::SceneNodeId placement, const comp::GameEvent &event);
-    [[nodiscard]] bool Select(UiSelection selection);
+    [[nodiscard]] bool Select(const UiSelection &selection);
+    // An owned value must survive Execute/Open and later selection changes.
+    // cppcheck-suppress returnByReference
     [[nodiscard]] UiSelection Selection() const noexcept { return selection_; }
+    // Resolve a placement to its definition; never reuse a Play entity handle.
+    [[nodiscard]] std::optional<UiSelection> PrefabDefinitionSelection() const;
     [[nodiscard]] const EditorProject *Project() const noexcept { return project_.get(); }
     [[nodiscard]] const PlaySession *Session() const noexcept { return session_.get(); }
     [[nodiscard]] std::vector<std::shared_ptr<const PlayActivation>> Activations() const;
@@ -37,7 +44,7 @@ class EditorWorkspace final {
   private:
     [[nodiscard]] foundation::Result<void> Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate);
     [[nodiscard]] foundation::Result<void> Finish(foundation::Result<void> &&result, bool reconcile = false);
-    [[nodiscard]] bool Exists(UiSelection selection) const;
+    [[nodiscard]] bool Exists(const UiSelection &selection) const;
     void Reconcile();
     ProjectSchema schema_;
     std::function<PlayOptions()> play_options_;

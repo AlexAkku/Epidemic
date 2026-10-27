@@ -68,9 +68,12 @@ names are not persisted by SceneSnapshot/PrefabNode; display labels are derived.
 The future 2D viewport must be a child surface of the Platform-owned editor
 window, driven by its existing event pump and invalidation. Presentation's Canvas
 currently requires its own Host and cannot simply be attached to this HWND.
-The integration point is a surface adapter over existing drawing facilities,
-without another scene, event loop or Framework API change. No viewport or gizmo
-is supplied by the document-navigation milestone.
+The selected integration point is a child HWND plus the existing
+`EpidemicRuntimePresentation` Renderer, whose public constructor accepts a native
+window. A Game/Editor surface adapter must own resize/paint/input/lifetime and
+leave the Platform event pump in charge. Embedded-surface behavior still needs
+its M3 spike; no second renderer, scene or Framework API change is required.
+No viewport or gizmo is supplied by the document-navigation milestone.
 
 Build/run `EpidemicEditorDesktop [project.epidemic]` on Windows (full profile).
 The portable `EpidemicEditorUi` workspace owns the Command API client, stable-ID
@@ -88,6 +91,18 @@ to the example `hit` event. Graphs use node/port/connection lists, with Event en
 Native damage and Wait templates. Core validates connections and references.
 Node/port labels include stable IDs to distinguish repeated templates; connection
 rows and properties show their endpoints. Drop-down lists expand for long labels.
+Hierarchy labels use complete base-36 IDs (no truncation collisions); properties
+retain full decimal IDs. Scene parents form the spatial tree; Prefab children
+remain ownership relationships. Components have their own selection using the
+document/node/type/part key and a filtered Inspector. Delete falls back to its
+owner or current document; Undo restores identities without resurrecting stale
+selection. Open/reload resets selection. A placement's Open Prefab definition
+action resolves its current definition through the same workspace selection API.
+Creation selects the new item; refresh preserves collapsed branches. The header
+shows document/selection context, while Project, history and Play actions are
+grouped separately. Actions for other document kinds are hidden. Native message
+fonts and layout scale with window DPI; native smoke covers 100/150% layout and
+font metrics, separately from an actual monitor-DPI GUI check.
 Parameters and parameter-bound properties are read-only. Prefab overrides have
 no editing UI; reassigning the same Prefab preserves its existing overrides.
 

@@ -7,9 +7,10 @@
 namespace epidemic::game::editor {
 namespace {
 foundation::Error Error(std::string_view code) { return foundation::Error::Create(code, "editor UI action rejected"); }
-bool HasNode(const comp::PrefabNode &node, std::uint64_t id) {
-    if (node.id.Raw() == id) return true;
-    return std::any_of(node.children.begin(), node.children.end(), [&](const auto &child) { return HasNode(child, id); });
+const comp::PrefabNode *FindNode(const comp::PrefabNode &node, std::uint64_t id) {
+    if (node.id.Raw() == id) return &node;
+    for (const auto &child : node.children) if (const auto *found = FindNode(child, id)) return found;
+    return nullptr;
 }
 }
 foundation::Result<void> EditorWorkspace::Finish(foundation::Result<void> &&result, bool reconcile) {
@@ -64,22 +65,47 @@ foundation::Result<std::size_t> EditorWorkspace::Send(runtime::SceneNodeId place
     if (!result) error_ = result.GetError(); else error_.reset(); return result;
 }
 std::vector<std::shared_ptr<const PlayActivation>> EditorWorkspace::Activations() const { return session_ ? session_->Activations() : std::vector<std::shared_ptr<const PlayActivation>>{}; }
-bool EditorWorkspace::Exists(UiSelection selection) const {
+bool EditorWorkspace::Exists(const UiSelection &selection) const {
     if (!project_) return false;
     const auto *doc = project_->Snapshot()->Find(selection.document); if (!doc) return false;
+    if (selection.kind != UiElement::PrefabComponent && (selection.component.IsValid() || selection.part.IsValid())) return false;
     if (selection.kind == UiElement::Document) return selection.element == 0;
     if (const auto *scene = std::get_if<composition::SceneCompositionDefinition>(&doc->data))
         return selection.kind == UiElement::SceneNode && std::any_of(scene->scene.nodes.begin(), scene->scene.nodes.end(), [&](const auto &n) { return n.id.Raw() == selection.element; });
-    if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc->data)) return selection.kind == UiElement::PrefabNode && HasNode(prefab->root, selection.element);
+    if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc->data)) {
+        const auto *node = FindNode(prefab->root, selection.element);
+        if (!node) return false;
+        if (selection.kind == UiElement::PrefabNode) return true;
+        return selection.kind == UiElement::PrefabComponent && std::any_of(node->components.begin(), node->components.end(),
+            [&](const auto &component) { return component.type == selection.component && component.part == selection.part; });
+    }
     if (const auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc->data)) {
         if (selection.kind == UiElement::GraphNode) return std::any_of(graph->nodes.begin(), graph->nodes.end(), [&](const auto &n) { return n.id.Raw() == selection.element; });
         if (selection.kind == UiElement::Connection) return std::any_of(graph->connections.begin(), graph->connections.end(), [&](const auto &c) { return c.id.Raw() == selection.element; });
     }
     return false;
 }
-bool EditorWorkspace::Select(UiSelection selection) { if (!Exists(selection)) return false; selection_ = selection; return true; }
+bool EditorWorkspace::Select(const UiSelection &selection) { if (!Exists(selection)) return false; selection_ = selection; return true; }
+std::optional<UiSelection> EditorWorkspace::PrefabDefinitionSelection() const {
+    if (!project_ || selection_.kind != UiElement::SceneNode) return std::nullopt;
+    const auto snapshot = project_->Snapshot();
+    const auto *document = snapshot->Find(selection_.document);
+    const auto *scene = document ? std::get_if<composition::SceneCompositionDefinition>(&document->data) : nullptr;
+    if (!scene) return std::nullopt;
+    for (const auto &placement : scene->placements) if (placement.node.Raw() == selection_.element) {
+        const auto *target = snapshot->Find(placement.prefab);
+        const auto *prefab = target ? std::get_if<comp::PrefabDefinition>(&target->data) : nullptr;
+        if (prefab) return UiSelection{target->id, UiElement::PrefabNode, prefab->root.id.Raw()};
+    }
+    return std::nullopt;
+}
 void EditorWorkspace::Reconcile() {
     if (Exists(selection_)) return;
+    if (selection_.kind == UiElement::PrefabComponent) {
+        const UiSelection owner{selection_.document, UiElement::PrefabNode, selection_.element};
+        if (Exists(owner)) { selection_ = owner; return; }
+    }
+    if (project_ && project_->Snapshot()->Find(selection_.document)) { selection_ = {selection_.document}; return; }
     if (project_ && !project_->Snapshot()->definition.documents.empty()) selection_ = {project_->Snapshot()->definition.documents.front().id};
     else selection_ = {};
 }

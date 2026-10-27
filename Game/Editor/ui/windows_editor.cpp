@@ -17,6 +17,9 @@
 #include <limits>
 #include <set>
 #include <unordered_map>
+#include <charconv>
+#include <tuple>
+#include <source_location>
 
 namespace {
 using namespace epidemic;
@@ -47,9 +50,12 @@ std::string Text(HWND control) {
 void SetText(HWND control, std::string_view text) { const auto wide = Wide(text); SetWindowTextW(control, wide.c_str()); }
 void Item(HWND list, std::string_view text, UINT message = LB_ADDSTRING) { const auto wide = Wide(text); SendMessageW(list, message, 0, reinterpret_cast<LPARAM>(wide.c_str())); }
 std::string Number(std::uint64_t id) { return std::to_string(id); }
-std::string FormatNodeLabel(const graph::NodeDefinition &node) { return node.name+" ["+Number(node.id.Raw())+"]"; }
+// Full, lossless base-36 identity: shorter than decimal, without prefix collisions.
+std::string LabelId(std::uint64_t id) { char text[32]; const auto end=std::to_chars(std::begin(text),std::end(text),id,36).ptr; return {text,end}; }
+auto SelectionKey(const ed::UiSelection &value) { return std::tuple{value.document.Raw(),value.kind,value.element,value.component.Raw(),value.part.Raw()}; }
+std::string FormatNodeLabel(const graph::NodeDefinition &node) { return node.name+" ["+LabelId(node.id.Raw())+"]"; }
 std::string FormatPortLabel(const graph::NodeDefinition &node, const graph::PortDefinition &port) {
-    return node.name+" / "+port.name+" ["+Number(port.id.Raw())+"]";
+    return node.name+" / "+port.name+" ["+LabelId(port.id.Raw())+"]";
 }
 std::string PortLabel(const graph::GraphDefinition &definition, graph::ElementId id) {
     for (const auto &node:definition.nodes) for (const auto &port:node.ports)
@@ -65,7 +71,7 @@ enum Control : int { New = 100, Open, Save, Undo, Redo, Play, Stop, SendEvent, P
     Tree, Fields, Value, Apply, Revert, Add, Remove, NewScene, NewPrefab, NewGraph,
     Palette, Source, Destination, Connect, AddHealth, AddMovement, AttachBehavior, Place, Prefabs,
     Status, Log, Hint, DocumentsLabel, PropertiesLabel, ToolsLabel, EventLabel, NodeLabel, FromLabel, ToLabel, PrefabLabel,
-    ValueLabel, BehaviorLabel, BehaviorGraph };
+    ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel };
 struct Field {
     std::string name, value;
     std::function<Result<ed::Command>(std::string_view)> command;
@@ -78,16 +84,18 @@ class Desktop final {
         INITCOMMONCONTROLSEX common{sizeof(common), ICC_TREEVIEW_CLASSES};
         if (!InitCommonControlsEx(&common) || !SetWindowSubclass(hwnd_, &ParentProc, 1, reinterpret_cast<DWORD_PTR>(this)))
             throw std::runtime_error("Cannot initialize Editor window");
-        try { Controls(); Layout(); Refresh(); }
-        catch (...) { RemoveWindowSubclass(hwnd_, &ParentProc, 1); throw; }
+        try { Controls(); Fonts(GetDpiForWindow(hwnd_)); Layout(); Refresh(); }
+        catch (...) { if (font_) DeleteObject(font_); if (heading_font_) DeleteObject(heading_font_); RemoveWindowSubclass(hwnd_, &ParentProc, 1); throw; }
     }
     ~Desktop() {
         KillTimer(hwnd_, 1);
-        for (int id=New;id<=BehaviorGraph;++id) if (const auto child=ControlHandle(id)) RemoveWindowSubclass(child,&ChildProc,1);
+        for (int id=New;id<=PreviewLabel;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
+        if (font_) DeleteObject(font_);
+        if (heading_font_) DeleteObject(heading_font_);
         RemoveWindowSubclass(hwnd_, &ParentProc, 1);
     }
     bool Closed() const noexcept { return closed_; }
-    void Load(const std::filesystem::path &file) { (void)workspace_.Open(file); Refresh(); }
+    void Load(const std::filesystem::path &file) { (void)workspace_.Open(file); Refresh(true); }
     void Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events);
   private:
     HWND ControlHandle(int id) const { return GetDlgItem(hwnd_, id); }
@@ -100,8 +108,9 @@ class Desktop final {
         return control;
     }
     void Controls();
+    void Fonts(UINT dpi);
     void Layout();
-    void Refresh();
+    void Refresh(bool new_project=false);
     void Inspector();
     void Diagnostics();
     int Shortcut(HWND source, WPARAM key) const noexcept;
@@ -112,26 +121,30 @@ class Desktop final {
     bool CanReplace();
     std::optional<std::filesystem::path> Choose(bool save);
     void Action(int id);
-    bool Execute(std::vector<ed::Command> commands) {
+    bool Execute(std::vector<ed::Command> commands, const std::optional<ed::UiSelection> &select_after={}) {
         const auto result = workspace_.Execute(std::move(commands), view_revision_);
-        if (result) Refresh(); else Diagnostics(); return static_cast<bool>(result);
+        if (result) { if (select_after) (void)workspace_.Select(*select_after); Refresh(); } else Diagnostics(); return static_cast<bool>(result);
     }
     foundation::StringId Fresh() { return ex::Id(nonce_ + "/" + Number(++next_)); }
-    HTREEITEM TreeItem(HTREEITEM parent, std::string_view label, ed::UiSelection selection);
+    HTREEITEM TreeItem(HTREEITEM parent, std::string_view label, const ed::UiSelection &selection);
     void PrefabTree(HTREEITEM parent, AssetId doc, const comp::PrefabNode &node);
+    void SceneTree(HTREEITEM parent, const ed::ProjectSnapshot &snapshot, const ed::EditorDocument &doc);
     void AddField(Field field) {
         const auto text=field.name+" = "+field.value+(field.command?"":"  [read only]");
         Item(ControlHandle(Fields),text);
+        MeasureField(text);
+        fields_.push_back(std::move(field));
+    }
+    void MeasureField(std::string_view text) {
         const auto wide=Wide(text); const auto dc=GetDC(ControlHandle(Fields));
         if (dc) {
-            const auto old=SelectObject(dc,GetStockObject(DEFAULT_GUI_FONT)); SIZE extent{};
+            const auto old=SelectObject(dc,font_); SIZE extent{};
             if (GetTextExtentPoint32W(dc,wide.data(),static_cast<int>(wide.size()),&extent)) {
                 const auto width=SendMessageW(ControlHandle(Fields),LB_GETHORIZONTALEXTENT,0,0);
                 SendMessageW(ControlHandle(Fields),LB_SETHORIZONTALEXTENT,static_cast<WPARAM>(std::max(width,static_cast<LRESULT>(extent.cx+16))),0);
             }
             SelectObject(dc,old); ReleaseDC(ControlHandle(Fields),dc);
         }
-        fields_.push_back(std::move(field));
     }
     void NewDocument(ed::DocumentKind kind);
     static LRESULT CALLBACK ParentProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR data) noexcept;
@@ -141,7 +154,10 @@ class Desktop final {
     ex::Schema &schema_;
     ed::EditorWorkspace workspace_;
     HWND hwnd_;
+    HFONT font_=nullptr, heading_font_=nullptr;
+    UINT dpi_=96;
     std::vector<ed::UiSelection> selections_;
+    std::vector<HTREEITEM> tree_items_;
     std::vector<Field> fields_;
     std::vector<graph::ElementId> outputs_, inputs_;
     std::vector<AssetId> prefabs_, graphs_;
@@ -156,9 +172,11 @@ void Desktop::Controls() {
         {New,L"New example"}, {Open,L"Open..."}, {Save,L"Save"}, {Undo,L"Undo"}, {Redo,L"Redo"},
         {Play,L"Play (F5)"}, {Stop,L"Stop"}, {SendEvent,L"Send hit"}}}) Make(id,L"BUTTON",label,WS_TABSTOP);
     Make(EventLabel,L"STATIC",L"Payload / wait ticks"); Make(Payload,L"EDIT",L"10",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
-    Make(DocumentsLabel,L"STATIC",L"DOCUMENTS / CONTENT");
+    Make(ProjectLabel,L"STATIC",L"Project"); Make(HistoryLabel,L"STATIC",L"Edit history"); Make(PreviewLabel,L"STATIC",L"Play preview");
+    Make(Context,L"STATIC",L"Open a project or create an example.",SS_NOPREFIX);
+    Make(DocumentsLabel,L"STATIC",L"Documents / hierarchy");
     Make(Tree,WC_TREEVIEWW,L"",WS_TABSTOP | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_SHOWSELALWAYS);
-    Make(PropertiesLabel,L"STATIC",L"AUTHORING PROPERTIES");
+    Make(PropertiesLabel,L"STATIC",L"Authoring properties");
     Make(Fields,L"LISTBOX",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT);
     Make(ValueLabel,L"STATIC",L"Value");
     Make(Value,L"EDIT",L"",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
@@ -166,7 +184,7 @@ void Desktop::Controls() {
     Make(Hint,L"STATIC",L"Choose a property. Enter a typed value, then Apply.\nPlay runs an isolated snapshot. Save writes authoring data.");
     Make(NewScene,L"BUTTON",L"+ Scene",WS_TABSTOP); Make(NewPrefab,L"BUTTON",L"+ Prefab",WS_TABSTOP); Make(NewGraph,L"BUTTON",L"+ Graph",WS_TABSTOP);
     Make(Add,L"BUTTON",L"Add item",WS_TABSTOP); Make(Remove,L"BUTTON",L"Delete item",WS_TABSTOP);
-    Make(ToolsLabel,L"STATIC",L"COMPOSITION / GRAPH"); Make(NodeLabel,L"STATIC",L"Graph node template");
+    Make(ToolsLabel,L"STATIC",L"Document actions"); Make(NodeLabel,L"STATIC",L"Graph node template");
     Make(Palette,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     for (const auto *name : {"Event entry", "Native damage", "Wait"}) Item(ControlHandle(Palette),name,CB_ADDSTRING);
     SendMessageW(ControlHandle(Palette),CB_SETCURSEL,0,0);
@@ -182,52 +200,105 @@ void Desktop::Controls() {
     Make(PrefabLabel,L"STATIC",L"Prefab asset for Scene placement");
     Make(Prefabs,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     Make(Place,L"BUTTON",L"Assign Prefab",WS_TABSTOP);
+    Make(FollowPrefab,L"BUTTON",L"Open Prefab definition",WS_TABSTOP);
+    Make(ToolsHint,L"STATIC",L"",SS_NOPREFIX);
     Make(Status,L"STATIC",L"");
     Make(Log,L"EDIT",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL);
 }
+void Desktop::Fonts(UINT dpi) {
+    NONCLIENTMETRICSW metrics{}; metrics.cbSize=sizeof(metrics);
+    if (!SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS,sizeof(metrics),&metrics,0,dpi)) throw std::runtime_error("Cannot query UI font");
+    metrics.lfMessageFont.lfHeight=-MulDiv(10,static_cast<int>(dpi),72);
+    const auto normal=CreateFontIndirectW(&metrics.lfMessageFont);
+    metrics.lfMessageFont.lfWeight=FW_SEMIBOLD;
+    const auto heading=CreateFontIndirectW(&metrics.lfMessageFont);
+    if (!normal || !heading) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); throw std::runtime_error("Cannot create UI font"); }
+    for (int id=New;id<=PreviewLabel;++id) {
+        const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel;
+        SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:normal),TRUE);
+    }
+    if (font_) DeleteObject(font_);
+    if (heading_font_) DeleteObject(heading_font_);
+    font_=normal; heading_font_=heading; dpi_=dpi;
+    SendMessageW(ControlHandle(Fields),LB_SETHORIZONTALEXTENT,0,0);
+    for (const auto &field:fields_) MeasureField(field.name+" = "+field.value+(field.command?"":"  [read only]"));
+}
 void Desktop::Layout() {
     RECT rect{}; GetClientRect(hwnd_, &rect);
-    const int dpi = static_cast<int>(GetDpiForWindow(hwnd_));
+    const int dpi = static_cast<int>(dpi_);
     const auto px = [dpi](int value) { return MulDiv(value, dpi, 96); };
     const int width = MulDiv(rect.right,96,dpi), height = MulDiv(rect.bottom,96,dpi);
     const auto move = [&](int id,int x,int y,int w,int h) { MoveWindow(ControlHandle(id),px(x),px(y),px(w),px(h),TRUE); };
-    int x = 10;
-    for (int id = New; id <= SendEvent; ++id) { const int w = id == New ? 108 : (id == Open || id == Play || id == SendEvent ? 90 : 64); move(id,x,10,w,28); x += w+6; }
-    move(EventLabel,10,47,140,20); move(Payload,155,44,90,25);
-    const int left = width / 4, mid = (width-left-40)/2, right = left+mid+30;
-    const int bottom = height-190;
-    move(DocumentsLabel,10,82,left,20); move(PropertiesLabel,left+20,82,mid,20); move(ToolsLabel,right,82,width-right-10,20);
-    move(Tree,10,106,left,bottom-150);
-    move(NewScene,10,bottom-34,left/3-4,26); move(NewPrefab,14+left/3,bottom-34,left/3-4,26); move(NewGraph,18+2*left/3,bottom-34,left/3-8,26);
-    move(Fields,left+20,106,mid,bottom-246); move(ValueLabel,left+20,bottom-134,mid,20); move(Value,left+20,bottom-106,mid,26);
-    move(Apply,left+20,bottom-74,80,28); move(Revert,left+106,bottom-74,110,28);
-    move(Hint,left+20,bottom-38,mid,48);
+    move(ProjectLabel,12,8,290,20); move(HistoryLabel,326,8,164,20); move(PreviewLabel,512,8,280,20);
+    move(New,12,32,116,30); move(Open,134,32,80,30); move(Save,220,32,80,30);
+    move(Undo,326,32,76,30); move(Redo,408,32,76,30);
+    move(Play,512,32,90,30); move(Stop,608,32,70,30); move(SendEvent,684,32,90,30);
+    move(EventLabel,792,8,width-804,20); move(Payload,792,32,100,30);
+    move(Context,12,76,width-24,42);
+    const int left=(width-48)*28/100, mid=(width-left-48)/2, right=left+mid+36;
+    const int bottom=height-164;
+    move(DocumentsLabel,12,124,left,22); move(PropertiesLabel,left+24,124,mid,22); move(ToolsLabel,right,124,width-right-12,22);
+    move(Tree,12,152,left,bottom-198);
+    move(NewScene,12,bottom-34,left/3-4,30); move(NewPrefab,16+left/3,bottom-34,left/3-4,30); move(NewGraph,20+2*left/3,bottom-34,left/3-8,30);
+    move(Fields,left+24,152,mid,bottom-328); move(ValueLabel,left+24,bottom-166,mid,22); move(Value,left+24,bottom-140,mid,28);
+    move(Apply,left+24,bottom-104,80,30); move(Revert,left+110,bottom-104,110,30);
+    move(Hint,left+24,bottom-64,mid,64);
     const int rw=width-right-10;
     for (int id:{Palette,Source,Destination,BehaviorGraph,Prefabs}) SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(rw,650))),0);
-    move(NodeLabel,right,106,rw,20); move(Palette,right,128,rw,240);
-    move(Add,right,162,rw/2-3,28); move(Remove,right+rw/2+3,162,rw/2-3,28);
-    move(FromLabel,right,202,rw,20); move(Source,right,224,rw,280);
-    move(ToLabel,right,256,rw,20); move(Destination,right,278,rw,280); move(Connect,right,310,rw,28);
-    move(AddHealth,right,350,rw/2-3,28); move(AddMovement,right+rw/2+3,350,rw/2-3,28);
-    move(BehaviorLabel,right,384,rw,20); move(BehaviorGraph,right,406,rw,240); move(AttachBehavior,right,438,rw,28);
-    move(PrefabLabel,right,482,rw,20); move(Prefabs,right,504,rw,240); move(Place,right,536,rw,28);
-    move(Status,10,bottom+20,width-20,24); move(Log,10,bottom+48,width-20,132);
+    move(Add,right,152,rw/2-3,30); move(Remove,right+rw/2+3,152,rw/2-3,30);
+    move(NodeLabel,right,198,rw,22); move(Palette,right,224,rw,240);
+    move(FromLabel,right,270,rw,22); move(Source,right,296,rw,280);
+    move(ToLabel,right,340,rw,22); move(Destination,right,366,rw,280); move(Connect,right,408,rw,30);
+    move(AddHealth,right,198,rw/2-3,30); move(AddMovement,right+rw/2+3,198,rw/2-3,30);
+    move(BehaviorLabel,right,250,rw,22); move(BehaviorGraph,right,276,rw,240); move(AttachBehavior,right,316,rw,30);
+    move(PrefabLabel,right,198,rw,22); move(Prefabs,right,224,rw,240); move(Place,right,264,rw,30); move(FollowPrefab,right,310,rw,30);
+    move(ToolsHint,right,466,rw,std::max(70,bottom-466));
+    move(Status,12,bottom+8,width-24,24); move(Log,12,bottom+38,width-24,116);
 }
-HTREEITEM Desktop::TreeItem(HTREEITEM parent, std::string_view label, ed::UiSelection selection) {
+HTREEITEM Desktop::TreeItem(HTREEITEM parent, std::string_view label, const ed::UiSelection &selection) {
     auto text = Wide(label); selections_.push_back(selection);
     TVINSERTSTRUCTW item{}; item.hParent=parent; item.hInsertAfter=TVI_LAST;
     item.item.mask=TVIF_TEXT | TVIF_PARAM; item.item.pszText=text.data(); item.item.lParam=static_cast<LPARAM>(selections_.size()-1);
     const auto result = TreeView_InsertItem(ControlHandle(Tree),&item);
-    if (selection == workspace_.Selection()) TreeView_SelectItem(ControlHandle(Tree),result);
+    tree_items_.push_back(result);
     return result;
 }
 void Desktop::PrefabTree(HTREEITEM parent, AssetId doc, const comp::PrefabNode &node) {
-    const auto item = TreeItem(parent,"Entity " + Number(node.id.Raw()),{doc,ed::UiElement::PrefabNode,node.id.Raw()});
+    const auto *document=workspace_.Project()->Snapshot()->Find(doc);
+    const auto label=document && std::get<comp::PrefabDefinition>(document->data).root.id==node.id?document->name:std::string{"Entity"};
+    const auto item = TreeItem(parent,label+" ["+LabelId(node.id.Raw())+"]",{doc,ed::UiElement::PrefabNode,node.id.Raw()});
+    for (const auto &component:node.components) {
+        const auto *info=schema_.components.Find(component.type);
+        TreeItem(item,(info?info->name:"Component")+(component.part.IsValid()?" / part "+LabelId(component.part.Raw()):""),
+            {doc,ed::UiElement::PrefabComponent,node.id.Raw(),component.type,component.part});
+    }
     for (const auto &child : node.children) PrefabTree(item,doc,child);
-    TreeView_Expand(ControlHandle(Tree),item,TVE_EXPAND);
 }
-void Desktop::Refresh() {
-    refreshing_=true; field_=-1; fields_.clear(); selections_.clear(); outputs_.clear(); inputs_.clear(); prefabs_.clear(); graphs_.clear();
+void Desktop::SceneTree(HTREEITEM parent,const ed::ProjectSnapshot &snapshot,const ed::EditorDocument &doc) {
+    const auto &scene=std::get<gc::SceneCompositionDefinition>(doc.data);
+    std::unordered_map<SceneNodeId,std::vector<const SceneNodeSnapshot *>> children;
+    std::unordered_map<SceneNodeId,AssetId> placements;
+    for (const auto &node:scene.scene.nodes) children[node.parent].push_back(&node);
+    for (const auto &placement:scene.placements) placements.emplace(placement.node,placement.prefab);
+    struct Pending { HTREEITEM parent=nullptr; const SceneNodeSnapshot *node=nullptr; };
+    std::vector<Pending> pending;
+    const auto append=[&](HTREEITEM item,SceneNodeId id) { const auto found=children.find(id); if (found!=children.end()) for (auto i=found->second.rbegin();i!=found->second.rend();++i) pending.push_back({item,*i}); };
+    append(parent,{});
+    while (!pending.empty()) {
+        const auto current=pending.back(); pending.pop_back();
+        std::string name="Scene node";
+        if (const auto placement=placements.find(current.node->id);placement!=placements.end()) if (const auto *prefab=snapshot.Find(placement->second)) name=prefab->name;
+        const auto item=TreeItem(current.parent,name+" ["+LabelId(current.node->id.Raw())+"]",{doc.id,ed::UiElement::SceneNode,current.node->id.Raw()});
+        append(item,current.node->id);
+    }
+}
+void Desktop::Refresh(bool new_project) {
+    std::set<decltype(SelectionKey(ed::UiSelection{}))> expanded;
+    // Common-controls can return additional state bits despite the requested mask.
+    for (std::size_t i=0;i<tree_items_.size();++i) if ((TreeView_GetItemState(ControlHandle(Tree),tree_items_[i],TVIS_EXPANDED)&static_cast<UINT>(TVIS_EXPANDED))!=0) expanded.insert(SelectionKey(selections_[i]));
+    const bool initial=new_project || tree_items_.empty();
+    refreshing_=true; field_=-1; fields_.clear(); selections_.clear(); tree_items_.clear(); outputs_.clear(); inputs_.clear(); prefabs_.clear(); graphs_.clear();
+    SendMessageW(ControlHandle(Tree),WM_SETREDRAW,FALSE,0);
     TreeView_DeleteAllItems(ControlHandle(Tree));
     for (int id : {Source,Destination,Prefabs,BehaviorGraph}) SendMessageW(ControlHandle(id),CB_RESETCONTENT,0,0);
     if (const auto *project=workspace_.Project()) {
@@ -236,7 +307,7 @@ void Desktop::Refresh() {
             const std::array<const char *,3> kinds{"Scene","Prefab","Graph"};
             const auto root=TreeItem(TVI_ROOT,std::string{kinds[static_cast<std::size_t>(doc.Kind())]}+" / "+doc.name+(project->IsDirty(doc.id)?" *":""),{doc.id});
             if (const auto *scene=std::get_if<gc::SceneCompositionDefinition>(&doc.data)) {
-                for (const auto &node:scene->scene.nodes) TreeItem(root,"Placement "+Number(node.id.Raw())+(node.parent.Raw()?" / parent "+Number(node.parent.Raw()):""),{doc.id,ed::UiElement::SceneNode,node.id.Raw()});
+                (void)scene; SceneTree(root,*snapshot,doc);
             } else if (const auto *prefab=std::get_if<comp::PrefabDefinition>(&doc.data)) {
                 PrefabTree(root,doc.id,prefab->root); prefabs_.push_back(doc.id); Item(ControlHandle(Prefabs),doc.name,CB_ADDSTRING);
             } else if (const auto *graph=std::get_if<graph::GraphDefinition>(&doc.data)) {
@@ -246,12 +317,17 @@ void Desktop::Refresh() {
                     TreeItem(root,FormatNodeLabel(node),{doc.id,ed::UiElement::GraphNode,node.id.Raw()});
                     for (const auto &port:node.ports) port_labels.emplace(port.id,FormatPortLabel(node,port));
                 }
-                for (const auto &edge:graph->connections) TreeItem(root,"Link "+Number(edge.id.Raw())+": "+port_labels.at(edge.output_port)+" -> "+port_labels.at(edge.input_port),{doc.id,ed::UiElement::Connection,edge.id.Raw()});
+                for (const auto &edge:graph->connections) TreeItem(root,"Link ["+LabelId(edge.id.Raw())+"]: "+port_labels.at(edge.output_port)+" -> "+port_labels.at(edge.input_port),{doc.id,ed::UiElement::Connection,edge.id.Raw()});
             }
-            TreeView_Expand(ControlHandle(Tree),root,TVE_EXPAND);
         }
         SetText(hwnd_,"Epidemic Editor / "+Utf8(project->File().filename().wstring())+(project->IsDirty()?" *":""));
     } else { SetText(hwnd_,"Epidemic Editor"); view_revision_=0; }
+    // Restoring an expanded descendant can open its ancestors. Restore parents
+    // last, including explicit collapsed states, before revealing the selection.
+    for (std::size_t i=tree_items_.size();i>0;--i) TreeView_Expand(ControlHandle(Tree),tree_items_[i-1],
+        initial || expanded.contains(SelectionKey(selections_[i-1]))?TVE_EXPAND:TVE_COLLAPSE);
+    for (std::size_t i=0;i<tree_items_.size();++i) if (selections_[i]==workspace_.Selection()) { TreeView_SelectItem(ControlHandle(Tree),tree_items_[i]); TreeView_EnsureVisible(ControlHandle(Tree),tree_items_[i]); break; }
+    SendMessageW(ControlHandle(Tree),WM_SETREDRAW,TRUE,0); InvalidateRect(ControlHandle(Tree),nullptr,TRUE);
     SendMessageW(ControlHandle(Prefabs),CB_SETCURSEL,0,0);
     SendMessageW(ControlHandle(BehaviorGraph),CB_SETCURSEL,0,0);
     Inspector(); refreshing_=false; Diagnostics();
@@ -269,7 +345,9 @@ void Desktop::Inspector() {
         if (const auto *node=Find(prefab->root,selection.element)) {
             AddField({"Entity ID",Number(node->id.Raw()),{}});
             for (const auto &component:node->components) {
+                if (selection.kind==ed::UiElement::PrefabComponent && (component.type!=selection.component || component.part!=selection.part)) continue;
                 const auto *info=schema_.components.Find(component.type); if (!info) continue;
+                if (selection.kind==ed::UiElement::PrefabComponent) { AddField({"Component type ID",Number(component.type.Raw()),{}}); AddField({"Part ID",Number(component.part.Raw()),{}}); }
                 for (const auto &property:component.properties) {
                     const auto metadata=std::find_if(info->properties.begin(),info->properties.end(),[&](const auto &p){return p.id==property.property;});
                     if (metadata==info->properties.end()) continue;
@@ -287,6 +365,7 @@ void Desktop::Inspector() {
         for (const auto &parameter:prefab->parameters) AddField({"Parameter "+Number(parameter.id.Raw()),ed::EditorWorkspace::FormatValue(parameter.value),{}});
     } else if (const auto *scene=std::get_if<gc::SceneCompositionDefinition>(&doc->data)) {
         for (const auto &node:scene->scene.nodes) if (node.id.Raw()==selection.element && selection.kind==ed::UiElement::SceneNode) {
+            AddField({"Placement ID",Number(node.id.Raw()),{}});
             AddField({"Parent ID",Number(node.parent.Raw()),{}});
             const std::array<float,3> position{node.local_transform.position.x,node.local_transform.position.y,node.local_transform.position.z};
             for (std::size_t axis=0;axis<3;++axis) AddField({std::string{"Position "}+"XYZ"[axis],ed::EditorWorkspace::FormatValue(static_cast<double>(position[axis])),[asset,node,axis](std::string_view text) {
@@ -352,7 +431,7 @@ void Desktop::NewDocument(ed::DocumentKind kind) {
     else if (kind==ed::DocumentKind::Prefab) { auto root=ex::Enemy(schema_,Fresh()); root.behaviors.clear(); data=comp::PrefabDefinition{id.value,{},root}; }
     else data=graph::GraphDefinition{id,"Graph",{}, {}};
     const std::array<const char *,3> names{"Scene","Prefab","Graph"};
-    if (Execute({ed::CreateDocument{{id,names[static_cast<std::size_t>(kind)],0,std::move(data)}}})) { (void)workspace_.Select({id}); Refresh(); }
+    (void)Execute({ed::CreateDocument{{id,names[static_cast<std::size_t>(kind)],0,std::move(data)}}},ed::UiSelection{id});
 }
 void Desktop::Action(int id) {
     if (id==Revert) { SelectField(field_); local_error_.clear(); Diagnostics(); return; }
@@ -361,9 +440,15 @@ void Desktop::Action(int id) {
         if (!CanReplace()) return;
         const auto file=Choose(id==New); if (!file) return;
         const auto result=id==New?workspace_.New(*file,ex::Definition(schema_),true):workspace_.Open(*file,true);
-        if (result) { local_error_.clear(); Refresh(); } else Diagnostics(); return;
+        if (result) { local_error_.clear(); Refresh(true); } else Diagnostics(); return;
     }
     if (id==Save) { (void)SaveProject(); return; }
+    if (id==FollowPrefab) {
+        if (!ApplyDraft()) return;
+        if (const auto target=workspace_.PrefabDefinitionSelection();target && workspace_.Select(*target)) { local_error_.clear(); Refresh(); }
+        else { local_error_="Select a Scene placement with an available Prefab definition."; Diagnostics(); }
+        return;
+    }
     if (id==Stop) { (void)workspace_.Stop(); Diagnostics(); return; }
     if (!ApplyDraft()) return;
     local_error_.clear();
@@ -379,19 +464,22 @@ void Desktop::Action(int id) {
         Diagnostics(); return;
     }
     const auto *project=workspace_.Project(); if (!project) return;
-    const auto selection=workspace_.Selection(); const auto snapshot=project->Snapshot(); const auto *doc=snapshot->Find(selection.document); if (!doc) return;
     if (id==NewScene || id==NewPrefab || id==NewGraph) { NewDocument(static_cast<ed::DocumentKind>(id-NewScene)); return; }
+    const auto selection=workspace_.Selection(); const auto snapshot=project->Snapshot(); const auto *doc=snapshot->Find(selection.document); if (!doc) return;
     if (id==Add) {
-        if (doc->Kind()==ed::DocumentKind::Scene) { SceneNodeSnapshot node; node.id=SceneNodeId{Fresh().Raw()}; (void)Execute({ed::AddSceneNode{doc->id,node}}); }
+        if (doc->Kind()==ed::DocumentKind::Scene) { SceneNodeSnapshot node; node.id=SceneNodeId{Fresh().Raw()}; (void)Execute({ed::AddSceneNode{doc->id,node}},ed::UiSelection{doc->id,ed::UiElement::SceneNode,node.id.Raw()}); }
         else if (doc->Kind()==ed::DocumentKind::Prefab) {
             const auto &prefab=std::get<comp::PrefabDefinition>(doc->data);
             auto child=ex::Enemy(schema_,Fresh()); child.behaviors.clear();
-            (void)Execute({ed::AddEntity{doc->id,selection.kind==ed::UiElement::PrefabNode?comp::PrefabNodeId{selection.element}:prefab.root.id,std::move(child)}});
+            const ed::UiSelection created{doc->id,ed::UiElement::PrefabNode,child.id.Raw()};
+            (void)Execute({ed::AddEntity{doc->id,selection.kind==ed::UiElement::PrefabNode?comp::PrefabNodeId{selection.element}:prefab.root.id,std::move(child)}},created);
         } else {
             const auto palette=SendMessageW(ControlHandle(Palette),CB_GETCURSEL,0,0);
             if (palette<0 || palette>2) return;
             auto node=ex::Graph().nodes[static_cast<std::size_t>(palette)]; node.id=Fresh();
-            for (auto &port:node.ports) port.id=Fresh(); (void)Execute({ed::AddGraphNode{doc->id,std::move(node)}});
+            for (auto &port:node.ports) port.id=Fresh();
+            const ed::UiSelection created{doc->id,ed::UiElement::GraphNode,node.id.Raw()};
+            (void)Execute({ed::AddGraphNode{doc->id,std::move(node)}},created);
         }
     } else if (id==Remove) {
         switch (selection.kind) {
@@ -400,6 +488,7 @@ void Desktop::Action(int id) {
         case ed::UiElement::PrefabNode: (void)Execute({ed::DeleteEntity{doc->id,comp::PrefabNodeId{selection.element}}}); break;
         case ed::UiElement::GraphNode: (void)Execute({ed::DeleteGraphNode{doc->id,graph::ElementId{selection.element}}}); break;
         case ed::UiElement::Connection: (void)Execute({ed::DisconnectPorts{doc->id,graph::ElementId{selection.element}}}); break;
+        case ed::UiElement::PrefabComponent: (void)Execute({ed::DeleteComponent{doc->id,comp::PrefabNodeId{selection.element},selection.component,selection.part}}); break;
         }
     } else if (id==Connect && doc->Kind()==ed::DocumentKind::Graph) {
         const auto out=SendMessageW(ControlHandle(Source),CB_GETCURSEL,0,0), in=SendMessageW(ControlHandle(Destination),CB_GETCURSEL,0,0);
@@ -442,11 +531,33 @@ void Desktop::Diagnostics() {
     EnableWindow(ControlHandle(Save),project!=nullptr); EnableWindow(ControlHandle(Undo),project && project->CanUndo()); EnableWindow(ControlHandle(Redo),project && project->CanRedo());
     EnableWindow(ControlHandle(Play),project && !playing); EnableWindow(ControlHandle(Stop),playing); EnableWindow(ControlHandle(SendEvent),playing);
     const auto selection=workspace_.Selection(); const auto snapshot=project?project->Snapshot():nullptr; const auto *doc=snapshot?snapshot->Find(selection.document):nullptr;
-    const bool graph=doc && doc->Kind()==ed::DocumentKind::Graph, prefab=selection.kind==ed::UiElement::PrefabNode;
+    const bool graph=doc && std::holds_alternative<graph::GraphDefinition>(doc->data), prefab=selection.kind==ed::UiElement::PrefabNode;
+    const bool prefab_doc=doc && std::holds_alternative<comp::PrefabDefinition>(doc->data), scene_doc=doc && std::holds_alternative<gc::SceneCompositionDefinition>(doc->data);
+    const auto visible=[&](int id,bool show) { const auto control=ControlHandle(id); if (((static_cast<DWORD_PTR>(GetWindowLongPtrW(control,GWL_STYLE))&static_cast<DWORD_PTR>(WS_VISIBLE))!=0)!=show) ShowWindow(control,show?SW_SHOW:SW_HIDE); };
+    for (int id:{NodeLabel,Palette,FromLabel,Source,ToLabel,Destination,Connect}) visible(id,graph);
+    for (int id:{AddHealth,AddMovement,BehaviorLabel,BehaviorGraph,AttachBehavior}) visible(id,prefab_doc);
+    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab}) visible(id,scene_doc);
+    SetText(ControlHandle(ToolsLabel),graph?"Graph actions":prefab_doc?"Prefab definition":scene_doc?"Scene placement":"Document actions");
+    SetText(ControlHandle(Add),graph?"Add node":prefab_doc?"Add Entity":"Add placement");
+    SetText(ControlHandle(Remove),selection.kind==ed::UiElement::PrefabComponent?"Delete component":"Delete selection");
+    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Definition data. Child entities express ownership, not spatial parenting. Select an Entity to assign components or behavior.":"Select a placement to assign a Prefab or open its definition. Instance overrides remain read-only in this milestone.";
+    if (Text(ControlHandle(ToolsHint))!=tool_hint) SetText(ControlHandle(ToolsHint),tool_hint);
+    std::string context="Open a project or create an example.";
+    if (doc && project) {
+        context=std::string{graph?"Graph":prefab_doc?"Prefab":"Scene"}+" / "+doc->name+(project->IsDirty(doc->id)?" *":"");
+        for (std::size_t i=0;i<selections_.size();++i) if (selections_[i]==selection) {
+            std::array<wchar_t,512> label{}; TVITEMW item{}; item.mask=TVIF_TEXT; item.hItem=tree_items_[i]; item.pszText=label.data(); item.cchTextMax=static_cast<int>(label.size());
+            TreeView_GetItem(ControlHandle(Tree),&item); context+="  |  Selected: "+Utf8(label.data()); break;
+        }
+        context+=playing?"\nEditing authoring data; Play uses its existing snapshot.":"\nAuthoring data. Full stable IDs are available in properties.";
+    }
+    if (Text(ControlHandle(Context))!=context) SetText(ControlHandle(Context),context);
     for (int id:{NewScene,NewPrefab,NewGraph,Add,Remove}) EnableWindow(ControlHandle(id),project!=nullptr);
+    EnableWindow(ControlHandle(Add),doc && selection.kind!=ed::UiElement::PrefabComponent);
     for (int id:{Palette,Source,Destination,Connect}) EnableWindow(ControlHandle(id),graph);
     for (int id:{AddHealth,AddMovement,AttachBehavior,BehaviorGraph}) EnableWindow(ControlHandle(id),prefab);
     EnableWindow(ControlHandle(Place),selection.kind==ed::UiElement::SceneNode); EnableWindow(ControlHandle(Prefabs),selection.kind==ed::UiElement::SceneNode);
+    EnableWindow(ControlHandle(FollowPrefab),workspace_.PrefabDefinitionSelection().has_value());
     EnableWindow(ControlHandle(Apply),Draft()); EnableWindow(ControlHandle(Revert),Draft());
     std::string log=local_error_;
     if (workspace_.LastError()) { const auto &error=*workspace_.LastError(); log+="\r\nLast command failed: "+error.code+": "+error.message; }
@@ -456,7 +567,7 @@ void Desktop::Diagnostics() {
         if (report) log+=" / last step instructions "+Number(report->instructions)+" / native calls "+Number(report->native_calls);
         if (report && report->diagnostic) { const auto &d=*report->diagnostic; log+=" / "+d.error.code+" / asset "+Number(d.asset.value.Raw())+" / node "+Number(d.node.Raw())+" / instruction "+Number(d.instruction)+" / "+d.error.message; }
     }
-    if (log.empty()) log="Ready. New example includes Scene, Enemy Prefab (Health / Movement) and Event -> Damage -> Wait -> Damage.\r\nSelect Placement 42, Play, then Send hit. Runtime changes are discarded by Stop.";
+    if (log.empty()) log="Ready. New example includes Scene, Enemy Prefab (Health / Movement) and Event -> Damage -> Wait -> Damage.\r\nSelect an Enemy placement in Scene, Play, then Send hit. Runtime changes are discarded by Stop.";
     if (log!=log_text_) { log_text_=log; SetText(ControlHandle(Log),log); }
 }
 int Desktop::Shortcut(HWND source, WPARAM key) const noexcept {
@@ -498,8 +609,14 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
         if (wp==VK_TAB) { const auto next=GetNextDlgTabItem(hwnd_,nullptr,GetKeyState(VK_SHIFT)<0); if (next) SetFocus(next); return 0; }
         if (const int action=Shortcut(hwnd_,wp)) { Action(action); return 0; }
     }
-    if (msg==WM_SIZE || msg==WM_DPICHANGED) { Layout(); return DefSubclassProc(hwnd_,msg,wp,lp); }
-    if (msg==WM_GETMINMAXINFO) { const auto dpi=static_cast<int>(GetDpiForWindow(hwnd_)); auto *limits=reinterpret_cast<MINMAXINFO *>(lp); limits->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(800,dpi,96)}; return 0; }
+    if (msg==WM_DPICHANGED) {
+        const auto result=DefSubclassProc(hwnd_,msg,wp,lp);
+        Fonts(HIWORD(wp));
+        if (const auto *suggested=reinterpret_cast<const RECT *>(lp)) SetWindowPos(hwnd_,nullptr,suggested->left,suggested->top,suggested->right-suggested->left,suggested->bottom-suggested->top,SWP_NOZORDER | SWP_NOACTIVATE);
+        Layout(); return result;
+    }
+    if (msg==WM_SIZE) { Layout(); return DefSubclassProc(hwnd_,msg,wp,lp); }
+    if (msg==WM_GETMINMAXINFO) { const auto dpi=static_cast<int>(dpi_); auto *limits=reinterpret_cast<MINMAXINFO *>(lp); limits->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(800,dpi,96)}; return 0; }
     if (msg==WM_CLOSE) { if (CanReplace()) { const auto result=workspace_.Stop(); if (result) { KillTimer(hwnd_,1); timer_running_=false; closed_=true; } else Diagnostics(); } return 0; }
     if (msg==WM_TIMER && wp==1) { if (timer_running_) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); } return 0; }
     if (msg==WM_COMMAND && !refreshing_) {
@@ -527,8 +644,12 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     return DefSubclassProc(hwnd_,msg,wp,lp);
 }
 void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events) {
-    const auto check=[](bool value) { if (!value) throw std::runtime_error("Native Editor smoke invariant"); };
-    ex::Take(workspace_.New(file,ex::Definition(schema_))); Refresh();
+    const auto check=[](bool value,const std::source_location at=std::source_location::current()) { if (!value) throw std::runtime_error("Native Editor smoke invariant at line "+Number(at.line())); };
+    auto empty=ex::Definition(schema_); empty.documents.clear(); empty.entry_scene={};
+    ex::Take(workspace_.New(file,std::move(empty))); Refresh(true);
+    SendMessageW(hwnd_,WM_COMMAND,NewScene,0);
+    check(workspace_.Project()->Snapshot()->definition.documents.size()==1 && workspace_.Selection().kind==ed::UiElement::Document);
+    ex::Take(workspace_.New(file,ex::Definition(schema_),true)); Refresh(true);
     // Drive the real native command handlers and typed property control.
     (void)workspace_.Select({AssetId::FromString("example.prefab"),ed::UiElement::PrefabNode,ex::Id("enemy").Raw()}); Refresh();
     int points=-1; for (std::size_t i=0;i<fields_.size();++i) if (fields_[i].name.ends_with(" / points")) points=static_cast<int>(i);
@@ -540,6 +661,30 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     SelectField(points); SetText(ControlHandle(Value),"-1"); SendMessageW(hwnd_,WM_COMMAND,Apply,0);
     check(Draft() && workspace_.Project()->Snapshot()==edited); SendMessageW(hwnd_,WM_COMMAND,Revert,0);
     SendMessageW(hwnd_,WM_COMMAND,Save,0); check(!workspace_.Project()->IsDirty());
+    const auto choose=[&](const ed::UiSelection &target) {
+        const auto found=std::find(selections_.begin(),selections_.end(),target); check(found!=selections_.end());
+        TreeView_SelectItem(ControlHandle(Tree),tree_items_[static_cast<std::size_t>(found-selections_.begin())]); check(workspace_.Selection()==target);
+    };
+    const auto prefab_id=AssetId::FromString("example.prefab");
+    choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
+    check(IsWindowEnabled(ControlHandle(FollowPrefab))); SendMessageW(hwnd_,WM_COMMAND,FollowPrefab,0);
+    check(workspace_.Selection()==ed::UiSelection{prefab_id,ed::UiElement::PrefabNode,ex::Id("enemy").Raw()});
+    const ed::UiSelection component{prefab_id,ed::UiElement::PrefabComponent,ex::Id("enemy").Raw(),schema_.health,{}};
+    choose(component);
+    check(std::any_of(fields_.begin(),fields_.end(),[](const auto &field){return field.name.ends_with(" / points");}));
+    check(std::none_of(fields_.begin(),fields_.end(),[](const auto &field){return field.name.ends_with(" / speed");}));
+    SendMessageW(hwnd_,WM_COMMAND,Remove,0); check(workspace_.Selection().kind==ed::UiElement::PrefabNode);
+    SendMessageW(hwnd_,WM_COMMAND,Undo,0); choose(component);
+    // Preserve a collapsed, unrelated document while refreshing the selected component.
+    const auto scene_index=std::find(selections_.begin(),selections_.end(),ed::UiSelection{AssetId::FromString("example.scene")})-selections_.begin();
+    const auto collapsed=[&] {
+        TVITEMW item{}; item.mask=TVIF_STATE; item.stateMask=TVIS_EXPANDED; item.hItem=tree_items_[static_cast<std::size_t>(scene_index)];
+        check(TreeView_GetItem(ControlHandle(Tree),&item)); return (item.state&static_cast<UINT>(TVIS_EXPANDED))==0;
+    };
+    TreeView_Expand(ControlHandle(Tree),tree_items_[static_cast<std::size_t>(scene_index)],TVE_COLLAPSE);
+    check(collapsed());
+    Refresh(); check(workspace_.Selection()==component);
+    check(collapsed());
     // Graph buttons create, validate and undo connections through the same Command API.
     SendMessageW(hwnd_,WM_COMMAND,NewGraph,0); const auto draft_graph=workspace_.Selection().document;
     SendMessageW(ControlHandle(Palette),CB_SETCURSEL,0,0); SendMessageW(hwnd_,WM_COMMAND,Add,0);
@@ -580,10 +725,19 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     (void)workspace_.Select({AssetId::FromString("example.prefab"),ed::UiElement::PrefabNode,ex::Id("enemy").Raw()}); Refresh();
     check(std::any_of(fields_.begin(),fields_.end(),[](const auto &field){return field.name.ends_with(" / points") && field.value=="87";}));
     // Exercise the supported minimum client layout without touching any other window.
-    SetWindowPos(hwnd_,nullptr,0,0,1000,800,SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-    RECT client{},tools{}; GetClientRect(hwnd_,&client); GetWindowRect(ControlHandle(Place),&tools);
-    POINT corner{tools.right,tools.bottom}; ScreenToClient(hwnd_,&corner);
-    check(corner.x<=client.right && corner.y<client.bottom-140);
+    const auto actual_dpi=GetDpiForWindow(hwnd_);
+    for (const auto dpi:{96u,144u}) {
+        Fonts(dpi);
+        SetWindowPos(hwnd_,nullptr,0,0,MulDiv(1000,static_cast<int>(dpi),96),MulDiv(800,static_cast<int>(dpi),96),SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Layout();
+        RECT client{}; GetClientRect(hwnd_,&client);
+        for (int id:{Tree,Fields,Value,FollowPrefab,Connect,Place,ToolsHint,Log}) {
+            RECT bounds{}; GetWindowRect(ControlHandle(id),&bounds);
+            POINT first{bounds.left,bounds.top},last{bounds.right,bounds.bottom}; ScreenToClient(hwnd_,&first); ScreenToClient(hwnd_,&last);
+            check(first.x>=0 && first.y>=0 && last.x<=client.right && last.y<=client.bottom && last.y>first.y);
+        }
+        LOGFONTW font{}; check(GetObjectW(font_,sizeof(font),&font)!=0 && font.lfHeight==-MulDiv(10,static_cast<int>(dpi),72));
+    }
+    Fonts(actual_dpi); Layout();
     SendMessageW(hwnd_,WM_SYSKEYDOWN,VK_F4,static_cast<LPARAM>(1ULL<<29u));
     // DefWindowProc may post the system-close command. Exercise the same
     // Platform event pump as the real application before checking its outcome.
