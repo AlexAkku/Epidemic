@@ -80,9 +80,10 @@ Apply (Enter) publishes the current field; Revert (Escape) discards its draft.
 Invalid input leaves source, history and save points unchanged. Apply/Revert is
 required before changing selection. Save applies a valid field first; close and
 project replacement offer Save/Discard/Cancel. Ctrl+S/O/N and F5/Shift+F5 operate
-on the workspace. Ctrl+Z/Y control project history outside the value edit;
-Ctrl+Z inside value/payload edits remains a local text undo. Workspace shortcuts
+on the workspace. Ctrl+Z/Y control project history outside value/payload edits;
+inside those edits native text undo is retained. Workspace shortcuts
 also work when the main window itself has focus; Alt+F4 uses normal close handling.
+Tab/Shift+Tab enter the native control traversal even from initial host focus.
 Play uses the project's entry Scene snapshot (there is no entry-Scene selector
 in this host); authoring changes become visible on the next Play. Select
 a Scene placement and Send hit to run the example with the supplied i64 payload

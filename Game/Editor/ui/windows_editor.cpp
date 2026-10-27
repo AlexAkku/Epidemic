@@ -494,7 +494,10 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     // Platform publishes raw system keys for games; a desktop host also needs
     // their standard Windows behavior (Alt+F4, Alt+Space).
     if (msg==WM_SYSKEYDOWN || msg==WM_SYSKEYUP) { (void)DefSubclassProc(hwnd_,msg,wp,lp); return DefWindowProcW(hwnd_,msg,wp,lp); }
-    if (msg==WM_KEYDOWN) { if (const int action=Shortcut(hwnd_,wp)) { Action(action); return 0; } }
+    if (msg==WM_KEYDOWN) {
+        if (wp==VK_TAB) { const auto next=GetNextDlgTabItem(hwnd_,nullptr,GetKeyState(VK_SHIFT)<0); if (next) SetFocus(next); return 0; }
+        if (const int action=Shortcut(hwnd_,wp)) { Action(action); return 0; }
+    }
     if (msg==WM_SIZE || msg==WM_DPICHANGED) { Layout(); return DefSubclassProc(hwnd_,msg,wp,lp); }
     if (msg==WM_GETMINMAXINFO) { const auto dpi=static_cast<int>(GetDpiForWindow(hwnd_)); auto *limits=reinterpret_cast<MINMAXINFO *>(lp); limits->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(800,dpi,96)}; return 0; }
     if (msg==WM_CLOSE) { if (CanReplace()) { const auto result=workspace_.Stop(); if (result) { KillTimer(hwnd_,1); timer_running_=false; closed_=true; } else Diagnostics(); } return 0; }
@@ -581,7 +584,7 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     RECT client{},tools{}; GetClientRect(hwnd_,&client); GetWindowRect(ControlHandle(Place),&tools);
     POINT corner{tools.right,tools.bottom}; ScreenToClient(hwnd_,&corner);
     check(corner.x<=client.right && corner.y<client.bottom-140);
-    SendMessageW(hwnd_,WM_SYSKEYDOWN,VK_F4,static_cast<LPARAM>(1ULL<<29));
+    SendMessageW(hwnd_,WM_SYSKEYDOWN,VK_F4,static_cast<LPARAM>(1ULL<<29u));
     // DefWindowProc may post the system-close command. Exercise the same
     // Platform event pump as the real application before checking its outcome.
     events.PumpEvents();
