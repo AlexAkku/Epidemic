@@ -374,7 +374,7 @@ function(epidemic_add_public_header_self_containment_target)
         get_target_property(_source_dir "${_target}" SOURCE_DIR)
         file(RELATIVE_PATH _relative_source "${PROJECT_SOURCE_DIR}" "${_source_dir}")
         if(NOT _type MATCHES "^(STATIC|SHARED|MODULE|INTERFACE|OBJECT)_LIBRARY$" OR
-           NOT _relative_source MATCHES "^(EngineBase|EngineRuntime|EngineFramework)/" OR
+           NOT _relative_source MATCHES "^(EngineBase|EngineRuntime|EngineFramework|Game)/" OR
            _relative_source MATCHES "/(Tests|tests|Apps|DevelopmentInfrastructure)(/|$)")
             continue()
         endif()

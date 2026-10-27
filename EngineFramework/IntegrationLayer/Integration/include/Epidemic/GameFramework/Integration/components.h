@@ -18,6 +18,20 @@ struct ComponentTypeInfo { TypeId id{}; std::string name; std::vector<PropertyIn
 
 class ComponentRegistry final {
   public:
+    class Prepared final {
+      public:
+        Prepared(Prepared &&) noexcept = default;
+        Prepared &operator=(Prepared &&) noexcept = default;
+        Prepared(const Prepared &) = delete;
+        Prepared &operator=(const Prepared &) = delete;
+      private:
+        Prepared() = default;
+        const ComponentRegistry *registry_ = nullptr;
+        TypeId type_{};
+        std::shared_ptr<void> object_;
+        friend class ComponentRegistry;
+        friend class ComponentStore;
+    };
     ComponentRegistry() = default;
     ComponentRegistry(const ComponentRegistry &) = delete;
     ComponentRegistry &operator=(const ComponentRegistry &) = delete;
@@ -49,6 +63,12 @@ class ComponentRegistry final {
         auto &descriptor = *found->second;
         const auto id = PropertyId::FromString(name);
         Property property;
+        property.validate = [validate](const PropertyValue &value) {
+            const auto *typed = std::get_if<V>(&value);
+            if (!typed) return foundation::Result<void>::Failure(Error("component.property_type"));
+            if (validate && !validate(*typed)) return foundation::Result<void>::Failure(Error("component.value_rejected"));
+            return foundation::Result<void>::Success();
+        };
         property.read = [member](const void *object) { return PropertyValue{static_cast<const T *>(object)->*member}; };
         property.write = [member, validate](void *object, const PropertyValue &value) {
             const auto *typed = std::get_if<V>(&value);
@@ -70,9 +90,12 @@ class ComponentRegistry final {
     void Freeze() noexcept { names_.Freeze(); }
     [[nodiscard]] bool IsFrozen() const noexcept { return names_.IsFrozen(); }
     [[nodiscard]] const ComponentTypeInfo *Find(TypeId type) const noexcept;
+    [[nodiscard]] foundation::Result<void> Validate(TypeId type, std::span<const PropertyAssignment> properties) const;
+    [[nodiscard]] foundation::Result<Prepared> Prepare(TypeId type, std::span<const PropertyAssignment> properties) const;
   private:
     static foundation::Error Error(std::string_view code) { return foundation::Error::Create(code, "component contract rejected"); }
     struct Property {
+        std::function<foundation::Result<void>(const PropertyValue &)> validate;
         std::function<PropertyValue(const void *)> read;
         std::function<foundation::Result<void>(void *, const PropertyValue &)> write;
     };
@@ -102,6 +125,8 @@ class ComponentStore final {
     ~ComponentStore();
     [[nodiscard]] foundation::Result<ComponentHandle> Attach(entities::EntityId entity, TypeId type,
         std::span<const PropertyAssignment> properties = {}, entities::EntityPartId part = {});
+    [[nodiscard]] foundation::Result<ComponentHandle> AttachPrepared(entities::EntityId entity,
+        ComponentRegistry::Prepared &&prepared, entities::EntityPartId part = {});
     [[nodiscard]] foundation::Result<void> Remove(const ComponentHandle &handle);
     void Synchronize();
     [[nodiscard]] std::optional<ComponentHandle> Find(entities::EntityId entity, TypeId type, entities::EntityPartId part = {}) const;

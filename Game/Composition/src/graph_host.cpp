@@ -61,10 +61,18 @@ bool HasPort(const runtime::graph::GraphDefinition &definition, std::span<const 
 }
 } // namespace
 bool GraphActivation::IsFinished() const noexcept {
-    if (!task_ || !task_->LastReport()) return false;
-    const auto status = task_->LastReport()->status;
+    const auto &report = Report();
+    if (!report) return false;
+    const auto status = report->status;
     return status == runtime::graph::ExecutionStatus::Completed || status == runtime::graph::ExecutionStatus::Failed ||
            status == runtime::graph::ExecutionStatus::Cancelled;
+}
+void GraphActivation::RequestCancel() noexcept {
+    owner_.Invalidate();
+    if (!task_ && !IsFinished()) {
+        if (pending_) pending_->Cancel();
+        pending_report_ = runtime::graph::ExecutionReport{runtime::graph::ExecutionStatus::Cancelled};
+    }
 }
 GraphExecutionHost::~GraphExecutionHost() { for (const auto &active : active_) active.activation->RequestCancel(); }
 foundation::Result<BoundGraphPtr> GraphExecutionHost::Compile(
@@ -89,9 +97,8 @@ foundation::Result<gameplay::composition::GraphAssetId> GraphExecutionHost::Regi
     assets_.emplace(id.Raw(), std::move(asset));
     return Result::Success(id);
 }
-foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>> GraphExecutionHost::Bind(
-    const std::shared_ptr<GraphScope> &scope, const gameplay::composition::GraphBehaviorDefinition &definition) {
-    using Result = foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>>;
+foundation::Result<void> GraphExecutionHost::CheckDefinition(const gameplay::composition::GraphBehaviorDefinition &definition) const {
+    using Result = foundation::Result<void>;
     const auto found = assets_.find(definition.graph.Raw());
     if (found == assets_.end()) return Result::Failure(foundation::Error::Create("behavior.unknown_graph", "graph asset is not registered"));
     const auto &asset = found->second;
@@ -99,6 +106,20 @@ foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>> 
         return Result::Failure(foundation::Error::Create("behavior.invalid_inputs", "input port is not an activation input"));
     for (const auto &event : definition.events) if (!HasPort(asset.definition, asset.bindings, event.port, runtime::graph::Operation::EventEntry))
         return Result::Failure(foundation::Error::Create("behavior.invalid_routes", "event port is not an EventEntry input"));
+    for (const auto &node : asset.definition.nodes) {
+        const auto binding = std::find_if(asset.bindings.begin(), asset.bindings.end(), [&](const auto &item) { return item.type == node.type_id; });
+        if (binding == asset.bindings.end() || binding->operation != runtime::graph::Operation::Input) continue;
+        for (const auto &port : node.ports) if (std::none_of(definition.inputs.begin(), definition.inputs.end(), [&](const auto &input) { return input.port == port.id; }))
+            return Result::Failure(foundation::Error::Create("behavior.missing_input", "every activation input needs an explicit behavior value"));
+    }
+    return Result::Success();
+}
+foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>> GraphExecutionHost::Bind(
+    const std::shared_ptr<GraphScope> &scope, const gameplay::composition::GraphBehaviorDefinition &definition) {
+    using Result = foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>>;
+    const auto checked = CheckDefinition(definition);
+    if (!checked) return Result::Failure(checked.GetError());
+    const auto &asset = assets_.at(definition.graph.Raw());
     const auto compiled = Compile(scope, asset.definition, asset.bindings);
     if (!compiled) return Result::Failure(compiled.GetError());
     auto bound = std::make_shared<BoundGraph>();
@@ -121,6 +142,8 @@ foundation::Result<std::shared_ptr<GraphActivation>> GraphExecutionHost::Start(
     const BoundGraphPtr &program,
     runtime::graph::ElementId event_port, std::int64_t payload, const runtime::GraphScheduleOptions &options) {
     using Result = foundation::Result<std::shared_ptr<GraphActivation>>;
+    if (options.fixed_step.ticks < 0 || options.budget.instructions == 0 || options.budget.native_calls == 0)
+        return Result::Failure(foundation::Error::Create("graph.scheduler.invalid_options", "invalid activation budget or fixed step"));
     if (program && program->host_ != identity_) return Result::Failure(
         foundation::Error::Create("composition.foreign_program", "program belongs to another graph host"));
     const auto scope = program ? program->scope_.lock() : nullptr;
@@ -133,22 +156,34 @@ foundation::Result<std::shared_ptr<GraphActivation>> GraphExecutionHost::Start(
     }
     auto activation = std::make_shared<GraphActivation>();
     std::erase_if(active_, [](const auto &active) { return active.activation->IsFinished(); });
+    if (active_.size() >= 1024) return Result::Failure(foundation::Error::Create("composition.activation_capacity", "graph activation queue is full"));
     active_.reserve(active_.size() + 1);
+    activation->pending_ = std::move(instance).Value();
     const auto tracked = scope->Track(activation);
     if (!tracked) return Result::Failure(tracked.GetError());
-    auto task = scheduler_.SubmitOwned(std::move(instance).Value(), activation->owner_, options);
-    if (!task) return Result::Failure(task.GetError());
-    activation->task_ = std::move(task).Value();
-    active_.push_back({scope, activation});
+    active_.push_back({scope, activation, options});
     return Result::Success(std::move(activation));
 }
 foundation::Result<std::size_t> GraphExecutionHost::Prepare() {
+    std::optional<foundation::Error> failure;
     for (const auto &active : active_) {
         if (const auto scope = active.scope.lock()) scope->Synchronize();
         else active.activation->RequestCancel();
+        auto &activation = *active.activation;
+        if (activation.pending_ && !activation.IsFinished()) {
+            const auto asset = activation.pending_->Program().Asset();
+            auto task = scheduler_.SubmitOwned(std::move(activation.pending_), activation.owner_, active.options);
+            if (task) activation.task_ = std::move(task).Value();
+            else {
+                activation.pending_report_ = runtime::graph::ExecutionReport{runtime::graph::ExecutionStatus::Failed, 0, 0,
+                    runtime::graph::ExecutionDiagnostic{asset, {}, 0, task.GetError()}};
+                if (!failure) failure = task.GetError();
+            }
+        }
     }
     const auto prepared = scheduler_.Prepare();
     std::erase_if(active_, [](const auto &active) { return active.activation->IsFinished(); });
+    if (failure) return foundation::Result<std::size_t>::Failure(*failure);
     return prepared;
 }
 } // namespace epidemic::game::composition

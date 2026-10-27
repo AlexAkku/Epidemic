@@ -90,7 +90,7 @@ inline std::array<gc::NodeBinding, 3> Bindings(gc::DomainOperation invoke) {
             gc::NodeBinding{Id("wait.type"), graph::Operation::Wait, {}}};
 }
 inline graph::ExecutionStatus Status(const gc::GraphActivation &activation) {
-    const auto &report = activation.Task().LastReport();
+    const auto &report = activation.Report();
     if (!report) throw std::runtime_error("missing execution report");
     return report->status;
 }

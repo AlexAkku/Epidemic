@@ -3,6 +3,10 @@ target_include_directories(EpidemicGameComposition PUBLIC "${CMAKE_CURRENT_SOURC
 target_link_libraries(EpidemicGameComposition PUBLIC EpidemicGameFrameworkCoreIntegration
     EpidemicGameFrameworkRuntimeBridge EpidemicRuntimeSupport)
 epidemic_configure_target(EpidemicGameComposition)
+add_executable(EpidemicCompositionExample example/vertical_slice.cpp)
+target_link_libraries(EpidemicCompositionExample PRIVATE EpidemicGameComposition)
+epidemic_configure_target(EpidemicCompositionExample)
 if(BUILD_TESTING)
     add_subdirectory(tests)
+    epidemic_add_test(EpidemicCompositionExample)
 endif()

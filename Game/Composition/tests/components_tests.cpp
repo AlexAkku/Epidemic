@@ -24,6 +24,12 @@ void Components() {
     const auto part = fw::entities::EntityPartId::FromString("game.body");
     const auto part_hp = Take(components.Attach(first, types.health, {}, part));
     Check(part_hp.part == part, "components extend existing Parts");
+    Check(f.entities.Deactivate(second).HasValue(), "deactivate existing Entity");
+    components.Synchronize();
+    Check(Take(components.Read<std::int64_t>(other_hp, types.points)) == 100, "Dormant preserves component state");
+    Check(components.Find(second, types.health) == other_hp, "Dormant component remains discoverable");
+    Check(components.WriteProperty(other_hp, {types.points, std::int64_t{99}}).HasValue(), "Dormant state remains mutable under EntityService rules");
+    Check(f.entities.Activate(second).HasValue(), "reactivate existing Entity");
     auto old_scope = Take(components.ScopeOf(hp));
     Check(components.Remove(hp).HasValue() && !old_scope->IsAlive(), "removing component invalidates its lifetime scope");
     const auto replaced = Take(components.Attach(first, types.health));
@@ -32,7 +38,7 @@ void Components() {
     Check(f.entities.RequestDestroy(first, fw::entities::EntityDestroyReason::Destroyed).HasValue(), "destroy Entity");
     components.Synchronize();
     ErrorIs(components.Get<Health>(replaced), "component.stale_handle");
-    Check(Take(components.Get<Health>(other_hp))->points == 100, "unrelated Entity preserved");
+    Check(Take(components.Get<Health>(other_hp))->points == 99, "unrelated Entity preserved");
     comp::ComponentRegistry invalid_registry;
     const auto null_type = Take(invalid_registry.Register<Health>("game.null", [] { return std::shared_ptr<Health>{}; }));
     invalid_registry.Freeze();

@@ -19,6 +19,7 @@ class IGraphProgram { public: virtual ~IGraphProgram() = default; };
 class IGraphBehaviorHost {
   public:
     virtual ~IGraphBehaviorHost() = default;
+    [[nodiscard]] virtual foundation::Result<void> CheckDefinition(const GraphBehaviorDefinition &) const { return foundation::Result<void>::Success(); }
     [[nodiscard]] virtual foundation::Result<std::shared_ptr<const IGraphProgram>>
     Bind(const std::shared_ptr<GraphScope> &scope, const GraphBehaviorDefinition &definition) = 0;
     [[nodiscard]] virtual foundation::Result<std::shared_ptr<IGraphActivation>>
@@ -33,6 +34,7 @@ class GraphBehaviorService final {
     GraphBehaviorService(const GraphBehaviorService &) = delete;
     GraphBehaviorService &operator=(const GraphBehaviorService &) = delete;
     [[nodiscard]] foundation::Result<BehaviorHandle> Attach(const std::shared_ptr<GraphScope> &owner, const GraphBehaviorDefinition &definition);
+    [[nodiscard]] foundation::Result<void> Validate(const GraphBehaviorDefinition &definition) const;
     [[nodiscard]] foundation::Result<void> Detach(BehaviorHandle behavior);
     [[nodiscard]] foundation::Result<std::shared_ptr<IGraphActivation>> Send(BehaviorHandle behavior, const GameEvent &event);
     [[nodiscard]] foundation::Result<std::size_t> SendTo(const GraphScope &target, const GameEvent &event);

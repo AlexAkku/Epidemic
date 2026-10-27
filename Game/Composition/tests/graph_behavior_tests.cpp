@@ -34,6 +34,14 @@ void GraphBehaviors() {
     Check(Take(components.Read<std::int64_t>(hp, types.points)) == 90 && Take(components.Read<std::int64_t>(other, types.points)) == 100, "event targets only its object's graph");
     f.Advance(); f.Tick();
     Check(Status(activation) == graph::ExecutionStatus::Completed && Take(components.Read<std::int64_t>(hp, types.points)) == 80, "configured Wait resumes the domain operation");
+    const auto paused = Take(behaviors.Send(first_behavior, {Id("game.damage"), 0})); f.Tick();
+    Check(f.entities.Deactivate(first).HasValue(), "deactivate graph owner");
+    behaviors.Synchronize(); components.Synchronize(); f.Tick();
+    Check(Status(paused) == graph::ExecutionStatus::Cancelled && Take(components.Read<std::int64_t>(hp, types.points)) == 80, "Dormant cancels execution without dropping components or behavior configuration");
+    ErrorIs(behaviors.Send(first_behavior, {Id("game.damage"), 1}), "behavior.owner_inactive");
+    Check(f.entities.Activate(first).HasValue(), "activate graph owner");
+    const auto reactivated = Take(behaviors.Send(first_behavior, {Id("game.damage"), 0})); f.Tick(); f.Advance(); f.Tick();
+    Check(Status(reactivated) == graph::ExecutionStatus::Completed, "same behavior handle receives a fresh event after reactivation");
     const auto waiting = Take(behaviors.Send(second_behavior, {Id("game.damage"), 1}));
     f.Tick(); Check(!waiting->IsFinished(), "component graph waits");
     Check(components.Remove(other).HasValue(), "remove behavior's component");
@@ -51,4 +59,6 @@ void GraphBehaviors() {
     auto target = Take(gc::GraphScope::ForEntity(f.entities, first));
     Check(Take(behaviors.SendTo(*target, {Id("game.damage"), 1})) == 1, "explicit gameplay event fanout uses target context");
     Check(behaviors.Detach(routed).HasValue(), "discard queued final fixture event"); f.Tick();
+    behavior.inputs.clear();
+    ErrorIs(behaviors.Attach(target, behavior), "behavior.missing_input");
 }

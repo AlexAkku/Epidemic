@@ -9,42 +9,71 @@ const ComponentTypeInfo *ComponentRegistry::Find(TypeId type) const noexcept {
 ComponentStore::~ComponentStore() { for (const auto &[_, entry] : entries_) entry.scope->Invalidate(); }
 std::optional<ComponentHandle> ComponentStore::Find(entities::EntityId entity, TypeId type, entities::EntityPartId part) const {
     const auto handle = entities_.HandleOf(entity);
-    for (const auto &[_, entry] : entries_) if (entry.handle.entity == handle && entry.handle.type == type && entry.handle.part == part && entry.scope->IsAlive()) return entry.handle;
+    for (const auto &[_, entry] : entries_) if (entry.handle.entity == handle && entry.handle.type == type && entry.handle.part == part && entry.scope->IsPresent()) return entry.handle;
     return std::nullopt;
 }
 const ComponentStore::Entry *ComponentStore::Resolve(const ComponentHandle &handle) const {
     const auto found = entries_.find(handle.generation);
-    return found != entries_.end() && found->second.handle == handle && found->second.scope->IsAlive() ? &found->second : nullptr;
+    return found != entries_.end() && found->second.handle == handle && found->second.scope->IsPresent() ? &found->second : nullptr;
 }
-foundation::Result<ComponentHandle> ComponentStore::Attach(entities::EntityId entity, TypeId type,
-    std::span<const PropertyAssignment> properties, entities::EntityPartId part) {
-    using Result = foundation::Result<ComponentHandle>;
-    if (!registry_.IsFrozen()) return Result::Failure(Error("component.registry_not_frozen"));
-    const auto descriptor = registry_.types_.find(type.Raw());
-    if (descriptor == registry_.types_.end()) return Result::Failure(Error("component.unknown_type"));
-    const auto scope = GraphScope::ForEntity(entities_, entity, part);
-    if (!scope) return Result::Failure(scope.GetError());
-    Synchronize();
-    for (const auto &[_, entry] : entries_) if (entry.handle.entity == scope.Value()->Handle() && entry.handle.part == part && entry.handle.type == type)
-        return Result::Failure(Error("component.duplicate"));
-    if (entries_.size() >= 65536 || next_ == std::numeric_limits<std::uint64_t>::max()) return Result::Failure(Error("component.capacity"));
-    std::shared_ptr<void> object;
+foundation::Result<void> ComponentRegistry::Validate(TypeId type, std::span<const PropertyAssignment> properties) const {
+    if (!IsFrozen()) return foundation::Result<void>::Failure(Error("component.registry_not_frozen"));
+    const auto descriptor = types_.find(type.Raw());
+    if (descriptor == types_.end()) return foundation::Result<void>::Failure(Error("component.unknown_type"));
+    std::unordered_set<std::uint64_t> assigned;
     try {
-        object = descriptor->second->create();
-        if (!object || object.use_count() != 1) return Result::Failure(Error("component.invalid_factory"));
-        std::unordered_set<std::uint64_t> assigned;
         for (const auto &property : properties) {
             const auto found = descriptor->second->properties.find(property.property.Raw());
-            if (found == descriptor->second->properties.end()) return Result::Failure(Error("component.unknown_property"));
-            if (!assigned.insert(property.property.Raw()).second) return Result::Failure(Error("component.duplicate_property"));
-            const auto written = found->second.write(object.get(), property.value);
+            if (found == descriptor->second->properties.end()) return foundation::Result<void>::Failure(Error("component.unknown_property"));
+            if (!assigned.insert(property.property.Raw()).second) return foundation::Result<void>::Failure(Error("component.duplicate_property"));
+            const auto valid = found->second.validate(property.value);
+            if (!valid) return valid;
+        }
+    } catch (const std::bad_alloc &) { throw; }
+    catch (...) { return foundation::Result<void>::Failure(Error("component.property_exception")); }
+    return foundation::Result<void>::Success();
+}
+foundation::Result<ComponentRegistry::Prepared> ComponentRegistry::Prepare(TypeId type, std::span<const PropertyAssignment> properties) const {
+    using Result = foundation::Result<Prepared>;
+    const auto valid = Validate(type, properties);
+    if (!valid) return Result::Failure(valid.GetError());
+    const auto &descriptor = *types_.at(type.Raw());
+    Prepared prepared; prepared.registry_ = this; prepared.type_ = type;
+    try {
+        prepared.object_ = descriptor.create();
+        if (!prepared.object_ || prepared.object_.use_count() != 1) return Result::Failure(Error("component.invalid_factory"));
+        for (const auto &property : properties) {
+            const auto written = descriptor.properties.at(property.property.Raw()).write(prepared.object_.get(), property.value);
             if (!written) return Result::Failure(written.GetError());
+        }
+        for (const auto &[_, property] : descriptor.properties) {
+            const auto checked = property.validate(property.read(prepared.object_.get()));
+            if (!checked) return Result::Failure(checked.GetError());
         }
     } catch (const std::bad_alloc &) { throw; }
     catch (...) { return Result::Failure(Error("component.factory_exception")); }
-    const ComponentHandle handle{next_, type, scope.Value()->Handle(), part};
-    entries_.emplace(next_, Entry{handle, descriptor->second, std::move(object), scope.Value()});
-    ++next_;
+    return Result::Success(std::move(prepared));
+}
+foundation::Result<ComponentHandle> ComponentStore::Attach(entities::EntityId entity, TypeId type,
+    std::span<const PropertyAssignment> properties, entities::EntityPartId part) {
+    auto prepared = registry_.Prepare(type, properties);
+    if (!prepared) return foundation::Result<ComponentHandle>::Failure(prepared.GetError());
+    return AttachPrepared(entity, std::move(prepared).Value(), part);
+}
+foundation::Result<ComponentHandle> ComponentStore::AttachPrepared(entities::EntityId entity,
+    ComponentRegistry::Prepared &&prepared, entities::EntityPartId part) {
+    using Result = foundation::Result<ComponentHandle>;
+    if (prepared.registry_ != &registry_ || !prepared.object_) return Result::Failure(Error("component.invalid_prepared"));
+    const auto scope = GraphScope::ForEntityState(entities_, entity, part);
+    if (!scope) return Result::Failure(scope.GetError());
+    Synchronize();
+    for (const auto &[_, entry] : entries_) if (entry.handle.entity == scope.Value()->Handle() && entry.handle.part == part && entry.handle.type == prepared.type_)
+        return Result::Failure(Error("component.duplicate"));
+    if (entries_.size() >= 65536 || next_ == std::numeric_limits<std::uint64_t>::max()) return Result::Failure(Error("component.capacity"));
+    const ComponentHandle handle{next_, prepared.type_, scope.Value()->Handle(), part};
+    // Allocate the map node before consuming a prepared object.
+    entries_.emplace(next_, Entry{handle, registry_.types_.at(prepared.type_.Raw()), prepared.object_, scope.Value()});
+    prepared.object_.reset(); ++next_;
     return Result::Success(handle);
 }
 foundation::Result<void> ComponentStore::Remove(const ComponentHandle &handle) {
@@ -55,8 +84,8 @@ foundation::Result<void> ComponentStore::Remove(const ComponentHandle &handle) {
 }
 void ComponentStore::Synchronize() {
     for (auto it = entries_.begin(); it != entries_.end();) {
-        if (!it->second.scope->IsAlive()) { it->second.scope->Invalidate(); it = entries_.erase(it); }
-        else ++it;
+        if (!it->second.scope->IsPresent()) { it->second.scope->Invalidate(); it = entries_.erase(it); }
+        else { it->second.scope->Synchronize(); ++it; }
     }
 }
 foundation::Result<std::shared_ptr<GraphScope>> ComponentStore::ScopeOf(const ComponentHandle &handle) const {

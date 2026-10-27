@@ -7,17 +7,28 @@ GraphScope::GraphScope(entities::EntityService &entities, entities::EntityId ent
 GraphScope::~GraphScope() { Invalidate(); }
 foundation::Result<std::shared_ptr<GraphScope>> GraphScope::ForEntity(
     entities::EntityService &entities, entities::EntityId entity, entities::EntityPartId part) {
+    auto scope = ForEntityState(entities, entity, part);
+    if (!scope) return scope;
+    if (!scope.Value()->IsAlive()) return foundation::Result<std::shared_ptr<GraphScope>>::Failure(
+        foundation::Error::Create("composition.invalid_entity", "an active Entity/Part is required"));
+    return scope;
+}
+foundation::Result<std::shared_ptr<GraphScope>> GraphScope::ForEntityState(
+    entities::EntityService &entities, entities::EntityId entity, entities::EntityPartId part) {
     auto scope = std::shared_ptr<GraphScope>(new GraphScope(entities, entity, part));
-    if (!scope->IsAlive()) return foundation::Result<std::shared_ptr<GraphScope>>::Failure(
-        foundation::Error::Create("composition.invalid_entity", "an alive Entity/Part is required"));
+    if (!scope->IsPresent()) return foundation::Result<std::shared_ptr<GraphScope>>::Failure(
+        foundation::Error::Create("composition.invalid_entity", "an existing Entity/Part is required"));
     return foundation::Result<std::shared_ptr<GraphScope>>::Success(std::move(scope));
 }
-bool GraphScope::IsAlive() const {
+bool GraphScope::IsAlive() const { return Check(true); }
+bool GraphScope::IsPresent() const { return Check(false); }
+bool GraphScope::Check(bool require_active) const {
     if (!enabled_) return false;
-    if (depth_ != 0) { const auto parent = parent_.lock(); if (!parent || !parent->IsAlive()) return false; }
+    if (depth_ != 0) { const auto parent = parent_.lock(); if (!parent || !parent->Check(require_active)) return false; }
     if (kind_ != GraphScopeKind::Entity) return !owner_alive_ || owner_alive_();
     const auto record = entities_->Resolve(handle_);
-    return record && record->id == entity_ && record->lifecycle == entities::EntityLifecycleState::Alive &&
+    return record && record->id == entity_ && (record->lifecycle == entities::EntityLifecycleState::Alive ||
+           (!require_active && record->lifecycle == entities::EntityLifecycleState::Dormant)) &&
            (!part_.IsValid() || entities_->GetPart(entity_, part_).has_value());
 }
 GameplayObjectRef GraphScope::Object() const noexcept {
@@ -62,14 +73,13 @@ foundation::Result<void> GraphScope::Track(const std::shared_ptr<IGraphActivatio
     return foundation::Result<void>::Success();
 }
 void GraphScope::Synchronize() noexcept {
-    try { if (!IsAlive()) Invalidate(); }
+    try { if (!IsPresent()) Invalidate(); else if (!IsAlive()) CancelExecutions(); }
     catch (...) { Invalidate(); } // Fail closed; never throw during a native callback's unwind.
 }
-void GraphScope::Invalidate() noexcept {
-    enabled_ = false;
-    for (const auto &weak : children_) if (const auto child = weak.lock()) child->Invalidate();
-    children_.clear();
+void GraphScope::CancelExecutions() noexcept {
+    for (const auto &weak : children_) if (const auto child = weak.lock()) child->CancelExecutions();
     for (const auto &weak : activations_) if (const auto active = weak.lock()) active->RequestCancel();
     activations_.clear();
 }
+void GraphScope::Invalidate() noexcept { enabled_ = false; CancelExecutions(); }
 } // namespace epidemic::gameplay::composition

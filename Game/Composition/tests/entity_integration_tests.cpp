@@ -4,6 +4,7 @@ using namespace composition_tests;
 void Components();
 void GraphBehaviors();
 void Systems();
+void Prefabs();
 void EntityIntegration() {
     Fixture f;
     const auto entity = f.Entity();
@@ -42,9 +43,20 @@ void EntityIntegration() {
     auto part = Take(gc::GraphScope::ForEntity(f.entities, part_entity, fw::entities::EntityPartId::FromString("game.body")));
     Check(part->Part().IsValid(), "existing Entity Parts are supported");
     ErrorIs(gc::GraphScope::ForEntity(f.entities, part_entity, fw::entities::EntityPartId::FromString("missing")), "composition.invalid_entity");
+    GraphScheduler limited{f.time.clock, f.simulation, SimulationZoneId{2}, 1};
+    gc::GraphExecutionHost queue{limited, f.bridge};
+    const auto queued_bindings = Bindings([](const gc::OperationContext &, std::int64_t value) { return foundation::Result<std::int64_t>::Success(value); });
+    const auto queued_program = Take(queue.Compile(part, Definition(), queued_bindings));
+    auto accepted = Take(queue.Start(queued_program, Id("event.in"), 1));
+    auto rejected = Take(queue.Start(queued_program, Id("event.in"), 1));
+    ErrorIs(queue.Prepare(), "graph.scheduler.capacity");
+    Check(Status(*rejected) == graph::ExecutionStatus::Failed, "deferred submission failure is visible");
+    rejected->RequestCancel();
+    Check(Status(*rejected) == graph::ExecutionStatus::Failed, "cancellation cannot hide an earlier submission failure");
+    accepted->RequestCancel(); Check(queue.Prepare().HasValue(), "cancel accepted queued job");
 }
 int main() {
-    try { EntityIntegration(); Components(); GraphBehaviors(); Systems(); }
+    try { EntityIntegration(); Components(); GraphBehaviors(); Systems(); Prefabs(); }
     catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
     return 0;
 }

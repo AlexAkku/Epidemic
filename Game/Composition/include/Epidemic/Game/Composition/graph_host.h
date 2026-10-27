@@ -29,12 +29,15 @@ class BoundGraph final : public gameplay::composition::IGraphProgram {
 using BoundGraphPtr = std::shared_ptr<const BoundGraph>;
 class GraphActivation final : public gameplay::composition::IGraphActivation {
   public:
-    void RequestCancel() noexcept override { owner_.Invalidate(); }
+    void RequestCancel() noexcept override;
     [[nodiscard]] bool IsFinished() const noexcept override;
-    [[nodiscard]] const runtime::GraphTask &Task() const noexcept { return *task_; }
+    [[nodiscard]] const runtime::GraphTask *Task() const noexcept { return task_.get(); }
+    [[nodiscard]] const std::optional<runtime::graph::ExecutionReport> &Report() const noexcept { return task_ ? task_->LastReport() : pending_report_; }
   private:
     runtime::GraphActivationOwner owner_;
     std::shared_ptr<runtime::GraphTask> task_;
+    std::unique_ptr<runtime::graph::GraphInstance> pending_;
+    std::optional<runtime::graph::ExecutionReport> pending_report_;
     friend class GraphExecutionHost;
 };
 // Composition root: Framework supplies object capabilities; Runtime owns all IR,
@@ -48,6 +51,7 @@ class GraphExecutionHost final : public gameplay::composition::IGraphBehaviorHos
     GraphExecutionHost &operator=(const GraphExecutionHost &) = delete;
     [[nodiscard]] foundation::Result<gameplay::composition::GraphAssetId> RegisterGraph(
         runtime::graph::GraphDefinition definition, std::span<const NodeBinding> bindings);
+    [[nodiscard]] foundation::Result<void> CheckDefinition(const gameplay::composition::GraphBehaviorDefinition &definition) const override;
     [[nodiscard]] foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>>
     Bind(const std::shared_ptr<GraphScope> &scope, const gameplay::composition::GraphBehaviorDefinition &definition) override;
     [[nodiscard]] foundation::Result<std::shared_ptr<gameplay::composition::IGraphActivation>>
@@ -59,7 +63,7 @@ class GraphExecutionHost final : public gameplay::composition::IGraphBehaviorHos
         runtime::graph::ElementId event_port, std::int64_t payload, const runtime::GraphScheduleOptions &options = {});
     [[nodiscard]] foundation::Result<std::size_t> Prepare();
   private:
-    struct Active { std::weak_ptr<GraphScope> scope; std::shared_ptr<GraphActivation> activation; };
+    struct Active { std::weak_ptr<GraphScope> scope; std::shared_ptr<GraphActivation> activation; runtime::GraphScheduleOptions options{}; };
     runtime::GraphScheduler &scheduler_;
     gameplay::runtime_bridge::RuntimeBridgeService &bridge_;
     std::vector<Active> active_;

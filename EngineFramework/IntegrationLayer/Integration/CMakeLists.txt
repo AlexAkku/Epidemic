@@ -6,6 +6,7 @@ add_library(EpidemicGameFrameworkCoreIntegration STATIC
     src/graph_scope.cpp
     src/components.cpp
     src/graph_behavior.cpp
+    src/prefab.cpp
 )
 
 target_include_directories(EpidemicGameFrameworkCoreIntegration PUBLIC
