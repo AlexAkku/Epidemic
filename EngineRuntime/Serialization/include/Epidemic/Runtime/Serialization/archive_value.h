@@ -26,5 +26,6 @@ class SerializedDocument {
     friend class InMemoryArchiveReader;
     friend class InMemoryArchiveWriter;
     friend class InMemoryArchiveFactory;
+    friend class DocumentCodecAccess;
 };
 } // namespace epidemic::runtime
