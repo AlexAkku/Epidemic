@@ -2,6 +2,7 @@
 #include "../../example/demo_game.h"
 #include <cstdio>
 #include <limits>
+#include <cmath>
 
 using namespace epidemic;
 namespace ed = game::editor;
@@ -9,6 +10,57 @@ namespace ex = ed::example;
 namespace comp = gameplay::composition;
 namespace {
 void Check(bool value) { if (!value) throw std::runtime_error("workspace invariant"); }
+void Spatial() {
+    ex::Schema schema;
+    ed::EditorWorkspace workspace{schema.View(), [&] { return ex::Options(schema); }};
+    const auto scene=runtime::AssetId::FromString("example.scene"), prefab=runtime::AssetId::FromString("example.prefab");
+    const runtime::SceneNodeId child{42}, parent{43};
+    const std::filesystem::path file{EPIDEMIC_EDITOR_TEST_DIRECTORY "/spatial.epidemic"};
+    std::filesystem::create_directories(file.parent_path());
+    ex::Take(workspace.New(file,ex::Definition(schema)));
+    const auto current=[&] { return std::get<game::composition::SceneCompositionDefinition>(workspace.Project()->Snapshot()->Find(scene)->data).scene.nodes.front().local_transform; };
+    const auto apply=[&](ed::UiTransformField field,std::string_view text) {
+        auto command=ex::Take(ed::EditorWorkspace::TransformCommand(scene,child,current(),field,text));
+        ex::Take(workspace.Execute({std::move(command)},workspace.Project()->Revision()));
+    };
+    apply(ed::UiTransformField::PositionX,"-2"); apply(ed::UiTransformField::PositionY,"4"); apply(ed::UiTransformField::ScaleY,"2");
+    apply(ed::UiTransformField::ScaleX,"-1"); Check(current().scale.x==-1); ex::Take(workspace.Undo());
+    for (const auto text:{"nan","inf","-inf","1e100","1e-100","bad"}) Check(!ed::EditorWorkspace::TransformCommand(scene,child,current(),ed::UiTransformField::PositionX,text));
+    Check(!ed::EditorWorkspace::TransformCommand(scene,child,current(),ed::UiTransformField::ScaleX,"0"));
+    auto tilted=current(); tilted.rotation={0.70710678f,0,0,0.70710678f};
+    Check(!ed::EditorWorkspace::TransformCommand(scene,child,tilted,ed::UiTransformField::RotationZDegrees,"90"));
+    const auto turn=ex::Take(ed::EditorWorkspace::TransformCommand(scene,parent,runtime::Transform{},ed::UiTransformField::RotationZDegrees,"450"));
+    runtime::SceneNodeSnapshot group; group.id=parent; group.local_transform=std::get<ed::SetSceneTransform>(turn).transform;
+    group.local_transform.position={10,20,0}; group.local_transform.scale={2,3,1};
+    comp::PrefabOverrides overrides; overrides.components.push_back({ex::Id("enemy"),schema.health,{}, {schema.points,std::int64_t{77}}});
+    ex::Take(workspace.Execute({ed::AddSceneNode{scene,group},ed::SetSceneParent{scene,child,parent},ed::PlacePrefab{scene,{child,prefab,overrides}}},workspace.Project()->Revision()));
+    ex::Take(workspace.Save()); const auto saved=workspace.Project()->Snapshot();
+    apply(ed::UiTransformField::PositionX,"-3"); ex::Take(workspace.Undo());
+    const auto revision=workspace.Project()->Revision();
+    const auto reject=[&](std::vector<ed::Command> commands) {
+        Check(!workspace.Execute(std::move(commands),revision));
+        Check(workspace.Project()->Snapshot()==saved && workspace.Project()->Revision()==revision && !workspace.Project()->IsDirty() && workspace.Project()->CanRedo());
+    };
+    auto invalid=current(); invalid.scale.x=0;
+    reject({ed::RenameDocument{scene,"Rejected"},ed::SetSceneTransform{scene,child,invalid}});
+    reject({ed::SetSceneParent{scene,parent,child}}); // Cycle.
+    reject({ed::SetSceneParent{scene,child,runtime::SceneNodeId{999}}});
+    invalid=current(); invalid.position.x=std::numeric_limits<float>::infinity(); reject({ed::SetSceneTransform{scene,child,invalid}});
+    invalid.position.x=std::numeric_limits<float>::quiet_NaN(); reject({ed::SetSceneTransform{scene,child,invalid}});
+    ex::Take(workspace.Redo()); Check(current().position.x==-3); ex::Take(workspace.Undo());
+    ex::Take(workspace.Open(file)); Check(current().position==runtime::Vec3{-2,4,0});
+    const auto &restored=std::get<game::composition::SceneCompositionDefinition>(workspace.Project()->Snapshot()->Find(scene)->data);
+    Check(restored.scene.nodes.front().id==child && restored.scene.nodes.front().parent==parent && std::get<std::int64_t>(restored.placements.front().overrides.components.front().property.value)==77);
+    ex::Take(workspace.Play()); const auto *runtime_scene=workspace.Session()->Scene();
+    if (!runtime_scene) throw std::runtime_error("missing runtime Scene");
+    const auto world=runtime_scene->scene.transforms->GetWorldTransform(runtime_scene->nodes.at(child));
+    if (!world) throw std::runtime_error("missing world transform");
+    Check(std::abs(world->position.x+2)<0.0001f && std::abs(world->position.y-16)<0.0001f && world->scale==runtime::Vec3{2,6,1});
+    apply(ed::UiTransformField::PositionX,"-5");
+    Check(runtime_scene->scene.transforms->GetWorldTransform(runtime_scene->nodes.at(child))==world);
+    const auto authored=workspace.Project()->Snapshot(); ex::Take(workspace.Stop()); Check(workspace.Project()->Snapshot()==authored);
+    ex::Take(workspace.Undo()); Check(!workspace.Project()->IsDirty());
+}
 void Run() {
     ex::Schema schema;
     ed::EditorWorkspace workspace{schema.View(), [&] { return ex::Options(schema); }};
@@ -114,6 +166,6 @@ void Run() {
 }
 }
 int main() {
-    try { Run(); std::puts("PASS: workspace commands, persistence, runtime isolation, identity, typed values"); }
+    try { Spatial(); Run(); std::puts("PASS: workspace commands, spatial authoring, persistence, runtime isolation, identity, typed values"); }
     catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
 }

@@ -106,6 +106,17 @@ font metrics, separately from an actual monitor-DPI GUI check.
 Parameters and parameter-bound properties are read-only. Prefab overrides have
 no editing UI; reassigning the same Prefab preserves its existing overrides.
 
+Spatial fields edit **local** Scene TRS: XYZ position/scale in Scene units and
+Z rotation in degrees for XY-plane orientations. Angles wrap modulo 360; tilted
+3D quaternions remain read-only. Finite float range, non-zero scale and existing
+Scene validity rules apply before publication; negative positions/scales are
+supported. Spatial parent selection commits `SetSceneParent` with **KeepLocal**
+semantics, so world placement changes; missing/cyclic parents are rejected
+atomically. World transforms belong to SceneServices, including its documented
+simplified-TRS approximation for shear-producing hierarchies. There is no world
+editing mode, viewport or gizmo yet. These fields use archive 1.0.0 unchanged;
+the headless write/read-play example verifies parented TRS in a new process.
+
 Apply (Enter) publishes the current field; Revert (Escape) discards its draft.
 Invalid input leaves source, history and save points unchanged. Apply/Revert is
 required before changing selection. Save applies a valid field first; close and

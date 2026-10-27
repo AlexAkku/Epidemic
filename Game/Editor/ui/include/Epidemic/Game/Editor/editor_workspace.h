@@ -4,6 +4,7 @@
 
 namespace epidemic::game::editor {
 enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection, PrefabComponent };
+enum class UiTransformField { PositionX, PositionY, PositionZ, ScaleX, ScaleY, ScaleZ, RotationZDegrees };
 struct UiSelection {
     runtime::AssetId document{};
     UiElement kind = UiElement::Document;
@@ -41,6 +42,8 @@ class EditorWorkspace final {
     [[nodiscard]] const std::optional<foundation::Error> &LastError() const noexcept { return error_; }
     [[nodiscard]] static foundation::Result<comp::PropertyValue> ParseValue(comp::PropertyKind kind, std::string_view text);
     [[nodiscard]] static std::string FormatValue(const comp::PropertyValue &value);
+    [[nodiscard]] static foundation::Result<Command> TransformCommand(runtime::AssetId document, runtime::SceneNodeId node,
+        const runtime::Transform &current, UiTransformField field, std::string_view text);
   private:
     [[nodiscard]] foundation::Result<void> Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate);
     [[nodiscard]] foundation::Result<void> Finish(foundation::Result<void> &&result, bool reconcile = false);

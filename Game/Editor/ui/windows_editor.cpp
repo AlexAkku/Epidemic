@@ -20,6 +20,7 @@
 #include <charconv>
 #include <tuple>
 #include <source_location>
+#include <numbers>
 
 namespace {
 using namespace epidemic;
@@ -71,7 +72,8 @@ enum Control : int { New = 100, Open, Save, Undo, Redo, Play, Stop, SendEvent, P
     Tree, Fields, Value, Apply, Revert, Add, Remove, NewScene, NewPrefab, NewGraph,
     Palette, Source, Destination, Connect, AddHealth, AddMovement, AttachBehavior, Place, Prefabs,
     Status, Log, Hint, DocumentsLabel, PropertiesLabel, ToolsLabel, EventLabel, NodeLabel, FromLabel, ToLabel, PrefabLabel,
-    ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel };
+    ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel,
+    ParentLabel, SceneParents, Reparent };
 struct Field {
     std::string name, value;
     std::function<Result<ed::Command>(std::string_view)> command;
@@ -89,7 +91,7 @@ class Desktop final {
     }
     ~Desktop() {
         KillTimer(hwnd_, 1);
-        for (int id=New;id<=PreviewLabel;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
+        for (int id=New;id<=Reparent;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
         if (font_) DeleteObject(font_);
         if (heading_font_) DeleteObject(heading_font_);
         RemoveWindowSubclass(hwnd_, &ParentProc, 1);
@@ -161,6 +163,7 @@ class Desktop final {
     std::vector<Field> fields_;
     std::vector<graph::ElementId> outputs_, inputs_;
     std::vector<AssetId> prefabs_, graphs_;
+    std::vector<SceneNodeId> parents_;
     std::uint64_t view_revision_ = 0, next_ = 0;
     std::string nonce_ = Number(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
     std::string local_error_, log_text_;
@@ -201,6 +204,9 @@ void Desktop::Controls() {
     Make(Prefabs,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     Make(Place,L"BUTTON",L"Assign Prefab",WS_TABSTOP);
     Make(FollowPrefab,L"BUTTON",L"Open Prefab definition",WS_TABSTOP);
+    Make(ParentLabel,L"STATIC",L"Spatial parent (keep local)");
+    Make(SceneParents,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
+    Make(Reparent,L"BUTTON",L"Set parent (keep local)",WS_TABSTOP);
     Make(ToolsHint,L"STATIC",L"",SS_NOPREFIX);
     Make(Status,L"STATIC",L"");
     Make(Log,L"EDIT",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL);
@@ -213,7 +219,7 @@ void Desktop::Fonts(UINT dpi) {
     metrics.lfMessageFont.lfWeight=FW_SEMIBOLD;
     const auto heading=CreateFontIndirectW(&metrics.lfMessageFont);
     if (!normal || !heading) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); throw std::runtime_error("Cannot create UI font"); }
-    for (int id=New;id<=PreviewLabel;++id) {
+    for (int id=New;id<=Reparent;++id) {
         const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel;
         SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:normal),TRUE);
     }
@@ -244,7 +250,7 @@ void Desktop::Layout() {
     move(Apply,left+24,bottom-104,80,30); move(Revert,left+110,bottom-104,110,30);
     move(Hint,left+24,bottom-64,mid,64);
     const int rw=width-right-10;
-    for (int id:{Palette,Source,Destination,BehaviorGraph,Prefabs}) SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(rw,650))),0);
+    for (int id:{Palette,Source,Destination,BehaviorGraph,Prefabs,SceneParents}) SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(rw,650))),0);
     move(Add,right,152,rw/2-3,30); move(Remove,right+rw/2+3,152,rw/2-3,30);
     move(NodeLabel,right,198,rw,22); move(Palette,right,224,rw,240);
     move(FromLabel,right,270,rw,22); move(Source,right,296,rw,280);
@@ -252,6 +258,7 @@ void Desktop::Layout() {
     move(AddHealth,right,198,rw/2-3,30); move(AddMovement,right+rw/2+3,198,rw/2-3,30);
     move(BehaviorLabel,right,250,rw,22); move(BehaviorGraph,right,276,rw,240); move(AttachBehavior,right,316,rw,30);
     move(PrefabLabel,right,198,rw,22); move(Prefabs,right,224,rw,240); move(Place,right,264,rw,30); move(FollowPrefab,right,310,rw,30);
+    move(ParentLabel,right,366,rw,22); move(SceneParents,right,392,rw,240); move(Reparent,right,430,rw,30);
     move(ToolsHint,right,466,rw,std::max(70,bottom-466));
     move(Status,12,bottom+8,width-24,24); move(Log,12,bottom+38,width-24,116);
 }
@@ -334,6 +341,7 @@ void Desktop::Refresh(bool new_project) {
 }
 void Desktop::Inspector() {
     fields_.clear(); field_=-1; SendMessageW(ControlHandle(Fields),LB_RESETCONTENT,0,0); SendMessageW(ControlHandle(Fields),LB_SETHORIZONTALEXTENT,0,0); SetText(ControlHandle(Value),"");
+    parents_.clear(); SendMessageW(ControlHandle(SceneParents),CB_RESETCONTENT,0,0);
     const auto *project=workspace_.Project();
     const auto snapshot=project?project->Snapshot():nullptr;
     const auto selection=workspace_.Selection(); const auto *doc=snapshot?snapshot->Find(selection.document):nullptr;
@@ -367,17 +375,30 @@ void Desktop::Inspector() {
         for (const auto &node:scene->scene.nodes) if (node.id.Raw()==selection.element && selection.kind==ed::UiElement::SceneNode) {
             AddField({"Placement ID",Number(node.id.Raw()),{}});
             AddField({"Parent ID",Number(node.parent.Raw()),{}});
-            const std::array<float,3> position{node.local_transform.position.x,node.local_transform.position.y,node.local_transform.position.z};
-            for (std::size_t axis=0;axis<3;++axis) AddField({std::string{"Position "}+"XYZ"[axis],ed::EditorWorkspace::FormatValue(static_cast<double>(position[axis])),[asset,node,axis](std::string_view text) {
-                const auto value=ed::EditorWorkspace::ParseValue(comp::PropertyKind::Real,text);
-                if (!value) return Result<ed::Command>::Failure(value.GetError());
-                const auto real=std::get<double>(value.Value());
-                if (std::abs(real)>std::numeric_limits<float>::max()) return Result<ed::Command>::Failure(foundation::Error::Create("editor.ui.position_range","Position exceeds float range"));
-                auto transform=node.local_transform;
-                if (axis==0) transform.position.x=static_cast<float>(real);
-                else if (axis==1) transform.position.y=static_cast<float>(real); else transform.position.z=static_cast<float>(real);
-                return Result<ed::Command>::Success(ed::SetSceneTransform{asset,node.id,transform});
-            }});
+            const auto transform=node.local_transform;
+            const auto add_transform=[&](std::string name,double value,ed::UiTransformField target) {
+                AddField({std::move(name),ed::EditorWorkspace::FormatValue(value),[asset,id=node.id,transform,target](std::string_view text) {
+                    return ed::EditorWorkspace::TransformCommand(asset,id,transform,target,text);
+                }});
+            };
+            const std::array<float,3> position{transform.position.x,transform.position.y,transform.position.z}, scale{transform.scale.x,transform.scale.y,transform.scale.z};
+            const std::array<ed::UiTransformField,3> positions{ed::UiTransformField::PositionX,ed::UiTransformField::PositionY,ed::UiTransformField::PositionZ}, scales{ed::UiTransformField::ScaleX,ed::UiTransformField::ScaleY,ed::UiTransformField::ScaleZ};
+            for (std::size_t axis=0;axis<3;++axis) add_transform(std::string{"Local position "}+"XYZ"[axis],position[axis],positions[axis]);
+            for (std::size_t axis=0;axis<3;++axis) add_transform(std::string{"Local scale "}+"XYZ"[axis],scale[axis],scales[axis]);
+            if (transform.rotation.x==0 && transform.rotation.y==0) add_transform("Local rotation Z (degrees)",std::remainder(2*std::atan2(static_cast<double>(transform.rotation.z),static_cast<double>(transform.rotation.w))*180/std::numbers::pi,360.0),ed::UiTransformField::RotationZDegrees);
+            else {
+                const std::array<float,4> quaternion{transform.rotation.x,transform.rotation.y,transform.rotation.z,transform.rotation.w};
+                for (std::size_t axis=0;axis<4;++axis) AddField({std::string{"Local quaternion "}+"XYZW"[axis],ed::EditorWorkspace::FormatValue(static_cast<double>(quaternion[axis])),{}});
+            }
+            parents_.push_back({}); Item(ControlHandle(SceneParents),"Scene root (0)",CB_ADDSTRING);
+            std::unordered_map<SceneNodeId,AssetId> placements; for (const auto &placement:scene->placements) placements.emplace(placement.node,placement.prefab);
+            for (const auto &parent:scene->scene.nodes) if (parent.id!=node.id) {
+                std::string name="Scene node";
+                if (const auto placed=placements.find(parent.id);placed!=placements.end()) if (const auto *target=snapshot->Find(placed->second)) name=target->name;
+                parents_.push_back(parent.id); Item(ControlHandle(SceneParents),name+" ["+LabelId(parent.id.Raw())+"]",CB_ADDSTRING);
+            }
+            const auto parent=std::find(parents_.begin(),parents_.end(),node.parent);
+            if (parent!=parents_.end()) SendMessageW(ControlHandle(SceneParents),CB_SETCURSEL,static_cast<WPARAM>(parent-parents_.begin()),0);
             for (const auto &placement:scene->placements) if (placement.node==node.id) AddField({"Prefab asset",Number(placement.prefab.value.Raw()),{}});
         }
     } else if (const auto *definition=std::get_if<graph::GraphDefinition>(&doc->data)) {
@@ -443,6 +464,13 @@ void Desktop::Action(int id) {
         if (result) { local_error_.clear(); Refresh(true); } else Diagnostics(); return;
     }
     if (id==Save) { (void)SaveProject(); return; }
+    if (id==Reparent) {
+        if (!ApplyDraft()) return;
+        const auto selection=workspace_.Selection(); const auto index=SendMessageW(ControlHandle(SceneParents),CB_GETCURSEL,0,0);
+        if (selection.kind==ed::UiElement::SceneNode && index>=0 && static_cast<std::size_t>(index)<parents_.size())
+            (void)Execute({ed::SetSceneParent{selection.document,SceneNodeId{selection.element},parents_[static_cast<std::size_t>(index)]}});
+        return;
+    }
     if (id==FollowPrefab) {
         if (!ApplyDraft()) return;
         if (const auto target=workspace_.PrefabDefinitionSelection();target && workspace_.Select(*target)) { local_error_.clear(); Refresh(); }
@@ -536,11 +564,11 @@ void Desktop::Diagnostics() {
     const auto visible=[&](int id,bool show) { const auto control=ControlHandle(id); if (((static_cast<DWORD_PTR>(GetWindowLongPtrW(control,GWL_STYLE))&static_cast<DWORD_PTR>(WS_VISIBLE))!=0)!=show) ShowWindow(control,show?SW_SHOW:SW_HIDE); };
     for (int id:{NodeLabel,Palette,FromLabel,Source,ToLabel,Destination,Connect}) visible(id,graph);
     for (int id:{AddHealth,AddMovement,BehaviorLabel,BehaviorGraph,AttachBehavior}) visible(id,prefab_doc);
-    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab}) visible(id,scene_doc);
+    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab,ParentLabel,SceneParents,Reparent}) visible(id,scene_doc);
     SetText(ControlHandle(ToolsLabel),graph?"Graph actions":prefab_doc?"Prefab definition":scene_doc?"Scene placement":"Document actions");
     SetText(ControlHandle(Add),graph?"Add node":prefab_doc?"Add Entity":"Add placement");
     SetText(ControlHandle(Remove),selection.kind==ed::UiElement::PrefabComponent?"Delete component":"Delete selection");
-    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Definition data. Child entities express ownership, not spatial parenting. Select an Entity to assign components or behavior.":"Select a placement to assign a Prefab or open its definition. Instance overrides remain read-only in this milestone.";
+    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Definition data. Child entities express ownership, not spatial parenting. Select an Entity to assign components or behavior.":"Transform fields are local Scene units; Z rotation uses degrees. Reparent keeps local values and changes world placement. Instance overrides remain read-only.";
     if (Text(ControlHandle(ToolsHint))!=tool_hint) SetText(ControlHandle(ToolsHint),tool_hint);
     std::string context="Open a project or create an example.";
     if (doc && project) {
@@ -558,6 +586,7 @@ void Desktop::Diagnostics() {
     for (int id:{AddHealth,AddMovement,AttachBehavior,BehaviorGraph}) EnableWindow(ControlHandle(id),prefab);
     EnableWindow(ControlHandle(Place),selection.kind==ed::UiElement::SceneNode); EnableWindow(ControlHandle(Prefabs),selection.kind==ed::UiElement::SceneNode);
     EnableWindow(ControlHandle(FollowPrefab),workspace_.PrefabDefinitionSelection().has_value());
+    for (int id:{SceneParents,Reparent}) EnableWindow(ControlHandle(id),selection.kind==ed::UiElement::SceneNode);
     EnableWindow(ControlHandle(Apply),Draft()); EnableWindow(ControlHandle(Revert),Draft());
     std::string log=local_error_;
     if (workspace_.LastError()) { const auto &error=*workspace_.LastError(); log+="\r\nLast command failed: "+error.code+": "+error.message; }
@@ -685,6 +714,23 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     check(collapsed());
     Refresh(); check(workspace_.Selection()==component);
     check(collapsed());
+    choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
+    const auto edit_transform=[&](std::string_view name,std::string_view value) {
+        const auto found=std::find_if(fields_.begin(),fields_.end(),[&](const auto &field){return field.name==name;}); check(found!=fields_.end());
+        SelectField(static_cast<int>(found-fields_.begin())); SetText(ControlHandle(Value),value); SendMessageW(hwnd_,WM_COMMAND,Apply,0);
+    };
+    edit_transform("Local position X","-12.5"); edit_transform("Local scale X","2"); edit_transform("Local rotation Z (degrees)","90");
+    const auto transformed=workspace_.Project()->Snapshot();
+    edit_transform("Local scale X","0"); check(Draft() && workspace_.Project()->Snapshot()==transformed); SendMessageW(hwnd_,WM_COMMAND,Revert,0);
+    SendMessageW(hwnd_,WM_COMMAND,Add,0); const auto group_id=workspace_.Selection().element;
+    check(workspace_.Selection().kind==ed::UiElement::SceneNode && group_id!=42);
+    choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
+    SendMessageW(ControlHandle(SceneParents),CB_SETCURSEL,1,0); SendMessageW(hwnd_,WM_COMMAND,Reparent,0);
+    const auto parented=workspace_.Project()->Snapshot();
+    const auto &scene=std::get<gc::SceneCompositionDefinition>(parented->Find(AssetId::FromString("example.scene"))->data);
+    check(scene.scene.nodes.front().parent.Raw()==group_id && scene.scene.nodes.front().local_transform.position.x==-12.5f);
+    choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,group_id});
+    SendMessageW(ControlHandle(SceneParents),CB_SETCURSEL,1,0); SendMessageW(hwnd_,WM_COMMAND,Reparent,0); check(workspace_.Project()->Snapshot()==parented);
     // Graph buttons create, validate and undo connections through the same Command API.
     SendMessageW(hwnd_,WM_COMMAND,NewGraph,0); const auto draft_graph=workspace_.Selection().document;
     SendMessageW(ControlHandle(Palette),CB_SETCURSEL,0,0); SendMessageW(hwnd_,WM_COMMAND,Add,0);

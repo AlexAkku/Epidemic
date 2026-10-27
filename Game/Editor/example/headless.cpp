@@ -32,6 +32,10 @@ void Write(const std::filesystem::path &file, Schema &schema) {
     for (const auto &node : graph_template.nodes) edit.commands.push_back(ed::AddGraphNode{graph_id, node});
     for (const auto &edge : graph_template.connections) edit.commands.push_back(ed::ConnectPorts{graph_id, edge});
     SceneNodeSnapshot node; node.id = SceneNodeId{42}; edit.commands.push_back(ed::AddSceneNode{scene_id, node});
+    SceneNodeSnapshot parent; parent.id=SceneNodeId{43}; parent.local_transform={{10,20,0},{0,0,0.70710678f,0.70710678f},{2,3,1}};
+    edit.commands.push_back(ed::AddSceneNode{scene_id,parent});
+    edit.commands.push_back(ed::SetSceneParent{scene_id,node.id,parent.id});
+    edit.commands.push_back(ed::SetSceneTransform{scene_id,node.id,{{-2,4,0},{},{1,2,1}}});
     edit.commands.push_back(ed::PlacePrefab{scene_id, {node.id, prefab_id, {}}});
     (void)Take(project->Execute(edit)); const auto edited = project->Snapshot();
     Take(project->Undo()); Check(project->Snapshot()->definition.documents.size() == 2 && !project->IsDirty());
@@ -43,6 +47,12 @@ void ReadPlay(const std::filesystem::path &file, Schema &schema) {
     auto project = Take(ed::EditorProject::Open(file, schema.View())); Check(!project->IsDirty());
     auto options = Options(schema);
     auto session = Take(project->Play(std::move(options)));
+    const auto *scene=session->Scene(); if (!scene) throw std::runtime_error("runtime Scene missing");
+    const auto local=scene->scene.transforms->GetLocalTransform(scene->nodes.at(SceneNodeId{42}));
+    const auto world=scene->scene.transforms->GetWorldTransform(scene->nodes.at(SceneNodeId{42}));
+    if (!local || !world) throw std::runtime_error("runtime transform missing");
+    Check(local->position==Vec3{-2,4,0} && local->scale==Vec3{1,2,1});
+    Check(std::abs(world->position.x+2)<0.0001f && std::abs(world->position.y-16)<0.0001f && world->scale==Vec3{2,6,1});
     const auto entity = session->Instance(SceneNodeId{42})->Objects()[0].entity;
     const auto health = session->Context()->components.Find(entity, schema.health);
     if (!health) throw std::runtime_error("runtime Health missing");

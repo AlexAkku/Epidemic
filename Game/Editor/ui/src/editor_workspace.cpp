@@ -3,6 +3,7 @@
 #include <charconv>
 #include <cmath>
 #include <limits>
+#include <numbers>
 
 namespace epidemic::game::editor {
 namespace {
@@ -108,6 +109,36 @@ void EditorWorkspace::Reconcile() {
     if (project_ && project_->Snapshot()->Find(selection_.document)) { selection_ = {selection_.document}; return; }
     if (project_ && !project_->Snapshot()->definition.documents.empty()) selection_ = {project_->Snapshot()->definition.documents.front().id};
     else selection_ = {};
+}
+foundation::Result<Command> EditorWorkspace::TransformCommand(runtime::AssetId document, runtime::SceneNodeId node,
+    const runtime::Transform &current, UiTransformField field, std::string_view text) {
+    using Result = foundation::Result<Command>;
+    const auto reject = [](std::string_view code, std::string_view message) { return Result::Failure(foundation::Error::Create(code, message)); };
+    const auto parsed = ParseValue(comp::PropertyKind::Real, text);
+    if (!parsed) return reject("editor.ui.transform_value", "Enter a finite number for the local transform.");
+    const double real = std::get<double>(parsed.Value());
+    auto transform = current;
+    if (field == UiTransformField::RotationZDegrees) {
+        if (current.rotation.x != 0 || current.rotation.y != 0)
+            return reject("editor.ui.rotation_profile", "Z rotation editing requires an XY-plane orientation; the existing quaternion is preserved.");
+        const double half_angle = std::remainder(real, 360.0) * std::numbers::pi / 360.0;
+        transform.rotation = runtime::Normalize(runtime::Quat{0, 0, static_cast<float>(std::sin(half_angle)), static_cast<float>(std::cos(half_angle))});
+    } else {
+        if (std::abs(real) > std::numeric_limits<float>::max()) return reject("editor.ui.transform_range", "Value exceeds the Scene float range.");
+        const float value = static_cast<float>(real);
+        if (real != 0 && value == 0) return reject("editor.ui.transform_range", "Value is too small for the Scene float representation.");
+        switch (field) {
+        case UiTransformField::PositionX: transform.position.x = value; break;
+        case UiTransformField::PositionY: transform.position.y = value; break;
+        case UiTransformField::PositionZ: transform.position.z = value; break;
+        case UiTransformField::ScaleX: transform.scale.x = value; break;
+        case UiTransformField::ScaleY: transform.scale.y = value; break;
+        case UiTransformField::ScaleZ: transform.scale.z = value; break;
+        default: return reject("editor.ui.transform_field", "Unknown local transform field.");
+        }
+    }
+    if (!runtime::IsValidTransform(transform)) return reject("editor.ui.invalid_transform", "Scene requires a normalized rotation and finite, non-zero scale.");
+    return Result::Success(SetSceneTransform{document, node, transform});
 }
 foundation::Result<comp::PropertyValue> EditorWorkspace::ParseValue(comp::PropertyKind kind, std::string_view text) {
     using Result = foundation::Result<comp::PropertyValue>;
