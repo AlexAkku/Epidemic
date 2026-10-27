@@ -1,4 +1,4 @@
-add_library(EpidemicGameComposition STATIC src/graph_host.cpp)
+add_library(EpidemicGameComposition STATIC src/graph_host.cpp src/scene_composition.cpp)
 target_include_directories(EpidemicGameComposition PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(EpidemicGameComposition PUBLIC EpidemicGameFrameworkCoreIntegration
     EpidemicGameFrameworkRuntimeBridge EpidemicRuntimeSupport)

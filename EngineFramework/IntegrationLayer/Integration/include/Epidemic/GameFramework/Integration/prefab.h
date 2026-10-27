@@ -72,6 +72,7 @@ class PrefabComposer final {
     PrefabComposer(const PrefabComposer &) = delete;
     PrefabComposer &operator=(const PrefabComposer &) = delete;
     [[nodiscard]] foundation::Result<PrefabId> Register(const PrefabDefinition &definition);
+    [[nodiscard]] foundation::Result<void> Validate(PrefabId id, const PrefabOverrides &overrides = {}) const;
     [[nodiscard]] std::shared_ptr<const PrefabDefinition> Find(PrefabId id) const;
     [[nodiscard]] foundation::Result<std::shared_ptr<const PrefabInstance>> Spawn(PrefabId id, const PrefabOverrides &overrides = {});
     [[nodiscard]] foundation::Result<void> Destroy(const PrefabInstance &instance);

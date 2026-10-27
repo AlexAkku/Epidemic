@@ -120,6 +120,13 @@ foundation::Result<PrefabId> PrefabComposer::Register(const PrefabDefinition &de
 std::shared_ptr<const PrefabDefinition> PrefabComposer::Find(PrefabId id) const {
     const auto found = definitions_.find(id.Raw()); return found == definitions_.end() ? nullptr : found->second;
 }
+foundation::Result<void> PrefabComposer::Validate(PrefabId id, const PrefabOverrides &overrides) const {
+    const auto definition = Find(id);
+    if (!definition) return foundation::Result<void>::Failure(Error("prefab.unknown_definition"));
+    const auto plan = Plan(*definition, overrides, false);
+    if (!plan) return foundation::Result<void>::Failure(plan.GetError());
+    return foundation::Result<void>::Success();
+}
 foundation::Result<void> PrefabComposer::Rollback(PrefabInstance &instance) {
     std::optional<foundation::Error> failure;
     for (auto object = instance.objects_.rbegin(); object != instance.objects_.rend(); ++object) {

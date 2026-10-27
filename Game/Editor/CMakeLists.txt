@@ -1,0 +1,7 @@
+add_library(EpidemicEditorCore STATIC src/editor_project.cpp src/editor_commands.cpp)
+target_include_directories(EpidemicEditorCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_link_libraries(EpidemicEditorCore PUBLIC EpidemicGameComposition)
+epidemic_configure_target(EpidemicEditorCore)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

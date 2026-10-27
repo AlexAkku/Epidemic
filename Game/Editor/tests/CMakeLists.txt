@@ -1,0 +1,4 @@
+add_executable(EpidemicEditorCoreTests editor_tests.cpp)
+target_link_libraries(EpidemicEditorCoreTests PRIVATE EpidemicEditorCore)
+epidemic_configure_target(EpidemicEditorCoreTests)
+epidemic_add_test(EpidemicEditorCoreTests)
