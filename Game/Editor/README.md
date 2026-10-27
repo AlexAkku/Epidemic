@@ -71,15 +71,17 @@ properties use atomic commands. Scene placements can assign a Prefab; Prefab
 entities expose registered properties and can assign a graph's first event input
 to the example `hit` event. Graphs use node/port/connection lists, with Event entry,
 Native damage and Wait templates. Core validates connections and references.
-Parameters/bindings/overrides without dedicated commands are displayed read-only;
-reassigning the same Prefab preserves its existing overrides.
+Parameters and parameter-bound properties are read-only. Prefab overrides have
+no editing UI; reassigning the same Prefab preserves its existing overrides.
 
 Apply (Enter) publishes the current field; Revert (Escape) discards its draft.
 Invalid input leaves source, history and save points unchanged. Apply/Revert is
 required before changing selection. Save applies a valid field first; close and
-project replacement offer Save/Discard/Cancel. Ctrl+S/O/N, Ctrl+Z/Y and F5/Shift+F5
-operate on the workspace (Ctrl+Z in the value edit remains a local text undo).
-Play uses a snapshot; authoring changes become visible on the next Play. Select
+project replacement offer Save/Discard/Cancel. Ctrl+S/O/N and F5/Shift+F5 operate
+on the workspace. Ctrl+Z/Y control project history outside the value edit;
+Ctrl+Z inside that edit remains a local text undo.
+Play uses the project's entry Scene snapshot (there is no entry-Scene selector
+in this host); authoring changes become visible on the next Play. Select
 a Scene placement and Send hit to run the example with the supplied i64 payload
 (also its wait duration). The host advances one game tick per 33 ms UI timer;
 this is a development preview, not a real-time scheduling policy. Activation

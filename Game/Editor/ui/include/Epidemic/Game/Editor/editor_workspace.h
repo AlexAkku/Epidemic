@@ -36,7 +36,7 @@ class EditorWorkspace final {
     [[nodiscard]] static std::string FormatValue(const comp::PropertyValue &value);
   private:
     [[nodiscard]] foundation::Result<void> Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate);
-    [[nodiscard]] foundation::Result<void> Finish(foundation::Result<void> result, bool reconcile = false);
+    [[nodiscard]] foundation::Result<void> Finish(foundation::Result<void> &&result, bool reconcile = false);
     [[nodiscard]] bool Exists(UiSelection selection) const;
     void Reconcile();
     ProjectSchema schema_;

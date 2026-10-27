@@ -41,7 +41,9 @@ void Run() {
     const auto activation = workspace.Activations().at(0);
     Check(!activation->IsFinished());
     ex::Take(workspace.Stop());
-    Check(activation->IsFinished() && activation->Report()->status == runtime::graph::ExecutionStatus::Cancelled);
+    const auto cancelled = activation->Report();
+    if (!cancelled) throw std::runtime_error("missing cancelled activation report");
+    Check(activation->IsFinished() && cancelled->status == runtime::graph::ExecutionStatus::Cancelled);
     ex::Take(workspace.Stop());
     Check(workspace.Project()->Snapshot() == edited && !workspace.Project()->IsDirty());
     ex::Take(workspace.Open(file));
@@ -49,15 +51,18 @@ void Run() {
     ex::Take(workspace.Play());
     (void)ex::Take(workspace.Send(runtime::SceneNodeId{42}, {ex::Id("hit"), 1}));
     ex::Take(workspace.Tick({})); ex::Take(workspace.Tick(runtime::GameDuration{1}));
-    Check(workspace.Activations().at(0)->Report()->status == runtime::graph::ExecutionStatus::Completed);
+    const auto completed = workspace.Activations().at(0)->Report();
+    if (!completed) throw std::runtime_error("missing completed activation report");
+    Check(completed->status == runtime::graph::ExecutionStatus::Completed);
     ex::Take(workspace.Stop());
     Check(schema.entities.AllEntities().empty());
     ex::Take(workspace.Play());
     (void)ex::Take(workspace.Send(runtime::SceneNodeId{42}, {ex::Id("hit"), std::numeric_limits<std::int64_t>::min()}));
     ex::Take(workspace.Tick({})); // Native failure is observable independently of Tick success.
     const auto failed = workspace.Activations().at(0)->Report();
-    Check(failed && failed->status == runtime::graph::ExecutionStatus::Failed);
-    Check(failed->diagnostic && failed->diagnostic->error.code == "example.damage_range");
+    if (!failed || !failed->diagnostic) throw std::runtime_error("missing failed activation diagnostic");
+    Check(failed->status == runtime::graph::ExecutionStatus::Failed);
+    Check(failed->diagnostic->error.code == "example.damage_range");
     ex::Take(workspace.Stop());
     Check(!workspace.Project()->IsDirty());
     using K = comp::PropertyKind;

@@ -105,7 +105,7 @@ class Desktop final {
         if (result) Refresh(); else Diagnostics(); return static_cast<bool>(result);
     }
     foundation::StringId Fresh() { return ex::Id(nonce_ + "/" + Number(++next_)); }
-    HTREEITEM TreeItem(HTREEITEM parent, std::string label, ed::UiSelection selection);
+    HTREEITEM TreeItem(HTREEITEM parent, std::string_view label, ed::UiSelection selection);
     void PrefabTree(HTREEITEM parent, AssetId doc, const comp::PrefabNode &node);
     void AddField(Field field) {
         const auto text=field.name+" = "+field.value+(field.command?"":"  [read only]");
@@ -200,7 +200,7 @@ void Desktop::Layout() {
     move(PrefabLabel,right,482,rw,20); move(Prefabs,right,504,rw,240); move(Place,right,536,rw,28);
     move(Status,10,bottom+20,width-20,24); move(Log,10,bottom+48,width-20,132);
 }
-HTREEITEM Desktop::TreeItem(HTREEITEM parent, std::string label, ed::UiSelection selection) {
+HTREEITEM Desktop::TreeItem(HTREEITEM parent, std::string_view label, ed::UiSelection selection) {
     auto text = Wide(label); selections_.push_back(selection);
     TVINSERTSTRUCTW item{}; item.hParent=parent; item.hInsertAfter=TVI_LAST;
     item.item.mask=TVIF_TEXT | TVIF_PARAM; item.item.pszText=text.data(); item.item.lParam=static_cast<LPARAM>(selections_.size()-1);
@@ -536,9 +536,12 @@ void Desktop::Smoke(const std::filesystem::path &file) {
 } // namespace
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
     try {
-        int argc=0; auto **argv=CommandLineToArgvW(GetCommandLineW(),&argc);
+        int argc=0;
+        const auto release=[](wchar_t **pointer) { LocalFree(static_cast<HLOCAL>(pointer)); };
+        const std::unique_ptr<wchar_t *,decltype(release)> parsed{CommandLineToArgvW(GetCommandLineW(),&argc),release};
+        auto **argv=parsed.get();
         if (!argv) return 1;
-        std::vector<std::wstring> args; for (int i=1;i<argc;++i) args.emplace_back(argv[i]); LocalFree(argv);
+        std::vector<std::wstring> args; for (int i=1;i<argc;++i) args.emplace_back(argv[i]);
         const bool smoke=args.size()==2 && args[0]==L"--ui-smoke";
         if ((!args.empty() && !smoke && args.size()!=1) || (!args.empty() && args[0].starts_with(L"--") && !smoke)) throw std::runtime_error("usage: EpidemicEditorDesktop [project.epidemic] | --ui-smoke <project.epidemic>");
         platform::WindowsPlatformRuntime platform; ex::Schema schema;

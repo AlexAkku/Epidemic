@@ -12,10 +12,10 @@ bool HasNode(const comp::PrefabNode &node, std::uint64_t id) {
     return std::any_of(node.children.begin(), node.children.end(), [&](const auto &child) { return HasNode(child, id); });
 }
 }
-foundation::Result<void> EditorWorkspace::Finish(foundation::Result<void> result, bool reconcile) {
+foundation::Result<void> EditorWorkspace::Finish(foundation::Result<void> &&result, bool reconcile) {
     if (!result) error_ = result.GetError();
     else { error_.reset(); if (reconcile) Reconcile(); }
-    return result;
+    return std::move(result);
 }
 foundation::Result<void> EditorWorkspace::Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate) {
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
