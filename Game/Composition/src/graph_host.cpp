@@ -164,6 +164,24 @@ foundation::Result<std::shared_ptr<GraphActivation>> GraphExecutionHost::Start(
     active_.push_back({scope, activation, options});
     return Result::Success(std::move(activation));
 }
+std::vector<std::shared_ptr<GraphActivation>> GraphExecutionHost::Activations() const {
+    std::vector<std::shared_ptr<GraphActivation>> result; result.reserve(active_.size());
+    for (const auto &item : active_) if (!item.activation->IsFinished()) result.push_back(item.activation);
+    return result;
+}
+foundation::Result<void> GraphExecutionHost::CancelAll() {
+    for (const auto &item : active_) item.activation->RequestCancel();
+    std::optional<foundation::Error> failure;
+    for (const auto &item : active_) if (item.activation->task_) {
+        const auto cancelled = scheduler_.Cancel(*item.activation->task_);
+        if (!cancelled && !failure) failure = cancelled.GetError();
+    }
+    const auto prepared = scheduler_.Prepare();
+    std::erase_if(active_, [](const auto &item) { return item.activation->IsFinished(); });
+    if (failure) return foundation::Result<void>::Failure(*failure);
+    if (!prepared) return foundation::Result<void>::Failure(prepared.GetError());
+    return foundation::Result<void>::Success();
+}
 foundation::Result<std::size_t> GraphExecutionHost::Prepare() {
     std::optional<foundation::Error> failure;
     for (const auto &active : active_) {

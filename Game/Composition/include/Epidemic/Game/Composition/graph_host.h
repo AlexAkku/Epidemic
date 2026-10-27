@@ -62,6 +62,10 @@ class GraphExecutionHost final : public gameplay::composition::IGraphBehaviorHos
         const BoundGraphPtr &program,
         runtime::graph::ElementId event_port, std::int64_t payload, const runtime::GraphScheduleOptions &options = {});
     [[nodiscard]] foundation::Result<std::size_t> Prepare();
+    [[nodiscard]] std::vector<std::shared_ptr<GraphActivation>> Activations() const;
+    // Cancel every scope's work and finalize reports before destroying a host.
+    // Externally synchronized; never called from inside a native callback.
+    [[nodiscard]] foundation::Result<void> CancelAll();
   private:
     struct Active { std::weak_ptr<GraphScope> scope; std::shared_ptr<GraphActivation> activation; runtime::GraphScheduleOptions options{}; };
     runtime::GraphScheduler &scheduler_;

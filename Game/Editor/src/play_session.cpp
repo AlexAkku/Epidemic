@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <exception>
+#include <deque>
 
 namespace epidemic::game::editor {
 namespace {
@@ -31,8 +32,7 @@ void Archetypes(const comp::PrefabNode &node, const ProjectSchema &schema, gamep
     }
     for (const auto &child : node.children) Archetypes(child, schema, entities, registered);
 }
-}
-struct PlaySession::Impl {
+struct PlayRuntime {
     std::shared_ptr<const ProjectSnapshot> source;
     std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend;
     gameplay::entities::EntityService entities;
@@ -47,20 +47,55 @@ struct PlaySession::Impl {
     PlayContext context;
     composition::SceneCompositionInstance scene;
     std::unordered_map<runtime::SceneNodeId, std::shared_ptr<const comp::PrefabInstance>> instances;
-    explicit Impl(const ProjectSchema &schema, std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> representation)
+    explicit PlayRuntime(const ProjectSchema &schema, std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> representation)
         : backend(std::move(representation)), bridge(*backend), components(entities, schema.components),
           prefabs(entities, schema.components, components, behaviors), context{entities, components, behaviors, prefabs, bridge} {}
-    ~Impl() {
-        // Invalidate scopes while their EntityService still exists. External
-        // activation handles remain cancelled after the session is released.
+    ~PlayRuntime() {
         for (const auto &[id, instance] : instances) { (void)id; for (const auto &object : instance->Objects()) object.scope->Invalidate(); }
+    }
+};
+}
+struct PlaySession::Impl {
+    struct Live { std::shared_ptr<composition::GraphActivation> execution; std::shared_ptr<PlayActivation> handle; };
+    std::unique_ptr<PlayRuntime> runtime;
+    std::vector<Live> live;
+    std::deque<std::shared_ptr<PlayActivation>> completed;
+    std::uint64_t next_id = 1;
+    Impl(const ProjectSchema &schema, std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend)
+        : runtime(std::make_unique<PlayRuntime>(schema, std::move(backend))) {}
+    ~Impl() {
+        // Destruction cannot leave Editor handles pending, even if explicit
+        // shutdown failed. This path allocates nothing and runs no native code.
+        for (auto &item : live) {
+            item.execution->RequestCancel();
+            item.handle->report_.emplace(runtime::graph::ExecutionReport{runtime::graph::ExecutionStatus::Cancelled});
+            item.handle->finished_ = true;
+        }
+    }
+    void Capture() {
+        if (!runtime) return;
+        for (auto &execution : runtime->host.Activations()) {
+            if (execution->IsFinished() || std::any_of(live.begin(), live.end(), [&](const auto &item) { return item.execution == execution; })) continue;
+            live.push_back({execution, std::shared_ptr<PlayActivation>(new PlayActivation(next_id++))});
+        }
+    }
+    void Refresh() {
+        for (auto at = live.begin(); at != live.end();) {
+            auto report = at->execution->Report();
+            if (report) at->handle->report_ = std::move(report);
+            if (at->execution->IsFinished()) {
+                at->handle->finished_ = true;
+                completed.push_back(at->handle);
+                if (completed.size() > PlaySession::kCompletedActivationRetention) completed.pop_front();
+                at = live.erase(at); // Finished Editor handles never retain a VM/callable/context.
+            } else ++at;
+        }
     }
 };
 PlaySession::PlaySession(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
 PlaySession::~PlaySession() {
     try { (void)Stop(); } catch (...) {
-        // Explicit Stop reports errors. Destruction must still release services;
-        // their scope/host destructors cancel activations before dependencies die.
+        // Explicit Stop reports errors; Impl finalizes remaining Editor handles.
     }
 }
 foundation::Result<std::unique_ptr<PlaySession>> EditorProject::Play(PlayOptions options) const {
@@ -75,14 +110,13 @@ foundation::Result<std::unique_ptr<PlaySession>> PlaySession::Start(std::shared_
         const auto *entry = snapshot->Find(snapshot->definition.entry_scene);
         if (!entry || entry->Kind() != DocumentKind::Scene) return Result::Failure(Error("editor.entry_scene"));
         auto session = std::unique_ptr<PlaySession>(new PlaySession(std::make_unique<Impl>(schema, std::move(options.backend))));
-        auto &state = *session->impl_; state.source = std::move(snapshot);
+        auto &state = *session->impl_->runtime; state.source = std::move(snapshot);
         std::unordered_set<std::uint64_t> registered;
         for (const auto &doc : state.source->definition.documents) if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc.data))
             Archetypes(prefab->root, schema, state.entities, registered);
         state.entities.Freeze();
         for (const auto &doc : state.source->definition.documents) if (const auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc.data)) {
             auto bindings = options.bindings(state.context, doc.id);
-            // Authored operation semantics cannot silently change on Play.
             for (const auto &binding : bindings) {
                 const auto expected = std::find_if(schema.operations.begin(), schema.operations.end(), [&](const auto &item) { return item.first == binding.type; });
                 if (expected == schema.operations.end() || expected->second != binding.operation) throw Failure{Error("editor.play_binding")};
@@ -98,42 +132,56 @@ foundation::Result<std::unique_ptr<PlaySession>> PlaySession::Start(std::shared_
     catch (const std::exception &error) { return Result::Failure(foundation::Error::Create("editor.play_exception", "session initialization or binding factory failed", error.what())); }
     catch (...) { return Result::Failure(Error("editor.play_exception")); }
 }
-bool PlaySession::IsPlaying() const noexcept { return impl_ != nullptr; }
-PlayContext *PlaySession::Context() noexcept { return impl_ ? &impl_->context : nullptr; }
-const composition::SceneCompositionInstance *PlaySession::Scene() const noexcept { return impl_ ? &impl_->scene : nullptr; }
+bool PlaySession::IsPlaying() const noexcept { return impl_ && impl_->runtime; }
+PlayContext *PlaySession::Context() noexcept { return IsPlaying() ? &impl_->runtime->context : nullptr; }
+const composition::SceneCompositionInstance *PlaySession::Scene() const noexcept { return IsPlaying() ? &impl_->runtime->scene : nullptr; }
 const comp::PrefabInstance *PlaySession::Instance(runtime::SceneNodeId placement) const noexcept {
-    if (!impl_) return nullptr; const auto at = impl_->instances.find(placement); return at == impl_->instances.end() ? nullptr : at->second.get();
+    if (!IsPlaying()) return nullptr; const auto at = impl_->runtime->instances.find(placement); return at == impl_->runtime->instances.end() ? nullptr : at->second.get();
+}
+std::vector<std::shared_ptr<const PlayActivation>> PlaySession::Activations() const {
+    std::vector<std::shared_ptr<const PlayActivation>> handles;
+    handles.reserve(impl_->completed.size() + impl_->live.size());
+    for (const auto &item : impl_->completed) handles.push_back(item);
+    for (const auto &item : impl_->live) handles.push_back(item.handle);
+    std::sort(handles.begin(), handles.end(), [](const auto &a, const auto &b) { return a->Id() < b->Id(); });
+    return handles;
 }
 foundation::Result<std::size_t> PlaySession::Send(runtime::SceneNodeId placement, const comp::GameEvent &event) {
-    if (!impl_ || ticking_) return foundation::Result<std::size_t>::Failure(Error("editor.play_inactive_or_busy"));
+    if (!IsPlaying() || ticking_) return foundation::Result<std::size_t>::Failure(Error("editor.play_inactive_or_busy"));
     const auto *instance = Instance(placement); if (!instance) return foundation::Result<std::size_t>::Failure(Error("editor.play_placement"));
     const auto *root = instance->Find(instance->Definition()->root.id);
-    return impl_->behaviors.SendTo(*root->scope, event);
+    auto result = impl_->runtime->behaviors.SendTo(*root->scope, event);
+    impl_->Capture(); impl_->Refresh(); return result;
 }
 foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
-    if (!impl_ || ticking_) return foundation::Result<void>::Failure(Error("editor.play_inactive_or_busy"));
+    if (!IsPlaying() || ticking_) return foundation::Result<void>::Failure(Error("editor.play_inactive_or_busy"));
     struct Guard { bool &flag; ~Guard() { flag = false; } } guard{ticking_}; ticking_ = true;
     try {
-        Take(impl_->time.runtime->Skip(advance));
-        impl_->components.Synchronize(); impl_->behaviors.Synchronize();
-        (void)Take(impl_->host.Prepare()); const auto tick = Take(impl_->simulation.runtime->Tick());
+        impl_->Capture(); impl_->Refresh();
+        auto &state = *impl_->runtime;
+        Take(state.time.runtime->Skip(advance));
+        state.components.Synchronize(); state.behaviors.Synchronize();
+        (void)Take(state.host.Prepare()); const auto tick = Take(state.simulation.runtime->Tick());
+        impl_->Capture(); impl_->Refresh();
         if (!tick.failures.empty()) return foundation::Result<void>::Failure(Error("editor.play_execution_failed"));
         return foundation::Result<void>::Success();
-    } catch (const Failure &failure) { return foundation::Result<void>::Failure(failure.error); }
+    } catch (const Failure &failure) { impl_->Refresh(); return foundation::Result<void>::Failure(failure.error); }
 }
 foundation::Result<void> PlaySession::Stop() {
     if (ticking_) return foundation::Result<void>::Failure(Error("editor.play_inactive_or_busy"));
-    if (!impl_) return foundation::Result<void>::Success();
-    for (const auto &entity : impl_->entities.AllEntities()) {
+    if (!IsPlaying()) return foundation::Result<void>::Success();
+    impl_->Capture();
+    auto &state = *impl_->runtime;
+    for (const auto &entity : state.entities.AllEntities()) {
         if (entity.lifecycle != gameplay::entities::EntityLifecycleState::Alive && entity.lifecycle != gameplay::entities::EntityLifecycleState::Dormant) continue;
-        const auto destroyed = impl_->entities.RequestDestroy(entity.id, gameplay::entities::EntityDestroyReason::OwnerRequest);
+        const auto destroyed = state.entities.RequestDestroy(entity.id, gameplay::entities::EntityDestroyReason::OwnerRequest);
         if (!destroyed) return destroyed;
     }
-    impl_->components.Synchronize(); impl_->behaviors.Synchronize();
-    for (const auto &[id, instance] : impl_->instances) { (void)id; for (const auto &object : instance->Objects()) object.scope->Invalidate(); }
-    // Prepare observes owner invalidation before any timer can resume a graph.
-    const auto prepared = impl_->host.Prepare();
-    if (!prepared) return foundation::Result<void>::Failure(prepared.GetError());
-    impl_.reset(); return foundation::Result<void>::Success();
+    state.components.Synchronize(); state.behaviors.Synchronize();
+    for (const auto &[id, instance] : state.instances) { (void)id; for (const auto &object : instance->Objects()) object.scope->Invalidate(); }
+    const auto cancelled = state.host.CancelAll();
+    impl_->Refresh();
+    if (!cancelled) return cancelled;
+    impl_->runtime.reset(); return foundation::Result<void>::Success();
 }
 } // namespace epidemic::game::editor

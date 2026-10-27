@@ -2,6 +2,18 @@
 #include "Epidemic/Game/Editor/editor_project.h"
 
 namespace epidemic::game::editor {
+class PlayActivation final {
+  public:
+    [[nodiscard]] std::uint64_t Id() const noexcept { return id_; }
+    [[nodiscard]] bool IsFinished() const noexcept { return finished_; }
+    [[nodiscard]] std::optional<runtime::graph::ExecutionReport> Report() const { return report_; }
+  private:
+    explicit PlayActivation(std::uint64_t id) : id_(id) {}
+    std::uint64_t id_;
+    bool finished_ = false;
+    std::optional<runtime::graph::ExecutionReport> report_;
+    friend class PlaySession;
+};
 struct PlayContext {
     PlayContext(gameplay::entities::EntityService &entity_service, comp::ComponentStore &component_store,
         comp::GraphBehaviorService &behavior_service, comp::PrefabComposer &composer,
@@ -25,6 +37,11 @@ class PlaySession final {
     PlaySession(const PlaySession &) = delete;
     PlaySession &operator=(const PlaySession &) = delete;
     [[nodiscard]] bool IsPlaying() const noexcept;
+    static constexpr std::size_t kCompletedActivationRetention = 64;
+    // Includes all live activations and the last 64 terminal reports. Handles
+    // own only Editor report values, survive eviction/Stop/session destruction,
+    // and update after Send/Tick/Stop. IDs are monotonic within this session.
+    [[nodiscard]] std::vector<std::shared_ptr<const PlayActivation>> Activations() const;
     [[nodiscard]] foundation::Result<void> Tick(runtime::GameDuration advance = {});
     [[nodiscard]] foundation::Result<std::size_t> Send(runtime::SceneNodeId placement, const comp::GameEvent &event);
     [[nodiscard]] foundation::Result<void> Stop();
