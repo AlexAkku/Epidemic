@@ -15,6 +15,8 @@
 #include <cstdio>
 #include <chrono>
 #include <limits>
+#include <set>
+#include <unordered_map>
 
 namespace {
 using namespace epidemic;
@@ -45,6 +47,15 @@ std::string Text(HWND control) {
 void SetText(HWND control, std::string_view text) { const auto wide = Wide(text); SetWindowTextW(control, wide.c_str()); }
 void Item(HWND list, std::string_view text, UINT message = LB_ADDSTRING) { const auto wide = Wide(text); SendMessageW(list, message, 0, reinterpret_cast<LPARAM>(wide.c_str())); }
 std::string Number(std::uint64_t id) { return std::to_string(id); }
+std::string FormatNodeLabel(const graph::NodeDefinition &node) { return node.name+" ["+Number(node.id.Raw())+"]"; }
+std::string FormatPortLabel(const graph::NodeDefinition &node, const graph::PortDefinition &port) {
+    return node.name+" / "+port.name+" ["+Number(port.id.Raw())+"]";
+}
+std::string PortLabel(const graph::GraphDefinition &definition, graph::ElementId id) {
+    for (const auto &node:definition.nodes) for (const auto &port:node.ports)
+        if (port.id==id) return FormatPortLabel(node,port);
+    return Number(id.Raw());
+}
 const comp::PrefabNode *Find(const comp::PrefabNode &root, std::uint64_t id) {
     if (root.id.Raw() == id) return &root;
     for (const auto &child : root.children) if (const auto *node = Find(child, id)) return node;
@@ -67,7 +78,7 @@ class Desktop final {
         INITCOMMONCONTROLSEX common{sizeof(common), ICC_TREEVIEW_CLASSES};
         if (!InitCommonControlsEx(&common) || !SetWindowSubclass(hwnd_, &ParentProc, 1, reinterpret_cast<DWORD_PTR>(this)))
             throw std::runtime_error("Cannot initialize Editor window");
-        try { Controls(); Layout(); Refresh(); SetTimer(hwnd_, 1, 33, nullptr); }
+        try { Controls(); Layout(); Refresh(); }
         catch (...) { RemoveWindowSubclass(hwnd_, &ParentProc, 1); throw; }
     }
     ~Desktop() {
@@ -77,7 +88,7 @@ class Desktop final {
     }
     bool Closed() const noexcept { return closed_; }
     void Load(const std::filesystem::path &file) { (void)workspace_.Open(file); Refresh(); }
-    void Smoke(const std::filesystem::path &file);
+    void Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events);
   private:
     HWND ControlHandle(int id) const { return GetDlgItem(hwnd_, id); }
     HWND Make(int id, const wchar_t *kind, const wchar_t *label, DWORD style = 0) {
@@ -93,6 +104,7 @@ class Desktop final {
     void Refresh();
     void Inspector();
     void Diagnostics();
+    int Shortcut(HWND source, WPARAM key) const noexcept;
     void SelectField(int index);
     bool Draft() const { return field_ >= 0 && static_cast<std::size_t>(field_) < fields_.size() && Text(ControlHandle(Value)) != fields_[static_cast<std::size_t>(field_)].value; }
     bool ApplyDraft();
@@ -137,7 +149,7 @@ class Desktop final {
     std::string nonce_ = Number(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
     std::string local_error_, log_text_;
     int field_ = -1;
-    bool refreshing_ = false, closed_ = false;
+    bool refreshing_ = false, closed_ = false, timer_running_ = false;
 };
 void Desktop::Controls() {
     for (const auto &[id, label] : std::array<std::pair<int, const wchar_t *>, 8>{{
@@ -191,6 +203,7 @@ void Desktop::Layout() {
     move(Apply,left+20,bottom-74,80,28); move(Revert,left+106,bottom-74,110,28);
     move(Hint,left+20,bottom-38,mid,48);
     const int rw=width-right-10;
+    for (int id:{Palette,Source,Destination,BehaviorGraph,Prefabs}) SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(rw,650))),0);
     move(NodeLabel,right,106,rw,20); move(Palette,right,128,rw,240);
     move(Add,right,162,rw/2-3,28); move(Remove,right+rw/2+3,162,rw/2-3,28);
     move(FromLabel,right,202,rw,20); move(Source,right,224,rw,280);
@@ -228,8 +241,12 @@ void Desktop::Refresh() {
                 PrefabTree(root,doc.id,prefab->root); prefabs_.push_back(doc.id); Item(ControlHandle(Prefabs),doc.name,CB_ADDSTRING);
             } else if (const auto *graph=std::get_if<graph::GraphDefinition>(&doc.data)) {
                 graphs_.push_back(doc.id); Item(ControlHandle(BehaviorGraph),doc.name,CB_ADDSTRING);
-                for (const auto &node:graph->nodes) TreeItem(root,node.name,{doc.id,ed::UiElement::GraphNode,node.id.Raw()});
-                for (const auto &edge:graph->connections) TreeItem(root,"Link "+Number(edge.id.Raw()),{doc.id,ed::UiElement::Connection,edge.id.Raw()});
+                std::unordered_map<graph::ElementId,std::string> port_labels;
+                for (const auto &node:graph->nodes) {
+                    TreeItem(root,FormatNodeLabel(node),{doc.id,ed::UiElement::GraphNode,node.id.Raw()});
+                    for (const auto &port:node.ports) port_labels.emplace(port.id,FormatPortLabel(node,port));
+                }
+                for (const auto &edge:graph->connections) TreeItem(root,"Link "+Number(edge.id.Raw())+": "+port_labels.at(edge.output_port)+" -> "+port_labels.at(edge.input_port),{doc.id,ed::UiElement::Connection,edge.id.Raw()});
             }
             TreeView_Expand(ControlHandle(Tree),root,TVE_EXPAND);
         }
@@ -287,13 +304,15 @@ void Desktop::Inspector() {
     } else if (const auto *definition=std::get_if<graph::GraphDefinition>(&doc->data)) {
         for (const auto &node:definition->nodes) for (const auto &port:node.ports) {
             const std::array<const char *,3> kinds{"data","control","event"};
-            const auto name=node.name+" / "+port.name+" ["+kinds[static_cast<std::size_t>(port.kind)]+"]";
+            const auto name=FormatPortLabel(node,port)+" ["+kinds[static_cast<std::size_t>(port.kind)]+"]";
             if (port.direction==graph::PortDirection::Output) { outputs_.push_back(port.id); Item(ControlHandle(Source),name,CB_ADDSTRING); }
             else { inputs_.push_back(port.id); Item(ControlHandle(Destination),name,CB_ADDSTRING); }
             if (node.id.Raw()==selection.element && selection.kind==ed::UiElement::GraphNode) AddField({name,Number(port.id.Raw()),{}});
         }
+        for (const auto &node:definition->nodes) if (node.id.Raw()==selection.element && selection.kind==ed::UiElement::GraphNode) AddField({"Node ID",Number(node.id.Raw()),{}});
         for (const auto &edge:definition->connections) if (edge.id.Raw()==selection.element && selection.kind==ed::UiElement::Connection) {
             AddField({"Output ID",Number(edge.output_port.Raw()),{}}); AddField({"Input ID",Number(edge.input_port.Raw()),{}});
+            AddField({"Output",PortLabel(*definition,edge.output_port),{}}); AddField({"Input",PortLabel(*definition,edge.input_port),{}});
         }
         SendMessageW(ControlHandle(Source),CB_SETCURSEL,0,0); SendMessageW(ControlHandle(Destination),CB_SETCURSEL,0,0);
     }
@@ -310,7 +329,7 @@ bool Desktop::ApplyDraft() {
     const auto &field=fields_[static_cast<std::size_t>(field_)]; if (!field.command) return false;
     auto command=field.command(Text(ControlHandle(Value)));
     if (!command) { local_error_=command.GetError().code+": "+command.GetError().message; Diagnostics(); SetFocus(ControlHandle(Value)); return false; }
-    const int selected=field_; if (!Execute({std::move(command).Value()})) return false;
+    const int selected=field_; if (!Execute({std::move(command).Value()})) { SetFocus(ControlHandle(Value)); return false; }
     SelectField(selected); local_error_.clear(); Diagnostics(); return true;
 }
 bool Desktop::SaveProject() { if (!ApplyDraft()) return false; const auto saved=workspace_.Save(); if (saved) Refresh(); else Diagnostics(); return static_cast<bool>(saved); }
@@ -414,7 +433,11 @@ void Desktop::Action(int id) {
     }
 }
 void Desktop::Diagnostics() {
-    const auto *project=workspace_.Project(); const auto *session=workspace_.Session(); const bool playing=session && session->IsPlaying();
+    const auto *project=workspace_.Project(); const auto *session=workspace_.Session(); bool playing=session && session->IsPlaying();
+    if (playing && !timer_running_) {
+        if (SetTimer(hwnd_,1,33,nullptr)) timer_running_=true;
+        else { (void)workspace_.Stop(); playing=false; local_error_="Cannot start Play timer; session stopped."; }
+    } else if (!playing && timer_running_) { KillTimer(hwnd_,1); timer_running_=false; }
     SetText(ControlHandle(Status),std::string{playing?"PLAYING SNAPSHOT | ":"AUTHORING | "}+(project?(project->IsDirty()?"Unsaved changes":"Saved"):"Open a project or create an example")+(Draft()?" | Unapplied field":""));
     EnableWindow(ControlHandle(Save),project!=nullptr); EnableWindow(ControlHandle(Undo),project && project->CanUndo()); EnableWindow(ControlHandle(Redo),project && project->CanRedo());
     EnableWindow(ControlHandle(Play),project && !playing); EnableWindow(ControlHandle(Stop),playing); EnableWindow(ControlHandle(SendEvent),playing);
@@ -426,15 +449,31 @@ void Desktop::Diagnostics() {
     EnableWindow(ControlHandle(Place),selection.kind==ed::UiElement::SceneNode); EnableWindow(ControlHandle(Prefabs),selection.kind==ed::UiElement::SceneNode);
     EnableWindow(ControlHandle(Apply),Draft()); EnableWindow(ControlHandle(Revert),Draft());
     std::string log=local_error_;
-    if (workspace_.LastError()) { const auto &error=*workspace_.LastError(); log+="\r\n"+error.code+": "+error.message; }
+    if (workspace_.LastError()) { const auto &error=*workspace_.LastError(); log+="\r\nLast command failed: "+error.code+": "+error.message; }
     const std::array<const char *,5> states{"Completed","Budget exhausted","Failed","Waiting","Cancelled"};
     for (const auto &activation:workspace_.Activations()) {
         const auto report=activation->Report(); log+="\r\nActivation "+Number(activation->Id())+" / "+(report?states[static_cast<std::size_t>(report->status)]:"Queued");
-        if (report) log+=" / instructions "+Number(report->instructions)+" / native calls "+Number(report->native_calls);
+        if (report) log+=" / last step instructions "+Number(report->instructions)+" / native calls "+Number(report->native_calls);
         if (report && report->diagnostic) { const auto &d=*report->diagnostic; log+=" / "+d.error.code+" / asset "+Number(d.asset.value.Raw())+" / node "+Number(d.node.Raw())+" / instruction "+Number(d.instruction)+" / "+d.error.message; }
     }
     if (log.empty()) log="Ready. New example includes Scene, Enemy Prefab (Health / Movement) and Event -> Damage -> Wait -> Damage.\r\nSelect Placement 42, Play, then Send hit. Runtime changes are discarded by Stop.";
     if (log!=log_text_) { log_text_=log; SetText(ControlHandle(Log),log); }
+}
+int Desktop::Shortcut(HWND source, WPARAM key) const noexcept {
+    if (GetKeyState(VK_CONTROL)<0) {
+        if (key=='S') return Save;
+        if (key=='O') return Open;
+        if (key=='N') return New;
+        if (source!=ControlHandle(Value) && source!=ControlHandle(Payload)) {
+            if (key=='Z') return Undo;
+            if (key=='Y') return Redo;
+        }
+    } else if (key==VK_F5) return GetKeyState(VK_SHIFT)<0?Stop:Play;
+    else if (source==ControlHandle(Value)) {
+        if (key==VK_RETURN) return Apply;
+        if (key==VK_ESCAPE) return Revert;
+    }
+    return 0;
 }
 LRESULT CALLBACK Desktop::ParentProc(HWND,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data) noexcept {
     auto &self=*reinterpret_cast<Desktop *>(data);
@@ -445,24 +484,21 @@ LRESULT CALLBACK Desktop::ParentProc(HWND,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,
 LRESULT CALLBACK Desktop::ChildProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data) noexcept {
     auto &self=*reinterpret_cast<Desktop *>(data);
     if (msg==WM_KEYDOWN) {
-        int action=0;
-        if (GetKeyState(VK_CONTROL)<0) {
-            if (wp=='S') action=Save; else if (wp=='O') action=Open; else if (wp=='N') action=New;
-            else if (wp=='Z' && hwnd!=self.ControlHandle(Value)) action=Undo;
-            else if (wp=='Y' && hwnd!=self.ControlHandle(Value)) action=Redo;
-        } else if (wp==VK_F5) action=GetKeyState(VK_SHIFT)<0?Stop:Play;
-        else if (wp==VK_RETURN && hwnd==self.ControlHandle(Value)) action=Apply;
-        else if (wp==VK_ESCAPE && hwnd==self.ControlHandle(Value)) action=Revert;
-        else if (wp==VK_TAB) { const auto next=GetNextDlgTabItem(self.hwnd_,hwnd,GetKeyState(VK_SHIFT)<0); if (next) SetFocus(next); return 0; }
+        const int action=self.Shortcut(hwnd,wp);
+        if (wp==VK_TAB) { const auto next=GetNextDlgTabItem(self.hwnd_,hwnd,GetKeyState(VK_SHIFT)<0); if (next) SetFocus(next); return 0; }
         if (action) { SendMessageW(self.hwnd_,WM_COMMAND,static_cast<WPARAM>(action),0); return 0; }
     }
     return DefSubclassProc(hwnd,msg,wp,lp);
 }
 LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
+    // Platform publishes raw system keys for games; a desktop host also needs
+    // their standard Windows behavior (Alt+F4, Alt+Space).
+    if (msg==WM_SYSKEYDOWN || msg==WM_SYSKEYUP) { (void)DefSubclassProc(hwnd_,msg,wp,lp); return DefWindowProcW(hwnd_,msg,wp,lp); }
+    if (msg==WM_KEYDOWN) { if (const int action=Shortcut(hwnd_,wp)) { Action(action); return 0; } }
     if (msg==WM_SIZE || msg==WM_DPICHANGED) { Layout(); return DefSubclassProc(hwnd_,msg,wp,lp); }
     if (msg==WM_GETMINMAXINFO) { const auto dpi=static_cast<int>(GetDpiForWindow(hwnd_)); auto *limits=reinterpret_cast<MINMAXINFO *>(lp); limits->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(800,dpi,96)}; return 0; }
-    if (msg==WM_CLOSE) { if (CanReplace()) { const auto result=workspace_.Stop(); if (result) closed_=true; else Diagnostics(); } return 0; }
-    if (msg==WM_TIMER) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); return 0; }
+    if (msg==WM_CLOSE) { if (CanReplace()) { const auto result=workspace_.Stop(); if (result) { KillTimer(hwnd_,1); timer_running_=false; closed_=true; } else Diagnostics(); } return 0; }
+    if (msg==WM_TIMER && wp==1) { if (timer_running_) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); } return 0; }
     if (msg==WM_COMMAND && !refreshing_) {
         const auto id=LOWORD(wp), notification=HIWORD(wp);
         if (id==Fields && notification==LBN_SELCHANGE) {
@@ -487,7 +523,7 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     }
     return DefSubclassProc(hwnd_,msg,wp,lp);
 }
-void Desktop::Smoke(const std::filesystem::path &file) {
+void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events) {
     const auto check=[](bool value) { if (!value) throw std::runtime_error("Native Editor smoke invariant"); };
     ex::Take(workspace_.New(file,ex::Definition(schema_))); Refresh();
     // Drive the real native command handlers and typed property control.
@@ -517,9 +553,23 @@ void Desktop::Smoke(const std::filesystem::path &file) {
     check(std::get<graph::GraphDefinition>(workspace_.Project()->Snapshot()->Find(draft_graph)->data).connections.empty());
     SendMessageW(hwnd_,WM_COMMAND,Undo,0); check(workspace_.Project()->Snapshot()==connected);
     SendMessageW(hwnd_,WM_COMMAND,Redo,0);
+    (void)workspace_.Select({draft_graph}); Refresh();
+    SendMessageW(hwnd_,WM_COMMAND,Add,0); // A second Native damage must be distinguishable.
+    std::set<std::wstring> port_labels;
+    bool unique_labels=true;
+    for (LRESULT index=0;index<SendMessageW(ControlHandle(Source),CB_GETCOUNT,0,0);++index) {
+        const auto length=SendMessageW(ControlHandle(Source),CB_GETLBTEXTLEN,static_cast<WPARAM>(index),0);
+        check(length>=0); std::wstring label(static_cast<std::size_t>(length)+1,L'\0');
+        SendMessageW(ControlHandle(Source),CB_GETLBTEXT,static_cast<WPARAM>(index),reinterpret_cast<LPARAM>(label.data()));
+        label.resize(static_cast<std::size_t>(length));
+        unique_labels=port_labels.insert(std::move(label)).second && unique_labels;
+    }
     SendMessageW(hwnd_,WM_COMMAND,Save,0); check(!workspace_.Project()->IsDirty());
     (void)workspace_.Select({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42}); Refresh();
-    SendMessageW(hwnd_,WM_COMMAND,Play,0); check(workspace_.Session() && workspace_.Session()->IsPlaying());
+    SendMessageW(hwnd_,WM_KEYDOWN,VK_F5,0);
+    const bool root_shortcut=workspace_.Session() && workspace_.Session()->IsPlaying();
+    if (!root_shortcut) SendMessageW(hwnd_,WM_COMMAND,Play,0);
+    check(workspace_.Session() && workspace_.Session()->IsPlaying());
     SetText(ControlHandle(Payload),"1"); SendMessageW(hwnd_,WM_COMMAND,SendEvent,0); ex::Take(workspace_.Tick({}));
     check(workspace_.Activations().size()==1); const auto activation=workspace_.Activations().front(); check(!activation->IsFinished());
     SendMessageW(hwnd_,WM_COMMAND,Stop,0); check(activation->IsFinished());
@@ -531,7 +581,14 @@ void Desktop::Smoke(const std::filesystem::path &file) {
     RECT client{},tools{}; GetClientRect(hwnd_,&client); GetWindowRect(ControlHandle(Place),&tools);
     POINT corner{tools.right,tools.bottom}; ScreenToClient(hwnd_,&corner);
     check(corner.x<=client.right && corner.y<client.bottom-140);
-    SendMessageW(hwnd_,WM_CLOSE,0,0); check(closed_);
+    SendMessageW(hwnd_,WM_SYSKEYDOWN,VK_F4,static_cast<LPARAM>(1ULL<<29));
+    // DefWindowProc may post the system-close command. Exercise the same
+    // Platform event pump as the real application before checking its outcome.
+    events.PumpEvents();
+    if (!unique_labels) std::fprintf(stderr,"REGRESSION: repeated nodes produce ambiguous port labels\n");
+    if (!root_shortcut) std::fprintf(stderr,"REGRESSION: F5 ignored when the host window owns focus\n");
+    if (!closed_) std::fprintf(stderr,"REGRESSION: Alt+F4 does not close the host window\n");
+    check(unique_labels && root_shortcut && closed_);
 }
 } // namespace
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
@@ -548,10 +605,14 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
         auto window=ex::Take(platform.CreateWindow({"Epidemic Editor",1280,850,!smoke}));
         {
             Desktop editor{window,schema};
-            if (smoke) editor.Smoke(std::filesystem::path{args[1]});
+            if (smoke) editor.Smoke(std::filesystem::path{args[1]},platform);
             else {
                 if (!args.empty()) editor.Load(std::filesystem::path{args[0]});
-                while (!editor.Closed() && !window->IsCloseRequested() && !platform.IsExitRequested()) { platform.PumpEvents(); (void)platform.DrainEvents(); MsgWaitForMultipleObjectsEx(0,nullptr,33,QS_ALLINPUT,MWMO_INPUTAVAILABLE); }
+                const auto active=[&] { return !editor.Closed() && !window->IsCloseRequested() && !platform.IsExitRequested(); };
+                while (active()) {
+                    platform.PumpEvents(); (void)platform.DrainEvents();
+                    if (active()) MsgWaitForMultipleObjectsEx(0,nullptr,INFINITE,QS_ALLINPUT,MWMO_INPUTAVAILABLE);
+                }
             }
         }
         window->Close(); platform.Shutdown(); return 0;

@@ -71,6 +71,8 @@ properties use atomic commands. Scene placements can assign a Prefab; Prefab
 entities expose registered properties and can assign a graph's first event input
 to the example `hit` event. Graphs use node/port/connection lists, with Event entry,
 Native damage and Wait templates. Core validates connections and references.
+Node/port labels include stable IDs to distinguish repeated templates; connection
+rows and properties show their endpoints. Drop-down lists expand for long labels.
 Parameters and parameter-bound properties are read-only. Prefab overrides have
 no editing UI; reassigning the same Prefab preserves its existing overrides.
 
@@ -79,15 +81,23 @@ Invalid input leaves source, history and save points unchanged. Apply/Revert is
 required before changing selection. Save applies a valid field first; close and
 project replacement offer Save/Discard/Cancel. Ctrl+S/O/N and F5/Shift+F5 operate
 on the workspace. Ctrl+Z/Y control project history outside the value edit;
-Ctrl+Z inside that edit remains a local text undo.
+Ctrl+Z inside value/payload edits remains a local text undo. Workspace shortcuts
+also work when the main window itself has focus; Alt+F4 uses normal close handling.
 Play uses the project's entry Scene snapshot (there is no entry-Scene selector
 in this host); authoring changes become visible on the next Play. Select
 a Scene placement and Send hit to run the example with the supplied i64 payload
 (also its wait duration). The host advances one game tick per 33 ms UI timer;
 this is a development preview, not a real-time scheduling policy. Activation
 status and original native error/asset/node/instruction details stay visible after Stop.
+Instruction/native-call counters describe the last execution step, including after
+Wait resumes. Command errors are labelled as the last failed command.
+Outside Play the host waits for Windows messages without polling the workspace;
+the 33 ms game timer runs only during Play and is removed on Stop/close.
 The window supports Windows DPI scaling and a minimum size of 1000 x 800 logical pixels.
 
 `EpidemicEditorDesktop --ui-smoke <Temp path>` runs real native controls hidden,
 including property rejection, Undo/Redo, typed connections, disk reload and Wait
 cancellation. `EpidemicEditorWorkspaceTests` checks the portable command client.
+Close owned preview windows before rebuilding their executable. If a user session
+must stay open, use another normal build directory (for example
+`Temp/b/ui-validation`); no executable renaming is required.
