@@ -12,7 +12,7 @@ inline foundation::StringId Id(std::string_view value) { return foundation::Stri
 template<class T> T Take(foundation::Result<T> result) { if (!result) throw std::runtime_error(result.GetError().code); return std::move(result).Value(); }
 struct Health { std::int64_t points = 100; };
 struct Movement { double speed = 1; bool enabled = true; std::string label = "Enemy"; };
-bool ValidHealth(const std::int64_t &value) { return value >= 0 && value <= 10000; }
+inline bool ValidHealth(const std::int64_t &value) { return value >= 0 && value <= 10000; }
 class Backend final : public rb::IRuntimeBridgeBackend {
   public:
     foundation::Result<rb::RuntimeMaterializationResult> Materialize(rb::RuntimePersistentObjectHandle) override { return foundation::Result<rb::RuntimeMaterializationResult>::Success({rb::RuntimeObjectHandle{next_++}, true}); }
@@ -58,6 +58,7 @@ inline ed::PlayOptions Options(Schema &schema) {
             const auto component = store->Find(entity, health);
             if (!component) return Result::Failure(foundation::Error::Create("example.health_missing", "Health required"));
             const auto current = store->Read<std::int64_t>(*component, points); if (!current) return Result::Failure(current.GetError());
+            if (amount < 0 || amount > current.Value()) return Result::Failure(foundation::Error::Create("example.damage_range", "Damage must be between zero and current Health"));
             const auto changed = store->WriteProperty(*component, {points, current.Value() - amount}); if (!changed) return Result::Failure(changed.GetError());
             return Result::Success(amount);
         };

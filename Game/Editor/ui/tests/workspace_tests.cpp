@@ -1,6 +1,7 @@
 #include "Epidemic/Game/Editor/editor_workspace.h"
 #include "../../example/demo_game.h"
 #include <cstdio>
+#include <limits>
 
 using namespace epidemic;
 namespace ed = game::editor;
@@ -51,6 +52,14 @@ void Run() {
     Check(workspace.Activations().at(0)->Report()->status == runtime::graph::ExecutionStatus::Completed);
     ex::Take(workspace.Stop());
     Check(schema.entities.AllEntities().empty());
+    ex::Take(workspace.Play());
+    (void)ex::Take(workspace.Send(runtime::SceneNodeId{42}, {ex::Id("hit"), std::numeric_limits<std::int64_t>::min()}));
+    ex::Take(workspace.Tick({})); // Native failure is observable independently of Tick success.
+    const auto failed = workspace.Activations().at(0)->Report();
+    Check(failed && failed->status == runtime::graph::ExecutionStatus::Failed);
+    Check(failed->diagnostic && failed->diagnostic->error.code == "example.damage_range");
+    ex::Take(workspace.Stop());
+    Check(!workspace.Project()->IsDirty());
     using K = comp::PropertyKind;
     for (const auto value : {"nan", "inf", "-inf", "", "1junk", "1,5"}) Check(!ed::EditorWorkspace::ParseValue(K::Real, value));
     Check(!ed::EditorWorkspace::ParseValue(K::Real, std::string_view{}));

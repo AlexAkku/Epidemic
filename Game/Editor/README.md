@@ -1,4 +1,4 @@
-# Headless editor core
+# Editor core and minimal desktop host
 
 `EditorProject` is the authoring and automation boundary. `Open`, `Save`,
 `Execute(EditRequest)`, `Undo`, `Redo`, `Snapshot`, and `Play` are the same C++ API
@@ -54,3 +54,38 @@ Run `EpidemicEditorHeadless --write <path>` followed in a new process by
 `EpidemicEditorHeadless --read-play <path>`. The example creates Entity/Health and
 GraphBehavior through commands, connects ports, undoes/redoes, saves, reloads,
 executes an event with Wait/resume, and stops without dirtying authoring data.
+
+## Windows desktop
+
+Build/run `EpidemicEditorDesktop [project.epidemic]` on Windows (full profile).
+The portable `EpidemicEditorUi` workspace owns the Command API client, stable-ID
+selection and PlaySession. The desktop uses the existing Platform window and
+standard Windows controls; Core, Runtime and Framework have no UI dependency.
+The executable shares the headless example's frozen game schema and native bindings:
+Enemy, Health, Movement and an event-driven Damage/Wait graph. Other game schemas
+must supply their registrations and operations in the host; unknown types are rejected.
+
+New example chooses a project path; Open loads the existing Serialization archive.
+The document tree opens Scene/Prefab/Graph authoring data. Add/Delete and typed
+properties use atomic commands. Scene placements can assign a Prefab; Prefab
+entities expose registered properties and can assign a graph's first event input
+to the example `hit` event. Graphs use node/port/connection lists, with Event entry,
+Native damage and Wait templates. Core validates connections and references.
+Parameters/bindings/overrides without dedicated commands are displayed read-only;
+reassigning the same Prefab preserves its existing overrides.
+
+Apply (Enter) publishes the current field; Revert (Escape) discards its draft.
+Invalid input leaves source, history and save points unchanged. Apply/Revert is
+required before changing selection. Save applies a valid field first; close and
+project replacement offer Save/Discard/Cancel. Ctrl+S/O/N, Ctrl+Z/Y and F5/Shift+F5
+operate on the workspace (Ctrl+Z in the value edit remains a local text undo).
+Play uses a snapshot; authoring changes become visible on the next Play. Select
+a Scene placement and Send hit to run the example with the supplied i64 payload
+(also its wait duration). The host advances one game tick per 33 ms UI timer;
+this is a development preview, not a real-time scheduling policy. Activation
+status and original native error/asset/node/instruction details stay visible after Stop.
+The window supports Windows DPI scaling and a minimum size of 1000 x 800 logical pixels.
+
+`EpidemicEditorDesktop --ui-smoke <Temp path>` runs real native controls hidden,
+including property rejection, Undo/Redo, typed connections, disk reload and Wait
+cancellation. `EpidemicEditorWorkspaceTests` checks the portable command client.
