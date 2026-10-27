@@ -15,7 +15,8 @@ foundation::Result<void> EditorProject::Save() {
     // A failed disk publication never advances the save point.
     std::unordered_map<std::uint64_t, std::uint64_t> documents;
     for (const auto &document : current_->definition.documents) documents.emplace(document.id.Raw(), document.revision);
-    auto encoded = detail::WriteProject({current_->definition, {used_ids_.begin(), used_ids_.end()}}, schema_);
+    detail::ProjectArchive archive{current_->definition, {used_ids_.begin(), used_ids_.end()}};
+    auto encoded = detail::WriteProject(archive, schema_);
     if (!encoded) return foundation::Result<void>::Failure(encoded.GetError());
     const auto published = detail::PublishFile(file_, encoded.Value());
     if (!published) return published;
@@ -33,6 +34,10 @@ foundation::Result<std::unique_ptr<EditorProject>> EditorProject::Open(const std
     // Persist retired identities as well as live ones; malicious omissions cannot
     // remove live IDs because Create has already registered every current ID.
     project.used_ids_.insert(decoded.Value().used_ids.begin(), decoded.Value().used_ids.end());
+    if (project.used_ids_.size() > 65536) return Result::Failure(foundation::Error::Create("editor.identity_limit", "too many reserved identities"));
+    auto definition = project.current_->definition;
+    const auto persistable = detail::ValidateForPersistence(definition, project.used_ids_, schema);
+    if (!persistable) return Result::Failure(persistable.GetError());
     project.saved_state_ = project.current_->state_id;
     for (const auto &document : project.current_->definition.documents) project.saved_documents_.emplace(document.id.Raw(), document.revision);
     return created;

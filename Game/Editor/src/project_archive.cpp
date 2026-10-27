@@ -143,13 +143,23 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema, runti
 }
 const auto kProjectType = foundation::StringId::FromString("epidemic.editor.project");
 }
-foundation::Result<std::vector<std::byte>> WriteProject(ProjectArchive project, const ProjectSchema &schema) {
+foundation::Result<std::vector<std::byte>> WriteProject(ProjectArchive &project, const ProjectSchema &schema) {
     using Result = foundation::Result<std::vector<std::byte>>;
     try {
         auto services = Take(runtime::CreateSerializationServices()); auto writer = services.archives->CreateWriter(); Require(writer != nullptr);
         IO io{writer.get(), nullptr}; Project(io, project, schema, *services.archives);
         return runtime::EncodeDocument(Take(writer->Finalize(kProjectType, {1, 0, 0})));
     } catch (const Failure &failure) { return Result::Failure(failure.error); }
+}
+foundation::Result<void> ValidateForPersistence(ProjectDefinition &definition,
+    const std::set<std::pair<std::uint64_t, std::uint64_t>> &identities, const ProjectSchema &schema) {
+    // Move the unpublished candidate rather than copying the entire project
+    // again. Use the exact Save schema/codec limits, including finite doubles.
+    ProjectArchive archive{std::move(definition), {identities.begin(), identities.end()}};
+    const auto encoded = WriteProject(archive, schema);
+    definition = std::move(archive.definition);
+    if (!encoded) return foundation::Result<void>::Failure(encoded.GetError());
+    return foundation::Result<void>::Success();
 }
 foundation::Result<ProjectArchive> ReadProject(std::span<const std::byte> bytes, const ProjectSchema &schema) {
     using Result = foundation::Result<ProjectArchive>;

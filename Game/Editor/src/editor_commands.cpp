@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/editor_commands.h"
+#include "project_archive.h"
 #include <algorithm>
 #include <limits>
 #include <type_traits>
@@ -158,6 +159,8 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
         if (used.size() > 65536) return Result::Failure(Error("editor.identity_limit"));
     }
     const auto valid = ValidateProject(candidate, schema_); if (!valid) return Result::Failure(valid.GetError());
+    const auto persistable = detail::ValidateForPersistence(candidate, used, schema_);
+    if (!persistable) return Result::Failure(persistable.GetError());
     auto document_revision = next_document_;
     for (auto &doc : candidate.documents) if (changed.contains(doc.id.Raw())) doc.revision = document_revision++;
     auto snapshot = std::make_shared<const ProjectSnapshot>(ProjectSnapshot{std::move(candidate), valid.Value(), next_state_});

@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/editor_project.h"
+#include "project_archive.h"
 #include <algorithm>
 #include <unordered_set>
 
@@ -134,6 +135,8 @@ foundation::Result<std::unique_ptr<EditorProject>> EditorProject::Create(std::fi
     for (auto &document : definition.documents) document.revision = project->next_document_++;
     project->RememberIds(definition);
     if (project->used_ids_.size() > 65536) return Result::Failure(Error("editor.identity_limit"));
+    const auto persistable = detail::ValidateForPersistence(definition, project->used_ids_, schema);
+    if (!persistable) return Result::Failure(persistable.GetError());
     project->current_ = std::make_shared<const ProjectSnapshot>(ProjectSnapshot{std::move(definition), valid.Value(), 1});
     return Result::Success(std::move(project));
 }
