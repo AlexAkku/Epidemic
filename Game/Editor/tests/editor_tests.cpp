@@ -161,4 +161,15 @@ void Play() {
     ErrorIs(project->Play(std::move(throwing)), "editor.play_exception");
     Check(project->Snapshot()->Find(AssetId::FromString("editor.prefab"))->name == "Enemy", "failed Play does not mutate authoring");
 }
-int main() { try { Documents(); Commands(); Persistence(); Play(); } catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; } return 0; }
+#include "stabilization_cases.h"
+int main(int argc, char **argv) {
+    try {
+        if (argc == 1) { Documents(); Commands(); Persistence(); Play(); }
+        else if (argc == 2 && std::string_view{argv[1]} == "failures") StabilizationFailures();
+        else if (argc == 2 && std::string_view{argv[1]} == "authoring") StabilizationAuthoring();
+        else if (argc == 2 && std::string_view{argv[1]} == "stop") StabilizationStop();
+        else if (argc == 2 && std::string_view{argv[1]} == "dependencies") StabilizationDependencies();
+        else throw std::runtime_error("unknown editor test case");
+    } catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
+    return 0;
+}

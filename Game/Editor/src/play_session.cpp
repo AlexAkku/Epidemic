@@ -68,8 +68,10 @@ struct PlaySession::Impl {
         // shutdown failed. This path allocates nothing and runs no native code.
         for (auto &item : live) {
             item.execution->RequestCancel();
-            item.handle->report_.emplace(runtime::graph::ExecutionReport{runtime::graph::ExecutionStatus::Cancelled});
-            item.handle->finished_ = true;
+            if (!item.handle->finished_) {
+                item.handle->report_.emplace(runtime::graph::ExecutionReport{runtime::graph::ExecutionStatus::Cancelled});
+                item.handle->finished_ = true;
+            }
         }
     }
     void Capture() {
@@ -95,7 +97,9 @@ struct PlaySession::Impl {
 PlaySession::PlaySession(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
 PlaySession::~PlaySession() {
     try { (void)Stop(); } catch (...) {
-        // Explicit Stop reports errors; Impl finalizes remaining Editor handles.
+        // Complete fallback cancellation and release services immediately.
+        // Explicit Stop reports errors; destruction cannot propagate them.
+        impl_.reset();
     }
 }
 foundation::Result<std::unique_ptr<PlaySession>> EditorProject::Play(PlayOptions options) const {
@@ -176,6 +180,7 @@ foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
 foundation::Result<void> PlaySession::Stop() {
     if (ticking_) return foundation::Result<void>::Failure(Error("editor.play_inactive_or_busy"));
     if (!IsPlaying()) return foundation::Result<void>::Success();
+    struct Guard { bool &flag; ~Guard() { flag = false; } } guard{ticking_}; ticking_ = true;
     impl_->Capture();
     auto &state = *impl_->runtime;
     for (const auto &entity : state.entities.AllEntities()) {

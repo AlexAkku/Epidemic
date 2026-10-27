@@ -26,8 +26,10 @@ the entry Scene's transitive dependency manifest from Assets. Unused drafts stay
 registered without IR compilation; all Prefab definitions remain available for
 dynamic Spawn, and their graphs compile when bound. Used invalid graphs fail
 Play/Attach/Spawn. Binding factories are still called for all Graph definitions;
-schema/reference checks apply to the whole project. This does not defer missing
-native factory/configuration errors or permit structurally invalid documents.
+schema/reference checks apply to the whole project. Thrown binding-factory
+errors and mismatched declared operations still block Play; other IR/callable
+completeness checks occur when a deferred graph is bound. Structurally invalid
+documents remain rejected.
 
 Play creates fresh EntityService, components, SceneServices, RuntimeBridge, Time,
 Simulation and GraphScheduler instances. Callables are bound to that session's
@@ -36,6 +38,7 @@ borrowed until Stop; Stop invalidates scopes and cancels active graphs.
 Cancellation covers Entity/Part, Scene and World system behaviors, including queued
 work. The host cancels and finalizes all activations before Simulation teardown;
 Stop requires no external Tick and invokes no native graph effects.
+Send/Tick/Stop reject reentry during a Tick or shutdown/lifetime callback.
 
 `Tick` reports Simulation infrastructure failures. Game results are independent:
 after `Send`, use `Activations()` and keep its read-only `PlayActivation` handles.
