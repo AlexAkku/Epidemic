@@ -97,6 +97,18 @@ foundation::Result<gameplay::composition::GraphAssetId> GraphExecutionHost::Regi
     assets_.emplace(id.Raw(), std::move(asset));
     return Result::Success(id);
 }
+foundation::Result<gameplay::composition::GraphAssetId> GraphExecutionHost::RegisterGraphDeferred(
+    runtime::graph::GraphDefinition definition, std::span<const NodeBinding> bindings,
+    std::span<const runtime::graph::TypeId> known_types) {
+    using Result = foundation::Result<gameplay::composition::GraphAssetId>;
+    if (assets_.size() >= 1024 || assets_.contains(definition.asset_id.Raw())) return Result::Failure(
+        foundation::Error::Create("composition.graph_duplicate_or_capacity", "graph catalog cannot accept this asset"));
+    const auto valid = runtime::graph::ValidateGraph(definition, known_types);
+    if (!valid) return Result::Failure(valid.GetError());
+    const auto id = definition.asset_id.value;
+    assets_.emplace(id.Raw(), Asset{std::move(definition), {bindings.begin(), bindings.end()}});
+    return Result::Success(id);
+}
 foundation::Result<void> GraphExecutionHost::CheckDefinition(const gameplay::composition::GraphBehaviorDefinition &definition) const {
     using Result = foundation::Result<void>;
     const auto found = assets_.find(definition.graph.Raw());

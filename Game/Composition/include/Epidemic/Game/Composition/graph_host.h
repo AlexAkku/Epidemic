@@ -51,6 +51,11 @@ class GraphExecutionHost final : public gameplay::composition::IGraphBehaviorHos
     GraphExecutionHost &operator=(const GraphExecutionHost &) = delete;
     [[nodiscard]] foundation::Result<gameplay::composition::GraphAssetId> RegisterGraph(
         runtime::graph::GraphDefinition definition, std::span<const NodeBinding> bindings);
+    // Keep a structurally valid authoring draft available for dynamic binding.
+    // The caller supplies its schema snapshot; IR validation remains in Bind.
+    [[nodiscard]] foundation::Result<gameplay::composition::GraphAssetId> RegisterGraphDeferred(
+        runtime::graph::GraphDefinition definition, std::span<const NodeBinding> bindings,
+        std::span<const runtime::graph::TypeId> known_types);
     [[nodiscard]] foundation::Result<void> CheckDefinition(const gameplay::composition::GraphBehaviorDefinition &definition) const override;
     [[nodiscard]] foundation::Result<std::shared_ptr<const gameplay::composition::IGraphProgram>>
     Bind(const std::shared_ptr<GraphScope> &scope, const gameplay::composition::GraphBehaviorDefinition &definition) override;

@@ -106,9 +106,14 @@ foundation::Result<std::unique_ptr<PlaySession>> PlaySession::Start(std::shared_
     using Result = foundation::Result<std::unique_ptr<PlaySession>>;
     if (!snapshot || !options.backend || !options.bindings) return Result::Failure(Error("editor.play_options"));
     try {
-        (void)Take(ValidateProject(snapshot->definition, schema));
+        const auto assets = Take(ValidateProject(snapshot->definition, schema));
         const auto *entry = snapshot->Find(snapshot->definition.entry_scene);
         if (!entry || entry->Kind() != DocumentKind::Scene) return Result::Failure(Error("editor.entry_scene"));
+        const auto manifest = Take(assets->BuildDependencyManifest(entry->id));
+        std::unordered_set<std::uint64_t> required{entry->id.Raw()};
+        for (const auto &dependency : manifest.dependencies) required.insert(dependency.asset_id.Raw());
+        std::vector<runtime::graph::TypeId> known_types{runtime::graph::kI64Type};
+        for (const auto &[type, operation] : schema.operations) { (void)operation; known_types.push_back(type); }
         auto session = std::unique_ptr<PlaySession>(new PlaySession(std::make_unique<Impl>(schema, std::move(options.backend))));
         auto &state = *session->impl_->runtime; state.source = std::move(snapshot);
         std::unordered_set<std::uint64_t> registered;
@@ -121,7 +126,8 @@ foundation::Result<std::unique_ptr<PlaySession>> PlaySession::Start(std::shared_
                 const auto expected = std::find_if(schema.operations.begin(), schema.operations.end(), [&](const auto &item) { return item.first == binding.type; });
                 if (expected == schema.operations.end() || expected->second != binding.operation) throw Failure{Error("editor.play_binding")};
             }
-            (void)Take(state.host.RegisterGraph(*graph, bindings));
+            if (required.contains(doc.id.Raw())) (void)Take(state.host.RegisterGraph(*graph, bindings));
+            else (void)Take(state.host.RegisterGraphDeferred(*graph, bindings, known_types));
         }
         for (const auto &doc : state.source->definition.documents) if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc.data)) (void)Take(state.prefabs.Register(*prefab));
         const auto &definition = std::get<composition::SceneCompositionDefinition>(entry->data);

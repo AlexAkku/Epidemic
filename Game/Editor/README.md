@@ -21,7 +21,13 @@ Documents compose existing SceneSnapshot, PrefabDefinition and GraphDefinition.
 Assets owns the sealed catalog. Serialization owns the versioned archive encoding;
 Platform owns bounded, atomic disk publication. The project archive schema is 1.0.0.
 Scene world transforms/bounds and runtime revisions are derived on instantiation.
-Incomplete graphs may be edited/saved; Play requires successful Runtime compilation.
+Structurally valid incomplete graphs may be edited/saved. Play eagerly compiles
+the entry Scene's transitive dependency manifest from Assets. Unused drafts stay
+registered without IR compilation; all Prefab definitions remain available for
+dynamic Spawn, and their graphs compile when bound. Used invalid graphs fail
+Play/Attach/Spawn. Binding factories are still called for all Graph definitions;
+schema/reference checks apply to the whole project. This does not defer missing
+native factory/configuration errors or permit structurally invalid documents.
 
 Play creates fresh EntityService, components, SceneServices, RuntimeBridge, Time,
 Simulation and GraphScheduler instances. Callables are bound to that session's
