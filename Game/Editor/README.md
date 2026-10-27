@@ -57,6 +57,21 @@ executes an event with Wait/resume, and stops without dirtying authoring data.
 
 ## Windows desktop
 
+Scene/Prefab authoring uses the existing `SetSceneTransform`, `SetSceneParent`
+and `PlacePrefab` commands. Archive 1.0.0 already stores local position/rotation/
+scale, spatial parents and placement overrides; SceneServices derives world
+transforms at instantiation. Prefab children express ownership, not spatial
+parenting. Placement overrides replace only the selected instance's assignments;
+an editor changing one assignment must preserve the others. Human-readable object
+names are not persisted by SceneSnapshot/PrefabNode; display labels are derived.
+
+The future 2D viewport must be a child surface of the Platform-owned editor
+window, driven by its existing event pump and invalidation. Presentation's Canvas
+currently requires its own Host and cannot simply be attached to this HWND.
+The integration point is a surface adapter over existing drawing facilities,
+without another scene, event loop or Framework API change. No viewport or gizmo
+is supplied by the document-navigation milestone.
+
 Build/run `EpidemicEditorDesktop [project.epidemic]` on Windows (full profile).
 The portable `EpidemicEditorUi` workspace owns the Command API client, stable-ID
 selection and PlaySession. The desktop uses the existing Platform window and
