@@ -1,4 +1,5 @@
 add_executable(EpidemicEditorCoreTests editor_tests.cpp)
 target_link_libraries(EpidemicEditorCoreTests PRIVATE EpidemicEditorCore)
+target_compile_definitions(EpidemicEditorCoreTests PRIVATE EPIDEMIC_EDITOR_TEST_DIRECTORY="${PROJECT_SOURCE_DIR}/Temp/editor-tests")
 epidemic_configure_target(EpidemicEditorCoreTests)
 epidemic_add_test(EpidemicEditorCoreTests)

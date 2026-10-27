@@ -7,7 +7,8 @@ foundation::Result<SceneCompositionInstance> CreateSceneComposition(const SceneC
         return Result::Failure(foundation::Error::Create("composition.invalid_scene", "invalid Scene asset or node count"));
     auto services = runtime::CreateSceneServices();
     if (!services) return Result::Failure(services.GetError());
-    SceneCompositionInstance instance{std::move(services).Value(), {}};
+    SceneCompositionInstance instance;
+    instance.scene = std::move(services).Value();
     for (const auto &node : definition.scene.nodes) {
         if (!node.id.IsValid() || instance.nodes.contains(node.id)) return Result::Failure(
             foundation::Error::Create("composition.scene_identity", "Scene node identity is invalid or duplicated"));

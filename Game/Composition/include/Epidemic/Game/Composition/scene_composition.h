@@ -19,6 +19,11 @@ struct SceneCompositionDefinition {
     std::vector<ScenePrefabPlacement> placements;
 };
 struct SceneCompositionInstance {
+    SceneCompositionInstance() = default;
+    // MSVC's unordered_map move can allocate. Keep ordinary allocation failure
+    // propagation instead of promising noexcept and terminating the process.
+    SceneCompositionInstance(SceneCompositionInstance &&) noexcept(false) = default; // NOLINT(bugprone-unsafe-to-allow-exceptions)
+    SceneCompositionInstance &operator=(SceneCompositionInstance &&) noexcept(false) = default; // NOLINT(bugprone-unsafe-to-allow-exceptions)
     runtime::SceneServices scene;
     std::unordered_map<runtime::SceneNodeId, runtime::SceneNodeId> nodes;
 };

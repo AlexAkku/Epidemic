@@ -155,6 +155,7 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
         auto after = Ids(candidate);
         for (const auto &id : after) if (!before.contains(id) && !used.insert(id).second) return Result::Failure(Error("editor.retired_id"));
         before = std::move(after);
+        if (used.size() > 65536) return Result::Failure(Error("editor.identity_limit"));
     }
     const auto valid = ValidateProject(candidate, schema_); if (!valid) return Result::Failure(valid.GetError());
     auto document_revision = next_document_;

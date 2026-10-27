@@ -54,8 +54,14 @@ foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>> ValidateProjec
     if (!definition.id.IsValid() || definition.documents.size() > 64 || !schema.entities.IsFrozen() || !schema.components.IsFrozen())
         return Result::Failure(Error("editor.invalid_project"));
     std::unordered_set<std::uint64_t> ids;
+    std::unordered_set<std::uint64_t> operation_types;
+    if (schema.operations.size() > 256) return Result::Failure(Error("editor.operation_schema"));
     std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type};
-    for (const auto &[type, _] : schema.operations) types.push_back(type);
+    for (const auto &[type, operation] : schema.operations) {
+        if (!type.IsValid() || !operation_types.insert(type.Raw()).second || operation > runtime::graph::Operation::Repeat)
+            return Result::Failure(Error("editor.operation_schema"));
+        types.push_back(type);
+    }
     References references{definition, schema};
     comp::GraphBehaviorService behaviors{references};
     comp::ComponentStore components{schema.entities, schema.components};
@@ -119,9 +125,15 @@ foundation::Result<std::unique_ptr<EditorProject>> EditorProject::Create(std::fi
     const auto valid = ValidateProject(definition, schema);
     if (!valid) return Result::Failure(valid.GetError());
     if (file.empty() || file.filename().empty()) return Result::Failure(Error("editor.project_path"));
-    auto project = std::unique_ptr<EditorProject>(new EditorProject(std::filesystem::absolute(file).lexically_normal(), schema));
+    if (file.native().find(std::filesystem::path::value_type{}) != std::filesystem::path::string_type::npos)
+        return Result::Failure(Error("editor.project_path"));
+    std::error_code error;
+    auto absolute = std::filesystem::absolute(file, error);
+    if (error) return Result::Failure(Error("editor.project_path"));
+    auto project = std::unique_ptr<EditorProject>(new EditorProject(absolute.lexically_normal(), schema));
     for (auto &document : definition.documents) document.revision = project->next_document_++;
     project->RememberIds(definition);
+    if (project->used_ids_.size() > 65536) return Result::Failure(Error("editor.identity_limit"));
     project->current_ = std::make_shared<const ProjectSnapshot>(ProjectSnapshot{std::move(definition), valid.Value(), 1});
     return Result::Success(std::move(project));
 }

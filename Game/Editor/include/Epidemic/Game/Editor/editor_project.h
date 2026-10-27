@@ -10,6 +10,8 @@ namespace epidemic::game::editor {
 namespace comp = gameplay::composition;
 struct EditRequest;
 struct EditReceipt;
+struct PlayOptions;
+class PlaySession;
 using DocumentData = std::variant<composition::SceneCompositionDefinition, comp::PrefabDefinition, runtime::graph::GraphDefinition>;
 enum class DocumentKind { Scene, Prefab, Graph };
 struct EditorDocument {
@@ -42,9 +44,13 @@ class EditorProject final {
   public:
     [[nodiscard]] static foundation::Result<std::unique_ptr<EditorProject>> Create(
         std::filesystem::path file, ProjectDefinition definition, const ProjectSchema &schema);
+    [[nodiscard]] static foundation::Result<std::unique_ptr<EditorProject>> Open(
+        const std::filesystem::path &file, const ProjectSchema &schema);
+    [[nodiscard]] foundation::Result<void> Save();
+    [[nodiscard]] foundation::Result<std::unique_ptr<PlaySession>> Play(PlayOptions options) const;
     EditorProject(const EditorProject &) = delete;
     EditorProject &operator=(const EditorProject &) = delete;
-    [[nodiscard]] const std::shared_ptr<const ProjectSnapshot> &Snapshot() const noexcept { return current_; }
+    [[nodiscard]] std::shared_ptr<const ProjectSnapshot> Snapshot() const noexcept { return current_; }
     [[nodiscard]] const std::filesystem::path &File() const noexcept { return file_; }
     [[nodiscard]] bool IsDirty() const noexcept { return current_->state_id != saved_state_; }
     [[nodiscard]] bool IsDirty(runtime::AssetId document) const;
