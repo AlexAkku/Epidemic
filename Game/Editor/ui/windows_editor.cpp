@@ -6,6 +6,7 @@
 #include <shellapi.h>
 #include <wincodec.h>
 #include <wrl/client.h>
+#include <psapi.h>
 // Win32's convenience macro collides with the existing IWindowSystem API.
 #undef CreateWindow
 #include "Epidemic/Platform/windows_platform_runtime.h"
@@ -14,6 +15,7 @@
 #include "windows_scene_view.h"
 #include "../example/demo_game.h"
 #include "../example/editor_demo.h"
+#include "../example/editor_stress.h"
 #include <array>
 #include <algorithm>
 #include <cmath>
@@ -121,6 +123,7 @@ class Desktop final {
     void Load(const std::filesystem::path &file) { (void)workspace_.Open(file); Refresh(true); }
     void Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events);
     void DemoSmoke(const std::filesystem::path &file,platform::IPlatformRuntime &events);
+    void StressSmoke(const std::filesystem::path &file,platform::WindowsPlatformRuntime &events,std::size_t count);
   private:
     HWND ControlHandle(int id) const { return GetDlgItem(hwnd_, id); }
     HWND Make(int id, const wchar_t *kind, const wchar_t *label, DWORD style = 0) {
@@ -382,6 +385,14 @@ void Desktop::Refresh(bool new_project) {
     // Common-controls can return additional state bits despite the requested mask.
     for (std::size_t i=0;i<tree_items_.size();++i) if ((TreeView_GetItemState(ControlHandle(Tree),tree_items_[i],TVIS_EXPANDED)&static_cast<UINT>(TVIS_EXPANDED))!=0) expanded.insert(SelectionKey(selections_[i]));
     const bool initial=new_project || tree_items_.empty();
+    struct RefreshGuard {
+        bool &active; HWND tree;
+        RefreshGuard(bool &flag,HWND handle):active(flag),tree(handle) {}
+        ~RefreshGuard() {
+            if (!active) return;
+            active=false; SendMessageW(tree,WM_SETREDRAW,TRUE,0); InvalidateRect(tree,nullptr,TRUE);
+        }
+    } guard{refreshing_,ControlHandle(Tree)};
     refreshing_=true; field_=-1; fields_.clear(); selections_.clear(); tree_items_.clear(); outputs_.clear(); inputs_.clear(); prefabs_.clear(); graphs_.clear();
     SendMessageW(ControlHandle(Tree),WM_SETREDRAW,FALSE,0);
     TreeView_DeleteAllItems(ControlHandle(Tree));
@@ -815,7 +826,13 @@ int Desktop::Shortcut(HWND source, WPARAM key) const noexcept {
 LRESULT CALLBACK Desktop::ParentProc(HWND,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data) noexcept {
     auto &self=*reinterpret_cast<Desktop *>(data);
     try { return self.Message(msg,wp,lp); }
-    catch (const std::exception &) { SetWindowTextW(self.ControlHandle(Log),L"Editor operation failed; authoring commands remain atomic."); return 0; }
+    catch (const std::exception &error) {
+        // Reporting an exception must not allocate again (e.g. bad_alloc).
+        std::array<wchar_t,512> detail{};
+        if (!MultiByteToWideChar(CP_UTF8,0,error.what(),-1,detail.data(),static_cast<int>(detail.size())))
+            lstrcpynW(detail.data(),L"Editor operation failed; diagnostic unavailable.",static_cast<int>(detail.size()));
+        SetWindowTextW(self.ControlHandle(Log),detail.data()); return 0;
+    }
     catch (...) { SetWindowTextW(self.ControlHandle(Log),L"Unexpected Editor error"); return 0; }
 }
 LRESULT CALLBACK Desktop::ChildProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data) noexcept {
@@ -1209,6 +1226,96 @@ void Desktop::DemoSmoke(const std::filesystem::path &file,platform::IPlatformRun
     ex::Take(workspace_.Open(file)); Refresh(true); choose(42); field("Local position X"); check(fields_[static_cast<std::size_t>(field_)].value=="-5");
     SendMessageW(hwnd_,WM_CLOSE,0,0); events.PumpEvents(); check(closed_);
 }
+void Desktop::StressSmoke(const std::filesystem::path &file,platform::WindowsPlatformRuntime &events,std::size_t count) {
+    const auto check=[](bool value,const std::source_location at=std::source_location::current()){if(!value)throw std::runtime_error("Native stress invariant at line "+Number(at.line()));};
+    const auto measure=[&]<class F>(const char *name,F &&action,int repeats=1){
+        const auto start=std::chrono::steady_clock::now(); for(int i=0;i<repeats;++i)action();
+        const auto ms=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count()/repeats;
+        std::printf("M8 placements=%zu metric=%s value=%.6f\n",count,name,ms);
+    };
+    struct Usage { double cpu_ms=0; SIZE_T private_bytes=0,working_set=0; DWORD handles=0,gdi=0,user=0; };
+    const auto usage=[&]{
+        PROCESS_MEMORY_COUNTERS_EX memory{}; memory.cb=sizeof(memory); FILETIME created{},exited{},kernel{},user{}; DWORD handles=0;
+        check(GetProcessMemoryInfo(GetCurrentProcess(),reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&memory),sizeof(memory))!=FALSE);
+        check(GetProcessTimes(GetCurrentProcess(),&created,&exited,&kernel,&user)!=FALSE && GetProcessHandleCount(GetCurrentProcess(),&handles)!=FALSE);
+        const auto ticks=[](const FILETIME &time){return (static_cast<std::uint64_t>(time.dwHighDateTime)<<32u)|time.dwLowDateTime;};
+        return Usage{static_cast<double>(ticks(kernel)+ticks(user))/10000.,memory.PrivateUsage,memory.WorkingSetSize,handles,GetGuiResources(GetCurrentProcess(),GR_GDIOBJECTS),GetGuiResources(GetCurrentProcess(),GR_USEROBJECTS)};
+    };
+    const auto memory=[&](const char *phase){const auto current=usage(); std::printf("M8 placements=%zu phase=%s private_bytes=%zu working_set=%zu handles=%lu gdi=%lu user=%lu\n",count,phase,current.private_bytes,current.working_set,current.handles,current.gdi,current.user);};
+    const auto idle=[&](const char *phase){
+        check(!timer_running_); SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); const auto before=usage(); const auto start=std::chrono::steady_clock::now();
+        while(std::chrono::steady_clock::now()-start<std::chrono::milliseconds{500}){
+            events.PumpEvents(); (void)events.DrainEvents();
+            const auto remaining=std::chrono::milliseconds{500}-std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()-start);
+            if(remaining.count()>0)MsgWaitForMultipleObjectsEx(0,nullptr,static_cast<DWORD>(remaining.count()),QS_ALLINPUT,MWMO_INPUTAVAILABLE);
+        }
+        const auto after=usage(); const double elapsed=std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-start).count();
+        std::printf("M8 placements=%zu phase=%s idle_cpu_pct_one_core=%.6f repaint_pending=%d\n",count,phase,(after.cpu_ms-before.cpu_ms)/elapsed*100,GetUpdateRect(ControlHandle(Viewport),nullptr,FALSE)!=FALSE); memory(phase);
+    };
+    std::filesystem::create_directories(file.parent_path());
+    const auto scene=AssetId::FromString("example.scene");
+    ex::Take(workspace_.New(file,ex::Take(ex::StressDefinition(file,schema_.View(),count)),true)); ex::Take(workspace_.Save());
+    const auto healthy=workspace_.Project()->Snapshot();
+    ex::Take(workspace_.Execute({ed::RenameDocument{scene,std::string{"Bad UTF-8 "}+static_cast<char>(0xff)}},workspace_.Project()->Revision()));
+    SendMessageW(hwnd_,WM_COMMAND,Save,0); // Save succeeds; the presentation refresh rejects unsupported text.
+    check(!refreshing_);
+    check(Text(ControlHandle(Log)).find("Invalid UTF-8")!=std::string::npos);
+    SendMessageW(hwnd_,WM_COMMAND,Undo,0); check(workspace_.Project()->Snapshot()==healthy);
+    Action(Save); check(!workspace_.Project()->IsDirty());
+    measure("hierarchy_refresh_ms",[&]{Refresh();},3);
+    const auto choose=[&](std::uint64_t node){
+        const ed::UiSelection selection{scene,node?ed::UiElement::SceneNode:ed::UiElement::Document,node};
+        const auto found=std::find(selections_.begin(),selections_.end(),selection); check(found!=selections_.end());
+        TreeView_SelectItem(ControlHandle(Tree),tree_items_[static_cast<std::size_t>(found-selections_.begin())]); check(workspace_.Selection()==selection);
+    };
+    const auto field=[&](std::string_view suffix){const auto found=std::find_if(fields_.begin(),fields_.end(),[&](const auto &row){return row.name.ends_with(suffix);}); check(found!=fields_.end()); SelectField(static_cast<int>(found-fields_.begin()));};
+    choose(42); Action(FitScene); check(scene_view_->Projection().Items().size()==count);
+    SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); check(local_error_.empty()); idle("before_cycles");
+    measure("render_frame_ms",[&]{SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0);},10);
+    std::uint64_t picked=0; measure("native_pick_ms",[&]{picked=scene_view_->Projection().Pick(scene_view_->Projection().ToScreen({-6,0})).Raw();},1000); check(picked!=0);
+    const auto baseline=workspace_.Project()->Snapshot(); const auto epoch=workspace_.Project()->Revision();
+    const auto mouse=[&](UINT message,ed::ViewPoint point){SendMessageW(ControlHandle(Viewport),message,0,MAKELPARAM(static_cast<int>(std::lround(point.x*dpi_/96)),static_cast<int>(std::lround(point.y*dpi_/96))));};
+    const auto &projection=scene_view_->Projection(); auto gizmo=ed::MakeGizmo(projection,projection.Items().front().world,ed::GizmoSpace::World);
+    mouse(WM_LBUTTONDOWN,gizmo.x); int moves=0;
+    measure("native_drag_preview_ms",[&]{++moves; mouse(WM_MOUSEMOVE,{gizmo.x.x+moves*.5,gizmo.x.y});},60);
+    check(workspace_.Project()->Snapshot()==baseline && workspace_.Project()->Revision()==epoch);
+    measure("native_drag_commit_ms",[&]{mouse(WM_LBUTTONUP,{gizmo.x.x+30,gizmo.x.y});});
+    check(workspace_.Project()->Revision()==epoch+1); measure("native_undo_ms",[&]{Action(Undo);}); check(workspace_.Project()->Snapshot()==baseline);
+    measure("native_redo_ms",[&]{Action(Redo);}); Action(Undo); check(!workspace_.Project()->IsDirty());
+    for(const auto message:{WM_CANCELMODE,WM_CAPTURECHANGED,WM_KILLFOCUS,WM_RBUTTONDOWN}){
+        gizmo=ed::MakeGizmo(scene_view_->Projection(),scene_view_->Projection().Items().front().world,ed::GizmoSpace::World);
+        mouse(WM_LBUTTONDOWN,gizmo.x); mouse(WM_MOUSEMOVE,{gizmo.x.x+30,gizmo.x.y}); SendMessageW(ControlHandle(Viewport),static_cast<UINT>(message),0,0);
+        check(workspace_.Project()->Snapshot()==baseline && GetCapture()!=ControlHandle(Viewport));
+    }
+    choose(0); const auto long_name=std::string(220,'W')+" / Arena Пример"; field("Document");
+    SetText(ControlHandle(Value),long_name); Action(Apply); check(!Draft()); field("Document"); check(Text(ControlHandle(Value))==long_name);
+    const auto authored=workspace_.Project()->Snapshot(); const auto author_epoch=workspace_.Project()->Revision();
+    SendMessageW(ControlHandle(Value),EM_SETSEL,0,-1); SendMessageW(ControlHandle(Value),EM_REPLACESEL,TRUE,reinterpret_cast<LPARAM>(L"unapplied edit"));
+    check(Draft()); SendMessageW(ControlHandle(Value),WM_UNDO,0,0); check(!Draft() && workspace_.Project()->Snapshot()==authored && workspace_.Project()->Revision()==author_epoch);
+    const auto actual_dpi=GetDpiForWindow(hwnd_);
+    for(const auto dpi:{96u,144u}){
+        Fonts(dpi); SetWindowPos(hwnd_,nullptr,0,0,MulDiv(1000,static_cast<int>(dpi),96),MulDiv(800,static_cast<int>(dpi),96),SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE); Layout(); SyncScene();
+        SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); check(local_error_.empty());
+        HWND next=GetNextDlgTabItem(hwnd_,nullptr,FALSE); check(next!=nullptr && IsChild(hwnd_,next));
+    }
+    SetWindowPos(hwnd_,nullptr,0,0,0,0,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+    Fonts(actual_dpi); SetWindowPos(hwnd_,nullptr,0,0,1280,850,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE); Layout(); SyncScene();
+    SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); check(local_error_.empty());
+    measure("native_save_ms",[&]{Action(Save);}); check(!workspace_.Project()->IsDirty());
+    const int cycles=count==200?10:3;
+    for(int i=0;i<cycles;++i){
+        measure("native_open_ms",[&]{ex::Take(workspace_.Open(file)); Refresh(true);}); choose(42);
+        measure("native_play_ms",[&]{Action(Play);}); check(timer_running_ && workspace_.Session()->IsPlaying());
+        SetText(ControlHandle(Payload),"1"); Action(SendEvent); ex::Take(workspace_.Tick({})); const auto waiting=workspace_.Activations().back(); check(!waiting->IsFinished());
+        measure("native_stop_ms",[&]{Action(Stop);}); const auto report=waiting->Report(); check(waiting->IsFinished() && report && report->status==graph::ExecutionStatus::Cancelled && !timer_running_);
+        check(!workspace_.Project()->IsDirty()); memory("cycle");
+    }
+    idle("after_cycles");
+    Action(Play); SetText(ControlHandle(Payload),"1"); Action(SendEvent); ex::Take(workspace_.Tick({})); const auto waiting=workspace_.Activations().back();
+    SendMessageW(hwnd_,WM_CLOSE,0,0); events.PumpEvents(); const auto report=waiting->Report();
+    check(closed_ && waiting->IsFinished() && report && report->status==graph::ExecutionStatus::Cancelled && !timer_running_ && !workspace_.Project()->IsDirty());
+    std::puts("PASS: native bounded load, idle/lifecycle resources, render/pick/drag, long text, DPI/layout, text Undo and close during Play");
+}
 } // namespace
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
     try {
@@ -1218,14 +1325,16 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
         auto **argv=parsed.get();
         if (!argv) return 1;
         std::vector<std::wstring> args; for (int i=1;i<argc;++i) args.emplace_back(argv[i]);
+        const bool stress=args.size()==2 && (args[0]==L"--stress-smoke" || args[0]==L"--stress-diagnostic");
         const bool demo_smoke=args.size()==2 && args[0]==L"--demo-smoke";
-        const bool smoke=demo_smoke || (args.size()==2 && args[0]==L"--ui-smoke");
-        if ((!args.empty() && !smoke && args.size()!=1) || (!args.empty() && args[0].starts_with(L"--") && !smoke)) throw std::runtime_error("usage: EpidemicEditorDesktop [project.epidemic] | --ui-smoke|--demo-smoke <project.epidemic>");
+        const bool smoke=stress || demo_smoke || (args.size()==2 && args[0]==L"--ui-smoke");
+        if ((!args.empty() && !smoke && args.size()!=1) || (!args.empty() && args[0].starts_with(L"--") && !smoke)) throw std::runtime_error("usage: EpidemicEditorDesktop [project.epidemic] | --ui-smoke|--demo-smoke|--stress-smoke|--stress-diagnostic <project.epidemic>");
         platform::WindowsPlatformRuntime platform; ex::Schema schema;
         auto window=ex::Take(platform.CreateWindow({"Epidemic Editor",1280,850,!smoke}));
         {
             Desktop editor{window,schema};
-            if (demo_smoke) editor.DemoSmoke(std::filesystem::path{args[1]},platform);
+            if (stress) editor.StressSmoke(std::filesystem::path{args[1]},platform,args[0]==L"--stress-diagnostic"?1000:200);
+            else if (demo_smoke) editor.DemoSmoke(std::filesystem::path{args[1]},platform);
             else if (smoke) editor.Smoke(std::filesystem::path{args[1]},platform);
             else {
                 if (!args.empty()) editor.Load(std::filesystem::path{args[0]});
@@ -1240,7 +1349,7 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
     } catch (const std::exception &error) {
         // CI smoke failures use a deterministic nonzero exit, never a modal dialog.
         const std::wstring_view command{GetCommandLineW()};
-        if (command.find(L"--ui-smoke")==std::wstring_view::npos && command.find(L"--demo-smoke")==std::wstring_view::npos) MessageBoxW(nullptr,Wide(error.what()).c_str(),L"Epidemic Editor",MB_OK | MB_ICONERROR);
+        if (command.find(L"--ui-smoke")==std::wstring_view::npos && command.find(L"--demo-smoke")==std::wstring_view::npos && command.find(L"--stress-smoke")==std::wstring_view::npos && command.find(L"--stress-diagnostic")==std::wstring_view::npos) MessageBoxW(nullptr,Wide(error.what()).c_str(),L"Epidemic Editor",MB_OK | MB_ICONERROR);
         std::fprintf(stderr,"%s\n",error.what()); OutputDebugStringA(error.what()); return 1;
     }
 }

@@ -277,3 +277,34 @@ Headless --edit-demo / --read-demo and native --demo-smoke operate on Temp copie
 of this same archive. The native result is also reloaded by a new headless process.
 Hidden native smoke verifies the owned controls and viewport; real desktop UX/DPI
 and visible end-to-end acceptance remain manual when computer use is excluded.
+
+### Load and lifecycle qualification
+
+EpidemicEditorStressTests creates a 200-placement working project from the same
+EditorDemo definition. It checks branching Undo/Redo, the 64-transaction history
+cap, save points, stale IDs/revisions, atomic invalid edits, graph/reference
+rejections and repeated Play/Stop. A counted native operation proves that Stop,
+repeated Stop and later Tick invoke no additional graph effects.
+
+The Windows --stress-smoke <Temp/project.epidemic> path checks the owned hidden
+window, hierarchy, render/picking/drag, long Unicode names, native text Undo,
+100/150% layout, zero-size restoration and closing during a waiting activation.
+It measures only its own process CPU, private/working-set bytes and resource
+counts. UI refresh exceptions restore notification/redraw state and expose the
+exception reason; unsupported metadata text can be recovered with Undo/Open,
+without silently changing persisted bytes or imposing a new Core string policy.
+
+--large on the portable test, and Windows --stress-diagnostic, use 1000 placements
+as separate diagnostics, not a supported industrial capacity/performance claim.
+Measurements are observations without hardware-dependent pass thresholds. Drag
+preview timing excludes rendering, which is measured separately. Idle samples
+are short, hidden-process samples and include possible driver/OS transients;
+visible desktop CPU, readability, actual monitor DPI, focus and native dialogs
+still require manual checks. Copy/encode/preflight, commit, history, Save/Open
+and Play/Stop are timed separately; no alternate history/serialization path is
+introduced. Full archive preflight remains part of each published edit and can
+dominate large-project Debug latency. Current results/logs belong only in Temp.
+
+There is no duplicate command or custom hierarchy context menu. Native edit
+controls retain their standard context menus; Save/Discard/Cancel dialogs and
+visible UX are not claimed as tested by the hidden smoke.
