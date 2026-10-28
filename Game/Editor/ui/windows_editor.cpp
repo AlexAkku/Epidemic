@@ -4,10 +4,13 @@
 #include <commctrl.h>
 #include <commdlg.h>
 #include <shellapi.h>
+#include <wincodec.h>
+#include <wrl/client.h>
 // Win32's convenience macro collides with the existing IWindowSystem API.
 #undef CreateWindow
 #include "Epidemic/Platform/windows_platform_runtime.h"
 #include "Epidemic/Game/Editor/editor_workspace.h"
+#include "windows_scene_view.h"
 #include "../example/demo_game.h"
 #include <array>
 #include <algorithm>
@@ -73,7 +76,7 @@ enum Control : int { New = 100, Open, Save, Undo, Redo, Play, Stop, SendEvent, P
     Palette, Source, Destination, Connect, AddHealth, AddMovement, AttachBehavior, Place, Prefabs,
     Status, Log, Hint, DocumentsLabel, PropertiesLabel, ToolsLabel, EventLabel, NodeLabel, FromLabel, ToLabel, PrefabLabel,
     ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel,
-    ParentLabel, SceneParents, Reparent };
+    ParentLabel, SceneParents, Reparent, Viewport, ViewLabel, FrameSelection, FitScene };
 struct Field {
     std::string name, value;
     std::function<Result<ed::Command>(std::string_view)> command;
@@ -86,12 +89,18 @@ class Desktop final {
         INITCOMMONCONTROLSEX common{sizeof(common), ICC_TREEVIEW_CLASSES};
         if (!InitCommonControlsEx(&common) || !SetWindowSubclass(hwnd_, &ParentProc, 1, reinterpret_cast<DWORD_PTR>(this)))
             throw std::runtime_error("Cannot initialize Editor window");
-        try { Controls(); Fonts(GetDpiForWindow(hwnd_)); Layout(); Refresh(); }
+        try {
+            Controls();
+            scene_view_=std::make_unique<ed::NativeSceneView>(ControlHandle(Viewport),[this](SceneNodeId node) { PickScene(node); },
+                [this](std::string error) { local_error_=std::move(error); Diagnostics(); });
+            Fonts(GetDpiForWindow(hwnd_)); Layout(); Refresh();
+        }
         catch (...) { if (font_) DeleteObject(font_); if (heading_font_) DeleteObject(heading_font_); RemoveWindowSubclass(hwnd_, &ParentProc, 1); throw; }
     }
     ~Desktop() {
         KillTimer(hwnd_, 1);
-        for (int id=New;id<=Reparent;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
+        scene_view_.reset();
+        for (int id=New;id<=FitScene;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
         if (font_) DeleteObject(font_);
         if (heading_font_) DeleteObject(heading_font_);
         RemoveWindowSubclass(hwnd_, &ParentProc, 1);
@@ -115,6 +124,8 @@ class Desktop final {
     void Refresh(bool new_project=false);
     void Inspector();
     void Diagnostics();
+    void SyncScene(bool reset=false);
+    void PickScene(SceneNodeId node);
     int Shortcut(HWND source, WPARAM key) const noexcept;
     void SelectField(int index);
     bool Draft() const { return field_ >= 0 && static_cast<std::size_t>(field_) < fields_.size() && Text(ControlHandle(Value)) != fields_[static_cast<std::size_t>(field_)].value; }
@@ -155,6 +166,7 @@ class Desktop final {
     platform::WindowPtr window_;
     ex::Schema &schema_;
     ed::EditorWorkspace workspace_;
+    std::unique_ptr<ed::NativeSceneView> scene_view_;
     HWND hwnd_;
     HFONT font_=nullptr, heading_font_=nullptr;
     UINT dpi_=96;
@@ -168,7 +180,7 @@ class Desktop final {
     std::string nonce_ = Number(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
     std::string local_error_, log_text_;
     int field_ = -1;
-    bool refreshing_ = false, closed_ = false, timer_running_ = false;
+    bool refreshing_ = false, closed_ = false, timer_running_ = false, scene_document_=false;
 };
 void Desktop::Controls() {
     for (const auto &[id, label] : std::array<std::pair<int, const wchar_t *>, 8>{{
@@ -207,6 +219,9 @@ void Desktop::Controls() {
     Make(ParentLabel,L"STATIC",L"Spatial parent (keep local)");
     Make(SceneParents,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     Make(Reparent,L"BUTTON",L"Set parent (keep local)",WS_TABSTOP);
+    Make(Viewport,L"STATIC",L"Scene View",WS_TABSTOP | WS_CLIPSIBLINGS | SS_NOTIFY);
+    Make(ViewLabel,L"STATIC",L"Scene View / XY authoring");
+    Make(FrameSelection,L"BUTTON",L"Frame selection",WS_TABSTOP); Make(FitScene,L"BUTTON",L"Fit scene",WS_TABSTOP);
     Make(ToolsHint,L"STATIC",L"",SS_NOPREFIX);
     Make(Status,L"STATIC",L"");
     Make(Log,L"EDIT",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL);
@@ -219,8 +234,8 @@ void Desktop::Fonts(UINT dpi) {
     metrics.lfMessageFont.lfWeight=FW_SEMIBOLD;
     const auto heading=CreateFontIndirectW(&metrics.lfMessageFont);
     if (!normal || !heading) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); throw std::runtime_error("Cannot create UI font"); }
-    for (int id=New;id<=Reparent;++id) {
-        const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel;
+    for (int id=New;id<=FitScene;++id) {
+        const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel || id==ViewLabel;
         SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:normal),TRUE);
     }
     if (font_) DeleteObject(font_);
@@ -249,6 +264,16 @@ void Desktop::Layout() {
     move(Fields,left+24,152,mid,bottom-328); move(ValueLabel,left+24,bottom-166,mid,22); move(Value,left+24,bottom-140,mid,28);
     move(Apply,left+24,bottom-104,80,30); move(Revert,left+110,bottom-104,110,30);
     move(Hint,left+24,bottom-64,mid,64);
+    if (scene_document_) {
+        const int view_height=std::max(140,(bottom-152)*46/100);
+        move(ViewLabel,left+24,124,mid,22);
+        move(FrameSelection,left+24,152,140,28); move(FitScene,left+170,152,90,28);
+        move(Viewport,left+24,188,mid,view_height);
+        move(PropertiesLabel,left+24,200+view_height,mid,22);
+        move(Fields,left+24,228+view_height,mid,std::max(36,bottom-336-view_height));
+        move(ValueLabel,left+24,bottom-104,mid,22); move(Value,left+24,bottom-80,mid,28);
+        move(Apply,left+24,bottom-44,80,30); move(Revert,left+110,bottom-44,110,30);
+    }
     const int rw=width-right-10;
     for (int id:{Palette,Source,Destination,BehaviorGraph,Prefabs,SceneParents}) SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(rw,650))),0);
     move(Add,right,152,rw/2-3,30); move(Remove,right+rw/2+3,152,rw/2-3,30);
@@ -337,7 +362,24 @@ void Desktop::Refresh(bool new_project) {
     SendMessageW(ControlHandle(Tree),WM_SETREDRAW,TRUE,0); InvalidateRect(ControlHandle(Tree),nullptr,TRUE);
     SendMessageW(ControlHandle(Prefabs),CB_SETCURSEL,0,0);
     SendMessageW(ControlHandle(BehaviorGraph),CB_SETCURSEL,0,0);
-    Inspector(); refreshing_=false; Diagnostics();
+    Inspector(); SyncScene(new_project); refreshing_=false; Diagnostics();
+}
+void Desktop::SyncScene(bool reset) {
+    const auto *project=workspace_.Project(); const auto snapshot=project?project->Snapshot():nullptr;
+    const auto selection=workspace_.Selection(); const auto *doc=snapshot?snapshot->Find(selection.document):nullptr;
+    const bool scene=doc && std::holds_alternative<gc::SceneCompositionDefinition>(doc->data);
+    if (scene_document_!=scene) { scene_document_=scene; Layout(); }
+    for (int id:{Viewport,ViewLabel,FrameSelection,FitScene}) ShowWindow(ControlHandle(id),scene?SW_SHOW:SW_HIDE);
+    ShowWindow(ControlHandle(Hint),scene?SW_HIDE:SW_SHOW);
+    scene_view_->Sync(snapshot,scene?selection.document:AssetId{},selection.kind==ed::UiElement::SceneNode?SceneNodeId{selection.element}:SceneNodeId{},dpi_,reset);
+    EnableWindow(ControlHandle(FrameSelection),scene && selection.kind==ed::UiElement::SceneNode);
+}
+void Desktop::PickScene(SceneNodeId node) {
+    if (Draft()) { local_error_="Apply or Revert the edited field before changing selection."; Diagnostics(); return; }
+    const ed::UiSelection key{workspace_.Selection().document,node.IsValid()?ed::UiElement::SceneNode:ed::UiElement::Document,node.Raw()};
+    for (std::size_t i=0;i<selections_.size();++i) if (selections_[i]==key) {
+        TreeView_SelectItem(ControlHandle(Tree),tree_items_[i]); TreeView_EnsureVisible(ControlHandle(Tree),tree_items_[i]); return;
+    }
 }
 void Desktop::Inspector() {
     fields_.clear(); field_=-1; SendMessageW(ControlHandle(Fields),LB_RESETCONTENT,0,0); SendMessageW(ControlHandle(Fields),LB_SETHORIZONTALEXTENT,0,0); SetText(ControlHandle(Value),"");
@@ -455,6 +497,7 @@ void Desktop::NewDocument(ed::DocumentKind kind) {
     (void)Execute({ed::CreateDocument{{id,names[static_cast<std::size_t>(kind)],0,std::move(data)}}},ed::UiSelection{id});
 }
 void Desktop::Action(int id) {
+    if (id==FrameSelection || id==FitScene) { scene_view_->Frame(id==FitScene); return; }
     if (id==Revert) { SelectField(field_); local_error_.clear(); Diagnostics(); return; }
     if (id==Apply) { (void)ApplyDraft(); return; }
     if (id==New || id==Open) {
@@ -568,7 +611,7 @@ void Desktop::Diagnostics() {
     SetText(ControlHandle(ToolsLabel),graph?"Graph actions":prefab_doc?"Prefab definition":scene_doc?"Scene placement":"Document actions");
     SetText(ControlHandle(Add),graph?"Add node":prefab_doc?"Add Entity":"Add placement");
     SetText(ControlHandle(Remove),selection.kind==ed::UiElement::PrefabComponent?"Delete component":"Delete selection");
-    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Definition data. Child entities express ownership, not spatial parenting. Select an Entity to assign components or behavior.":"Transform fields are local Scene units; Z rotation uses degrees. Reparent keeps local values and changes world placement. Instance overrides remain read-only.";
+    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Definition data. Child entities express ownership, not spatial parenting. Select an Entity to assign components or behavior.":"XY authoring view: boxes show Runtime world bounds, or unit placeholders. Sprites are not bound yet. MMB pan, wheel zoom; F / Home frame / fit. Transform fields use local units. Reparent keeps local values.";
     if (Text(ControlHandle(ToolsHint))!=tool_hint) SetText(ControlHandle(ToolsHint),tool_hint);
     std::string context="Open a project or create an example.";
     if (doc && project) {
@@ -642,7 +685,7 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
         const auto result=DefSubclassProc(hwnd_,msg,wp,lp);
         Fonts(HIWORD(wp));
         if (const auto *suggested=reinterpret_cast<const RECT *>(lp)) SetWindowPos(hwnd_,nullptr,suggested->left,suggested->top,suggested->right-suggested->left,suggested->bottom-suggested->top,SWP_NOZORDER | SWP_NOACTIVATE);
-        Layout(); return result;
+        Layout(); SyncScene(); return result;
     }
     if (msg==WM_SIZE) { Layout(); return DefSubclassProc(hwnd_,msg,wp,lp); }
     if (msg==WM_GETMINMAXINFO) { const auto dpi=static_cast<int>(dpi_); auto *limits=reinterpret_cast<MINMAXINFO *>(lp); limits->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(800,dpi,96)}; return 0; }
@@ -665,7 +708,7 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
         if (notice->idFrom==Tree && notice->code==TVN_SELCHANGEDW) {
             const auto *change=reinterpret_cast<NMTREEVIEWW *>(lp); const auto index=static_cast<std::size_t>(change->itemNew.lParam);
             if (index<selections_.size() && workspace_.Select(selections_[index])) {
-                refreshing_=true; outputs_.clear(); inputs_.clear(); SendMessageW(ControlHandle(Source),CB_RESETCONTENT,0,0); SendMessageW(ControlHandle(Destination),CB_RESETCONTENT,0,0); Inspector(); refreshing_=false; Diagnostics();
+                refreshing_=true; outputs_.clear(); inputs_.clear(); SendMessageW(ControlHandle(Source),CB_RESETCONTENT,0,0); SendMessageW(ControlHandle(Destination),CB_RESETCONTENT,0,0); Inspector(); SyncScene(); refreshing_=false; Diagnostics();
             }
             return 0;
         }
@@ -696,6 +739,45 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     };
     const auto prefab_id=AssetId::FromString("example.prefab");
     choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
+    check(IsWindowVisible(ControlHandle(Viewport))==IsWindowVisible(hwnd_));
+    POINT native_hit{20,20}; ClientToScreen(ControlHandle(Viewport),&native_hit);
+    check(SendMessageW(ControlHandle(Viewport),WM_NCHITTEST,0,MAKELPARAM(native_hit.x,native_hit.y))==HTCLIENT);
+    SendMessageW(hwnd_,WM_COMMAND,FitScene,0);
+    const auto before_camera=workspace_.Project()->Snapshot();
+    const auto pick=scene_view_->Projection().ToScreen({0,0});
+    SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); check(local_error_.empty());
+    SendMessageW(ControlHandle(Viewport),WM_LBUTTONDOWN,0,MAKELPARAM(static_cast<int>(pick.x*dpi_/96),static_cast<int>(pick.y*dpi_/96)));
+    check(workspace_.Selection().element==42 && workspace_.Project()->Snapshot()==before_camera);
+    // Raster regression: Presentation letterboxes tall child surfaces as well
+    // as wide ones. A pixel inside the picked box must contain its selected fill.
+    struct ComScope {
+        HRESULT status=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
+        ~ComScope() { if (SUCCEEDED(status)) CoUninitialize(); }
+    } com;
+    check(SUCCEEDED(com.status) || com.status==RPC_E_CHANGED_MODE);
+    const auto capture_dpi=dpi_;
+    for (const auto dpi:{96u,144u}) {
+        Fonts(dpi); SyncScene();
+        SetWindowPos(ControlHandle(Viewport),nullptr,0,0,MulDiv(480,static_cast<int>(dpi),96),MulDiv(1000,static_cast<int>(dpi),96),SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+        scene_view_->Frame(true);
+        const auto capture=file.parent_path()/("scene-view-"+Number(dpi)+".png"); scene_view_->Capture(capture);
+        const auto bounds=scene_view_->Projection().ScreenBounds(scene_view_->Projection().Items().front());
+        const auto probe=scene_view_->Projection().ToScreen({0,0});
+        check(scene_view_->Projection().Pick({probe.x+20,bounds.top+20})==SceneNodeId{42});
+        Microsoft::WRL::ComPtr<IWICImagingFactory> imaging;
+        Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
+        Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
+        Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
+        check(SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&imaging))));
+        check(SUCCEEDED(imaging->CreateDecoderFromFilename(capture.c_str(),nullptr,GENERIC_READ,WICDecodeMetadataCacheOnLoad,&decoder)));
+        check(SUCCEEDED(decoder->GetFrame(0,&frame)) && SUCCEEDED(imaging->CreateFormatConverter(&converter)));
+        check(SUCCEEDED(converter->Initialize(frame.Get(),GUID_WICPixelFormat32bppRGBA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom)));
+        const WICRect pixel_region{static_cast<int>((probe.x+20)*dpi/96),static_cast<int>((bounds.top+20)*dpi/96),1,1};
+        std::array<BYTE,4> pixel{};
+        check(SUCCEEDED(converter->CopyPixels(&pixel_region,4,4,pixel.data())));
+        check(pixel[0]>60 && pixel[0]>pixel[2]);
+    }
+    Fonts(capture_dpi); Layout(); SyncScene();
     check(IsWindowEnabled(ControlHandle(FollowPrefab))); SendMessageW(hwnd_,WM_COMMAND,FollowPrefab,0);
     check(workspace_.Selection()==ed::UiSelection{prefab_id,ed::UiElement::PrefabNode,ex::Id("enemy").Raw()});
     const ed::UiSelection component{prefab_id,ed::UiElement::PrefabComponent,ex::Id("enemy").Raw(),schema_.health,{}};
@@ -772,16 +854,29 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     check(std::any_of(fields_.begin(),fields_.end(),[](const auto &field){return field.name.ends_with(" / points") && field.value=="87";}));
     // Exercise the supported minimum client layout without touching any other window.
     const auto actual_dpi=GetDpiForWindow(hwnd_);
+    choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
     for (const auto dpi:{96u,144u}) {
         Fonts(dpi);
         SetWindowPos(hwnd_,nullptr,0,0,MulDiv(1000,static_cast<int>(dpi),96),MulDiv(800,static_cast<int>(dpi),96),SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Layout();
         RECT client{}; GetClientRect(hwnd_,&client);
-        for (int id:{Tree,Fields,Value,FollowPrefab,Connect,Place,ToolsHint,Log}) {
+        SyncScene();
+        for (int id:{Tree,Fields,Value,FollowPrefab,Connect,Place,ToolsHint,Log,Viewport,FrameSelection,FitScene}) {
             RECT bounds{}; GetWindowRect(ControlHandle(id),&bounds);
             POINT first{bounds.left,bounds.top},last{bounds.right,bounds.bottom}; ScreenToClient(hwnd_,&first); ScreenToClient(hwnd_,&last);
             check(first.x>=0 && first.y>=0 && last.x<=client.right && last.y<=client.bottom && last.y>first.y);
         }
         LOGFONTW font{}; check(GetObjectW(font_,sizeof(font),&font)!=0 && font.lfHeight==-MulDiv(10,static_cast<int>(dpi),72));
+        SendMessageW(hwnd_,WM_COMMAND,FitScene,0); SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); check(local_error_.empty());
+        const auto screen=scene_view_->Projection().ToScreen({-12.5,0});
+        check(scene_view_->Projection().Pick(screen)==SceneNodeId{42});
+        const auto native_point=MAKELPARAM(static_cast<int>(screen.x*dpi/96),static_cast<int>(screen.y*dpi/96));
+        SendMessageW(ControlHandle(Viewport),WM_LBUTTONDOWN,0,native_point);
+        check(workspace_.Selection().element==42);
+        const auto stable=workspace_.Project()->Snapshot();
+        SendMessageW(ControlHandle(Viewport),WM_MBUTTONDOWN,MK_MBUTTON,MAKELPARAM(60,60));
+        SendMessageW(ControlHandle(Viewport),WM_MOUSEMOVE,MK_MBUTTON,MAKELPARAM(90,75));
+        SendMessageW(ControlHandle(Viewport),WM_MBUTTONUP,0,MAKELPARAM(90,75));
+        check(workspace_.Project()->Snapshot()==stable && GetCapture()!=ControlHandle(Viewport));
     }
     Fonts(actual_dpi); Layout();
     SendMessageW(hwnd_,WM_SYSKEYDOWN,VK_F4,static_cast<LPARAM>(1ULL<<29u));

@@ -65,15 +65,15 @@ parenting. Placement overrides replace only the selected instance's assignments;
 an editor changing one assignment must preserve the others. Human-readable object
 names are not persisted by SceneSnapshot/PrefabNode; display labels are derived.
 
-The future 2D viewport must be a child surface of the Platform-owned editor
+The 2D viewport is a child surface of the Platform-owned editor
 window, driven by its existing event pump and invalidation. Presentation's Canvas
 currently requires its own Host and cannot simply be attached to this HWND.
 The selected integration point is a child HWND plus the existing
 `EpidemicRuntimePresentation` Renderer, whose public constructor accepts a native
-window. A Game/Editor surface adapter must own resize/paint/input/lifetime and
-leave the Platform event pump in charge. Embedded-surface behavior still needs
-its M3 spike; no second renderer, scene or Framework API change is required.
-No viewport or gizmo is supplied by the document-navigation milestone.
+window. The Game/Editor surface adapter owns resize/paint/input/lifetime and
+leaves the Platform event pump in charge, without a second renderer, Scene or
+Framework API change. The M3 native smoke exercises
+embedded drawing/resize at 100/150% DPI; actual monitor-DPI checks are separate.
 
 Build/run `EpidemicEditorDesktop [project.epidemic]` on Windows (full profile).
 The portable `EpidemicEditorUi` workspace owns the Command API client, stable-ID
@@ -114,8 +114,26 @@ supported. Spatial parent selection commits `SetSceneParent` with **KeepLocal**
 semantics, so world placement changes; missing/cyclic parents are rejected
 atomically. World transforms belong to SceneServices, including its documented
 simplified-TRS approximation for shear-producing hierarchies. There is no world
-editing mode, viewport or gizmo yet. These fields use archive 1.0.0 unchanged;
+editing mode or gizmo yet. These fields use archive 1.0.0 unchanged;
 the headless write/read-play example verifies parented TRS in a new process.
+
+Scene documents show an XY **authoring** viewport hosted in a child HWND using
+the existing Runtime Presentation renderer. Runtime SceneServices derives world
+TRS/bounds once per changed immutable snapshot; the viewport retains only IDs,
+labels, XY bounds and a transient camera. It does not tick, serialize or rebuild
+the Scene on idle paints. During Play it still displays authoring, not simulation.
+Visible nodes draw world AABBs, or transformed unit-box placeholders without
+bounds. Sprite bindings are not yet present in these authoring documents; missing
+or nonresident visual assets never block placeholders. Hidden nodes remain in
+the hierarchy but are not drawn or picked. Labels include full base-36 IDs.
+Greater SceneNodeId draws last and wins overlapping picks, independently of
+selection. Thin/subpixel bounds use the same minimum 14-DIP box for display/picking.
+Left click selects through the shared workspace selection; an unapplied field
+blocks selection changes. Middle drag or left drag on empty space pans; wheel
+zooms around the cursor. Frame selection (`F` with viewport focus) and Fit scene
+(`Home`) restore the camera. Navigation never changes dirty state or Undo history.
+The camera is session-local and resets on Open/document change. Native paint and
+resize messages drive the surface; there is no second event loop or idle timer.
 
 Apply (Enter) publishes the current field; Revert (Escape) discards its draft.
 Invalid input leaves source, history and save points unchanged. Apply/Revert is
