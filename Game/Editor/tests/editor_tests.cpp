@@ -220,9 +220,12 @@ void PlacementDiagnostic() {
     Check(a!=b && a!=c && b!=c,"placement instances own independent entities; spatial Entity binding is not implemented");
 }
 #include "stabilization_cases.h"
+#include "p04_spike.h"
 int main(int argc, char **argv) {
     try {
         if (argc == 1) { Documents(); Commands(); Persistence(); Play(); PlacementDiagnostic(); }
+        else if (argc == 2 && std::string_view{argv[1]} == "p04-write") p04_spike::Write();
+        else if (argc == 2 && std::string_view{argv[1]} == "p04-read") p04_spike::ReadAndReimport();
         else if (argc == 2 && std::string_view{argv[1]} == "failures") StabilizationFailures();
         else if (argc == 2 && std::string_view{argv[1]} == "authoring") StabilizationAuthoring();
         else if (argc == 2 && std::string_view{argv[1]} == "stop") StabilizationStop();
