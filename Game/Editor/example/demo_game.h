@@ -2,6 +2,7 @@
 #include "Epidemic/Game/Editor/editor_commands.h"
 #include "Epidemic/Game/Editor/play_session.h"
 #include <stdexcept>
+#include <cmath>
 namespace epidemic::game::editor::example {
 using namespace epidemic::runtime;
 namespace ed = epidemic::game::editor;
@@ -12,7 +13,9 @@ inline foundation::StringId Id(std::string_view value) { return foundation::Stri
 template<class T> T Take(foundation::Result<T> result) { if (!result) throw std::runtime_error(result.GetError().code); return std::move(result).Value(); }
 struct Health { std::int64_t points = 100; };
 struct Movement { double speed = 1; bool enabled = true; std::string label = "Enemy"; };
+struct Tuning { std::int64_t count=3; double weight=1.5; bool active=true; std::string title="Custom enemy"; };
 inline bool ValidHealth(const std::int64_t &value) { return value >= 0 && value <= 10000; }
+inline bool ValidWeight(const double &value) { return std::isfinite(value) && value>=0 && value<=1000; }
 class Backend final : public rb::IRuntimeBridgeBackend {
   public:
     foundation::Result<rb::RuntimeMaterializationResult> Materialize(rb::RuntimePersistentObjectHandle) override { return foundation::Result<rb::RuntimeMaterializationResult>::Success({rb::RuntimeObjectHandle{next_++}, true}); }
@@ -32,6 +35,8 @@ struct Schema {
     comp::PropertyId points;
     gameplay::TypeId movement;
     comp::PropertyId speed, enabled, label;
+    gameplay::TypeId tuning;
+    comp::PropertyId count, weight, active, title;
     Schema() {
         gameplay::entities::EntityArchetypeDefinition type; type.canonical_name = "editor.example.enemy";
         enemy = Take(entities.RegisterArchetype(type)); entities.Freeze();
@@ -41,10 +46,20 @@ struct Schema {
         speed = Take(components.RegisterProperty(movement, "speed", &Movement::speed));
         enabled = Take(components.RegisterProperty(movement, "enabled", &Movement::enabled));
         label = Take(components.RegisterProperty(movement, "label", &Movement::label));
+        tuning=Take(components.Register<Tuning>("editor.example.tuning"));
+        count=Take(components.RegisterProperty(tuning,"count",&Tuning::count,&ValidHealth));
+        weight=Take(components.RegisterProperty(tuning,"weight",&Tuning::weight,&ValidWeight));
+        active=Take(components.RegisterProperty(tuning,"active",&Tuning::active));
+        title=Take(components.RegisterProperty(tuning,"title",&Tuning::title));
         components.Freeze();
     }
     ed::ProjectSchema View() { return {entities, components, {{Id("event.type"), graph::Operation::EventEntry}, {Id("native.type"), graph::Operation::NativeCall}, {Id("wait.type"), graph::Operation::Wait}}}; }
 };
+inline std::vector<comp::PrefabComponent> ComponentRecipes(const Schema &schema) {
+    return {{schema.health,{},{{schema.points,std::int64_t{100},{}}},{}},
+        {schema.movement,{},{{schema.speed,1.,{}},{schema.enabled,true,{}},{schema.label,std::string{"Enemy"},{}}},{}},
+        {schema.tuning,{},{{schema.count,std::int64_t{3},{}},{schema.weight,1.5,{}},{schema.active,true,{}},{schema.title,std::string{"Custom enemy"},{}}},{}}};
+}
 inline graph::PortDefinition Port(std::string_view name, graph::PortKind kind, graph::PortDirection direction) {
     return {Id(name), std::string(name), kind, direction, kind == graph::PortKind::Control ? graph::TypeId{} : graph::kI64Type};
 }

@@ -189,3 +189,39 @@ cancellation. `EpidemicEditorWorkspaceTests` checks the portable command client.
 Close owned preview windows before rebuilding their executable. If a user session
 must stay open, use another normal build directory (for example
 `Temp/b/ui-validation`); no executable renaming is required.
+
+### Schema Inspector (M5)
+
+Inspector fields come from the frozen ComponentRegistry descriptors: i64/double
+use checked numeric entry, bool uses a true/false selector, and string uses native
+single-line text editing. Apply (Enter) publishes one command; Revert (Escape)
+discards the draft. Native text Undo remains local until publication. Invalid
+numbers, non-finite doubles and component validators reject publication; a pending
+field blocks selection changes and other authoring commands until Apply/Revert.
+
+The component template picker supports Add on a Prefab Entity, Replace on a
+selected Component, and Delete through the existing hierarchy action. Replace
+atomically deletes the old slot and installs template defaults in the same part;
+it does not migrate old properties/behaviors. Occupied target slots are rejected.
+Undo restores the entire old component. Templates supply authoring defaults in
+the host; metadata/validation remain in ComponentRegistry. The example registers
+Health, Movement and Tuning (count/weight/active/title). Other frozen host schemas
+use the same Inspector without UI-specific field code; user DLL loading is outside
+this stage. A missing authored property shows its factory default as unavailable:
+Inspector never instantiates a runtime component to discover defaults.
+
+Prefab definition values are editable unless parameter-bound. Scene placements
+show read-only effective definition/parameter/override values. Parameter and
+override authoring remains M6. IDs, graph routes and GraphBehavior references are
+read-only fields; existing Graph/Prefab pickers assign valid project references.
+GraphBehavior may belong to an Entity or a Component; the example assignment maps
+hit to the selected Graph's first event input. Open reference navigates existing
+project documents, using their asset IDs rather than a separate catalog.
+
+During Play, Scene Inspector can also show detached read-only runtime component
+values, clearly marked runtime snapshot. Refresh values explicitly rereads them;
+Tick does not rebuild Inspector fields. Authoring edits affect the next Play.
+PlaySession::ReadComponentProperty returns an owned value and fails for inactive,
+busy, missing or destroyed runtime objects; it exposes no mutable service/handle.
+Single-line editing preserves Unicode/whitespace. Existing multiline/NUL strings
+are escaped and read-only; invalid UTF-8 is read-only in the Windows host.
