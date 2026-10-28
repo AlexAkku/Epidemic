@@ -36,12 +36,26 @@ foundation::Result<void> SceneView::Update(const ProjectSnapshot &project, runti
         const ViewRect rect{bounds.min.x,bounds.min.y,bounds.max.x,bounds.max.y};
         if (!Finite({rect.left,rect.top}) || !Finite({rect.right,rect.bottom})) continue;
         const auto name=names.find(node.id);
-        items_.push_back({node.id,(name==names.end()?"Scene node":name->second)+" ["+Identity(node.id)+"]",rect});
+        items_.push_back({node.id,(name==names.end()?"Scene node":name->second)+" ["+Identity(node.id)+"]",rect,*world});
     }
     // Ascending identity is painter order; the greatest ID wins overlap picks.
     std::sort(items_.begin(),items_.end(),[](const auto &a,const auto &b) { return a.id.Raw()<b.id.Raw(); });
     if (changed) Fit();
     return Result::Success();
+}
+bool SceneView::Preview(const composition::SceneCompositionInstance &scene) {
+    scratch_.resize(items_.size());
+    for (std::size_t i=0;i<items_.size();++i) {
+        const auto found=scene.nodes.find(items_[i].id); if (found==scene.nodes.end()) return false;
+        const auto world=scene.scene.transforms->GetWorldTransform(found->second); if (!world) return false;
+        const auto bounds=scene.scene.spatial->GetWorldBounds(found->second).value_or(
+            runtime::TransformAabb(*world,runtime::Aabb{{-.5f,-.5f,-.5f},{.5f,.5f,.5f}}));
+        const ViewRect rect{bounds.min.x,bounds.min.y,bounds.max.x,bounds.max.y};
+        if (!Finite({rect.left,rect.top}) || !Finite({rect.right,rect.bottom})) return false;
+        scratch_[i]={rect,*world};
+    }
+    for (std::size_t i=0;i<items_.size();++i) { items_[i].bounds=scratch_[i].bounds; items_[i].world=scratch_[i].world; }
+    return true;
 }
 void SceneView::Clear() { items_.clear(); document_={}; center_={}; scale_=40; }
 void SceneView::Resize(double width,double height) {
@@ -69,12 +83,19 @@ void SceneView::Fit(runtime::SceneNodeId selection) {
             union_bounds->left=std::min(union_bounds->left,item.bounds.left); union_bounds->top=std::min(union_bounds->top,item.bounds.top);
             union_bounds->right=std::max(union_bounds->right,item.bounds.right); union_bounds->bottom=std::max(union_bounds->bottom,item.bounds.bottom);
         }
+        if (selection.IsValid()) {
+            union_bounds->left=std::min(union_bounds->left,static_cast<double>(item.world.position.x));
+            union_bounds->right=std::max(union_bounds->right,static_cast<double>(item.world.position.x));
+            union_bounds->top=std::min(union_bounds->top,static_cast<double>(item.world.position.y));
+            union_bounds->bottom=std::max(union_bounds->bottom,static_cast<double>(item.world.position.y));
+        }
     }
     if (!union_bounds) { if (!selection.IsValid()) { center_={}; scale_=40; } return; }
     const auto &b=*union_bounds;
     center_={(b.left+b.right)*.5,(b.top+b.bottom)*.5};
-    scale_=std::clamp(std::min(std::max(1.,extent_.x-64)/std::max(1.,b.right-b.left),
-        std::max(1.,extent_.y-64)/std::max(1.,b.bottom-b.top)),1e-36,1e6);
+    const double margin=selection.IsValid()?160:64;
+    scale_=std::clamp(std::min(std::max(1.,extent_.x-margin)/std::max(1.,b.right-b.left),
+        std::max(1.,extent_.y-margin)/std::max(1.,b.bottom-b.top)),1e-36,1e6);
 }
 ViewRect SceneView::ScreenBounds(const SceneViewItem &item) const {
     const auto a=ToScreen({item.bounds.left,item.bounds.bottom}), b=ToScreen({item.bounds.right,item.bounds.top});

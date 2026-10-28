@@ -9,6 +9,7 @@
 using namespace epidemic;
 namespace ed=game::editor;
 namespace ex=ed::example;
+void DragCases();
 namespace {
 void Check(bool value,const std::source_location at=std::source_location::current()) {
     if (!value) throw std::runtime_error("Scene View invariant at line "+std::to_string(at.line()));
@@ -74,6 +75,6 @@ void Run() {
 }
 }
 int main() {
-    try { Run(); std::puts("PASS: Runtime-derived projection, three Prefab instances, visibility, deterministic picking, camera, resize, persistence isolation"); }
+    try { Run(); DragCases(); std::puts("PASS: Scene View, transactional drag, gizmos, validation, history and Play isolation"); }
     catch (const std::exception &error) { std::fprintf(stderr,"%s\n",error.what()); return 1; }
 }
