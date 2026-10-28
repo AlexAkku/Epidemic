@@ -49,5 +49,5 @@ separate priority stage 2.6a, before components and Editor Core.
 
 C# ownership and project references use the existing managed validator; `.cs` and
 `.csproj` are routed separately from native include scans. Dependency allowlists
-are unchanged. WebAssembly remains an optional feasibility stage; this hostfxr
+are unchanged. WebAssembly builds are a mandatory release goal after the remaining functionality is complete; this hostfxr
 backend does not implement a browser CLR host.

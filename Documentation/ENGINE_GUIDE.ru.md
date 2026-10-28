@@ -489,10 +489,11 @@ cmake --build Temp/b/minimal-game --config Debug --parallel 2
 `Examples/MinimalGame` — отдельный пример приложения; для нового Graph/Prefab/Editor
 workflow ориентируйтесь также на примеры из `Game`.
 
-### WebAssembly — опциональная платформа
+### WebAssembly — обязательная цель перед релизом
 
-В кодовой базе есть Emscripten/Web targets и WebGL/Canvas2D-пути. Их стоит
-сохранять при развитии движка, но Windows-проверки не подтверждают автоматически
+WebAssembly/Web builds обязательны перед релизом; их реализация и проверка
+выполняются после завершения остального функционала. В кодовой базе есть
+Emscripten/Web targets и WebGL/Canvas2D-пути, но Windows-проверки не подтверждают автоматически
 поддержку нового модуля в браузере. Нативное Windows-окно Editor и hostfxr bridge
 не являются Web-реализациями.
 
