@@ -107,6 +107,9 @@ shows document/selection context, while Project, history and Play actions are
 grouped separately. Actions for other document kinds are hidden. Native message
 fonts and layout scale with window DPI; native smoke covers 100/150% layout and
 font metrics, separately from an actual monitor-DPI GUI check.
+The native menu bar exposes File, Edit, View, Run and Help; Terminal is reserved
+and disabled until implemented. The compact bottom row contains status and a
+single-line, horizontally navigable activation/error diagnostic.
 The drafting layout places hierarchy left, the Scene viewport in the center,
 and a property/value Inspector right. Scene object operations live in the
 Inspector **Actions** tab; **Properties** retains the explicit override mode.

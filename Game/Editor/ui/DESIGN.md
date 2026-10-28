@@ -21,7 +21,7 @@ spacing: {gutter: "10dip", margin: "12dip", button: "30dip", propertyRow: "36dip
 ## Overview
 Operate mode: a dark CAD drafting workspace (direction seed 5d698492, assigned 3).
 Hierarchy left, dominant Scene canvas center, persistent Inspector right,
-activation diagnostics below. Prefab/Graph use the center for current authoring
+a compact diagnostic row below and a native menu bar above. Prefab/Graph use the center for current authoring
 actions; no visual Graph Canvas or spatial Prefab preview is implied.
 
 ## Layout

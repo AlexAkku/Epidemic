@@ -199,13 +199,28 @@ class Desktop final {
     bool inspector_actions_=false;
 };
 void Desktop::Controls() {
-    Make(Brand,L"STATIC",L"EPIDEMIC  /  EDITOR",SS_NOPREFIX);
+    const auto menu=CreateMenu();
+    if(!menu)throw std::runtime_error("Cannot create Editor menu");
+    const auto group=[&](const wchar_t *label,std::initializer_list<std::pair<int,const wchar_t *>> entries) {
+        const auto popup=CreatePopupMenu();
+        if(!popup){DestroyMenu(menu);throw std::runtime_error("Cannot create Editor submenu");}
+        for(const auto &[id,title]:entries) AppendMenuW(popup,MF_STRING,static_cast<UINT_PTR>(id),title);
+        AppendMenuW(menu,MF_POPUP,reinterpret_cast<UINT_PTR>(popup),label);
+    };
+    group(L"File",{{New,L"Example\tCtrl+N"},{NewDemo,L"New demo"},{Open,L"Open...\tCtrl+O"},{Save,L"Save\tCtrl+S"}});
+    group(L"Edit",{{Undo,L"Undo\tCtrl+Z"},{Redo,L"Redo\tCtrl+Y"}});
+    group(L"View",{{FrameSelection,L"Frame selection"},{FitScene,L"Fit scene"},{RefreshInspector,L"Refresh values"}});
+    group(L"Run",{{Play,L"Play\tF5"},{Stop,L"Stop\tShift+F5"},{SendEvent,L"Send hit"}});
+    group(L"Help",{{10000,L"About"}}); group(L"Terminal",{});
+    EnableMenuItem(menu,5,MF_BYPOSITION|MF_GRAYED);
+    if(!SetMenu(hwnd_,menu)){DestroyMenu(menu);throw std::runtime_error("Cannot attach Editor menu");}
+    Make(Brand,L"STATIC",L"",SS_NOPREFIX); ShowWindow(ControlHandle(Brand),SW_HIDE);
     for (const auto &[id, label] : std::array<std::pair<int, const wchar_t *>, 8>{{
         {New,L"Example"}, {Open,L"Open..."}, {Save,L"Save"}, {Undo,L"Undo"}, {Redo,L"Redo"},
         {Play,L"Play (F5)"}, {Stop,L"Stop"}, {SendEvent,L"Send hit"}}}) Make(id,L"BUTTON",label,WS_TABSTOP);
     Make(EventLabel,L"STATIC",L"Hit / wait ticks"); Make(Payload,L"EDIT",L"10",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
     Make(NewDemo,L"BUTTON",L"New demo",WS_TABSTOP);
-    Make(ProjectLabel,L"STATIC",L"Project"); Make(HistoryLabel,L"STATIC",L"Edit history"); Make(PreviewLabel,L"STATIC",L"Play preview");
+    Make(ProjectLabel,L"STATIC",L""); ShowWindow(ControlHandle(ProjectLabel),SW_HIDE); Make(HistoryLabel,L"STATIC",L"Edit history"); Make(PreviewLabel,L"STATIC",L"Play preview");
     Make(Context,L"STATIC",L"Open a project or create an example.",SS_NOPREFIX);
     Make(DocumentsLabel,L"STATIC",L"Documents / hierarchy");
     Make(Tree,WC_TREEVIEWW,L"",WS_TABSTOP | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_SHOWSELALWAYS);
@@ -214,7 +229,7 @@ void Desktop::Controls() {
     Make(InspectorTabs,WC_TABCONTROLW,L"",WS_TABSTOP);
     for(auto *label:{L"Properties",L"Actions"}) { TCITEMW item{}; item.mask=TCIF_TEXT; item.pszText=const_cast<wchar_t *>(label); TabCtrl_InsertItem(ControlHandle(InspectorTabs),TabCtrl_GetItemCount(ControlHandle(InspectorTabs)),&item); }
     Make(WorkspaceHint,L"STATIC",L"",SS_NOPREFIX);
-    Make(LogLabel,L"STATIC",L"Activation diagnostics",SS_NOPREFIX);
+    Make(LogLabel,L"STATIC",L"",SS_NOPREFIX); ShowWindow(ControlHandle(LogLabel),SW_HIDE);
     Make(ValueLabel,L"STATIC",L"Value");
     Make(Value,L"EDIT",L"",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
     Make(Apply,L"BUTTON",L"Apply",WS_TABSTOP); Make(Revert,L"BUTTON",L"Revert",WS_TABSTOP);
@@ -268,7 +283,7 @@ void Desktop::Controls() {
     Make(SnapValue,L"EDIT",L"0",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL); Make(SetSnap,L"BUTTON",L"Set snap",WS_TABSTOP);
     Make(ToolsHint,L"STATIC",L"",SS_NOPREFIX);
     Make(Status,L"STATIC",L"");
-    Make(Log,L"EDIT",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL);
+    Make(Log,L"EDIT",L"",WS_TABSTOP | ES_READONLY | ES_AUTOHSCROLL);
 }
 void Desktop::Fonts(UINT dpi) {
     NONCLIENTMETRICSW metrics{}; metrics.cbSize=sizeof(metrics);
@@ -305,9 +320,9 @@ void Desktop::Layout() {
     const auto px=[&](int value){return MulDiv(value,static_cast<int>(dpi_),96);};
     const int width=MulDiv(client.right,96,static_cast<int>(dpi_)),height=MulDiv(client.bottom,96,static_cast<int>(dpi_));
     if(width<=0 || height<=0)return;
-    const auto move=[&](int id,int x,int y,int w,int h){MoveWindow(ControlHandle(id),px(x),px(y),px(std::max(1,w)),px(std::max(1,h)),TRUE);};
+    const auto move=[&](int id,int x,int y,int w,int h){MoveWindow(ControlHandle(id),px(x),px(std::max(0,y-30)),px(std::max(1,w)),px(std::max(1,h)),TRUE);};
     const int left=std::clamp(width/5,196,248),right_width=std::clamp(width*28/100,300,356);
-    const int center=left+22,right=width-right_width-12,middle=right-center-10,bottom=height-154;
+    const int center=left+22,right=width-right_width-12,middle=right-center-10,bottom=height-8;
     move(Brand,16,7,340,24); move(ProjectLabel,16,34,340,17); move(HistoryLabel,374,34,160,17);
     move(PreviewLabel,width-410,34,246,17); move(EventLabel,width-144,34,120,17);
     move(New,16,56,88,30); move(Open,110,56,70,30); move(Save,186,56,64,30); move(NewDemo,256,56,94,30);
@@ -347,7 +362,7 @@ void Desktop::Layout() {
     move(ToolsHint,action_x,scene_document_?552:492,action_w,std::max(32,bottom-(scene_document_?552:492)-4));
     for(int id:{Palette,Source,Destination,BehaviorGraph,Prefabs,SceneParents,ComponentTypes,OverrideMode})
         SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(action_w,650))),0);
-    move(Status,16,height-140,width-32,23); move(LogLabel,16,height-111,width-32,22); move(Log,12,height-84,width-24,72);
+    move(Status,16,height,340,22); move(LogLabel,16,height,1,1); move(Log,360,height,width-372,22);
     InvalidateRect(hwnd_,nullptr,FALSE);
 }
 
@@ -357,13 +372,13 @@ void Desktop::PaintChrome(HDC dc) {
     const int width=MulDiv(client.right,96,static_cast<int>(dpi_)),height=MulDiv(client.bottom,96,static_cast<int>(dpi_));
     if(width<=0 || height<=0)return;
     const int left=std::clamp(width/5,196,248),right_width=std::clamp(width*28/100,300,356);
-    const int center=left+22,right=width-right_width-12,bottom=height-154;
+    const int center=left+22,right=width-right_width-12,bottom=height-38;
     const auto panel=[&](int x,int y,int w,int h){RECT r{px(x),px(y),px(x+w),px(y+h)}; FillRect(dc,&r,style_.Panel());};
-    panel(0,0,width,94); panel(0,98,width,48); panel(8,150,left+8,bottom-146);
-    panel(center-4,150,right-center+4,bottom-146); panel(right-4,150,right_width+8,bottom-146);
-    panel(8,height-144,width-16,136);
+    panel(0,0,width,64); panel(0,68,width,48); panel(8,120,left+8,bottom-116);
+    panel(center-4,120,right-center+4,bottom-116); panel(right-4,120,right_width+8,bottom-116);
+    panel(8,height-34,width-16,30);
     const auto pen=CreatePen(PS_SOLID,1,style_.border); const auto previous=SelectObject(dc,pen);
-    for(const auto y:{94,146,height-148}){MoveToEx(dc,0,px(y),nullptr);LineTo(dc,client.right,px(y));}
+    for(const auto y:{64,116,height-38}){MoveToEx(dc,0,px(y),nullptr);LineTo(dc,client.right,px(y));}
     SelectObject(dc,previous); DeleteObject(pen);
 }
 void Desktop::PaintPicker(HWND control,HDC dc) {
@@ -883,7 +898,7 @@ void Desktop::Diagnostics() {
     SetText(ControlHandle(Add),graph?"+ Node":prefab_doc?"+ Entity":"+ Object");
     SetText(ControlHandle(Remove),"Delete");
     SetText(ControlHandle(PropertiesLabel),actions?"Scene actions":"Inspector");
-    SetText(ControlHandle(ProjectLabel),"PROJECT"); SetText(ControlHandle(HistoryLabel),"HISTORY"); SetText(ControlHandle(PreviewLabel),playing?"PLAYING SNAPSHOT":"PLAY CONTROLS");
+    SetText(ControlHandle(HistoryLabel),"HISTORY"); SetText(ControlHandle(PreviewLabel),playing?"PLAYING SNAPSHOT":"PLAY CONTROLS");
     SetText(ControlHandle(WorkspaceHint),scene_doc?"XY authoring  |  Pan: middle drag  |  Zoom: wheel":prefab_doc?"Ownership tree  |  Parameters and components share this definition":"Typed ports  |  Node and connection lists are in Hierarchy");
     const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Edit Definition. Expose a property as a parameter; edit its default row or detach its binding. Tree nesting is ownership, not spatial parenting; no Prefab geometry preview is available.":"Reset removes only the selected override layer. Runtime rows remain read-only.";
     if (Text(ControlHandle(ToolsHint))!=tool_hint) SetText(ControlHandle(ToolsHint),tool_hint);
@@ -921,8 +936,11 @@ void Desktop::Diagnostics() {
         if (report) log+=" / last step instructions "+Number(report->instructions)+" / native calls "+Number(report->native_calls);
         if (report && report->diagnostic) { const auto &d=*report->diagnostic; log+=" / "+d.error.code+" / asset "+Number(d.asset.value.Raw())+" / node "+Number(d.node.Raw())+" / instruction "+Number(d.instruction)+" / "+d.error.message; }
     }
-    if (log.empty()) log="Ready. New example includes Scene, Enemy Prefab (Health / Movement) and Event -> Damage -> Wait -> Damage.\r\nSelect an Enemy placement in Scene, Play, then Send hit. Runtime changes are discarded by Stop.";
+    if (log.empty()) log="Ready";
+    log="Diagnostics: "+log;
+    for(std::size_t at=0;(at=log.find("\r\n",at))!=std::string::npos;) log.replace(at,2," | ");
     if (log!=log_text_) { log_text_=log; SetText(ControlHandle(Log),log); }
+    const auto menu=GetMenu(hwnd_); if(menu) for(int id:{New,NewDemo,Open,Save,Undo,Redo,FrameSelection,FitScene,RefreshInspector,Play,Stop,SendEvent}) EnableMenuItem(menu,static_cast<UINT>(id),MF_BYCOMMAND|(IsWindowEnabled(ControlHandle(id))?MF_ENABLED:MF_GRAYED));
 }
 int Desktop::Shortcut(HWND source, WPARAM key) const noexcept {
     if (GetKeyState(VK_CONTROL)<0) {
@@ -1005,6 +1023,7 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     if (msg==WM_TIMER && wp==1) { if (timer_running_) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); } return 0; }
     if (msg==WM_COMMAND && !refreshing_) {
         const auto id=LOWORD(wp), notification=HIWORD(wp);
+        if(id==10000 && !lp){MessageBoxW(hwnd_,L"Epidemic Editor - development build",L"About",MB_OK | MB_ICONINFORMATION);return 0;}
         if (id==Fields && notification==LBN_SELCHANGE) {
             const auto index=static_cast<int>(SendMessageW(ControlHandle(Fields),LB_GETCURSEL,0,0));
             if (!Draft()) SelectField(index);
@@ -1050,6 +1069,11 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
 }
 void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events) {
     const auto check=[](bool value,const std::source_location at=std::source_location::current()) { if (!value) throw std::runtime_error("Native Editor smoke invariant at line "+Number(at.line())); };
+    const auto menu=GetMenu(hwnd_); check(menu && GetMenuItemCount(menu)==6);
+    check((GetMenuState(menu,5,MF_BYPOSITION)&MF_GRAYED)!=0);
+    check(GetMenuItemCount(GetSubMenu(menu,0))==4 && GetMenuItemCount(GetSubMenu(menu,1))==2);
+    check(GetMenuItemID(GetSubMenu(menu,0),2)==Open && GetMenuItemID(GetSubMenu(menu,1),0)==Undo);
+    check((static_cast<DWORD_PTR>(GetWindowLongPtrW(ControlHandle(Log),GWL_STYLE))&(static_cast<DWORD_PTR>(WS_BORDER)|static_cast<DWORD_PTR>(ES_MULTILINE)))==0);
     auto empty=ex::Definition(schema_); empty.documents.clear(); empty.entry_scene={};
     ex::Take(workspace_.New(file,std::move(empty))); Refresh(true);
     SendMessageW(hwnd_,WM_COMMAND,NewScene,0);
