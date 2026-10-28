@@ -1,6 +1,13 @@
 #include "Epidemic/Game/Editor/scene_view.h"
 #include "Epidemic/Game/Editor/editor_workspace.h"
 #include "../../example/demo_game.h"
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include "../../../../EngineRuntime/Support/Presentation/renderer.h"
+static_assert([] { epidemic::runtime::presentation::SpriteEntry sprite; return sprite.x == 0 && sprite.y == 0; }());
+#endif
 #include <cmath>
 #include <cstdio>
 #include <limits>

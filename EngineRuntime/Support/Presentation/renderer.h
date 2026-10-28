@@ -22,7 +22,7 @@ using RendererPoint=D2D1_POINT_2F;
 using RendererMatrix=D2D1_MATRIX_3X2_F;
 struct SpriteEntry {
     std::string_view name;
-    int x, y;
+    int x = 0, y = 0;
     int width=256, height=256, anchorX=128, anchorY=128;
 };
 enum class DisplayMode {
