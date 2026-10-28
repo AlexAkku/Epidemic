@@ -47,6 +47,9 @@ class PlaySession final {
     [[nodiscard]] foundation::Result<void> Stop();
     [[nodiscard]] PlayContext *Context() noexcept;
     [[nodiscard]] const comp::PrefabInstance *Instance(runtime::SceneNodeId placement) const noexcept;
+    // Detached Inspector value; no runtime handle or mutable service escapes.
+    [[nodiscard]] foundation::Result<comp::PropertyValue> ReadComponentProperty(runtime::SceneNodeId placement,
+        comp::PrefabNodeId node,gameplay::TypeId type,gameplay::entities::EntityPartId part,comp::PropertyId property) const;
     [[nodiscard]] const composition::SceneCompositionInstance *Scene() const noexcept;
   private:
     struct Impl;

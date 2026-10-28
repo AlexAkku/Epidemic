@@ -148,6 +148,16 @@ const composition::SceneCompositionInstance *PlaySession::Scene() const noexcept
 const comp::PrefabInstance *PlaySession::Instance(runtime::SceneNodeId placement) const noexcept {
     if (!IsPlaying()) return nullptr; const auto at = impl_->runtime->instances.find(placement); return at == impl_->runtime->instances.end() ? nullptr : at->second.get();
 }
+foundation::Result<comp::PropertyValue> PlaySession::ReadComponentProperty(runtime::SceneNodeId placement,
+    comp::PrefabNodeId node,gameplay::TypeId type,gameplay::entities::EntityPartId part,comp::PropertyId property) const {
+    using Result=foundation::Result<comp::PropertyValue>;
+    if (!IsPlaying() || ticking_) return Result::Failure(Error("editor.play_inactive_or_busy"));
+    const auto *instance=Instance(placement); const auto *object=instance?instance->Find(node):nullptr;
+    if (!object) return Result::Failure(Error("editor.play_object_missing"));
+    const auto handle=std::find_if(object->components.begin(),object->components.end(),[&](const auto &value) { return value.type==type && value.part==part; });
+    if (handle==object->components.end()) return Result::Failure(Error("editor.play_component_missing"));
+    return impl_->runtime->context.components.ReadProperty(*handle,property);
+}
 std::vector<std::shared_ptr<const PlayActivation>> PlaySession::Activations() const {
     std::vector<std::shared_ptr<const PlayActivation>> handles;
     handles.reserve(impl_->completed.size() + impl_->live.size());
