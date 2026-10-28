@@ -38,6 +38,8 @@ browser or sprite-asset API is implemented by this document.
 The test-only `EpidemicEditorP04SpikeWrite/Read` runs in separate processes and
 exercises Serialization, Platform atomic single-file commits and sealed Assets with
 a fixed ID, mock reimport generation and invalid-candidate last-good preservation.
+A copied test directory retains relative source/cooked paths; an uncommitted
+mock generation leaves the previous manifest usable. This is not crash injection.
 It does not define a production descriptor or decode PNG. Choose and test the
 production schema and multi-file commit/recovery protocol, and resolve resource
 publication with in-flight leases.

@@ -31,13 +31,14 @@ inline void Save(const Manifest &m) {
     auto bytes=Take(runtime::EncodeDocument(Take(w->Finalize(manifest_type,{1,0,0}))));
     Take(platform::CommitFilePackage(foundation::Path{Root()/"manifest.spike"},bytes,4096));
 }
-inline Manifest Load() {
-    auto bytes=Take(platform::ReadFilePackage(foundation::Path{Root()/"manifest.spike"},4096));
+inline Manifest LoadAt(const std::filesystem::path &directory) {
+    auto bytes=Take(platform::ReadFilePackage(foundation::Path{directory/"manifest.spike"},4096));
     auto doc=Take(runtime::DecodeDocument(bytes));
     Check(doc.GetTypeId()==manifest_type && doc.GetSchemaVersion()==runtime::SchemaVersion{1,0,0},"manifest schema");
     auto s=Take(runtime::CreateSerializationServices()); auto r=Take(s.archives->CreateReader(doc));
     return {Take(r->ReadUInt64("id")),Take(r->ReadUInt64("generation")),Take(r->ReadString("source")),Take(r->ReadString("cooked"))};
 }
+inline Manifest Load() { return LoadAt(Root()); }
 inline void CheckCatalog(const Manifest &m) {
     auto a=Take(runtime::CreateAssetServices()); runtime::AssetMetadata meta;
     meta.id=runtime::AssetId{foundation::StringId{m.id}}; meta.type={foundation::StringId::FromString("test.mock.png")};
@@ -66,5 +67,20 @@ inline void ReadAndReimport() {
     Commit(Root()/m.source,"MOCKPNG:second"); Check(Reimport(m,Read(Root()/m.source)),"second mock import");
     const auto updated=Load(); Check(updated.id==asset_id.Raw() && updated.generation==2 && Read(Root()/updated.cooked)=="MOCKPNG:second","stable ID and new generation");
     Check(Read(Root()/unchanged.cooked)==old,"prior cooked version retained"); CheckCatalog(updated);
+    // A prepared but unpublished generation must leave the committed manifest usable.
+    Commit(Root()/"Cache/mock-orphan","MOCKPNG:orphan");
+    const auto after_interruption=Load();
+    Check(after_interruption.id==updated.id && after_interruption.generation==updated.generation &&
+        Read(Root()/after_interruption.cooked)=="MOCKPNG:second","unpublished candidate leaves manifest unchanged");
+    // Copy only the committed manifest and its relative source/cooked files.
+    const auto relocated=Root()/"relocated";
+    std::filesystem::create_directories(relocated/"Content");
+    std::filesystem::create_directories(relocated/"Cache");
+    std::filesystem::copy_file(Root()/"manifest.spike",relocated/"manifest.spike",std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::copy_file(Root()/updated.source,relocated/updated.source,std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::copy_file(Root()/updated.cooked,relocated/updated.cooked,std::filesystem::copy_options::overwrite_existing);
+    const auto copied=LoadAt(relocated);
+    Check(copied.id==asset_id.Raw() && copied.generation==2 && Read(relocated/copied.source)=="MOCKPNG:second" &&
+        Read(relocated/copied.cooked)=="MOCKPNG:second","relocated mock project preserves identity and relative files");
 }
 } // namespace p04_spike
