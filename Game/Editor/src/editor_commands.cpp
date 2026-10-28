@@ -64,6 +64,16 @@ template<class C> bool Apply(ProjectDefinition &project, const C &command) {
         auto *doc = Find(project.documents, [&](const auto &value) { return value.id == command.document; });
         if (!doc) return false;
         if constexpr (std::is_same_v<C, RenameDocument>) { doc->name = command.name; return true; }
+        else if constexpr (std::is_same_v<C, SetPrefabParameter>) {
+            auto *prefab=std::get_if<comp::PrefabDefinition>(&doc->data);
+            if (!prefab || !command.parameter.id.IsValid()) return false;
+            auto *parameter=Find(prefab->parameters,[&](const auto &p){return p.id==command.parameter.id;});
+            if (parameter) {
+                if (parameter->value.index()!=command.parameter.value.index()) return false;
+                *parameter=command.parameter;
+            } else prefab->parameters.push_back(command.parameter);
+            return true;
+        }
         else if constexpr (std::is_same_v<C, AddEntity> || std::is_same_v<C, DeleteEntity> ||
             std::is_same_v<C, SetComponent> || std::is_same_v<C, DeleteComponent> || std::is_same_v<C, SetProperty> ||
             std::is_same_v<C, SetBehavior> || std::is_same_v<C, DeleteBehavior>) {
@@ -118,6 +128,22 @@ template<class C> bool Apply(ProjectDefinition &project, const C &command) {
         } else {
             auto *scene = std::get_if<composition::SceneCompositionDefinition>(&doc->data); if (!scene) return false;
             if constexpr (std::is_same_v<C, AddSceneNode>) { scene->scene.nodes.push_back(command.node); return true; }
+            else if constexpr (std::is_same_v<C, SetComponentOverride> || std::is_same_v<C, SetParameterOverride>) {
+                auto *placement=Find(scene->placements,[&](const auto &p){return p.node==command.placement;});
+                if (!placement || placement->prefab!=command.prefab) return false;
+                if constexpr (std::is_same_v<C, SetParameterOverride>) {
+                    const auto matches=[&](const auto &p){return p.property==command.value.property;};
+                    if (command.reset) return Erase(placement->overrides.parameters,matches);
+                    auto *value=Find(placement->overrides.parameters,matches);
+                    if (value) *value=command.value; else placement->overrides.parameters.push_back(command.value);
+                } else {
+                    const auto matches=[&](const auto &p){return p.node==command.value.node && p.component==command.value.component && p.part==command.value.part && p.property.property==command.value.property.property;};
+                    if (command.reset) return Erase(placement->overrides.components,matches);
+                    auto *value=Find(placement->overrides.components,matches);
+                    if (value) *value=command.value; else placement->overrides.components.push_back(command.value);
+                }
+                return true;
+            }
             else if constexpr (std::is_same_v<C, PlacePrefab>) {
                 auto *placement = Find(scene->placements, [&](const auto &value) { return value.node == command.placement.node; });
                 if (placement) *placement = command.placement; else scene->placements.push_back(command.placement); return true;

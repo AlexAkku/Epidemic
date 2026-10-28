@@ -62,13 +62,51 @@ void ReadPlay(const std::filesystem::path &file, Schema &schema) {
     Take(session->Stop()); Check(!project->IsDirty() && schema.entities.AllEntities().empty());
     std::puts("PASS: new process load, Entity/Health/GraphBehavior, Wait/resume, Stop, isolated authoring");
 }
+void WriteOverrides(const std::filesystem::path &file,Schema &schema) {
+    const auto scene=AssetId::FromString("example.scene"),prefab=AssetId::FromString("example.prefab");
+    const auto parameter=Id("example.health.parameter"),node=Id("enemy");
+    auto project=Take(ed::EditorProject::Create(file,ed::example::Definition(schema),schema.View()));
+    SceneNodeSnapshot second; second.id=SceneNodeId{43}; second.local_transform.position={5,0,0};
+    (void)Take(project->Execute({project->Revision(),{
+        ed::SetPrefabParameter{prefab,{parameter,std::int64_t{100}}},
+        ed::SetProperty{prefab,node,schema.health,{}, {schema.points,std::int64_t{100},parameter}},
+        ed::AddSceneNode{scene,second},ed::PlacePrefab{scene,{second.id,prefab,{}}},
+        ed::SetParameterOverride{scene,SceneNodeId{42},prefab,{parameter,std::int64_t{120}}},
+        ed::SetComponentOverride{scene,SceneNodeId{43},prefab,{node,schema.health,{}, {schema.points,std::int64_t{75}}}},
+        ed::SetComponentOverride{scene,SceneNodeId{42},prefab,{node,schema.movement,{}, {schema.speed,2.5}}},
+        ed::SetComponentOverride{scene,SceneNodeId{43},prefab,{node,schema.movement,{}, {schema.speed,4.}}},
+        ed::RenameDocument{prefab,"Shared Enemy"}}}));
+    const auto snapshot=project->Snapshot(); Take(project->Undo()); Take(project->Redo()); Check(project->Snapshot()==snapshot);
+    Take(project->Save()); std::puts("PASS: Prefab parameter/binding, two independent overrides, rename, Undo/Redo, save");
+}
+void ReadOverrides(const std::filesystem::path &file,Schema &schema) {
+    auto project=Take(ed::EditorProject::Open(file,schema.View())); Check(!project->IsDirty());
+    const auto prefab=AssetId::FromString("example.prefab"); const auto *doc=project->Snapshot()->Find(prefab);
+    Check(doc && doc->name=="Shared Enemy");
+    const auto &definition=std::get<comp::PrefabDefinition>(doc->data);
+    Check(definition.parameters.size()==1 && definition.parameters.front().id==Id("example.health.parameter"));
+    Check(definition.parameters.front().value==comp::PropertyValue{std::int64_t{100}} && definition.root.components.front().properties.front().parameter==Id("example.health.parameter"));
+    auto session=Take(project->Play(Options(schema)));
+    Check(session->Instance(SceneNodeId{42})->Definition()==session->Instance(SceneNodeId{43})->Definition());
+    const auto read=[&](std::uint64_t placement,gameplay::TypeId type,comp::PropertyId property) {
+        return Take(session->ReadComponentProperty(SceneNodeId{placement},Id("enemy"),type,{},property));
+    };
+    Check(read(42,schema.health,schema.points)==comp::PropertyValue{std::int64_t{120}} && read(43,schema.health,schema.points)==comp::PropertyValue{std::int64_t{75}});
+    Check(read(42,schema.movement,schema.speed)==comp::PropertyValue{2.5} && read(43,schema.movement,schema.speed)==comp::PropertyValue{4.});
+    (void)Take(session->Send(SceneNodeId{42},{Id("hit"),1})); Take(session->Tick()); Take(session->Tick(GameDuration{1}));
+    Check(read(42,schema.health,schema.points)==comp::PropertyValue{std::int64_t{118}} && read(43,schema.health,schema.points)==comp::PropertyValue{std::int64_t{75}});
+    Take(session->Stop()); Check(!project->IsDirty());
+    std::puts("PASS: fresh-process parameters/overrides, shared definition, independent runtime state, event/Wait, Stop");
+}
 }
 int main(int argc, char **argv) {
     try {
-        if (argc != 3) throw std::runtime_error("usage: EpidemicEditorHeadless --write|--read-play <project path>");
+        if (argc != 3) throw std::runtime_error("usage: EpidemicEditorHeadless --write|--read-play|--write-overrides|--read-overrides <project path>");
         Schema schema; const std::filesystem::path file{argv[2]};
         if (std::string_view{argv[1]} == "--write") { std::filesystem::create_directories(file.parent_path()); Write(file, schema); }
         else if (std::string_view{argv[1]} == "--read-play") ReadPlay(file, schema);
+        else if (std::string_view{argv[1]} == "--write-overrides") { std::filesystem::create_directories(file.parent_path()); WriteOverrides(file,schema); }
+        else if (std::string_view{argv[1]} == "--read-overrides") ReadOverrides(file,schema);
         else throw std::runtime_error("unknown command");
     } catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
 }

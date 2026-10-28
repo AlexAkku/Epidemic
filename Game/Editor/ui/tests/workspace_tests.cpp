@@ -9,6 +9,7 @@ namespace ed = game::editor;
 namespace ex = ed::example;
 namespace comp = gameplay::composition;
 void InspectorCases();
+void PrefabCases();
 namespace {
 void Check(bool value) { if (!value) throw std::runtime_error("workspace invariant"); }
 void Spatial() {
@@ -167,6 +168,6 @@ void Run() {
 }
 }
 int main() {
-    try { Spatial(); Run(); InspectorCases(); std::puts("PASS: workspace, schema Inspector, component commands, persistence, runtime isolation and typed values"); }
+    try { Spatial(); Run(); InspectorCases(); PrefabCases(); std::puts("PASS: workspace, schema Inspector, Prefab parameters/overrides, persistence and runtime isolation"); }
     catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
 }

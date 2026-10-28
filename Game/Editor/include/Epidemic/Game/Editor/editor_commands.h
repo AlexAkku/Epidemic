@@ -22,9 +22,15 @@ struct DeleteSceneNode { runtime::AssetId document; runtime::SceneNodeId node; }
 struct SetSceneParent { runtime::AssetId document; runtime::SceneNodeId node, parent; };
 struct SetSceneTransform { runtime::AssetId document; runtime::SceneNodeId node; runtime::Transform transform; };
 struct PlacePrefab { runtime::AssetId document; composition::ScenePrefabPlacement placement; };
+struct SetPrefabParameter { runtime::AssetId document; comp::PrefabParameter parameter; };
+// Patch one override against the current placement; never overwrite unrelated
+// assignments. The expected Prefab rejects commands held across reassignment.
+struct SetComponentOverride { runtime::AssetId document; runtime::SceneNodeId placement; runtime::AssetId prefab; comp::ComponentOverride value; bool reset=false; };
+struct SetParameterOverride { runtime::AssetId document; runtime::SceneNodeId placement; runtime::AssetId prefab; comp::PropertyAssignment value; bool reset=false; };
 using Command = std::variant<CreateDocument, DeleteDocument, RenameDocument, SetEntryScene, AddEntity, DeleteEntity,
     SetComponent, DeleteComponent, SetProperty, SetBehavior, DeleteBehavior, AddGraphNode, DeleteGraphNode,
-    ConnectPorts, DisconnectPorts, AddSceneNode, DeleteSceneNode, SetSceneParent, SetSceneTransform, PlacePrefab>;
+    ConnectPorts, DisconnectPorts, AddSceneNode, DeleteSceneNode, SetSceneParent, SetSceneTransform, PlacePrefab,
+    SetPrefabParameter, SetComponentOverride, SetParameterOverride>;
 struct EditReceipt { std::uint64_t revision = 0; std::vector<runtime::AssetId> changed_documents; };
 // A transaction is validated and published once. No caller receives a mutable
 // document, and an error in any command leaves the entire project untouched.

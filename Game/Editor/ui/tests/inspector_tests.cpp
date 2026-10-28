@@ -2,6 +2,7 @@
 #include "../../example/demo_game.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <source_location>
 
 using namespace epidemic;
@@ -115,4 +116,85 @@ void InspectorCases() {
     Check(!ed::InspectorCommand(property(caption),"line one\nline two"));
     ex::Take(workspace.Execute({ed::SetProperty{prefab,node,type,{}, {caption,std::string{"line one\nline two"},{}}}},workspace.Project()->Revision()));
     Check(!property(caption).editable && ed::InspectorText(property(caption)).find("\\n")!=std::string::npos);
+}
+
+void PrefabCases() {
+    ex::Schema schema;
+    ed::EditorWorkspace workspace{schema.View(),[&]{return ex::Options(schema);}};
+    const runtime::AssetId prefab=runtime::AssetId::FromString("example.prefab"),scene=runtime::AssetId::FromString("example.scene");
+    const auto node=ex::Id("enemy"),parameter=ex::Id("m6.health");
+    const ed::UiSelection root{prefab,ed::UiElement::PrefabComponent,node.Raw(),schema.health,{}},a{scene,ed::UiElement::SceneNode,42},b{scene,ed::UiElement::SceneNode,43};
+    ex::Take(workspace.New(EPIDEMIC_EDITOR_TEST_DIRECTORY "/prefab-overrides.epidemic",ex::Definition(schema)));
+    const auto execute=[&](std::vector<ed::Command> commands){ex::Take(workspace.Execute(std::move(commands),workspace.Project()->Revision()));};
+    const auto field=[&](const ed::UiSelection &selection,comp::PropertyId property,ed::InspectorTarget target) {
+        for (const auto &entry:ed::InspectComponents(*workspace.Project()->Snapshot(),selection,schema.components,nullptr,true))
+            if (entry.property==property && entry.target==target) return entry;
+        throw std::runtime_error("Missing Prefab Inspector field");
+    };
+    auto health=field(root,schema.points,ed::InspectorTarget::Property);
+    const auto unbound=workspace.Project()->Snapshot();
+    execute(ex::Take(ed::InspectorBinding(health,parameter)));
+    health=field(root,schema.points,ed::InspectorTarget::Property);
+    Check(health.binding==parameter && !health.editable && Value(health)==comp::PropertyValue{std::int64_t{100}});
+    ex::Take(workspace.Undo()); Check(workspace.Project()->Snapshot()==unbound); ex::Take(workspace.Redo());
+    runtime::SceneNodeSnapshot second; second.id=runtime::SceneNodeId{43}; second.local_transform.position={5,0,0};
+    execute({ed::AddSceneNode{scene,second},ed::PlacePrefab{scene,{second.id,prefab,{}}}});
+    const auto edit=[&](const ed::UiSelection &selected,comp::PropertyId property,ed::InspectorTarget target,std::string_view text) {
+        execute({ex::Take(ed::InspectorCommand(field(selected,property,target),text))});
+    };
+    edit(a,parameter,ed::InspectorTarget::ParameterOverride,"75");
+    edit(a,schema.points,ed::InspectorTarget::ComponentOverride,"60");
+    edit(a,schema.speed,ed::InspectorTarget::ComponentOverride,"2.5");
+    edit(b,schema.points,ed::InspectorTarget::ComponentOverride,"80");
+    edit(b,schema.speed,ed::InspectorTarget::ComponentOverride,"5");
+    Check(Value(field(a,schema.points,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{std::int64_t{60}});
+    const auto with_overrides=workspace.Project()->Snapshot();
+    execute({ex::Take(ed::InspectorResetCommand(field(a,schema.points,ed::InspectorTarget::ComponentOverride)))});
+    Check(Value(field(a,schema.points,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{std::int64_t{75}});
+    Check(Value(field(b,schema.points,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{std::int64_t{80}});
+    Check(Value(field(a,schema.speed,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{2.5});
+    ex::Take(workspace.Undo()); Check(workspace.Project()->Snapshot()==with_overrides); ex::Take(workspace.Redo());
+    execute({ex::Take(ed::InspectorResetCommand(field(a,parameter,ed::InspectorTarget::ParameterOverride)))});
+    Check(!ed::InspectorResetCommand(field(a,schema.points,ed::InspectorTarget::ComponentOverride)));
+    edit(root,parameter,ed::InspectorTarget::Parameter,"90");
+    Check(Value(field(a,schema.points,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{std::int64_t{90}});
+    Check(Value(field(b,schema.points,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{std::int64_t{80}});
+    ex::Take(workspace.Save()); const auto saved=workspace.Project()->Snapshot(); const auto revision=workspace.Project()->Revision();
+    const auto invalid=ex::Take(ed::InspectorCommand(field(a,schema.points,ed::InspectorTarget::ComponentOverride),"-1"));
+    Check(!workspace.Execute({ed::RenameDocument{prefab,"must roll back"},invalid},revision));
+    Check(workspace.Project()->Snapshot()==saved && workspace.Project()->Revision()==revision && !workspace.Project()->IsDirty());
+    Check(!workspace.Execute({ed::SetPrefabParameter{prefab,{parameter,1.5}}},revision)); // Stable parameter kind.
+    Check(!workspace.Execute({ed::SetPrefabParameter{prefab,{ex::Id("bad.parameter"),std::numeric_limits<double>::infinity()}}},revision));
+    Check(!workspace.Execute({ed::SetParameterOverride{scene,runtime::SceneNodeId{42},prefab,{ex::Id("missing"),std::int64_t{2}}}},revision));
+    Check(!workspace.Execute({ed::SetComponentOverride{scene,runtime::SceneNodeId{999},prefab,{node,schema.health,{}, {schema.points,std::int64_t{2}}}}},revision));
+    Check(!ed::InspectorCommand(field(a,schema.speed,ed::InspectorTarget::ComponentOverride),"inf"));
+    execute({ed::RenameDocument{prefab,"Renamed enemy"},ed::SetSceneParent{scene,runtime::SceneNodeId{43},runtime::SceneNodeId{42}}});
+    Check(Value(field(b,schema.points,ed::InspectorTarget::ComponentOverride))==comp::PropertyValue{std::int64_t{80}});
+    const auto linked=workspace.Project()->Snapshot();
+    execute({ed::DeleteSceneNode{scene,runtime::SceneNodeId{43}}}); ex::Take(workspace.Undo()); Check(workspace.Project()->Snapshot()==linked);
+    Check(!workspace.Execute({ed::DeleteDocument{prefab}},workspace.Project()->Revision()));
+    // A cached override command cannot target a replacement Prefab at the same placement ID.
+    const auto stale=ex::Take(ed::InspectorCommand(field(a,schema.speed,ed::InspectorTarget::ComponentOverride),"7"));
+    auto other=ex::Enemy(schema); const runtime::AssetId other_id=runtime::AssetId::FromString("m6.other");
+    execute({ed::CreateDocument{{other_id,"Other",0,comp::PrefabDefinition{other_id.value,{},other}}},ed::PlacePrefab{scene,{runtime::SceneNodeId{42},other_id,{}}}});
+    const auto reassigned=workspace.Project()->Snapshot();
+    Check(!workspace.Execute({stale},workspace.Project()->Revision()) && workspace.Project()->Snapshot()==reassigned);
+    ex::Take(workspace.Undo()); Check(workspace.Project()->Snapshot()==linked);
+    ex::Take(workspace.Save());
+    const std::filesystem::path relocated{EPIDEMIC_EDITOR_TEST_DIRECTORY "/prefab-relocated.epidemic"};
+    std::filesystem::copy_file(EPIDEMIC_EDITOR_TEST_DIRECTORY "/prefab-overrides.epidemic",relocated,std::filesystem::copy_options::overwrite_existing);
+    ex::Take(workspace.Open(relocated)); // Asset IDs remain stable after moving the project file.
+    ex::Take(workspace.Play());
+    Check(workspace.Session()->Instance(runtime::SceneNodeId{42})->Definition()==workspace.Session()->Instance(runtime::SceneNodeId{43})->Definition());
+    const auto runtime_value=[&](std::uint64_t placement,gameplay::TypeId type,comp::PropertyId property) {
+        return ex::Take(workspace.Session()->ReadComponentProperty(runtime::SceneNodeId{placement},node,type,{},property));
+    };
+    Check(runtime_value(42,schema.health,schema.points)==comp::PropertyValue{std::int64_t{90}});
+    Check(runtime_value(43,schema.health,schema.points)==comp::PropertyValue{std::int64_t{80}});
+    Check(runtime_value(42,schema.movement,schema.speed)==comp::PropertyValue{2.5} && runtime_value(43,schema.movement,schema.speed)==comp::PropertyValue{5.});
+    ex::Take(workspace.Send(runtime::SceneNodeId{42},{ex::Id("hit"),1})); ex::Take(workspace.Tick({}));
+    Check(runtime_value(42,schema.health,schema.points)==comp::PropertyValue{std::int64_t{89}} && runtime_value(43,schema.health,schema.points)==comp::PropertyValue{std::int64_t{80}});
+    ex::Take(workspace.Stop()); Check(!workspace.Project()->IsDirty());
+    health=field(root,schema.points,ed::InspectorTarget::Property); execute(ex::Take(ed::InspectorBinding(health)));
+    Check(field(root,schema.points,ed::InspectorTarget::Property).editable);
 }

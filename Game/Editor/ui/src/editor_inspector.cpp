@@ -42,29 +42,48 @@ void Properties(std::vector<InspectorEntry> &rows,const comp::ComponentRegistry 
         row.name+=" / "+property.name; row.kind=property.kind; row.property=property.id;
         row.owner={document,UiElement::PrefabComponent,node.id.Raw(),component.type,component.part}; row.editable=editable;
         row.source="factory default unavailable";
-        if (!editable) row.readonly_reason="Effective authoring value; edit its Prefab definition (overrides editor is M6)";
+        if (!editable) row.readonly_reason="Effective authoring value; choose Edit Instance Override or open its Prefab definition";
         const auto authored=std::find_if(component.properties.begin(),component.properties.end(),[&](const auto &p) { return p.property==property.id; });
         if (authored!=component.properties.end()) {
             row.value=authored->value; row.source="definition";
             if (authored->parameter.IsValid()) {
                 row.value.reset(); row.source="parameter ["+Id(authored->parameter.Raw())+"]";
-                row.editable=false; row.readonly_reason="Parameter binding is read-only in M5";
+                row.binding=authored->parameter;
+                row.editable=false; row.readonly_reason="Bound property; edit its parameter default or detach binding";
                 for (const auto &parameter:definition.parameters) if (parameter.id==authored->parameter) row.value=parameter.value;
-                if (overrides) for (const auto &parameter:overrides->parameters) if (parameter.property==authored->parameter) {
-                    row.value=parameter.value; row.source="parameter override ["+Id(authored->parameter.Raw())+"]";
-                }
             }
         }
+        row.definition_value=row.value;
+        if (overrides && row.binding.IsValid()) for (const auto &parameter:overrides->parameters) if (parameter.property==row.binding) {
+            row.value=parameter.value; row.source="parameter override ["+Id(row.binding.Raw())+"]";
+        }
         if (overrides) for (const auto &override:overrides->components) if (override.node==node.id && override.component==component.type && override.part==component.part && override.property.property==property.id) {
-            row.value=override.property.value; row.source="instance override"; row.readonly_reason="Instance override editor is M6";
+            row.value=override.property.value; row.source="instance override"; row.overridden=true;
         }
         if (row.value && !SingleLine(*row.value)) { row.editable=false; row.readonly_reason="Single-line Inspector cannot edit NUL/multiline strings"; }
         rows.push_back(std::move(row));
     }
 }
+void Parameters(std::vector<InspectorEntry> &rows,const comp::PrefabDefinition &definition,runtime::AssetId document,
+    const composition::ScenePrefabPlacement *placement=nullptr) {
+    for (const auto &parameter:definition.parameters) {
+        InspectorEntry row; row.name="Parameter ["+Id(parameter.id.Raw())+"]"; row.source="definition parameter";
+        row.owner={document}; row.property=parameter.id; row.value=parameter.value; row.definition_value=parameter.value;
+        row.kind=static_cast<comp::PropertyKind>(parameter.value.index()); row.target=InspectorTarget::Parameter;
+        row.editable=SingleLine(parameter.value);
+        if (!row.editable) row.readonly_reason="Single-line Inspector cannot edit NUL/multiline strings";
+        if (placement) {
+            row.target=InspectorTarget::ParameterOverride;
+            for (const auto &value:placement->overrides.parameters) if (value.property==parameter.id) {
+                row.value=value.value; row.source="instance parameter override"; row.overridden=true;
+            }
+        }
+        rows.push_back(std::move(row));
+    }
+}
 }
 std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,const UiSelection &selection,
-    const comp::ComponentRegistry &registry,const PlaySession *session) {
+    const comp::ComponentRegistry &registry,const PlaySession *session,bool edit_overrides) {
     std::vector<InspectorEntry> rows; const auto *doc=snapshot.Find(selection.document); if (!doc) return rows;
     if (const auto *prefab=std::get_if<comp::PrefabDefinition>(&doc->data)) {
         if (const auto *node=Node(prefab->root,selection.element)) {
@@ -75,22 +94,29 @@ std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,co
             }
             if (selection.kind!=UiElement::PrefabComponent) Behaviors(rows,snapshot,node->behaviors,"");
         }
-        for (const auto &parameter:prefab->parameters) {
-            InspectorEntry row; row.name="Parameter ["+Id(parameter.id.Raw())+"]"; row.source="definition parameter";
-            row.value=parameter.value; row.kind=static_cast<comp::PropertyKind>(parameter.value.index()); row.readonly_reason="Parameter editor is M6";
-            rows.push_back(std::move(row));
-        }
+        Parameters(rows,*prefab,doc->id);
     } else if (const auto *scene=std::get_if<composition::SceneCompositionDefinition>(&doc->data);scene && selection.kind==UiElement::SceneNode) {
         for (const auto &placement:scene->placements) if (placement.node.Raw()==selection.element) {
             const auto *prefab_doc=snapshot.Find(placement.prefab);
             const auto *definition=prefab_doc?std::get_if<comp::PrefabDefinition>(&prefab_doc->data):nullptr;
-            if (definition) for (const auto *node:Nodes(definition->root)) {
+            const auto first=rows.size();
+            if (definition) {
+              Parameters(rows,*definition,prefab_doc->id,&placement);
+              for (const auto *node:Nodes(definition->root)) {
                 const auto prefix="Node ["+Id(node->id.Raw())+"] / ";
                 for (const auto &component:node->components) {
                     Properties(rows,registry,*definition,*node,component,&placement.overrides,prefab_doc->id,false,prefix);
                     Behaviors(rows,snapshot,component.behaviors,prefix+"Component ["+Id(component.type.Raw())+" / "+Id(component.part.Raw())+"] / ",true);
                 }
                 Behaviors(rows,snapshot,node->behaviors,prefix,true);
+              }
+            }
+            for (auto i=first;i<rows.size();++i) if (rows[i].kind) {
+                auto &row=rows[i]; row.placement=selection;
+                if (row.target!=InspectorTarget::ParameterOverride) row.target=InspectorTarget::ComponentOverride;
+                row.editable=edit_overrides && (!row.value || SingleLine(*row.value));
+                if (row.editable) row.readonly_reason.clear();
+                else if (!edit_overrides) row.readonly_reason="View Definition; choose Edit Instance Override to change only this placement";
             }
         }
         const auto *instance=session && session->IsPlaying()?session->Instance(runtime::SceneNodeId{selection.element}):nullptr;
@@ -124,7 +150,29 @@ foundation::Result<Command> InspectorCommand(const InspectorEntry &entry,std::st
     if (!entry.editable || !entry.kind) return Result::Failure(foundation::Error::Create("editor.inspector_readonly","This value is read-only: "+entry.readonly_reason));
     const auto value=EditorWorkspace::ParseValue(*entry.kind,text); if (!value) return Result::Failure(value.GetError());
     if (!SingleLine(value.Value())) return Result::Failure(foundation::Error::Create("editor.inspector_string","Use single-line text without NUL in this Inspector."));
+    if (entry.target==InspectorTarget::Parameter) return Result::Success(SetPrefabParameter{entry.owner.document,{entry.property,value.Value()}});
+    if (entry.target==InspectorTarget::ParameterOverride) return Result::Success(SetParameterOverride{entry.placement.document,runtime::SceneNodeId{entry.placement.element},entry.owner.document,{entry.property,value.Value()}});
+    if (entry.target==InspectorTarget::ComponentOverride) return Result::Success(SetComponentOverride{entry.placement.document,runtime::SceneNodeId{entry.placement.element},entry.owner.document,
+        {comp::PrefabNodeId{entry.owner.element},entry.owner.component,entry.owner.part,{entry.property,value.Value()}}});
     return Result::Success(SetProperty{entry.owner.document,comp::PrefabNodeId{entry.owner.element},entry.owner.component,entry.owner.part,{entry.property,value.Value(),{}}});
+}
+foundation::Result<Command> InspectorResetCommand(const InspectorEntry &entry) {
+    using Result=foundation::Result<Command>;
+    if (!entry.overridden || !entry.placement.document.IsValid()) return Result::Failure(foundation::Error::Create("editor.no_override","Select an overridden authoring field."));
+    if (entry.target==InspectorTarget::ParameterOverride) return Result::Success(SetParameterOverride{entry.placement.document,runtime::SceneNodeId{entry.placement.element},entry.owner.document,{entry.property,std::int64_t{}},true});
+    if (entry.target==InspectorTarget::ComponentOverride) return Result::Success(SetComponentOverride{entry.placement.document,runtime::SceneNodeId{entry.placement.element},entry.owner.document,
+        {comp::PrefabNodeId{entry.owner.element},entry.owner.component,entry.owner.part,{entry.property,std::int64_t{}}},true});
+    return Result::Failure(foundation::Error::Create("editor.no_override","Runtime and definition values cannot be reset as placement overrides."));
+}
+foundation::Result<std::vector<Command>> InspectorBinding(const InspectorEntry &entry,comp::PropertyId parameter) {
+    using Result=foundation::Result<std::vector<Command>>;
+    if (entry.target!=InspectorTarget::Property || entry.owner.kind!=UiElement::PrefabComponent || !entry.value || !entry.kind ||
+        (parameter.IsValid()?(!entry.editable || entry.binding.IsValid()):!entry.binding.IsValid()))
+        return Result::Failure(foundation::Error::Create("editor.parameter_binding","Select an authored property to expose, or a bound definition property to detach."));
+    std::vector<Command> commands;
+    if (parameter.IsValid()) commands.emplace_back(SetPrefabParameter{entry.owner.document,{parameter,*entry.value}});
+    commands.emplace_back(SetProperty{entry.owner.document,comp::PrefabNodeId{entry.owner.element},entry.owner.component,entry.owner.part,{entry.property,*entry.value,parameter}});
+    return Result::Success(std::move(commands));
 }
 foundation::Result<std::vector<Command>> ComponentCommands(const ProjectSnapshot &snapshot,const UiSelection &selection,
     const comp::PrefabComponent &recipe,bool replace) {
