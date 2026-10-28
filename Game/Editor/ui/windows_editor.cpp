@@ -13,6 +13,7 @@
 #include "Epidemic/Game/Editor/editor_workspace.h"
 #include "Epidemic/Game/Editor/editor_inspector.h"
 #include "windows_scene_view.h"
+#include "windows_editor_style.h"
 #include "../example/demo_game.h"
 #include "../example/editor_demo.h"
 #include "../example/editor_stress.h"
@@ -82,7 +83,7 @@ enum Control : int { New = 100, Open, Save, Undo, Redo, Play, Stop, SendEvent, P
     ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel,
     ParentLabel, SceneParents, Reparent, Viewport, ViewLabel, FrameSelection, FitScene,
     ToolMode, CoordinateSpace, SnapLabel, SnapValue, SetSnap, BooleanValue, ComponentLabel, ComponentTypes, OpenReference, RefreshInspector,
-    OverrideMode, ResetOverride, ExposeParameter, DetachBinding, NewDemo };
+    OverrideMode, ResetOverride, ExposeParameter, DetachBinding, NewDemo, Brand, InspectorTabs, WorkspaceHint, LogLabel };
 struct Field {
     std::string name, value;
     std::function<Result<ed::Command>(std::string_view)> command;
@@ -94,13 +95,13 @@ struct Field {
     std::function<Result<std::vector<ed::Command>>(comp::PropertyId)> binding;
     bool bound=false;
 };
-std::string FieldText(const Field &field) { return field.name+" = "+field.value+(field.detail.empty()?"":" ["+field.detail+"]")+(field.command?"":"  [read only]"); }
+std::string FieldText(const Field &field) { return field.name+" = "+field.value+(field.command?"":"  [read only]"); }
 class Desktop final {
   public:
     Desktop(platform::WindowPtr window, ex::Schema &schema)
         : window_(std::move(window)), schema_(schema), workspace_(schema.View(), [&schema] { return ex::Options(schema); }),
           hwnd_(window_->GetNativeHandle().As<HWND>()) {
-        INITCOMMONCONTROLSEX common{sizeof(common), ICC_TREEVIEW_CLASSES};
+        INITCOMMONCONTROLSEX common{sizeof(common), ICC_TREEVIEW_CLASSES|ICC_TAB_CLASSES};
         if (!InitCommonControlsEx(&common) || !SetWindowSubclass(hwnd_, &ParentProc, 1, reinterpret_cast<DWORD_PTR>(this)))
             throw std::runtime_error("Cannot initialize Editor window");
         try {
@@ -109,14 +110,15 @@ class Desktop final {
                 [this](std::string error) { local_error_=std::move(error); Diagnostics(); },[this] { Refresh(); });
             Fonts(GetDpiForWindow(hwnd_)); Layout(); Refresh();
         }
-        catch (...) { if (font_) DeleteObject(font_); if (heading_font_) DeleteObject(heading_font_); RemoveWindowSubclass(hwnd_, &ParentProc, 1); throw; }
+        catch (...) { if (font_) DeleteObject(font_); if (heading_font_) DeleteObject(heading_font_); if(meta_font_)DeleteObject(meta_font_); RemoveWindowSubclass(hwnd_, &ParentProc, 1); throw; }
     }
     ~Desktop() {
         KillTimer(hwnd_, 1);
         scene_view_.reset();
-        for (int id=New;id<=NewDemo;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
+        for (int id=New;id<=LogLabel;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
         if (font_) DeleteObject(font_);
         if (heading_font_) DeleteObject(heading_font_);
+        if(meta_font_)DeleteObject(meta_font_);
         RemoveWindowSubclass(hwnd_, &ParentProc, 1);
     }
     bool Closed() const noexcept { return closed_; }
@@ -127,6 +129,8 @@ class Desktop final {
   private:
     HWND ControlHandle(int id) const { return GetDlgItem(hwnd_, id); }
     HWND Make(int id, const wchar_t *kind, const wchar_t *label, DWORD style = 0) {
+        if (lstrcmpiW(kind,L"BUTTON")==0) style|=BS_OWNERDRAW;
+        if (lstrcmpiW(kind,L"COMBOBOX")==0) style|=CBS_OWNERDRAWFIXED|CBS_HASSTRINGS;
         const auto control = CreateWindowExW(0, kind, label, WS_CHILD | WS_VISIBLE | style, 0, 0, 10, 10,
             hwnd_, reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)), GetModuleHandleW(nullptr), nullptr);
         if (!control) throw std::runtime_error("Cannot create Editor control");
@@ -137,6 +141,10 @@ class Desktop final {
     void Controls();
     void Fonts(UINT dpi);
     void Layout();
+    void PaintChrome(HDC dc);
+    void PaintPicker(HWND control,HDC dc);
+    bool DrawControl(const DRAWITEMSTRUCT &item);
+    void CaptureUi(const std::filesystem::path &file);
     void Refresh(bool new_project=false);
     void Inspector();
     void Diagnostics();
@@ -162,19 +170,7 @@ class Desktop final {
     void AddField(Field field) {
         const auto text=FieldText(field);
         Item(ControlHandle(Fields),text);
-        MeasureField(text);
         fields_.push_back(std::move(field));
-    }
-    void MeasureField(std::string_view text) {
-        const auto wide=Wide(text); const auto dc=GetDC(ControlHandle(Fields));
-        if (dc) {
-            const auto old=SelectObject(dc,font_); SIZE extent{};
-            if (GetTextExtentPoint32W(dc,wide.data(),static_cast<int>(wide.size()),&extent)) {
-                const auto width=SendMessageW(ControlHandle(Fields),LB_GETHORIZONTALEXTENT,0,0);
-                SendMessageW(ControlHandle(Fields),LB_SETHORIZONTALEXTENT,static_cast<WPARAM>(std::max(width,static_cast<LRESULT>(extent.cx+16))),0);
-            }
-            SelectObject(dc,old); ReleaseDC(ControlHandle(Fields),dc);
-        }
     }
     void NewDocument(ed::DocumentKind kind);
     static LRESULT CALLBACK ParentProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp, UINT_PTR, DWORD_PTR data) noexcept;
@@ -185,7 +181,8 @@ class Desktop final {
     ed::EditorWorkspace workspace_;
     std::unique_ptr<ed::NativeSceneView> scene_view_;
     HWND hwnd_;
-    HFONT font_=nullptr, heading_font_=nullptr;
+    HFONT font_=nullptr, heading_font_=nullptr,meta_font_=nullptr;
+    ed::EditorStyle style_;
     UINT dpi_=96;
     std::vector<ed::UiSelection> selections_;
     std::vector<HTREEITEM> tree_items_;
@@ -199,10 +196,12 @@ class Desktop final {
     std::string local_error_, log_text_;
     int field_ = -1;
     bool refreshing_ = false, closed_ = false, timer_running_ = false, scene_document_=false, edit_overrides_=false;
+    bool inspector_actions_=false;
 };
 void Desktop::Controls() {
+    Make(Brand,L"STATIC",L"EPIDEMIC  /  EDITOR",SS_NOPREFIX);
     for (const auto &[id, label] : std::array<std::pair<int, const wchar_t *>, 8>{{
-        {New,L"New example"}, {Open,L"Open..."}, {Save,L"Save"}, {Undo,L"Undo"}, {Redo,L"Redo"},
+        {New,L"Example"}, {Open,L"Open..."}, {Save,L"Save"}, {Undo,L"Undo"}, {Redo,L"Redo"},
         {Play,L"Play (F5)"}, {Stop,L"Stop"}, {SendEvent,L"Send hit"}}}) Make(id,L"BUTTON",label,WS_TABSTOP);
     Make(EventLabel,L"STATIC",L"Hit / wait ticks"); Make(Payload,L"EDIT",L"10",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
     Make(NewDemo,L"BUTTON",L"New demo",WS_TABSTOP);
@@ -211,11 +210,15 @@ void Desktop::Controls() {
     Make(DocumentsLabel,L"STATIC",L"Documents / hierarchy");
     Make(Tree,WC_TREEVIEWW,L"",WS_TABSTOP | WS_BORDER | TVS_HASLINES | TVS_LINESATROOT | TVS_HASBUTTONS | TVS_SHOWSELALWAYS);
     Make(PropertiesLabel,L"STATIC",L"Inspector");
-    Make(Fields,L"LISTBOX",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT);
+    Make(Fields,L"LISTBOX",L"",WS_TABSTOP | WS_BORDER | WS_VSCROLL | LBS_NOTIFY | LBS_NOINTEGRALHEIGHT | LBS_OWNERDRAWFIXED | LBS_HASSTRINGS);
+    Make(InspectorTabs,WC_TABCONTROLW,L"",WS_TABSTOP);
+    for(auto *label:{L"Properties",L"Actions"}) { TCITEMW item{}; item.mask=TCIF_TEXT; item.pszText=const_cast<wchar_t *>(label); TabCtrl_InsertItem(ControlHandle(InspectorTabs),TabCtrl_GetItemCount(ControlHandle(InspectorTabs)),&item); }
+    Make(WorkspaceHint,L"STATIC",L"",SS_NOPREFIX);
+    Make(LogLabel,L"STATIC",L"Activation diagnostics",SS_NOPREFIX);
     Make(ValueLabel,L"STATIC",L"Value");
     Make(Value,L"EDIT",L"",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
-    Make(Apply,L"BUTTON",L"Apply",WS_TABSTOP); Make(Revert,L"BUTTON",L"Revert field",WS_TABSTOP);
-    Make(Hint,L"STATIC",L"Choose a property. Enter a typed value, then Apply.\nPlay runs an isolated snapshot. Save writes authoring data.");
+    Make(Apply,L"BUTTON",L"Apply",WS_TABSTOP); Make(Revert,L"BUTTON",L"Revert",WS_TABSTOP);
+    Make(Hint,L"EDIT",L"Choose a property. Apply publishes authoring; Revert discards the draft.",WS_TABSTOP | WS_BORDER | WS_VSCROLL | ES_MULTILINE | ES_READONLY);
     Make(NewScene,L"BUTTON",L"+ Scene",WS_TABSTOP); Make(NewPrefab,L"BUTTON",L"+ Prefab",WS_TABSTOP); Make(NewGraph,L"BUTTON",L"+ Graph",WS_TABSTOP);
     Make(Add,L"BUTTON",L"Add item",WS_TABSTOP); Make(Remove,L"BUTTON",L"Delete item",WS_TABSTOP);
     Make(ToolsLabel,L"STATIC",L"Document actions"); Make(NodeLabel,L"STATIC",L"Graph node template");
@@ -270,78 +273,184 @@ void Desktop::Controls() {
 void Desktop::Fonts(UINT dpi) {
     NONCLIENTMETRICSW metrics{}; metrics.cbSize=sizeof(metrics);
     if (!SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS,sizeof(metrics),&metrics,0,dpi)) throw std::runtime_error("Cannot query UI font");
-    metrics.lfMessageFont.lfHeight=-MulDiv(10,static_cast<int>(dpi),72);
+    metrics.lfMessageFont.lfHeight=-MulDiv(11,static_cast<int>(dpi),72);
     const auto normal=CreateFontIndirectW(&metrics.lfMessageFont);
     metrics.lfMessageFont.lfWeight=FW_SEMIBOLD;
+    metrics.lfMessageFont.lfHeight=-MulDiv(12,static_cast<int>(dpi),72);
     const auto heading=CreateFontIndirectW(&metrics.lfMessageFont);
-    if (!normal || !heading) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); throw std::runtime_error("Cannot create UI font"); }
-    for (int id=New;id<=NewDemo;++id) {
-        const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel || id==ViewLabel;
-        SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:normal),TRUE);
+    metrics.lfMessageFont.lfWeight=FW_NORMAL; metrics.lfMessageFont.lfHeight=-MulDiv(9,static_cast<int>(dpi),72);
+    const auto meta=CreateFontIndirectW(&metrics.lfMessageFont);
+    if (!normal || !heading || !meta) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); if(meta)DeleteObject(meta); throw std::runtime_error("Cannot create UI font"); }
+    for (int id=New;id<=LogLabel;++id) {
+        const bool title=id==Brand || id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ViewLabel || id==LogLabel;
+        const bool metadata=id==Hint || id==ToolsHint || id==WorkspaceHint || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel || id==EventLabel;
+        SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:metadata?meta:normal),TRUE);
     }
     if (font_) DeleteObject(font_);
     if (heading_font_) DeleteObject(heading_font_);
-    font_=normal; heading_font_=heading; dpi_=dpi;
+    if(meta_font_)DeleteObject(meta_font_);
+    font_=normal; heading_font_=heading; meta_font_=meta; dpi_=dpi;
+    style_.ApplyFrame(hwnd_);
+    for(int id:{Palette,Source,Destination,ComponentTypes,BooleanValue,OverrideMode,BehaviorGraph,Prefabs,SceneParents,ToolMode,CoordinateSpace}) {
+        SendMessageW(ControlHandle(id),CB_SETITEMHEIGHT,0,MulDiv(26,static_cast<int>(dpi),96));
+        SendMessageW(ControlHandle(id),CB_SETITEMHEIGHT,static_cast<WPARAM>(-1),MulDiv(22,static_cast<int>(dpi),96));
+    }
+    TreeView_SetItemHeight(ControlHandle(Tree),MulDiv(25,static_cast<int>(dpi),96));
+    TreeView_SetBkColor(ControlHandle(Tree),style_.input); TreeView_SetTextColor(ControlHandle(Tree),style_.text);
+    SendMessageW(ControlHandle(Fields),LB_SETITEMHEIGHT,0,MulDiv(36,static_cast<int>(dpi),96));
     SendMessageW(ControlHandle(Fields),LB_SETHORIZONTALEXTENT,0,0);
-    for (const auto &field:fields_) MeasureField(FieldText(field));
 }
 void Desktop::Layout() {
-    RECT rect{}; GetClientRect(hwnd_, &rect);
-    const int dpi = static_cast<int>(dpi_);
-    const auto px = [dpi](int value) { return MulDiv(value, dpi, 96); };
-    const int width = MulDiv(rect.right,96,dpi), height = MulDiv(rect.bottom,96,dpi);
-    const auto move = [&](int id,int x,int y,int w,int h) { MoveWindow(ControlHandle(id),px(x),px(y),px(w),px(h),TRUE); };
-    move(ProjectLabel,12,8,290,20); move(HistoryLabel,326,8,164,20); move(PreviewLabel,512,8,280,20);
-    move(New,12,32,116,30); move(Open,134,32,80,30); move(Save,220,32,80,30);
-    move(Undo,326,32,76,30); move(Redo,408,32,76,30);
-    move(Play,512,32,90,30); move(Stop,608,32,70,30); move(SendEvent,684,32,90,30);
-    move(EventLabel,792,8,100,20); move(Payload,792,32,100,30); move(NewDemo,900,32,std::min(110,width-912),30);
-    move(Context,12,76,width-24,42);
-    const int left=(width-48)*28/100, mid=(width-left-48)/2, right=left+mid+36;
-    const int bottom=height-164;
-    move(DocumentsLabel,12,124,left,22); move(PropertiesLabel,left+24,124,mid,22); move(ToolsLabel,right,124,width-right-12,22);
-    move(Tree,12,152,left,bottom-198);
+    RECT client{}; GetClientRect(hwnd_,&client);
+    const auto px=[&](int value){return MulDiv(value,static_cast<int>(dpi_),96);};
+    const int width=MulDiv(client.right,96,static_cast<int>(dpi_)),height=MulDiv(client.bottom,96,static_cast<int>(dpi_));
+    if(width<=0 || height<=0)return;
+    const auto move=[&](int id,int x,int y,int w,int h){MoveWindow(ControlHandle(id),px(x),px(y),px(std::max(1,w)),px(std::max(1,h)),TRUE);};
+    const int left=std::clamp(width/5,196,248),right_width=std::clamp(width*28/100,300,356);
+    const int center=left+22,right=width-right_width-12,middle=right-center-10,bottom=height-154;
+    move(Brand,16,7,340,24); move(ProjectLabel,16,34,340,17); move(HistoryLabel,374,34,160,17);
+    move(PreviewLabel,width-410,34,246,17); move(EventLabel,width-144,34,120,17);
+    move(New,16,56,88,30); move(Open,110,56,70,30); move(Save,186,56,64,30); move(NewDemo,256,56,94,30);
+    move(Undo,374,56,70,30); move(Redo,450,56,70,30);
+    move(Play,width-410,56,82,30); move(Stop,width-322,56,68,30); move(SendEvent,width-248,56,96,30); move(Payload,width-144,56,72,30);
+    move(Context,16,102,width-32,42);
+    move(DocumentsLabel,12,154,left,24); move(Tree,12,184,left,bottom-264);
+    move(Add,12,bottom-70,left/2-3,30); move(Remove,18+left/2,bottom-70,left/2-3,30);
     move(NewScene,12,bottom-34,left/3-4,30); move(NewPrefab,16+left/3,bottom-34,left/3-4,30); move(NewGraph,20+2*left/3,bottom-34,left/3-8,30);
-    move(Fields,left+24,152,mid,bottom-328); move(ValueLabel,left+24,bottom-166,mid,22); move(Value,left+24,bottom-140,mid,28);
-    move(Apply,left+24,bottom-104,80,30); move(Revert,left+110,bottom-104,110,30);
-    move(Hint,left+24,bottom-64,mid,64);
-    move(PropertiesLabel,left+24,124,mid-126,22); move(RefreshInspector,left+24+mid-120,122,120,26);
-    move(OpenReference,left+226,bottom-104,mid-202,30);
-    if (scene_document_) {
-        const int view_height=std::max(140,(bottom-152)*46/100);
-        move(ViewLabel,left+24,124,mid,22);
-        move(ToolMode,left+24,152,130,160); move(CoordinateSpace,left+160,152,mid-136,130);
-        move(FrameSelection,left+24,188,140,28); move(FitScene,left+170,188,90,28);
-        move(Viewport,left+24,224,mid,view_height-36);
-        move(PropertiesLabel,left+24,200+view_height,mid-126,22); move(RefreshInspector,left+24+mid-120,198+view_height,120,26);
-        move(Fields,left+24,228+view_height,mid,std::max(36,bottom-336-view_height));
-        move(ValueLabel,left+24,bottom-104,mid,22); move(Value,left+24,bottom-80,mid,28);
-        move(Apply,left+24,bottom-44,80,30); move(Revert,left+110,bottom-44,110,30);
-        move(OpenReference,left+226,bottom-44,mid-202,30);
-    }
-    RECT value_rect{}; GetWindowRect(ControlHandle(Value),&value_rect); MapWindowPoints(nullptr,hwnd_,reinterpret_cast<POINT *>(&value_rect),2);
-    MoveWindow(ControlHandle(BooleanValue),value_rect.left,value_rect.top,value_rect.right-value_rect.left,px(120),TRUE);
-    const int rw=width-right-10;
-    for (int id:{Palette,Source,Destination,BehaviorGraph,Prefabs,SceneParents,ComponentTypes}) SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(rw,650))),0);
-    move(Add,right,152,rw/2-3,30); move(Remove,right+rw/2+3,152,rw/2-3,30);
-    move(NodeLabel,right,198,rw,22); move(Palette,right,224,rw,240);
-    move(FromLabel,right,270,rw,22); move(Source,right,296,rw,280);
-    move(ToLabel,right,340,rw,22); move(Destination,right,366,rw,280); move(Connect,right,408,rw,30);
-    move(ComponentLabel,right,198,rw,22); move(ComponentTypes,right,224,rw,240);
-    move(AddComponent,right,260,rw/2-3,30); move(ReplaceComponent,right+rw/2+3,260,rw/2-3,30);
-    move(BehaviorLabel,right,310,rw,22); move(BehaviorGraph,right,336,rw,240); move(AttachBehavior,right,376,rw,30);
-    move(ExposeParameter,right,414,rw/2-3,30); move(DetachBinding,right+rw/2+3,414,rw/2-3,30);
-    move(PrefabLabel,right,198,rw,22); move(Prefabs,right,224,rw,240); move(Place,right,264,rw,30); move(FollowPrefab,right,310,rw,30);
-    move(ParentLabel,right,366,rw,22); move(SceneParents,right,392,rw,240); move(Reparent,right,430,rw,30);
-    move(ToolsHint,right,466,rw,std::max(70,bottom-466));
-    if (scene_document_) {
-        move(OverrideMode,right,350,rw,100); move(ResetOverride,right,532,rw,30);
-        move(ParentLabel,right,382,rw,22); move(SceneParents,right,406,rw,240); move(Reparent,right,438,rw,30);
-        move(SnapLabel,right,474,rw,22); move(SnapValue,right,500,90,28); move(SetSnap,right+96,500,96,28);
-        move(ToolsHint,right,570,rw,std::max(20,bottom-570));
-    }
-    move(Status,12,bottom+8,width-24,24); move(Log,12,bottom+38,width-24,116);
+    move(PropertiesLabel,right,154,right_width-110,24); move(RefreshInspector,right+right_width-106,152,106,28);
+    move(InspectorTabs,right,184,right_width,28); move(OverrideMode,right,220,right_width,150);
+    const int fields_top=scene_document_?254:184;
+    move(Fields,right,fields_top,right_width,bottom-fields_top-188);
+    move(ValueLabel,right,bottom-180,right_width,22); move(Value,right,bottom-154,right_width,30);
+    move(BooleanValue,right,bottom-154,right_width,130);
+    move(Apply,right,bottom-116,64,30); move(Revert,right+70,bottom-116,64,30); move(OpenReference,right+140,bottom-116,right_width-140,30);
+    move(Hint,right,bottom-78,right_width,74);
+    move(ViewLabel,center,154,middle,24); move(ToolsLabel,center,154,middle,24);
+    move(ToolMode,center,184,110,160); move(CoordinateSpace,center+118,184,110,130);
+    move(FrameSelection,center+236,184,110,30); move(FitScene,center+354,184,std::min(78,middle-354),30);
+    move(SnapLabel,center,224,82,22); move(SnapValue,center+88,220,70,30); move(SetSnap,center+166,220,90,30);
+    move(Viewport,center,262,middle,bottom-292); move(WorkspaceHint,center,bottom-26,middle,24);
+    // Graph and Prefab use the center as a document workspace; Scene actions
+    // occupy the Inspector's Actions tab. Every operation retains its control ID.
+    const int action_x=scene_document_?right:center,action_w=scene_document_?right_width:middle;
+    move(NodeLabel,center,192,middle,22); move(Palette,center,220,middle,240);
+    move(FromLabel,center,266,middle,22); move(Source,center,294,middle,280);
+    move(ToLabel,center,340,middle,22); move(Destination,center,368,middle,280); move(Connect,center,414,170,32);
+    move(ComponentLabel,center,192,middle,22); move(ComponentTypes,center,220,middle,240);
+    move(AddComponent,center,264,middle/2-4,32); move(ReplaceComponent,center+middle/2+4,264,middle/2-4,32);
+    move(BehaviorLabel,center,320,middle,22); move(BehaviorGraph,center,348,middle,240); move(AttachBehavior,center,392,middle,32);
+    move(ExposeParameter,center,442,middle/2-4,32); move(DetachBinding,center+middle/2+4,442,middle/2-4,32);
+    move(PrefabLabel,action_x,226,action_w,22); move(Prefabs,action_x,254,action_w,240);
+    move(Place,action_x,296,action_w,32); move(FollowPrefab,action_x,334,action_w,32);
+    move(ParentLabel,action_x,390,action_w,22); move(SceneParents,action_x,418,action_w,240); move(Reparent,action_x,460,action_w,32);
+    move(ResetOverride,action_x,510,action_w,32);
+    move(ToolsHint,action_x,scene_document_?552:492,action_w,std::max(32,bottom-(scene_document_?552:492)-4));
+    for(int id:{Palette,Source,Destination,BehaviorGraph,Prefabs,SceneParents,ComponentTypes,OverrideMode})
+        SendMessageW(ControlHandle(id),CB_SETDROPPEDWIDTH,static_cast<WPARAM>(px(std::max(action_w,650))),0);
+    move(Status,16,height-140,width-32,23); move(LogLabel,16,height-111,width-32,22); move(Log,12,height-84,width-24,72);
+    InvalidateRect(hwnd_,nullptr,FALSE);
 }
+
+void Desktop::PaintChrome(HDC dc) {
+    RECT client{}; GetClientRect(hwnd_,&client); FillRect(dc,&client,style_.Background());
+    const auto px=[&](int v){return MulDiv(v,static_cast<int>(dpi_),96);};
+    const int width=MulDiv(client.right,96,static_cast<int>(dpi_)),height=MulDiv(client.bottom,96,static_cast<int>(dpi_));
+    if(width<=0 || height<=0)return;
+    const int left=std::clamp(width/5,196,248),right_width=std::clamp(width*28/100,300,356);
+    const int center=left+22,right=width-right_width-12,bottom=height-154;
+    const auto panel=[&](int x,int y,int w,int h){RECT r{px(x),px(y),px(x+w),px(y+h)}; FillRect(dc,&r,style_.Panel());};
+    panel(0,0,width,94); panel(0,98,width,48); panel(8,150,left+8,bottom-146);
+    panel(center-4,150,right-center+4,bottom-146); panel(right-4,150,right_width+8,bottom-146);
+    panel(8,height-144,width-16,136);
+    const auto pen=CreatePen(PS_SOLID,1,style_.border); const auto previous=SelectObject(dc,pen);
+    for(const auto y:{94,146,height-148}){MoveToEx(dc,0,px(y),nullptr);LineTo(dc,client.right,px(y));}
+    SelectObject(dc,previous); DeleteObject(pen);
+}
+void Desktop::PaintPicker(HWND control,HDC dc) {
+    RECT bounds{};GetClientRect(control,&bounds);FillRect(dc,&bounds,style_.Input());
+    SetBkMode(dc,TRANSPARENT);const auto previous=SelectObject(dc,font_);
+    const auto frame=[&](RECT rect,COLORREF color){const auto brush=CreateSolidBrush(color);FrameRect(dc,&rect,brush);DeleteObject(brush);};
+    const int pad=MulDiv(8,static_cast<int>(dpi_),96);
+    if(control==ControlHandle(InspectorTabs)) {
+        FillRect(dc,&bounds,style_.Panel());
+        for(int index=0;index<TabCtrl_GetItemCount(control);++index) {
+            RECT rect{};TabCtrl_GetItemRect(control,index,&rect);
+            const bool selected=TabCtrl_GetCurSel(control)==index;
+            const auto brush=CreateSolidBrush(selected?style_.selection:style_.panel);FillRect(dc,&rect,brush);DeleteObject(brush);
+            frame(rect,selected?style_.accent:style_.border);
+            std::array<wchar_t,64> text{};TCITEMW item{};item.mask=TCIF_TEXT;item.pszText=text.data();item.cchTextMax=static_cast<int>(text.size());TabCtrl_GetItem(control,index,&item);
+            SetTextColor(dc,selected && style_.HighContrast()?GetSysColor(COLOR_HIGHLIGHTTEXT):style_.text);
+            DrawTextW(dc,text.data(),-1,&rect,DT_CENTER|DT_VCENTER|DT_SINGLELINE);
+            if(GetFocus()==control && selected){InflateRect(&rect,-3,-3);DrawFocusRect(dc,&rect);}
+        }
+    } else {
+        const bool enabled=IsWindowEnabled(control)!=FALSE;
+        frame(bounds,GetFocus()==control?style_.accent:style_.border);
+        RECT text=bounds;text.left+=pad;text.right-=pad*3;
+        SetTextColor(dc,enabled?style_.text:style_.muted);
+        const auto label=Wide(Text(control));DrawTextW(dc,label.c_str(),static_cast<int>(label.size()),&text,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+        const int x=bounds.right-pad*2,y=(bounds.bottom-bounds.top)/2;
+        const auto pen=CreatePen(PS_SOLID,1,enabled?style_.text:style_.muted);const auto old=SelectObject(dc,pen);
+        MoveToEx(dc,x-3,y-2,nullptr);LineTo(dc,x,y+1);LineTo(dc,x+4,y-3);SelectObject(dc,old);DeleteObject(pen);
+        if(GetFocus()==control){InflateRect(&text,-2,-2);DrawFocusRect(dc,&text);}
+    }
+    SelectObject(dc,previous);
+}
+
+bool Desktop::DrawControl(const DRAWITEMSTRUCT &item) {
+    if(item.CtlType==ODT_COMBOBOX) {
+        const bool selected=(item.itemState&ODS_SELECTED)!=0;
+        const auto brush=CreateSolidBrush(selected?style_.selection:style_.input);FillRect(item.hDC,&item.rcItem,brush);DeleteObject(brush);
+        if(item.itemID==static_cast<UINT>(-1))return true;
+        const auto length=SendMessageW(item.hwndItem,CB_GETLBTEXTLEN,item.itemID,0);if(length<0)return true;
+        std::wstring label(static_cast<std::size_t>(length)+1,L'\0');SendMessageW(item.hwndItem,CB_GETLBTEXT,item.itemID,reinterpret_cast<LPARAM>(label.data()));
+        auto rect=item.rcItem;rect.left+=MulDiv(8,static_cast<int>(dpi_),96);rect.right-=MulDiv(8,static_cast<int>(dpi_),96);
+        SetBkMode(item.hDC,TRANSPARENT);SetTextColor(item.hDC,selected && style_.HighContrast()?GetSysColor(COLOR_HIGHLIGHTTEXT):style_.text);
+        const auto old=SelectObject(item.hDC,font_);DrawTextW(item.hDC,label.data(),static_cast<int>(length),&rect,DT_LEFT|DT_SINGLELINE|DT_VCENTER|DT_END_ELLIPSIS);
+        if((item.itemState&ODS_FOCUS)!=0)DrawFocusRect(item.hDC,&rect);SelectObject(item.hDC,old);return true;
+    }
+    if(item.CtlType==ODT_BUTTON) {
+        const bool disabled=(item.itemState&ODS_DISABLED)!=0,pressed=(item.itemState&ODS_SELECTED)!=0;
+        const bool primary=item.CtlID==Play || item.CtlID==Apply;
+        const COLORREF fill=primary && !disabled?style_.accent:pressed?style_.selection:style_.input;
+        const auto brush=CreateSolidBrush(fill); FillRect(item.hDC,&item.rcItem,brush); DeleteObject(brush);
+        const auto border=CreateSolidBrush(primary && !disabled?style_.accent:style_.border); FrameRect(item.hDC,&item.rcItem,border); DeleteObject(border);
+        SetBkMode(item.hDC,TRANSPARENT); SetTextColor(item.hDC,disabled?GetSysColor(COLOR_GRAYTEXT):primary?GetSysColor(COLOR_HIGHLIGHTTEXT):style_.text);
+        const auto previous=SelectObject(item.hDC,font_); auto rect=item.rcItem;
+        if(pressed)OffsetRect(&rect,1,1);
+        const auto text=Wide(Text(item.hwndItem)); DrawTextW(item.hDC,text.c_str(),static_cast<int>(text.size()),&rect,DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+        if((item.itemState&ODS_FOCUS)!=0){InflateRect(&rect,-4,-4);DrawFocusRect(item.hDC,&rect);}
+        SelectObject(item.hDC,previous); return true;
+    }
+    if(item.CtlType!=ODT_LISTBOX || item.CtlID!=Fields)return false;
+    const bool selected=(item.itemState&ODS_SELECTED)!=0;
+    const auto brush=CreateSolidBrush(selected?style_.selection:style_.input); FillRect(item.hDC,&item.rcItem,brush); DeleteObject(brush);
+    if(item.itemID>=fields_.size())return true;
+    const auto &field=fields_[item.itemID]; const auto slash=field.name.rfind(" / ");
+    const auto label=Wide(slash==std::string::npos?field.name:field.name.substr(slash+3));
+    std::string detail=field.detail.empty()?(field.command?"Editable":"Read only"):field.detail;
+    if(const auto end=detail.find(" / ",detail.find(" / ")==std::string::npos?0:detail.find(" / ")+3);end!=std::string::npos)detail.resize(end);
+    if(!field.command && !field.detail.empty())detail="Read only | "+detail;
+    if(slash!=std::string::npos) {
+        auto owner=field.name.substr(0,slash); const auto start=owner.rfind(" / "); if(start!=std::string::npos)owner=owner.substr(start+3);
+        const auto dot=owner.rfind('.'); if(dot!=std::string::npos)owner=owner.substr(dot+1);
+        detail=owner+" | "+detail;
+    }
+    SetBkMode(item.hDC,TRANSPARENT);
+    const int pad=MulDiv(8,static_cast<int>(dpi_),96),line=MulDiv(20,static_cast<int>(dpi_),96);
+    RECT name=item.rcItem; name.left+=pad;name.right=item.rcItem.left+(item.rcItem.right-item.rcItem.left)*58/100;name.bottom=name.top+line;
+    const auto previous=SelectObject(item.hDC,font_);
+    SetTextColor(item.hDC,selected && style_.HighContrast()?GetSysColor(COLOR_HIGHLIGHTTEXT):style_.text);
+    DrawTextW(item.hDC,label.c_str(),static_cast<int>(label.size()),&name,DT_LEFT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+    RECT value=name;value.left=name.right+pad;value.right=item.rcItem.right-pad;
+    const auto text=Wide(field.value); DrawTextW(item.hDC,text.c_str(),static_cast<int>(text.size()),&value,DT_RIGHT|DT_VCENTER|DT_SINGLELINE|DT_END_ELLIPSIS);
+    RECT caption=item.rcItem;caption.left+=pad;caption.right-=pad;caption.top+=line;
+    SelectObject(item.hDC,meta_font_);SetTextColor(item.hDC,selected && style_.HighContrast()?GetSysColor(COLOR_HIGHLIGHTTEXT):style_.muted);
+    const auto meta=Wide(detail); DrawTextW(item.hDC,meta.c_str(),static_cast<int>(meta.size()),&caption,DT_LEFT|DT_SINGLELINE|DT_END_ELLIPSIS);
+    if((item.itemState&ODS_FOCUS)!=0){auto focus=item.rcItem;InflateRect(&focus,-1,-1);DrawFocusRect(item.hDC,&focus);}
+    SelectObject(item.hDC,previous); return true;
+}
+
 HTREEITEM Desktop::TreeItem(HTREEITEM parent, std::string_view label, const ed::UiSelection &selection) {
     auto text = Wide(label); selections_.push_back(selection);
     TVINSERTSTRUCTW item{}; item.hParent=parent; item.hInsertAfter=TVI_LAST;
@@ -380,7 +489,7 @@ void Desktop::SceneTree(HTREEITEM parent,const ed::ProjectSnapshot &snapshot,con
     }
 }
 void Desktop::Refresh(bool new_project) {
-    if (new_project) { edit_overrides_=false; SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,0,0); }
+    if (new_project) { edit_overrides_=false; inspector_actions_=false; TabCtrl_SetCurSel(ControlHandle(InspectorTabs),0); SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,0,0); }
     std::set<decltype(SelectionKey(ed::UiSelection{}))> expanded;
     // Common-controls can return additional state bits despite the requested mask.
     for (std::size_t i=0;i<tree_items_.size();++i) if ((TreeView_GetItemState(ControlHandle(Tree),tree_items_[i],TVIS_EXPANDED)&static_cast<UINT>(TVIS_EXPANDED))!=0) expanded.insert(SelectionKey(selections_[i]));
@@ -549,7 +658,7 @@ void Desktop::SelectField(int index) {
     EnableWindow(ControlHandle(OpenReference),field && field->reference.IsValid() && workspace_.Project()->Snapshot()->Find(field->reference));
     const std::array<const char *,4> kinds{"i64","double","bool","string"};
     SetText(ControlHandle(ValueLabel),field && field->kind?std::string{"Value ("}+kinds[static_cast<std::size_t>(*field->kind)]+(field->command?")":", read only)"):"Value");
-    SetText(ControlHandle(Hint),field && !field->detail.empty()?field->detail:"Choose a property. Apply publishes authoring; Revert discards the field draft.");
+    SetText(ControlHandle(Hint),field?field->name+"\r\n"+(field->detail.empty()?(field->command?"Editable authoring value. Apply / Revert the draft.":"Read-only identity or reference."):field->detail):"Choose a property. Apply publishes authoring; Revert discards the field draft.");
 }
 bool Desktop::ApplyDraft(bool explicit_apply) {
     const bool missing=field_>=0 && static_cast<std::size_t>(field_)<fields_.size() && fields_[static_cast<std::size_t>(field_)].missing;
@@ -763,10 +872,19 @@ void Desktop::Diagnostics() {
     const auto visible=[&](int id,bool show) { const auto control=ControlHandle(id); if (((static_cast<DWORD_PTR>(GetWindowLongPtrW(control,GWL_STYLE))&static_cast<DWORD_PTR>(WS_VISIBLE))!=0)!=show) ShowWindow(control,show?SW_SHOW:SW_HIDE); };
     for (int id:{NodeLabel,Palette,FromLabel,Source,ToLabel,Destination,Connect}) visible(id,graph);
     for (int id:{AddComponent,ReplaceComponent,ComponentLabel,ComponentTypes,BehaviorLabel,BehaviorGraph,AttachBehavior,ExposeParameter,DetachBinding}) visible(id,prefab_doc);
-    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab,ParentLabel,SceneParents,Reparent,OverrideMode,ResetOverride}) visible(id,scene_doc);
+    const bool actions=scene_doc && inspector_actions_;
+    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab,ParentLabel,SceneParents,Reparent,ResetOverride}) visible(id,actions);
+    visible(OverrideMode,scene_doc && !actions); visible(InspectorTabs,scene_doc);
+    for(int id:{Fields,ValueLabel,Apply,Revert,OpenReference,Hint}) visible(id,!actions);
+    const bool boolean=field_>=0 && static_cast<std::size_t>(field_)<fields_.size() && fields_[static_cast<std::size_t>(field_)].command && fields_[static_cast<std::size_t>(field_)].kind==comp::PropertyKind::Boolean;
+    visible(Value,!actions && !boolean); visible(BooleanValue,!actions && boolean);
+    visible(ToolsLabel,!scene_doc); visible(ToolsHint,!scene_doc || actions);
     SetText(ControlHandle(ToolsLabel),graph?"Graph actions":prefab_doc?"Prefab definition":scene_doc?"Scene placement":"Document actions");
-    SetText(ControlHandle(Add),graph?"Add node":prefab_doc?"Add Entity":"Add placement");
-    SetText(ControlHandle(Remove),selection.kind==ed::UiElement::PrefabComponent?"Delete component":"Delete selection");
+    SetText(ControlHandle(Add),graph?"+ Node":prefab_doc?"+ Entity":"+ Object");
+    SetText(ControlHandle(Remove),"Delete");
+    SetText(ControlHandle(PropertiesLabel),actions?"Scene actions":"Inspector");
+    SetText(ControlHandle(ProjectLabel),"PROJECT"); SetText(ControlHandle(HistoryLabel),"HISTORY"); SetText(ControlHandle(PreviewLabel),playing?"PLAYING SNAPSHOT":"PLAY CONTROLS");
+    SetText(ControlHandle(WorkspaceHint),scene_doc?"XY authoring  |  Pan: middle drag  |  Zoom: wheel":prefab_doc?"Ownership tree  |  Parameters and components share this definition":"Typed ports  |  Node and connection lists are in Hierarchy");
     const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Edit Definition. Expose a property as a parameter; edit its default row or detach its binding. Tree nesting is ownership, not spatial parenting; no Prefab geometry preview is available.":"Reset removes only the selected override layer. Runtime rows remain read-only.";
     if (Text(ControlHandle(ToolsHint))!=tool_hint) SetText(ControlHandle(ToolsHint),tool_hint);
     std::string context="Open a project or create an example.";
@@ -837,6 +955,14 @@ LRESULT CALLBACK Desktop::ParentProc(HWND,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,
 }
 LRESULT CALLBACK Desktop::ChildProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data) noexcept {
     auto &self=*reinterpret_cast<Desktop *>(data);
+    std::array<wchar_t,32> kind{};GetClassNameW(hwnd,kind.data(),static_cast<int>(kind.size()));
+    const bool picker=hwnd==self.ControlHandle(InspectorTabs) || lstrcmpiW(kind.data(),L"COMBOBOX")==0;
+    if(picker && msg==WM_ERASEBKGND){RECT rect{};GetClientRect(hwnd,&rect);FillRect(reinterpret_cast<HDC>(wp),&rect,self.style_.Input());return TRUE;}
+    if(picker && (msg==WM_PAINT || msg==WM_PRINT || msg==WM_PRINTCLIENT)) {
+        PAINTSTRUCT paint{};const auto dc=msg==WM_PAINT?BeginPaint(hwnd,&paint):reinterpret_cast<HDC>(wp);
+        try{self.PaintPicker(hwnd,dc);}catch(...){SetWindowTextW(self.ControlHandle(Log),L"Cannot render Editor control.");}
+        if(msg==WM_PAINT)EndPaint(hwnd,&paint);return 0;
+    }
     if (msg==WM_KEYDOWN) {
         const int action=self.Shortcut(hwnd,wp);
         if (wp==VK_TAB) { const auto next=GetNextDlgTabItem(self.hwnd_,hwnd,GetKeyState(VK_SHIFT)<0); if (next) SetFocus(next); return 0; }
@@ -845,6 +971,21 @@ LRESULT CALLBACK Desktop::ChildProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_
     return DefSubclassProc(hwnd,msg,wp,lp);
 }
 LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
+    if(msg==WM_NOTIFY && !lp)return 0;
+    if(msg==WM_MEASUREITEM && lp) { auto &item=*reinterpret_cast<MEASUREITEMSTRUCT *>(lp);if(item.CtlType==ODT_COMBOBOX){item.itemHeight=static_cast<UINT>(MulDiv(26,static_cast<int>(dpi_),96));return TRUE;} }
+    if(msg==WM_ERASEBKGND) { PaintChrome(reinterpret_cast<HDC>(wp)); return 1; }
+    if(msg==WM_PAINT) { PAINTSTRUCT paint{}; const auto dc=BeginPaint(hwnd_,&paint); PaintChrome(dc); EndPaint(hwnd_,&paint); return 0; }
+    if(msg==WM_CTLCOLORSTATIC || msg==WM_CTLCOLOREDIT || msg==WM_CTLCOLORLISTBOX) {
+        const auto dc=reinterpret_cast<HDC>(wp); const int id=GetDlgCtrlID(reinterpret_cast<HWND>(lp));
+        const bool input=msg!=WM_CTLCOLORSTATIC || id==Log || id==Hint;
+        COLORREF color=style_.text;
+        if(id==Hint || id==ToolsHint || id==WorkspaceHint || id==ProjectLabel || id==HistoryLabel || id==EventLabel)color=style_.muted;
+        if(id==Status)color=workspace_.LastError() || !local_error_.empty()?style_.danger:style_.text;
+        if(id==PreviewLabel && workspace_.Session() && workspace_.Session()->IsPlaying())color=style_.success;
+        SetTextColor(dc,color); SetBkColor(dc,input?style_.input:style_.panel); return reinterpret_cast<LRESULT>(input?style_.Input():style_.Panel());
+    }
+    if(msg==WM_DRAWITEM && lp) { if(DrawControl(*reinterpret_cast<const DRAWITEMSTRUCT *>(lp)))return TRUE; }
+    if(msg==WM_SYSCOLORCHANGE || msg==WM_THEMECHANGED || (msg==WM_SETTINGCHANGE && wp==SPI_SETHIGHCONTRAST)) { style_.Refresh(); style_.ApplyFrame(hwnd_); TreeView_SetBkColor(ControlHandle(Tree),style_.input); TreeView_SetTextColor(ControlHandle(Tree),style_.text); InvalidateRect(hwnd_,nullptr,TRUE); }
     // Platform publishes raw system keys for games; a desktop host also needs
     // their standard Windows behavior (Alt+F4, Alt+Space).
     if (msg==WM_SYSKEYDOWN || msg==WM_SYSKEYUP) { (void)DefSubclassProc(hwnd_,msg,wp,lp); return DefWindowProcW(hwnd_,msg,wp,lp); }
@@ -877,8 +1018,25 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
         else if (notification==BN_CLICKED || ((id==ToolMode || id==CoordinateSpace || id==OverrideMode) && notification==CBN_SELCHANGE)) Action(id);
         return 0;
     }
+    if(msg==WM_NOTIFY && lp) {
+        const auto *header=reinterpret_cast<NMHDR *>(lp);
+        if(header->idFrom==Tree && header->code==NM_CUSTOMDRAW) {
+            auto &draw=*reinterpret_cast<NMTVCUSTOMDRAW *>(lp);
+            if(draw.nmcd.dwDrawStage==CDDS_PREPAINT)return CDRF_NOTIFYITEMDRAW;
+            if(draw.nmcd.dwDrawStage==CDDS_ITEMPREPAINT) {
+                const bool selected=reinterpret_cast<HTREEITEM>(draw.nmcd.dwItemSpec)==TreeView_GetSelection(ControlHandle(Tree));
+                draw.clrText=selected && style_.HighContrast()?GetSysColor(COLOR_HIGHLIGHTTEXT):style_.text;
+                draw.clrTextBk=selected?style_.selection:style_.input;
+                // Only the paint copy changes; native selection/lifetime stays intact.
+                draw.nmcd.uItemState&=~static_cast<UINT>(CDIS_SELECTED);
+                return CDRF_DODEFAULT;
+            }
+        }
+    }
     if (msg==WM_NOTIFY && !refreshing_) {
         const auto *notice=reinterpret_cast<NMHDR *>(lp);
+        if(notice->idFrom==InspectorTabs && notice->code==TCN_SELCHANGING && Draft()) { local_error_="Apply or Revert the field before changing Inspector tabs."; Diagnostics(); return TRUE; }
+        if(notice->idFrom==InspectorTabs && notice->code==TCN_SELCHANGE) { inspector_actions_=TabCtrl_GetCurSel(ControlHandle(InspectorTabs))==1; Layout(); Diagnostics(); return 0; }
         if (notice->idFrom==Tree && notice->code==TVN_SELCHANGINGW && Draft()) { local_error_="Apply or Revert the edited field before changing selection."; Diagnostics(); return TRUE; }
         if (notice->idFrom==Tree && notice->code==TVN_SELCHANGEDW) {
             const auto *change=reinterpret_cast<NMTREEVIEWW *>(lp); const auto index=static_cast<std::size_t>(change->itemNew.lParam);
@@ -1152,7 +1310,8 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
             POINT first{bounds.left,bounds.top},last{bounds.right,bounds.bottom}; ScreenToClient(hwnd_,&first); ScreenToClient(hwnd_,&last);
             check(first.x>=0 && first.y>=0 && last.x<=client.right && last.y<=client.bottom && last.y>first.y);
         }
-        LOGFONTW font{}; check(GetObjectW(font_,sizeof(font),&font)!=0 && font.lfHeight==-MulDiv(10,static_cast<int>(dpi),72));
+        LOGFONTW font{}; check(GetObjectW(font_,sizeof(font),&font)!=0 && font.lfHeight==-MulDiv(11,static_cast<int>(dpi),72));
+        CaptureUi(file.parent_path()/(dpi==96?"ui-scene-min.png":"ui-scene-min-150.png"));
         SendMessageW(hwnd_,WM_COMMAND,FitScene,0); SendMessageW(ControlHandle(Viewport),WM_PAINT,0,0); check(local_error_.empty());
         const auto screen=scene_view_->Projection().ToScreen({-12.5,0});
         check(scene_view_->Projection().Pick(screen)==SceneNodeId{42});
@@ -1184,6 +1343,55 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     if (!closed_) std::fprintf(stderr,"REGRESSION: Alt+F4 does not close the host window\n");
     check(unique_labels && root_shortcut && closed_);
 }
+void Desktop::CaptureUi(const std::filesystem::path &file) {
+    // Render only this owned, hidden window. No desktop pixels or input APIs.
+    const auto require=[](bool value){if(!value)throw std::runtime_error("Cannot capture owned Editor UI");};
+    struct ComScope { HRESULT status=CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED); ~ComScope(){if(SUCCEEDED(status))CoUninitialize();} } com;
+    require(SUCCEEDED(com.status) || com.status==RPC_E_CHANGED_MODE);
+    RECT client{}; GetClientRect(hwnd_,&client); const int width=client.right,height=client.bottom;
+    require(width>0 && height>0);
+    struct Raster {
+        HWND window=nullptr; HDC screen=nullptr,dc=nullptr; HBITMAP bitmap=nullptr; HGDIOBJ previous=nullptr; void *pixels=nullptr;
+        ~Raster(){if(previous)SelectObject(dc,previous);if(bitmap)DeleteObject(bitmap);if(dc)DeleteDC(dc);if(screen)ReleaseDC(window,screen);}
+    } raster;
+    raster.window=hwnd_; raster.screen=GetDC(hwnd_); raster.dc=CreateCompatibleDC(raster.screen);
+    BITMAPINFO info{}; info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=width;info.bmiHeader.biHeight=-height;
+    info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
+    raster.bitmap=CreateDIBSection(raster.screen,&info,DIB_RGB_COLORS,&raster.pixels,nullptr,0);
+    require(raster.dc && raster.bitmap && raster.pixels); raster.previous=SelectObject(raster.dc,raster.bitmap);
+    PaintChrome(raster.dc);
+    for(auto child=GetWindow(hwnd_,GW_CHILD);child;child=GetWindow(child,GW_HWNDNEXT)) {
+        if((static_cast<DWORD_PTR>(GetWindowLongPtrW(child,GWL_STYLE))&static_cast<DWORD_PTR>(WS_VISIBLE))==0 || child==ControlHandle(Viewport))continue;
+        RECT bounds{};GetWindowRect(child,&bounds);MapWindowPoints(nullptr,hwnd_,reinterpret_cast<POINT *>(&bounds),2);
+        const auto saved=SaveDC(raster.dc);SetViewportOrgEx(raster.dc,bounds.left,bounds.top,nullptr);
+        IntersectClipRect(raster.dc,0,0,bounds.right-bounds.left,bounds.bottom-bounds.top);
+        SendMessageW(child,WM_PRINT,reinterpret_cast<WPARAM>(raster.dc),PRF_NONCLIENT|PRF_CLIENT|PRF_CHILDREN|PRF_ERASEBKGND);
+        RestoreDC(raster.dc,saved);
+    }
+    Microsoft::WRL::ComPtr<IWICImagingFactory> factory;
+    require(SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory))));
+    if(scene_document_) {
+        const auto viewport=file.parent_path()/(file.stem().wstring()+L"-viewport.png"); scene_view_->Capture(viewport);
+        Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder; Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame; Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
+        require(SUCCEEDED(factory->CreateDecoderFromFilename(viewport.c_str(),nullptr,GENERIC_READ,WICDecodeMetadataCacheOnLoad,&decoder)));
+        require(SUCCEEDED(decoder->GetFrame(0,&frame)) && SUCCEEDED(factory->CreateFormatConverter(&converter)));
+        require(SUCCEEDED(converter->Initialize(frame.Get(),GUID_WICPixelFormat32bppBGRA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom)));
+        RECT rect{}; GetWindowRect(ControlHandle(Viewport),&rect); MapWindowPoints(nullptr,hwnd_,reinterpret_cast<POINT *>(&rect),2);
+        require(rect.left>=0 && rect.top>=0 && rect.right<=width && rect.bottom<=height);
+        UINT w=0,h=0; require(SUCCEEDED(frame->GetSize(&w,&h)) && w==static_cast<UINT>(rect.right-rect.left) && h==static_cast<UINT>(rect.bottom-rect.top));
+        auto *data=static_cast<BYTE *>(raster.pixels)+(static_cast<std::size_t>(rect.top)*static_cast<std::size_t>(width)+static_cast<std::size_t>(rect.left))*4;
+        require(SUCCEEDED(converter->CopyPixels(nullptr,static_cast<UINT>(width*4),static_cast<UINT>((height-rect.top)*width*4-rect.left*4),data)));
+    }
+    auto *pixels=static_cast<BYTE *>(raster.pixels); for(int i=0;i<width*height;++i)pixels[i*4+3]=255;
+    Microsoft::WRL::ComPtr<IWICBitmapEncoder> encoder; Microsoft::WRL::ComPtr<IWICStream> stream; Microsoft::WRL::ComPtr<IWICBitmapFrameEncode> output;
+    require(SUCCEEDED(factory->CreateStream(&stream)) && SUCCEEDED(stream->InitializeFromFilename(file.c_str(),GENERIC_WRITE)));
+    require(SUCCEEDED(factory->CreateEncoder(GUID_ContainerFormatPng,nullptr,&encoder)) && SUCCEEDED(encoder->Initialize(stream.Get(),WICBitmapEncoderNoCache)));
+    require(SUCCEEDED(encoder->CreateNewFrame(&output,nullptr)) && SUCCEEDED(output->Initialize(nullptr)) && SUCCEEDED(output->SetSize(static_cast<UINT>(width),static_cast<UINT>(height))));
+    WICPixelFormatGUID format=GUID_WICPixelFormat32bppBGRA; require(SUCCEEDED(output->SetPixelFormat(&format)));
+    require(SUCCEEDED(output->WritePixels(static_cast<UINT>(height),static_cast<UINT>(width*4),static_cast<UINT>(width*height*4),pixels)));
+    require(SUCCEEDED(output->Commit()) && SUCCEEDED(encoder->Commit()));
+}
+
 void Desktop::DemoSmoke(const std::filesystem::path &file,platform::IPlatformRuntime &events) {
     const auto check=[](bool value,const std::source_location at=std::source_location::current()) { if (!value) throw std::runtime_error("EditorDemo native invariant at line "+Number(at.line())); };
     check(!CreateDemoCopy(EPIDEMIC_EDITOR_DEMO_PROJECT)); ex::Take(CreateDemoCopy(file));
@@ -1199,6 +1407,26 @@ void Desktop::DemoSmoke(const std::filesystem::path &file,platform::IPlatformRun
     };
     const auto edit=[&](std::string_view suffix,std::string_view text){field(suffix); SetText(ControlHandle(Value),text); Action(Apply); check(!Draft());};
     choose(0); check(scene_view_->Projection().Items().size()==3); Action(FitScene);
+    check(SendMessageW(hwnd_,WM_NOTIFY,0,0)==0);
+    if(!style_.HighContrast())check(GetRValue(style_.background)<64 && GetRValue(style_.input)<64 && GetRValue(style_.text)>200);
+    check((static_cast<DWORD_PTR>(GetWindowLongPtrW(ControlHandle(ToolMode),GWL_STYLE))&static_cast<DWORD_PTR>(CBS_HASSTRINGS))!=0);
+    choose(42); field("Local position X"); CaptureUi(file.parent_path()/"ui-scene.png");
+    const auto unchanged=workspace_.Project()->Snapshot(); const auto epoch=workspace_.Project()->Revision();
+    SetText(ControlHandle(Value),"-7"); check(Draft());
+    NMHDR tab{ControlHandle(InspectorTabs),InspectorTabs,TCN_SELCHANGING};
+    check(SendMessageW(hwnd_,WM_NOTIFY,InspectorTabs,reinterpret_cast<LPARAM>(&tab))==TRUE && !inspector_actions_);
+    check(workspace_.Project()->Snapshot()==unchanged && workspace_.Project()->Revision()==epoch); Action(Revert);
+    check(SendMessageW(hwnd_,WM_NOTIFY,InspectorTabs,reinterpret_cast<LPARAM>(&tab))==FALSE);
+    TabCtrl_SetCurSel(ControlHandle(InspectorTabs),1);tab.code=TCN_SELCHANGE;SendMessageW(hwnd_,WM_NOTIFY,InspectorTabs,reinterpret_cast<LPARAM>(&tab));
+    const auto shown=[&](int id){return (static_cast<DWORD_PTR>(GetWindowLongPtrW(ControlHandle(id),GWL_STYLE))&static_cast<DWORD_PTR>(WS_VISIBLE))!=0;};
+    check(inspector_actions_ && shown(Place) && !shown(Fields) && !shown(Value)); CaptureUi(file.parent_path()/"ui-actions.png");
+    TabCtrl_SetCurSel(ControlHandle(InspectorTabs),0);SendMessageW(hwnd_,WM_NOTIFY,InspectorTabs,reinterpret_cast<LPARAM>(&tab));
+    check(!inspector_actions_ && !shown(Place) && shown(Fields) && shown(Value) && !Draft());
+    check(workspace_.Project()->Snapshot()==unchanged && workspace_.Project()->Revision()==epoch);
+    check(Text(ControlHandle(Hint)).find("Local position X")!=std::string::npos);
+    check((static_cast<DWORD_PTR>(GetWindowLongPtrW(ControlHandle(Fields),GWL_STYLE))&static_cast<DWORD_PTR>(WS_HSCROLL))==0);
+    (void)workspace_.Select({AssetId::FromString("example.prefab"),ed::UiElement::PrefabNode,ex::Id("enemy").Raw()}); Refresh(); CaptureUi(file.parent_path()/"ui-prefab.png");
+    (void)workspace_.Select({AssetId::FromString("example.graph")}); Refresh(); CaptureUi(file.parent_path()/"ui-graph.png"); choose(0);
     const auto baseline=workspace_.Project()->Snapshot();
     const auto mouse=[&](UINT message,ed::ViewPoint point) { SendMessageW(ControlHandle(Viewport),message,0,MAKELPARAM(static_cast<int>(std::lround(point.x*dpi_/96)),static_cast<int>(std::lround(point.y*dpi_/96)))); };
     const auto center=scene_view_->Projection().ToScreen({-6,0}); mouse(WM_LBUTTONDOWN,center); mouse(WM_LBUTTONUP,center);

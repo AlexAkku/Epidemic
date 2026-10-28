@@ -83,7 +83,7 @@ The executable shares the headless example's frozen game schema and native bindi
 Enemy, Health, Movement and an event-driven Damage/Wait graph. Other game schemas
 must supply their registrations and operations in the host; unknown types are rejected.
 
-New example chooses a project path; Open loads the existing Serialization archive.
+Example chooses a project path; Open loads the existing Serialization archive.
 The document tree opens Scene/Prefab/Graph authoring data. Add/Delete and typed
 properties use atomic commands. Scene placements can assign a Prefab; Prefab
 entities expose registered properties and can assign a graph's first event input
@@ -103,6 +103,15 @@ shows document/selection context, while Project, history and Play actions are
 grouped separately. Actions for other document kinds are hidden. Native message
 fonts and layout scale with window DPI; native smoke covers 100/150% layout and
 font metrics, separately from an actual monitor-DPI GUI check.
+The drafting layout places hierarchy left, the Scene viewport in the center,
+and a property/value Inspector right. Scene object operations live in the
+Inspector **Actions** tab; **Properties** retains the explicit override mode.
+Apply or Revert an unfinished value before switching tabs or selection.
+Selected-property metadata is scrollable and copyable below the value editor.
+Dark panels use the system message font (11 pt body); Windows high-contrast
+colors override the palette. ComboBox rows/closed faces and tabs use dark owner drawing;
+keyboard commands and native control semantics remain. DWM caption colors apply on
+supported Windows versions; system dialogs and scrollbar chrome follow Windows.
 Parameter defaults are editable; bound properties show the parameter link and
 can be detached. Scene component/parameter fields use explicit View Definition
 or Edit Instance Override modes; reassigning the same Prefab preserves overrides.
