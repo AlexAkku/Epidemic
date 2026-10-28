@@ -113,8 +113,8 @@ Scene validity rules apply before publication; negative positions/scales are
 supported. Spatial parent selection commits `SetSceneParent` with **KeepLocal**
 semantics, so world placement changes; missing/cyclic parents are rejected
 atomically. World transforms belong to SceneServices, including its documented
-simplified-TRS approximation for shear-producing hierarchies. There is no world
-editing mode or gizmo yet. These fields use archive 1.0.0 unchanged;
+simplified-TRS approximation for shear-producing hierarchies. Inspector fields
+remain local TRS. These fields use archive 1.0.0 unchanged;
 the headless write/read-play example verifies parented TRS in a new process.
 
 Scene documents show an XY **authoring** viewport hosted in a child HWND using
@@ -134,6 +134,34 @@ zooms around the cursor. Frame selection (`F` with viewport focus) and Fit scene
 (`Home`) restore the camera. Navigation never changes dirty state or Undo history.
 The camera is session-local and resets on Open/document change. Native paint and
 resize messages drive the surface; there is no second event loop or idle timer.
+
+The viewport tool selector offers Move, Rotate Z and Scale XY. Move supports
+World XY or Local XY axes; object-body/center drag is free World XY translation.
+Rotate uses the ring around the Scene node pivot, changing local Z rotation;
+Scale uses local X/Y endpoints, or the center square for proportional XY scale
+(drag up/right to increase). Z position/scale remain unchanged. All ancestors
+must have XY-plane orientations for gizmos; tilted 3D hierarchies remain editable
+through the existing Inspector. World/local conversion uses Runtime Scene's
+existing representability checks, including its simplified TRS contract.
+
+One gesture owns one transient Runtime Scene, an immutable source reference and
+the source revision/selection. Mouse movement updates bounded drawing geometry,
+including descendants, without EditRequest or archive encoding. Inspector values
+remain authoring until release. A release beyond the 3-DIP threshold publishes
+one `SetSceneTransform`; a click/no-op publishes nothing. Esc, right click,
+capture/focus loss, resize/DPI changes, camera/tool changes and project actions
+cancel preview without changing authoring/history. Stale revision/selection,
+nonfinite transforms, zero scale or nonfinite derived bounds reject the gesture;
+the last valid preview is never silently committed after an invalid endpoint.
+Negative final scales remain supported by the existing Scene contract.
+
+Move snap is a finite nonnegative Scene-unit value, applied with Set snap or
+Enter; zero disables it. Free/World movement snaps absolute world coordinates;
+Local axis movement snaps distance along that axis. Rotation/scale are not
+snapped. With viewport focus, arrows move World XY by the snap step or 0.1 units
+(Shift multiplies by 10); key repeats/chords form one transaction until all arrow
+keys are released. Focus loss/Esc cancels that transaction. Text edits retain
+native text Undo. Changes during Play affect authoring and the next Play only.
 
 Apply (Enter) publishes the current field; Revert (Escape) discards its draft.
 Invalid input leaves source, history and save points unchanged. Apply/Revert is

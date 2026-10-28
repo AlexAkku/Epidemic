@@ -17,18 +17,22 @@ std::wstring Wide(std::string_view text) {
     MultiByteToWideChar(CP_UTF8,0,text.data(),static_cast<int>(text.size()),result.data(),size); return result;
 }
 }
-NativeSceneView::NativeSceneView(HWND window,std::function<void(runtime::SceneNodeId)> select,std::function<void(std::string)> error)
-    : window_(window), select_(std::move(select)), error_(std::move(error)) {
+NativeSceneView::NativeSceneView(HWND window,EditorWorkspace &workspace,std::function<bool(runtime::SceneNodeId)> select,
+    std::function<void(std::string)> error,std::function<void()> changed)
+    : window_(window), workspace_(workspace), select_(std::move(select)), error_(std::move(error)), changed_(std::move(changed)) {
     if (!SetWindowSubclass(window_,&Procedure,2,reinterpret_cast<DWORD_PTR>(this))) throw std::runtime_error("Cannot initialize Scene View");
 }
 NativeSceneView::~NativeSceneView() {
+    drag_.Cancel();
     if (GetCapture()==window_) ReleaseCapture();
     renderer_.reset(); RemoveWindowSubclass(window_,&Procedure,2);
 }
 void NativeSceneView::Sync(std::shared_ptr<const ProjectSnapshot> snapshot,runtime::AssetId scene,runtime::SceneNodeId selected,UINT dpi,bool reset) {
     const bool changed=reset || snapshot_!=snapshot || view_.Document()!=scene;
     const bool redraw=changed || selected_!=selected || dpi_!=dpi;
+    if (drag_.Active() && (redraw || !drag_.Current(workspace_))) Cancel();
     dpi_=dpi; selected_=selected; Resize();
+    editable_=snapshot && SceneDrag::Supports(*snapshot,workspace_.Selection());
     if (changed) {
         if (reset) view_.Clear();
         snapshot_=std::move(snapshot);
@@ -45,7 +49,61 @@ void NativeSceneView::Resize() {
     view_.Resize(static_cast<double>(rect.right)*96/dpi_,static_cast<double>(rect.bottom)*96/dpi_);
 }
 ViewPoint NativeSceneView::Point(LPARAM position) const { return {static_cast<double>(GET_X_LPARAM(position))*96/dpi_,static_cast<double>(GET_Y_LPARAM(position))*96/dpi_}; }
-void NativeSceneView::Frame(bool all) { view_.Fit(all?runtime::SceneNodeId{}:selected_); InvalidateRect(window_,nullptr,FALSE); }
+void NativeSceneView::Frame(bool all) { Cancel(); view_.Fit(all?runtime::SceneNodeId{}:selected_); InvalidateRect(window_,nullptr,FALSE); }
+foundation::Result<void> NativeSceneView::Configure(GizmoTool tool,GizmoSpace space,double snap) {
+    if (!std::isfinite(snap) || snap<0 || (tool!=GizmoTool::Move && space!=GizmoSpace::Local))
+        return foundation::Result<void>::Failure(foundation::Error::Create("editor.gizmo_settings","Snap must be finite and nonnegative; Rotate/Scale use Local coordinates."));
+    Cancel(); tool_=tool; space_=space; snap_=snap; InvalidateRect(window_,nullptr,FALSE);
+    return foundation::Result<void>::Success();
+}
+void NativeSceneView::Restore() {
+    if (snapshot_ && view_.Document().IsValid()) {
+        const auto restored=view_.Update(*snapshot_,view_.Document());
+        if (!restored) error_(restored.GetError().code+": "+restored.GetError().message);
+    }
+    InvalidateRect(window_,nullptr,FALSE);
+}
+void NativeSceneView::Cancel() {
+    const bool active=drag_.Active(); drag_.Cancel(); arrow_keys_=0; panning_=false;
+    if (GetCapture()==window_) ReleaseCapture();
+    if (active) Restore();
+}
+void NativeSceneView::Finish() {
+    const auto committed=drag_.Commit(workspace_); arrow_keys_=0;
+    if (GetCapture()==window_) ReleaseCapture();
+    if (!committed || !committed.Value()) Restore();
+    if (!committed) error_(committed.GetError().code+": "+committed.GetError().message);
+    else error_({});
+    changed_();
+}
+void NativeSceneView::Move(ViewPoint cursor) {
+    if (!drag_.Current(workspace_)) { Cancel(); error_("Gesture cancelled: source revision or selection changed."); return; }
+    const auto moved=drag_.Move(view_,cursor,snap_);
+    if (!moved) error_(moved.GetError().code+": "+moved.GetError().message);
+    InvalidateRect(window_,nullptr,FALSE);
+}
+std::optional<GizmoFrame> NativeSceneView::Gizmo() const {
+    if (!editable_) return std::nullopt;
+    for (const auto &item:view_.Items()) if (item.id==selected_) {
+        const auto frame=MakeGizmo(view_,item.world,space_); const auto extent=view_.Extent();
+        if (frame.pivot.x>=0 && frame.pivot.x<=extent.x && frame.pivot.y>=24 && frame.pivot.y<=extent.y-24) return frame;
+    }
+    return std::nullopt;
+}
+void NativeSceneView::DrawGizmo() {
+    const auto frame=Gizmo(); if (!frame) return;
+    const auto p=frame->pivot; const auto px=static_cast<float>(p.x), py=static_cast<float>(p.y);
+    if (tool_==GizmoTool::Rotate) { renderer_->Outline(px,py,52,0xffd078,3); renderer_->Circle(px,py,3,0xffd078); return; }
+    const auto axis=[&](ViewPoint end,unsigned color,std::wstring_view label) {
+        const auto x=static_cast<float>(end.x), y=static_cast<float>(end.y);
+        renderer_->Line(px,py,x,y,color,3);
+        if (tool_==GizmoTool::Scale) renderer_->Rect(x-5,y-5,10,10,color);
+        else renderer_->Circle(x,y,4,color);
+        renderer_->Text(label,x+7,y-8,13,color,25);
+    };
+    axis(frame->x,0xf49791,L"X"); axis(frame->y,0x84d5ae,L"Y");
+    renderer_->Rect(px-5,py-5,10,10,0xffd078);
+}
 void NativeSceneView::Capture(const std::filesystem::path &file) {
     Paint();
     if (!renderer_ || !failure_.empty()) throw std::runtime_error("Scene View cannot capture a failed surface");
@@ -102,10 +160,12 @@ void NativeSceneView::Paint() {
         renderer_->Text(Wide(item.label.substr(0,identity)),label_x,label_y,13,color,140);
         if (identity!=std::string::npos) renderer_->Text(Wide(item.label.substr(identity+1)),label_x,label_y+18,13,color,140);
     }
+    DrawGizmo();
     char coordinates[128];
     std::snprintf(coordinates,sizeof(coordinates),"XY authoring | grid %.3g | X %.4g  Y %.4g",step,world.x,world.y);
     renderer_->Rect(0,0,w,24,0x17222e,.95f); renderer_->Text(Wide(coordinates),8,4,12,0xe2eaf0,w-16);
-    renderer_->Rect(0,h-24,w,24,0x17222e,.95f); renderer_->Text(L"MMB / empty drag pan | wheel zoom | F / Home",8,h-21,12,0xe2eaf0,w-16);
+    renderer_->Rect(0,h-24,w,24,0x17222e,.95f);
+    renderer_->Text(drag_.Active()?L"Preview | release commit | Esc / RMB cancel":L"MMB pan | wheel zoom | arrows move | F / Home",8,h-21,12,0xe2eaf0,w-16);
     renderer_->PopTransform(); renderer_->End();
 }
 LRESULT CALLBACK NativeSceneView::Procedure(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data) noexcept {
@@ -128,20 +188,55 @@ LRESULT NativeSceneView::Message(UINT msg,WPARAM wp,LPARAM lp) {
         } catch (...) { EndPaint(window_,&paint); throw; }
         EndPaint(window_,&paint); return 0;
     }
-    if (msg==WM_SIZE) { Resize(); InvalidateRect(window_,nullptr,FALSE); return 0; }
+    if (msg==WM_SIZE) { Cancel(); Resize(); InvalidateRect(window_,nullptr,FALSE); return 0; }
     if (msg==WM_LBUTTONDOWN) {
-        SetFocus(window_); const auto hit=view_.Pick(Point(lp)); select_(hit);
+        Cancel(); SetFocus(window_); const auto point=Point(lp);
+        if (point.y<24 || point.y>view_.Extent().y-24) return 0;
+        const auto frame=Gizmo(); const auto handle=frame?PickGizmo(*frame,tool_,point):GizmoHandle::None;
+        if (handle!=GizmoHandle::None) {
+            if (!select_(selected_)) return 0;
+            const auto begun=drag_.Begin(workspace_,view_,tool_,space_,handle,point);
+            if (begun) SetCapture(window_); else error_(begun.GetError().message);
+            return 0;
+        }
+        const auto hit=view_.Pick(point); if (!select_(hit)) return 0;
+        if (hit.IsValid() && tool_==GizmoTool::Move && editable_) {
+            const auto begun=drag_.Begin(workspace_,view_,GizmoTool::Move,space_,GizmoHandle::Free,point);
+            if (begun) SetCapture(window_); else error_(begun.GetError().message);
+        }
         if (!hit.IsValid()) { panning_=true; last_=Point(lp); SetCapture(window_); }
         return 0;
     }
-    if (msg==WM_MBUTTONDOWN) { SetFocus(window_); panning_=true; last_=Point(lp); SetCapture(window_); return 0; }
-    if (msg==WM_MBUTTONUP || msg==WM_LBUTTONUP || msg==WM_CANCELMODE) { panning_=false; if (GetCapture()==window_) ReleaseCapture(); return 0; }
-    if (msg==WM_CAPTURECHANGED) { panning_=false; return 0; }
+    if (msg==WM_MBUTTONDOWN) { Cancel(); SetFocus(window_); panning_=true; last_=Point(lp); SetCapture(window_); return 0; }
+    if (msg==WM_LBUTTONUP && drag_.Active() && arrow_keys_==0) { Move(Point(lp)); if (drag_.Active()) Finish(); return 0; }
+    if (msg==WM_MBUTTONUP || msg==WM_LBUTTONUP) { panning_=false; if (GetCapture()==window_) ReleaseCapture(); return 0; }
+    if (msg==WM_CAPTURECHANGED || msg==WM_CANCELMODE || msg==WM_RBUTTONDOWN || msg==WM_KILLFOCUS) { Cancel(); return DefSubclassProc(window_,msg,wp,lp); }
+    if (msg==WM_MOUSEMOVE && drag_.Active() && arrow_keys_==0) { Move(Point(lp)); return 0; }
     if (msg==WM_MOUSEMOVE && panning_) { const auto next=Point(lp); view_.Pan({next.x-last_.x,next.y-last_.y}); last_=next; InvalidateRect(window_,nullptr,FALSE); return 0; }
     if (msg==WM_MOUSEWHEEL) {
+        Cancel();
         POINT point{GET_X_LPARAM(lp),GET_Y_LPARAM(lp)}; ScreenToClient(window_,&point);
         view_.Zoom({static_cast<double>(point.x)*96/dpi_,static_cast<double>(point.y)*96/dpi_},static_cast<double>(GET_WHEEL_DELTA_WPARAM(wp))/WHEEL_DELTA);
         InvalidateRect(window_,nullptr,FALSE); return 0;
+    }
+    if (msg==WM_KEYDOWN && wp==VK_ESCAPE) { Cancel(); return 0; }
+    if ((msg==WM_KEYDOWN || msg==WM_KEYUP) && wp>=VK_LEFT && wp<=VK_DOWN) {
+        const unsigned bit=1u<<static_cast<unsigned>(wp-VK_LEFT);
+        if (msg==WM_KEYUP) { if (arrow_keys_!=0) { arrow_keys_&=~bit; if (arrow_keys_==0 && drag_.Active()) Finish(); } return 0; }
+        if (GetKeyState(VK_CONTROL)<0 || GetKeyState(VK_MENU)<0) return DefSubclassProc(window_,msg,wp,lp);
+        if (drag_.Active() && arrow_keys_==0) return 0;
+        if (!drag_.Active()) {
+            if (!select_(selected_)) return 0;
+            keyboard_cursor_={view_.Extent().x*.5,view_.Extent().y*.5};
+            const auto begun=drag_.Begin(workspace_,view_,GizmoTool::Move,GizmoSpace::World,GizmoHandle::Free,keyboard_cursor_,0);
+            if (!begun) { error_(begun.GetError().message); return 0; }
+        }
+        arrow_keys_|=bit; const double step=(snap_>0?snap_:.1)*(GetKeyState(VK_SHIFT)<0?10:1)*view_.Scale();
+        if (wp==VK_LEFT) keyboard_cursor_.x-=step;
+        if (wp==VK_RIGHT) keyboard_cursor_.x+=step;
+        if (wp==VK_UP) keyboard_cursor_.y-=step;
+        if (wp==VK_DOWN) keyboard_cursor_.y+=step;
+        Move(keyboard_cursor_); return 0;
     }
     if (msg==WM_KEYDOWN && (wp=='F' || wp==VK_HOME)) { Frame(wp==VK_HOME); return 0; }
     return DefSubclassProc(window_,msg,wp,lp);
