@@ -13,6 +13,7 @@
 #include "Epidemic/Game/Editor/editor_inspector.h"
 #include "windows_scene_view.h"
 #include "../example/demo_game.h"
+#include "../example/editor_demo.h"
 #include <array>
 #include <algorithm>
 #include <cmath>
@@ -79,7 +80,7 @@ enum Control : int { New = 100, Open, Save, Undo, Redo, Play, Stop, SendEvent, P
     ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel,
     ParentLabel, SceneParents, Reparent, Viewport, ViewLabel, FrameSelection, FitScene,
     ToolMode, CoordinateSpace, SnapLabel, SnapValue, SetSnap, BooleanValue, ComponentLabel, ComponentTypes, OpenReference, RefreshInspector,
-    OverrideMode, ResetOverride, ExposeParameter, DetachBinding };
+    OverrideMode, ResetOverride, ExposeParameter, DetachBinding, NewDemo };
 struct Field {
     std::string name, value;
     std::function<Result<ed::Command>(std::string_view)> command;
@@ -111,7 +112,7 @@ class Desktop final {
     ~Desktop() {
         KillTimer(hwnd_, 1);
         scene_view_.reset();
-        for (int id=New;id<=DetachBinding;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
+        for (int id=New;id<=NewDemo;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
         if (font_) DeleteObject(font_);
         if (heading_font_) DeleteObject(heading_font_);
         RemoveWindowSubclass(hwnd_, &ParentProc, 1);
@@ -119,6 +120,7 @@ class Desktop final {
     bool Closed() const noexcept { return closed_; }
     void Load(const std::filesystem::path &file) { (void)workspace_.Open(file); Refresh(true); }
     void Smoke(const std::filesystem::path &file, platform::IPlatformRuntime &events);
+    void DemoSmoke(const std::filesystem::path &file,platform::IPlatformRuntime &events);
   private:
     HWND ControlHandle(int id) const { return GetDlgItem(hwnd_, id); }
     HWND Make(int id, const wchar_t *kind, const wchar_t *label, DWORD style = 0) {
@@ -142,6 +144,7 @@ class Desktop final {
     bool Draft() const { return field_ >= 0 && static_cast<std::size_t>(field_) < fields_.size() && fields_[static_cast<std::size_t>(field_)].command && Text(ControlHandle(Value)) != fields_[static_cast<std::size_t>(field_)].value; }
     bool ApplyDraft(bool explicit_apply=false);
     bool SaveProject();
+    Result<void> CreateDemoCopy(const std::filesystem::path &file);
     bool CanReplace();
     std::optional<std::filesystem::path> Choose(bool save);
     void Action(int id);
@@ -198,7 +201,8 @@ void Desktop::Controls() {
     for (const auto &[id, label] : std::array<std::pair<int, const wchar_t *>, 8>{{
         {New,L"New example"}, {Open,L"Open..."}, {Save,L"Save"}, {Undo,L"Undo"}, {Redo,L"Redo"},
         {Play,L"Play (F5)"}, {Stop,L"Stop"}, {SendEvent,L"Send hit"}}}) Make(id,L"BUTTON",label,WS_TABSTOP);
-    Make(EventLabel,L"STATIC",L"Payload / wait ticks"); Make(Payload,L"EDIT",L"10",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
+    Make(EventLabel,L"STATIC",L"Hit / wait ticks"); Make(Payload,L"EDIT",L"10",WS_TABSTOP | WS_BORDER | ES_AUTOHSCROLL);
+    Make(NewDemo,L"BUTTON",L"New demo",WS_TABSTOP);
     Make(ProjectLabel,L"STATIC",L"Project"); Make(HistoryLabel,L"STATIC",L"Edit history"); Make(PreviewLabel,L"STATIC",L"Play preview");
     Make(Context,L"STATIC",L"Open a project or create an example.",SS_NOPREFIX);
     Make(DocumentsLabel,L"STATIC",L"Documents / hierarchy");
@@ -268,7 +272,7 @@ void Desktop::Fonts(UINT dpi) {
     metrics.lfMessageFont.lfWeight=FW_SEMIBOLD;
     const auto heading=CreateFontIndirectW(&metrics.lfMessageFont);
     if (!normal || !heading) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); throw std::runtime_error("Cannot create UI font"); }
-    for (int id=New;id<=DetachBinding;++id) {
+    for (int id=New;id<=NewDemo;++id) {
         const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel || id==ViewLabel;
         SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:normal),TRUE);
     }
@@ -288,7 +292,7 @@ void Desktop::Layout() {
     move(New,12,32,116,30); move(Open,134,32,80,30); move(Save,220,32,80,30);
     move(Undo,326,32,76,30); move(Redo,408,32,76,30);
     move(Play,512,32,90,30); move(Stop,608,32,70,30); move(SendEvent,684,32,90,30);
-    move(EventLabel,792,8,width-804,20); move(Payload,792,32,100,30);
+    move(EventLabel,792,8,100,20); move(Payload,792,32,100,30); move(NewDemo,900,32,std::min(110,width-912),30);
     move(Context,12,76,width-24,42);
     const int left=(width-48)*28/100, mid=(width-left-48)/2, right=left+mid+36;
     const int bottom=height-164;
@@ -547,6 +551,12 @@ bool Desktop::ApplyDraft(bool explicit_apply) {
     SelectField(selected); local_error_.clear(); Diagnostics(); return true;
 }
 bool Desktop::SaveProject() { if (!ApplyDraft()) return false; const auto saved=workspace_.Save(); if (saved) { local_error_.clear(); Refresh(); } else Diagnostics(); return static_cast<bool>(saved); }
+Result<void> Desktop::CreateDemoCopy(const std::filesystem::path &file) {
+    auto definition=ex::DemoDefinition(file,schema_.View());
+    if (!definition) return Result<void>::Failure(definition.GetError());
+    auto created=workspace_.New(file,std::move(definition).Value(),true); if (!created) return created;
+    auto saved=workspace_.Save(); if (saved) local_error_.clear(); Refresh(true); return saved;
+}
 bool Desktop::CanReplace() {
     if (!Draft() && (!workspace_.Project() || !workspace_.Project()->IsDirty())) return true;
     const auto answer=MessageBoxW(hwnd_,L"Save changes before leaving this project?",L"Unsaved authoring data",MB_YESNOCANCEL | MB_ICONQUESTION);
@@ -619,6 +629,13 @@ void Desktop::Action(int id) {
     if (id==FrameSelection || id==FitScene) { scene_view_->Frame(id==FitScene); return; }
     if (id==Revert) { SelectField(field_); local_error_.clear(); Diagnostics(); return; }
     if (id==Apply) { (void)ApplyDraft(true); return; }
+    if (id==NewDemo) {
+        if (!CanReplace()) return;
+        const auto file=Choose(true); if (!file) return;
+        const auto result=CreateDemoCopy(*file);
+        if (!result) { local_error_=result.GetError().code+": "+result.GetError().message; Diagnostics(); }
+        return;
+    }
     if (id==New || id==Open) {
         if (!CanReplace()) return;
         const auto file=Choose(id==New); if (!file) return;
@@ -1113,7 +1130,7 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
         SetWindowPos(hwnd_,nullptr,0,0,MulDiv(1000,static_cast<int>(dpi),96),MulDiv(800,static_cast<int>(dpi),96),SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Layout();
         RECT client{}; GetClientRect(hwnd_,&client);
         SyncScene();
-        for (int id:{Tree,Fields,Value,BooleanValue,ComponentTypes,OpenReference,RefreshInspector,OverrideMode,ResetOverride,ExposeParameter,DetachBinding,FollowPrefab,Connect,Place,ToolsHint,Log,Viewport,FrameSelection,FitScene}) {
+        for (int id:{Tree,Fields,Value,BooleanValue,ComponentTypes,OpenReference,RefreshInspector,OverrideMode,ResetOverride,ExposeParameter,DetachBinding,NewDemo,FollowPrefab,Connect,Place,ToolsHint,Log,Viewport,FrameSelection,FitScene}) {
             RECT bounds{}; GetWindowRect(ControlHandle(id),&bounds);
             POINT first{bounds.left,bounds.top},last{bounds.right,bounds.bottom}; ScreenToClient(hwnd_,&first); ScreenToClient(hwnd_,&last);
             check(first.x>=0 && first.y>=0 && last.x<=client.right && last.y<=client.bottom && last.y>first.y);
@@ -1150,6 +1167,48 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     if (!closed_) std::fprintf(stderr,"REGRESSION: Alt+F4 does not close the host window\n");
     check(unique_labels && root_shortcut && closed_);
 }
+void Desktop::DemoSmoke(const std::filesystem::path &file,platform::IPlatformRuntime &events) {
+    const auto check=[](bool value,const std::source_location at=std::source_location::current()) { if (!value) throw std::runtime_error("EditorDemo native invariant at line "+Number(at.line())); };
+    check(!CreateDemoCopy(EPIDEMIC_EDITOR_DEMO_PROJECT)); ex::Take(CreateDemoCopy(file));
+    const auto scene=AssetId::FromString("example.scene");
+    const auto choose=[&](std::uint64_t node) {
+        const ed::UiSelection selection{scene,node?ed::UiElement::SceneNode:ed::UiElement::Document,node};
+        const auto found=std::find(selections_.begin(),selections_.end(),selection); check(found!=selections_.end());
+        TreeView_SelectItem(ControlHandle(Tree),tree_items_[static_cast<std::size_t>(found-selections_.begin())]); check(workspace_.Selection()==selection);
+    };
+    const auto field=[&](std::string_view suffix) {
+        const auto found=std::find_if(fields_.begin(),fields_.end(),[&](const auto &item){return item.name.ends_with(suffix);});
+        check(found!=fields_.end()); SelectField(static_cast<int>(found-fields_.begin()));
+    };
+    const auto edit=[&](std::string_view suffix,std::string_view text){field(suffix); SetText(ControlHandle(Value),text); Action(Apply); check(!Draft());};
+    choose(0); check(scene_view_->Projection().Items().size()==3); Action(FitScene);
+    const auto baseline=workspace_.Project()->Snapshot();
+    const auto mouse=[&](UINT message,ed::ViewPoint point) { SendMessageW(ControlHandle(Viewport),message,0,MAKELPARAM(static_cast<int>(std::lround(point.x*dpi_/96)),static_cast<int>(std::lround(point.y*dpi_/96)))); };
+    const auto center=scene_view_->Projection().ToScreen({-6,0}); mouse(WM_LBUTTONDOWN,center); mouse(WM_LBUTTONUP,center);
+    check(workspace_.Selection().element==42 && workspace_.Project()->Snapshot()==baseline); choose(43); choose(42);
+    SetText(ControlHandle(SnapValue),"1"); Action(SetSnap); scene_view_->Frame(true);
+    const auto gizmo=ed::MakeGizmo(scene_view_->Projection(),scene_view_->Projection().Items().front().world,ed::GizmoSpace::World);
+    mouse(WM_LBUTTONDOWN,gizmo.x); mouse(WM_LBUTTONUP,{gizmo.x.x+scene_view_->Projection().Scale(),gizmo.x.y});
+    field("Local position X"); check(fields_[static_cast<std::size_t>(field_)].value=="-5");
+    const auto moved=workspace_.Project()->Snapshot(); Action(Undo); check(workspace_.Project()->Snapshot()==baseline); Action(Redo); check(workspace_.Project()->Snapshot()==moved);
+    SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,1,0); Action(OverrideMode);
+    edit(" / points","110"); edit(" / label","Edited Scout");
+    const auto edited=workspace_.Project()->Snapshot(); const auto revision=workspace_.Project()->Revision();
+    field(" / points"); SetText(ControlHandle(Value),"bad"); Action(Apply);
+    check(Draft() && workspace_.Project()->Snapshot()==edited && workspace_.Project()->Revision()==revision); Action(Revert);
+    choose(44); Action(Remove); Action(Undo); check(workspace_.Project()->Snapshot()==edited); choose(42);
+    choose(0); edit("Document","Arena edited"); Action(Save); check(!workspace_.Project()->IsDirty()); choose(42);
+    const auto authored=workspace_.Project()->Snapshot(); Action(Play); check(workspace_.Session() && workspace_.Session()->IsPlaying());
+    SetText(ControlHandle(Payload),"1"); Action(SendEvent); ex::Take(workspace_.Tick({}));
+    check(workspace_.Activations().size()==1); const auto activation=workspace_.Activations().back(); check(!activation->IsFinished());
+    ex::Take(workspace_.Tick(GameDuration{1})); check(activation->IsFinished()); Action(RefreshInspector);
+    check(std::any_of(fields_.begin(),fields_.end(),[](const auto &row){return row.name.ends_with(" / points") && row.value=="108" && row.detail.find("runtime snapshot")!=std::string::npos && !row.command;}));
+    SetText(ControlHandle(Payload),"999"); Action(SendEvent); ex::Take(workspace_.Tick({})); Action(RefreshInspector);
+    check(Text(ControlHandle(Log)).find("example.damage_range")!=std::string::npos);
+    Action(Stop); check(workspace_.Project()->Snapshot()==authored && !workspace_.Project()->IsDirty());
+    ex::Take(workspace_.Open(file)); Refresh(true); choose(42); field("Local position X"); check(fields_[static_cast<std::size_t>(field_)].value=="-5");
+    SendMessageW(hwnd_,WM_CLOSE,0,0); events.PumpEvents(); check(closed_);
+}
 } // namespace
 int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
     try {
@@ -1159,13 +1218,15 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
         auto **argv=parsed.get();
         if (!argv) return 1;
         std::vector<std::wstring> args; for (int i=1;i<argc;++i) args.emplace_back(argv[i]);
-        const bool smoke=args.size()==2 && args[0]==L"--ui-smoke";
-        if ((!args.empty() && !smoke && args.size()!=1) || (!args.empty() && args[0].starts_with(L"--") && !smoke)) throw std::runtime_error("usage: EpidemicEditorDesktop [project.epidemic] | --ui-smoke <project.epidemic>");
+        const bool demo_smoke=args.size()==2 && args[0]==L"--demo-smoke";
+        const bool smoke=demo_smoke || (args.size()==2 && args[0]==L"--ui-smoke");
+        if ((!args.empty() && !smoke && args.size()!=1) || (!args.empty() && args[0].starts_with(L"--") && !smoke)) throw std::runtime_error("usage: EpidemicEditorDesktop [project.epidemic] | --ui-smoke|--demo-smoke <project.epidemic>");
         platform::WindowsPlatformRuntime platform; ex::Schema schema;
         auto window=ex::Take(platform.CreateWindow({"Epidemic Editor",1280,850,!smoke}));
         {
             Desktop editor{window,schema};
-            if (smoke) editor.Smoke(std::filesystem::path{args[1]},platform);
+            if (demo_smoke) editor.DemoSmoke(std::filesystem::path{args[1]},platform);
+            else if (smoke) editor.Smoke(std::filesystem::path{args[1]},platform);
             else {
                 if (!args.empty()) editor.Load(std::filesystem::path{args[0]});
                 const auto active=[&] { return !editor.Closed() && !window->IsCloseRequested() && !platform.IsExitRequested(); };
@@ -1178,7 +1239,8 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int) {
         window->Close(); platform.Shutdown(); return 0;
     } catch (const std::exception &error) {
         // CI smoke failures use a deterministic nonzero exit, never a modal dialog.
-        if (std::wstring_view{GetCommandLineW()}.find(L"--ui-smoke")==std::wstring_view::npos) MessageBoxW(nullptr,Wide(error.what()).c_str(),L"Epidemic Editor",MB_OK | MB_ICONERROR);
+        const std::wstring_view command{GetCommandLineW()};
+        if (command.find(L"--ui-smoke")==std::wstring_view::npos && command.find(L"--demo-smoke")==std::wstring_view::npos) MessageBoxW(nullptr,Wide(error.what()).c_str(),L"Epidemic Editor",MB_OK | MB_ICONERROR);
         std::fprintf(stderr,"%s\n",error.what()); OutputDebugStringA(error.what()); return 1;
     }
 }

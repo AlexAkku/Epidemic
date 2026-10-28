@@ -259,3 +259,21 @@ Prefab inheritance, nested asset references or live runtime propagation is added
 The archive remains 1.0.0. Headless --write-overrides / --read-overrides exercise
 two placements, parameter binding, independent Health/Movement and event/Wait in
 separate processes. Temporary projects remain under Temp/editor-tests.
+
+### EditorDemo
+
+The permanent source project is example/EditorDemo/EditorDemo.epidemic; its README
+documents stable IDs, role/override values and the manual end-to-end scenario.
+New demo imports that archive into a user-chosen working file and immediately
+saves it through the existing Command/Persistence path. Selecting the shipped
+source as the destination is rejected. Other authoring files remain editable;
+the dev build uses its source path to locate the template.
+
+The demo uses three spatially separated, differently scaled unit-box placeholders
+for a shared Enemy definition. Role strings live in Movement.label; viewport/tree
+labels use Prefab name and stable ID, matching SceneSnapshot's existing contract.
+There are no new Sprite bindings, asset formats, runtime services or UI frameworks.
+Headless --edit-demo / --read-demo and native --demo-smoke operate on Temp copies
+of this same archive. The native result is also reloaded by a new headless process.
+Hidden native smoke verifies the owned controls and viewport; real desktop UX/DPI
+and visible end-to-end acceptance remain manual when computer use is excluded.
