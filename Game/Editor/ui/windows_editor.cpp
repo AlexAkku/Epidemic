@@ -78,7 +78,8 @@ enum Control : int { New = 100, Open, Save, Undo, Redo, Play, Stop, SendEvent, P
     Status, Log, Hint, DocumentsLabel, PropertiesLabel, ToolsLabel, EventLabel, NodeLabel, FromLabel, ToLabel, PrefabLabel,
     ValueLabel, BehaviorLabel, BehaviorGraph, FollowPrefab, Context, ToolsHint, ProjectLabel, HistoryLabel, PreviewLabel,
     ParentLabel, SceneParents, Reparent, Viewport, ViewLabel, FrameSelection, FitScene,
-    ToolMode, CoordinateSpace, SnapLabel, SnapValue, SetSnap, BooleanValue, ComponentLabel, ComponentTypes, OpenReference, RefreshInspector };
+    ToolMode, CoordinateSpace, SnapLabel, SnapValue, SetSnap, BooleanValue, ComponentLabel, ComponentTypes, OpenReference, RefreshInspector,
+    OverrideMode, ResetOverride, ExposeParameter, DetachBinding };
 struct Field {
     std::string name, value;
     std::function<Result<ed::Command>(std::string_view)> command;
@@ -86,6 +87,9 @@ struct Field {
     std::string detail{};
     AssetId reference{};
     bool missing=false;
+    std::optional<ed::Command> reset;
+    std::function<Result<std::vector<ed::Command>>(comp::PropertyId)> binding;
+    bool bound=false;
 };
 std::string FieldText(const Field &field) { return field.name+" = "+field.value+(field.detail.empty()?"":" ["+field.detail+"]")+(field.command?"":"  [read only]"); }
 class Desktop final {
@@ -107,7 +111,7 @@ class Desktop final {
     ~Desktop() {
         KillTimer(hwnd_, 1);
         scene_view_.reset();
-        for (int id=New;id<=RefreshInspector;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
+        for (int id=New;id<=DetachBinding;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
         if (font_) DeleteObject(font_);
         if (heading_font_) DeleteObject(heading_font_);
         RemoveWindowSubclass(hwnd_, &ParentProc, 1);
@@ -188,7 +192,7 @@ class Desktop final {
     std::string nonce_ = Number(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
     std::string local_error_, log_text_;
     int field_ = -1;
-    bool refreshing_ = false, closed_ = false, timer_running_ = false, scene_document_=false;
+    bool refreshing_ = false, closed_ = false, timer_running_ = false, scene_document_=false, edit_overrides_=false;
 };
 void Desktop::Controls() {
     for (const auto &[id, label] : std::array<std::pair<int, const wchar_t *>, 8>{{
@@ -227,13 +231,18 @@ void Desktop::Controls() {
     for (const auto *value:{"false","true"}) Item(ControlHandle(BooleanValue),value,CB_ADDSTRING);
     ShowWindow(ControlHandle(BooleanValue),SW_HIDE);
     Make(OpenReference,L"BUTTON",L"Open reference",WS_TABSTOP); Make(RefreshInspector,L"BUTTON",L"Refresh values",WS_TABSTOP);
+    Make(OverrideMode,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST);
+    for (const auto *mode:{"View Definition","Edit Instance Override"}) Item(ControlHandle(OverrideMode),mode,CB_ADDSTRING);
+    SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,0,0);
+    Make(ResetOverride,L"BUTTON",L"Reset selected override",WS_TABSTOP);
+    Make(ExposeParameter,L"BUTTON",L"Expose parameter",WS_TABSTOP); Make(DetachBinding,L"BUTTON",L"Detach binding",WS_TABSTOP);
     Make(BehaviorLabel,L"STATIC",L"Graph asset for hit behavior");
     Make(BehaviorGraph,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     Make(AttachBehavior,L"BUTTON",L"Assign hit GraphBehavior",WS_TABSTOP);
     Make(PrefabLabel,L"STATIC",L"Prefab asset for Scene placement");
     Make(Prefabs,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     Make(Place,L"BUTTON",L"Assign Prefab",WS_TABSTOP);
-    Make(FollowPrefab,L"BUTTON",L"Open Prefab definition",WS_TABSTOP);
+    Make(FollowPrefab,L"BUTTON",L"Edit Prefab Definition",WS_TABSTOP);
     Make(ParentLabel,L"STATIC",L"Spatial parent (keep local)");
     Make(SceneParents,L"COMBOBOX",L"",WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL);
     Make(Reparent,L"BUTTON",L"Set parent (keep local)",WS_TABSTOP);
@@ -259,7 +268,7 @@ void Desktop::Fonts(UINT dpi) {
     metrics.lfMessageFont.lfWeight=FW_SEMIBOLD;
     const auto heading=CreateFontIndirectW(&metrics.lfMessageFont);
     if (!normal || !heading) { if (normal) DeleteObject(normal); if (heading) DeleteObject(heading); throw std::runtime_error("Cannot create UI font"); }
-    for (int id=New;id<=RefreshInspector;++id) {
+    for (int id=New;id<=DetachBinding;++id) {
         const bool title=id==DocumentsLabel || id==PropertiesLabel || id==ToolsLabel || id==ProjectLabel || id==HistoryLabel || id==PreviewLabel || id==ViewLabel;
         SendMessageW(ControlHandle(id),WM_SETFONT,reinterpret_cast<WPARAM>(title?heading:normal),TRUE);
     }
@@ -314,12 +323,15 @@ void Desktop::Layout() {
     move(ComponentLabel,right,198,rw,22); move(ComponentTypes,right,224,rw,240);
     move(AddComponent,right,260,rw/2-3,30); move(ReplaceComponent,right+rw/2+3,260,rw/2-3,30);
     move(BehaviorLabel,right,310,rw,22); move(BehaviorGraph,right,336,rw,240); move(AttachBehavior,right,376,rw,30);
+    move(ExposeParameter,right,414,rw/2-3,30); move(DetachBinding,right+rw/2+3,414,rw/2-3,30);
     move(PrefabLabel,right,198,rw,22); move(Prefabs,right,224,rw,240); move(Place,right,264,rw,30); move(FollowPrefab,right,310,rw,30);
     move(ParentLabel,right,366,rw,22); move(SceneParents,right,392,rw,240); move(Reparent,right,430,rw,30);
     move(ToolsHint,right,466,rw,std::max(70,bottom-466));
     if (scene_document_) {
-        move(SnapLabel,right,466,rw,22); move(SnapValue,right,492,90,28); move(SetSnap,right+96,492,96,28);
-        move(ToolsHint,right,532,rw,std::max(30,bottom-532));
+        move(OverrideMode,right,350,rw,100); move(ResetOverride,right,532,rw,30);
+        move(ParentLabel,right,382,rw,22); move(SceneParents,right,406,rw,240); move(Reparent,right,438,rw,30);
+        move(SnapLabel,right,474,rw,22); move(SnapValue,right,500,90,28); move(SetSnap,right+96,500,96,28);
+        move(ToolsHint,right,570,rw,std::max(20,bottom-570));
     }
     move(Status,12,bottom+8,width-24,24); move(Log,12,bottom+38,width-24,116);
 }
@@ -361,6 +373,7 @@ void Desktop::SceneTree(HTREEITEM parent,const ed::ProjectSnapshot &snapshot,con
     }
 }
 void Desktop::Refresh(bool new_project) {
+    if (new_project) { edit_overrides_=false; SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,0,0); }
     std::set<decltype(SelectionKey(ed::UiSelection{}))> expanded;
     // Common-controls can return additional state bits despite the requested mask.
     for (std::size_t i=0;i<tree_items_.size();++i) if ((TreeView_GetItemState(ControlHandle(Tree),tree_items_[i],TVIS_EXPANDED)&static_cast<UINT>(TVIS_EXPANDED))!=0) expanded.insert(SelectionKey(selections_[i]));
@@ -479,18 +492,30 @@ void Desktop::Inspector() {
         }
         SendMessageW(ControlHandle(Source),CB_SETCURSEL,0,0); SendMessageW(ControlHandle(Destination),CB_SETCURSEL,0,0);
     }
-    for (const auto &entry:ed::InspectComponents(*snapshot,selection,schema_.components,workspace_.Session())) {
+    for (const auto &entry:ed::InspectComponents(*snapshot,selection,schema_.components,workspace_.Session(),edit_overrides_)) {
         const std::array<const char *,4> kinds{"i64","double","bool","string"};
         Field field{entry.name,ed::InspectorText(entry),{},entry.kind,entry.source,entry.reference};
         field.missing=entry.editable && !entry.value;
         if (entry.kind) field.detail=std::string{kinds[static_cast<std::size_t>(*entry.kind)]}+" / "+field.detail;
         if (!entry.readonly_reason.empty()) field.detail+=" / "+entry.readonly_reason;
-        if (entry.editable && entry.kind) field.command=[owner=entry.owner,property=entry.property,kind=*entry.kind](std::string_view text) {
-            ed::InspectorEntry key; key.owner=owner; key.property=property; key.kind=kind; key.editable=true;
-            return ed::InspectorCommand(key,text);
-        };
+        if (entry.binding.IsValid()) field.detail+=" / bound parameter ["+Number(entry.binding.Raw())+"]";
+        if (entry.definition_value) {
+            ed::InspectorEntry display; display.value=entry.definition_value; const auto text=ed::InspectorText(display);
+            const bool valid=text.empty() || MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text.data(),static_cast<int>(text.size()),nullptr,0);
+            field.detail+=" / definition default: "+(valid?text:"<invalid UTF-8>");
+        } else if (entry.target==ed::InspectorTarget::ComponentOverride) field.detail+=" / definition default unavailable";
+        ed::InspectorEntry key; key.owner=entry.owner; key.property=entry.property; key.kind=entry.kind; key.editable=entry.editable;
+        key.target=entry.target; key.placement=entry.placement; key.binding=entry.binding; key.overridden=entry.overridden;
+        if (entry.editable && entry.kind) field.command=[key](std::string_view text) { return ed::InspectorCommand(key,text); };
+        if (auto reset=ed::InspectorResetCommand(key);reset) field.reset=std::move(reset).Value();
+        if (entry.target==ed::InspectorTarget::Property && entry.owner.kind==ed::UiElement::PrefabComponent && entry.value) {
+            field.bound=entry.binding.IsValid();
+            field.binding=[key,value=*entry.value](comp::PropertyId parameter) mutable {
+                key.value=value; return ed::InspectorBinding(key,parameter);
+            };
+        }
         if (!field.value.empty() && !MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,field.value.data(),static_cast<int>(field.value.size()),nullptr,0)) {
-            field.value="<invalid UTF-8>"; field.command={}; field.detail+=" / unsupported text encoding";
+            field.value="<invalid UTF-8>"; field.command={}; field.binding={}; field.detail+=" / unsupported text encoding";
         }
         AddField(std::move(field));
     }
@@ -548,6 +573,26 @@ void Desktop::Action(int id) {
     if (id==RefreshInspector) {
         if (Draft()) { local_error_="Apply or Revert the field before refreshing values."; Diagnostics(); return; }
         Inspector(); Diagnostics(); return;
+    }
+    if (id==OverrideMode) {
+        if (Draft()) {
+            // The mode change has not rebuilt the fields yet; retain the
+            // previous mode until the pending field is explicitly resolved.
+            SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,edit_overrides_?1:0,0);
+            local_error_="Apply or Revert the field before changing edit mode."; Diagnostics(); return;
+        }
+        edit_overrides_=SendMessageW(ControlHandle(OverrideMode),CB_GETCURSEL,0,0)==1;
+        Inspector(); Diagnostics(); return;
+    }
+    if (id==ResetOverride || id==ExposeParameter || id==DetachBinding) {
+        if (Draft()) { local_error_="Apply or Revert the field before changing its override/binding."; Diagnostics(); return; }
+        if (field_<0 || static_cast<std::size_t>(field_)>=fields_.size()) return;
+        auto &field=fields_[static_cast<std::size_t>(field_)];
+        if (id==ResetOverride) { if (field.reset) (void)Execute({*field.reset}); return; }
+        if (!field.binding) return;
+        auto commands=field.binding(id==ExposeParameter?Fresh():comp::PropertyId{});
+        if (!commands) { local_error_=commands.GetError().message; Diagnostics(); return; }
+        (void)Execute(std::move(commands).Value()); return;
     }
     if (id==OpenReference) {
         if (Draft()) { local_error_="Apply or Revert the field before opening a reference."; Diagnostics(); return; }
@@ -689,12 +734,12 @@ void Desktop::Diagnostics() {
     const bool prefab_doc=doc && std::holds_alternative<comp::PrefabDefinition>(doc->data), scene_doc=doc && std::holds_alternative<gc::SceneCompositionDefinition>(doc->data);
     const auto visible=[&](int id,bool show) { const auto control=ControlHandle(id); if (((static_cast<DWORD_PTR>(GetWindowLongPtrW(control,GWL_STYLE))&static_cast<DWORD_PTR>(WS_VISIBLE))!=0)!=show) ShowWindow(control,show?SW_SHOW:SW_HIDE); };
     for (int id:{NodeLabel,Palette,FromLabel,Source,ToLabel,Destination,Connect}) visible(id,graph);
-    for (int id:{AddComponent,ReplaceComponent,ComponentLabel,ComponentTypes,BehaviorLabel,BehaviorGraph,AttachBehavior}) visible(id,prefab_doc);
-    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab,ParentLabel,SceneParents,Reparent}) visible(id,scene_doc);
+    for (int id:{AddComponent,ReplaceComponent,ComponentLabel,ComponentTypes,BehaviorLabel,BehaviorGraph,AttachBehavior,ExposeParameter,DetachBinding}) visible(id,prefab_doc);
+    for (int id:{PrefabLabel,Prefabs,Place,FollowPrefab,ParentLabel,SceneParents,Reparent,OverrideMode,ResetOverride}) visible(id,scene_doc);
     SetText(ControlHandle(ToolsLabel),graph?"Graph actions":prefab_doc?"Prefab definition":scene_doc?"Scene placement":"Document actions");
     SetText(ControlHandle(Add),graph?"Add node":prefab_doc?"Add Entity":"Add placement");
     SetText(ControlHandle(Remove),selection.kind==ed::UiElement::PrefabComponent?"Delete component":"Delete selection");
-    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Schema properties show type/source. Add on Entity; replace on Component (resets that slot to the chosen template). Parameters are read-only. Graph picker assigns hit behavior to the selection.":"Drag axes or Move body. Esc/RMB cancels. Arrows move World XY; Shift x10. Inspector values below TRS are effective authoring; runtime rows are separate and refresh explicitly.";
+    const std::string tool_hint=!doc?"Open a project or create an example.":graph?"Select ports of compatible kind, direction and type. Select a node or link to delete it.":prefab_doc?"Edit Definition. Expose a property as a parameter; edit its default row or detach its binding. Tree nesting is ownership, not spatial parenting; no Prefab geometry preview is available.":"Reset removes only the selected override layer. Runtime rows remain read-only.";
     if (Text(ControlHandle(ToolsHint))!=tool_hint) SetText(ControlHandle(ToolsHint),tool_hint);
     std::string context="Open a project or create an example.";
     if (doc && project) {
@@ -703,7 +748,9 @@ void Desktop::Diagnostics() {
             std::array<wchar_t,512> label{}; TVITEMW item{}; item.mask=TVIF_TEXT; item.hItem=tree_items_[i]; item.pszText=label.data(); item.cchTextMax=static_cast<int>(label.size());
             TreeView_GetItem(ControlHandle(Tree),&item); context+="  |  Selected: "+Utf8(label.data()); break;
         }
-        context+=playing?"\nEditing authoring data; Play uses its existing snapshot.":"\nAuthoring data. Full stable IDs are available in properties.";
+        context+=playing?"\nEditing authoring data; Play uses its existing snapshot.":scene_doc?
+            (edit_overrides_?"\nEdit Instance Override: changes belong only to this placement.":"\nView Definition: use Edit Prefab Definition or choose Edit Instance Override."):
+            prefab_doc?"\nEdit Definition: shared by all placements without an overriding value.":"\nAuthoring data. Full stable IDs are available in properties.";
     }
     if (Text(ControlHandle(Context))!=context) SetText(ControlHandle(Context),context);
     for (int id:{NewScene,NewPrefab,NewGraph,Add,Remove}) EnableWindow(ControlHandle(id),project!=nullptr);
@@ -715,6 +762,10 @@ void Desktop::Diagnostics() {
     EnableWindow(ControlHandle(FollowPrefab),workspace_.PrefabDefinitionSelection().has_value());
     for (int id:{SceneParents,Reparent}) EnableWindow(ControlHandle(id),selection.kind==ed::UiElement::SceneNode);
     const bool missing_field=field_>=0 && static_cast<std::size_t>(field_)<fields_.size() && fields_[static_cast<std::size_t>(field_)].missing;
+    const auto *selected_field=field_>=0 && static_cast<std::size_t>(field_)<fields_.size()?&fields_[static_cast<std::size_t>(field_)]:nullptr;
+    EnableWindow(ControlHandle(ResetOverride),selected_field && selected_field->reset.has_value());
+    EnableWindow(ControlHandle(ExposeParameter),selected_field && selected_field->binding && !selected_field->bound);
+    EnableWindow(ControlHandle(DetachBinding),selected_field && selected_field->binding && selected_field->bound);
     EnableWindow(ControlHandle(Apply),Draft() || missing_field); EnableWindow(ControlHandle(Revert),Draft());
     std::string log=local_error_;
     if (workspace_.LastError()) { const auto &error=*workspace_.LastError(); log+="\r\nLast command failed: "+error.code+": "+error.message; }
@@ -789,7 +840,7 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
             if (index==0 || index==1) SetText(ControlHandle(Value),index==1?"true":"false");
             Diagnostics();
         } else if (id==Value && notification==EN_CHANGE) Diagnostics();
-        else if (notification==BN_CLICKED || ((id==ToolMode || id==CoordinateSpace) && notification==CBN_SELCHANGE)) Action(id);
+        else if (notification==BN_CLICKED || ((id==ToolMode || id==CoordinateSpace || id==OverrideMode) && notification==CBN_SELCHANGE)) Action(id);
         return 0;
     }
     if (msg==WM_NOTIFY && !refreshing_) {
@@ -874,6 +925,27 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
     check(workspace_.Project()->Snapshot()!=absent && !fields_[static_cast<std::size_t>(field_)].missing);
     Action(Undo); check(workspace_.Project()->Snapshot()==absent);
     Action(Undo); check(workspace_.Project()->Snapshot()==tuned); Action(Save);
+    // M6: expose/default/binding and explicit placement override through UI.
+    choose(tuning); field_named(" / count"); Action(ExposeParameter);
+    field_named(" / count"); check(!fields_[static_cast<std::size_t>(field_)].command && fields_[static_cast<std::size_t>(field_)].bound);
+    Action(DetachBinding); field_named(" / count"); check(static_cast<bool>(fields_[static_cast<std::size_t>(field_)].command)); Action(Undo);
+    const auto parameter_field=[&] {
+        const auto found=std::find_if(fields_.begin(),fields_.end(),[](const auto &field){return field.name.starts_with("Parameter [");});
+        check(found!=fields_.end()); SelectField(static_cast<int>(found-fields_.begin()));
+    };
+    parameter_field(); SetText(ControlHandle(Value),"30"); Action(Apply);
+    choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
+    SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,1,0); Action(OverrideMode);
+    enter(" / count","99"); field_named(" / count"); check(fields_[static_cast<std::size_t>(field_)].reset.has_value());
+    const auto overridden=workspace_.Project()->Snapshot(); Action(ResetOverride); field_named(" / count");
+    check(fields_[static_cast<std::size_t>(field_)].value=="30" && !fields_[static_cast<std::size_t>(field_)].reset);
+    Action(Undo); check(workspace_.Project()->Snapshot()==overridden); Action(Undo); // Remove only that property override.
+    field_named(" / count"); SetText(ControlHandle(Value),"44");
+    SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,0,0); Action(OverrideMode);
+    check(Draft() && SendMessageW(ControlHandle(OverrideMode),CB_GETCURSEL,0,0)==1); Action(Revert);
+    SendMessageW(ControlHandle(OverrideMode),CB_SETCURSEL,0,0); Action(OverrideMode);
+    field_named(" / count"); check(!fields_[static_cast<std::size_t>(field_)].command);
+    Action(Undo); Action(Undo); check(workspace_.Project()->Snapshot()==tuned); Action(Save);
     choose({AssetId::FromString("example.scene"),ed::UiElement::SceneNode,42});
     check(IsWindowVisible(ControlHandle(Viewport))==IsWindowVisible(hwnd_));
     POINT native_hit{20,20}; ClientToScreen(ControlHandle(Viewport),&native_hit);
@@ -1041,7 +1113,7 @@ void Desktop::Smoke(const std::filesystem::path &file, platform::IPlatformRuntim
         SetWindowPos(hwnd_,nullptr,0,0,MulDiv(1000,static_cast<int>(dpi),96),MulDiv(800,static_cast<int>(dpi),96),SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE); Layout();
         RECT client{}; GetClientRect(hwnd_,&client);
         SyncScene();
-        for (int id:{Tree,Fields,Value,BooleanValue,ComponentTypes,OpenReference,RefreshInspector,FollowPrefab,Connect,Place,ToolsHint,Log,Viewport,FrameSelection,FitScene}) {
+        for (int id:{Tree,Fields,Value,BooleanValue,ComponentTypes,OpenReference,RefreshInspector,OverrideMode,ResetOverride,ExposeParameter,DetachBinding,FollowPrefab,Connect,Place,ToolsHint,Log,Viewport,FrameSelection,FitScene}) {
             RECT bounds{}; GetWindowRect(ControlHandle(id),&bounds);
             POINT first{bounds.left,bounds.top},last{bounds.right,bounds.bottom}; ScreenToClient(hwnd_,&first); ScreenToClient(hwnd_,&last);
             check(first.x>=0 && first.y>=0 && last.x<=client.right && last.y<=client.bottom && last.y>first.y);

@@ -103,8 +103,9 @@ shows document/selection context, while Project, history and Play actions are
 grouped separately. Actions for other document kinds are hidden. Native message
 fonts and layout scale with window DPI; native smoke covers 100/150% layout and
 font metrics, separately from an actual monitor-DPI GUI check.
-Parameters and parameter-bound properties are read-only. Prefab overrides have
-no editing UI; reassigning the same Prefab preserves its existing overrides.
+Parameter defaults are editable; bound properties show the parameter link and
+can be detached. Scene component/parameter fields use explicit View Definition
+or Edit Instance Override modes; reassigning the same Prefab preserves overrides.
 
 Spatial fields edit **local** Scene TRS: XYZ position/scale in Scene units and
 Z rotation in degrees for XY-plane orientations. Angles wrap modulo 360; tilted
@@ -190,7 +191,7 @@ Close owned preview windows before rebuilding their executable. If a user sessio
 must stay open, use another normal build directory (for example
 `Temp/b/ui-validation`); no executable renaming is required.
 
-### Schema Inspector (M5)
+### Schema Inspector
 
 Inspector fields come from the frozen ComponentRegistry descriptors: i64/double
 use checked numeric entry, bool uses a true/false selector, and string uses native
@@ -211,8 +212,8 @@ this stage. A missing authored property shows its factory default as unavailable
 Inspector never instantiates a runtime component to discover defaults.
 
 Prefab definition values are editable unless parameter-bound. Scene placements
-show read-only effective definition/parameter/override values. Parameter and
-override authoring remains M6. IDs, graph routes and GraphBehavior references are
+show effective definition/parameter/override values, editable in Instance Override
+mode. Runtime remains read-only. IDs, graph routes and GraphBehavior references are
 read-only fields; existing Graph/Prefab pickers assign valid project references.
 GraphBehavior may belong to an Entity or a Component; the example assignment maps
 hit to the selected Graph's first event input. Open reference navigates existing
@@ -225,3 +226,36 @@ PlaySession::ReadComponentProperty returns an owned value and fails for inactive
 busy, missing or destroyed runtime objects; it exposes no mutable service/handle.
 Single-line editing preserves Unicode/whitespace. Existing multiline/NUL strings
 are escaped and read-only; invalid UTF-8 is read-only in the Windows host.
+
+### Prefab definition and instance editing
+
+Prefab documents expose the existing ownership tree, components, GraphBehavior
+and parameter rows. Prefab nodes carry no spatial transforms or render geometry;
+there is no spatial Prefab preview, and ownership never becomes Scene parenting.
+The Scene viewport continues to show placement geometry/placeholders.
+
+Expose parameter publishes SetPrefabParameter + SetProperty as one transaction.
+The generated parameter ID is shown on the bound field and its default row.
+Defaults retain their original value kind; all bound-property validators and
+archive constraints apply before publication. Detach binding keeps the current
+definition value as a literal. It retains the parameter itself, including other
+bindings and instance assignments; it does not delete authoring data implicitly.
+
+Scene's View Definition mode keeps component values read-only; Edit Prefab
+Definition navigates by asset ID. Edit Instance Override writes only the selected
+placement's component or parameter assignment, using SetComponentOverride or
+SetParameterOverride. These commands patch the current placement and reject a
+mismatched expected Prefab ID, preserving unrelated component/parameter/behavior
+overrides. Reset selected override removes just that assignment in one Undo step.
+Effective priority is component override, then bound parameter override, then
+definition default. Resetting a component assignment can therefore reveal an
+existing parameter override; reset its parameter row separately to inherit the
+definition default. A mode change cannot discard an unapplied draft.
+
+Definition edits affect subsequent Play sessions and effective authoring views;
+running sessions keep their independent snapshot. Rename, Scene reparenting and
+project-file relocation preserve asset/node/property IDs. No Apply All Overrides,
+Prefab inheritance, nested asset references or live runtime propagation is added.
+The archive remains 1.0.0. Headless --write-overrides / --read-overrides exercise
+two placements, parameter binding, independent Health/Movement and event/Wait in
+separate processes. Temporary projects remain under Temp/editor-tests.
