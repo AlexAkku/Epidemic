@@ -109,6 +109,10 @@ foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>> ValidateProjec
             Dependencies(std::get<comp::PrefabDefinition>(document.data).root, metadata.dependencies);
             metadata.type = {foundation::StringId::FromString("editor.prefab")};
         } else metadata.type = {foundation::StringId::FromString("editor.graph")};
+        // Dependencies describe asset edges, not individual placements/behaviors.
+        // Several instances may legitimately reference the same required asset.
+        std::sort(metadata.dependencies.begin(),metadata.dependencies.end(),[](const auto &a,const auto &b) { return a.asset_id.Raw()<b.asset_id.Raw(); });
+        metadata.dependencies.erase(std::unique(metadata.dependencies.begin(),metadata.dependencies.end()),metadata.dependencies.end());
         const auto registered = assets.Value().writer->RegisterAsset(metadata);
         if (!registered) return Result::Failure(registered.GetError());
     }

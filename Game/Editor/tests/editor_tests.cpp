@@ -37,6 +37,19 @@ void Documents() {
     invalid = snapshot->definition;
     std::get<gc::SceneCompositionDefinition>(invalid.documents[0].data).scene.nodes[0].parent = SceneNodeId{999};
     ErrorIs(ed::ValidateProject(invalid, Schema(f, types)), "composition.scene_parent");
+    auto repeated=snapshot->definition;
+    auto &scene=std::get<gc::SceneCompositionDefinition>(repeated.documents[0].data);
+    for (const auto id:{43u,44u}) {
+        SceneNodeSnapshot node; node.id=SceneNodeId{id}; scene.scene.nodes.push_back(node);
+        scene.placements.push_back({node.id,repeated.documents[1].id,{}});
+    }
+    auto &prefab=std::get<comp::PrefabDefinition>(repeated.documents[1].data);
+    auto behavior=prefab.root.behaviors.front(); behavior.id=Id("another.behavior"); prefab.root.behaviors.push_back(behavior);
+    const auto catalog=Take(ed::ValidateProject(repeated,Schema(f,types)));
+    const auto scene_asset=catalog->FindById(scene.asset_id), prefab_asset=catalog->FindById(AssetId{prefab.id});
+    if (!scene_asset || !prefab_asset) throw std::runtime_error("repeated asset references lost catalog identity");
+    Check(scene_asset->dependencies.size()==1 && prefab_asset->dependencies.size()==1,
+        "repeated Prefab placements and behaviors share a single asset dependency");
 }
 void Commands() {
     Fixture f; ComponentsFixture types;
