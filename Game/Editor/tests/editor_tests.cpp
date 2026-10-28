@@ -2,6 +2,7 @@
 #include "Epidemic/Game/Editor/play_session.h"
 #include "../../Composition/tests/user_components.h"
 #include <fstream>
+#include <array>
 
 using namespace composition_tests;
 namespace ed = epidemic::game::editor;
@@ -77,6 +78,16 @@ void Commands() {
     Take(project->Redo());
     Take(project->Execute({0, {ed::DeleteGraphNode{graph_id, node.id}}}));
     ErrorIs(project->Execute({0, {ed::AddGraphNode{graph_id, node}}}), "editor.retired_id");
+    // These probes document current container-scoped identities: reuse is currently accepted.
+    const auto parameter=comp::PrefabParameter{Id("probe.parameter"),std::int64_t{42}};
+    Take(project->Execute({0,{ed::SetPrefabParameter{prefab,parameter}}})); Take(project->Undo());
+    Check(static_cast<bool>(project->Execute({0,{ed::SetPrefabParameter{prefab,parameter}}})), "parameter ID reuse after Undo is currently accepted");
+    auto behavior=std::get<comp::PrefabDefinition>(project->Snapshot()->Find(prefab)->data).root.behaviors.front();
+    behavior.id=Id("probe.behavior");
+    Take(project->Execute({0,{ed::SetBehavior{prefab,Id("enemy"),{},{},behavior}}}));
+    Take(project->Execute({0,{ed::DeleteBehavior{prefab,Id("enemy"),{},{},behavior.id}}}));
+    Check(static_cast<bool>(project->Execute({0,{ed::SetBehavior{prefab,Id("enemy"),{},{},behavior}}})), "behavior ID reuse after delete is currently accepted");
+    Take(project->Execute({0,{ed::DeleteBehavior{prefab,Id("enemy"),{},{},behavior.id}}}));
     Take(project->Execute({0, {ed::DeleteBehavior{prefab, Id("enemy"), {}, {}, Id("behavior")}, ed::DeleteDocument{graph_id}}}));
     Take(project->Undo()); Check(project->Snapshot()->Find(graph_id) != nullptr, "undo restores referenced graph and behavior together");
 }
@@ -170,14 +181,48 @@ void Play() {
     const auto destroyed = restarted->Instance(SceneNodeId{42})->Objects()[0].entity;
     Take(restarted->Context()->entities.RequestDestroy(destroyed, fw::entities::EntityDestroyReason::Destroyed));
     Take(restarted->Stop()); Check(!restarted->IsPlaying(), "Stop accepts Entities already pending destruction");
+    auto draft=Definition(); draft.asset_id=AssetId::FromString("editor.unused.graph");
+    Take(project->Execute({0,{ed::CreateDocument{{draft.asset_id,"Unused graph",0,draft}}}}));
+    auto unused_failure=Options(types); auto normal=unused_failure.bindings;
+    unused_failure.bindings=[normal,draft](ed::PlayContext &ctx,AssetId id) {
+        if(id==draft.asset_id) throw std::runtime_error("unused factory failure");
+        return normal(ctx,id);
+    };
+    ErrorIs(project->Play(std::move(unused_failure)),"editor.play_exception");
+    auto unused_mismatch=Options(types); normal=unused_mismatch.bindings;
+    unused_mismatch.bindings=[normal,draft](ed::PlayContext &ctx,AssetId id) {
+        auto result=normal(ctx,id);
+        if(id==draft.asset_id && !result.empty()) result[0].operation=graph::Operation::Wait;
+        return result;
+    };
+    ErrorIs(project->Play(std::move(unused_mismatch)),"editor.play_binding");
     auto throwing = Options(types); throwing.bindings = [](ed::PlayContext &, AssetId) -> std::vector<gc::NodeBinding> { throw std::runtime_error("binding failed"); };
     ErrorIs(project->Play(std::move(throwing)), "editor.play_exception");
     Check(project->Snapshot()->Find(AssetId::FromString("editor.prefab"))->name == "Enemy", "failed Play does not mutate authoring");
 }
+void PlacementDiagnostic() {
+    Fixture f; ComponentsFixture types; auto definition=Project(f,types);
+    auto &scene=std::get<gc::SceneCompositionDefinition>(definition.documents[0].data);
+    scene.scene.nodes[0].local_transform.position={4,0,0};
+    SceneNodeSnapshot parent; parent.id=SceneNodeId{99}; parent.local_transform.position={10,0,0}; scene.scene.nodes.push_back(parent);
+    SceneNodeSnapshot child; child.id=SceneNodeId{43}; child.parent=parent.id; child.local_transform.position={2,0,0}; scene.scene.nodes.push_back(child);
+    SceneNodeSnapshot third; third.id=SceneNodeId{44}; third.local_transform.position={-3,0,0}; scene.scene.nodes.push_back(third);
+    for(auto id:{43u,44u})scene.placements.push_back({SceneNodeId{id},definition.documents[1].id,{}});
+    auto project=Take(ed::EditorProject::Create("Temp/editor-tests/placement-diagnostic.epidemic",definition,Schema(f,types)));
+    auto play=Take(project->Play(Options(types))); const auto *runtime=play->Scene();
+    for(const auto &[id,x]:std::array<std::pair<unsigned,float>,3>{{{42u,4.0f},{43u,12.0f},{44u,-3.0f}}}) {
+        const auto node=runtime->nodes.at(SceneNodeId{id}); const auto world=runtime->scene.transforms->GetWorldTransform(node);
+        Check(world && world->position.x==x && play->Instance(SceneNodeId{id}),"scene world transform and placement instance exist");
+    }
+    const auto a=play->Instance(SceneNodeId{42})->Objects()[0].entity;
+    const auto b=play->Instance(SceneNodeId{43})->Objects()[0].entity;
+    const auto c=play->Instance(SceneNodeId{44})->Objects()[0].entity;
+    Check(a!=b && a!=c && b!=c,"placement instances own independent entities; spatial Entity binding is not implemented");
+}
 #include "stabilization_cases.h"
 int main(int argc, char **argv) {
     try {
-        if (argc == 1) { Documents(); Commands(); Persistence(); Play(); }
+        if (argc == 1) { Documents(); Commands(); Persistence(); Play(); PlacementDiagnostic(); }
         else if (argc == 2 && std::string_view{argv[1]} == "failures") StabilizationFailures();
         else if (argc == 2 && std::string_view{argv[1]} == "authoring") StabilizationAuthoring();
         else if (argc == 2 && std::string_view{argv[1]} == "stop") StabilizationStop();

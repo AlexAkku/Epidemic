@@ -9,7 +9,11 @@ must outlive projects and Play sessions. Calls are externally synchronized on on
 A request publishes one validated transaction. `expected_revision` rejects stale
 clients (zero opts out). Undo/redo restores immutable snapshots, including IDs and
 references; revisions remain monotonic within a session. History retains at most 64 transactions.
-Deleted IDs remain reserved across history branches and disk reloads. A save point
+Document IDs and Scene/Prefab node and Graph node/port/connection IDs remain
+reserved across history branches and disk reloads. Prefab parameter IDs are
+scoped to their Prefab, and GraphBehavior IDs to their Entity or Component
+behavior list; these IDs are currently reusable after undo or deletion. They
+are not covered by the retired-ID guarantee. A save point
 controls project and per-document dirty state; history is session-local.
 Create/Execute preflight the actual ProjectArchive encoder before publishing.
 All persisted authoring doubles must be finite (including parameters/overrides);
