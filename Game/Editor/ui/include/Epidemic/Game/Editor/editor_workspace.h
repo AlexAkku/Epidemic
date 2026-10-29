@@ -1,6 +1,7 @@
 #pragma once
 #include "Epidemic/Game/Editor/editor_commands.h"
 #include "Epidemic/Game/Editor/play_session.h"
+#include "Epidemic/Game/Editor/project_folder.h"
 
 namespace epidemic::game::editor {
 enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection, PrefabComponent };
@@ -22,6 +23,16 @@ class EditorWorkspace final {
         : schema_(schema), play_options_(std::move(play_options)) {}
     [[nodiscard]] foundation::Result<void> Open(const std::filesystem::path &file, bool discard_dirty = false);
     [[nodiscard]] foundation::Result<void> New(const std::filesystem::path &file, ProjectDefinition definition, bool discard_dirty = false);
+    [[nodiscard]] foundation::Result<void> OpenFolder(const std::filesystem::path &root, bool discard_dirty = false);
+    [[nodiscard]] foundation::Result<void> NewFolder(const std::filesystem::path &root, std::string title, ProjectDefinition definition, bool discard_dirty = false);
+    [[nodiscard]] foundation::Result<void> CloneFolder(const std::filesystem::path &destination);
+    [[nodiscard]] foundation::Result<void> ImportPng(const std::filesystem::path &source, std::string_view relative);
+    [[nodiscard]] foundation::Result<void> ReimportPng(runtime::AssetId asset);
+    [[nodiscard]] foundation::Result<void> MoveAsset(runtime::AssetId asset, std::string_view relative);
+    [[nodiscard]] foundation::Result<void> UndoAssetMove();
+    [[nodiscard]] foundation::Result<void> RedoAssetMove();
+    [[nodiscard]] const ProjectFolder *Folder() const noexcept { return folder_.get(); }
+    [[nodiscard]] bool IsDirty() const noexcept { return folder_ ? folder_->IsDirty() : project_ && project_->IsDirty(); }
     [[nodiscard]] foundation::Result<void> Execute(std::vector<Command> commands, std::uint64_t expected_revision);
     [[nodiscard]] foundation::Result<void> Save();
     [[nodiscard]] foundation::Result<void> Undo();
@@ -36,7 +47,7 @@ class EditorWorkspace final {
     [[nodiscard]] UiSelection Selection() const noexcept { return selection_; }
     // Resolve a placement to its definition; never reuse a Play entity handle.
     [[nodiscard]] std::optional<UiSelection> PrefabDefinitionSelection() const;
-    [[nodiscard]] const EditorProject *Project() const noexcept { return project_.get(); }
+    [[nodiscard]] const EditorProject *Project() const noexcept { return folder_ ? &folder_->Authoring() : project_.get(); }
     [[nodiscard]] const PlaySession *Session() const noexcept { return session_.get(); }
     [[nodiscard]] std::vector<std::shared_ptr<const PlayActivation>> Activations() const;
     [[nodiscard]] const std::optional<foundation::Error> &LastError() const noexcept { return error_; }
@@ -52,6 +63,7 @@ class EditorWorkspace final {
     ProjectSchema schema_;
     std::function<PlayOptions()> play_options_;
     std::unique_ptr<EditorProject> project_;
+    std::unique_ptr<ProjectFolder> folder_;
     std::unique_ptr<PlaySession> session_;
     UiSelection selection_;
     std::optional<foundation::Error> error_;

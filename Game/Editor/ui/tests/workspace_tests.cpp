@@ -167,7 +167,32 @@ void Run() {
     }
 }
 }
+void FolderWorkspace() {
+    ex::Schema schema;
+    const auto root=std::filesystem::path{EPIDEMIC_EDITOR_TEST_DIRECTORY}/"workspace-folder";
+    const auto clone=std::filesystem::path{EPIDEMIC_EDITOR_TEST_DIRECTORY}/"workspace-folder-clone";
+    std::error_code ec; std::filesystem::remove_all(root,ec); std::filesystem::remove_all(clone,ec);
+    const auto scene=runtime::AssetId::FromString("example.scene");
+    {
+        ed::EditorWorkspace workspace{schema.View(),[&]{return ex::Options(schema);}};
+        ex::Take(workspace.NewFolder(root,"Folder UI",ex::Definition(schema)));
+        Check(workspace.Folder() && !workspace.IsDirty());
+        ex::Take(workspace.Execute({ed::RenameDocument{scene,"Folder scene"}},workspace.Project()->Revision()));
+        Check(workspace.IsDirty() && !workspace.Open(root/"Project.epidemicproj"));
+        ex::Take(workspace.Undo()); Check(!workspace.IsDirty());
+        ex::Take(workspace.Redo()); Check(workspace.IsDirty());
+        ex::Take(workspace.Save()); Check(!workspace.IsDirty());
+        ex::Take(workspace.CloneFolder(clone));
+        ex::Take(workspace.Open(clone/"Project.epidemicproj"));
+        Check(workspace.Folder() && workspace.Project()->Snapshot()->Find(scene)->name=="Folder scene");
+        ex::Take(workspace.Play()); ex::Take(workspace.Stop());
+        Check(!workspace.IsDirty());
+    }
+    ed::EditorWorkspace reopened{schema.View(),[&]{return ex::Options(schema);}};
+    ex::Take(reopened.Open(root/"Project.epidemicproj"));
+    Check(reopened.Project()->Snapshot()->Find(scene)->name=="Folder scene");
+}
 int main() {
-    try { Spatial(); Run(); InspectorCases(); PrefabCases(); std::puts("PASS: workspace, schema Inspector, Prefab parameters/overrides, persistence and runtime isolation"); }
+    try { FolderWorkspace(); Spatial(); Run(); InspectorCases(); PrefabCases(); std::puts("PASS: workspace, schema Inspector, Prefab parameters/overrides, persistence and runtime isolation"); }
     catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
 }

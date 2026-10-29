@@ -645,6 +645,26 @@ void Renderer::WarpedSprite(std::string_view name,float x,float y,float size,flo
     Check(deform->SetValue(D2D1_DISPLACEMENTMAP_PROP_SCALE,strength*2),"Deform strength");Check(deform->SetValue(D2D1_DISPLACEMENTMAP_PROP_X_CHANNEL_SELECT,D2D1_CHANNEL_SELECTOR_R),"Deform X");Check(deform->SetValue(D2D1_DISPLACEMENTMAP_PROP_Y_CHANNEL_SELECT,D2D1_CHANNEL_SELECTOR_G),"Deform Y");
     canvas_->DrawImage(deform.Get());
 }
+struct RendererTexture {
+    Microsoft::WRL::ComPtr<ID2D1DeviceContext> context;
+    Microsoft::WRL::ComPtr<ID2D1Bitmap1> bitmap;
+};
+RendererTexturePtr Renderer::CreateTexture(unsigned width,unsigned height,std::span<const std::byte> pixels) {
+    if(recording_ || !width || !height || width>4096 || height>4096 || pixels.size()!=static_cast<std::size_t>(width)*height*4)
+        throw std::invalid_argument("Invalid external BGRA texture");
+    auto texture=std::make_shared<RendererTexture>();texture->context=canvas_;
+    const auto properties=D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_NONE,
+        D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM,D2D1_ALPHA_MODE_PREMULTIPLIED));
+    Check(canvas_->CreateBitmap(D2D1::SizeU(width,height),pixels.data(),width*4,&properties,&texture->bitmap),"Project texture upload");
+    return texture;
+}
+void Renderer::Texture(RendererTexturePtr texture,float x,float y,float width,float height,float alpha) {
+    if(!texture)return;
+    if(texture->context.Get()!=canvas_.Get())throw std::invalid_argument("Texture belongs to another renderer");
+    if(recording_){commands_.emplace_back([=,this]{Texture(texture,x,y,width,height,alpha);});return;}
+    if(width<=0 || height<=0 || alpha<=0)return;
+    canvas_->DrawBitmap(texture->bitmap.Get(),D2D1::RectF(x,y,x+width,y+height),std::clamp(alpha*opacity_,0.f,1.f),D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR);
+}
 void Renderer::Image(int id,float x,float y,float width,float height,float alpha){
     if(recording_){commands_.emplace_back([=,this]{Image(id,x,y,width,height,alpha);});return;}
     if(alpha<=0||width<=0||height<=0)return;

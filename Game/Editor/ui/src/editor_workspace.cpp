@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/editor_workspace.h"
+#include "Epidemic/Game/Editor/image_resource.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>
@@ -22,35 +23,78 @@ foundation::Result<void> EditorWorkspace::Finish(foundation::Result<void> &&resu
 foundation::Result<void> EditorWorkspace::Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate) {
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    project_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    folder_.reset(); project_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::Open(const std::filesystem::path &file, bool discard_dirty) {
-    if (project_ && project_->IsDirty() && !discard_dirty) return Finish(foundation::Result<void>::Failure(Error("editor.ui.unsaved_project")));
+    if (IsDirty() && !discard_dirty) return Finish(foundation::Result<void>::Failure(Error("editor.ui.unsaved_project")));
+    if (file.extension() == ".epidemicproj") return OpenFolder(file.parent_path(), discard_dirty);
     return Adopt(EditorProject::Open(file, schema_));
 }
 foundation::Result<void> EditorWorkspace::New(const std::filesystem::path &file, ProjectDefinition definition, bool discard_dirty) {
-    if (project_ && project_->IsDirty() && !discard_dirty) return Finish(foundation::Result<void>::Failure(Error("editor.ui.unsaved_project")));
+    if (IsDirty() && !discard_dirty) return Finish(foundation::Result<void>::Failure(Error("editor.ui.unsaved_project")));
     return Adopt(EditorProject::Create(file, std::move(definition), schema_));
 }
+foundation::Result<void> EditorWorkspace::OpenFolder(const std::filesystem::path &root, bool discard_dirty) {
+    if (IsDirty() && !discard_dirty) return Finish(foundation::Result<void>::Failure(Error("editor.ui.unsaved_project")));
+    auto candidate = ProjectFolder::Open(root, schema_);
+    if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
+    const auto stopped = Stop(); if (!stopped) return stopped;
+    project_.reset(); folder_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    return Finish(foundation::Result<void>::Success(), true);
+}
+foundation::Result<void> EditorWorkspace::NewFolder(const std::filesystem::path &root, std::string title, ProjectDefinition definition, bool discard_dirty) {
+    if (IsDirty() && !discard_dirty) return Finish(foundation::Result<void>::Failure(Error("editor.ui.unsaved_project")));
+    auto candidate = ProjectFolder::Create(root, std::move(title), std::move(definition), schema_);
+    if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
+    const auto stopped = Stop(); if (!stopped) return stopped;
+    project_.reset(); folder_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    return Finish(foundation::Result<void>::Success(), true);
+}
+foundation::Result<void> EditorWorkspace::CloneFolder(const std::filesystem::path &destination) {
+    return Finish(folder_ ? folder_->CloneTo(destination) : foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+}
+foundation::Result<void> EditorWorkspace::ImportPng(const std::filesystem::path &source, std::string_view relative) {
+    if (!folder_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+    const auto imported=ImportExternalPng(*folder_,source,relative);
+    return Finish(imported?foundation::Result<void>::Success():foundation::Result<void>::Failure(imported.GetError()));
+}
+foundation::Result<void> EditorWorkspace::ReimportPng(runtime::AssetId asset) {
+    if (!folder_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+    for(const auto &record:folder_->Sources())if(record.id==asset){
+        const auto imported=CookProjectPng(*folder_,record.relative_path.substr(8));
+        return Finish(imported?foundation::Result<void>::Success():foundation::Result<void>::Failure(imported.GetError()));
+    }
+    return Finish(foundation::Result<void>::Failure(Error("editor.ui.unknown_asset")));
+}
+foundation::Result<void> EditorWorkspace::MoveAsset(runtime::AssetId asset,std::string_view relative) {
+    return Finish(folder_?folder_->MoveSource(asset,relative):foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+}
+foundation::Result<void> EditorWorkspace::UndoAssetMove() {
+    return Finish(folder_?folder_->UndoAssetMove():foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+}
+foundation::Result<void> EditorWorkspace::RedoAssetMove() {
+    return Finish(folder_?folder_->RedoAssetMove():foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+}
 foundation::Result<void> EditorWorkspace::Execute(std::vector<Command> commands, std::uint64_t expected_revision) {
-    if (!project_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_project")));
-    const auto changed = project_->Execute({expected_revision, std::move(commands)});
+    if (!Project()) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_project")));
+    const EditRequest request{expected_revision, std::move(commands)};
+    const auto changed = folder_ ? folder_->Execute(request) : project_->Execute(request);
     return Finish(changed ? foundation::Result<void>::Success() : foundation::Result<void>::Failure(changed.GetError()), true);
 }
 foundation::Result<void> EditorWorkspace::Save() {
-    return Finish(project_ ? project_->Save() : foundation::Result<void>::Failure(Error("editor.ui.no_project")));
+    return Finish(folder_ ? folder_->Save() : project_ ? project_->Save() : foundation::Result<void>::Failure(Error("editor.ui.no_project")));
 }
 foundation::Result<void> EditorWorkspace::Undo() {
-    return Finish(project_ ? project_->Undo() : foundation::Result<void>::Failure(Error("editor.ui.no_project")), true);
+    return Finish(folder_ ? folder_->Undo() : project_ ? project_->Undo() : foundation::Result<void>::Failure(Error("editor.ui.no_project")), true);
 }
 foundation::Result<void> EditorWorkspace::Redo() {
-    return Finish(project_ ? project_->Redo() : foundation::Result<void>::Failure(Error("editor.ui.no_project")), true);
+    return Finish(folder_ ? folder_->Redo() : project_ ? project_->Redo() : foundation::Result<void>::Failure(Error("editor.ui.no_project")), true);
 }
 foundation::Result<void> EditorWorkspace::Play() {
-    if (!project_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_project")));
+    if (!Project()) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_project")));
     if (session_ && session_->IsPlaying()) return Finish(foundation::Result<void>::Failure(Error("editor.ui.already_playing")));
-    auto candidate = project_->Play(play_options_());
+    auto candidate = folder_ ? folder_->Play(play_options_()) : project_->Play(play_options_());
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     session_ = std::move(candidate).Value(); return Finish(foundation::Result<void>::Success());
 }
@@ -67,8 +111,8 @@ foundation::Result<std::size_t> EditorWorkspace::Send(runtime::SceneNodeId place
 }
 std::vector<std::shared_ptr<const PlayActivation>> EditorWorkspace::Activations() const { return session_ ? session_->Activations() : std::vector<std::shared_ptr<const PlayActivation>>{}; }
 bool EditorWorkspace::Exists(const UiSelection &selection) const {
-    if (!project_) return false;
-    const auto *doc = project_->Snapshot()->Find(selection.document); if (!doc) return false;
+    if (!Project()) return false;
+    const auto *doc = Project()->Snapshot()->Find(selection.document); if (!doc) return false;
     if (selection.kind != UiElement::PrefabComponent && (selection.component.IsValid() || selection.part.IsValid())) return false;
     if (selection.kind == UiElement::Document) return selection.element == 0;
     if (const auto *scene = std::get_if<composition::SceneCompositionDefinition>(&doc->data))
@@ -88,8 +132,8 @@ bool EditorWorkspace::Exists(const UiSelection &selection) const {
 }
 bool EditorWorkspace::Select(const UiSelection &selection) { if (!Exists(selection)) return false; selection_ = selection; return true; }
 std::optional<UiSelection> EditorWorkspace::PrefabDefinitionSelection() const {
-    if (!project_ || selection_.kind != UiElement::SceneNode) return std::nullopt;
-    const auto snapshot = project_->Snapshot();
+    if (!Project() || selection_.kind != UiElement::SceneNode) return std::nullopt;
+    const auto snapshot = Project()->Snapshot();
     const auto *document = snapshot->Find(selection_.document);
     const auto *scene = document ? std::get_if<composition::SceneCompositionDefinition>(&document->data) : nullptr;
     if (!scene) return std::nullopt;
@@ -106,8 +150,8 @@ void EditorWorkspace::Reconcile() {
         const UiSelection owner{selection_.document, UiElement::PrefabNode, selection_.element};
         if (Exists(owner)) { selection_ = owner; return; }
     }
-    if (project_ && project_->Snapshot()->Find(selection_.document)) { selection_ = {selection_.document}; return; }
-    if (project_ && !project_->Snapshot()->definition.documents.empty()) selection_ = {project_->Snapshot()->definition.documents.front().id};
+    if (Project() && Project()->Snapshot()->Find(selection_.document)) { selection_ = {selection_.document}; return; }
+    if (Project() && !Project()->Snapshot()->definition.documents.empty()) selection_ = {Project()->Snapshot()->definition.documents.front().id};
     else selection_ = {};
 }
 foundation::Result<Command> EditorWorkspace::TransformCommand(runtime::AssetId document, runtime::SceneNodeId node,

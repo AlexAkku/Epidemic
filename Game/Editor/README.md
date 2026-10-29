@@ -324,3 +324,15 @@ dominate large-project Debug latency. Current results/logs belong only in Temp.
 There is no duplicate command or custom hierarchy context menu. Native edit
 controls retain their standard context menus; Save/Discard/Cancel dialogs and
 visible UX are not claimed as tested by the hidden smoke.
+
+
+### Portable project folders / PNG preview
+
+File / New project folder creates a directory from the selected name; File / Open
+accepts `Project.epidemicproj` as well as legacy `.epidemic`. File / Clone project
+folder copies committed data with IDs preserved. View / Content Browser provides
+PNG copy/import/reimport, path search, rename/move, separate move Undo/Redo, Save
+and a thumbnail preview through Resources/Presentation. See
+[folder contract](PROJECT_FOLDER.md) and [PNG/browser limits](CONTENT_BROWSER_AND_PNG.md).
+This is the minimal browser; it does not yet provide Sprite assignment, duplicate,
+staged delete, multi-selection or typed drag/drop.

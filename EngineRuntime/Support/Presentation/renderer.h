@@ -15,9 +15,12 @@
 #include <functional>
 #include <memory>
 #include <span>
+#include <cstddef>
 #include <map>
 
 namespace epidemic::runtime::presentation {
+struct RendererTexture;
+using RendererTexturePtr = std::shared_ptr<const RendererTexture>;
 using RendererPoint=D2D1_POINT_2F;
 using RendererMatrix=D2D1_MATRIX_3X2_F;
 struct SpriteEntry {
@@ -116,6 +119,10 @@ class Renderer {
     void Outline(float x, float y, float radius, unsigned color, float thickness = 2, float alpha = 1);
     // Continuous displacement of one premultiplied sprite, with an anchored core.
     void WarpedSprite(std::string_view name,float x,float y,float size,float phase,float strength,float coreRadius,float alpha=1);
+    // Owner/render thread only. Input is top-down premultiplied BGRA8; pixels
+    // are copied to the GPU. Texture ownership may outlive a recorded frame.
+    [[nodiscard]] RendererTexturePtr CreateTexture(unsigned width, unsigned height, std::span<const std::byte> pixels);
+    void Texture(RendererTexturePtr texture, float x, float y, float width, float height, float alpha=1);
     void Image(int resource,float x,float y,float width,float height,float alpha=1);
     void Sprite(std::string_view name, float x, float y, float size = 256, float alpha = 1, bool platform = false,
                 float height = 256, float rotation = 0);

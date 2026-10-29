@@ -1,122 +1,63 @@
-# P04.0 / P04.1 production folder backend (proposed delta)
+# Portable project folder contract
 
-**Patch base:** `ea654e1581e6701fb3d38c6e2220be19b7c604cb` on `v2`.
-**Status:** Windows Debug build, public headers and 158 CTest cases passed; integration/GUI and the listed acceptance gaps remain open.
+ProjectFolder owns the file envelope; EditorProject remains the only authoring
+model and is exposed read-only. All Scene/Prefab/Graph mutations use the existing
+Command API through Execute/Undo/Redo. Schema/component registrations are borrowed
+and must outlive the folder and its PlaySession.
 
-## Ownership / contract
+## Layout and publication
 
-- The existing `EditorProject` remains the single Scene/Prefab/Graph authoring authority.
-- `ProjectFolder` uses its existing `ProjectDefinition`, `ProjectSchema`, Command API,
-  `project_archive` wire codec, Platform atomic single-file publication and Assets.
-  It reads/writes no new Runtime implementation and does not unseal catalog instances.
-- The folder layer is in `Game/Editor` (higher-level composition). It owns
-  project descriptors, stable source identity and multi-file commit protocol.
-- `ProjectFolder::Authoring()` is **read-only**. Use wrapper `Execute/Undo/Redo/Save`
-  to avoid writing directly into an immutable committed revision.
-- The schema and component registrations are borrowed, just as for EditorProject.
-  Callers must keep them alive and stay on the owning thread.
+- `Project.epidemicproj`: convenience descriptor, not the recovery authority.
+- `ProjectData/Commits/N.commit`: Serialization descriptor schema 1.0.0, published last.
+- `ProjectData/Revisions/N/Authoring.epidemic`: unchanged authoring archive 1.0.0,
+  including retired ID reservations.
+- `ProjectData/Revisions/N/Assets.manifest`: source index schema 1.1.0; the previous
+  1.0.0 remains readable. Source records include stable ID/type, relative location,
+  fingerprint/generation and optional immutable cooked SHA-256 key.
+- `Content/`, `Scripts/`: portable sources. Binary data stays outside authoring.
+- `.epidemic/Cache/images/`: derived cooked images; Clone copies these artifacts.
+- `.epidemic/workspace.lock`: process-owned OS writer lock, not a stale PID marker.
+- `.epidemic/source-moves.journal`: bounded source-move recovery protocol.
 
-## New portable layout
+Save validates authoring/index, stages immutable files through Platform atomic
+packages, reads them back, and publishes the commit marker last. Only then does
+it advance the authoring/source savepoint. Missing/changed sources remain visible
+as diagnostics and do not invalidate otherwise-saveable authoring. Source bytes
+are user-owned and are not themselves rolled back by an authoring snapshot.
 
-```
-MyGame/
-  Project.epidemicproj                    # best-effort, non-authoritative recent descriptor
-  ProjectData/
-    Commits/0000000000000001.commit       # authoritative, serialized; published LAST
-    Revisions/0000000000000001/
-      Authoring.epidemic                  # unchanged v2 authoring schema 1.0.0
-      Assets.manifest                     # versioned source index (not cooked imports)
-  Content/                                # user-owned sources
-  Scripts/                                # reserved for P05
-  .epidemic/workspace.lock                # OS-managed exclusive writer lock
-```
+Open holds the writer lock while selecting/recovering the newest intact committed
+revision. An unsupported future schema or incompatible game schema is a controlled
+failure, not a silent downgrade. Unmarked files are ignored. Uncommitted source
+moves roll back; ambiguous recovery preserves files and reports an error.
 
-Project filenames, relative paths and metadata are platform-neutral. Project
-identity comes from the authoring project, never the install folder or filename.
-The commit descriptor contains project/entry IDs, title, generation, relative
-immutable file paths and 64-bit *non-cryptographic* content hashes.
+## Operations
 
-## Commit / crash recovery
+Create requires a nonexistent destination. ImportLegacy copies the old archive
+and retired IDs into a separate new folder, without changing the original. Clone
+preserves identities and requires a committed project; it copies Content, Scripts,
+current immutable revision, marker and cooked images. It is not a cross-project
+remapping operation. Relocating the complete project retains relative paths.
 
-1. Validate authoring serialization (including retired IDs), source index and
-   source hashes. All in-memory modifications remain uncommitted on error.
-2. Write immutable `Revisions/N/Authoring.epidemic` via Platform commit.
-3. Write immutable `Revisions/N/Assets.manifest` via Platform commit.
-4. Re-read both, confirm hashes; atomically publish `Commits/N.commit` **last**.
-5. Only after successful marker publication advance `Generation` and the editor
-   savepoint; best-effort update the convenience root descriptor.
+EditorWorkspace routes commands, Undo/Redo, Save and Play to the active folder or
+legacy EditorProject. New-folder and Clone menu dialogs take the desired folder
+name (the `.epidemicproj` suffix is removed); Open selects the actual descriptor.
+Project-level dirty state includes asset metadata, not just authoring documents.
+Move Undo/Redo is separate from authoring Undo/Redo; see CONTENT_BROWSER_AND_PNG.md.
 
-`Open` searches committed markers newest first. It rejects unsupported future
-schemas without silent downgrade, and falls back to an older complete revision
-if a newer commit's files are missing/corrupt. **It must not fall back for a
-schema-incompatible authoring document**. Unmarked staged/orphan files are
-ignored. Old revisions are retained; garbage collection is not implemented.
+## Acceptance gaps
 
-A process-owned OS writer lock (exclusive Win32 file handle; POSIX flock) prevents
-two local editors opening the same folder for mutation. Kernel releases the lock
-if the process crashes, although the lock-file directory entry may remain.
-This protects cooperating local processes, not malicious filesystem replacement,
-network filesystem anomalies, power-loss durability on every storage device or
-manual file mutations from another application.
+Full P04.1 is not complete: configurable external/link mounts, profile/feature
+manifest fields, complete Unicode collision policy, handle-bound race-resistant
+I/O and crash injection at every publication boundary are not implemented.
+Existing symlinks/reparse components, traversal/device paths and overwrites are
+rejected, but this is not a sandbox against hostile concurrent filesystem changes.
 
-## Public operations
+Revision garbage collection is not implemented. Authoring still has its existing
+64 document / 16 MiB limits. ImportLegacy is available through the backend, not a
+native migration wizard. Visible UI, actual monitor DPI and network-filesystem
+behavior require manual acceptance.
 
-- `Create(root,title,definition,schema)`: root must not exist. Writes generation 1.
-- `ImportLegacy(root,legacy,title,schema)`: creates a separate folder, retaining
-  legacy retired IDs and not overwriting the source `.epidemic`.
-- `Open(root,schema)`: selects a verified committed revision, retains current IDs.
-- `Execute/Undo/Redo/Save`: edits use the existing Command API, savepoint advances
-  only after the multi-file commit marker. No second mutable authoring tree.
-- `IndexSource("Sprites/cat.png",type)`: indexes a file already inside `Content/`.
-  **Does not decode PNG**; gives a path-independent AssetId and fingerprints it.
-- `ReindexSource(id)`: after source bytes change, increments source generation
-  if fingerprint changes; does not create cooked payload or hot-update textures.
-- `BuildSourceCatalog()`: fresh, sealed, read-only Runtime Assets metadata snapshot.
-- `ResolveMount("Content"/"Scripts"/"ProjectData"/"Cache",relative)`:
-  calls existing `ResolveProjectPath` and retains its security limitations.
-- `CloneTo(root)`: copies the current **committed** authoring/asset index and
-  Content/Scripts into a new root, without cache or lock; preserves project IDs.
-  It refuses dirty projects. A clone is not a fork and does not remap identifiers.
-
-## Tests
-
-`EpidemicEditorFolderCreate` => `EpidemicEditorFolderReopen` =>
-`EpidemicEditorFolderRecovery` run as separate processes with CTest fixtures.
-They exercise create/edit/save, sealed catalog indexing, exclusive lock,
-relocation/clone, new-process open/Play, unpublished orphan ignored and
-corrupted newest committed authoring falling back to last-good.
-All test artifacts stay below `Temp/editor-tests/p04-folder`.
-
-## Important limitations / next packets
-
-1. **No EditorDesktop UI wiring** yet. Existing Open/New/Save menu still handles
-   legacy `.epidemic`; call ProjectFolder from C++/headless tests for now.
-2. **No production image/audio import or cooked resources**. Source indexing
-   only; P04.3 will supply decoders, import recipe, content generation and
-   resource publication. Mock P04 spike remains separate and unchanged.
-3. **No active ResourceLease generation-swap test.** This P04.0 acceptance item
-   must be completed on the real ResourceManager before declaring all of P04.0
-   closed. The per-source metadata generation is not a ResourceHandle generation.
-4. **No file watchers, async import, progress/cancel, thumbnails, drag/drop or
-   Content Browser**; these are P04.2–P04.5.
-5. **No user-configured external mounts** (only fixed project-relative mounts);
-   external-file links are intentionally not represented as portable dependencies.
-6. **No hardened sandbox**: `ResolveProjectPath` can be raced by symlink/reparse
-   replacement between checking and opening. Unicode/case-fold collisions beyond
-   ASCII, junctions, network shares and handle-based safe open remain open issues.
-7. **No asset-specific Undo/Redo, garbage collection or bounded retained history**;
-   immutable revision files accumulate until a future tested pruning feature.
-8. **The 64 document / 16 MiB authoring limits still apply.** Binary source files
-   stay out of the `.epidemic` archive.
-9. Build, tests, GUI, DLL-loading, Windows hardening and actual monitor DPI need
-   further target-environment verification. Local build/tests are qualified; visible GUI, DLL-loading, Windows hardening and actual monitor DPI are not asserted PASS.
-
-## Migration plan
-
-- Existing `.epidemic` is still readable by old APIs and is never rewritten.
-- Use explicit `ProjectFolder::ImportLegacy` for conversion by copying the
-  authoring definition and its retired IDs into a separate folder.
-- Reject unknown versions; future migration must add an explicit versioned
-  converter, not reinterpret old fields.
-- Before UI exposure, add an `EditorWorkspace` adapter that selects legacy
-  EditorProject or ProjectFolder and routes Save to the correct owner.
+Tests: FolderCreate/Reopen/Recovery cover separate-process commit/clone/legacy
+migration, lock, orphan rejection and corrupted-revision fallback. ContentTests,
+ContentReopen and ContentDesktopSmoke cover the real PNG/resource/preview path.
+All test files are under Temp.

@@ -1,26 +1,51 @@
-# P04.2/P04.3a incremental backend — status and scope
+# Content Browser and PNG MVP
 
-Base: `v2` commit `87715cb8cc6303a8d8d5905854921fbfa84fe236`.
+Open a portable project descriptor from File / Open, or use File / New project
+folder. The new-folder dialog takes a name: selecting `Parent/MyGame.epidemicproj`
+creates `Parent/MyGame/Project.epidemicproj`. File / Clone project folder copies
+committed portable data without changing IDs; save pending edits first.
 
-## Implemented
+View / Content Browser opens a native command client for the active ProjectFolder.
+It supports path search, stable ID/generation/presence information, PNG import,
+reimport, rename/move, separate Undo move/Redo move, Save and resident thumbnail
+preview. Source move history is bounded to 64 operations and 128 pending journal
+steps between saves. History is session-local; recovery journal is durable.
 
-- Read-only, sorted Content Browser view of `ProjectFolder::Sources()` with path-prefix, case-insensitive ASCII search, type filter, folder discovery, presence indicator and generation metadata.
-- Move/rename indexed content source within an existing Content folder. Preserves stable AssetId, rejects traversal, destination collision and overwrite, marks project dirty; committed by `ProjectFolder::Save()`. This is a filesystem operation, not EditorProject Undo.
-- Real PNG signature, WIC decode to bounded 32-bit premultiplied BGRA pixels on Windows; 4096 pixels per side and 128 MiB source-file maximum. Invalid/oversized/corrupt inputs rejected before indexing.
-- Index existing project PNG and copy/import external PNG to an existing Content folder, using `ProjectFolder::IndexSource()` and its source fingerprint; no `.rc`/EXE rebuild.
-- Headless tests for filtering/move/reopen, rejecting malformed/truncated PNG and Windows decoding of a real 1x1 RGBA PNG with premultiplied-alpha verification and persisted AssetId.
+The destination field is relative to Content (including the filename). Clear it
+before Import to use the selected external filename. Destination directories must
+already exist. The authoring Undo/Redo in the main window remain distinct from
+filesystem move Undo/Redo. Import/reimport are not advertised as undoable.
 
-## Not yet implemented — do not mark P04.2 or P04.3 COMPLETE
+## PNG / resource contract
 
-- Content Browser GUI, thumbnails, drag-and-drop, tags, multi-select, soft delete/undo, references graph, import progress.
-- Cooked textures, actual GPU sprite view, atlas/tilesets, WebP, WAV/Ogg, fonts, live reimport, Scene Sprite binding.
-- Filesystem security and transactions across source moves, journalled rollback, externally linked assets and cancellation.
-- The new `DecodedPng` byte buffer is an import/preview primitive only; it is not a ResourceLease, cooked artifact, or renderer texture.
+- Windows WIC; signature/container checks, maximum 128 MiB source, 4096 per side.
+- Cooked Serialization document including key, recipe, dimensions and PBGRA8 pixels.
+  Its current 16 MiB archive budget also limits cooked pixel bytes (4096 bytes of
+  headroom reserved); large images can decode but fail cooking without publication.
+- Fixed sRGB, premultiplied BGRA8, top-down, nearest/clamp, no mipmap or trim.
+  SHA-256 includes source bytes and canonical recipe/importer/profile version.
+- Immutable `.epidemic/Cache/images/<key>.image`; source index schema 1.1.0 stores
+  last-good key. Clone copies image artifacts; deleting cache requires Reimport
+  from valid source. Preview uses existing Resources then Presentation texture API.
+- Corrupt/missing source does not erase references or prevent saving authoring.
+  Failed/cancelled reimport retains key/generation and existing resource leases.
+- Preview manager budget 64 MiB, maximum 256 registered keys per browser session;
+  textures use at most 128x128 thumbnails. Close/reopen releases session resources.
+  Imports are synchronous/bounded today; background jobs belong to P04.5.
 
-## Integration contract
+## Remaining P04.2 work
 
-`ProjectFolder` owns source identity. `BrowseContent` is detached and must not become a second asset registry. UI commands later call these APIs through the existing `EditorWorkspace` integration. WIC decode runs on calling thread today: schedule through bounded worker jobs before exposing large imports from UI.
+Folder tree/breadcrumb, empty-folder commands, grid mode, GUI type/status/tag
+filters, multi-selection, duplicate/remap, staged delete with references policy,
+full asset-command Undo/Redo and typed drag/drop are not implemented. The current
+browser must not be described as complete P04.2. Sprite assignment/Scene rendering
+are P04.3b, not this texture preview.
 
-## Test
+## Verification
 
-Configure your existing Windows build directory, build `EpidemicEditorContentTests` and run `ctest -R EpidemicEditorContent`. Also run `EpidemicEditorFolder` and complete native Debug build to catch ABI or linker problems. Current Windows Debug build, public headers and 158 CTest cases passed in the local qualification. This does not establish the missing GUI/cooked/resource acceptance gates.
+`EpidemicEditorContentTests` verifies real PNG pixels, cooked data, lease lifetime,
+identity, reimport failures/cancellation, source-move history and recovery.
+`EpidemicEditorContentReopen` opens a relocated clone in another process.
+`EpidemicEditorContentDesktopSmoke` uploads and displays thumbnails in an owned
+hidden native window. Manual DPI, focus, appearance and visible UX still require
+acceptance; no Computer Use is required by these tests.
