@@ -1,4 +1,4 @@
-add_library(EpidemicEditorCore STATIC src/editor_project.cpp src/editor_commands.cpp src/editor_persistence.cpp src/project_archive.cpp src/play_session.cpp)
+add_library(EpidemicEditorCore STATIC src/editor_project.cpp src/project_path.cpp src/editor_commands.cpp src/editor_persistence.cpp src/project_archive.cpp src/play_session.cpp)
 target_include_directories(EpidemicEditorCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(EpidemicEditorCore PUBLIC EpidemicGameComposition PRIVATE EpidemicPlatform)
 epidemic_configure_target(EpidemicEditorCore)

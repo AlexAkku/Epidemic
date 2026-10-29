@@ -44,6 +44,16 @@ It does not define a production descriptor or decode PNG. Choose and test the
 production schema and multi-file commit/recovery protocol, and resolve resource
 publication with in-flight leases.
 
+## Initial project-path API
+
+`ResolveProjectPath(root, relative)` resolves a portable forward-slash relative
+path against an existing canonical project root. It rejects dot traversal,
+rooted/drive/UNC paths, alternate streams, empty components, reserved Windows
+names and existing relative-path symlinks. It performs no file writes.
+This is only a checked path resolver: handle-bound I/O, race resistance, mount
+aliases, case/Unicode collision detection and external-link policy remain open.
+It is not yet connected to a production workspace or the Editor file menus.
+
 ## Subsequent gates
 
 PNG decoding, browser UI, crash injection and runtime placement binding require

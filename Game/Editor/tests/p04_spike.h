@@ -4,6 +4,7 @@
 #include "Epidemic/Runtime/Serialization/serialization_services.h"
 #include "Epidemic/Runtime/Serialization/document_codec.h"
 #include "Epidemic/Platform/iplatform_runtime.h"
+#include "Epidemic/Game/Editor/project_path.h"
 #include <filesystem>
 #include <span>
 #include <string>
@@ -56,6 +57,10 @@ inline bool Reimport(Manifest &m,std::string_view candidate) {
 }
 inline void Write() {
     std::filesystem::create_directories(Root()/"Content"); std::filesystem::create_directories(Root()/"Cache");
+    for(const auto path:{"../outside","/absolute","C:/drive","Content/../escape","Content//empty","NUL.txt","Content/file:stream","Content/trailing.","Content/"})
+        Check(!game::editor::ResolveProjectPath(Root(),path),"unsafe project path rejected");
+    const auto checked=Take(game::editor::ResolveProjectPath(Root(),"Content/mock.png"));
+    Check(checked==std::filesystem::canonical(Root())/"Content/mock.png","portable relative path resolves inside root");
     Manifest m{asset_id.Raw(),0,"Content/mock.png",""}; Commit(Root()/m.source,"MOCKPNG:first");
     Check(Reimport(m,Read(Root()/m.source)),"first mock import"); CheckCatalog(m);
 }
