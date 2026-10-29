@@ -116,6 +116,35 @@ foundation::Result<runtime::ResourceLoadArtifact> ImageResourceLoader::Load(runt
     }catch(const Failure &failure){return R::Failure(failure.error);}
     catch(const std::exception &){return R::Failure(Error("editor.image_load"));}
 }
+foundation::Result<PreparedCookedPng> PrepareCookedPng(
+    const std::filesystem::path &root,std::string_view relative,const std::atomic_bool *cancel){
+    using R=foundation::Result<PreparedCookedPng>;
+    try {
+        const auto check=[&]{Require(!cancel || !cancel->load(std::memory_order_relaxed),"editor.image_cancelled");};
+        check();
+        const auto path=Take(ResolveProjectPath(root,"Content/"+std::string(relative)));
+        const auto key=Fingerprint(path);
+        check();
+        auto image=Take(DecodePng(path));
+        check();
+        Require(image.pixels.size()<runtime::kMaxDocumentBytes-4096,"editor.image_cooked_limit");
+        Require(key==Fingerprint(path),"editor.image_source_changed");
+        auto services=Take(runtime::CreateSerializationServices());auto writer=services.archives->CreateWriter();
+        Require(writer!=nullptr,"editor.image_codec");
+        Take(writer->WriteUInt64("width",image.width));Take(writer->WriteUInt64("height",image.height));
+        Take(writer->WriteString("recipe",kRecipe));Take(writer->WriteString("key",key));
+        Take(writer->WriteBytes("pixels",image.pixels));
+        const auto bytes=Take(runtime::EncodeDocument(Take(writer->Finalize(kImageType,kVersion))));
+        const auto destination=Cooked(root,key);
+        std::error_code ec;std::filesystem::create_directories(destination.parent_path(),ec);
+        Require(!ec,"editor.image_cache");
+        check();
+        Take(platform::CommitFilePackage(foundation::Path{destination},bytes,runtime::kMaxDocumentBytes));
+        check();
+        return R::Success({key});
+    }catch(const Failure &failure){return R::Failure(failure.error);}
+    catch(const std::exception &){return R::Failure(Error("editor.image_prepare"));}
+}
 DecodedPng MakeImageThumbnail(const DecodedPng &image){
     if(!image.width || !image.height || image.width>4096 || image.height>4096 || image.pixels.size()!=static_cast<std::size_t>(image.width)*image.height*4)return {};
     const auto divisor=std::max(1U,(std::max(image.width,image.height)+127)/128);

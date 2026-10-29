@@ -2,6 +2,7 @@
 #include "Epidemic/Game/Editor/png_import.h"
 #include "Epidemic/Runtime/Resources/resource_loader.h"
 #include <atomic>
+#include <string>
 #include <utility>
 
 namespace epidemic::game::editor {
@@ -25,6 +26,14 @@ class ImageResourceLoader final : public runtime::IResourceLoader {
     std::filesystem::path root_;
     std::vector<std::pair<runtime::ResourceId,std::string>> keys_;
 };
+// Produces an unreferenced, immutable cooked PNG on a worker thread.
+// No ProjectFolder, AssetCatalog, Resources or Renderer mutation takes place.
+// The owner must independently confirm the source signature before publishing
+// the returned key through ProjectFolder::PublishCooked.
+struct PreparedCookedPng { std::string key; };
+[[nodiscard]] foundation::Result<PreparedCookedPng> PrepareCookedPng(
+    const std::filesystem::path &root, std::string_view relative,
+    const std::atomic_bool *cancel = nullptr);
 // Same PBGRA source pixels, nearest reduction; bounded to a 128x128 preview.
 [[nodiscard]] DecodedPng MakeImageThumbnail(const DecodedPng &image);
 } // namespace epidemic::game::editor

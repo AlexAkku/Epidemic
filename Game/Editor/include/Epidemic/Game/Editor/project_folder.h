@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Epidemic/Game/Editor/editor_commands.h"
+#include "Epidemic/Game/Editor/sprite_sheet.h"
 #include "Epidemic/Game/Editor/play_session.h"
 #include <cstdint>
 #include <filesystem>
@@ -19,6 +20,23 @@ struct ProjectSourceAsset {
     // SHA-256 key of immutable serialized image; empty for uncooked sources.
     std::string cooked_key;
     [[nodiscard]] bool operator==(const ProjectSourceAsset &) const = default;
+};
+
+// P04.3c: named subassets belong to one PNG AssetId, never a filename.
+struct SpriteSheetDefinition {
+    runtime::AssetId texture{};
+    std::vector<sheets::Region> regions;
+};
+// Typed Prefab -> texture assignment. Sprite identity is a stable AssetId,
+// not a filename or a generic component string property. The association is
+// stored inside the versioned Sources manifest of each immutable commit.
+struct PrefabSpriteBinding {
+    runtime::AssetId prefab{};
+    runtime::AssetId texture{};
+    std::uint64_t region_id=0; // 0 draws the complete texture
+    float pivot_x=0.5f, pivot_y=0.5f;
+    float pixels_per_unit=64.0f;
+    [[nodiscard]] bool operator==(const PrefabSpriteBinding &) const = default;
 };
 
 // P04.0/P04.1: durable folder workspace. The existing EditorProject is still the
@@ -56,8 +74,21 @@ class ProjectFolder final {
     [[nodiscard]] const std::filesystem::path &Root() const noexcept { return root_; }
     [[nodiscard]] const std::string &Title() const noexcept { return title_; }
     [[nodiscard]] std::uint64_t Generation() const noexcept { return generation_; }
-    [[nodiscard]] bool IsDirty() const noexcept { return asset_dirty_ || editor_->IsDirty(); }
+    [[nodiscard]] bool IsDirty() const noexcept { return asset_dirty_ || sprite_dirty_ || editor_->IsDirty(); }
     [[nodiscard]] const std::vector<ProjectSourceAsset> &Sources() const noexcept { return assets_; }
+    [[nodiscard]] const std::vector<PrefabSpriteBinding> &SpriteBindings() const noexcept { return sprites_; }
+    [[nodiscard]] const std::vector<SpriteSheetDefinition> &SpriteSheets() const noexcept { return sheets_; }
+    // Whole-image binding remains backward compatible. Region ID 0 means full image.
+    [[nodiscard]] foundation::Result<void> SetPrefabSpriteRegion(runtime::AssetId prefab,
+        runtime::AssetId texture,std::uint64_t region_id,float pivot_x=0.5f,
+        float pivot_y=0.5f,float pixels_per_unit=64.0f);
+    [[nodiscard]] foundation::Result<void> SetSpriteSheet(runtime::AssetId texture,
+        std::vector<sheets::Region> regions,std::uint32_t image_width,std::uint32_t image_height);
+    // Replaces a Prefab's typed texture slot; texture={} clears it.
+    // Failed validation never changes the commit candidate.
+    [[nodiscard]] foundation::Result<void> SetPrefabSprite(runtime::AssetId prefab,
+        runtime::AssetId texture, float pivot_x=0.5f, float pivot_y=0.5f,
+        float pixels_per_unit=64.0f);
     // P04.1 source indexing (not image decoding/cooking). The caller puts a
     // real file inside Content/ first. Identity is allocated independently
     // from the path; reindex keeps it stable and publishes on Save.
@@ -86,6 +117,8 @@ class ProjectFolder final {
     std::vector<MoveRecord> move_history_;
     std::size_t move_cursor_=0;
     std::vector<ProjectSourceAsset> saved_assets_;
+    std::vector<PrefabSpriteBinding> sprites_;
+    std::vector<SpriteSheetDefinition> sheets_;
     ProjectFolder(std::filesystem::path root, std::string title, const ProjectSchema &schema);
     [[nodiscard]] static foundation::Result<std::unique_ptr<ProjectFolder>> CreateWithIds(
         const std::filesystem::path &root, std::string title, ProjectDefinition definition,
@@ -100,5 +133,6 @@ class ProjectFolder final {
     std::uint64_t next_asset_number_ = 1;
     std::vector<ProjectSourceAsset> assets_;
     bool asset_dirty_ = false;
+    bool sprite_dirty_ = false;
 };
 } // namespace epidemic::game::editor

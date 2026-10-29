@@ -2,6 +2,7 @@
 #include "Epidemic/Game/Editor/editor_commands.h"
 #include "Epidemic/Game/Editor/play_session.h"
 #include "Epidemic/Game/Editor/project_folder.h"
+#include "Epidemic/Game/Editor/content_hot_reload.h"
 
 namespace epidemic::game::editor {
 enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection, PrefabComponent };
@@ -28,10 +29,13 @@ class EditorWorkspace final {
     [[nodiscard]] foundation::Result<void> CloneFolder(const std::filesystem::path &destination);
     [[nodiscard]] foundation::Result<void> ImportPng(const std::filesystem::path &source, std::string_view relative);
     [[nodiscard]] foundation::Result<void> ReimportPng(runtime::AssetId asset);
+    [[nodiscard]] foundation::Result<void> AssignPrefabSprite(runtime::AssetId prefab, runtime::AssetId texture);
     [[nodiscard]] foundation::Result<void> MoveAsset(runtime::AssetId asset, std::string_view relative);
     [[nodiscard]] foundation::Result<void> UndoAssetMove();
     [[nodiscard]] foundation::Result<void> RedoAssetMove();
     [[nodiscard]] const ProjectFolder *Folder() const noexcept { return folder_.get(); }
+    [[nodiscard]] std::vector<HotAssetEvent> PollContent() {return folder_ ? hot_reload_.Poll(*folder_) : std::vector<HotAssetEvent>{};}
+    void EnableContentWatch(bool enabled) noexcept {hot_reload_.SetEnabled(enabled);}
     [[nodiscard]] bool IsDirty() const noexcept { return folder_ ? folder_->IsDirty() : project_ && project_->IsDirty(); }
     [[nodiscard]] foundation::Result<void> Execute(std::vector<Command> commands, std::uint64_t expected_revision);
     [[nodiscard]] foundation::Result<void> Save();
@@ -64,6 +68,7 @@ class EditorWorkspace final {
     std::function<PlayOptions()> play_options_;
     std::unique_ptr<EditorProject> project_;
     std::unique_ptr<ProjectFolder> folder_;
+    ContentHotReload hot_reload_;
     std::unique_ptr<PlaySession> session_;
     UiSelection selection_;
     std::optional<foundation::Error> error_;

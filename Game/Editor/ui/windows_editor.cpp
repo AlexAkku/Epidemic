@@ -115,6 +115,7 @@ class Desktop final {
     }
     ~Desktop() {
         KillTimer(hwnd_, 1);
+        KillTimer(hwnd_, 2);
         scene_view_.reset();
         for (int id=New;id<=LogLabel;++id) if (const auto child=ControlHandle(id)) { SendMessageW(child,WM_SETFONT,reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),FALSE); RemoveWindowSubclass(child,&ChildProc,1); }
         if (font_) DeleteObject(font_);
@@ -197,7 +198,7 @@ class Desktop final {
     std::string nonce_ = Number(static_cast<std::uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()));
     std::string local_error_, log_text_;
     int field_ = -1;
-    bool refreshing_ = false, closed_ = false, timer_running_ = false, scene_document_=false, edit_overrides_=false;
+    bool refreshing_ = false, closed_ = false, timer_running_ = false, content_timer_running_=false, scene_document_=false, edit_overrides_=false;
     bool inspector_actions_=false;
 };
 void Desktop::Controls() {
@@ -562,6 +563,8 @@ void Desktop::SyncScene(bool reset) {
     for (int id:{Viewport,ViewLabel,FrameSelection,FitScene,ToolMode,CoordinateSpace,SnapLabel,SnapValue,SetSnap}) ShowWindow(ControlHandle(id),scene?SW_SHOW:SW_HIDE);
     ShowWindow(ControlHandle(Hint),scene?SW_HIDE:SW_SHOW);
     scene_view_->Sync(snapshot,scene?selection.document:AssetId{},selection.kind==ed::UiElement::SceneNode?SceneNodeId{selection.element}:SceneNodeId{},dpi_,reset);
+    if(workspace_.Folder() && !content_timer_running_) {content_timer_running_=SetTimer(hwnd_,2,300,nullptr)!=0;}
+    else if(!workspace_.Folder() && content_timer_running_) {KillTimer(hwnd_,2);content_timer_running_=false;}
     EnableWindow(ControlHandle(FrameSelection),scene && selection.kind==ed::UiElement::SceneNode);
 }
 bool Desktop::PickScene(SceneNodeId node) {
@@ -1033,6 +1036,17 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     if (msg==WM_GETMINMAXINFO) { const auto dpi=static_cast<int>(dpi_); auto *limits=reinterpret_cast<MINMAXINFO *>(lp); limits->ptMinTrackSize={MulDiv(1000,dpi,96),MulDiv(800,dpi,96)}; return 0; }
     if (msg==WM_CLOSE) { scene_view_->Cancel(); if (CanReplace()) { const auto result=workspace_.Stop(); if (result) { KillTimer(hwnd_,1); timer_running_=false; closed_=true; } else Diagnostics(); } return 0; }
     if (msg==WM_TIMER && wp==1) { if (timer_running_) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); } return 0; }
+    if (msg==WM_TIMER && wp==2) {
+        if(content_timer_running_ && workspace_.Folder() && (!workspace_.Session() || !workspace_.Session()->IsPlaying())) {
+            const auto events=workspace_.PollContent();
+            if(!events.empty()) {
+                for(const auto &event:events) if(event.kind==ed::HotAssetEventKind::Failed ||
+                    event.kind==ed::HotAssetEventKind::Missing) {local_error_=event.diagnostic;break;}
+                SyncScene();Diagnostics();
+            }
+        }
+        return 0;
+    }
     if (msg==WM_COMMAND && !refreshing_) {
         const auto id=LOWORD(wp), notification=HIWORD(wp);
         if(id==10000 && !lp){MessageBoxW(hwnd_,L"Epidemic Editor - development build",L"About",MB_OK | MB_ICONINFORMATION);return 0;}

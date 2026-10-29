@@ -3,7 +3,9 @@
 #include "windows_content_browser.h"
 #include "windows_editor_style.h"
 #include "Epidemic/Game/Editor/content_browser.h"
+#include "Epidemic/Game/Editor/content_hot_reload.h"
 #include "Epidemic/Game/Editor/image_resource.h"
+#include "Epidemic/Game/Editor/content_thumbnail_cache.h"
 #include "Epidemic/Runtime/Resources/resource_services.h"
 #include "renderer.h"
 #include <commctrl.h>
@@ -31,13 +33,14 @@ std::string Text(HWND handle){
     GetWindowTextW(handle,text.data(),size+1);text.resize(static_cast<std::size_t>(size));return Utf8(text);
 }
 struct Browser final {
-    enum : int { Search=200, List, Path, Import, Reimport, Rename, Save, Preview, Info, Close, UndoMove, RedoMove };
+    enum : int { Search=200, List, Path, Import, Reimport, Rename, Save, Preview, Info, Close, UndoMove, RedoMove, AssignPrefab };
     EditorWorkspace &workspace;
     bool smoke=false;
     HWND window=nullptr;
     EditorStyle style;
     BrowserListing listing;
     runtime::AssetId selection{};
+    ThumbnailCache thumbnails{std::size_t{16}*1024*1024,128};
     std::unique_ptr<runtime::presentation::Renderer> renderer;
     runtime::presentation::RendererTexturePtr texture;
     // Loader precedes services: borrowed registry loader outlives the manager.
@@ -82,6 +85,7 @@ struct Browser final {
         Add(Reimport,L"BUTTON",L"Reimport",WS_TABSTOP);Add(Rename,L"BUTTON",L"Rename / Move",WS_TABSTOP);
         Add(UndoMove,L"BUTTON",L"Undo move",WS_TABSTOP);Add(RedoMove,L"BUTTON",L"Redo move",WS_TABSTOP);
         Add(Save,L"BUTTON",L"Save project",WS_TABSTOP);Add(Close,L"BUTTON",L"Close",WS_TABSTOP);
+        Add(AssignPrefab,L"BUTTON",L"Use as Prefab Sprite",WS_TABSTOP);
         Add(Preview,L"STATIC",L"",WS_BORDER);
         Add(Info,L"EDIT",L"",ES_READONLY|ES_MULTILINE|WS_VSCROLL);
         loader=std::make_unique<ImageResourceLoader>(workspace.Folder()->Root());
@@ -90,7 +94,8 @@ struct Browser final {
         const auto registered=resources.loaders->RegisterLoader(*loader);if(!registered)throw std::runtime_error("Cannot register image loader");
         const auto frozen=resources.loaders->Freeze();if(!frozen)throw std::runtime_error("Cannot freeze image loaders");
         if(!SetWindowSubclass(Control(Preview),&PreviewProc,1,reinterpret_cast<DWORD_PTR>(this)))throw std::runtime_error("Cannot initialize image preview");
-        Layout();Refresh();Error("Select an image for preview. Destination paths are relative to Content/. No Sprite assignment in this panel yet.");
+        Layout();Refresh();Error("Select a PNG to preview or assign to selected Prefab.");
+        SetTimer(window,20,300,nullptr);
     }
     void Layout(){
         RECT bounds{};GetClientRect(window,&bounds);const auto dpi=GetDpiForWindow(window);
@@ -103,6 +108,7 @@ struct Browser final {
         move(Preview,margin+left+gap,top,right,std::max(row,static_cast<int>(bounds.bottom)-top-scale(240)));
         move(Info,margin+left+gap,std::max(top+row,static_cast<int>(bounds.bottom)-scale(230)),right,scale(104));
         move(Path,margin,bounds.bottom-scale(122),width,row);
+        move(AssignPrefab,margin,bounds.bottom-scale(155),std::min(width,scale(240)),row);
         const int button=std::max(scale(70),(width-6*gap)/7),y=bounds.bottom-scale(80);
         int x=margin;for(int id:{Import,Reimport,Rename,UndoMove,RedoMove,Save,Close}){move(id,x,y,button,row);x+=button+gap;}
         if(renderer){RECT preview{};GetClientRect(Control(Preview),&preview);renderer->SetClientExtent(static_cast<unsigned>(std::max(1L,preview.right)),static_cast<unsigned>(std::max(1L,preview.bottom)));renderer->Resize();}
@@ -133,7 +139,13 @@ struct Browser final {
                 if(!renderer){RECT bounds{};GetClientRect(Control(Preview),&bounds);
                     renderer=std::make_unique<runtime::presentation::Renderer>(Control(Preview),std::span<const runtime::presentation::SpriteEntry>{},0);
                     renderer->SetClientExtent(static_cast<unsigned>(std::max(1L,bounds.right)),static_cast<unsigned>(std::max(1L,bounds.bottom)));renderer->Resize();}
-                const auto thumbnail=MakeImageThumbnail(payload->image);
+                DecodedPng thumbnail;
+                if(auto cached=thumbnails.Get(source.cooked_key))
+                    thumbnail={cached->width,cached->height,std::move(cached->bgra)};
+                else {
+                    thumbnail=MakeImageThumbnail(payload->image);
+                    (void)thumbnails.Put(source.cooked_key,{thumbnail.width,thumbnail.height,thumbnail.pixels});
+                }
                 auto candidate_texture=renderer->CreateTexture(thumbnail.width,thumbnail.height,thumbnail.pixels);
                 ClearPreview();lease=candidate.Value();texture=std::move(candidate_texture);image_width=thumbnail.width;image_height=thumbnail.height;
                 InvalidateRect(Control(Preview),nullptr,FALSE);
@@ -167,6 +179,19 @@ struct Browser final {
     }
     void Action(int id){
         if(id==Close){EndDialog(window,0);return;}
+        if(id==AssignPrefab){
+            const auto project=workspace.Project();
+            if(!project || !selection.IsValid()){Error("Select a PNG asset first");return;}
+            const auto chosen=workspace.Selection();
+            auto prefab=chosen.document;
+            if(chosen.kind==UiElement::SceneNode){
+                const auto *scene_doc=project->Snapshot()->Find(chosen.document);
+                const auto *scene=scene_doc?std::get_if<composition::SceneCompositionDefinition>(&scene_doc->data):nullptr;
+                if(scene)for(const auto &placement:scene->placements)
+                    if(placement.node.Raw()==chosen.element){prefab=placement.prefab;break;}
+            }
+            Result(workspace.AssignPrefabSprite(prefab,selection));return;
+        }
         if(id==UndoMove){Result(workspace.UndoAssetMove());return;}
         if(id==RedoMove){Result(workspace.RedoAssetMove());return;}
         if(id==Save){Result(workspace.Save());return;}
@@ -196,6 +221,16 @@ struct Browser final {
             if(message==WM_INITDIALOG){self->Initialize();if(self->smoke)self->Smoke();return TRUE;}
             if(message==WM_DRAWITEM && lp && self->DrawButton(*reinterpret_cast<const DRAWITEMSTRUCT *>(lp)))return TRUE;
             if(message==WM_CLOSE){EndDialog(hwnd,0);return TRUE;}
+            if(message==WM_TIMER && wp==20) {
+                const auto events=self->workspace.PollContent();
+                if(!events.empty()) {
+                    self->Refresh();
+                    for(const auto &event:events)if(event.id==self->selection && event.kind==HotAssetEventKind::Updated)self->Select();
+                    for(const auto &event:events)if(event.kind==HotAssetEventKind::Failed || event.kind==HotAssetEventKind::Missing)
+                        self->Error(event.diagnostic);
+                }
+                return TRUE;
+            }
             if(message==WM_SIZE){self->Layout();return TRUE;}
             if(message==WM_GETMINMAXINFO){auto &info=*reinterpret_cast<MINMAXINFO *>(lp);const auto dpi=GetDpiForWindow(hwnd);info.ptMinTrackSize={MulDiv(720,static_cast<int>(dpi),96),MulDiv(500,static_cast<int>(dpi),96)};return TRUE;}
             if(message==WM_COMMAND){const auto id=LOWORD(wp);if(id==IDCANCEL){EndDialog(hwnd,0);return TRUE;}
@@ -204,7 +239,7 @@ struct Browser final {
                 if(HIWORD(wp)==BN_CLICKED){self->Action(id);return TRUE;}}
             if(message==WM_CTLCOLORDLG)return reinterpret_cast<INT_PTR>(self->style.Background());
             if(message==WM_CTLCOLORSTATIC || message==WM_CTLCOLOREDIT || message==WM_CTLCOLORLISTBOX){auto dc=reinterpret_cast<HDC>(wp);SetTextColor(dc,self->style.text);SetBkColor(dc,self->style.input);return reinterpret_cast<INT_PTR>(self->style.Input());}
-            if(message==WM_DESTROY){self->ClearPreview();self->renderer.reset();return TRUE;}
+            if(message==WM_DESTROY){KillTimer(hwnd,20);self->ClearPreview();self->renderer.reset();return TRUE;}
         }catch(const std::exception &error){self->NativeError(error.what());if(message==WM_INITDIALOG)EndDialog(hwnd,-1);}
         catch(...){SetWindowTextW(self->Control(Info),L"Content Browser operation failed");if(message==WM_INITDIALOG)EndDialog(hwnd,-1);}
         return FALSE;

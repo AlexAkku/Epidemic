@@ -2,12 +2,19 @@
 #define WIN32_LEAN_AND_MEAN
 #include "windows_scene_view.h"
 #include "renderer.h"
+#include "Epidemic/Game/Editor/image_resource.h"
+#include "Epidemic/Runtime/Resources/resource_services.h"
+#include <unordered_map>
+#include "Epidemic/Game/Editor/sprite_sheet.h"
 #include <d2d1_1helper.h>
 #include <commctrl.h>
 #include <windowsx.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <set>
+#include <array>
+#include <optional>
 
 namespace epidemic::game::editor {
 namespace {
@@ -15,8 +22,61 @@ std::wstring Wide(std::string_view text) {
     const auto size=MultiByteToWideChar(CP_UTF8,0,text.data(),static_cast<int>(text.size()),nullptr,0);
     std::wstring result(static_cast<std::size_t>(size),L'\0');
     MultiByteToWideChar(CP_UTF8,0,text.data(),static_cast<int>(text.size()),result.data(),size); return result;
+ }
+struct ScreenSprite {
+    D2D1::Matrix3x2F transform;
+    D2D1_RECT_F rectangle;
+};
+std::optional<ScreenSprite> SpriteGeometry(const SceneView &view,const SceneViewItem &item,
+    D2D1_SIZE_U dimensions,D2D1_POINT_2F pivot,float ppu) {
+    const auto point=view.ToScreen({item.world.position.x,item.world.position.y});
+    const D2D1_POINT_2F anchor{static_cast<float>(point.x),static_cast<float>(point.y)};
+    const float width=static_cast<float>(dimensions.width)*std::abs(item.world.scale.x)*static_cast<float>(view.Scale())/ppu;
+    const float height=static_cast<float>(dimensions.height)*std::abs(item.world.scale.y)*static_cast<float>(view.Scale())/ppu;
+    if(!std::isfinite(anchor.x)||!std::isfinite(anchor.y)||!std::isfinite(width)||!std::isfinite(height)||width<=0||height<=0)return std::nullopt;
+    const auto &q=item.world.rotation;
+    const float angle=-static_cast<float>(std::atan2(2*(q.w*q.z+q.x*q.y),1-2*(q.y*q.y+q.z*q.z))*180/3.141592653589793);
+    const auto transform=D2D1::Matrix3x2F::Scale(item.world.scale.x<0?-1.f:1.f,item.world.scale.y<0?-1.f:1.f,anchor)*D2D1::Matrix3x2F::Rotation(angle,anchor);
+    const auto rect=D2D1::RectF(anchor.x-width*pivot.x,anchor.y-height*pivot.y,anchor.x+width*(1-pivot.x),anchor.y+height*(1-pivot.y));
+    const std::array<D2D1_POINT_2F,4> corners{transform.TransformPoint({rect.left,rect.top}),transform.TransformPoint({rect.right,rect.top}),transform.TransformPoint({rect.left,rect.bottom}),transform.TransformPoint({rect.right,rect.bottom})};
+    float left=corners[0].x,right=left,top=corners[0].y,bottom=top;
+    for(const auto &corner:corners){if(!std::isfinite(corner.x)||!std::isfinite(corner.y))return std::nullopt;left=std::min(left,corner.x);right=std::max(right,corner.x);top=std::min(top,corner.y);bottom=std::max(bottom,corner.y);}
+    if(right<0 || bottom<0 || left>view.Extent().x || top>view.Extent().y)return std::nullopt;
+    return ScreenSprite{transform,rect};
 }
 }
+// Render-thread cache holds Resources leases and immutable texture generations.
+// The authored binding references AssetId; the cache uses cooked digest keys.
+struct NativeSceneView::SpriteCache {
+    struct Resident {
+        runtime::ResourceLease lease;
+        runtime::presentation::RendererTexturePtr texture;
+        std::uint32_t width=0,height=0;
+    };
+    std::filesystem::path root;
+    std::unique_ptr<ImageResourceLoader> loader;
+    runtime::ResourceServices resources;
+    std::unordered_map<std::string,Resident> textures;
+    struct Draw {runtime::AssetId texture{};std::string key,cache_key;std::uint64_t region=0;float pivot_x=0.5f,pivot_y=0.5f,ppu=64.0f;};
+    std::unordered_map<std::uint64_t,Draw> placement_keys;
+    explicit SpriteCache(std::filesystem::path path):root(std::move(path)),loader(std::make_unique<ImageResourceLoader>(root)) {
+        auto created=runtime::CreateResourceServices({std::size_t{64}*1024*1024});
+        if(!created)throw std::runtime_error("Scene sprite resources unavailable");
+        resources=std::move(created).Value();
+        auto registered=resources.loaders->RegisterLoader(*loader);
+        if(!registered)throw std::runtime_error("Scene sprite loader registration failed");
+        auto frozen=resources.loaders->Freeze();
+        if(!frozen)throw std::runtime_error("Scene sprite registry freeze failed");
+    }
+    ~SpriteCache() {
+        textures.clear(); // GPU texture wrappers destroyed on the renderer thread
+    }
+    void ReleaseAll() {
+        for(auto &[key,r]:textures) {r.texture.reset();(void)resources.manager->Release(r.lease);}
+        textures.clear();placement_keys.clear();
+        (void)resources.manager->EvictUnreferenced();
+    }
+};
 NativeSceneView::NativeSceneView(HWND window,EditorWorkspace &workspace,std::function<bool(runtime::SceneNodeId)> select,
     std::function<void(std::string)> error,std::function<void()> changed)
     : window_(window), workspace_(workspace), select_(std::move(select)), error_(std::move(error)), changed_(std::move(changed)) {
@@ -25,6 +85,7 @@ NativeSceneView::NativeSceneView(HWND window,EditorWorkspace &workspace,std::fun
 NativeSceneView::~NativeSceneView() {
     drag_.Cancel();
     if (GetCapture()==window_) ReleaseCapture();
+    if(sprites_)sprites_->ReleaseAll();sprites_.reset();
     renderer_.reset(); RemoveWindowSubclass(window_,&Procedure,2);
 }
 void NativeSceneView::Sync(std::shared_ptr<const ProjectSnapshot> snapshot,runtime::AssetId scene,runtime::SceneNodeId selected,UINT dpi,bool reset) {
@@ -42,7 +103,7 @@ void NativeSceneView::Sync(std::shared_ptr<const ProjectSnapshot> snapshot,runti
             else failure_.clear();
         } else { view_.Clear(); snapshot_.reset(); }
     }
-    if (redraw) InvalidateRect(window_,nullptr,FALSE);
+    if (redraw || workspace_.Folder()) InvalidateRect(window_,nullptr,FALSE);
 }
 void NativeSceneView::Resize() {
     RECT rect{}; GetClientRect(window_,&rect);
@@ -112,6 +173,109 @@ void NativeSceneView::Capture(const std::filesystem::path &file) {
     catch (...) { renderer_->EnableCaptures(false); throw; }
     renderer_->EnableCaptures(false);
 }
+void NativeSceneView::RefreshSprites() {
+    const auto *folder=workspace_.Folder();
+    if(!folder || !snapshot_) {if(sprites_)sprites_->ReleaseAll();sprites_.reset();return;}
+    if(!renderer_)return;
+    if(!sprites_ || sprites_->root!=folder->Root()) {
+        if(sprites_)sprites_->ReleaseAll();sprites_.reset();
+        sprites_=std::make_unique<SpriteCache>(folder->Root());
+    }
+    // Derived frame lookups only: ProjectFolder remains the authoritative index.
+    std::unordered_map<std::uint64_t,const ProjectSourceAsset *> sources;
+    for(const auto &source:folder->Sources())sources.emplace(source.id.Raw(),&source);
+    std::unordered_map<std::uint64_t,const SpriteSheetDefinition *> sheets;
+    for(const auto &sheet:folder->SpriteSheets())sheets.emplace(sheet.texture.Raw(),&sheet);
+    std::unordered_map<std::uint64_t,SpriteCache::Draw> bindings;
+    std::unordered_map<std::string,const sheets::Region *> crops;
+    for(const auto &binding:folder->SpriteBindings()) {
+        const auto source=sources.find(binding.texture.Raw());
+        if(source==sources.end() || source->second->cooked_key.empty())continue;
+        const auto &digest=source->second->cooked_key;
+        auto key=digest+"/"+std::to_string(binding.region_id);
+        if(binding.region_id) {
+            const auto sheet=sheets.find(binding.texture.Raw());
+            if(sheet==sheets.end()){error_("editor.missing_subasset");continue;}
+            const auto region=std::find_if(sheet->second->regions.begin(),sheet->second->regions.end(),[&](const auto &r){return r.id==binding.region_id && !r.missing;});
+            if(region==sheet->second->regions.end()){error_("editor.missing_subasset");continue;}
+            key+="/"+std::to_string(region->x)+","+std::to_string(region->y)+","+std::to_string(region->width)+","+std::to_string(region->height);
+            crops.emplace(key,&*region);
+        }
+        bindings.emplace(binding.prefab.Raw(),SpriteCache::Draw{binding.texture,digest,key,binding.region_id,binding.pivot_x,binding.pivot_y,binding.pixels_per_unit});
+    }
+    std::unordered_map<std::uint64_t,SpriteCache::Draw> desired;
+    const auto *doc=snapshot_->Find(view_.Document());
+    const auto *scene=doc?std::get_if<composition::SceneCompositionDefinition>(&doc->data):nullptr;
+    if(scene)for(const auto &placement:scene->placements) {
+        const auto binding=bindings.find(placement.prefab.Raw());
+        if(binding!=bindings.end())desired.emplace(placement.node.Raw(),binding->second);
+    }
+    std::set<std::string> needed;
+    for(const auto &[node,draw]:desired)needed.insert(draw.cache_key);
+    // Keep old leases/textures until every replacement has loaded and uploaded.
+    for(const auto &key:needed) {
+        if(sprites_->textures.contains(key))continue;
+        const auto resource=sprites_->loader->Register(key.substr(0,64));
+        if(!resource){error_(resource.GetError().code);continue;}
+        const auto lease=sprites_->resources.manager->RequestLease({resource.Value(),sprites_->loader->GetResourceType()});
+        if(!lease){error_(lease.GetError().code);continue;}
+        const auto loaded=sprites_->resources.manager->ProcessPendingLoads();
+        const auto payload=std::dynamic_pointer_cast<const ImagePayload>(sprites_->resources.manager->GetPayload(lease.Value().resource));
+        if(!loaded || !payload){(void)sprites_->resources.manager->Release(lease.Value());error_("Sprite cooked resource could not load");continue;}
+        try {
+            std::uint32_t width=payload->image.width,height=payload->image.height;
+            std::span<const std::byte> pixels=payload->image.pixels;
+            std::vector<std::byte> cropped;
+            if(const auto crop=crops.find(key);crop!=crops.end()) {
+                auto candidate=sheets::ExtractPbgra(payload->image.pixels,width,height,*crop->second);
+                if(!candidate){error_(candidate.error);(void)sprites_->resources.manager->Release(lease.Value());continue;}
+                cropped=std::move(candidate.value);width=crop->second->width;height=crop->second->height;pixels=cropped;
+            }
+            auto texture=renderer_->CreateTexture(width,height,pixels);
+            sprites_->textures.emplace(key,SpriteCache::Resident{lease.Value(),std::move(texture),width,height});
+        }catch(const std::exception &error){(void)sprites_->resources.manager->Release(lease.Value());error_(error.what());}
+        catch(...){(void)sprites_->resources.manager->Release(lease.Value());throw;}
+    }
+    for(auto &[node,draw]:desired)if(!sprites_->textures.contains(draw.cache_key)) {
+        const auto previous=sprites_->placement_keys.find(node);
+        if(previous!=sprites_->placement_keys.end() && previous->second.texture==draw.texture && previous->second.region==draw.region && sprites_->textures.contains(previous->second.cache_key))draw=previous->second;
+    }
+    needed.clear();for(const auto &[node,draw]:desired)needed.insert(draw.cache_key);
+    sprites_->placement_keys.swap(desired);
+    for(auto it=sprites_->textures.begin();it!=sprites_->textures.end();) {
+        if(needed.contains(it->first)){++it;continue;}
+        it->second.texture.reset();(void)sprites_->resources.manager->Release(it->second.lease);it=sprites_->textures.erase(it);
+    }
+    (void)sprites_->resources.manager->EvictUnreferenced();
+}
+void NativeSceneView::DrawSprites() {
+    if(!sprites_)return;
+    for(const auto &item:view_.Items()) {
+        const auto draw=sprites_->placement_keys.find(item.id.Raw());if(draw==sprites_->placement_keys.end())continue;
+        const auto texture=sprites_->textures.find(draw->second.cache_key);if(texture==sprites_->textures.end())continue;
+        const auto geometry=SpriteGeometry(view_,item,D2D1::SizeU(texture->second.width,texture->second.height),{draw->second.pivot_x,draw->second.pivot_y},draw->second.ppu);
+        if(!geometry)continue;
+        const auto &rect=geometry->rectangle;
+        renderer_->PushTransform(geometry->transform);renderer_->Texture(texture->second.texture,rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);renderer_->PopTransform();
+    }
+}
+runtime::SceneNodeId NativeSceneView::Pick(ViewPoint point) const {
+    if(!std::isfinite(point.x)||!std::isfinite(point.y)||point.x<0||point.y<0||point.x>view_.Extent().x||point.y>view_.Extent().y)return {};
+    if(!sprites_)return view_.Pick(point);
+    for(auto item=view_.Items().rbegin();item!=view_.Items().rend();++item) {
+        const auto draw=sprites_->placement_keys.find(item->id.Raw());
+        if(draw!=sprites_->placement_keys.end())if(const auto texture=sprites_->textures.find(draw->second.cache_key);texture!=sprites_->textures.end()) {
+            auto geometry=SpriteGeometry(view_,*item,D2D1::SizeU(texture->second.width,texture->second.height),{draw->second.pivot_x,draw->second.pivot_y},draw->second.ppu);
+            if(!geometry || !geometry->transform.Invert())continue;
+            const auto local=geometry->transform.TransformPoint({static_cast<float>(point.x),static_cast<float>(point.y)});const auto &rect=geometry->rectangle;
+            if(local.x>=rect.left && local.x<=rect.right && local.y>=rect.top && local.y<=rect.bottom)return item->id;
+            continue;
+        }
+        const auto rect=view_.ScreenBounds(*item);if(point.x>=rect.left && point.x<=rect.right && point.y>=rect.top && point.y<=rect.bottom)return item->id;
+    }
+    return {};
+}
+
 void NativeSceneView::Paint() {
     if (!failure_.empty()) return;
     RECT client{}; GetClientRect(window_,&client);
@@ -119,6 +283,7 @@ void NativeSceneView::Paint() {
     Resize();
     if (!renderer_) renderer_=std::make_unique<runtime::presentation::Renderer>(window_,std::span<const runtime::presentation::SpriteEntry>{},0);
     renderer_->Resize();
+    RefreshSprites();
     const auto physical=renderer_->ClientExtent(), logical=renderer_->LogicalExtent();
     const float base=physical.x/logical.x, dpi=static_cast<float>(dpi_)/96;
     const float offset=(physical.x-std::min(1280.f,physical.x)*base)*.5f;
@@ -145,6 +310,7 @@ void NativeSceneView::Paint() {
     grid(true); grid(false);
     if (origin.x>=0 && origin.x<=extent.x) renderer_->Line(static_cast<float>(origin.x),0,static_cast<float>(origin.x),h,0x78bca5,2);
     if (origin.y>=0 && origin.y<=extent.y) renderer_->Line(0,static_cast<float>(origin.y),w,static_cast<float>(origin.y),0xe2a387,2);
+    DrawSprites();
     for (const auto &item:view_.Items()) {
         const auto b=view_.ScreenBounds(item);
         if (b.right<0 || b.bottom<0 || b.left>extent.x || b.top>extent.y) continue;
@@ -199,7 +365,7 @@ LRESULT NativeSceneView::Message(UINT msg,WPARAM wp,LPARAM lp) {
             if (begun) SetCapture(window_); else error_(begun.GetError().message);
             return 0;
         }
-        const auto hit=view_.Pick(point); if (!select_(hit)) return 0;
+        const auto hit=Pick(point); if (!select_(hit)) return 0;
         if (hit.IsValid() && tool_==GizmoTool::Move && editable_) {
             const auto begun=drag_.Begin(workspace_,view_,GizmoTool::Move,space_,GizmoHandle::Free,point);
             if (begun) SetCapture(window_); else error_(begun.GetError().message);

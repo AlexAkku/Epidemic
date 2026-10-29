@@ -40,7 +40,7 @@ foundation::Result<void> EditorWorkspace::OpenFolder(const std::filesystem::path
     auto candidate = ProjectFolder::Open(root, schema_);
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    project_.reset(); folder_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    project_.reset(); folder_ = std::move(candidate).Value(); hot_reload_.Reset(*folder_); session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::NewFolder(const std::filesystem::path &root, std::string title, ProjectDefinition definition, bool discard_dirty) {
@@ -48,7 +48,7 @@ foundation::Result<void> EditorWorkspace::NewFolder(const std::filesystem::path 
     auto candidate = ProjectFolder::Create(root, std::move(title), std::move(definition), schema_);
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    project_.reset(); folder_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    project_.reset(); folder_ = std::move(candidate).Value(); hot_reload_.Reset(*folder_); session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::CloneFolder(const std::filesystem::path &destination) {
@@ -66,6 +66,9 @@ foundation::Result<void> EditorWorkspace::ReimportPng(runtime::AssetId asset) {
         return Finish(imported?foundation::Result<void>::Success():foundation::Result<void>::Failure(imported.GetError()));
     }
     return Finish(foundation::Result<void>::Failure(Error("editor.ui.unknown_asset")));
+}
+foundation::Result<void> EditorWorkspace::AssignPrefabSprite(runtime::AssetId prefab, runtime::AssetId texture) {
+    return Finish(folder_?folder_->SetPrefabSprite(prefab,texture):foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
 }
 foundation::Result<void> EditorWorkspace::MoveAsset(runtime::AssetId asset,std::string_view relative) {
     return Finish(folder_?folder_->MoveSource(asset,relative):foundation::Result<void>::Failure(Error("editor.ui.no_folder")));

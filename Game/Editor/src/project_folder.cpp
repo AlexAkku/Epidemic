@@ -1,5 +1,6 @@
 #include "Epidemic/Game/Editor/project_folder.h"
 #include "Epidemic/Game/Editor/project_path.h"
+#include "Epidemic/Game/Editor/png_import.h"
 #include "project_archive.h"
 #include "Epidemic/Platform/iplatform_runtime.h"
 #include "Epidemic/Runtime/Serialization/serialization_services.h"
@@ -7,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <exception>
 #include <span>
@@ -52,6 +54,8 @@ const auto kCommitType=foundation::StringId::FromString("epidemic.editor.folder_
 const auto kSourcesType=foundation::StringId::FromString("epidemic.editor.source_index");
 constexpr runtime::SchemaVersion kVersion{1,0,0};
 constexpr runtime::SchemaVersion kSourcesVersion{1,1,0};
+constexpr runtime::SchemaVersion kSpriteSourcesVersion{1,2,0};
+constexpr runtime::SchemaVersion kSheetSourcesVersion{1,3,0};
 
 struct Commit {
     std::uint64_t generation=0, project=0, entry_scene=0, authoring_hash=0, assets_hash=0;
@@ -60,6 +64,8 @@ struct Commit {
 struct SourceIndex {
     std::uint64_t next=1;
     std::vector<ProjectSourceAsset> records;
+    std::vector<PrefabSpriteBinding> sprites;
+    std::vector<SpriteSheetDefinition> sheets;
 };
 std::uint64_t Hash(std::span<const std::byte> data) {
     std::uint64_t h=14695981039346656037ULL;
@@ -116,12 +122,36 @@ Bytes EncodeSources(const SourceIndex &index) {
         Take(w->WriteUInt64("generation",a.generation)); Take(w->WriteString("cooked",a.cooked_key)); Take(w->EndArrayElement());
     }
     Take(w->EndArray());
-    return Take(runtime::EncodeDocument(Take(w->Finalize(kSourcesType,kSourcesVersion))));
+    Require(index.sprites.size()<=kMaxSources,"editor.sprite_limit","Too many sprite bindings");
+    Take(w->BeginArray("sprites",index.sprites.size()));
+    for(std::size_t i=0;i<index.sprites.size();++i) {
+        const auto &s=index.sprites[i];Take(w->BeginArrayElement(i));
+        Take(w->WriteUInt64("prefab",s.prefab.Raw()));
+        Take(w->WriteUInt64("texture",s.texture.Raw()));
+        Take(w->WriteUInt64("region",s.region_id));
+        Take(w->WriteDouble("pivot_x",s.pivot_x));
+        Take(w->WriteDouble("pivot_y",s.pivot_y));
+        Take(w->WriteDouble("ppu",s.pixels_per_unit));
+        Take(w->EndArrayElement());
+    }
+    Take(w->EndArray());
+    Require(index.sheets.size()<=kMaxSources,"editor.sheet_limit","Too many sheet records");
+    Take(w->BeginArray("sheets",index.sheets.size()));
+    for(std::size_t i=0;i<index.sheets.size();++i){
+        const auto &sheet=index.sheets[i];Take(w->BeginArrayElement(i));
+        Take(w->WriteUInt64("texture",sheet.texture.Raw()));
+        const auto metadata=sheets::Encode(sheet.texture.Raw(),sheet.regions);
+        Require(static_cast<bool>(metadata),"editor.sheet_metadata","Cannot encode sheet");
+        Take(w->WriteString("regions",metadata.value));Take(w->EndArrayElement());
+    }
+    Take(w->EndArray());
+    return Take(runtime::EncodeDocument(Take(w->Finalize(kSourcesType,kSheetSourcesVersion))));
 }
 SourceIndex DecodeSources(std::span<const std::byte> data) {
     auto doc=Take(runtime::DecodeDocument(data));
     Require(doc.GetTypeId()==kSourcesType,"editor.folder_sources","Wrong source index type");
-    Require(doc.GetSchemaVersion()==kVersion || doc.GetSchemaVersion()==kSourcesVersion,"editor.folder_version","Unsupported source index version");
+    Require(doc.GetSchemaVersion()==kVersion || doc.GetSchemaVersion()==kSourcesVersion ||
+        (doc.GetSchemaVersion()==kSpriteSourcesVersion || doc.GetSchemaVersion()==kSheetSourcesVersion),"editor.folder_version","Unsupported source index version");
     auto services=Take(runtime::CreateSerializationServices()); auto r=Take(services.archives->CreateReader(doc));
     SourceIndex index; index.next=Take(r->ReadUInt64("next"));
     const auto count=Take(r->BeginArray("sources"));
@@ -134,7 +164,8 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
         a.type=runtime::AssetType{foundation::StringId{Take(r->ReadUInt64("type"))}};
         a.relative_path=Take(r->ReadString("path")); a.source_hash=Take(r->ReadUInt64("hash"));
         a.generation=Take(r->ReadUInt64("generation"));
-        if(doc.GetSchemaVersion()==kSourcesVersion) a.cooked_key=Take(r->ReadString("cooked"));
+        if(doc.GetSchemaVersion()==kSourcesVersion || doc.GetSchemaVersion()==kSpriteSourcesVersion || doc.GetSchemaVersion()==kSheetSourcesVersion)
+            a.cooked_key=Take(r->ReadString("cooked"));
         Require(a.cooked_key.empty() || (a.cooked_key.size()==64 && a.cooked_key.find_first_not_of("0123456789abcdef")==std::string::npos),"editor.folder_sources","Invalid cooked key");
         Take(r->EndArrayElement());
         Require(a.id.IsValid() && a.type.IsValid() && a.generation>0 &&
@@ -148,6 +179,47 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
         index.records.push_back(std::move(a));
     }
     Take(r->EndArray());
+    if(doc.GetSchemaVersion()==kSpriteSourcesVersion || doc.GetSchemaVersion()==kSheetSourcesVersion) {
+        const auto sprites=Take(r->BeginArray("sprites"));
+        Require(sprites<=kMaxSources,"editor.sprite_limit","Too many sprite bindings");
+        std::set<std::uint64_t> prefabs;
+        for(std::size_t i=0;i<sprites;++i) {
+            Take(r->BeginArrayElement(i));
+            PrefabSpriteBinding s;
+            s.prefab=runtime::AssetId{foundation::StringId{Take(r->ReadUInt64("prefab"))}};
+            s.texture=runtime::AssetId{foundation::StringId{Take(r->ReadUInt64("texture"))}};
+            if(doc.GetSchemaVersion()==kSheetSourcesVersion)s.region_id=Take(r->ReadUInt64("region"));
+            s.pivot_x=static_cast<float>(Take(r->ReadDouble("pivot_x")));
+            s.pivot_y=static_cast<float>(Take(r->ReadDouble("pivot_y")));
+            s.pixels_per_unit=static_cast<float>(Take(r->ReadDouble("ppu")));
+            Take(r->EndArrayElement());
+            Require(s.prefab.IsValid() && s.texture.IsValid() &&
+                std::isfinite(s.pivot_x) && std::isfinite(s.pivot_y) &&
+                s.pivot_x>=0 && s.pivot_x<=1 && s.pivot_y>=0 && s.pivot_y<=1 &&
+                std::isfinite(s.pixels_per_unit) && s.pixels_per_unit>0 && s.pixels_per_unit<=4096 &&
+                prefabs.insert(s.prefab.Raw()).second && ids.contains(s.texture.Raw()),
+                "editor.sprite_binding","Invalid or duplicate sprite binding");
+            index.sprites.push_back(s);
+        }
+        Take(r->EndArray());
+    }
+    if(doc.GetSchemaVersion()==kSheetSourcesVersion){
+        const auto sheets_count=Take(r->BeginArray("sheets"));
+        Require(sheets_count<=kMaxSources,"editor.sheet_limit","Too many spritesheets");
+        std::set<std::uint64_t> sheet_ids;
+        for(std::size_t i=0;i<sheets_count;++i){
+            Take(r->BeginArrayElement(i));
+            const auto raw=Take(r->ReadUInt64("texture"));
+            const auto encoded=Take(r->ReadString("regions"));
+            Take(r->EndArrayElement());
+            Require(raw && ids.contains(raw) && sheet_ids.insert(raw).second,
+                "editor.sheet_identity","Sheet has missing or duplicate parent");
+            const auto decoded=sheets::Decode(raw,encoded);
+            Require(static_cast<bool>(decoded),"editor.sheet_metadata","Malformed region table");
+            index.sheets.push_back({runtime::AssetId{foundation::StringId{raw}},decoded.value});
+        }
+        Take(r->EndArray());
+    }
     return index;
 }
 Result<Bytes> Read(const std::filesystem::path &p) {
@@ -387,6 +459,8 @@ Result<std::unique_ptr<ProjectFolder>> ProjectFolder::Open(const std::filesystem
         folder->generation_=restored->commit.generation;
         folder->editor_=std::move(restored->editor);
         folder->assets_=std::move(restored->index.records);
+        folder->sprites_=std::move(restored->index.sprites);
+        folder->sheets_=std::move(restored->index.sheets);
         folder->saved_assets_=folder->assets_;
         folder->next_asset_number_=restored->index.next;
         return R::Success(std::move(folder));
@@ -400,7 +474,7 @@ VoidResult ProjectFolder::Save() {
         // The process lock prevents concurrent editor writers; a manual external
         // edit to a committed marker is detected on reopening, not hot-reloaded.
         const auto next=generation_+1;
-        SourceIndex index{next_asset_number_,assets_};
+        SourceIndex index{next_asset_number_,assets_,sprites_,sheets_};
         // Source availability is diagnostic, not authoring validity. Preserve
         // missing/failed source references and their last-good cooked key.
         for(const auto &source:index.records) (void)SafeAt(root_,source.relative_path);
@@ -431,7 +505,7 @@ VoidResult ProjectFolder::Save() {
         generation_=next;
         editor_->saved_state_=editor_->current_->state_id;
         editor_->saved_documents_.swap(saved_documents);
-        saved_assets_=std::move(index.records);asset_dirty_=false;
+        saved_assets_=std::move(index.records);asset_dirty_=false;sprite_dirty_=false;
         pending_moves_.clear();
         {std::error_code ignored;std::filesystem::remove(journal_path,ignored);}
         // Convenience descriptor, not recovery authority. Failure here does not
@@ -564,6 +638,58 @@ VoidResult ProjectFolder::RedoAssetMove() {
     if(move_cursor_>=move_history_.size())return VoidResult::Failure(Error("editor.folder_move_history","No asset move to redo"));
     const auto &record=move_history_[move_cursor_];const auto result=ApplySourceMove(record.id,record.after.substr(8));
     if(result)++move_cursor_;return result;
+}
+VoidResult ProjectFolder::SetPrefabSprite(runtime::AssetId prefab,runtime::AssetId texture,
+    float pivot_x,float pivot_y,float pixels_per_unit) {
+    return SetPrefabSpriteRegion(prefab,texture,0,pivot_x,pivot_y,pixels_per_unit);
+}
+VoidResult ProjectFolder::SetPrefabSpriteRegion(runtime::AssetId prefab,runtime::AssetId texture,
+    std::uint64_t region_id,float pivot_x,float pivot_y,float pixels_per_unit) {
+    if(!prefab.IsValid() || !std::isfinite(pivot_x) || !std::isfinite(pivot_y) ||
+        pivot_x<0 || pivot_x>1 || pivot_y<0 || pivot_y>1 ||
+        !std::isfinite(pixels_per_unit) || pixels_per_unit<=0 || pixels_per_unit>4096)
+        return VoidResult::Failure(Error("editor.sprite_binding","Invalid Sprite parameters"));
+    const auto *document=editor_->Snapshot()->Find(prefab);
+    if(!document || document->Kind()!=DocumentKind::Prefab)
+        return VoidResult::Failure(Error("editor.sprite_prefab","Prefab document not found"));
+    auto next=sprites_;
+    next.erase(std::remove_if(next.begin(),next.end(),[&](const auto &s){return s.prefab==prefab;}),next.end());
+    if(texture.IsValid()) {
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &s){return s.id==texture;});
+        if(found==assets_.end() || found->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} || found->cooked_key.empty())
+            return VoidResult::Failure(Error("editor.sprite_texture","Texture must be a cooked PNG asset"));
+        if(region_id){
+            auto sheet=std::find_if(sheets_.begin(),sheets_.end(),[&](const auto &s){return s.texture==texture;});
+            if(sheet==sheets_.end() || std::none_of(sheet->regions.begin(),sheet->regions.end(),
+                [&](const auto &r){return r.id==region_id && !r.missing;}))
+                return VoidResult::Failure(Error("editor.sprite_region","Unknown or retired sprite region"));
+        }
+        next.push_back({prefab,texture,region_id,pivot_x,pivot_y,pixels_per_unit});
+    }
+    if(next!=sprites_) {sprites_.swap(next);sprite_dirty_=true;}
+    return VoidResult::Success();
+}
+VoidResult ProjectFolder::SetSpriteSheet(runtime::AssetId texture,
+    std::vector<sheets::Region> regions,std::uint32_t width,std::uint32_t height) {
+    const auto asset=std::find_if(assets_.begin(),assets_.end(),[&](const auto &a){return a.id==texture;});
+    if(asset==assets_.end() || asset->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
+        return VoidResult::Failure(Error("editor.sheet_parent","Sprite sheet requires indexed PNG"));
+    const auto source=ResolveProjectPath(root_,asset->relative_path);
+    if(!source)return VoidResult::Failure(source.GetError());
+    const auto png=DecodePng(source.Value());
+    if(!png || png.Value().width!=width || png.Value().height!=height)
+        return VoidResult::Failure(Error("editor.sheet_source","Sheet dimensions differ from decoded PNG"));
+    const auto validated=sheets::Validate(width,height,regions);
+    if(!validated)return VoidResult::Failure(Error("editor.sheet_regions",validated.error));
+    std::vector<SpriteSheetDefinition> next=sheets_;
+    auto old=std::find_if(next.begin(),next.end(),[&](const auto &s){return s.texture==texture;});
+    if(old!=next.end()){
+        auto reconciled=sheets::Reconcile(old->regions,regions);
+        if(!reconciled)return VoidResult::Failure(Error("editor.sheet_regions",reconciled.error));
+        old->regions=std::move(reconciled.value);
+    }else next.push_back({texture,std::move(regions)});
+    sheets_.swap(next);sprite_dirty_=true;
+    return VoidResult::Success();
 }
 Result<std::shared_ptr<const runtime::IAssetCatalog>> ProjectFolder::BuildSourceCatalog() const {
     using R=Result<std::shared_ptr<const runtime::IAssetCatalog>>;

@@ -30,6 +30,11 @@ class NativeSceneView final {
     void Finish();
     void Move(ViewPoint cursor);
     void DrawGizmo();
+    void DrawSprites();
+    [[nodiscard]] runtime::SceneNodeId Pick(ViewPoint point) const;
+    void RefreshSprites();
+    struct SpriteCache;
+    std::unique_ptr<SpriteCache> sprites_;
     [[nodiscard]] std::optional<GizmoFrame> Gizmo() const;
     [[nodiscard]] ViewPoint Point(LPARAM position) const;
     HWND window_;
