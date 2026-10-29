@@ -46,7 +46,7 @@ template<class T> T Take(Result<T> result) {
     if (!result) throw Failure{result.GetError()};
     return std::move(result).Value();
 }
-void Take(VoidResult result) { if (!result) throw Failure{result.GetError()}; }
+void Take(const VoidResult &result) { if (!result) throw Failure{result.GetError()}; }
 constexpr std::uint64_t kMaxSources = 16384;
 const auto kCommitType=foundation::StringId::FromString("epidemic.editor.folder_commit");
 const auto kSourcesType=foundation::StringId::FromString("epidemic.editor.source_index");
@@ -191,6 +191,7 @@ struct Restored {
     SourceIndex index;
     std::unique_ptr<EditorProject> editor;
 };
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
 Restored RestoreCommit(const std::filesystem::path &root,const std::filesystem::path &file,const ProjectSchema &schema) {
     const auto commit_bytes=Take(Read(file));const auto c=DecodeCommit(commit_bytes);
     Require(file.filename()==std::filesystem::path{RevisionName(c.generation)+".commit"},"editor.folder_commit","Commit filename mismatch");
@@ -231,6 +232,7 @@ bool IsSubpath(const std::filesystem::path &root,const std::filesystem::path &ca
     for(;a!=root.end();++a,++b) if(b==candidate.end() || *a!=*b)return false;
     return true;
 }
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
 void CopyTree(const std::filesystem::path &src,const std::filesystem::path &dest) {
     std::error_code ec;
     if(!std::filesystem::exists(src,ec))return;
@@ -301,6 +303,7 @@ Result<std::unique_ptr<ProjectFolder>> ProjectFolder::Create(const std::filesyst
     ProjectDefinition definition,const ProjectSchema &schema) {
     return CreateWithIds(root,std::move(title),std::move(definition),schema,{});
 }
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
 Result<std::unique_ptr<ProjectFolder>> ProjectFolder::ImportLegacy(const std::filesystem::path &root,
     const std::filesystem::path &legacy,std::string title,const ProjectSchema &schema) {
     using R=Result<std::unique_ptr<ProjectFolder>>;
@@ -333,7 +336,7 @@ Result<std::unique_ptr<ProjectFolder>> ProjectFolder::Open(const std::filesystem
                 // Last-good fallback for a broken committed generation.
             }
         }
-        Require(restored.has_value(),"editor.folder_integrity","No intact committed project revision");
+        if(!restored) throw Failure{Error("editor.folder_integrity","No intact committed project revision")};
         EnsureDirectories(canonical);
         auto folder=std::unique_ptr<ProjectFolder>(new ProjectFolder(canonical,restored->commit.title,schema));
         Take(folder->AcquireLock());
@@ -391,6 +394,7 @@ Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {return e
 VoidResult ProjectFolder::Undo(){return editor_->Undo();}
 VoidResult ProjectFolder::Redo(){return editor_->Redo();}
 Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) const {return editor_->Play(std::move(options));}
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
 Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount,std::string_view relative) const {
     if(mount!="Content" && mount!="Scripts" && mount!="ProjectData" && mount!="Cache")
         return Result<std::filesystem::path>::Failure(Error("editor.folder_mount","Unknown project mount"));
@@ -434,6 +438,34 @@ VoidResult ProjectFolder::ReindexSource(runtime::AssetId id) {
         return VoidResult::Success();
     } catch(const Failure &f) {return VoidResult::Failure(f.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_source","Source refresh failed"));}
+}
+VoidResult ProjectFolder::MoveSource(runtime::AssetId id, std::string_view new_content_path) {
+    try {
+        Require(!new_content_path.empty() && new_content_path.size()<runtime::kMaxAssetPathBytes-8,
+            "editor.folder_path", "Invalid destination path");
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
+        Require(found!=assets_.end(),"editor.folder_sources","Unknown asset ID");
+        auto relative="Content/"+std::string(new_content_path);
+        const auto old_path=SafeAt(root_,found->relative_path);
+        const auto new_path=SafeAt(root_,relative);
+        Require(old_path!=new_path,"editor.folder_path","Destination matches source");
+        auto folded=relative;
+        std::transform(folded.begin(),folded.end(),folded.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+        for(const auto &asset:assets_) if(asset.id!=id) {
+            auto other=asset.relative_path;
+            std::transform(other.begin(),other.end(),other.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+            Require(other!=folded,"editor.folder_path","Destination conflicts with another asset");
+        }
+        std::error_code ec;
+        Require(std::filesystem::is_regular_file(old_path,ec) && !ec,"editor.folder_source","Missing source file");
+        Require(!std::filesystem::exists(new_path,ec) && !ec,"editor.folder_path","Destination exists");
+        Require(std::filesystem::is_directory(new_path.parent_path(),ec) && !ec,"editor.folder_path","Destination directory does not exist");
+        std::filesystem::rename(old_path,new_path,ec);
+        Require(!ec,"editor.folder_io","Cannot move source file");
+        found->relative_path.swap(relative);asset_dirty_=true;
+        return VoidResult::Success();
+    } catch(const Failure &f) {return VoidResult::Failure(f.error);}
+    catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_io","Move source failed"));}
 }
 Result<std::shared_ptr<const runtime::IAssetCatalog>> ProjectFolder::BuildSourceCatalog() const {
     using R=Result<std::shared_ptr<const runtime::IAssetCatalog>>;

@@ -1,7 +1,8 @@
 # Asset pipeline: P04.0 contract draft
 
-Status: investigation and test-only mock spike. No production project-folder, import,
-browser or sprite-asset API is implemented by this document.
+Status: partial production backend. ProjectFolder, detached browser queries and
+Windows PNG decoding exist. Editor UI wiring, cooked resources and Sprite preview
+are not implemented; P04.0/P04.1/P04.2/P04.3a are not complete.
 
 ## Existing owners
 

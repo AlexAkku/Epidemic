@@ -1,7 +1,7 @@
 # P04.0 / P04.1 production folder backend (proposed delta)
 
 **Patch base:** `ea654e1581e6701fb3d38c6e2220be19b7c604cb` on `v2`.
-**Status:** implementation candidate, not a verified build; integration/GUI acceptance still required.
+**Status:** Windows Debug build, public headers and 158 CTest cases passed; integration/GUI and the listed acceptance gaps remain open.
 
 ## Ownership / contract
 
@@ -109,7 +109,7 @@ All test artifacts stay below `Temp/editor-tests/p04-folder`.
 8. **The 64 document / 16 MiB authoring limits still apply.** Binary source files
    stay out of the `.epidemic` archive.
 9. Build, tests, GUI, DLL-loading, Windows hardening and actual monitor DPI need
-   verification in the target environment; none are asserted PASS by this delta.
+   further target-environment verification. Local build/tests are qualified; visible GUI, DLL-loading, Windows hardening and actual monitor DPI are not asserted PASS.
 
 ## Migration plan
 

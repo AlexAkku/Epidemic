@@ -23,3 +23,8 @@ add_test(NAME EpidemicEditorFolderRecovery COMMAND EpidemicEditorProjectFolderTe
 set_tests_properties(EpidemicEditorFolderCreate PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" FIXTURES_SETUP EditorP04FolderCreated)
 set_tests_properties(EpidemicEditorFolderReopen PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" FIXTURES_REQUIRED EditorP04FolderCreated FIXTURES_SETUP EditorP04FolderRead)
 set_tests_properties(EpidemicEditorFolderRecovery PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" FIXTURES_REQUIRED EditorP04FolderRead)
+add_executable(EpidemicEditorContentTests p04_content_tests.cpp)
+target_link_libraries(EpidemicEditorContentTests PRIVATE EpidemicEditorCore)
+target_compile_definitions(EpidemicEditorContentTests PRIVATE EPIDEMIC_EDITOR_TEST_DIRECTORY="${PROJECT_SOURCE_DIR}/Temp/editor-tests")
+epidemic_configure_target(EpidemicEditorContentTests)
+epidemic_add_test(EpidemicEditorContentTests)

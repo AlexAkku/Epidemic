@@ -61,6 +61,9 @@ class ProjectFolder final {
     [[nodiscard]] foundation::Result<runtime::AssetId> IndexSource(
         std::string_view content_relative_path, runtime::AssetType type);
     [[nodiscard]] foundation::Result<void> ReindexSource(runtime::AssetId id);
+    // Renames or moves a source within Content while preserving its AssetId.
+    // Rejects destination conflicts and does not affect authored references.
+    [[nodiscard]] foundation::Result<void> MoveSource(runtime::AssetId id, std::string_view new_content_path);
     // Fresh sealed snapshot; never unseal or mutate Runtime Assets catalog.
     [[nodiscard]] foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>> BuildSourceCatalog() const;
     [[nodiscard]] std::uint64_t Revision() const noexcept { return editor_->Revision(); }
