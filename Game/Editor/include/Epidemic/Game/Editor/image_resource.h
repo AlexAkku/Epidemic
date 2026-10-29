@@ -1,9 +1,11 @@
 #pragma once
 #include "Epidemic/Game/Editor/png_import.h"
 #include "Epidemic/Runtime/Resources/resource_loader.h"
+#include "Epidemic/Runtime/Resources/resource_manager.h"
 #include <atomic>
 #include <string>
 #include <utility>
+#include <unordered_map>
 
 namespace epidemic::game::editor {
 // Recipe v1 is intentionally bounded: sRGB, PBGRA8, top-down, clamp, nearest,
@@ -20,11 +22,15 @@ class ImageResourceLoader final : public runtime::IResourceLoader {
   public:
     explicit ImageResourceLoader(std::filesystem::path root) : root_(std::move(root)) {}
     [[nodiscard]] foundation::Result<runtime::ResourceId> Register(std::string key);
+    // Call after releasing preview leases. Referenced/queued resources survive;
+    // retired registrations can be re-created by Register before a new request.
+    void CollectUnused(runtime::IResourceManager &manager);
+    [[nodiscard]] std::size_t RegistrationCount() const noexcept { return keys_.size(); }
     [[nodiscard]] runtime::ResourceType GetResourceType() const override;
     [[nodiscard]] foundation::Result<runtime::ResourceLoadArtifact> Load(runtime::ResourceRequest request) override;
   private:
     std::filesystem::path root_;
-    std::vector<std::pair<runtime::ResourceId,std::string>> keys_;
+    std::unordered_map<std::uint64_t,std::string> keys_;
 };
 // Produces an unreferenced, immutable cooked PNG on a worker thread.
 // No ProjectFolder, AssetCatalog, Resources or Renderer mutation takes place.

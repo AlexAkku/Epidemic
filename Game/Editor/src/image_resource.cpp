@@ -92,16 +92,22 @@ foundation::Result<runtime::ResourceId> ImageResourceLoader::Register(std::strin
     using R=foundation::Result<runtime::ResourceId>;
     if(!Key(key))return R::Failure(Error("editor.image_key"));
     const auto id=runtime::ResourceId::FromString("epidemic.editor.image/"+key);
-    for(const auto &entry:keys_)if(entry.first==id){
-        if(entry.second!=key)return R::Failure(Error("editor.image_key_collision"));return R::Success(id);}
-    if(keys_.size()>=256)return R::Failure(Error("editor.image_residency_limit"));
-    keys_.emplace_back(id,std::move(key));return R::Success(id);
+    if(const auto entry=keys_.find(id.Raw());entry!=keys_.end()){
+        if(entry->second!=key)return R::Failure(Error("editor.image_key_collision"));return R::Success(id);}
+    keys_.emplace(id.Raw(),std::move(key));return R::Success(id);
+}
+void ImageResourceLoader::CollectUnused(runtime::IResourceManager &manager){
+    for(auto entry=keys_.begin();entry!=keys_.end();){
+        const auto evicted=manager.Evict(runtime::ResourceId{foundation::StringId{entry->first}});
+        if(evicted || evicted.GetError().HasCode("resource.not_found"))entry=keys_.erase(entry);
+        else ++entry; // In-use leases, including pending requests, retain their key.
+    }
 }
 foundation::Result<runtime::ResourceLoadArtifact> ImageResourceLoader::Load(runtime::ResourceRequest request){
     using R=foundation::Result<runtime::ResourceLoadArtifact>;
     try{
         Require(request.type==GetResourceType(),"editor.image_type");
-        const auto entry=std::find_if(keys_.begin(),keys_.end(),[&](const auto &pair){return pair.first==request.resource_id;});
+        const auto entry=keys_.find(request.resource_id.Raw());
         Require(entry!=keys_.end(),"editor.image_unknown");
         const auto bytes=Take(platform::ReadFilePackage(foundation::Path{Cooked(root_,entry->second)},runtime::kMaxDocumentBytes));
         const auto document=Take(runtime::DecodeDocument(bytes));

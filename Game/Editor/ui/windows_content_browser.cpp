@@ -134,7 +134,7 @@ struct Browser final {
             const auto candidate=resources.manager->RequestLease({id.Value(),loader->GetResourceType()});if(!candidate){Error(candidate.GetError().code);return;}
             const auto loaded=resources.manager->ProcessPendingLoads();
             const auto payload=std::dynamic_pointer_cast<const ImagePayload>(resources.manager->GetPayload(candidate.Value().resource));
-            if(!loaded || !payload){(void)resources.manager->Release(candidate.Value());Error("Image load failed; previous preview retained. Reimport to rebuild missing cache.");return;}
+            if(!loaded || !payload){(void)resources.manager->Release(candidate.Value());loader->CollectUnused(*resources.manager);Error("Image load failed; previous preview retained. Reimport to rebuild missing cache.");return;}
             try{
                 if(!renderer){RECT bounds{};GetClientRect(Control(Preview),&bounds);
                     renderer=std::make_unique<runtime::presentation::Renderer>(Control(Preview),std::span<const runtime::presentation::SpriteEntry>{},0);
@@ -149,7 +149,7 @@ struct Browser final {
                 auto candidate_texture=renderer->CreateTexture(thumbnail.width,thumbnail.height,thumbnail.pixels);
                 ClearPreview();lease=candidate.Value();texture=std::move(candidate_texture);image_width=thumbnail.width;image_height=thumbnail.height;
                 InvalidateRect(Control(Preview),nullptr,FALSE);
-            }catch(...){(void)resources.manager->Release(candidate.Value());throw;}
+            }catch(...){(void)resources.manager->Release(candidate.Value());loader->CollectUnused(*resources.manager);throw;}
             return;
         }
     }
@@ -164,7 +164,7 @@ struct Browser final {
         if(!texture || !lease)throw std::runtime_error("Content smoke: repeated preview lost resource");
         EndDialog(window,0);
     }
-    void ClearPreview(){texture.reset();if(lease){(void)resources.manager->Release(*lease);lease.reset();}if(resources.manager)(void)resources.manager->EvictUnreferenced();if(const auto preview=Control(Preview))InvalidateRect(preview,nullptr,FALSE);}
+    void ClearPreview(){texture.reset();if(lease){(void)resources.manager->Release(*lease);lease.reset();}if(resources.manager)loader->CollectUnused(*resources.manager);if(const auto preview=Control(Preview))InvalidateRect(preview,nullptr,FALSE);}
     void Paint(){
         PAINTSTRUCT paint{};BeginPaint(Control(Preview),&paint);EndPaint(Control(Preview),&paint);
         if(!renderer)return;

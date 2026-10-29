@@ -74,7 +74,7 @@ struct NativeSceneView::SpriteCache {
     void ReleaseAll() {
         for(auto &[key,r]:textures) {r.texture.reset();(void)resources.manager->Release(r.lease);}
         textures.clear();placement_keys.clear();
-        (void)resources.manager->EvictUnreferenced();
+        loader->CollectUnused(*resources.manager);
     }
 };
 NativeSceneView::NativeSceneView(HWND window,EditorWorkspace &workspace,std::function<bool(runtime::SceneNodeId)> select,
@@ -246,7 +246,7 @@ void NativeSceneView::RefreshSprites() {
         if(needed.contains(it->first)){++it;continue;}
         it->second.texture.reset();(void)sprites_->resources.manager->Release(it->second.lease);it=sprites_->textures.erase(it);
     }
-    (void)sprites_->resources.manager->EvictUnreferenced();
+    sprites_->loader->CollectUnused(*sprites_->resources.manager);
 }
 void NativeSceneView::DrawSprites() {
     if(!sprites_)return;

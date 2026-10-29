@@ -86,6 +86,14 @@ int main(int argc,char **argv){
     ex::Take(resources.manager->ProcessPendingLoads());
     const auto old_pixels=std::dynamic_pointer_cast<const ed::ImagePayload>(resources.manager->GetPayload(old.resource));
     Check(old_pixels && old_pixels->image.pixels==decoded.pixels,"Cooked ResourceLoader/payload round-trip");
+    for(std::uint64_t key=1;key<=600;++key){
+        auto digest=std::string(64,'0');auto value=key;
+        for(std::size_t digit=0;value;++digit){digest[63-digit]="0123456789abcdef"[value%16];value/=16;}
+        Check(static_cast<bool>(loader.Register(std::move(digest))),"More than 256 image keys must register");
+    }
+    Check(loader.RegistrationCount()==601,"Registration count must include all live candidates");
+    loader.CollectUnused(*resources.manager);
+    Check(loader.RegistrationCount()==1 && resources.manager->IsReady(old.resource),"Collection must retain active old leases only");
     Check(ed::MakeImageThumbnail(old_pixels->image).pixels==decoded.pixels,"Thumbnail alpha matches same backend");
     Check(ex::Take(ed::CookProjectPng(*project,"Sprites/real.png"))==texture && project->Sources().back().generation==original.generation,"Deterministic unchanged reimport");
     constexpr unsigned char blue[]={137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,31,21,196,137,0,0,0,13,73,68,65,84,120,156,99,96,96,248,223,0,0,2,131,1,128,67,187,248,3,0,0,0,0,73,69,78,68,174,66,96,130};
@@ -99,6 +107,9 @@ int main(int argc,char **argv){
     const auto new_pixels=std::dynamic_pointer_cast<const ed::ImagePayload>(resources.manager->GetPayload(next.resource));
     Check(new_pixels && new_pixels->image.pixels[0]==std::byte{128} && old_pixels->image.pixels[2]==std::byte{128},"Old/new active leases retain independent pixels");
     ex::Take(resources.manager->Release(old));ex::Take(resources.manager->Release(next));
+    loader.CollectUnused(*resources.manager);
+    Check(loader.RegistrationCount()==0,"Released image generations must not accumulate loader keys");
+    Check(ex::Take(loader.Register(original.cooked_key))==old_id,"Re-registering an evicted digest preserves resource identity");
     std::atomic_bool cancelled{true};
     Check(!ed::CookProjectPng(*project,"Sprites/real.png",&cancelled) && project->Sources().back().cooked_key==updated.cooked_key,"Cancelled candidate retains last-good");
     ex::Take(project->Save());project.reset();project=ex::Take(ed::ProjectFolder::Open(root,schema.View()));
