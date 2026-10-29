@@ -12,6 +12,7 @@ struct EditRequest;
 struct EditReceipt;
 struct PlayOptions;
 class PlaySession;
+class ProjectFolder;
 using DocumentData = std::variant<composition::SceneCompositionDefinition, comp::PrefabDefinition, runtime::graph::GraphDefinition>;
 enum class DocumentKind { Scene, Prefab, Graph };
 struct EditorDocument {
@@ -61,6 +62,7 @@ class EditorProject final {
     [[nodiscard]] bool CanUndo() const noexcept { return !undo_.empty(); }
     [[nodiscard]] bool CanRedo() const noexcept { return !redo_.empty(); }
   private:
+    friend class ProjectFolder; // Folder commits preserve retired IDs and save points.
     EditorProject(std::filesystem::path file, const ProjectSchema &schema) : file_(std::move(file)), schema_(schema) {}
     std::filesystem::path file_;
     ProjectSchema schema_;
