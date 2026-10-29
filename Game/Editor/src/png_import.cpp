@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/png_import.h"
+#include "Epidemic/Game/Editor/image_resource.h"
 #include <array>
 #include <fstream>
 #include <limits>
@@ -68,17 +69,14 @@ foundation::Result<DecodedPng> DecodePng(const std::filesystem::path &path) {
 #endif
 }
 foundation::Result<runtime::AssetId> ImportProjectPng(ProjectFolder &project,std::string_view relative) {
-    if(relative.size()<4 || relative.substr(relative.size()-4)!=".png")return Error<runtime::AssetId>("editor.png_extension");
-    const auto path=project.ResolveMount("Content",relative);
-    if(!path)return Error<runtime::AssetId>("editor.png_path");
-    const auto decoded=DecodePng(path.Value());
-    if(!decoded)return foundation::Result<runtime::AssetId>::Failure(decoded.GetError());
-    return project.IndexSource(relative,{foundation::StringId::FromString("epidemic.texture.png")});
+    return CookProjectPng(project,relative);
 }
 foundation::Result<runtime::AssetId> ImportExternalPng(ProjectFolder &project,
     const std::filesystem::path &external,std::string_view content_relative) {
-    const auto decoded=DecodePng(external);
-    if(!decoded)return foundation::Result<runtime::AssetId>::Failure(decoded.GetError());
+    { // Release the validation buffer before decoding/cooking the copied file.
+        const auto decoded=DecodePng(external);
+        if(!decoded)return foundation::Result<runtime::AssetId>::Failure(decoded.GetError());
+    }
     const auto target=project.ResolveMount("Content",content_relative);
     if(!target)return Error<runtime::AssetId>("editor.png_path");
     std::error_code ec;

@@ -51,6 +51,7 @@ constexpr std::uint64_t kMaxSources = 16384;
 const auto kCommitType=foundation::StringId::FromString("epidemic.editor.folder_commit");
 const auto kSourcesType=foundation::StringId::FromString("epidemic.editor.source_index");
 constexpr runtime::SchemaVersion kVersion{1,0,0};
+constexpr runtime::SchemaVersion kSourcesVersion{1,1,0};
 
 struct Commit {
     std::uint64_t generation=0, project=0, entry_scene=0, authoring_hash=0, assets_hash=0;
@@ -112,15 +113,15 @@ Bytes EncodeSources(const SourceIndex &index) {
         const auto &a=index.records[i]; Take(w->BeginArrayElement(i));
         Take(w->WriteUInt64("id",a.id.Raw())); Take(w->WriteUInt64("type",a.type.value.Raw()));
         Take(w->WriteString("path",a.relative_path));Take(w->WriteUInt64("hash",a.source_hash));
-        Take(w->WriteUInt64("generation",a.generation)); Take(w->EndArrayElement());
+        Take(w->WriteUInt64("generation",a.generation)); Take(w->WriteString("cooked",a.cooked_key)); Take(w->EndArrayElement());
     }
     Take(w->EndArray());
-    return Take(runtime::EncodeDocument(Take(w->Finalize(kSourcesType,kVersion))));
+    return Take(runtime::EncodeDocument(Take(w->Finalize(kSourcesType,kSourcesVersion))));
 }
 SourceIndex DecodeSources(std::span<const std::byte> data) {
     auto doc=Take(runtime::DecodeDocument(data));
     Require(doc.GetTypeId()==kSourcesType,"editor.folder_sources","Wrong source index type");
-    Require(doc.GetSchemaVersion()==kVersion,"editor.folder_version","Unsupported source index version");
+    Require(doc.GetSchemaVersion()==kVersion || doc.GetSchemaVersion()==kSourcesVersion,"editor.folder_version","Unsupported source index version");
     auto services=Take(runtime::CreateSerializationServices()); auto r=Take(services.archives->CreateReader(doc));
     SourceIndex index; index.next=Take(r->ReadUInt64("next"));
     const auto count=Take(r->BeginArray("sources"));
@@ -132,7 +133,10 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
         a.id=runtime::AssetId{foundation::StringId{Take(r->ReadUInt64("id"))}};
         a.type=runtime::AssetType{foundation::StringId{Take(r->ReadUInt64("type"))}};
         a.relative_path=Take(r->ReadString("path")); a.source_hash=Take(r->ReadUInt64("hash"));
-        a.generation=Take(r->ReadUInt64("generation"));Take(r->EndArrayElement());
+        a.generation=Take(r->ReadUInt64("generation"));
+        if(doc.GetSchemaVersion()==kSourcesVersion) a.cooked_key=Take(r->ReadString("cooked"));
+        Require(a.cooked_key.empty() || (a.cooked_key.size()==64 && a.cooked_key.find_first_not_of("0123456789abcdef")==std::string::npos),"editor.folder_sources","Invalid cooked key");
+        Take(r->EndArrayElement());
         Require(a.id.IsValid() && a.type.IsValid() && a.generation>0 &&
                 a.generation<=std::numeric_limits<std::uint32_t>::max() &&
                 a.relative_path.starts_with("Content/") && a.relative_path.size()<=runtime::kMaxAssetPathBytes,
@@ -168,6 +172,38 @@ std::filesystem::path RootPath(const std::filesystem::path &root) {
 std::filesystem::path SafeAt(const std::filesystem::path &root,std::string_view rel) {
     return Take(ResolveProjectPath(root,rel));
 }
+Bytes EncodeMoves(std::uint64_t base,const std::vector<std::pair<std::string,std::string>> &moves) {
+    auto services=Take(runtime::CreateSerializationServices());auto writer=services.archives->CreateWriter();
+    Require(writer!=nullptr,"editor.folder_codec","No move journal writer");
+    Take(writer->WriteUInt64("base",base));Take(writer->BeginArray("moves",moves.size()));
+    for(std::size_t i=0;i<moves.size();++i){Take(writer->BeginArrayElement(i));
+        Take(writer->WriteString("before",moves[i].first));Take(writer->WriteString("after",moves[i].second));Take(writer->EndArrayElement());}
+    Take(writer->EndArray());return Take(runtime::EncodeDocument(Take(writer->Finalize(foundation::StringId::FromString("epidemic.editor.move_journal"),kVersion))));
+}
+void RecoverMoves(const std::filesystem::path &root,std::uint64_t generation) {
+    const auto journal=SafeAt(root,".epidemic/source-moves.journal");std::error_code ec;
+    if(!std::filesystem::exists(journal,ec)){Require(!ec,"editor.folder_journal","Cannot inspect move journal");return;}
+    const auto document=Take(runtime::DecodeDocument(Take(Read(journal))));
+    Require(document.GetTypeId()==foundation::StringId::FromString("epidemic.editor.move_journal") && document.GetSchemaVersion()==kVersion,"editor.folder_journal","Unsupported move journal");
+    auto services=Take(runtime::CreateSerializationServices());auto reader=Take(services.archives->CreateReader(document));
+    const auto base=Take(reader->ReadUInt64("base"));const auto count=Take(reader->BeginArray("moves"));
+    Require(count<=128 && base<=generation,"editor.folder_journal","Move journal bounds/base mismatch");
+    std::vector<std::pair<std::string,std::string>> moves;
+    for(std::size_t i=0;i<count;++i){Take(reader->BeginArrayElement(i));
+        auto before=Take(reader->ReadString("before")),after=Take(reader->ReadString("after"));
+        Require(before.starts_with("Content/") && after.starts_with("Content/"),"editor.folder_journal","Move journal path outside Content");
+        (void)SafeAt(root,before);(void)SafeAt(root,after);moves.emplace_back(std::move(before),std::move(after));Take(reader->EndArrayElement());}
+    Take(reader->EndArray());
+    if(base==generation)while(!moves.empty()){
+        const auto before=SafeAt(root,moves.back().first),after=SafeAt(root,moves.back().second);
+        const bool original=std::filesystem::exists(before,ec);Require(!ec,"editor.folder_journal","Cannot inspect original source");
+        const bool moved=std::filesystem::exists(after,ec);Require(!ec,"editor.folder_journal","Cannot inspect moved source");
+        Require(original!=moved,"editor.folder_journal","Ambiguous move recovery; preserve files for manual repair");
+        if(moved){std::filesystem::rename(after,before,ec);Require(!ec,"editor.folder_journal","Cannot restore uncommitted source move");}
+        moves.pop_back();Take(Publish(journal,EncodeMoves(base,moves)));
+    }
+    std::filesystem::remove(journal,ec);Require(!ec,"editor.folder_journal","Cannot retire recovered move journal");
+}
 std::uint64_t HashFileStream(const std::filesystem::path &path) {
     std::ifstream in(path,std::ios::binary);
     Require(in.good(),"editor.folder_source","Cannot read source file");
@@ -178,13 +214,6 @@ std::uint64_t HashFileStream(const std::filesystem::path &path) {
     }
     Require(in.eof() && !in.bad(),"editor.folder_source","Source file read failed");
     return h;
-}
-void CheckSourcesExist(const std::filesystem::path &root,const SourceIndex &index) {
-    for(const auto &a:index.records) {
-        const auto file=SafeAt(root,a.relative_path);std::error_code ec;
-        Require(std::filesystem::is_regular_file(file,ec) && !ec,"editor.folder_source","Indexed source file is missing");
-        Require(HashFileStream(file)==a.source_hash,"editor.folder_source","Indexed source hash changed; reindex before commit");
-    }
 }
 struct Restored {
     Commit commit;
@@ -229,7 +258,14 @@ std::vector<std::filesystem::path> Commits(const std::filesystem::path &root) {
 }
 bool IsSubpath(const std::filesystem::path &root,const std::filesystem::path &candidate) {
     auto a=root.begin(), b=candidate.begin();
-    for(;a!=root.end();++a,++b) if(b==candidate.end() || *a!=*b)return false;
+    for(;a!=root.end();++a,++b) {
+        if(b==candidate.end())return false;
+#ifdef _WIN32
+        if(CompareStringOrdinal(a->c_str(),-1,b->c_str(),-1,TRUE)!=CSTR_EQUAL)return false;
+#else
+        if(*a!=*b)return false;
+#endif
+    }
     return true;
 }
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
@@ -240,6 +276,11 @@ void CopyTree(const std::filesystem::path &src,const std::filesystem::path &dest
     for(const auto &entry:std::filesystem::recursive_directory_iterator(src)) {
         const auto status=entry.symlink_status(ec);
         Require(!ec && !std::filesystem::is_symlink(status),"editor.folder_clone","Symlink in portable source tree");
+
+#ifdef _WIN32
+        const auto attributes=GetFileAttributesW(entry.path().c_str());
+        Require(attributes!=INVALID_FILE_ATTRIBUTES && (attributes & static_cast<DWORD>(FILE_ATTRIBUTE_REPARSE_POINT))==0,"editor.folder_clone","Reparse point in portable source tree");
+#endif
         const auto relative=entry.path().lexically_relative(src);
         Require(!relative.empty(),"editor.folder_clone","Invalid source path");
         const auto output=dest/relative;
@@ -321,6 +362,9 @@ Result<std::unique_ptr<ProjectFolder>> ProjectFolder::Open(const std::filesystem
     using R=Result<std::unique_ptr<ProjectFolder>>;
     try {
         auto canonical=RootPath(root);
+        Require(std::filesystem::is_directory(canonical/".epidemic") && std::filesystem::is_directory(canonical/"ProjectData/Commits"),"editor.folder_missing","Not a project folder");
+        auto folder=std::unique_ptr<ProjectFolder>(new ProjectFolder(canonical,"",schema));
+        Take(folder->AcquireLock());
         const auto commits=Commits(canonical);
         Require(!commits.empty(),"editor.folder_missing","No committed project descriptor");
         // Do not turn a newer unknown schema into a silent downgrade.
@@ -338,11 +382,12 @@ Result<std::unique_ptr<ProjectFolder>> ProjectFolder::Open(const std::filesystem
         }
         if(!restored) throw Failure{Error("editor.folder_integrity","No intact committed project revision")};
         EnsureDirectories(canonical);
-        auto folder=std::unique_ptr<ProjectFolder>(new ProjectFolder(canonical,restored->commit.title,schema));
-        Take(folder->AcquireLock());
+        folder->title_=restored->commit.title;
+        RecoverMoves(canonical,restored->commit.generation);
         folder->generation_=restored->commit.generation;
         folder->editor_=std::move(restored->editor);
         folder->assets_=std::move(restored->index.records);
+        folder->saved_assets_=folder->assets_;
         folder->next_asset_number_=restored->index.next;
         return R::Success(std::move(folder));
     } catch(const Failure &failure) {return R::Failure(failure.error);}
@@ -356,7 +401,9 @@ VoidResult ProjectFolder::Save() {
         // edit to a committed marker is detected on reopening, not hot-reloaded.
         const auto next=generation_+1;
         SourceIndex index{next_asset_number_,assets_};
-        CheckSourcesExist(root_,index);
+        // Source availability is diagnostic, not authoring validity. Preserve
+        // missing/failed source references and their last-good cooked key.
+        for(const auto &source:index.records) (void)SafeAt(root_,source.relative_path);
         auto archive=detail::ProjectArchive{editor_->current_->definition,{editor_->used_ids_.begin(),editor_->used_ids_.end()}};
         const auto authored=Take(detail::WriteProject(archive,schema_));
         const auto sources=EncodeSources(index);
@@ -374,23 +421,33 @@ VoidResult ProjectFolder::Save() {
         Commit commit{next,editor_->current_->definition.id.Raw(),editor_->current_->definition.entry_scene.Raw(),
             Hash(authored),Hash(sources),title_,authoring_path,sources_path};
         const auto bytes=EncodeCommit(commit);
+        decltype(editor_->saved_documents_) saved_documents;
+        for(const auto &doc:editor_->current_->definition.documents)saved_documents.emplace(doc.id.Raw(),doc.revision);
+        const auto journal_path=SafeAt(root_,".epidemic/source-moves.journal");
+        const auto descriptor_path=root_/"Project.epidemicproj";
         // The commit marker is the LAST authoritative write. An interrupted
         // multi-file save leaves only uncommitted orphan revision files.
         Take(Publish(SafeAt(root_,CommitPath(next)),bytes));
         generation_=next;
         editor_->saved_state_=editor_->current_->state_id;
-        editor_->saved_documents_.clear();
-        for(const auto &doc:editor_->current_->definition.documents)
-            editor_->saved_documents_.emplace(doc.id.Raw(),doc.revision);
-        asset_dirty_=false;
+        editor_->saved_documents_.swap(saved_documents);
+        saved_assets_=std::move(index.records);asset_dirty_=false;
+        pending_moves_.clear();
+        {std::error_code ignored;std::filesystem::remove(journal_path,ignored);}
         // Convenience descriptor, not recovery authority. Failure here does not
         // undo an already durable commit and does not turn Save into a false FAIL.
-        (void)Publish(root_/"Project.epidemicproj",bytes);
+        try {(void)Publish(descriptor_path,bytes);} catch(const std::exception &) { return VoidResult::Success(); /* Commit remains durable. */ }
         return VoidResult::Success();
     } catch(const Failure &failure) {return VoidResult::Failure(failure.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_io","Project commit failed"));}
 }
-Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {return editor_->Execute(request);}
+Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {
+    if(request.expected_revision!=editor_->Revision())return editor_->Execute(request);
+    for(const auto &command:request.commands)if(const auto *created=std::get_if<CreateDocument>(&command))
+        if(std::any_of(assets_.begin(),assets_.end(),[&](const auto &source){return source.id==created->document.id;}))
+            return Result<EditReceipt>::Failure(Error("editor.folder_identity","Document ID is reserved by a source asset"));
+    return editor_->Execute(request);
+}
 VoidResult ProjectFolder::Undo(){return editor_->Undo();}
 VoidResult ProjectFolder::Redo(){return editor_->Redo();}
 Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) const {return editor_->Play(std::move(options));}
@@ -401,11 +458,12 @@ Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount
     const auto prefix=mount=="Cache"?".epidemic/Cache":std::string(mount);
     return ResolveProjectPath(root_,prefix+"/"+std::string(relative));
 }
-Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path,runtime::AssetType type) {
+Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path,runtime::AssetType type,std::string cooked_key) {
     using R=Result<runtime::AssetId>;
     try {
-        Require(type.IsValid() && !path.empty() && path.size()<runtime::kMaxAssetPathBytes && next_asset_number_<std::numeric_limits<std::uint64_t>::max() && assets_.size()<kMaxSources,
+        Require(type.IsValid() && !path.empty() && path.size()<=runtime::kMaxAssetPathBytes-8 && next_asset_number_<std::numeric_limits<std::uint64_t>::max() && assets_.size()<kMaxSources,
             "editor.folder_sources","Invalid source registration");
+        Require(cooked_key.empty() || (cooked_key.size()==64 && cooked_key.find_first_not_of("0123456789abcdef")==std::string::npos),"editor.folder_cooked","Invalid cooked key");
         const auto qualified="Content/"+std::string(path);
         const auto source=SafeAt(root_,qualified);
         std::error_code ec;
@@ -418,11 +476,12 @@ Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path,runtim
         }
         runtime::AssetId id{};
         do {
+            Require(next_asset_number_<std::numeric_limits<std::uint64_t>::max(),"editor.folder_sources","Source identity counter exhausted");
             const auto key="epidemic.project.asset/"+std::to_string(editor_->Snapshot()->definition.id.Raw())+"/"+std::to_string(next_asset_number_++);
             id=runtime::AssetId{foundation::StringId::FromString(key)};
-        } while(!id.IsValid() || editor_->Snapshot()->assets->Contains(id) ||
+        } while(!id.IsValid() || editor_->used_ids_.contains({id.Raw(),0}) || editor_->Snapshot()->assets->Contains(id) ||
                 std::any_of(assets_.begin(),assets_.end(),[&](const auto &a){return a.id==id;}));
-        assets_.push_back({id,type,qualified,HashFileStream(source),1});asset_dirty_=true;
+        assets_.push_back({id,type,qualified,HashFileStream(source),1,std::move(cooked_key)});asset_dirty_=true;
         return R::Success(id);
     } catch(const Failure &f) {return R::Failure(f.error);}
     catch(const std::exception &) {return R::Failure(Error("editor.folder_source","Cannot index source"));}
@@ -439,7 +498,22 @@ VoidResult ProjectFolder::ReindexSource(runtime::AssetId id) {
     } catch(const Failure &f) {return VoidResult::Failure(f.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_source","Source refresh failed"));}
 }
-VoidResult ProjectFolder::MoveSource(runtime::AssetId id, std::string_view new_content_path) {
+VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, std::string key) {
+    try {
+        Require(key.size()==64 && key.find_first_not_of("0123456789abcdef")==std::string::npos,
+            "editor.folder_cooked","Invalid cooked digest");
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
+        Require(found!=assets_.end() && found->generation<std::numeric_limits<std::uint32_t>::max(),
+            "editor.folder_cooked","Unknown source or generation overflow");
+        const auto hash=HashFileStream(SafeAt(root_,found->relative_path));
+        if(found->cooked_key!=key || found->source_hash!=hash) {
+            found->cooked_key.swap(key);found->source_hash=hash;++found->generation;asset_dirty_=true;
+        }
+        return VoidResult::Success();
+    } catch(const Failure &f){return VoidResult::Failure(f.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_cooked","Cannot publish cooked candidate"));}
+}
+VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view new_content_path) {
     try {
         Require(!new_content_path.empty() && new_content_path.size()<runtime::kMaxAssetPathBytes-8,
             "editor.folder_path", "Invalid destination path");
@@ -460,12 +534,36 @@ VoidResult ProjectFolder::MoveSource(runtime::AssetId id, std::string_view new_c
         Require(std::filesystem::is_regular_file(old_path,ec) && !ec,"editor.folder_source","Missing source file");
         Require(!std::filesystem::exists(new_path,ec) && !ec,"editor.folder_path","Destination exists");
         Require(std::filesystem::is_directory(new_path.parent_path(),ec) && !ec,"editor.folder_path","Destination directory does not exist");
+        Require(pending_moves_.size()<128,"editor.folder_journal_limit","Save before more source moves");
+        auto pending=pending_moves_;pending.emplace_back(found->relative_path,relative);
+        Take(Publish(SafeAt(root_,".epidemic/source-moves.journal"),EncodeMoves(generation_,pending)));
+        pending_moves_.swap(pending);
         std::filesystem::rename(old_path,new_path,ec);
         Require(!ec,"editor.folder_io","Cannot move source file");
-        found->relative_path.swap(relative);asset_dirty_=true;
+        found->relative_path.swap(relative);asset_dirty_=assets_!=saved_assets_;
         return VoidResult::Success();
     } catch(const Failure &f) {return VoidResult::Failure(f.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_io","Move source failed"));}
+}
+VoidResult ProjectFolder::MoveSource(runtime::AssetId id,std::string_view relative) {
+    try {
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
+        Require(found!=assets_.end(),"editor.folder_move_history","Unknown asset or move history full");
+        auto history=move_history_;history.resize(move_cursor_);if(history.size()==64)history.erase(history.begin());history.push_back({id,found->relative_path,"Content/"+std::string(relative)});
+        const auto moved=ApplySourceMove(id,relative);if(!moved)return moved;
+        move_history_.swap(history);move_cursor_=move_history_.size();return VoidResult::Success();
+    }catch(const Failure &failure){return VoidResult::Failure(failure.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_move_history","Cannot prepare move history"));}
+}
+VoidResult ProjectFolder::UndoAssetMove() {
+    if(move_cursor_==0)return VoidResult::Failure(Error("editor.folder_move_history","No asset move to undo"));
+    const auto &record=move_history_[move_cursor_-1];const auto result=ApplySourceMove(record.id,record.before.substr(8));
+    if(result)--move_cursor_;return result;
+}
+VoidResult ProjectFolder::RedoAssetMove() {
+    if(move_cursor_>=move_history_.size())return VoidResult::Failure(Error("editor.folder_move_history","No asset move to redo"));
+    const auto &record=move_history_[move_cursor_];const auto result=ApplySourceMove(record.id,record.after.substr(8));
+    if(result)++move_cursor_;return result;
 }
 Result<std::shared_ptr<const runtime::IAssetCatalog>> ProjectFolder::BuildSourceCatalog() const {
     using R=Result<std::shared_ptr<const runtime::IAssetCatalog>>;
@@ -497,13 +595,15 @@ VoidResult ProjectFolder::CloneTo(const std::filesystem::path &destination) cons
             std::filesystem::copy_file(src,dst,std::filesystem::copy_options::none,ec);
             Require(!ec,"editor.folder_clone","Cannot copy committed project file");};
         copy(AuthoringPath(generation_));copy(SourcesPath(generation_));
-        CopyTree(root_/"Content",target/"Content");CopyTree(root_/"Scripts",target/"Scripts");
-        // Source files and hashes must be valid before publishing the marker.
-        CheckSourcesExist(target,commit.index);
+        CopyTree(SafeAt(root_,"Content"),SafeAt(target,"Content"));CopyTree(SafeAt(root_,"Scripts"),SafeAt(target,"Scripts"));
+        CopyTree(SafeAt(root_,".epidemic/Cache/images"),SafeAt(target,".epidemic/Cache/images"));
+        // Last-good cooked data remains portable even if source is missing/corrupt.
+        for(const auto &source:commit.index.records)(void)SafeAt(target,source.relative_path);
         // A clone interrupted before this point is not a committed project.
         const auto bytes=Take(Read(marker));
+        const auto descriptor_path=target/"Project.epidemicproj";
         Take(Publish(target/CommitPath(generation_),bytes));
-        (void)Publish(target/"Project.epidemicproj",bytes);
+        try {(void)Publish(descriptor_path,bytes);} catch(const std::exception &) { return VoidResult::Success(); /* Clone marker is already durable. */ }
         return VoidResult::Success();
     } catch(const Failure &f){return VoidResult::Failure(f.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_clone","Cannot clone project folder"));}

@@ -16,6 +16,9 @@ struct ProjectSourceAsset {
     std::string relative_path;
     std::uint64_t source_hash = 0;
     std::uint64_t generation = 1;
+    // SHA-256 key of immutable serialized image; empty for uncooked sources.
+    std::string cooked_key;
+    [[nodiscard]] bool operator==(const ProjectSourceAsset &) const = default;
 };
 
 // P04.0/P04.1: durable folder workspace. The existing EditorProject is still the
@@ -59,11 +62,14 @@ class ProjectFolder final {
     // real file inside Content/ first. Identity is allocated independently
     // from the path; reindex keeps it stable and publishes on Save.
     [[nodiscard]] foundation::Result<runtime::AssetId> IndexSource(
-        std::string_view content_relative_path, runtime::AssetType type);
+        std::string_view content_relative_path, runtime::AssetType type, std::string cooked_key = {});
     [[nodiscard]] foundation::Result<void> ReindexSource(runtime::AssetId id);
+    [[nodiscard]] foundation::Result<void> PublishCooked(runtime::AssetId id, std::string key);
     // Renames or moves a source within Content while preserving its AssetId.
     // Rejects destination conflicts and does not affect authored references.
     [[nodiscard]] foundation::Result<void> MoveSource(runtime::AssetId id, std::string_view new_content_path);
+    [[nodiscard]] foundation::Result<void> UndoAssetMove();
+    [[nodiscard]] foundation::Result<void> RedoAssetMove();
     // Fresh sealed snapshot; never unseal or mutate Runtime Assets catalog.
     [[nodiscard]] foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>> BuildSourceCatalog() const;
     [[nodiscard]] std::uint64_t Revision() const noexcept { return editor_->Revision(); }
@@ -74,6 +80,12 @@ class ProjectFolder final {
 
   private:
     struct WriterLock;
+    struct MoveRecord { runtime::AssetId id; std::string before, after; };
+    [[nodiscard]] foundation::Result<void> ApplySourceMove(runtime::AssetId id, std::string_view relative);
+    std::vector<std::pair<std::string,std::string>> pending_moves_;
+    std::vector<MoveRecord> move_history_;
+    std::size_t move_cursor_=0;
+    std::vector<ProjectSourceAsset> saved_assets_;
     ProjectFolder(std::filesystem::path root, std::string title, const ProjectSchema &schema);
     [[nodiscard]] static foundation::Result<std::unique_ptr<ProjectFolder>> CreateWithIds(
         const std::filesystem::path &root, std::string title, ProjectDefinition definition,

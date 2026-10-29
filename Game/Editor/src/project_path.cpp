@@ -2,6 +2,12 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 namespace epidemic::game::editor {
 foundation::Result<std::filesystem::path> ResolveProjectPath(const std::filesystem::path &root,std::string_view relative) {
@@ -24,6 +30,13 @@ foundation::Result<std::filesystem::path> ResolveProjectPath(const std::filesyst
         std::u8string encoded; encoded.reserve(part.size());
         for(unsigned char c:part) encoded.push_back(static_cast<char8_t>(c));
         resolved/=std::filesystem::path{encoded};
+#ifdef _WIN32
+        // symlink_status alone may report a junction as a directory. Reject
+        // every reparse component, not just symbolic-link tags.
+        const auto attributes=GetFileAttributesW(resolved.c_str());
+        if(attributes!=INVALID_FILE_ATTRIBUTES && (attributes & static_cast<DWORD>(FILE_ATTRIBUTE_REPARSE_POINT))!=0)return reject();
+        if(attributes==INVALID_FILE_ATTRIBUTES && GetLastError()!=ERROR_FILE_NOT_FOUND && GetLastError()!=ERROR_PATH_NOT_FOUND)return reject();
+#endif
         const auto status=std::filesystem::symlink_status(resolved,error);
         if(error && error!=std::errc::no_such_file_or_directory)return reject();
         error.clear();
