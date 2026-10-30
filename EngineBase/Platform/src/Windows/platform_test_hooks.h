@@ -2,10 +2,10 @@
 
 namespace epidemic::platform::testing {
 enum class FaultPoint {
-    EventQueueCommit,
-    WindowTrackingCommit,
-    AfterWindowIdInsert,
-    AfterNativeLibraryLoad,
+  EventQueueCommit,
+  WindowTrackingCommit,
+  AfterWindowIdInsert,
+  AfterNativeLibraryLoad,
 };
 
 void FailNext(FaultPoint fault_point) noexcept;

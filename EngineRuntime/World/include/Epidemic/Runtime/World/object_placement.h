@@ -10,63 +10,72 @@
 
 namespace epidemic::runtime {
 struct WorldSurfacePlacement {
-    RegionId region{};
-    ChunkId chunk{};
-    Transform transform{};
+  RegionId region{};
+  ChunkId chunk{};
+  Transform transform{};
 
-    [[nodiscard]] constexpr bool operator==(const WorldSurfacePlacement &) const noexcept = default;
+  [[nodiscard]] constexpr bool
+  operator==(const WorldSurfacePlacement &) const noexcept = default;
 };
 
 struct ContainerPlacement {
-    RuntimeObjectId container{};
-    foundation::StringId slot{};
+  RuntimeObjectId container{};
+  foundation::StringId slot{};
 
-    [[nodiscard]] constexpr bool operator==(const ContainerPlacement &) const noexcept = default;
+  [[nodiscard]] constexpr bool
+  operator==(const ContainerPlacement &) const noexcept = default;
 };
 
 struct InventoryPlacement {
-    RuntimeObjectId owner{};
+  RuntimeObjectId owner{};
 
-    [[nodiscard]] constexpr bool operator==(const InventoryPlacement &) const noexcept = default;
+  [[nodiscard]] constexpr bool
+  operator==(const InventoryPlacement &) const noexcept = default;
 };
 
 struct EquippedPlacement {
-    RuntimeObjectId owner{};
-    foundation::StringId slot{};
+  RuntimeObjectId owner{};
+  foundation::StringId slot{};
 
-    [[nodiscard]] constexpr bool operator==(const EquippedPlacement &) const noexcept = default;
+  [[nodiscard]] constexpr bool
+  operator==(const EquippedPlacement &) const noexcept = default;
 };
 
 struct HiddenPlacement {
-    RegionId region{};
+  RegionId region{};
 
-    [[nodiscard]] constexpr bool operator==(const HiddenPlacement &) const noexcept = default;
+  [[nodiscard]] constexpr bool
+  operator==(const HiddenPlacement &) const noexcept = default;
 };
 
 struct DestroyedPlacement {
-    GameTimePoint destroyed_at{};
-    foundation::StringId reason{};
+  GameTimePoint destroyed_at{};
+  foundation::StringId reason{};
 
-    [[nodiscard]] constexpr bool operator==(const DestroyedPlacement &) const noexcept = default;
+  [[nodiscard]] constexpr bool
+  operator==(const DestroyedPlacement &) const noexcept = default;
 };
 
-using ObjectPlacement = std::variant<WorldSurfacePlacement, ContainerPlacement, InventoryPlacement, EquippedPlacement,
-                                     HiddenPlacement, DestroyedPlacement>;
+using ObjectPlacement =
+    std::variant<WorldSurfacePlacement, ContainerPlacement, InventoryPlacement,
+                 EquippedPlacement, HiddenPlacement, DestroyedPlacement>;
 
-[[nodiscard]] inline std::optional<RegionId> GetPlacementRegion(const ObjectPlacement &placement) {
-    if (const auto *world = std::get_if<WorldSurfacePlacement>(&placement)) {
-        return world->region;
-    }
-    if (const auto *hidden = std::get_if<HiddenPlacement>(&placement)) {
-        return hidden->region;
-    }
-    return std::nullopt;
+[[nodiscard]] inline std::optional<RegionId>
+GetPlacementRegion(const ObjectPlacement &placement) {
+  if (const auto *world = std::get_if<WorldSurfacePlacement>(&placement)) {
+    return world->region;
+  }
+  if (const auto *hidden = std::get_if<HiddenPlacement>(&placement)) {
+    return hidden->region;
+  }
+  return std::nullopt;
 }
 
-[[nodiscard]] inline std::optional<ChunkId> GetPlacementChunk(const ObjectPlacement &placement) {
-    if (const auto *world = std::get_if<WorldSurfacePlacement>(&placement)) {
-        return world->chunk;
-    }
-    return std::nullopt;
+[[nodiscard]] inline std::optional<ChunkId>
+GetPlacementChunk(const ObjectPlacement &placement) {
+  if (const auto *world = std::get_if<WorldSurfacePlacement>(&placement)) {
+    return world->chunk;
+  }
+  return std::nullopt;
 }
 } // namespace epidemic::runtime

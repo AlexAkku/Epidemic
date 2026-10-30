@@ -3,8 +3,8 @@
 #if defined(EPIDEMIC_CORE_ENABLE_TEST_HOOKS)
 namespace epidemic::core::testing {
 enum class ModuleRegistryFaultPoint {
-    None,
-    BeforeRegistrationCommit,
+  None,
+  BeforeRegistrationCommit,
 };
 
 void SetModuleRegistryFaultPoint(ModuleRegistryFaultPoint fault_point) noexcept;

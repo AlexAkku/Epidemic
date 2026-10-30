@@ -9,43 +9,45 @@
 
 namespace epidemic::runtime {
 struct UpsertObjectOperation {
-    PersistentObjectRecord record{};
+  PersistentObjectRecord record{};
 };
 
 struct AdminRemoveObjectOperation {
-    PersistentObjectId id{};
+  PersistentObjectId id{};
 };
 
 struct DeleteObjectOperation {
-    TombstoneRecord tombstone{};
+  TombstoneRecord tombstone{};
 };
 
 struct AdminAddTombstoneOperation {
-    TombstoneRecord tombstone{};
+  TombstoneRecord tombstone{};
 };
 
 struct UpsertLazyRuleOperation {
-    LazyRuleRecord record{};
+  LazyRuleRecord record{};
 };
 
 struct UpdateLazyRuleOperation {
-    LazyRuleRecord record{};
+  LazyRuleRecord record{};
 };
 
 struct RemoveLazyRuleOperation {
-    LazyRuleId id{};
+  LazyRuleId id{};
 };
 
 struct UpsertZoneOverrideOperation {
-    ZoneOverrideSnapshot snapshot{};
+  ZoneOverrideSnapshot snapshot{};
 };
 
 struct RemoveZoneOverrideOperation {
-    PersistenceLocation location{};
+  PersistenceLocation location{};
 };
 
 using PersistenceOperation =
-    std::variant<UpsertObjectOperation, DeleteObjectOperation, AdminRemoveObjectOperation, AdminAddTombstoneOperation,
-                 UpsertLazyRuleOperation, UpdateLazyRuleOperation, RemoveLazyRuleOperation, UpsertZoneOverrideOperation,
+    std::variant<UpsertObjectOperation, DeleteObjectOperation,
+                 AdminRemoveObjectOperation, AdminAddTombstoneOperation,
+                 UpsertLazyRuleOperation, UpdateLazyRuleOperation,
+                 RemoveLazyRuleOperation, UpsertZoneOverrideOperation,
                  RemoveZoneOverrideOperation>;
 } // namespace epidemic::runtime

@@ -11,19 +11,20 @@
 
 namespace epidemic::runtime {
 struct ZoneOverrideSnapshot {
-    PersistenceLocation location{};
-    std::vector<PersistentObjectId> record_ids;
-    std::vector<TombstoneRecord> tombstones;
-    std::vector<LazyRuleRecord> lazy_rules;
-    std::uint64_t revision = 0;
+  PersistenceLocation location{};
+  std::vector<PersistentObjectId> record_ids;
+  std::vector<TombstoneRecord> tombstones;
+  std::vector<LazyRuleRecord> lazy_rules;
+  std::uint64_t revision = 0;
 };
 
 class IZoneOverrideStore {
-  public:
-    virtual ~IZoneOverrideStore() = default;
+public:
+  virtual ~IZoneOverrideStore() = default;
 
-    [[nodiscard]] virtual std::optional<ZoneOverrideSnapshot>
-    FindZoneOverride(const PersistenceLocation &location) const = 0;
-    [[nodiscard]] virtual std::vector<ZoneOverrideSnapshot> ListZoneOverrides() const = 0;
+  [[nodiscard]] virtual std::optional<ZoneOverrideSnapshot>
+  FindZoneOverride(const PersistenceLocation &location) const = 0;
+  [[nodiscard]] virtual std::vector<ZoneOverrideSnapshot>
+  ListZoneOverrides() const = 0;
 };
 } // namespace epidemic::runtime

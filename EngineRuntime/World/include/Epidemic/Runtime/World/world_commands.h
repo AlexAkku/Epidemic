@@ -10,48 +10,48 @@
 
 namespace epidemic::runtime {
 struct WorldCommandResult {
-    RuntimeObjectId runtime_id{};
-    std::optional<WorldObjectSnapshot> before;
-    std::optional<WorldObjectSnapshot> after;
+  RuntimeObjectId runtime_id{};
+  std::optional<WorldObjectSnapshot> before;
+  std::optional<WorldObjectSnapshot> after;
 };
 
 struct CreateObjectCommand {
-    WorldObjectRecord record{};
+  WorldObjectRecord record{};
 };
 
 struct ChangePlacementCommand {
-    RuntimeObjectId runtime_id{};
-    std::uint64_t expected_revision = 0;
-    ObjectPlacement placement{HiddenPlacement{}};
+  RuntimeObjectId runtime_id{};
+  std::uint64_t expected_revision = 0;
+  ObjectPlacement placement{HiddenPlacement{}};
 };
 
 struct ChangeResidencyCommand {
-    RuntimeObjectId runtime_id{};
-    std::uint64_t expected_revision = 0;
-    ResidencyState residency = ResidencyState::Unloaded;
+  RuntimeObjectId runtime_id{};
+  std::uint64_t expected_revision = 0;
+  ResidencyState residency = ResidencyState::Unloaded;
 };
 
 struct PromotePersistenceTierCommand {
-    RuntimeObjectId runtime_id{};
-    std::uint64_t expected_revision = 0;
-    PersistenceTier tier = PersistenceTier::Disposable;
-    std::optional<PersistentObjectId> persistent_id;
+  RuntimeObjectId runtime_id{};
+  std::uint64_t expected_revision = 0;
+  PersistenceTier tier = PersistenceTier::Disposable;
+  std::optional<PersistentObjectId> persistent_id;
 };
 
 struct MaterializeObjectCommand {
-    MaterializationRequest request{};
-    std::uint64_t expected_revision = 0;
+  MaterializationRequest request{};
+  std::uint64_t expected_revision = 0;
 };
 
 struct DemoteObjectCommand {
-    DemotionRequest request{};
-    std::uint64_t expected_revision = 0;
+  DemotionRequest request{};
+  std::uint64_t expected_revision = 0;
 };
 
 struct DestroyObjectCommand {
-    RuntimeObjectId runtime_id{};
-    std::uint64_t expected_revision = 0;
-    GameTimePoint destroyed_at{};
-    foundation::StringId reason{};
+  RuntimeObjectId runtime_id{};
+  std::uint64_t expected_revision = 0;
+  GameTimePoint destroyed_at{};
+  foundation::StringId reason{};
 };
 } // namespace epidemic::runtime

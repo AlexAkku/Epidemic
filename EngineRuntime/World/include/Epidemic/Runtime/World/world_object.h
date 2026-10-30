@@ -8,16 +8,17 @@
 
 namespace epidemic::runtime {
 struct WorldObjectRecord {
-    RuntimeObjectId runtime_id{};
-    PersistentObjectId persistent_id{};
-    AssetId asset_id{};
-    ObjectRealityLevel reality = ObjectRealityLevel::Logical;
-    ResidencyState residency = ResidencyState::Unloaded;
-    PersistenceTier persistence_tier = PersistenceTier::Disposable;
-    ObjectPlacement placement{HiddenPlacement{}};
-    std::uint64_t revision = 0;
+  RuntimeObjectId runtime_id{};
+  PersistentObjectId persistent_id{};
+  AssetId asset_id{};
+  ObjectRealityLevel reality = ObjectRealityLevel::Logical;
+  ResidencyState residency = ResidencyState::Unloaded;
+  PersistenceTier persistence_tier = PersistenceTier::Disposable;
+  ObjectPlacement placement{HiddenPlacement{}};
+  std::uint64_t revision = 0;
 
-    [[nodiscard]] bool operator==(const WorldObjectRecord &) const noexcept = default;
+  [[nodiscard]] bool
+  operator==(const WorldObjectRecord &) const noexcept = default;
 };
 
 using WorldObjectSnapshot = WorldObjectRecord;

@@ -12,33 +12,37 @@
 
 namespace epidemic::runtime {
 struct PersistenceSnapshot {
-    PersistenceRevision current_revision = 0;
-    std::vector<PersistentObjectRecord> objects;
-    std::vector<TombstoneRecord> tombstones;
-    std::vector<LazyRuleRecord> lazy_rules;
-    std::vector<ZoneOverrideSnapshot> zone_overrides;
+  PersistenceRevision current_revision = 0;
+  std::vector<PersistentObjectRecord> objects;
+  std::vector<TombstoneRecord> tombstones;
+  std::vector<LazyRuleRecord> lazy_rules;
+  std::vector<ZoneOverrideSnapshot> zone_overrides;
 };
 
-// Semantic validation shared by service composition and durable backend adapters.
-[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot &snapshot);
+// Semantic validation shared by service composition and durable backend
+// adapters.
+[[nodiscard]] foundation::Result<void>
+ValidatePersistenceSnapshot(const PersistenceSnapshot &snapshot);
 
 // Closed enum domain. Callers must use one of these three durability levels.
 enum class PersistenceDurability {
-    MemoryOnly,
-    SaveRequired,
-    SaveAndFlushRequired,
+  MemoryOnly,
+  SaveRequired,
+  SaveAndFlushRequired,
 };
 
 class IPersistenceBackend {
-  public:
-    virtual ~IPersistenceBackend() = default;
+public:
+  virtual ~IPersistenceBackend() = default;
 
-    [[nodiscard]] virtual foundation::Result<PersistenceSnapshot> Load() = 0;
-    // Atomic backend contract: Result failure or exception must leave the previously committed
-    // durable snapshot authoritative. A successful return accepts the complete snapshot exactly
-    // once at the requested durability level. Separate Save()/Flush() transaction APIs are not part
-    // of the Runtime Persistence contract.
-    [[nodiscard]] virtual foundation::Result<void> CommitSnapshot(const PersistenceSnapshot &snapshot,
-                                                                  PersistenceDurability durability) = 0;
+  [[nodiscard]] virtual foundation::Result<PersistenceSnapshot> Load() = 0;
+  // Atomic backend contract: Result failure or exception must leave the
+  // previously committed durable snapshot authoritative. A successful return
+  // accepts the complete snapshot exactly once at the requested durability
+  // level. Separate Save()/Flush() transaction APIs are not part of the Runtime
+  // Persistence contract.
+  [[nodiscard]] virtual foundation::Result<void>
+  CommitSnapshot(const PersistenceSnapshot &snapshot,
+                 PersistenceDurability durability) = 0;
 };
 } // namespace epidemic::runtime

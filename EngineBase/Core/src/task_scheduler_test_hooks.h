@@ -4,9 +4,9 @@
 
 namespace epidemic::core::tasks::testing {
 enum class FaultPoint {
-    None,
-    AfterWorkerStart,
-    BeforeQueuePush,
+  None,
+  AfterWorkerStart,
+  BeforeQueuePush,
 };
 
 void SetFaultPoint(FaultPoint fault_point) noexcept;

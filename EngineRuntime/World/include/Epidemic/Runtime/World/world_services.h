@@ -18,13 +18,14 @@ using IWorldMaterializationRuntime = IObjectMaterializer;
 using IWorldDemotionAuthority = IDemotionCommitAuthority;
 
 struct WorldServices {
-    std::shared_ptr<IRegionRegistry> regions;
-    std::shared_ptr<IChunkRegistry> chunks;
-    std::shared_ptr<IWorldObjectQuery> query;
-    std::shared_ptr<IWorldObjectWriter> writer;
-    std::shared_ptr<IWorldMaterializationRuntime> materialization;
-    std::shared_ptr<IWorldDemotionAuthority> demotion_authority;
+  std::shared_ptr<IRegionRegistry> regions;
+  std::shared_ptr<IChunkRegistry> chunks;
+  std::shared_ptr<IWorldObjectQuery> query;
+  std::shared_ptr<IWorldObjectWriter> writer;
+  std::shared_ptr<IWorldMaterializationRuntime> materialization;
+  std::shared_ptr<IWorldDemotionAuthority> demotion_authority;
 };
 
-[[nodiscard]] foundation::Result<WorldServices> CreateWorldServices(const WorldOptions &options = {});
+[[nodiscard]] foundation::Result<WorldServices>
+CreateWorldServices(const WorldOptions &options = {});
 } // namespace epidemic::runtime

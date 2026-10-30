@@ -5,7 +5,7 @@
 #include "Epidemic/Runtime/Resources/resource_type.h"
 namespace epidemic::runtime {
 struct ResourceRequest {
-    ResourceId resource_id{};
-    ResourceType type{};
+  ResourceId resource_id{};
+  ResourceType type{};
 };
-}
+} // namespace epidemic::runtime

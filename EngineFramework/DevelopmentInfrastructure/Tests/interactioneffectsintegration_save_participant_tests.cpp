@@ -4,66 +4,78 @@
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
 void TestInteractionEffectExecutorSaveParticipant() {
-    std::cerr << "[participant] integration.interaction_effects: bootstrap\n";
-    effects::EffectService effects;
-    interaction::InteractionService interactions;
-    class NoopHandler final : public effects::IEffectHandler {
-      public:
-        effects::EffectTypeId Type() const noexcept override {
-            return effects::EffectTypeId::FromString("participant.noop");
-        }
-        effects::EffectHandlerCapabilities Capabilities() const noexcept override {
-            return {true, false, false, true};
-        }
-        epidemic::foundation::Result<effects::EffectPrepareResult>
-        Prepare(const effects::EffectOperation &) const override {
-            return epidemic::foundation::Result<effects::EffectPrepareResult>::Success(
-                {effects::EffectPrepareDisposition::Accepted, {}});
-        }
-        epidemic::foundation::Result<effects::EffectCommitResult>
-        Commit(const effects::EffectOperation &, const effects::RegisteredEffectPayload &) noexcept override {
-            return epidemic::foundation::Result<effects::EffectCommitResult>::Success(
-                {effects::EffectCommitDisposition::Applied, {}});
-        }
-    };
-    auto handler = std::make_shared<NoopHandler>();
-    participant_tests::Check(bool(effects.RegisterHandler("participant.noop", handler)),
-                             "register actual effect handler");
-    effects::EffectDefinition bundle;
-    bundle.canonical_name = "participant.bundle";
-    bundle.steps.push_back({handler->Type(), effects::EffectTargetSelector::AllTargets, 1, {}});
-    const auto effect = effects.RegisterDefinition(std::move(bundle));
-    participant_tests::Check(bool(effect), "register actual effect definition");
-    participant_tests::FreezeOwner(effects);
-    const auto type = interaction::InteractionTypeId::FromString("participant.interaction");
-    interaction::InteractionDefinition definition;
-    definition.type = type;
-    definition.canonical_name = "participant.interaction";
-    (void)interactions.RegisterDefinition(std::move(definition));
-    interaction_effects_integration::InteractionEffectExecutor owner(effects, type);
-    participant_tests::Check(bool(owner.RegisterEffect(effect.Value())), "register effect mapping");
-    participant_tests::Check(bool(owner.Freeze(interactions)), "freeze effect mapping");
-    savegame::SaveRestoreWorkspace workspace;
-    std::cerr << "[participant] integration.interaction_effects: contract\n";
-    auto participant = savegame::CreateInteractionEffectExecutorSaveParticipant(owner, workspace);
-    CheckParticipantContract(*participant, "integration.interaction_effects",
-                             {savegame::SaveParticipantId::FromString("framework.interaction"),
-                              savegame::SaveParticipantId::FromString("framework.effects")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
+  std::cerr << "[participant] integration.interaction_effects: bootstrap\n";
+  effects::EffectService effects;
+  interaction::InteractionService interactions;
+  class NoopHandler final : public effects::IEffectHandler {
+  public:
+    effects::EffectTypeId Type() const noexcept override {
+      return effects::EffectTypeId::FromString("participant.noop");
+    }
+    effects::EffectHandlerCapabilities Capabilities() const noexcept override {
+      return {true, false, false, true};
+    }
+    epidemic::foundation::Result<effects::EffectPrepareResult>
+    Prepare(const effects::EffectOperation &) const override {
+      return epidemic::foundation::Result<effects::EffectPrepareResult>::
+          Success({effects::EffectPrepareDisposition::Accepted, {}});
+    }
+    epidemic::foundation::Result<effects::EffectCommitResult>
+    Commit(const effects::EffectOperation &,
+           const effects::RegisteredEffectPayload &) noexcept override {
+      return epidemic::foundation::Result<effects::EffectCommitResult>::Success(
+          {effects::EffectCommitDisposition::Applied, {}});
+    }
+  };
+  auto handler = std::make_shared<NoopHandler>();
+  participant_tests::Check(
+      bool(effects.RegisterHandler("participant.noop", handler)),
+      "register actual effect handler");
+  effects::EffectDefinition bundle;
+  bundle.canonical_name = "participant.bundle";
+  bundle.steps.push_back(
+      {handler->Type(), effects::EffectTargetSelector::AllTargets, 1, {}});
+  const auto effect = effects.RegisterDefinition(std::move(bundle));
+  participant_tests::Check(bool(effect), "register actual effect definition");
+  participant_tests::FreezeOwner(effects);
+  const auto type =
+      interaction::InteractionTypeId::FromString("participant.interaction");
+  interaction::InteractionDefinition definition;
+  definition.type = type;
+  definition.canonical_name = "participant.interaction";
+  (void)interactions.RegisterDefinition(std::move(definition));
+  interaction_effects_integration::InteractionEffectExecutor owner(effects,
+                                                                   type);
+  participant_tests::Check(bool(owner.RegisterEffect(effect.Value())),
+                           "register effect mapping");
+  participant_tests::Check(bool(owner.Freeze(interactions)),
+                           "freeze effect mapping");
+  savegame::SaveRestoreWorkspace workspace;
+  std::cerr << "[participant] integration.interaction_effects: contract\n";
+  auto participant = savegame::CreateInteractionEffectExecutorSaveParticipant(
+      owner, workspace);
+  CheckParticipantContract(
+      *participant, "integration.interaction_effects",
+      {savegame::SaveParticipantId::FromString("framework.interaction"),
+       savegame::SaveParticipantId::FromString("framework.effects")});
+  participant_tests::CheckChangedStatePublication(
+      *participant, [&]() -> ::epidemic::foundation::Result<void> {
         auto snapshot = owner.CaptureSnapshot();
         interaction_effects_integration::InteractionEffectDeliveryRecord record;
-        record.execution = {GameplayObjectId::FromString("participant.interaction.execution")};
+        record.execution = {
+            GameplayObjectId::FromString("participant.interaction.execution")};
         record.interaction_type = type;
         record.effect_index = 0;
         record.definition = effect.Value();
-        record.state = interaction_effects_integration::InteractionEffectDeliveryState::Pending;
-        record.reconciliation =
-            interaction_effects_integration::InteractionEffectReconciliationOutcome::ConfirmedNotApplied;
+        record.state = interaction_effects_integration::
+            InteractionEffectDeliveryState::Pending;
+        record.reconciliation = interaction_effects_integration::
+            InteractionEffectReconciliationOutcome::ConfirmedNotApplied;
         snapshot.deliveries.push_back(std::move(record));
         return owner.RestoreSnapshot(std::move(snapshot));
-    });
+      });
 }
 int main() {
-    TestInteractionEffectExecutorSaveParticipant();
-    return 0;
+  TestInteractionEffectExecutorSaveParticipant();
+  return 0;
 }

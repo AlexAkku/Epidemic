@@ -9,8 +9,9 @@
 #include <vector>
 
 namespace epidemic::runtime::physics {
-// In-memory Physics foundation used for deterministic tests and early integration.
-// It stores collision shapes and body proxies, provides fake-but-stable queries and publishes contact events.
+// In-memory Physics foundation used for deterministic tests and early
+// integration. It stores collision shapes and body proxies, provides
+// fake-but-stable queries and publishes contact events.
 class PhysicsRuntime final : public ICollisionShapeRegistry,
                              public IPhysicsScene,
                              public IPhysicsStepper,
@@ -18,180 +19,219 @@ class PhysicsRuntime final : public ICollisionShapeRegistry,
                              public IPhysicsEventBuffer,
                              public IPhysicsBackend,
                              public IPhysicsRuntimeLifecycle {
-  public:
-    explicit PhysicsRuntime(std::shared_ptr<IPhysicsBackend> backend = {});
-    explicit PhysicsRuntime(PhysicsDependencies dependencies);
-    ~PhysicsRuntime() override;
-    [[nodiscard]] foundation::Result<void> Shutdown() override;
+public:
+  explicit PhysicsRuntime(std::shared_ptr<IPhysicsBackend> backend = {});
+  explicit PhysicsRuntime(PhysicsDependencies dependencies);
+  ~PhysicsRuntime() override;
+  [[nodiscard]] foundation::Result<void> Shutdown() override;
 
-    [[nodiscard]] foundation::Result<void> RegisterShape(const CollisionShapeDesc &desc) override;
-    [[nodiscard]] foundation::Result<void> UnregisterShape(CollisionShapeId id) override;
-    [[nodiscard]] bool HasShape(CollisionShapeId id) const override;
+  [[nodiscard]] foundation::Result<void>
+  RegisterShape(const CollisionShapeDesc &desc) override;
+  [[nodiscard]] foundation::Result<void>
+  UnregisterShape(CollisionShapeId id) override;
+  [[nodiscard]] bool HasShape(CollisionShapeId id) const override;
 
-    [[nodiscard]] foundation::Result<PhysicsBodyHandle> CreateBody(const PhysicsBodyDesc &desc) override;
-    [[nodiscard]] foundation::Result<void> DestroyBody(PhysicsBodyHandle handle) override;
-    [[nodiscard]] foundation::Result<void> ApplyImpulse(PhysicsBodyHandle handle, Vec3 impulse) override;
-    [[nodiscard]] foundation::Result<PhysicsBodySnapshot> GetBodySnapshot(PhysicsBodyHandle handle) const override;
-    [[nodiscard]] foundation::Result<PhysicsStepResult> StepFixed(RuntimeFrameDuration fixed_delta) override;
-    [[nodiscard]] foundation::Result<PhysicsStepResult> Tick(RuntimeFrameDuration delta) override;
+  [[nodiscard]] foundation::Result<PhysicsBodyHandle>
+  CreateBody(const PhysicsBodyDesc &desc) override;
+  [[nodiscard]] foundation::Result<void>
+  DestroyBody(PhysicsBodyHandle handle) override;
+  [[nodiscard]] foundation::Result<void> ApplyImpulse(PhysicsBodyHandle handle,
+                                                      Vec3 impulse) override;
+  [[nodiscard]] foundation::Result<PhysicsBodySnapshot>
+  GetBodySnapshot(PhysicsBodyHandle handle) const override;
+  [[nodiscard]] foundation::Result<PhysicsStepResult>
+  StepFixed(RuntimeFrameDuration fixed_delta) override;
+  [[nodiscard]] foundation::Result<PhysicsStepResult>
+  Tick(RuntimeFrameDuration delta) override;
 
-    [[nodiscard]] foundation::Result<void> Initialize(const PhysicsBackendOptions &options) override;
-    [[nodiscard]] foundation::Result<BackendShapeHandle> CreateShape(const CollisionShapeDesc &desc) override;
-    [[nodiscard]] foundation::Result<void> DestroyShape(BackendShapeHandle handle) override;
-    [[nodiscard]] foundation::Result<BackendBodyHandle> CreateBody(const PhysicsBodyDesc &desc,
-                                                                   BackendShapeHandle shape) override;
-    [[nodiscard]] foundation::Result<void> DestroyBody(BackendBodyHandle handle) override;
-    [[nodiscard]] foundation::Result<void> ApplyImpulse(BackendBodyHandle handle, const Vec3 &impulse) override;
-    [[nodiscard]] foundation::Result<void> SimulateFixed(RuntimeFrameDuration fixed_delta) override;
-    [[nodiscard]] foundation::Result<BackendBodySnapshot> GetBodySnapshot(BackendBodyHandle handle) const override;
-    [[nodiscard]] foundation::Result<std::vector<BackendContactEvent>> ConsumeContactEvents() override;
+  [[nodiscard]] foundation::Result<void>
+  Initialize(const PhysicsBackendOptions &options) override;
+  [[nodiscard]] foundation::Result<BackendShapeHandle>
+  CreateShape(const CollisionShapeDesc &desc) override;
+  [[nodiscard]] foundation::Result<void>
+  DestroyShape(BackendShapeHandle handle) override;
+  [[nodiscard]] foundation::Result<BackendBodyHandle>
+  CreateBody(const PhysicsBodyDesc &desc, BackendShapeHandle shape) override;
+  [[nodiscard]] foundation::Result<void>
+  DestroyBody(BackendBodyHandle handle) override;
+  [[nodiscard]] foundation::Result<void>
+  ApplyImpulse(BackendBodyHandle handle, const Vec3 &impulse) override;
+  [[nodiscard]] foundation::Result<void>
+  SimulateFixed(RuntimeFrameDuration fixed_delta) override;
+  [[nodiscard]] foundation::Result<BackendBodySnapshot>
+  GetBodySnapshot(BackendBodyHandle handle) const override;
+  [[nodiscard]] foundation::Result<std::vector<BackendContactEvent>>
+  ConsumeContactEvents() override;
 
-    [[nodiscard]] foundation::Result<BackendRaycastHit> RaycastBackend(const RaycastQuery &query) const override;
-    [[nodiscard]] foundation::Result<RaycastHit> Raycast(const RaycastQuery &query) const override;
-    [[nodiscard]] foundation::Result<OverlapResult> Overlap(const OverlapQuery &query) const override;
+  [[nodiscard]] foundation::Result<BackendRaycastHit>
+  RaycastBackend(const RaycastQuery &query) const override;
+  [[nodiscard]] foundation::Result<RaycastHit>
+  Raycast(const RaycastQuery &query) const override;
+  [[nodiscard]] foundation::Result<OverlapResult>
+  Overlap(const OverlapQuery &query) const override;
 
-    [[nodiscard]] std::span<const ContactEvent> Contacts() const override;
-    void Clear() override;
+  [[nodiscard]] std::span<const ContactEvent> Contacts() const override;
+  void Clear() override;
 
-    void QueueContact(ContactEvent event);
-    void SetTransformSource(IPhysicsTransformSource *source) noexcept;
-    void SetTransformSink(IPhysicsTransformSink *sink) noexcept;
-    void SetFixedStep(RuntimeFrameDuration step) noexcept;
-    void SetMaxSubsteps(std::uint32_t substeps) noexcept;
+  void QueueContact(ContactEvent event);
+  void SetTransformSource(IPhysicsTransformSource *source) noexcept;
+  void SetTransformSink(IPhysicsTransformSink *sink) noexcept;
+  void SetFixedStep(RuntimeFrameDuration step) noexcept;
+  void SetMaxSubsteps(std::uint32_t substeps) noexcept;
 
-    // Module-local deterministic seams used by the Physics contract suite. This
-    // concrete implementation header is not part of the installed public API.
-    void SetRevisionForTesting(std::uint64_t revision) noexcept {
-        revision_ = revision;
-    }
-    void SetFixedStepCountForTesting(std::uint64_t value) noexcept {
-        fixed_step_count_ = value;
-    }
-    void SetAllocatorStateForTesting(std::uint64_t next_body, std::uint32_t next_generation,
-                                     std::uint64_t next_backend_body) noexcept {
-        next_body_value_ = next_body;
-        next_body_generation_ = next_generation;
-        next_backend_body_value_ = next_backend_body;
-    }
-    void SetBackendShapeAllocatorForTesting(std::uint64_t next_backend_shape) noexcept {
-        next_backend_shape_value_ = next_backend_shape;
-    }
-    void SetTimingStateForTesting(RuntimeFrameDuration accumulator, RuntimeFrameDuration dropped) noexcept {
-        accumulator_ = accumulator;
-        dropped_time_ = dropped;
-    }
-    [[nodiscard]] std::uint64_t RevisionForTesting() const noexcept {
-        return revision_;
-    }
-    [[nodiscard]] std::uint64_t FixedStepCountForTesting() const noexcept {
-        return fixed_step_count_;
-    }
-    [[nodiscard]] RuntimeFrameDuration AccumulatorForTesting() const noexcept {
-        return accumulator_;
-    }
-    [[nodiscard]] RuntimeFrameDuration DroppedTimeForTesting() const noexcept {
-        return dropped_time_;
-    }
-    [[nodiscard]] std::size_t PendingProjectionCountForTesting() const noexcept {
-        return pending_transform_projections_.size();
-    }
-    [[nodiscard]] foundation::Result<PhysicsBodySnapshot>
-    GetLocalBodySnapshotForTesting(PhysicsBodyHandle handle) const {
-        const BodyRecord *body = FindBody(handle);
-        return body ? foundation::Result<PhysicsBodySnapshot>::Success(BuildSnapshot(*body))
-                    : foundation::Result<PhysicsBodySnapshot>::Failure(
-                          foundation::Error::Create("physics.unknown_handle", "test requested unknown local body"));
-    }
-    void FailNextBodyPublicationForTesting() noexcept {
-        fail_next_body_publication_for_testing_ = true;
-    }
-    void FailNextShapePublicationForTesting() noexcept {
-        fail_next_shape_publication_for_testing_ = true;
-    }
+  // Module-local deterministic seams used by the Physics contract suite. This
+  // concrete implementation header is not part of the installed public API.
+  void SetRevisionForTesting(std::uint64_t revision) noexcept {
+    revision_ = revision;
+  }
+  void SetFixedStepCountForTesting(std::uint64_t value) noexcept {
+    fixed_step_count_ = value;
+  }
+  void SetAllocatorStateForTesting(std::uint64_t next_body,
+                                   std::uint32_t next_generation,
+                                   std::uint64_t next_backend_body) noexcept {
+    next_body_value_ = next_body;
+    next_body_generation_ = next_generation;
+    next_backend_body_value_ = next_backend_body;
+  }
+  void SetBackendShapeAllocatorForTesting(
+      std::uint64_t next_backend_shape) noexcept {
+    next_backend_shape_value_ = next_backend_shape;
+  }
+  void SetTimingStateForTesting(RuntimeFrameDuration accumulator,
+                                RuntimeFrameDuration dropped) noexcept {
+    accumulator_ = accumulator;
+    dropped_time_ = dropped;
+  }
+  [[nodiscard]] std::uint64_t RevisionForTesting() const noexcept {
+    return revision_;
+  }
+  [[nodiscard]] std::uint64_t FixedStepCountForTesting() const noexcept {
+    return fixed_step_count_;
+  }
+  [[nodiscard]] RuntimeFrameDuration AccumulatorForTesting() const noexcept {
+    return accumulator_;
+  }
+  [[nodiscard]] RuntimeFrameDuration DroppedTimeForTesting() const noexcept {
+    return dropped_time_;
+  }
+  [[nodiscard]] std::size_t PendingProjectionCountForTesting() const noexcept {
+    return pending_transform_projections_.size();
+  }
+  [[nodiscard]] foundation::Result<PhysicsBodySnapshot>
+  GetLocalBodySnapshotForTesting(PhysicsBodyHandle handle) const {
+    const BodyRecord *body = FindBody(handle);
+    return body ? foundation::Result<PhysicsBodySnapshot>::Success(
+                      BuildSnapshot(*body))
+                : foundation::Result<PhysicsBodySnapshot>::Failure(
+                      foundation::Error::Create(
+                          "physics.unknown_handle",
+                          "test requested unknown local body"));
+  }
+  void FailNextBodyPublicationForTesting() noexcept {
+    fail_next_body_publication_for_testing_ = true;
+  }
+  void FailNextShapePublicationForTesting() noexcept {
+    fail_next_shape_publication_for_testing_ = true;
+  }
 
-  private:
-    struct BodyRecord {
-        PhysicsBodyHandle handle{};
-        BackendBodyHandle backend_handle{};
-        PhysicsBodyDesc desc{};
-        PhysicsActivityState activity = PhysicsActivityState::Disabled;
-        PhysicsDirtyFlags dirty = PhysicsDirtyFlags::None;
-        Vec3 last_impulse{};
-        Transform world_transform{};
-        Vec3 linear_velocity{};
-        Vec3 angular_velocity{};
-        Aabb bounds{};
-        std::uint64_t revision = 0;
-    };
+private:
+  struct BodyRecord {
+    PhysicsBodyHandle handle{};
+    BackendBodyHandle backend_handle{};
+    PhysicsBodyDesc desc{};
+    PhysicsActivityState activity = PhysicsActivityState::Disabled;
+    PhysicsDirtyFlags dirty = PhysicsDirtyFlags::None;
+    Vec3 last_impulse{};
+    Transform world_transform{};
+    Vec3 linear_velocity{};
+    Vec3 angular_velocity{};
+    Aabb bounds{};
+    std::uint64_t revision = 0;
+  };
 
-    struct ShapeRecord {
-        CollisionShapeDesc desc{};
-        BackendShapeHandle backend_handle{};
-    };
+  struct ShapeRecord {
+    CollisionShapeDesc desc{};
+    BackendShapeHandle backend_handle{};
+  };
 
-    [[nodiscard]] static PhysicsActivityState ActivityForType(PhysicsBodyType type);
-    [[nodiscard]] static bool PointInsideAabb(const Vec3 &point, const Aabb &bounds) noexcept;
-    [[nodiscard]] static bool IntersectsAabb(const Aabb &left, const Aabb &right) noexcept;
-    [[nodiscard]] static bool RayIntersectsAabb(const RaycastQuery &query, const Aabb &bounds,
-                                                float &distance) noexcept;
-    [[nodiscard]] static bool IsFinite(Vec3 value) noexcept;
-    [[nodiscard]] static bool IsValidBodyType(PhysicsBodyType value) noexcept;
-    [[nodiscard]] static bool IsValidActivity(PhysicsActivityState value) noexcept;
-    [[nodiscard]] static bool IsValidEventState(PhysicsEventState value) noexcept;
-    [[nodiscard]] static bool IsValidBackendSnapshot(const BackendBodySnapshot &snapshot) noexcept;
-    [[nodiscard]] static bool IsValidBackendContactPayload(const BackendContactEvent &contact) noexcept;
-    [[nodiscard]] static double Length(Vec3 value) noexcept;
-    [[nodiscard]] static Vec3 Normalize(Vec3 value) noexcept;
-    [[nodiscard]] static RaycastQuery NormalizeRaycastQuery(const RaycastQuery &query) noexcept;
-    [[nodiscard]] BodyRecord *FindBody(PhysicsBodyHandle handle);
-    [[nodiscard]] const BodyRecord *FindBody(PhysicsBodyHandle handle) const;
-    [[nodiscard]] BodyRecord *FindBackendBody(BackendBodyHandle handle);
-    [[nodiscard]] const BodyRecord *FindBackendBody(BackendBodyHandle handle) const;
-    [[nodiscard]] foundation::Result<PhysicsBodyHandle> MapBackendBody(BackendBodyHandle handle) const;
-    [[nodiscard]] PhysicsBodySnapshot BuildSnapshot(const BodyRecord &body) const;
-    [[nodiscard]] PhysicsBodySnapshot BuildSnapshotFromBackend(const BodyRecord &body,
-                                                               const BackendBodySnapshot &backend_snapshot) const;
-    [[nodiscard]] foundation::Result<void> ValidateHandle(PhysicsBodyHandle handle) const;
-    [[nodiscard]] foundation::Result<PhysicsStepResult> CompleteFixedStep(RuntimeFrameDuration fixed_delta,
-                                                                          std::uint32_t substeps);
-    [[nodiscard]] foundation::Result<void> SynchronizeBackendBody(BodyRecord &body);
-    [[nodiscard]] foundation::Result<void> ApplyBackendSnapshot(BodyRecord &body, const BackendBodySnapshot &snapshot);
-    void FlushPendingTransformProjections() noexcept;
-    [[nodiscard]] foundation::Result<void> DrainPendingBackendCleanup();
+  [[nodiscard]] static PhysicsActivityState
+  ActivityForType(PhysicsBodyType type);
+  [[nodiscard]] static bool PointInsideAabb(const Vec3 &point,
+                                            const Aabb &bounds) noexcept;
+  [[nodiscard]] static bool IntersectsAabb(const Aabb &left,
+                                           const Aabb &right) noexcept;
+  [[nodiscard]] static bool RayIntersectsAabb(const RaycastQuery &query,
+                                              const Aabb &bounds,
+                                              float &distance) noexcept;
+  [[nodiscard]] static bool IsFinite(Vec3 value) noexcept;
+  [[nodiscard]] static bool IsValidBodyType(PhysicsBodyType value) noexcept;
+  [[nodiscard]] static bool
+  IsValidActivity(PhysicsActivityState value) noexcept;
+  [[nodiscard]] static bool IsValidEventState(PhysicsEventState value) noexcept;
+  [[nodiscard]] static bool
+  IsValidBackendSnapshot(const BackendBodySnapshot &snapshot) noexcept;
+  [[nodiscard]] static bool
+  IsValidBackendContactPayload(const BackendContactEvent &contact) noexcept;
+  [[nodiscard]] static double Length(Vec3 value) noexcept;
+  [[nodiscard]] static Vec3 Normalize(Vec3 value) noexcept;
+  [[nodiscard]] static RaycastQuery
+  NormalizeRaycastQuery(const RaycastQuery &query) noexcept;
+  [[nodiscard]] BodyRecord *FindBody(PhysicsBodyHandle handle);
+  [[nodiscard]] const BodyRecord *FindBody(PhysicsBodyHandle handle) const;
+  [[nodiscard]] BodyRecord *FindBackendBody(BackendBodyHandle handle);
+  [[nodiscard]] const BodyRecord *
+  FindBackendBody(BackendBodyHandle handle) const;
+  [[nodiscard]] foundation::Result<PhysicsBodyHandle>
+  MapBackendBody(BackendBodyHandle handle) const;
+  [[nodiscard]] PhysicsBodySnapshot BuildSnapshot(const BodyRecord &body) const;
+  [[nodiscard]] PhysicsBodySnapshot
+  BuildSnapshotFromBackend(const BodyRecord &body,
+                           const BackendBodySnapshot &backend_snapshot) const;
+  [[nodiscard]] foundation::Result<void>
+  ValidateHandle(PhysicsBodyHandle handle) const;
+  [[nodiscard]] foundation::Result<PhysicsStepResult>
+  CompleteFixedStep(RuntimeFrameDuration fixed_delta, std::uint32_t substeps);
+  [[nodiscard]] foundation::Result<void>
+  SynchronizeBackendBody(BodyRecord &body);
+  [[nodiscard]] foundation::Result<void>
+  ApplyBackendSnapshot(BodyRecord &body, const BackendBodySnapshot &snapshot);
+  void FlushPendingTransformProjections() noexcept;
+  [[nodiscard]] foundation::Result<void> DrainPendingBackendCleanup();
 
-    struct PendingTransformProjection {
-        PhysicsTransformId id{};
-        Transform transform{};
-    };
+  struct PendingTransformProjection {
+    PhysicsTransformId id{};
+    Transform transform{};
+  };
 
-    std::unordered_map<CollisionShapeId, ShapeRecord> shapes_;
-    std::unordered_map<std::uint64_t, CollisionShapeId> backend_to_shape_;
-    std::unordered_map<PhysicsBodyId, BodyRecord> bodies_;
-    std::unordered_map<BackendBodyHandle, PhysicsBodyId> backend_to_body_;
-    std::vector<BackendShapeHandle> pending_backend_shape_cleanup_;
-    std::vector<BackendBodyHandle> pending_backend_body_cleanup_;
-    std::vector<ContactEvent> contacts_;
-    std::vector<BackendContactEvent> pending_backend_contacts_;
-    std::shared_ptr<IPhysicsBackend> backend_;
-    std::shared_ptr<IPhysicsTransformSource> owned_transform_source_;
-    std::shared_ptr<IPhysicsTransformSink> owned_transform_sink_;
-    IPhysicsTransformSource *transform_source_ = nullptr;
-    IPhysicsTransformSink *transform_sink_ = nullptr;
-    std::vector<PendingTransformProjection> pending_transform_projections_;
-    std::uint64_t next_body_value_ = 1;
-    std::uint64_t next_backend_shape_value_ = 1;
-    std::uint64_t next_backend_body_value_ = 1;
-    std::uint32_t next_body_generation_ = 1;
-    std::uint64_t fixed_step_count_ = 0;
-    std::uint64_t revision_ = 0;
-    std::uint64_t invalid_backend_contact_count_ = 0;
-    bool backend_step_pending_sync_ = false;
-    bool backend_contacts_pending_sync_ = false;
-    bool fail_next_body_publication_for_testing_ = false;
-    bool fail_next_shape_publication_for_testing_ = false;
-    RuntimeFrameDuration fixed_step_{std::chrono::microseconds{16667}};
-    RuntimeFrameDuration accumulator_{};
-    RuntimeFrameDuration dropped_time_{};
-    std::uint32_t max_substeps_ = 4;
+  std::unordered_map<CollisionShapeId, ShapeRecord> shapes_;
+  std::unordered_map<std::uint64_t, CollisionShapeId> backend_to_shape_;
+  std::unordered_map<PhysicsBodyId, BodyRecord> bodies_;
+  std::unordered_map<BackendBodyHandle, PhysicsBodyId> backend_to_body_;
+  std::vector<BackendShapeHandle> pending_backend_shape_cleanup_;
+  std::vector<BackendBodyHandle> pending_backend_body_cleanup_;
+  std::vector<ContactEvent> contacts_;
+  std::vector<BackendContactEvent> pending_backend_contacts_;
+  std::shared_ptr<IPhysicsBackend> backend_;
+  std::shared_ptr<IPhysicsTransformSource> owned_transform_source_;
+  std::shared_ptr<IPhysicsTransformSink> owned_transform_sink_;
+  IPhysicsTransformSource *transform_source_ = nullptr;
+  IPhysicsTransformSink *transform_sink_ = nullptr;
+  std::vector<PendingTransformProjection> pending_transform_projections_;
+  std::uint64_t next_body_value_ = 1;
+  std::uint64_t next_backend_shape_value_ = 1;
+  std::uint64_t next_backend_body_value_ = 1;
+  std::uint32_t next_body_generation_ = 1;
+  std::uint64_t fixed_step_count_ = 0;
+  std::uint64_t revision_ = 0;
+  std::uint64_t invalid_backend_contact_count_ = 0;
+  bool backend_step_pending_sync_ = false;
+  bool backend_contacts_pending_sync_ = false;
+  bool fail_next_body_publication_for_testing_ = false;
+  bool fail_next_shape_publication_for_testing_ = false;
+  RuntimeFrameDuration fixed_step_{std::chrono::microseconds{16667}};
+  RuntimeFrameDuration accumulator_{};
+  RuntimeFrameDuration dropped_time_{};
+  std::uint32_t max_substeps_ = 4;
 };
 } // namespace epidemic::runtime::physics

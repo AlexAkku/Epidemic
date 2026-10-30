@@ -10,17 +10,18 @@
 
 namespace epidemic::runtime {
 struct ResourceLoadArtifact {
-    ResourceId resource_id{};
-    ResourceType type{};
-    ResourcePayloadPtr payload{};
-    std::vector<ResourceDependency> dependencies;
+  ResourceId resource_id{};
+  ResourceType type{};
+  ResourcePayloadPtr payload{};
+  std::vector<ResourceDependency> dependencies;
 };
 
 class IResourceLoader {
-  public:
-    virtual ~IResourceLoader() = default;
+public:
+  virtual ~IResourceLoader() = default;
 
-    [[nodiscard]] virtual ResourceType GetResourceType() const = 0;
-    [[nodiscard]] virtual foundation::Result<ResourceLoadArtifact> Load(ResourceRequest request) = 0;
+  [[nodiscard]] virtual ResourceType GetResourceType() const = 0;
+  [[nodiscard]] virtual foundation::Result<ResourceLoadArtifact>
+  Load(ResourceRequest request) = 0;
 };
 } // namespace epidemic::runtime

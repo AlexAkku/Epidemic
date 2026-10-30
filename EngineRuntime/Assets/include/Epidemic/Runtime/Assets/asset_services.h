@@ -11,13 +11,15 @@ namespace epidemic::runtime {
 struct AssetsOptions {};
 
 struct AssetServices {
-    std::shared_ptr<IAssetCatalog> catalog;
-    std::shared_ptr<IAssetCatalogWriter> writer;
-    std::shared_ptr<IAssetLocationResolver> location_resolver;
+  std::shared_ptr<IAssetCatalog> catalog;
+  std::shared_ptr<IAssetCatalogWriter> writer;
+  std::shared_ptr<IAssetLocationResolver> location_resolver;
 };
 
-// Creates one in-memory catalog shared through read, write and location-resolver
-// interfaces. No filesystem/package/resource side effect is performed here.
-// Process-wide allocation failure may propagate according to the engine policy.
-[[nodiscard]] foundation::Result<AssetServices> CreateAssetServices(const AssetsOptions &options = {});
+// Creates one in-memory catalog shared through read, write and
+// location-resolver interfaces. No filesystem/package/resource side effect is
+// performed here. Process-wide allocation failure may propagate according to
+// the engine policy.
+[[nodiscard]] foundation::Result<AssetServices>
+CreateAssetServices(const AssetsOptions &options = {});
 } // namespace epidemic::runtime

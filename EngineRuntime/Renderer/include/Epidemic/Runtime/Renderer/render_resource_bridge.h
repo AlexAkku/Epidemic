@@ -9,73 +9,81 @@
 
 namespace epidemic::runtime::renderer {
 struct RenderTransformSnapshot {
-    RenderTransformId node{};
-    Transform world_transform{};
-    std::uint64_t revision = 0;
+  RenderTransformId node{};
+  Transform world_transform{};
+  std::uint64_t revision = 0;
 };
 
 struct RenderPoseBuffer {
-    RuntimeObjectId owner{};
-    std::vector<Transform> bone_transforms{};
-    std::uint64_t revision = 0;
+  RuntimeObjectId owner{};
+  std::vector<Transform> bone_transforms{};
+  std::uint64_t revision = 0;
 };
 
 class IRenderPoseSource {
-  public:
-    virtual ~IRenderPoseSource() = default;
+public:
+  virtual ~IRenderPoseSource() = default;
 
-    // Query boundary: Result failure or exception does not publish renderer state.
-    // A successful null pointer means that the owner has no pose and is rendered statically.
-    [[nodiscard]] virtual foundation::Result<std::shared_ptr<const RenderPoseBuffer>>
-    GetPose(RuntimeObjectId owner) const = 0;
+  // Query boundary: Result failure or exception does not publish renderer
+  // state. A successful null pointer means that the owner has no pose and is
+  // rendered statically.
+  [[nodiscard]] virtual foundation::Result<
+      std::shared_ptr<const RenderPoseBuffer>>
+  GetPose(RuntimeObjectId owner) const = 0;
 };
 
 class IRenderResourceBridge {
-  public:
-    virtual ~IRenderResourceBridge() = default;
+public:
+  virtual ~IRenderResourceBridge() = default;
 
-    // Ownership boundary: Acquire failure/exception means no hold was acquired.
-    // Release failure/exception means the existing hold remains owned by the caller and is retryable.
-    [[nodiscard]] virtual foundation::Result<void> AcquirePayloads(ResourceId mesh, ResourceId material) = 0;
-    [[nodiscard]] virtual foundation::Result<void> ReleasePayloads(ResourceId mesh, ResourceId material) = 0;
-    [[nodiscard]] virtual foundation::Result<RenderResourcePayloads> GetPayloads(ResourceId mesh,
-                                                                                 ResourceId material) const = 0;
+  // Ownership boundary: Acquire failure/exception means no hold was acquired.
+  // Release failure/exception means the existing hold remains owned by the
+  // caller and is retryable.
+  [[nodiscard]] virtual foundation::Result<void>
+  AcquirePayloads(ResourceId mesh, ResourceId material) = 0;
+  [[nodiscard]] virtual foundation::Result<void>
+  ReleasePayloads(ResourceId mesh, ResourceId material) = 0;
+  [[nodiscard]] virtual foundation::Result<RenderResourcePayloads>
+  GetPayloads(ResourceId mesh, ResourceId material) const = 0;
 };
 
 class IRenderSceneSource {
-  public:
-    virtual ~IRenderSceneSource() = default;
+public:
+  virtual ~IRenderSceneSource() = default;
 
-    [[nodiscard]] virtual foundation::Result<RenderTransformSnapshot>
-    GetTransformSnapshot(RenderTransformId node) const = 0;
+  [[nodiscard]] virtual foundation::Result<RenderTransformSnapshot>
+  GetTransformSnapshot(RenderTransformId node) const = 0;
 };
 
 struct RenderProxySubmission {
-    RenderProxyId proxy{};
-    RenderTransformSnapshot transform{};
-    RenderResourcePayloads payloads{};
-    std::shared_ptr<const RenderPoseBuffer> pose{};
-    RenderLayer layer = RenderLayer::Opaque;
-    RenderProxyVisibility visibility = RenderProxyVisibility::Visible;
+  RenderProxyId proxy{};
+  RenderTransformSnapshot transform{};
+  RenderResourcePayloads payloads{};
+  std::shared_ptr<const RenderPoseBuffer> pose{};
+  RenderLayer layer = RenderLayer::Opaque;
+  RenderProxyVisibility visibility = RenderProxyVisibility::Visible;
 };
 
 struct RenderFrameContext {
-    ViewId view{};
-    ViewDesc desc{};
-    RenderTransformSnapshot transform{};
+  ViewId view{};
+  ViewDesc desc{};
+  RenderTransformSnapshot transform{};
 };
 
 class IRenderCommandSink {
-  public:
-    virtual ~IRenderCommandSink() = default;
+public:
+  virtual ~IRenderCommandSink() = default;
 
-    // BeginFrame failure/exception means no backend frame was opened. After BeginFrame success,
-    // SubmitProxy/EndFrame failure or exception may leave that frame open. AbortFrame success
-    // closes/discards it. AbortFrame failure/exception retains backend-frame ownership and must
-    // be safely retryable before a later BeginFrame is accepted.
-    [[nodiscard]] virtual foundation::Result<void> BeginFrame(const RenderFrameContext &context) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SubmitProxy(const RenderProxySubmission &submission) = 0;
-    [[nodiscard]] virtual foundation::Result<void> EndFrame() = 0;
-    [[nodiscard]] virtual foundation::Result<void> AbortFrame() = 0;
+  // BeginFrame failure/exception means no backend frame was opened. After
+  // BeginFrame success, SubmitProxy/EndFrame failure or exception may leave
+  // that frame open. AbortFrame success closes/discards it. AbortFrame
+  // failure/exception retains backend-frame ownership and must be safely
+  // retryable before a later BeginFrame is accepted.
+  [[nodiscard]] virtual foundation::Result<void>
+  BeginFrame(const RenderFrameContext &context) = 0;
+  [[nodiscard]] virtual foundation::Result<void>
+  SubmitProxy(const RenderProxySubmission &submission) = 0;
+  [[nodiscard]] virtual foundation::Result<void> EndFrame() = 0;
+  [[nodiscard]] virtual foundation::Result<void> AbortFrame() = 0;
 };
 } // namespace epidemic::runtime::renderer

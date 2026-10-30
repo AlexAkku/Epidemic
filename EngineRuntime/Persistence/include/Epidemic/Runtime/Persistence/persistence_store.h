@@ -18,21 +18,25 @@ class IPersistenceQuery : public IPersistentObjectStore,
                           public IDirtyTracker,
                           public ITombstoneStore,
                           public IZoneOverrideStore {
-  public:
-    virtual ~IPersistenceQuery() = default;
+public:
+  virtual ~IPersistenceQuery() = default;
 
-    [[nodiscard]] virtual std::optional<LazyRuleRecord> FindLazyRule(LazyRuleId id) const = 0;
-    [[nodiscard]] virtual std::vector<LazyRuleRecord> FindLazyRules(PersistentObjectId target_id) const = 0;
-    [[nodiscard]] virtual std::vector<LazyRuleRecord> QueryDueLazyRules(GameTimePoint now) const = 0;
-    [[nodiscard]] virtual std::vector<LazyRuleRecord> ListLazyRules() const = 0;
-    [[nodiscard]] virtual PersistenceRevision GetRevision() const = 0;
+  [[nodiscard]] virtual std::optional<LazyRuleRecord>
+  FindLazyRule(LazyRuleId id) const = 0;
+  [[nodiscard]] virtual std::vector<LazyRuleRecord>
+  FindLazyRules(PersistentObjectId target_id) const = 0;
+  [[nodiscard]] virtual std::vector<LazyRuleRecord>
+  QueryDueLazyRules(GameTimePoint now) const = 0;
+  [[nodiscard]] virtual std::vector<LazyRuleRecord> ListLazyRules() const = 0;
+  [[nodiscard]] virtual PersistenceRevision GetRevision() const = 0;
 };
 
 class IPersistenceStore : public IPersistenceQuery {
-  public:
-    virtual ~IPersistenceStore() = default;
+public:
+  virtual ~IPersistenceStore() = default;
 
-    [[nodiscard]] virtual std::unique_ptr<ISaveTransaction> OpenTransaction() = 0;
-    [[nodiscard]] virtual std::unique_ptr<ISaveTransaction> OpenTransaction(PersistenceRevision base_revision) = 0;
+  [[nodiscard]] virtual std::unique_ptr<ISaveTransaction> OpenTransaction() = 0;
+  [[nodiscard]] virtual std::unique_ptr<ISaveTransaction>
+  OpenTransaction(PersistenceRevision base_revision) = 0;
 };
 } // namespace epidemic::runtime
