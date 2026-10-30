@@ -12,4 +12,4 @@ namespace epidemic::gameplay {
 // Ownership-local prepare/publication customization. Defined by upper-layer
 // adapters; this declaration creates no dependency on SaveGame or peer owners.
 template <typename Owner> struct SnapshotRestoreAccess;
-} // namespace epidemic::gameplay
+}

@@ -8,24 +8,24 @@
 
 namespace epidemic::runtime {
 class SerializedDocument {
-public:
-  SerializedDocument() = default;
+  public:
+    SerializedDocument() = default;
 
-  [[nodiscard]] foundation::StringId GetTypeId() const;
-  [[nodiscard]] SchemaVersion GetSchemaVersion() const;
-  [[nodiscard]] std::uint32_t GetFormatVersion() const;
-  [[nodiscard]] bool IsValid() const noexcept;
+    [[nodiscard]] foundation::StringId GetTypeId() const;
+    [[nodiscard]] SchemaVersion GetSchemaVersion() const;
+    [[nodiscard]] std::uint32_t GetFormatVersion() const;
+    [[nodiscard]] bool IsValid() const noexcept;
 
-private:
-  struct Impl;
+  private:
+    struct Impl;
 
-  explicit SerializedDocument(std::shared_ptr<const Impl> impl);
+    explicit SerializedDocument(std::shared_ptr<const Impl> impl);
 
-  std::shared_ptr<const Impl> impl_;
+    std::shared_ptr<const Impl> impl_;
 
-  friend class InMemoryArchiveReader;
-  friend class InMemoryArchiveWriter;
-  friend class InMemoryArchiveFactory;
-  friend class DocumentCodecAccess;
+    friend class InMemoryArchiveReader;
+    friend class InMemoryArchiveWriter;
+    friend class InMemoryArchiveFactory;
+    friend class DocumentCodecAccess;
 };
 } // namespace epidemic::runtime

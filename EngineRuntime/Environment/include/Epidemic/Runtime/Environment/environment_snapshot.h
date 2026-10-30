@@ -10,18 +10,17 @@
 #include <vector>
 
 namespace epidemic::runtime {
-// Detached runtime observation for one region. This type is not a
-// persistence/restore format.
+// Detached runtime observation for one region. This type is not a persistence/restore format.
 struct EnvironmentSnapshot {
-  RegionId region_id{};
-  std::uint64_t revision = 0;
-  WeatherState weather{};
-  SeasonState season{};
-  ClimateProfile climate{};
-  float temperature = 0.0f;
-  float humidity = 0.0f;
-  std::vector<SurfaceState> surfaces;
+    RegionId region_id{};
+    std::uint64_t revision = 0;
+    WeatherState weather{};
+    SeasonState season{};
+    ClimateProfile climate{};
+    float temperature = 0.0f;
+    float humidity = 0.0f;
+    std::vector<SurfaceState> surfaces;
 
-  [[nodiscard]] bool operator==(const EnvironmentSnapshot &) const = default;
+    [[nodiscard]] bool operator==(const EnvironmentSnapshot &) const = default;
 };
 } // namespace epidemic::runtime

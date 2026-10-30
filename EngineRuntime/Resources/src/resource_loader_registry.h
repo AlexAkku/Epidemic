@@ -6,18 +6,16 @@
 
 namespace epidemic::runtime {
 class ResourceLoaderRegistry final : public IResourceLoaderRegistry {
-public:
-  [[nodiscard]] foundation::Result<void>
-  RegisterLoader(IResourceLoader &loader) override;
-  [[nodiscard]] IResourceLoader *FindLoader(ResourceType type) override;
-  [[nodiscard]] const IResourceLoader *
-  FindLoader(ResourceType type) const override;
-  [[nodiscard]] bool HasLoader(ResourceType type) const override;
-  [[nodiscard]] foundation::Result<void> Freeze() override;
-  [[nodiscard]] bool IsFrozen() const noexcept override;
+  public:
+    [[nodiscard]] foundation::Result<void> RegisterLoader(IResourceLoader &loader) override;
+    [[nodiscard]] IResourceLoader *FindLoader(ResourceType type) override;
+    [[nodiscard]] const IResourceLoader *FindLoader(ResourceType type) const override;
+    [[nodiscard]] bool HasLoader(ResourceType type) const override;
+    [[nodiscard]] foundation::Result<void> Freeze() override;
+    [[nodiscard]] bool IsFrozen() const noexcept override;
 
-private:
-  std::unordered_map<foundation::StringId, IResourceLoader *> loaders_;
-  bool frozen_ = false;
+  private:
+    std::unordered_map<foundation::StringId, IResourceLoader *> loaders_;
+    bool frozen_ = false;
 };
 } // namespace epidemic::runtime

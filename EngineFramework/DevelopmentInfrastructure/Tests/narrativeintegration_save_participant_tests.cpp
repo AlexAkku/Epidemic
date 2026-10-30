@@ -4,34 +4,39 @@
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
 void TestNarrativeServiceSaveParticipant() {
-  std::cerr << "[participant] framework.narrative: bootstrap\n";
-  epidemic::gameplay::narrative::NarrativeService owner;
-  participant_tests::FreezeOwner(owner);
-  savegame::SaveRestoreWorkspace workspace;
-  std::cerr << "[participant] framework.narrative: contract\n";
-  auto participant =
-      savegame::CreateNarrativeServiceSaveParticipant(owner, workspace);
-  CheckParticipantContract(*participant, "framework.narrative", {});
-  std::cerr << "[participant] framework.narrative: counters\n";
-  participant_tests::CheckOwnerCounterContinuity(
-      owner, *participant, [&] { return owner.CaptureSnapshot(); },
-      [&](auto snapshot) {
-        return owner.RestoreSnapshot(std::move(snapshot));
-      });
-  const auto empty_snapshot = owner.CaptureSnapshot();
-  std::cerr << "[participant] framework.narrative: non-empty seed\n";
-  narrative::NarrativeFlag flag;
-  flag.id =
-      narrative::NarrativeFlagId::FromString("participant.narrative.flag");
-  flag.value = true;
-  participant_tests::Check(bool(owner.SetFlag(std::move(flag))),
-                           "seed actual narrative flag");
-  std::cerr << "[participant] framework.narrative: non-empty publication\n";
-  participant_tests::CheckNonEmptyPublication(
-      *participant, [&] { return owner.CaptureSnapshot().flags.size(); },
-      [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    std::cerr << "[participant] framework.narrative: bootstrap\n";
+    epidemic::gameplay::narrative::NarrativeService owner;
+    participant_tests::FreezeOwner(owner);
+    savegame::SaveRestoreWorkspace workspace;
+    std::cerr << "[participant] framework.narrative: contract\n";
+    auto participant = savegame::CreateNarrativeServiceSaveParticipant(owner, workspace);
+    CheckParticipantContract(*participant, "framework.narrative", {});
+    std::cerr << "[participant] framework.narrative: counters\n";
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
+    const auto empty_snapshot = owner.CaptureSnapshot();
+    std::cerr << "[participant] framework.narrative: non-empty seed\n";
+    narrative::NarrativeFlag flag;
+    flag.id = narrative::NarrativeFlagId::FromString("participant.narrative.flag");
+    flag.value = true;
+    participant_tests::Check(bool(owner.SetFlag(std::move(flag))), "seed actual narrative flag");
+    std::cerr << "[participant] framework.narrative: non-empty publication\n";
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().flags.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
 int main() {
-  TestNarrativeServiceSaveParticipant();
-  return 0;
+    TestNarrativeServiceSaveParticipant();
+    return 0;
 }

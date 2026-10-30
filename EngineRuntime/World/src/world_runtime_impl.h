@@ -18,88 +18,62 @@ class WorldRuntime : public IRegionRegistry,
                      public IObjectMaterializer,
                      public IDemotionCommitAuthority,
                      public IWorldQuery {
-public:
-  [[nodiscard]] foundation::Result<void>
-  RegisterRegion(RegionDescriptor region) override;
-  [[nodiscard]] std::optional<RegionDescriptor>
-  FindRegion(RegionId id) const override;
+  public:
+    [[nodiscard]] foundation::Result<void> RegisterRegion(RegionDescriptor region) override;
+    [[nodiscard]] std::optional<RegionDescriptor> FindRegion(RegionId id) const override;
 
-  [[nodiscard]] foundation::Result<void>
-  RegisterChunk(ChunkDescriptor chunk) override;
-  [[nodiscard]] std::optional<ChunkDescriptor>
-  FindChunk(ChunkId id) const override;
-  [[nodiscard]] foundation::Result<ChunkSnapshot>
-  GetChunkSnapshot(ChunkId id) const override;
-  [[nodiscard]] foundation::Result<void>
-  SetChunkState(ChangeChunkStateCommand command) override;
-  void Freeze() noexcept override;
-  [[nodiscard]] bool IsFrozen() const noexcept override;
+    [[nodiscard]] foundation::Result<void> RegisterChunk(ChunkDescriptor chunk) override;
+    [[nodiscard]] std::optional<ChunkDescriptor> FindChunk(ChunkId id) const override;
+    [[nodiscard]] foundation::Result<ChunkSnapshot> GetChunkSnapshot(ChunkId id) const override;
+    [[nodiscard]] foundation::Result<void> SetChunkState(ChangeChunkStateCommand command) override;
+    void Freeze() noexcept override;
+    [[nodiscard]] bool IsFrozen() const noexcept override;
 
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const CreateObjectCommand &command) override;
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const ChangePlacementCommand &command) override;
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const ChangeResidencyCommand &command) override;
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const PromotePersistenceTierCommand &command) override;
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const MaterializeObjectCommand &command);
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const DemoteObjectCommand &command);
-  [[nodiscard]] foundation::Result<WorldCommandResult>
-  Apply(const DestroyObjectCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const CreateObjectCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const ChangePlacementCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const ChangeResidencyCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const PromotePersistenceTierCommand &command) override;
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const MaterializeObjectCommand &command);
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const DemoteObjectCommand &command);
+    [[nodiscard]] foundation::Result<WorldCommandResult> Apply(const DestroyObjectCommand &command) override;
 
-  [[nodiscard]] foundation::Result<RuntimeObjectId>
-  CreateObject(WorldObjectRecord record);
-  [[nodiscard]] foundation::Result<void> DestroyObject(RuntimeObjectId id);
-  [[nodiscard]] std::optional<WorldObjectRecord>
-  FindObject(RuntimeObjectId id) const override;
-  [[nodiscard]] std::vector<WorldObjectRecord>
-  FindObjectsInRegion(RegionId region) const override;
-  [[nodiscard]] std::vector<WorldObjectRecord>
-  FindObjectsInChunk(ChunkId chunk) const override;
-  [[nodiscard]] std::vector<WorldObjectRecord>
-  FindObjectsByReality(ObjectRealityLevel reality) const override;
-  [[nodiscard]] foundation::Result<void>
-  SetPlacement(RuntimeObjectId id, ObjectPlacement placement);
-  [[nodiscard]] foundation::Result<void> SetResidency(RuntimeObjectId id,
-                                                      ResidencyState state);
+    [[nodiscard]] foundation::Result<RuntimeObjectId> CreateObject(WorldObjectRecord record);
+    [[nodiscard]] foundation::Result<void> DestroyObject(RuntimeObjectId id);
+    [[nodiscard]] std::optional<WorldObjectRecord> FindObject(RuntimeObjectId id) const override;
+    [[nodiscard]] std::vector<WorldObjectRecord> FindObjectsInRegion(RegionId region) const override;
+    [[nodiscard]] std::vector<WorldObjectRecord> FindObjectsInChunk(ChunkId chunk) const override;
+    [[nodiscard]] std::vector<WorldObjectRecord> FindObjectsByReality(ObjectRealityLevel reality) const override;
+    [[nodiscard]] foundation::Result<void> SetPlacement(RuntimeObjectId id, ObjectPlacement placement);
+    [[nodiscard]] foundation::Result<void> SetResidency(RuntimeObjectId id, ResidencyState state);
 
-  [[nodiscard]] foundation::Result<RuntimeObjectId>
-  Materialize(const MaterializationRequest &request) override;
-  [[nodiscard]] foundation::Result<void>
-  Demote(const DemotionRequest &request) override;
-  [[nodiscard]] foundation::Result<DemotionCommitToken>
-  IssueDemotionCommitToken(DemotionSnapshot snapshot) override;
-  [[nodiscard]] foundation::Result<void>
-  RevokeDemotionCommitToken(std::uint64_t token_id) override;
+    [[nodiscard]] foundation::Result<RuntimeObjectId> Materialize(const MaterializationRequest &request) override;
+    [[nodiscard]] foundation::Result<void> Demote(const DemotionRequest &request) override;
+    [[nodiscard]] foundation::Result<DemotionCommitToken> IssueDemotionCommitToken(DemotionSnapshot snapshot) override;
+    [[nodiscard]] foundation::Result<void> RevokeDemotionCommitToken(std::uint64_t token_id) override;
 
-  foundation::Result<void> SetChunkState(ChunkId id, ChunkState state);
+    foundation::Result<void> SetChunkState(ChunkId id, ChunkState state);
 
-protected:
-  struct ChunkRecord {
-    ChunkDescriptor descriptor{};
-    ChunkState state = ChunkState::Unloaded;
-    std::uint64_t revision = 1;
-  };
+  protected:
+    struct ChunkRecord {
+        ChunkDescriptor descriptor{};
+        ChunkState state = ChunkState::Unloaded;
+        std::uint64_t revision = 1;
+    };
 
-  std::unordered_map<RegionId, RegionDescriptor> regions_;
-  std::unordered_map<ChunkId, ChunkRecord> chunks_;
-  std::unordered_map<RuntimeObjectId, WorldObjectRecord> world_objects_;
-  std::unordered_map<PersistentObjectId, RuntimeObjectId>
-      persistent_to_runtime_;
-  std::unordered_map<std::uint64_t, DemotionCommitToken>
-      issued_demotion_tokens_;
-  std::uint64_t next_runtime_object_value_ = 1;
-  std::uint64_t next_demotion_token_value_ = 1;
-  bool topology_frozen_ = false;
-  bool fail_next_persistent_index_publication_for_testing_ = false;
-  bool fail_next_demotion_token_publication_for_testing_ = false;
+    std::unordered_map<RegionId, RegionDescriptor> regions_;
+    std::unordered_map<ChunkId, ChunkRecord> chunks_;
+    std::unordered_map<RuntimeObjectId, WorldObjectRecord> world_objects_;
+    std::unordered_map<PersistentObjectId, RuntimeObjectId> persistent_to_runtime_;
+    std::unordered_map<std::uint64_t, DemotionCommitToken> issued_demotion_tokens_;
+    std::uint64_t next_runtime_object_value_ = 1;
+    std::uint64_t next_demotion_token_value_ = 1;
+    bool topology_frozen_ = false;
+    bool fail_next_persistent_index_publication_for_testing_ = false;
+    bool fail_next_demotion_token_publication_for_testing_ = false;
 
-private:
-  friend struct WorldRuntimeTestAccess;
+  private:
+    friend struct WorldRuntimeTestAccess;
 
-  void InvalidateDemotionTokensForObject(RuntimeObjectId object);
+    void InvalidateDemotionTokensForObject(RuntimeObjectId object);
 };
-} // namespace epidemic::runtime
+}

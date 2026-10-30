@@ -6,75 +6,64 @@
 #include <optional>
 
 namespace epidemic::runtime::streaming {
-// Adapter interfaces that let Streaming request chunk-related data from other
-// majors through stable contracts, while still being able to run in mock mode
-// when absent.
+// Adapter interfaces that let Streaming request chunk-related data from other majors
+// through stable contracts, while still being able to run in mock mode when absent.
 class IStreamingWorldSource {
-public:
-  virtual ~IStreamingWorldSource() = default;
+  public:
+    virtual ~IStreamingWorldSource() = default;
 
-  [[nodiscard]] virtual std::optional<RegionId>
-  ResolveRegion(ChunkId chunk) const = 0;
+    [[nodiscard]] virtual std::optional<RegionId> ResolveRegion(ChunkId chunk) const = 0;
 };
 
 class IStreamingPersistenceSource {
-public:
-  virtual ~IStreamingPersistenceSource() = default;
+  public:
+    virtual ~IStreamingPersistenceSource() = default;
 
-  [[nodiscard]] virtual foundation::Result<void>
-  PrepareChunkData(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<void> PrepareChunkData(const StreamingRequest &request) = 0;
 };
 
 class IStreamingResourceSource {
-public:
-  // ReleaseChunkResources may be retried only when the previous call did not
-  // report success. Streaming itself never repeats a successfully completed
-  // release phase.
-  virtual ~IStreamingResourceSource() = default;
+  public:
+    // ReleaseChunkResources may be retried only when the previous call did not report
+    // success. Streaming itself never repeats a successfully completed release phase.
+    virtual ~IStreamingResourceSource() = default;
 
-  [[nodiscard]] virtual foundation::Result<void>
-  PrepareChunkResources(const StreamingRequest &request) = 0;
-  [[nodiscard]] virtual foundation::Result<void>
-  ReleaseChunkResources(ChunkId chunk) = 0;
+    [[nodiscard]] virtual foundation::Result<void> PrepareChunkResources(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<void> ReleaseChunkResources(ChunkId chunk) = 0;
 };
 
 class IStreamingDataSource {
-public:
-  // BuildLoadPlan is a planning operation. A returned plan is detached Runtime
-  // input. ExecuteStep has an acceptance boundary: Result failure or exception
-  // means that the logical step unit was not accepted. Result success is
-  // accepted by Runtime exactly once. If Runtime-local publication must be
-  // retried afterwards, the accepted result is retained and ExecuteStep is not
-  // called again for that unit. completed=false may still produce a later
-  // ExecuteStep call for the same plan cursor after the previous partial result
-  // has been durably accounted.
-  virtual ~IStreamingDataSource() = default;
+  public:
+    // BuildLoadPlan is a planning operation. A returned plan is detached Runtime input.
+    // ExecuteStep has an acceptance boundary: Result failure or exception means that the
+    // logical step unit was not accepted. Result success is accepted by Runtime exactly
+    // once. If Runtime-local publication must be retried afterwards, the accepted result
+    // is retained and ExecuteStep is not called again for that unit. completed=false may
+    // still produce a later ExecuteStep call for the same plan cursor after the previous
+    // partial result has been durably accounted.
+    virtual ~IStreamingDataSource() = default;
 
-  [[nodiscard]] virtual foundation::Result<ProgressiveLoadPlan>
-  BuildLoadPlan(const StreamingRequest &request) = 0;
-  [[nodiscard]] virtual foundation::Result<StreamingStepResult>
-  ExecuteStep(const StreamingRequest &request, StreamingPlanStepRecord step,
-              const RuntimeBudget &available_budget) = 0;
+    [[nodiscard]] virtual foundation::Result<ProgressiveLoadPlan> BuildLoadPlan(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<StreamingStepResult>
+    ExecuteStep(const StreamingRequest &request, StreamingPlanStepRecord step,
+                const RuntimeBudget &available_budget) = 0;
 };
 
 class IStreamingCommitTarget {
-public:
-  // request.handle is the stable operation identity. Implementations that can
-  // have ambiguous transport/backend failures must use it as an idempotency key
-  // so a retry cannot commit/rollback the same request twice.
-  virtual ~IStreamingCommitTarget() = default;
+  public:
+    // request.handle is the stable operation identity. Implementations that can have
+    // ambiguous transport/backend failures must use it as an idempotency key so a
+    // retry cannot commit/rollback the same request twice.
+    virtual ~IStreamingCommitTarget() = default;
 
-  [[nodiscard]] virtual foundation::Result<void>
-  Commit(const StreamingRequest &request) = 0;
-  [[nodiscard]] virtual foundation::Result<void>
-  Rollback(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<void> Commit(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<void> Rollback(const StreamingRequest &request) = 0;
 };
 
 class IStreamingPriorityProvider {
-public:
-  virtual ~IStreamingPriorityProvider() = default;
+  public:
+    virtual ~IStreamingPriorityProvider() = default;
 
-  [[nodiscard]] virtual StreamingPriorityClass
-  GetPriority(const StreamingTarget &target) const = 0;
+    [[nodiscard]] virtual StreamingPriorityClass GetPriority(const StreamingTarget &target) const = 0;
 };
 } // namespace epidemic::runtime::streaming

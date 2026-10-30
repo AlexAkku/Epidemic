@@ -8,81 +8,74 @@
 
 namespace epidemic::core {
 // This file implements the baseline main-thread task queue.
-// The dispatcher captures an owner thread at construction and enforces that
-// Drain runs only there.
+// The dispatcher captures an owner thread at construction and enforces that Drain runs only there.
 
 // Captures the constructing thread as the owner.
-MainThreadDispatcher::MainThreadDispatcher()
-    : owner_thread_id_(std::this_thread::get_id()) {}
+MainThreadDispatcher::MainThreadDispatcher() : owner_thread_id_(std::this_thread::get_id()) {
+}
 
 // Queues a task for later execution on the owner thread.
-void MainThreadDispatcher::Post(std::function<void()> task,
-                                std::string debug_name) {
-  if (!task) {
-    throw std::invalid_argument("Main-thread task must not be empty");
-  }
+void MainThreadDispatcher::Post(std::function<void()> task, std::string debug_name) {
+    if (!task) {
+        throw std::invalid_argument("Main-thread task must not be empty");
+    }
 
-  std::scoped_lock lock(mutex_);
-  PendingTask pending{std::move(task), std::move(debug_name)
+    std::scoped_lock lock(mutex_);
+    PendingTask pending{std::move(task), std::move(debug_name)
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-                                           ,
-                      auditor::shadow::child_context(),
-                      auditor::shadow::identity()
+                                             ,
+                        auditor::shadow::child_context(), auditor::shadow::identity()
 #endif
-  };
-  tasks_.push(std::move(pending));
+    };
+    tasks_.push(std::move(pending));
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-  auto &accepted = tasks_.back();
-  accepted.auditor_context.cause = auditor::shadow::emit_causal(
-      "async.submit", accepted.auditor_correlation.data());
+    auto &accepted = tasks_.back();
+    accepted.auditor_context.cause = auditor::shadow::emit_causal("async.submit", accepted.auditor_correlation.data());
 #endif
 }
 
-// Executes queued tasks in FIFO order on the owner thread and updates
-// diagnostics counters.
+// Executes queued tasks in FIFO order on the owner thread and updates diagnostics counters.
 std::size_t MainThreadDispatcher::Drain() {
-  if (!IsMainThread()) {
-    throw std::runtime_error(
-        "MainThreadDispatcher::Drain must execute on the owning main thread");
-  }
-
-  std::queue<PendingTask> pending_tasks;
-  {
-    std::scoped_lock lock(mutex_);
-    std::swap(pending_tasks, tasks_);
-  }
-
-  std::size_t executed_tasks = 0;
-  std::exception_ptr first_error;
-  while (!pending_tasks.empty()) {
-    auto task = std::move(pending_tasks.front());
-    pending_tasks.pop();
-#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-    const auditor::shadow::ContextScope auditor_scope(task.auditor_context);
-    auditor::shadow::flow("async.execute", task.auditor_correlation.data());
-#endif
-    try {
-      task.task();
-    } catch (...) {
-      if (!first_error) {
-        first_error = std::current_exception();
-      }
+    if (!IsMainThread()) {
+        throw std::runtime_error("MainThreadDispatcher::Drain must execute on the owning main thread");
     }
-    ++executed_tasks;
-  }
 
-  epidemic::diagnostics::GlobalCounters().Set(
-      epidemic::diagnostics::CounterId::MainThreadTasksExecuted,
-      static_cast<std::int64_t>(executed_tasks));
-  if (first_error) {
-    std::rethrow_exception(first_error);
-  }
+    std::queue<PendingTask> pending_tasks;
+    {
+        std::scoped_lock lock(mutex_);
+        std::swap(pending_tasks, tasks_);
+    }
 
-  return executed_tasks;
+    std::size_t executed_tasks = 0;
+    std::exception_ptr first_error;
+    while (!pending_tasks.empty()) {
+        auto task = std::move(pending_tasks.front());
+        pending_tasks.pop();
+#if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
+        const auditor::shadow::ContextScope auditor_scope(task.auditor_context);
+        auditor::shadow::flow("async.execute", task.auditor_correlation.data());
+#endif
+        try {
+            task.task();
+        } catch (...) {
+            if (!first_error) {
+                first_error = std::current_exception();
+            }
+        }
+        ++executed_tasks;
+    }
+
+    epidemic::diagnostics::GlobalCounters().Set(epidemic::diagnostics::CounterId::MainThreadTasksExecuted,
+                                                static_cast<std::int64_t>(executed_tasks));
+    if (first_error) {
+        std::rethrow_exception(first_error);
+    }
+
+    return executed_tasks;
 }
 
 // Returns whether the caller is the owning thread.
 bool MainThreadDispatcher::IsMainThread() const noexcept {
-  return std::this_thread::get_id() == owner_thread_id_;
+    return std::this_thread::get_id() == owner_thread_id_;
 }
 } // namespace epidemic::core

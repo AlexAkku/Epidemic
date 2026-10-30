@@ -8,23 +8,20 @@
 
 #include <utility>
 
-// Umbrella translation unit that anchors the public Streaming contracts in the
-// build.
+// Umbrella translation unit that anchors the public Streaming contracts in the build.
 
 namespace epidemic::runtime::streaming {
-foundation::Result<StreamingServices>
-CreateStreamingServices(const StreamingDependencies &dependencies) {
-  StreamingDependencies resolved = dependencies;
-  if (resolved.residency_controller == nullptr) {
-    resolved.residency_controller =
-        std::make_shared<InMemoryResidencyController>();
-  }
-  auto runtime = std::make_shared<StreamingRuntime>(std::move(resolved));
+foundation::Result<StreamingServices> CreateStreamingServices(const StreamingDependencies &dependencies) {
+    StreamingDependencies resolved = dependencies;
+    if (resolved.residency_controller == nullptr) {
+        resolved.residency_controller = std::make_shared<InMemoryResidencyController>();
+    }
+    auto runtime = std::make_shared<StreamingRuntime>(std::move(resolved));
 
-  StreamingServices services{};
-  services.runtime = runtime;
-  services.query = runtime;
-  services.controller = runtime;
-  return foundation::Result<StreamingServices>::Success(std::move(services));
+    StreamingServices services{};
+    services.runtime = runtime;
+    services.query = runtime;
+    services.controller = runtime;
+    return foundation::Result<StreamingServices>::Success(std::move(services));
 }
 } // namespace epidemic::runtime::streaming

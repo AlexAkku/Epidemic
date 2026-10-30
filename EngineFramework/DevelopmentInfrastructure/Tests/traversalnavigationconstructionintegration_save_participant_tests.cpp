@@ -4,124 +4,128 @@
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
 void TestConstructionServiceSaveParticipant() {
-  std::cerr << "[participant] framework.construction: bootstrap\n";
-  epidemic::gameplay::construction::ConstructionService owner;
-  construction::PlacementSocket socket;
-  socket.id = construction::PlacementSocketId::FromString("participant.socket");
-  socket.owner = {GameplayDomainId::FromString("participant.construction"),
-                  GameplayObjectId::FromString("wall")};
-  participant_tests::Check(bool(owner.RegisterSocket(socket)),
-                           "construction fixture socket");
-  const auto socket_id = socket.id;
-  participant_tests::FreezeOwner(owner);
-  savegame::SaveRestoreWorkspace workspace;
-  std::cerr << "[participant] framework.construction: contract\n";
-  auto participant =
-      savegame::CreateConstructionServiceSaveParticipant(owner, workspace);
-  CheckParticipantContract(*participant, "framework.construction", {});
-  std::cerr << "[participant] framework.construction: counters\n";
-  participant_tests::CheckOwnerCounterContinuity(
-      owner, *participant, [&] { return owner.CaptureSnapshot(); },
-      [&](auto snapshot) {
-        return owner.RestoreSnapshot(std::move(snapshot));
-      });
-  const auto empty_snapshot = owner.CaptureSnapshot();
-  std::cerr << "[participant] framework.construction: non-empty seed\n";
-  const GameplayObjectRef actor{
-      GameplayDomainId::FromString("participant.construction"),
-      GameplayObjectId::FromString("actor")};
-  participant_tests::Check(bool(owner.ReserveSocket(socket_id, actor)),
-                           "seed actual socket reservation");
-  std::cerr << "[participant] framework.construction: non-empty publication\n";
-  participant_tests::CheckNonEmptyPublication(
-      *participant,
-      [&] { return owner.CaptureSnapshot().socket_reservations.size(); },
-      [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    std::cerr << "[participant] framework.construction: bootstrap\n";
+    epidemic::gameplay::construction::ConstructionService owner;
+    construction::PlacementSocket socket;
+    socket.id = construction::PlacementSocketId::FromString("participant.socket");
+    socket.owner = {GameplayDomainId::FromString("participant.construction"), GameplayObjectId::FromString("wall")};
+    participant_tests::Check(bool(owner.RegisterSocket(socket)), "construction fixture socket");
+    const auto socket_id = socket.id;
+    participant_tests::FreezeOwner(owner);
+    savegame::SaveRestoreWorkspace workspace;
+    std::cerr << "[participant] framework.construction: contract\n";
+    auto participant = savegame::CreateConstructionServiceSaveParticipant(owner, workspace);
+    CheckParticipantContract(*participant, "framework.construction", {});
+    std::cerr << "[participant] framework.construction: counters\n";
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
+    const auto empty_snapshot = owner.CaptureSnapshot();
+    std::cerr << "[participant] framework.construction: non-empty seed\n";
+    const GameplayObjectRef actor{GameplayDomainId::FromString("participant.construction"),
+                                  GameplayObjectId::FromString("actor")};
+    participant_tests::Check(bool(owner.ReserveSocket(socket_id, actor)), "seed actual socket reservation");
+    std::cerr << "[participant] framework.construction: non-empty publication\n";
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().socket_reservations.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
 void TestNavigationSemanticsServiceSaveParticipant() {
-  std::cerr << "[participant] framework.navigation_semantics: bootstrap\n";
-  epidemic::gameplay::navigation_semantics::NavigationSemanticsService owner;
-  navigation_semantics::NavigationDomainDefinition domain;
-  domain.id = navigation_semantics::NavigationDomainId::FromString(
-      "participant.navigation.domain");
-  domain.canonical_name = "participant.navigation.domain";
-  participant_tests::Check(bool(owner.RegisterDomain(domain)),
-                           "navigation fixture domain");
-  const auto navigation_domain = domain.id;
-  participant_tests::FreezeOwner(owner);
-  savegame::SaveRestoreWorkspace workspace;
-  std::cerr << "[participant] framework.navigation_semantics: contract\n";
-  auto participant = savegame::CreateNavigationSemanticsServiceSaveParticipant(
-      owner, workspace);
-  CheckParticipantContract(*participant, "framework.navigation_semantics", {});
-  std::cerr << "[participant] framework.navigation_semantics: counters\n";
-  participant_tests::CheckOwnerCounterContinuity(
-      owner, *participant, [&] { return owner.CaptureSnapshot(); },
-      [&](auto snapshot) {
-        return owner.RestoreSnapshot(std::move(snapshot));
-      });
-  const auto empty_snapshot = owner.CaptureSnapshot();
-  std::cerr << "[participant] framework.navigation_semantics: non-empty seed\n";
-  const GameplayObjectRef subject{
-      GameplayDomainId::FromString("participant.navigation"),
-      GameplayObjectId::FromString("subject")};
-  navigation_semantics::NavigationSemanticProfile profile;
-  profile.subject = subject;
-  profile.domain = navigation_domain;
-  participant_tests::Check(bool(owner.SetProfile(std::move(profile))),
-                           "seed actual navigation profile");
-  std::cerr << "[participant] framework.navigation_semantics: non-empty "
-               "publication\n";
-  participant_tests::CheckNonEmptyPublication(
-      *participant, [&] { return owner.CaptureSnapshot().profiles.size(); },
-      [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    std::cerr << "[participant] framework.navigation_semantics: bootstrap\n";
+    epidemic::gameplay::navigation_semantics::NavigationSemanticsService owner;
+    navigation_semantics::NavigationDomainDefinition domain;
+    domain.id = navigation_semantics::NavigationDomainId::FromString("participant.navigation.domain");
+    domain.canonical_name = "participant.navigation.domain";
+    participant_tests::Check(bool(owner.RegisterDomain(domain)), "navigation fixture domain");
+    const auto navigation_domain = domain.id;
+    participant_tests::FreezeOwner(owner);
+    savegame::SaveRestoreWorkspace workspace;
+    std::cerr << "[participant] framework.navigation_semantics: contract\n";
+    auto participant = savegame::CreateNavigationSemanticsServiceSaveParticipant(owner, workspace);
+    CheckParticipantContract(*participant, "framework.navigation_semantics", {});
+    std::cerr << "[participant] framework.navigation_semantics: counters\n";
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
+    const auto empty_snapshot = owner.CaptureSnapshot();
+    std::cerr << "[participant] framework.navigation_semantics: non-empty seed\n";
+    const GameplayObjectRef subject{GameplayDomainId::FromString("participant.navigation"),
+                                    GameplayObjectId::FromString("subject")};
+    navigation_semantics::NavigationSemanticProfile profile;
+    profile.subject = subject;
+    profile.domain = navigation_domain;
+    participant_tests::Check(bool(owner.SetProfile(std::move(profile))), "seed actual navigation profile");
+    std::cerr << "[participant] framework.navigation_semantics: non-empty publication\n";
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().profiles.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
 void TestTraversalServiceSaveParticipant() {
-  std::cerr << "[participant] framework.traversal: bootstrap\n";
-  epidemic::gameplay::traversal::TraversalService owner;
-  traversal::TraversalModeDefinition mode;
-  mode.id =
-      traversal::TraversalModeId::FromString("participant.traversal.mode");
-  mode.canonical_name = "participant.traversal.mode";
-  participant_tests::Check(bool(owner.RegisterMode(mode)),
-                           "traversal fixture mode");
-  traversal::TraversalProfile profile;
-  profile.id = traversal::TraversalProfileId::FromString(
-      "participant.traversal.profile");
-  profile.canonical_name = "participant.traversal.profile";
-  profile.default_mode = mode.id;
-  profile.allowed_modes = {mode.id};
-  participant_tests::Check(bool(owner.RegisterProfile(profile)),
-                           "traversal fixture profile");
-  const auto traversal_profile = profile.id;
-  participant_tests::FreezeOwner(owner);
-  savegame::SaveRestoreWorkspace workspace;
-  std::cerr << "[participant] framework.traversal: contract\n";
-  auto participant =
-      savegame::CreateTraversalServiceSaveParticipant(owner, workspace);
-  CheckParticipantContract(*participant, "framework.traversal", {});
-  std::cerr << "[participant] framework.traversal: counters\n";
-  participant_tests::CheckOwnerCounterContinuity(
-      owner, *participant, [&] { return owner.CaptureSnapshot(); },
-      [&](auto snapshot) {
-        return owner.RestoreSnapshot(std::move(snapshot));
-      });
-  const auto empty_snapshot = owner.CaptureSnapshot();
-  std::cerr << "[participant] framework.traversal: non-empty seed\n";
-  const GameplayObjectRef subject{
-      GameplayDomainId::FromString("participant.traversal"),
-      GameplayObjectId::FromString("subject")};
-  participant_tests::Check(
-      bool(owner.AssignProfile(subject, traversal_profile)),
-      "seed actual traversal state");
-  std::cerr << "[participant] framework.traversal: non-empty publication\n";
-  participant_tests::CheckNonEmptyPublication(
-      *participant, [&] { return owner.CaptureSnapshot().states.size(); },
-      [&] { return owner.RestoreSnapshot(empty_snapshot); });
+    std::cerr << "[participant] framework.traversal: bootstrap\n";
+    epidemic::gameplay::traversal::TraversalService owner;
+    traversal::TraversalModeDefinition mode;
+    mode.id = traversal::TraversalModeId::FromString("participant.traversal.mode");
+    mode.canonical_name = "participant.traversal.mode";
+    participant_tests::Check(bool(owner.RegisterMode(mode)), "traversal fixture mode");
+    traversal::TraversalProfile profile;
+    profile.id = traversal::TraversalProfileId::FromString("participant.traversal.profile");
+    profile.canonical_name = "participant.traversal.profile";
+    profile.default_mode = mode.id;
+    profile.allowed_modes = {mode.id};
+    participant_tests::Check(bool(owner.RegisterProfile(profile)), "traversal fixture profile");
+    const auto traversal_profile = profile.id;
+    participant_tests::FreezeOwner(owner);
+    savegame::SaveRestoreWorkspace workspace;
+    std::cerr << "[participant] framework.traversal: contract\n";
+    auto participant = savegame::CreateTraversalServiceSaveParticipant(owner, workspace);
+    CheckParticipantContract(*participant, "framework.traversal", {});
+    std::cerr << "[participant] framework.traversal: counters\n";
+    participant_tests::CheckOwnerCounterContinuity(
+        owner, *participant,
+        [&] {
+            return owner.CaptureSnapshot();
+        },
+        [&](auto snapshot) {
+            return owner.RestoreSnapshot(std::move(snapshot));
+        });
+    const auto empty_snapshot = owner.CaptureSnapshot();
+    std::cerr << "[participant] framework.traversal: non-empty seed\n";
+    const GameplayObjectRef subject{GameplayDomainId::FromString("participant.traversal"),
+                                    GameplayObjectId::FromString("subject")};
+    participant_tests::Check(bool(owner.AssignProfile(subject, traversal_profile)), "seed actual traversal state");
+    std::cerr << "[participant] framework.traversal: non-empty publication\n";
+    participant_tests::CheckNonEmptyPublication(
+        *participant,
+        [&] {
+            return owner.CaptureSnapshot().states.size();
+        },
+        [&] {
+            return owner.RestoreSnapshot(empty_snapshot);
+        });
 }
 int main() {
-  TestConstructionServiceSaveParticipant();
-  TestNavigationSemanticsServiceSaveParticipant();
-  TestTraversalServiceSaveParticipant();
-  return 0;
+    TestConstructionServiceSaveParticipant();
+    TestNavigationSemanticsServiceSaveParticipant();
+    TestTraversalServiceSaveParticipant();
+    return 0;
 }

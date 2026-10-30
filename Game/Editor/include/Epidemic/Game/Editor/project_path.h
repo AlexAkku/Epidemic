@@ -7,9 +7,7 @@ namespace epidemic::game::editor {
 [[nodiscard]] bool IsPrivateContentPath(std::string_view relative) noexcept;
 // Resolve portable project-relative paths without I/O side effects. Existing
 // symlinks are rejected. Callers must still protect the subsequent
-// open/commit against replacement races; this is not an atomic filesystem
-// sandbox.
+// open/commit against replacement races; this is not an atomic filesystem sandbox.
 [[nodiscard]] foundation::Result<std::filesystem::path>
-ResolveProjectPath(const std::filesystem::path &root,
-                   std::string_view relative);
-} // namespace epidemic::game::editor
+ResolveProjectPath(const std::filesystem::path &root, std::string_view relative);
+}

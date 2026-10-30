@@ -12,13 +12,12 @@ namespace epidemic::runtime {
 struct SceneOptions {};
 
 struct SceneServices {
-  std::shared_ptr<ISceneNodeRegistry> nodes;
-  std::shared_ptr<ITransformRegistry> transforms;
-  std::shared_ptr<ISpatialIndex> spatial;
-  std::shared_ptr<ISceneQuery> queries;
-  std::shared_ptr<ISceneSnapshotProvider> snapshots;
+    std::shared_ptr<ISceneNodeRegistry> nodes;
+    std::shared_ptr<ITransformRegistry> transforms;
+    std::shared_ptr<ISpatialIndex> spatial;
+    std::shared_ptr<ISceneQuery> queries;
+    std::shared_ptr<ISceneSnapshotProvider> snapshots;
 };
 
-[[nodiscard]] foundation::Result<SceneServices>
-CreateSceneServices(const SceneOptions &options = {});
+[[nodiscard]] foundation::Result<SceneServices> CreateSceneServices(const SceneOptions &options = {});
 } // namespace epidemic::runtime

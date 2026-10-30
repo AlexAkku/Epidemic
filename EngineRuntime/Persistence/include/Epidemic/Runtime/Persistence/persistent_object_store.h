@@ -9,14 +9,12 @@
 
 namespace epidemic::runtime {
 class IPersistentObjectStore {
-public:
-  virtual ~IPersistentObjectStore() = default;
+  public:
+    virtual ~IPersistentObjectStore() = default;
 
-  [[nodiscard]] virtual std::optional<PersistentObjectRecord>
-  FindObject(PersistentObjectId id) const = 0;
-  [[nodiscard]] virtual std::vector<PersistentObjectRecord>
-  FindByLocation(const PersistenceLocation &location) const = 0;
-  [[nodiscard]] virtual std::vector<PersistentObjectRecord>
-  ListObjects() const = 0;
+    [[nodiscard]] virtual std::optional<PersistentObjectRecord> FindObject(PersistentObjectId id) const = 0;
+    [[nodiscard]] virtual std::vector<PersistentObjectRecord>
+    FindByLocation(const PersistenceLocation &location) const = 0;
+    [[nodiscard]] virtual std::vector<PersistentObjectRecord> ListObjects() const = 0;
 };
 } // namespace epidemic::runtime

@@ -11,6 +11,7 @@
 #include <dxgi.h>
 #include <wrl/client.h>
 
+#include <vector>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -18,761 +19,657 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace epidemic::rhi::d3d11 {
 // This file implements the baseline D3D11 backend.
-// Public contracts live in the RHI headers; local helpers and private classes
-// below translate them to D3D11 calls.
+// Public contracts live in the RHI headers; local helpers and private classes below translate them to D3D11 calls.
 
 namespace {
 using Microsoft::WRL::ComPtr;
 
 // Returns whether a floating-point clear-color component is finite.
 [[nodiscard]] bool IsFinite(float value) noexcept {
-  return std::isfinite(value) != 0;
+    return std::isfinite(value) != 0;
 }
 
 // Converts a UTF-16 Windows string into UTF-8 for diagnostics output.
-[[nodiscard]] std::string
-NarrowWideString(const std::wstring_view wide_string) {
-  if (wide_string.empty()) {
-    return {};
-  }
+[[nodiscard]] std::string NarrowWideString(const std::wstring_view wide_string) {
+    if (wide_string.empty()) {
+        return {};
+    }
 
-  const auto buffer_size = WideCharToMultiByte(
-      CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()),
-      nullptr, 0, nullptr, nullptr);
-  if (buffer_size <= 0) {
-    return {};
-  }
+    const auto buffer_size = WideCharToMultiByte(CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()),
+                                                 nullptr, 0, nullptr, nullptr);
+    if (buffer_size <= 0) {
+        return {};
+    }
 
-  std::string utf8_string(static_cast<std::size_t>(buffer_size), '\0');
-  WideCharToMultiByte(CP_UTF8, 0, wide_string.data(),
-                      static_cast<int>(wide_string.size()), utf8_string.data(),
-                      buffer_size, nullptr, nullptr);
-  return utf8_string;
+    std::string utf8_string(static_cast<std::size_t>(buffer_size), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()), utf8_string.data(),
+                        buffer_size, nullptr, nullptr);
+    return utf8_string;
 }
 
 // Formats an HRESULT into a stable textual diagnostic payload.
 [[nodiscard]] std::string FormatHResult(HRESULT result) {
-  std::wstring message_buffer(512, L'\0');
-  const auto message_length = FormatMessageW(
-      FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
-      static_cast<DWORD>(result), 0, message_buffer.data(),
-      static_cast<DWORD>(message_buffer.size()), nullptr);
+    std::wstring message_buffer(512, L'\0');
+    const auto message_length =
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, static_cast<DWORD>(result),
+                       0, message_buffer.data(), static_cast<DWORD>(message_buffer.size()), nullptr);
 
-  std::ostringstream stream;
-  stream << "HRESULT=0x" << std::hex << static_cast<std::uint32_t>(result);
-  if (message_length > 0) {
-    std::wstring_view windows_message(message_buffer.data(), message_length);
-    while (!windows_message.empty() && (windows_message.back() == L'\r' ||
-                                        windows_message.back() == L'\n' ||
-                                        windows_message.back() == L' ')) {
-      windows_message.remove_suffix(1);
+    std::ostringstream stream;
+    stream << "HRESULT=0x" << std::hex << static_cast<std::uint32_t>(result);
+    if (message_length > 0) {
+        std::wstring_view windows_message(message_buffer.data(), message_length);
+        while (!windows_message.empty() &&
+               (windows_message.back() == L'\r' || windows_message.back() == L'\n' || windows_message.back() == L' ')) {
+            windows_message.remove_suffix(1);
+        }
+
+        const auto utf8_message = NarrowWideString(windows_message);
+        if (!utf8_message.empty()) {
+            stream << ", message=" << utf8_message;
+        }
     }
 
-    const auto utf8_message = NarrowWideString(windows_message);
-    if (!utf8_message.empty()) {
-      stream << ", message=" << utf8_message;
-    }
-  }
-
-  return stream.str();
+    return stream.str();
 }
 
 // Builds a structured Error for a failed D3D11 operation.
-[[nodiscard]] epidemic::foundation::Error
-MakeD3D11Error(std::string_view error_code, std::string_view operation,
-               HRESULT result, std::string_view error_context = {}) {
-  return epidemic::foundation::Error::Create(
-      error_code,
-      "backend=D3D11, operation=" + std::string(operation) + " failed (" +
-          FormatHResult(result) + ")",
-      error_context);
+[[nodiscard]] epidemic::foundation::Error MakeD3D11Error(std::string_view error_code, std::string_view operation,
+                                                         HRESULT result, std::string_view error_context = {}) {
+    return epidemic::foundation::Error::Create(
+        error_code, "backend=D3D11, operation=" + std::string(operation) + " failed (" + FormatHResult(result) + ")",
+        error_context);
 }
 
 // Converts the baseline pixel-format enum into the corresponding DXGI format.
-[[nodiscard]] epidemic::foundation::Result<DXGI_FORMAT>
-ToDxgiFormat(RhiPixelFormat pixel_format) {
-  switch (pixel_format) {
-  case RhiPixelFormat::R8G8B8A8_UNorm:
-    return epidemic::foundation::Result<DXGI_FORMAT>::Success(
-        DXGI_FORMAT_R8G8B8A8_UNORM);
-  case RhiPixelFormat::B8G8R8A8_UNorm:
-    return epidemic::foundation::Result<DXGI_FORMAT>::Success(
-        DXGI_FORMAT_B8G8R8A8_UNORM);
-  case RhiPixelFormat::Unknown:
-    break;
-  }
+[[nodiscard]] epidemic::foundation::Result<DXGI_FORMAT> ToDxgiFormat(RhiPixelFormat pixel_format) {
+    switch (pixel_format) {
+    case RhiPixelFormat::R8G8B8A8_UNorm:
+        return epidemic::foundation::Result<DXGI_FORMAT>::Success(DXGI_FORMAT_R8G8B8A8_UNORM);
+    case RhiPixelFormat::B8G8R8A8_UNorm:
+        return epidemic::foundation::Result<DXGI_FORMAT>::Success(DXGI_FORMAT_B8G8R8A8_UNORM);
+    case RhiPixelFormat::Unknown:
+        break;
+    }
 
-  return epidemic::foundation::Result<DXGI_FORMAT>::Failure(
-      epidemic::foundation::Error::Create(
-          "rhi.invalid_color_format",
-          "D3D11 backend requires a known DXGI-compatible color format"));
+    return epidemic::foundation::Result<DXGI_FORMAT>::Failure(epidemic::foundation::Error::Create(
+        "rhi.invalid_color_format", "D3D11 backend requires a known DXGI-compatible color format"));
 }
 
 class D3D11RhiSwapChain;
 
 struct D3D11DeviceState {
-  ComPtr<ID3D11Device> device;
-  ComPtr<ID3D11DeviceContext> immediate_context;
-  D3D_FEATURE_LEVEL feature_level{D3D_FEATURE_LEVEL_10_0};
-  std::weak_ptr<D3D11RhiSwapChain> active_swap_chain;
-  bool device_lost{false};
-  HRESULT device_lost_reason{S_OK};
+    ComPtr<ID3D11Device> device;
+    ComPtr<ID3D11DeviceContext> immediate_context;
+    D3D_FEATURE_LEVEL feature_level{D3D_FEATURE_LEVEL_10_0};
+    std::weak_ptr<D3D11RhiSwapChain> active_swap_chain;
+    bool device_lost{false};
+    HRESULT device_lost_reason{S_OK};
 };
 
 [[nodiscard]] bool IsDeviceLostResult(HRESULT result) noexcept {
-  return result == DXGI_ERROR_DEVICE_HUNG ||
-         result == DXGI_ERROR_DEVICE_REMOVED ||
-         result == DXGI_ERROR_DEVICE_RESET ||
-         result == DXGI_ERROR_DRIVER_INTERNAL_ERROR;
+    return result == DXGI_ERROR_DEVICE_HUNG || result == DXGI_ERROR_DEVICE_REMOVED ||
+           result == DXGI_ERROR_DEVICE_RESET || result == DXGI_ERROR_DRIVER_INTERNAL_ERROR;
 }
 
-[[nodiscard]] epidemic::foundation::Error
-MakeDeviceLostError(const D3D11DeviceState &state, std::string_view operation,
-                    std::string_view error_context = {}) {
-  const auto reason = state.device_lost_reason == S_OK
-                          ? DXGI_ERROR_DEVICE_REMOVED
-                          : state.device_lost_reason;
-  return epidemic::foundation::Error::Create(
-      "rhi.d3d11.device_lost",
-      "backend=D3D11, operation=" + std::string(operation) +
-          " failed because the D3D11 device was lost (" +
-          FormatHResult(reason) + ")",
-      error_context);
+[[nodiscard]] epidemic::foundation::Error MakeDeviceLostError(const D3D11DeviceState &state, std::string_view operation,
+                                                              std::string_view error_context = {}) {
+    const auto reason = state.device_lost_reason == S_OK ? DXGI_ERROR_DEVICE_REMOVED : state.device_lost_reason;
+    return epidemic::foundation::Error::Create("rhi.d3d11.device_lost",
+                                               "backend=D3D11, operation=" + std::string(operation) +
+                                                   " failed because the D3D11 device was lost (" +
+                                                   FormatHResult(reason) + ")",
+                                               error_context);
 }
 
-[[nodiscard]] epidemic::foundation::Error
-MakeD3D11OperationError(D3D11DeviceState &state, std::string_view error_code,
-                        std::string_view operation, HRESULT result,
-                        std::string_view error_context = {}) {
-  if (IsDeviceLostResult(result)) {
-    state.device_lost = true;
-    state.device_lost_reason = state.device != nullptr
-                                   ? state.device->GetDeviceRemovedReason()
-                                   : result;
-    if (state.device_lost_reason == S_OK) {
-      state.device_lost_reason = result;
+[[nodiscard]] epidemic::foundation::Error MakeD3D11OperationError(D3D11DeviceState &state, std::string_view error_code,
+                                                                  std::string_view operation, HRESULT result,
+                                                                  std::string_view error_context = {}) {
+    if (IsDeviceLostResult(result)) {
+        state.device_lost = true;
+        state.device_lost_reason = state.device != nullptr ? state.device->GetDeviceRemovedReason() : result;
+        if (state.device_lost_reason == S_OK) {
+            state.device_lost_reason = result;
+        }
+        return MakeDeviceLostError(state, operation, error_context);
     }
-    return MakeDeviceLostError(state, operation, error_context);
-  }
 
-  return MakeD3D11Error(error_code, operation, result, error_context);
+    return MakeD3D11Error(error_code, operation, result, error_context);
 }
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
 thread_local testing::FaultPoint g_fault_point = testing::FaultPoint::None;
 
 [[nodiscard]] bool ConsumeFault(testing::FaultPoint fault_point) noexcept {
-  if (g_fault_point != fault_point) {
-    return false;
-  }
+    if (g_fault_point != fault_point) {
+        return false;
+    }
 
-  g_fault_point = testing::FaultPoint::None;
-  return true;
+    g_fault_point = testing::FaultPoint::None;
+    return true;
 }
 #endif
 
-// Swap-chain implementation that owns the DXGI swap chain and render-target
-// resources.
-class D3D11RhiSwapChain final
-    : public IRhiSwapChain,
-      public std::enable_shared_from_this<D3D11RhiSwapChain> {
-public:
-  // Creates, initializes, and returns a D3D11 swap-chain wrapper.
-  static epidemic::foundation::Result<std::shared_ptr<D3D11RhiSwapChain>>
-  Create(std::shared_ptr<D3D11DeviceState> state,
-         const RhiSwapChainDesc &descriptor) {
-    auto swap_chain = std::shared_ptr<D3D11RhiSwapChain>(
-        new D3D11RhiSwapChain(std::move(state), descriptor));
-    const auto initialize_result = swap_chain->Initialize();
-    if (!initialize_result.HasValue()) {
-      return epidemic::foundation::Result<std::shared_ptr<D3D11RhiSwapChain>>::
-          Failure(initialize_result.GetError());
+// Swap-chain implementation that owns the DXGI swap chain and render-target resources.
+class D3D11RhiSwapChain final : public IRhiSwapChain, public std::enable_shared_from_this<D3D11RhiSwapChain> {
+  public:
+    // Creates, initializes, and returns a D3D11 swap-chain wrapper.
+    static epidemic::foundation::Result<std::shared_ptr<D3D11RhiSwapChain>>
+    Create(std::shared_ptr<D3D11DeviceState> state, const RhiSwapChainDesc &descriptor) {
+        auto swap_chain = std::shared_ptr<D3D11RhiSwapChain>(new D3D11RhiSwapChain(std::move(state), descriptor));
+        const auto initialize_result = swap_chain->Initialize();
+        if (!initialize_result.HasValue()) {
+            return epidemic::foundation::Result<std::shared_ptr<D3D11RhiSwapChain>>::Failure(
+                initialize_result.GetError());
+        }
+
+        return epidemic::foundation::Result<std::shared_ptr<D3D11RhiSwapChain>>::Success(std::move(swap_chain));
     }
 
-    return epidemic::foundation::Result<
-        std::shared_ptr<D3D11RhiSwapChain>>::Success(std::move(swap_chain));
-  }
-
-  // Releases back-buffer resources before the swap chain is destroyed.
-  ~D3D11RhiSwapChain() override { ReleaseBackBufferResources(); }
-
-  // Presents the current back buffer when presentation resources are valid.
-  [[nodiscard]] epidemic::foundation::Result<void> Present() override {
-    if (state_->device_lost) {
-      return epidemic::foundation::Result<void>::Failure(MakeDeviceLostError(
-          *state_, "IDXGISwapChain::Present", descriptor_.debug_name));
+    // Releases back-buffer resources before the swap chain is destroyed.
+    ~D3D11RhiSwapChain() override {
+        ReleaseBackBufferResources();
     }
 
-    if (swap_chain_ == nullptr) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.d3d11.swap_chain_missing",
-              "D3D11 swap chain is not initialized", descriptor_.debug_name));
-    }
+    // Presents the current back buffer when presentation resources are valid.
+    [[nodiscard]] epidemic::foundation::Result<void> Present() override {
+        if (state_->device_lost) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeDeviceLostError(*state_, "IDXGISwapChain::Present", descriptor_.debug_name));
+        }
 
-    if (recreate_required_ || render_target_view_ == nullptr) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.d3d11.recreate_required",
-              "D3D11 swap chain render target must be recreated",
-              descriptor_.debug_name));
-    }
+        if (swap_chain_ == nullptr) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.d3d11.swap_chain_missing", "D3D11 swap chain is not initialized", descriptor_.debug_name));
+        }
 
-    const auto sync_interval = descriptor_.vsync ? 1u : 0u;
+        if (recreate_required_ || render_target_view_ == nullptr) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.d3d11.recreate_required", "D3D11 swap chain render target must be recreated",
+                descriptor_.debug_name));
+        }
+
+        const auto sync_interval = descriptor_.vsync ? 1u : 0u;
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    const auto result = ConsumeFault(testing::FaultPoint::PresentDeviceRemoved)
-                            ? DXGI_ERROR_DEVICE_REMOVED
-                            : swap_chain_->Present(sync_interval, 0);
+        const auto result = ConsumeFault(testing::FaultPoint::PresentDeviceRemoved)
+                                ? DXGI_ERROR_DEVICE_REMOVED
+                                : swap_chain_->Present(sync_interval, 0);
 #else
-    const auto result = swap_chain_->Present(sync_interval, 0);
+        const auto result = swap_chain_->Present(sync_interval, 0);
 #endif
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeD3D11OperationError(*state_, "rhi.d3d11.present_failed",
-                                  "IDXGISwapChain::Present", result,
-                                  descriptor_.debug_name));
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(MakeD3D11OperationError(
+                *state_, "rhi.d3d11.present_failed", "IDXGISwapChain::Present", result, descriptor_.debug_name));
+        }
+
+        return epidemic::foundation::Result<void>::Success();
     }
 
-    return epidemic::foundation::Result<void>::Success();
-  }
+    // Resizes DXGI buffers and recreates render-target resources.
+    [[nodiscard]] epidemic::foundation::Result<void> Resize(std::uint32_t width, std::uint32_t height) override {
+        if (state_->device_lost) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeDeviceLostError(*state_, "IDXGISwapChain::ResizeBuffers", descriptor_.debug_name));
+        }
 
-  // Resizes DXGI buffers and recreates render-target resources.
-  [[nodiscard]] epidemic::foundation::Result<void>
-  Resize(std::uint32_t width, std::uint32_t height) override {
-    if (state_->device_lost) {
-      return epidemic::foundation::Result<void>::Failure(MakeDeviceLostError(
-          *state_, "IDXGISwapChain::ResizeBuffers", descriptor_.debug_name));
-    }
+        if (width == 0 || height == 0) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.invalid_swap_chain_size", "Swap chain resize dimensions must be greater than zero",
+                descriptor_.debug_name));
+        }
 
-    if (width == 0 || height == 0) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.invalid_swap_chain_size",
-              "Swap chain resize dimensions must be greater than zero",
-              descriptor_.debug_name));
-    }
+        if (swap_chain_ == nullptr) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.d3d11.swap_chain_missing", "D3D11 swap chain is not initialized", descriptor_.debug_name));
+        }
 
-    if (swap_chain_ == nullptr) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.d3d11.swap_chain_missing",
-              "D3D11 swap chain is not initialized", descriptor_.debug_name));
-    }
+        if (width == width_ && height == height_ && !recreate_required_) {
+            return epidemic::foundation::Result<void>::Success();
+        }
 
-    if (width == width_ && height == height_ && !recreate_required_) {
-      return epidemic::foundation::Result<void>::Success();
-    }
-
-    // Once the old RTV is released, a retry must recreate it even when
-    // dimensions stay unchanged.
-    recreate_required_ = true;
-    ReleaseBackBufferResources();
-
-    const auto dxgi_format_result = ToDxgiFormat(descriptor_.color_format);
-    if (!dxgi_format_result.HasValue()) {
-      return epidemic::foundation::Result<void>::Failure(
-          dxgi_format_result.GetError());
-    }
-
-    const auto result = swap_chain_->ResizeBuffers(
-        descriptor_.buffer_count, width, height, dxgi_format_result.Value(), 0);
-    if (FAILED(result)) {
-      const auto failure = MakeD3D11OperationError(
-          *state_, "rhi.d3d11.resize_failed", "IDXGISwapChain::ResizeBuffers",
-          result, descriptor_.debug_name);
-      if (state_->device_lost) {
+        // Once the old RTV is released, a retry must recreate it even when dimensions stay unchanged.
         recreate_required_ = true;
-        return epidemic::foundation::Result<void>::Failure(failure);
-      }
+        ReleaseBackBufferResources();
 
-      const auto recovery_result = CreateBackBufferResources();
-      recreate_required_ = !recovery_result.HasValue();
-      return epidemic::foundation::Result<void>::Failure(failure);
+        const auto dxgi_format_result = ToDxgiFormat(descriptor_.color_format);
+        if (!dxgi_format_result.HasValue()) {
+            return epidemic::foundation::Result<void>::Failure(dxgi_format_result.GetError());
+        }
+
+        const auto result =
+            swap_chain_->ResizeBuffers(descriptor_.buffer_count, width, height, dxgi_format_result.Value(), 0);
+        if (FAILED(result)) {
+            const auto failure = MakeD3D11OperationError(
+                *state_, "rhi.d3d11.resize_failed", "IDXGISwapChain::ResizeBuffers", result, descriptor_.debug_name);
+            if (state_->device_lost) {
+                recreate_required_ = true;
+                return epidemic::foundation::Result<void>::Failure(failure);
+            }
+
+            const auto recovery_result = CreateBackBufferResources();
+            recreate_required_ = !recovery_result.HasValue();
+            return epidemic::foundation::Result<void>::Failure(failure);
+        }
+
+        descriptor_.width = width;
+        descriptor_.height = height;
+        width_ = width;
+        height_ = height;
+
+        const auto create_result = CreateBackBufferResources();
+        recreate_required_ = !create_result.HasValue();
+        return create_result;
     }
 
-    descriptor_.width = width;
-    descriptor_.height = height;
-    width_ = width;
-    height_ = height;
-
-    const auto create_result = CreateBackBufferResources();
-    recreate_required_ = !create_result.HasValue();
-    return create_result;
-  }
-
-  // Returns the current swap-chain width.
-  [[nodiscard]] std::uint32_t Width() const noexcept override { return width_; }
-
-  // Returns the current swap-chain height.
-  [[nodiscard]] std::uint32_t Height() const noexcept override {
-    return height_;
-  }
-
-  // Returns the configured DXGI buffer count.
-  [[nodiscard]] std::uint32_t BufferCount() const noexcept override {
-    return descriptor_.buffer_count;
-  }
-
-  // Returns the configured color format.
-  [[nodiscard]] RhiPixelFormat ColorFormat() const noexcept override {
-    return descriptor_.color_format;
-  }
-
-  // Returns whether a render-target view currently exists for presentation.
-  [[nodiscard]] bool HasRenderTarget() const noexcept {
-    return render_target_view_ != nullptr && width_ > 0 && height_ > 0;
-  }
-
-  // Verifies that this swap chain still owns a renderable back buffer.
-  [[nodiscard]] epidemic::foundation::Result<void>
-  ValidateRenderTarget() const {
-    if (state_->device_lost) {
-      return epidemic::foundation::Result<void>::Failure(MakeDeviceLostError(
-          *state_, "ID3D11DeviceContext rendering", descriptor_.debug_name));
+    // Returns the current swap-chain width.
+    [[nodiscard]] std::uint32_t Width() const noexcept override {
+        return width_;
     }
 
-    if (recreate_required_ || !HasRenderTarget()) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.d3d11.recreate_required",
-              "D3D11 swap chain render target must be recreated",
-              descriptor_.debug_name));
+    // Returns the current swap-chain height.
+    [[nodiscard]] std::uint32_t Height() const noexcept override {
+        return height_;
     }
 
-    return epidemic::foundation::Result<void>::Success();
-  }
-
-  // Binds the current render target and viewport to the immediate context.
-  void BindForRendering() {
-    ID3D11RenderTargetView *render_target = render_target_view_.Get();
-    state_->immediate_context->OMSetRenderTargets(1, &render_target, nullptr);
-
-    D3D11_VIEWPORT viewport{};
-    viewport.Width = static_cast<float>(width_);
-    viewport.Height = static_cast<float>(height_);
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
-    state_->immediate_context->RSSetViewports(1, &viewport);
-  }
-
-  // Clears the active render target with the requested color.
-  void ClearRenderTarget(const RhiColor &color) {
-    const float clear_color[4]{color.red, color.green, color.blue, color.alpha};
-    state_->immediate_context->ClearRenderTargetView(render_target_view_.Get(),
-                                                     clear_color);
-  }
-
-private:
-  // Stores device state and the immutable descriptor prior to initialization.
-  D3D11RhiSwapChain(std::shared_ptr<D3D11DeviceState> state,
-                    RhiSwapChainDesc descriptor)
-      : state_(std::move(state)), descriptor_(std::move(descriptor)),
-        width_(descriptor_.width), height_(descriptor_.height) {}
-
-  // Creates the underlying DXGI swap chain and its first back-buffer resources.
-  [[nodiscard]] epidemic::foundation::Result<void> Initialize() {
-    const auto validation_result = Validate(descriptor_);
-    if (!validation_result.HasValue()) {
-      return validation_result;
+    // Returns the configured DXGI buffer count.
+    [[nodiscard]] std::uint32_t BufferCount() const noexcept override {
+        return descriptor_.buffer_count;
     }
 
-    const auto dxgi_format_result = ToDxgiFormat(descriptor_.color_format);
-    if (!dxgi_format_result.HasValue()) {
-      return epidemic::foundation::Result<void>::Failure(
-          dxgi_format_result.GetError());
+    // Returns the configured color format.
+    [[nodiscard]] RhiPixelFormat ColorFormat() const noexcept override {
+        return descriptor_.color_format;
     }
 
-    const auto hwnd = descriptor_.surface_handle.As<HWND>();
-    if (hwnd == nullptr || IsWindow(hwnd) == FALSE) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.invalid_surface_handle",
-              "D3D11 swap chain requires a live Win32 window handle",
-              descriptor_.debug_name));
+    // Returns whether a render-target view currently exists for presentation.
+    [[nodiscard]] bool HasRenderTarget() const noexcept {
+        return render_target_view_ != nullptr && width_ > 0 && height_ > 0;
     }
 
-    ComPtr<IDXGIDevice> dxgi_device;
-    auto result = state_->device.As(&dxgi_device);
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeD3D11Error("rhi.d3d11.get_dxgi_device_failed",
-                         "ID3D11Device::QueryInterface(IDXGIDevice)", result,
-                         descriptor_.debug_name));
+    // Verifies that this swap chain still owns a renderable back buffer.
+    [[nodiscard]] epidemic::foundation::Result<void> ValidateRenderTarget() const {
+        if (state_->device_lost) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeDeviceLostError(*state_, "ID3D11DeviceContext rendering", descriptor_.debug_name));
+        }
+
+        if (recreate_required_ || !HasRenderTarget()) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.d3d11.recreate_required", "D3D11 swap chain render target must be recreated",
+                descriptor_.debug_name));
+        }
+
+        return epidemic::foundation::Result<void>::Success();
     }
 
-    ComPtr<IDXGIAdapter> adapter;
-    result = dxgi_device->GetAdapter(&adapter);
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(MakeD3D11Error(
-          "rhi.d3d11.get_adapter_failed", "IDXGIDevice::GetAdapter", result,
-          descriptor_.debug_name));
+    // Binds the current render target and viewport to the immediate context.
+    void BindForRendering() {
+        ID3D11RenderTargetView *render_target = render_target_view_.Get();
+        state_->immediate_context->OMSetRenderTargets(1, &render_target, nullptr);
+
+        D3D11_VIEWPORT viewport{};
+        viewport.Width = static_cast<float>(width_);
+        viewport.Height = static_cast<float>(height_);
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+        state_->immediate_context->RSSetViewports(1, &viewport);
     }
 
-    ComPtr<IDXGIFactory> factory;
-    result = adapter->GetParent(IID_PPV_ARGS(&factory));
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeD3D11Error("rhi.d3d11.get_factory_failed",
-                         "IDXGIAdapter::GetParent(IDXGIFactory)", result,
-                         descriptor_.debug_name));
+    // Clears the active render target with the requested color.
+    void ClearRenderTarget(const RhiColor &color) {
+        const float clear_color[4]{color.red, color.green, color.blue, color.alpha};
+        state_->immediate_context->ClearRenderTargetView(render_target_view_.Get(), clear_color);
     }
 
-    DXGI_SWAP_CHAIN_DESC swap_chain_desc{};
-    swap_chain_desc.BufferDesc.Width = descriptor_.width;
-    swap_chain_desc.BufferDesc.Height = descriptor_.height;
-    swap_chain_desc.BufferDesc.Format = dxgi_format_result.Value();
-    swap_chain_desc.SampleDesc.Count = 1;
-    swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swap_chain_desc.BufferCount = descriptor_.buffer_count;
-    swap_chain_desc.OutputWindow = hwnd;
-    swap_chain_desc.Windowed = TRUE;
-    swap_chain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-
-    result = factory->CreateSwapChain(state_->device.Get(), &swap_chain_desc,
-                                      &swap_chain_);
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeD3D11OperationError(*state_, "rhi.d3d11.create_swap_chain_failed",
-                                  "IDXGIFactory::CreateSwapChain", result,
-                                  descriptor_.debug_name));
+  private:
+    // Stores device state and the immutable descriptor prior to initialization.
+    D3D11RhiSwapChain(std::shared_ptr<D3D11DeviceState> state, RhiSwapChainDesc descriptor)
+        : state_(std::move(state)), descriptor_(std::move(descriptor)), width_(descriptor_.width),
+          height_(descriptor_.height) {
     }
 
-    return CreateBackBufferResources();
-  }
+    // Creates the underlying DXGI swap chain and its first back-buffer resources.
+    [[nodiscard]] epidemic::foundation::Result<void> Initialize() {
+        const auto validation_result = Validate(descriptor_);
+        if (!validation_result.HasValue()) {
+            return validation_result;
+        }
 
-  // Acquires the DXGI back buffer and creates the render-target view.
-  [[nodiscard]] epidemic::foundation::Result<void> CreateBackBufferResources() {
-    if (swap_chain_ == nullptr || width_ == 0 || height_ == 0) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.d3d11.recreate_required",
-              "D3D11 swap chain has no valid presentation buffers",
-              descriptor_.debug_name));
+        const auto dxgi_format_result = ToDxgiFormat(descriptor_.color_format);
+        if (!dxgi_format_result.HasValue()) {
+            return epidemic::foundation::Result<void>::Failure(dxgi_format_result.GetError());
+        }
+
+        const auto hwnd = descriptor_.surface_handle.As<HWND>();
+        if (hwnd == nullptr || IsWindow(hwnd) == FALSE) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.invalid_surface_handle", "D3D11 swap chain requires a live Win32 window handle",
+                descriptor_.debug_name));
+        }
+
+        ComPtr<IDXGIDevice> dxgi_device;
+        auto result = state_->device.As(&dxgi_device);
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeD3D11Error("rhi.d3d11.get_dxgi_device_failed", "ID3D11Device::QueryInterface(IDXGIDevice)", result,
+                               descriptor_.debug_name));
+        }
+
+        ComPtr<IDXGIAdapter> adapter;
+        result = dxgi_device->GetAdapter(&adapter);
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(MakeD3D11Error(
+                "rhi.d3d11.get_adapter_failed", "IDXGIDevice::GetAdapter", result, descriptor_.debug_name));
+        }
+
+        ComPtr<IDXGIFactory> factory;
+        result = adapter->GetParent(IID_PPV_ARGS(&factory));
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(MakeD3D11Error("rhi.d3d11.get_factory_failed",
+                                                                              "IDXGIAdapter::GetParent(IDXGIFactory)",
+                                                                              result, descriptor_.debug_name));
+        }
+
+        DXGI_SWAP_CHAIN_DESC swap_chain_desc{};
+        swap_chain_desc.BufferDesc.Width = descriptor_.width;
+        swap_chain_desc.BufferDesc.Height = descriptor_.height;
+        swap_chain_desc.BufferDesc.Format = dxgi_format_result.Value();
+        swap_chain_desc.SampleDesc.Count = 1;
+        swap_chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+        swap_chain_desc.BufferCount = descriptor_.buffer_count;
+        swap_chain_desc.OutputWindow = hwnd;
+        swap_chain_desc.Windowed = TRUE;
+        swap_chain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+
+        result = factory->CreateSwapChain(state_->device.Get(), &swap_chain_desc, &swap_chain_);
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeD3D11OperationError(*state_, "rhi.d3d11.create_swap_chain_failed", "IDXGIFactory::CreateSwapChain",
+                                        result, descriptor_.debug_name));
+        }
+
+        return CreateBackBufferResources();
     }
 
-    ComPtr<ID3D11Texture2D> back_buffer;
+    // Acquires the DXGI back buffer and creates the render-target view.
+    [[nodiscard]] epidemic::foundation::Result<void> CreateBackBufferResources() {
+        if (swap_chain_ == nullptr || width_ == 0 || height_ == 0) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.d3d11.recreate_required", "D3D11 swap chain has no valid presentation buffers",
+                descriptor_.debug_name));
+        }
+
+        ComPtr<ID3D11Texture2D> back_buffer;
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    auto result = ConsumeFault(testing::FaultPoint::GetBackBuffer)
-                      ? E_FAIL
-                      : swap_chain_->GetBuffer(0, IID_PPV_ARGS(&back_buffer));
+        auto result = ConsumeFault(testing::FaultPoint::GetBackBuffer)
+                          ? E_FAIL
+                          : swap_chain_->GetBuffer(0, IID_PPV_ARGS(&back_buffer));
 #else
-    auto result = swap_chain_->GetBuffer(0, IID_PPV_ARGS(&back_buffer));
+        auto result = swap_chain_->GetBuffer(0, IID_PPV_ARGS(&back_buffer));
 #endif
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeD3D11OperationError(*state_, "rhi.d3d11.get_back_buffer_failed",
-                                  "IDXGISwapChain::GetBuffer", result,
-                                  descriptor_.debug_name));
-    }
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeD3D11OperationError(*state_, "rhi.d3d11.get_back_buffer_failed", "IDXGISwapChain::GetBuffer",
+                                        result, descriptor_.debug_name));
+        }
 
-    ComPtr<ID3D11RenderTargetView> render_target_view;
+        ComPtr<ID3D11RenderTargetView> render_target_view;
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-    result = ConsumeFault(testing::FaultPoint::CreateRenderTargetView)
-                 ? E_FAIL
-                 : state_->device->CreateRenderTargetView(
-                       back_buffer.Get(), nullptr, &render_target_view);
+        result = ConsumeFault(testing::FaultPoint::CreateRenderTargetView)
+                     ? E_FAIL
+                     : state_->device->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_target_view);
 #else
-    result = state_->device->CreateRenderTargetView(back_buffer.Get(), nullptr,
-                                                    &render_target_view);
+        result = state_->device->CreateRenderTargetView(back_buffer.Get(), nullptr, &render_target_view);
 #endif
-    if (FAILED(result)) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeD3D11OperationError(*state_,
-                                  "rhi.d3d11.create_render_target_failed",
-                                  "ID3D11Device::CreateRenderTargetView",
-                                  result, descriptor_.debug_name));
+        if (FAILED(result)) {
+            return epidemic::foundation::Result<void>::Failure(
+                MakeD3D11OperationError(*state_, "rhi.d3d11.create_render_target_failed",
+                                        "ID3D11Device::CreateRenderTargetView", result, descriptor_.debug_name));
+        }
+
+        back_buffer_ = std::move(back_buffer);
+        render_target_view_ = std::move(render_target_view);
+        recreate_required_ = false;
+        return epidemic::foundation::Result<void>::Success();
     }
 
-    back_buffer_ = std::move(back_buffer);
-    render_target_view_ = std::move(render_target_view);
-    recreate_required_ = false;
-    return epidemic::foundation::Result<void>::Success();
-  }
+    // Releases D3D11 back-buffer resources and unbinds them from the immediate context.
+    void ReleaseBackBufferResources() {
+        if (state_ && state_->immediate_context.Get() != nullptr && !state_->device_lost) {
+            ID3D11RenderTargetView *null_render_target = nullptr;
+            state_->immediate_context->OMSetRenderTargets(1, &null_render_target, nullptr);
+            state_->immediate_context->Flush();
+        }
 
-  // Releases D3D11 back-buffer resources and unbinds them from the immediate
-  // context.
-  void ReleaseBackBufferResources() {
-    if (state_ && state_->immediate_context.Get() != nullptr &&
-        !state_->device_lost) {
-      ID3D11RenderTargetView *null_render_target = nullptr;
-      state_->immediate_context->OMSetRenderTargets(1, &null_render_target,
-                                                    nullptr);
-      state_->immediate_context->Flush();
+        render_target_view_.Reset();
+        back_buffer_.Reset();
     }
 
-    render_target_view_.Reset();
-    back_buffer_.Reset();
-  }
-
-  std::shared_ptr<D3D11DeviceState> state_;
-  RhiSwapChainDesc descriptor_;
-  std::uint32_t width_{};
-  std::uint32_t height_{};
-  ComPtr<IDXGISwapChain> swap_chain_;
-  ComPtr<ID3D11Texture2D> back_buffer_;
-  ComPtr<ID3D11RenderTargetView> render_target_view_;
-  bool recreate_required_{false};
+    std::shared_ptr<D3D11DeviceState> state_;
+    RhiSwapChainDesc descriptor_;
+    std::uint32_t width_{};
+    std::uint32_t height_{};
+    ComPtr<IDXGISwapChain> swap_chain_;
+    ComPtr<ID3D11Texture2D> back_buffer_;
+    ComPtr<ID3D11RenderTargetView> render_target_view_;
+    bool recreate_required_{false};
 };
 
-// Command-context implementation that issues the baseline clear-screen
-// operations through the D3D11 immediate context.
+// Command-context implementation that issues the baseline clear-screen operations through the D3D11 immediate context.
 class D3D11RhiCommandContext final : public IRhiCommandContext {
-public:
-  // Stores shared device state used for immediate-mode rendering.
-  explicit D3D11RhiCommandContext(std::shared_ptr<D3D11DeviceState> state)
-      : state_(std::move(state)) {}
-
-  // Starts a command-context frame and rejects nested BeginFrame calls.
-  [[nodiscard]] epidemic::foundation::Result<void> BeginFrame() override {
-    if (state_->device_lost) {
-      return epidemic::foundation::Result<void>::Failure(
-          MakeDeviceLostError(*state_, "BeginFrame"));
+  public:
+    // Stores shared device state used for immediate-mode rendering.
+    explicit D3D11RhiCommandContext(std::shared_ptr<D3D11DeviceState> state) : state_(std::move(state)) {
     }
 
-    if (frame_active_) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.frame_already_active",
-              "BeginFrame called while a frame is already active"));
+    // Starts a command-context frame and rejects nested BeginFrame calls.
+    [[nodiscard]] epidemic::foundation::Result<void> BeginFrame() override {
+        if (state_->device_lost) {
+            return epidemic::foundation::Result<void>::Failure(MakeDeviceLostError(*state_, "BeginFrame"));
+        }
+
+        if (frame_active_) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.frame_already_active", "BeginFrame called while a frame is already active"));
+        }
+
+        frame_active_ = true;
+        return epidemic::foundation::Result<void>::Success();
     }
 
-    frame_active_ = true;
-    return epidemic::foundation::Result<void>::Success();
-  }
+    // Validates the clear descriptor and clears the currently active swap chain.
+    [[nodiscard]] epidemic::foundation::Result<void> Clear(const RhiClearDesc &clear_desc) override {
+        if (!frame_active_) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.clear_outside_frame", "Clear must be called between BeginFrame and EndFrame"));
+        }
 
-  // Validates the clear descriptor and clears the currently active swap chain.
-  [[nodiscard]] epidemic::foundation::Result<void>
-  Clear(const RhiClearDesc &clear_desc) override {
-    if (!frame_active_) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.clear_outside_frame",
-              "Clear must be called between BeginFrame and EndFrame"));
+        if (!clear_desc.clear_color) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.nothing_to_clear", "RHI clear descriptor must request at least one clear operation"));
+        }
+
+        if (!IsFinite(clear_desc.color.red) || !IsFinite(clear_desc.color.green) || !IsFinite(clear_desc.color.blue) ||
+            !IsFinite(clear_desc.color.alpha)) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.invalid_clear_color", "RHI clear color components must be finite values"));
+        }
+
+        const auto swap_chain = state_->active_swap_chain.lock();
+        if (!swap_chain) {
+            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
+                "rhi.d3d11.no_swap_chain", "D3D11 command context requires an active swap chain before Clear"));
+        }
+
+        const auto render_target_result = swap_chain->ValidateRenderTarget();
+        if (!render_target_result.HasValue()) {
+            return render_target_result;
+        }
+
+        swap_chain->BindForRendering();
+        swap_chain->ClearRenderTarget(clear_desc.color);
+        return epidemic::foundation::Result<void>::Success();
     }
 
-    if (!clear_desc.clear_color) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.nothing_to_clear", "RHI clear descriptor must request at "
-                                      "least one clear operation"));
+    // Ends the active frame and unbinds the render target from the immediate context.
+    [[nodiscard]] epidemic::foundation::Result<void> EndFrame() override {
+        if (!frame_active_) {
+            return epidemic::foundation::Result<void>::Failure(
+                epidemic::foundation::Error::Create("rhi.no_active_frame", "EndFrame called without an active frame"));
+        }
+
+        if (!state_->device_lost) {
+            ID3D11RenderTargetView *null_render_target = nullptr;
+            state_->immediate_context->OMSetRenderTargets(1, &null_render_target, nullptr);
+        }
+        frame_active_ = false;
+        return epidemic::foundation::Result<void>::Success();
     }
 
-    if (!IsFinite(clear_desc.color.red) || !IsFinite(clear_desc.color.green) ||
-        !IsFinite(clear_desc.color.blue) || !IsFinite(clear_desc.color.alpha)) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.invalid_clear_color",
-              "RHI clear color components must be finite values"));
+    // Returns whether a D3D11 frame is currently active on this context.
+    [[nodiscard]] bool IsFrameActive() const noexcept override {
+        return frame_active_;
     }
 
-    const auto swap_chain = state_->active_swap_chain.lock();
-    if (!swap_chain) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.d3d11.no_swap_chain", "D3D11 command context requires an "
-                                         "active swap chain before Clear"));
-    }
-
-    const auto render_target_result = swap_chain->ValidateRenderTarget();
-    if (!render_target_result.HasValue()) {
-      return render_target_result;
-    }
-
-    swap_chain->BindForRendering();
-    swap_chain->ClearRenderTarget(clear_desc.color);
-    return epidemic::foundation::Result<void>::Success();
-  }
-
-  // Ends the active frame and unbinds the render target from the immediate
-  // context.
-  [[nodiscard]] epidemic::foundation::Result<void> EndFrame() override {
-    if (!frame_active_) {
-      return epidemic::foundation::Result<void>::Failure(
-          epidemic::foundation::Error::Create(
-              "rhi.no_active_frame",
-              "EndFrame called without an active frame"));
-    }
-
-    if (!state_->device_lost) {
-      ID3D11RenderTargetView *null_render_target = nullptr;
-      state_->immediate_context->OMSetRenderTargets(1, &null_render_target,
-                                                    nullptr);
-    }
-    frame_active_ = false;
-    return epidemic::foundation::Result<void>::Success();
-  }
-
-  // Returns whether a D3D11 frame is currently active on this context.
-  [[nodiscard]] bool IsFrameActive() const noexcept override {
-    return frame_active_;
-  }
-
-private:
-  std::shared_ptr<D3D11DeviceState> state_;
-  bool frame_active_{false};
+  private:
+    std::shared_ptr<D3D11DeviceState> state_;
+    bool frame_active_{false};
 };
 
-// Top-level D3D11 backend device that manufactures command contexts and swap
-// chains.
+// Top-level D3D11 backend device that manufactures command contexts and swap chains.
 class D3D11RhiDevice final : public IRhiDevice {
-public:
-  // Stores the immutable descriptor and shared D3D11 device state.
-  D3D11RhiDevice(RhiDeviceDesc descriptor,
-                 std::shared_ptr<D3D11DeviceState> state)
-      : descriptor_(std::move(descriptor)), state_(std::move(state)) {}
-
-  // Returns the stable backend name.
-  [[nodiscard]] std::string_view BackendName() const noexcept override {
-    return "D3D11";
-  }
-
-  // Returns the immutable device descriptor.
-  [[nodiscard]] const RhiDeviceDesc &Descriptor() const noexcept override {
-    return descriptor_;
-  }
-
-  // Creates a command context bound to the shared D3D11 device state.
-  [[nodiscard]] epidemic::foundation::Result<
-      std::shared_ptr<IRhiCommandContext>>
-  CreateCommandContext() override {
-    if (state_->device_lost) {
-      return epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>>::
-          Failure(MakeDeviceLostError(*state_, "CreateCommandContext",
-                                      descriptor_.debug_name));
+  public:
+    // Stores the immutable descriptor and shared D3D11 device state.
+    D3D11RhiDevice(RhiDeviceDesc descriptor, std::shared_ptr<D3D11DeviceState> state)
+        : descriptor_(std::move(descriptor)), state_(std::move(state)) {
     }
 
-    return epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>>::
-        Success(std::make_shared<D3D11RhiCommandContext>(state_));
-  }
-
-  [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>
-  // Creates a swap chain and makes it the active presentation target for the
-  // shared device state.
-  CreateSwapChain(const RhiSwapChainDesc &swap_chain_desc) override {
-    if (state_->device_lost) {
-      return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::
-          Failure(MakeDeviceLostError(*state_, "CreateSwapChain",
-                                      swap_chain_desc.debug_name));
+    // Returns the stable backend name.
+    [[nodiscard]] std::string_view BackendName() const noexcept override {
+        return "D3D11";
     }
 
-    const auto swap_chain_result =
-        D3D11RhiSwapChain::Create(state_, swap_chain_desc);
-    if (!swap_chain_result.HasValue()) {
-      return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::
-          Failure(swap_chain_result.GetError());
+    // Returns the immutable device descriptor.
+    [[nodiscard]] const RhiDeviceDesc &Descriptor() const noexcept override {
+        return descriptor_;
     }
 
-    const auto swap_chain = swap_chain_result.Value();
-    state_->active_swap_chain = swap_chain;
-    return epidemic::foundation::Result<
-        std::shared_ptr<IRhiSwapChain>>::Success(swap_chain);
-  }
+    // Creates a command context bound to the shared D3D11 device state.
+    [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>> CreateCommandContext() override {
+        if (state_->device_lost) {
+            return epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>>::Failure(
+                MakeDeviceLostError(*state_, "CreateCommandContext", descriptor_.debug_name));
+        }
 
-private:
-  RhiDeviceDesc descriptor_;
-  std::shared_ptr<D3D11DeviceState> state_;
+        return epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>>::Success(
+            std::make_shared<D3D11RhiCommandContext>(state_));
+    }
+
+    [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>
+    // Creates a swap chain and makes it the active presentation target for the shared device state.
+    CreateSwapChain(const RhiSwapChainDesc &swap_chain_desc) override {
+        if (state_->device_lost) {
+            return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Failure(
+                MakeDeviceLostError(*state_, "CreateSwapChain", swap_chain_desc.debug_name));
+        }
+
+        const auto swap_chain_result = D3D11RhiSwapChain::Create(state_, swap_chain_desc);
+        if (!swap_chain_result.HasValue()) {
+            return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Failure(swap_chain_result.GetError());
+        }
+
+        const auto swap_chain = swap_chain_result.Value();
+        state_->active_swap_chain = swap_chain;
+        return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Success(swap_chain);
+    }
+
+  private:
+    RhiDeviceDesc descriptor_;
+    std::shared_ptr<D3D11DeviceState> state_;
 };
 } // namespace
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
 void testing::SetFaultPoint(testing::FaultPoint fault_point) noexcept {
-  g_fault_point = fault_point;
+    g_fault_point = fault_point;
 }
 
 void testing::ClearFaultPoint() noexcept {
-  g_fault_point = testing::FaultPoint::None;
+    g_fault_point = testing::FaultPoint::None;
 }
 #endif
 
-// Creates the D3D11 device and immediate context and returns the backend device
-// wrapper.
-epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>
-CreateD3D11RhiDevice(const RhiDeviceDesc &device_desc) {
-  const auto validation_result = Validate(device_desc);
-  if (!validation_result.HasValue()) {
-    return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(
-        validation_result.GetError());
-  }
-
-  auto state = std::make_shared<D3D11DeviceState>();
-
-  UINT device_flags = 0;
-  if (device_desc.enable_debug_validation) {
-    device_flags |= D3D11_CREATE_DEVICE_DEBUG;
-  }
-
-  std::vector<D3D_FEATURE_LEVEL> feature_levels{
-#ifdef D3D_FEATURE_LEVEL_11_1
-      D3D_FEATURE_LEVEL_11_1,
-#endif
-      D3D_FEATURE_LEVEL_11_0,
-      D3D_FEATURE_LEVEL_10_1,
-      D3D_FEATURE_LEVEL_10_0,
-  };
-
-#if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-  auto result =
-      device_desc.enable_debug_validation &&
-              ConsumeFault(testing::FaultPoint::DebugLayerUnavailable)
-          ? DXGI_ERROR_SDK_COMPONENT_MISSING
-          : D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
-                              device_flags, feature_levels.data(),
-                              static_cast<UINT>(feature_levels.size()),
-                              D3D11_SDK_VERSION, &state->device,
-                              &state->feature_level, &state->immediate_context);
-#else
-  auto result = D3D11CreateDevice(
-      nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, device_flags,
-      feature_levels.data(), static_cast<UINT>(feature_levels.size()),
-      D3D11_SDK_VERSION, &state->device, &state->feature_level,
-      &state->immediate_context);
-#endif
-
-#ifdef D3D_FEATURE_LEVEL_11_1
-  if (result == E_INVALIDARG) {
-    state->immediate_context.Reset();
-    state->device.Reset();
-    state->feature_level = D3D_FEATURE_LEVEL_10_0;
-    feature_levels.erase(feature_levels.begin());
-    result = D3D11CreateDevice(
-        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, device_flags,
-        feature_levels.data(), static_cast<UINT>(feature_levels.size()),
-        D3D11_SDK_VERSION, &state->device, &state->feature_level,
-        &state->immediate_context);
-  }
-#endif
-
-  if (FAILED(result)) {
-    state->immediate_context.Reset();
-    state->device.Reset();
-    if (device_desc.enable_debug_validation &&
-        result == DXGI_ERROR_SDK_COMPONENT_MISSING) {
-      return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(
-          MakeD3D11Error("rhi.d3d11.debug_layer_unavailable",
-                         "D3D11CreateDevice(debug)", result,
-                         device_desc.debug_name));
+// Creates the D3D11 device and immediate context and returns the backend device wrapper.
+epidemic::foundation::Result<std::shared_ptr<IRhiDevice>> CreateD3D11RhiDevice(const RhiDeviceDesc &device_desc) {
+    const auto validation_result = Validate(device_desc);
+    if (!validation_result.HasValue()) {
+        return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(validation_result.GetError());
     }
 
-    return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(
-        MakeD3D11Error("rhi.d3d11.create_device_failed", "D3D11CreateDevice",
-                       result, device_desc.debug_name));
-  }
+    auto state = std::make_shared<D3D11DeviceState>();
+
+    UINT device_flags = 0;
+    if (device_desc.enable_debug_validation) {
+        device_flags |= D3D11_CREATE_DEVICE_DEBUG;
+    }
+
+    std::vector<D3D_FEATURE_LEVEL> feature_levels{
+#ifdef D3D_FEATURE_LEVEL_11_1
+        D3D_FEATURE_LEVEL_11_1,
+#endif
+        D3D_FEATURE_LEVEL_11_0,
+        D3D_FEATURE_LEVEL_10_1,
+        D3D_FEATURE_LEVEL_10_0,
+    };
 
 #if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
-  if (ConsumeFault(testing::FaultPoint::AfterDeviceCreate)) {
-    return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(
-        epidemic::foundation::Error::Create(
-            "rhi.d3d11.injected_failure",
-            "Injected failure after D3D11 device/context acquisition",
-            device_desc.debug_name));
-  }
+    auto result =
+        device_desc.enable_debug_validation && ConsumeFault(testing::FaultPoint::DebugLayerUnavailable)
+            ? DXGI_ERROR_SDK_COMPONENT_MISSING
+            : D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, device_flags, feature_levels.data(),
+                                static_cast<UINT>(feature_levels.size()), D3D11_SDK_VERSION, &state->device,
+                                &state->feature_level, &state->immediate_context);
+#else
+    auto result = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, device_flags, feature_levels.data(),
+                                    static_cast<UINT>(feature_levels.size()), D3D11_SDK_VERSION, &state->device,
+                                    &state->feature_level, &state->immediate_context);
 #endif
 
-  return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Success(
-      std::make_shared<D3D11RhiDevice>(device_desc, std::move(state)));
+#ifdef D3D_FEATURE_LEVEL_11_1
+    if (result == E_INVALIDARG) {
+        state->immediate_context.Reset();
+        state->device.Reset();
+        state->feature_level = D3D_FEATURE_LEVEL_10_0;
+        feature_levels.erase(feature_levels.begin());
+        result = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, device_flags, feature_levels.data(),
+                                   static_cast<UINT>(feature_levels.size()), D3D11_SDK_VERSION, &state->device,
+                                   &state->feature_level, &state->immediate_context);
+    }
+#endif
+
+    if (FAILED(result)) {
+        state->immediate_context.Reset();
+        state->device.Reset();
+        if (device_desc.enable_debug_validation && result == DXGI_ERROR_SDK_COMPONENT_MISSING) {
+            return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(MakeD3D11Error(
+                "rhi.d3d11.debug_layer_unavailable", "D3D11CreateDevice(debug)", result, device_desc.debug_name));
+        }
+
+        return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(
+            MakeD3D11Error("rhi.d3d11.create_device_failed", "D3D11CreateDevice", result, device_desc.debug_name));
+    }
+
+#if defined(EPIDEMIC_RHI_D3D11_ENABLE_TEST_HOOKS)
+    if (ConsumeFault(testing::FaultPoint::AfterDeviceCreate)) {
+        return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(epidemic::foundation::Error::Create(
+            "rhi.d3d11.injected_failure", "Injected failure after D3D11 device/context acquisition",
+            device_desc.debug_name));
+    }
+#endif
+
+    return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Success(
+        std::make_shared<D3D11RhiDevice>(device_desc, std::move(state)));
 }
 } // namespace epidemic::rhi::d3d11

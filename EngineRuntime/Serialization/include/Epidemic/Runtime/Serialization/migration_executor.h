@@ -8,8 +8,8 @@ namespace epidemic::runtime {
 class IArchiveFactory;
 class IMigrationRegistry;
 
-[[nodiscard]] foundation::Result<SerializedDocument>
-ApplyMigrations(const SerializedDocument &document, SchemaVersion target,
-                const IMigrationRegistry &migrations,
-                const IArchiveFactory &archives);
+[[nodiscard]] foundation::Result<SerializedDocument> ApplyMigrations(const SerializedDocument &document,
+                                                                     SchemaVersion target,
+                                                                     const IMigrationRegistry &migrations,
+                                                                     const IArchiveFactory &archives);
 } // namespace epidemic::runtime
