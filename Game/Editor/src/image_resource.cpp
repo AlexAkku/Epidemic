@@ -84,7 +84,10 @@ foundation::Result<runtime::ResourceId> ImageResourceLoader::Register(std::strin
 void ImageResourceLoader::CollectUnused(runtime::IResourceManager &manager){
     for(auto entry=keys_.begin();entry!=keys_.end();){
         const auto evicted=manager.Evict(runtime::ResourceId{foundation::StringId{entry->first}});
-        if(evicted || evicted.GetError().HasCode("resource.not_found"))entry=keys_.erase(entry);
+        if(evicted || evicted.GetError().HasCode("resource.not_found")){
+            if(prepared_ && prepared_->resource_id.Raw()==entry->first)prepared_.reset();
+            entry=keys_.erase(entry);
+        }
         else ++entry; // In-use leases, including pending requests, retain their key.
     }
 }
@@ -158,6 +161,7 @@ foundation::Result<PreparedCookedPng> PrepareCookedPng(
     }catch(const Failure &failure){return R::Failure(failure.error);}
     catch(const std::exception &){return R::Failure(Error("editor.image_prepare"));}
 }
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Root directory and external source are named filesystem roles; validation rejects exchanged inputs.
 foundation::Result<PreparedCookedPng> PrepareImportedPng(const std::filesystem::path &root,
     const std::filesystem::path &external,const std::atomic_bool *cancel){
     using R=foundation::Result<PreparedCookedPng>;

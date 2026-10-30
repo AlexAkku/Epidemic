@@ -336,15 +336,16 @@ visible UX are not claimed as tested by the hidden smoke.
 File / New project folder creates a directory from the selected name; File / Open
 accepts `Project.epidemicproj` as well as legacy `.epidemic`. File / Clone project
 folder copies committed data with IDs preserved. View / Content Browser provides
-PNG copy/import/reimport, path search, rename/move, separate move Undo/Redo, Save
+PNG copy/import/reimport, path search, rename/move, unified Undo/Redo, Save
 and a thumbnail preview through Resources/Presentation. See
 [folder contract](PROJECT_FOLDER.md) and [PNG/browser limits](CONTENT_BROWSER_AND_PNG.md).
-Use as Prefab Sprite assigns a selected PNG to the selected Prefab definition.
-Duplicate, staged delete, multi-selection and typed drag/drop remain unavailable.
+Assign Sprite assigns a selected PNG to the selected Prefab definition.
+Duplicate and staged delete/restore use the destination field and keep stable references.
+Multi-selection and typed drag/drop remain unavailable.
 Reimport acknowledges an asynchronous request; completion/errors arrive through
 Workspace PollContent. Manual reimport remains available with the automatic
 watcher disabled and during Play; authoring preview can update while the game
-retains its session snapshot. Stop preserves the watch preference. Copy/import remains synchronous.
+retains its session snapshot. Stop preserves the watch preference. Copy/import and cooked preview reads now run on bounded workers.
 The root watcher operates without the browser. Cancel/Reset do not wait; final
 service destruction drains its worker. See [the current pipeline contract](ASSET_PIPELINE.md)
 for fingerprint auditing, source read leases and registration reclamation limits.

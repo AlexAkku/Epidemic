@@ -347,11 +347,17 @@ bool IsSubpath(const std::filesystem::path &root,const std::filesystem::path &ca
     return true;
 }
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
-void CopyTree(const std::filesystem::path &src,const std::filesystem::path &dest) {
+void CopyTree(const std::filesystem::path &src,const std::filesystem::path &dest,bool skip_imports=false) {
     std::error_code ec;
     if(!std::filesystem::exists(src,ec))return;
     Require(!ec && std::filesystem::is_directory(src,ec),"editor.folder_clone","Source mount is not a directory");
-    for(const auto &entry:std::filesystem::recursive_directory_iterator(src)) {
+    for(auto iterator=std::filesystem::recursive_directory_iterator(src);iterator!=std::filesystem::recursive_directory_iterator{};++iterator) {
+        const auto &entry=*iterator;
+        if(skip_imports && iterator.depth()==0){
+            auto name=entry.path().filename().generic_string();
+            std::transform(name.begin(),name.end(),name.begin(),[](unsigned char c){return static_cast<char>(std::tolower(c));});
+            if(name==".imports"){iterator.disable_recursion_pending();continue;}
+        }
         const auto status=entry.symlink_status(ec);
         Require(!ec && !std::filesystem::is_symlink(status),"editor.folder_clone","Symlink in portable source tree");
 
@@ -578,7 +584,33 @@ VoidResult ProjectFolder::Redo(){
     if(!CanRedo())return VoidResult::Failure(Error("editor.redo_empty","No project command to redo"));
     const auto restored=RestoreEdit(edits_[edit_cursor_],true);if(restored)++edit_cursor_;return restored;
 }
-Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) const {return editor_->Play(std::move(options));}
+Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) const {
+    using R=Result<std::unique_ptr<PlaySession>>;
+    try{
+        auto session=Take(editor_->Play(std::move(options)));std::vector<PlaySprite> sprites;
+        const auto snapshot=Snapshot();const auto *entry=snapshot->Find(snapshot->definition.entry_scene);
+        const auto *scene=entry?std::get_if<composition::SceneCompositionDefinition>(&entry->data):nullptr;
+        if(!scene)return R::Failure(Error("editor.play_scene","Entry Scene missing"));
+        for(const auto &placement:scene->placements){
+            const auto binding=std::find_if(visuals_->sprites.begin(),visuals_->sprites.end(),[&](const auto &value){return value.prefab==placement.prefab;});
+            if(binding==visuals_->sprites.end())continue;
+            const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &value){return value.id==binding->texture;});
+            Require(source!=assets_.end() && !source->IsTrashed() && !source->cooked_key.empty(),"editor.play_sprite_source","Used Sprite source is unavailable");
+            PlaySprite sprite;sprite.placement=placement.node;sprite.texture=source->id;sprite.generation=source->generation;
+            sprite.cooked_key=source->cooked_key;sprite.region_id=binding->region_id;sprite.pivot_x=binding->pivot_x;sprite.pivot_y=binding->pivot_y;sprite.pixels_per_unit=binding->pixels_per_unit;
+            if(sprite.region_id){
+                const auto sheet=std::find_if(visuals_->sheets.begin(),visuals_->sheets.end(),[&](const auto &value){return value.texture==source->id;});
+                Require(sheet!=visuals_->sheets.end(),"editor.play_sprite_region","Used sheet is unavailable");
+                const auto region=std::find_if(sheet->regions.begin(),sheet->regions.end(),[&](const auto &value){return value.id==sprite.region_id;});
+                Require(region!=sheet->regions.end() && !region->missing,"editor.play_sprite_region","Used region is unavailable");
+                sprite.x=region->x;sprite.y=region->y;sprite.width=region->width;sprite.height=region->height;
+            }
+            sprites.push_back(std::move(sprite));
+        }
+        Take(session->InstallSprites(root_,std::move(sprites)));return R::Success(std::move(session));
+    }catch(const Failure &failure){return R::Failure(failure.error);}
+    catch(const std::exception &){return R::Failure(Error("editor.play_sprite","Cannot initialize Sprite resources"));}
+}
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
 Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount,std::string_view relative) const {
     if(mount!="Content" && mount!="Scripts" && mount!="ProjectData" && mount!="Cache")
@@ -589,7 +621,7 @@ Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount
 Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path,runtime::AssetType type,std::string cooked_key) {
     using R=Result<runtime::AssetId>;
     try {
-        Require(!path.starts_with(".Trash/") && !path.starts_with(".imports/"),"editor.import_destination","Reserved source directory");
+        Require(!IsPrivateContentPath(path),"editor.import_destination","Reserved source directory");
         Require(type.IsValid() && !path.empty() && path.size()<=runtime::kMaxAssetPathBytes-8 && next_asset_number_<std::numeric_limits<std::uint64_t>::max() && assets_.size()<kMaxSources,
             "editor.folder_sources","Invalid source registration");
         Require(cooked_key.empty() || (cooked_key.size()==64 && cooked_key.find_first_not_of("0123456789abcdef")==std::string::npos),"editor.folder_cooked","Invalid cooked key");
@@ -696,7 +728,7 @@ VoidResult ProjectFolder::MoveSource(runtime::AssetId id,std::string_view relati
     try {
         const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
         Require(found!=assets_.end() && !found->IsTrashed(),"editor.folder_move_history","Unknown active asset");
-        Require(!relative.starts_with(".Trash/") && !relative.starts_with(".imports/"),"editor.import_destination","Reserved source directory");
+        Require(!IsPrivateContentPath(relative),"editor.import_destination","Reserved source directory");
         EditStep step;step.kind=EditStep::Kind::Move;step.move={id,found->relative_path,"Content/"+std::string(relative)};
         auto history=PrepareEdit(std::move(step));
         const auto moved=ApplySourceMove(id,relative);if(!moved)return moved;
@@ -733,11 +765,11 @@ VoidResult ProjectFolder::ApplySourceLifecycle(const ProjectSourceAsset &target)
     catch(const std::exception &){return VoidResult::Failure(Error("editor.asset_restore","Cannot restore source disposition"));}
 }
 Result<runtime::AssetId> ProjectFolder::CommitImportedPng(PreparedCookedPng &&candidate,
-    std::string_view destination,runtime::AssetId duplicate_of){
+    std::string_view destination,runtime::AssetId duplicate_of,std::uint64_t expected_duplicate_revision){
     using R=Result<runtime::AssetId>;
     try{
         Require(candidate.root_==root_ && candidate.staging_cleanup_ && candidate.source_read_.use_count()==1 && candidate.relative_.starts_with(".imports/"),"editor.import_proof","Import requires exclusively owned staged source");
-        Require(!destination.empty() && !destination.starts_with(".Trash/") && !destination.starts_with(".imports/"),"editor.import_destination","Invalid destination");
+        Require(!destination.empty() && !IsPrivateContentPath(destination),"editor.import_destination","Invalid destination");
         const auto target=SafeAt(root_,"Content/"+std::string(destination));std::error_code error;
         Require(!std::filesystem::exists(target,error) && !error && std::filesystem::is_directory(target.parent_path(),error) && !error,"editor.import_destination","Destination exists or parent missing");
         auto counter=next_asset_number_;runtime::AssetId id;
@@ -748,8 +780,10 @@ Result<runtime::AssetId> ProjectFolder::CommitImportedPng(PreparedCookedPng &&ca
         ProjectSourceAsset record{id,{foundation::StringId::FromString("epidemic.texture.png")},"Content/"+std::string(destination),candidate.source_hash_,1,candidate.key_,{}};
         auto records=assets_;records.push_back(record);auto visual=std::make_shared<VisualState>(*visuals_);
         if(duplicate_of.IsValid()){
+            Require(expected_duplicate_revision==asset_revision_,"editor.duplicate_stale","Asset metadata changed during duplicate; retry");
             const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==duplicate_of;});
             Require(source!=assets_.end() && !source->IsTrashed() && source->type==record.type,"editor.duplicate_source","Duplicate source no longer exists");
+            Require(source->source_hash==candidate.source_hash_,"editor.duplicate_stale","Duplicate source fingerprint changed; reimport and retry");
             const auto sheet=std::find_if(visuals_->sheets.begin(),visuals_->sheets.end(),[&](const auto &value){return value.texture==duplicate_of;});
             if(sheet!=visuals_->sheets.end())visual->sheets.push_back({id,sheet->regions});
         }
@@ -881,7 +915,7 @@ VoidResult ProjectFolder::CloneTo(const std::filesystem::path &destination) cons
             std::filesystem::copy_file(src,dst,std::filesystem::copy_options::none,ec);
             Require(!ec,"editor.folder_clone","Cannot copy committed project file");};
         copy(AuthoringPath(generation_));copy(SourcesPath(generation_));
-        CopyTree(SafeAt(root_,"Content"),SafeAt(target,"Content"));CopyTree(SafeAt(root_,"Scripts"),SafeAt(target,"Scripts"));
+        CopyTree(SafeAt(root_,"Content"),SafeAt(target,"Content"),true);CopyTree(SafeAt(root_,"Scripts"),SafeAt(target,"Scripts"));
         CopyTree(SafeAt(root_,".epidemic/Cache/images"),SafeAt(target,".epidemic/Cache/images"));
         // Last-good cooked data remains portable even if source is missing/corrupt.
         for(const auto &source:commit.index.records)(void)SafeAt(target,source.relative_path);

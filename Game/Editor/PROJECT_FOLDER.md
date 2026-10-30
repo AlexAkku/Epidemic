@@ -11,9 +11,10 @@ and must outlive the folder and its PlaySession.
 - `ProjectData/Commits/N.commit`: Serialization descriptor schema 1.0.0, published last.
 - `ProjectData/Revisions/N/Authoring.epidemic`: unchanged authoring archive 1.0.0,
   including retired ID reservations.
-- `ProjectData/Revisions/N/Assets.manifest`: source index schema 1.1.0; the previous
-  1.0.0 remains readable. Source records include stable ID/type, relative location,
-  fingerprint/generation and optional immutable cooked SHA-256 key.
+- `ProjectData/Revisions/N/Assets.manifest`: source index schema 1.4.0; previous
+  1.0–1.3 remain readable. Source records include stable ID/type, relative location,
+  fingerprint/generation, immutable cooked SHA-256 key, typed visual metadata
+  and staged-delete original location.
 - `Content/`, `Scripts/`: portable sources. Binary data stays outside authoring.
 - `.epidemic/Cache/images/`: derived cooked images; Clone copies these artifacts.
 - `.epidemic/workspace.lock`: process-owned OS writer lock, not a stale PID marker.

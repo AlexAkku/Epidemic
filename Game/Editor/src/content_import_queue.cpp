@@ -1,6 +1,8 @@
 #include "Epidemic/Game/Editor/content_import_queue.h"
 #include <algorithm>
+#include "Epidemic/Game/Editor/project_path.h"
 #include <limits>
+#include <utility>
 
 namespace epidemic::game::editor {
 ContentImportQueue::~ContentImportQueue(){Cancel();} // Future drains before cancel-state destruction.
@@ -18,7 +20,7 @@ foundation::Result<std::uint64_t> ContentImportQueue::Enqueue(const ProjectFolde
     if(root_!=folder.Root())Reset(folder.Root());
     const auto resolved=folder.ResolveMount("Content",destination);
     std::error_code error;
-    if(!resolved || destination.empty() || destination.starts_with(".Trash/") || destination.starts_with(".imports/") ||
+    if(!resolved || destination.empty() || IsPrivateContentPath(destination) ||
         std::filesystem::exists(resolved.Value(),error) || error)
         return R::Failure(foundation::Error::Create("editor.import_destination","Destination must be a new Content path"));
     if(queued_.size()>=128 || next_job_==std::numeric_limits<std::uint64_t>::max())
@@ -27,14 +29,14 @@ foundation::Result<std::uint64_t> ContentImportQueue::Enqueue(const ProjectFolde
         (pending_ && pending_->request.epoch==epoch_ && pending_->request.destination==destination))
         return R::Failure(foundation::Error::Create("editor.import_destination_pending","Destination already queued"));
     const auto job=next_job_;
-    queued_.push_back({job,epoch_,folder.Root(),source,std::move(destination),duplicate_of});++next_job_;
+    queued_.push_back({job,epoch_,folder.Root(),source,std::move(destination),duplicate_of,folder.AssetRevision()});++next_job_;
     return R::Success(job);
 }
 std::vector<HotAssetEvent> ContentImportQueue::Poll(ProjectFolder &folder){
     if(root_!=folder.Root())Reset(folder.Root());
     std::vector<HotAssetEvent> events;
     if(pending_ && pending_->worker.wait_for(std::chrono::milliseconds{0})==std::future_status::ready){
-        auto completed=std::move(pending_);
+        auto completed=std::exchange(pending_,nullptr);
         auto candidate=[&]{
             try{return completed->worker.get();}
             catch(const std::exception &error){return foundation::Result<PreparedCookedPng>::Failure(foundation::Error::Create("editor.import_worker",error.what()));}
@@ -44,7 +46,7 @@ std::vector<HotAssetEvent> ContentImportQueue::Poll(ProjectFolder &folder){
             events.push_back({{},HotAssetEventKind::Cancelled,"editor.import_cancelled"});
         else if(!candidate)events.push_back({{},HotAssetEventKind::Failed,candidate.GetError().code+": "+completed->request.destination});
         else{
-            const auto imported=folder.CommitImportedPng(std::move(candidate).Value(),completed->request.destination,completed->request.duplicate_of);
+            const auto imported=folder.CommitImportedPng(std::move(candidate).Value(),completed->request.destination,completed->request.duplicate_of,completed->request.asset_revision);
             if(imported)events.push_back({imported.Value(),HotAssetEventKind::Updated,"editor.asset_imported: "+completed->request.destination});
             else events.push_back({{},HotAssetEventKind::Failed,imported.GetError().code+": "+completed->request.destination});
         }

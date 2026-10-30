@@ -35,6 +35,11 @@ std::string Text(HWND handle){
     const auto size=GetWindowTextLengthW(handle);std::wstring text(static_cast<std::size_t>(size)+1,L'\0');
     GetWindowTextW(handle,text.data(),size+1);text.resize(static_cast<std::size_t>(size));return Utf8(text);
 }
+foundation::Result<runtime::ResourceLoadArtifact> PrepareBrowserPreview(std::filesystem::path root,std::string key){
+    ImageResourceLoader worker{std::move(root)};const auto id=worker.Register(std::move(key));
+    if(!id)return foundation::Result<runtime::ResourceLoadArtifact>::Failure(id.GetError());
+    return worker.Load({id.Value(),worker.GetResourceType()});
+}
 struct Browser final {
     enum : int { Search=200, List, Path, Import, Reimport, Rename, Save, Preview, Info, Close, UndoMove, RedoMove, AssignPrefab, Duplicate, Delete, Restore, CancelJobs, References, ShowTrash };
     EditorWorkspace &workspace;
@@ -92,7 +97,7 @@ struct Browser final {
         Add(Reimport,L"BUTTON",L"Reimport",WS_TABSTOP);Add(Rename,L"BUTTON",L"Rename / Move",WS_TABSTOP);
         Add(UndoMove,L"BUTTON",L"Undo",WS_TABSTOP);Add(RedoMove,L"BUTTON",L"Redo",WS_TABSTOP);
         Add(Save,L"BUTTON",L"Save project",WS_TABSTOP);Add(Close,L"BUTTON",L"Close",WS_TABSTOP);
-        Add(AssignPrefab,L"BUTTON",L"Use as Prefab Sprite",WS_TABSTOP);
+        Add(AssignPrefab,L"BUTTON",L"Assign Sprite",WS_TABSTOP);
         Add(Duplicate,L"BUTTON",L"Duplicate",WS_TABSTOP);Add(Delete,L"BUTTON",L"Delete",WS_TABSTOP);
         Add(Restore,L"BUTTON",L"Restore",WS_TABSTOP);Add(CancelJobs,L"BUTTON",L"Cancel jobs",WS_TABSTOP);
         Add(References,L"BUTTON",L"References",WS_TABSTOP);Add(ShowTrash,L"BUTTON",L"Show trash",WS_TABSTOP);
@@ -156,11 +161,7 @@ struct Browser final {
         }
         if(desired_key.empty())return;
         working_key=desired_key;const auto root=workspace.Folder()->Root();const auto key=working_key;
-        preview_job=std::async(std::launch::async,[root,key]{
-            ImageResourceLoader worker{root};const auto id=worker.Register(key);
-            if(!id)return foundation::Result<runtime::ResourceLoadArtifact>::Failure(id.GetError());
-            return worker.Load({id.Value(),worker.GetResourceType()});
-        });
+        preview_job=std::async(std::launch::async,PrepareBrowserPreview,root,key);
     }
     void PublishPreview(const std::string &key,runtime::ResourceLoadArtifact artifact){
             const auto id=loader->Register(key);if(!id){Error(id.GetError().code);return;}

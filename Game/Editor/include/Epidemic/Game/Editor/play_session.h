@@ -40,6 +40,17 @@ struct PlayOptions {
     // capture this runtime context, never an authoring Entity/ComponentStore.
     std::function<std::vector<composition::NodeBinding>(PlayContext &, runtime::AssetId)> bindings;
 };
+// Detached visual metadata. Pixels remain owned by the session's Resources;
+// source edits cannot mutate this generation while Play is active.
+struct PlaySprite {
+    runtime::SceneNodeId placement{};
+    runtime::AssetId texture{};
+    std::uint64_t generation=0,region_id=0;
+    std::string cooked_key;
+    std::uint32_t x=0,y=0,width=0,height=0;
+    float pivot_x=0.5f,pivot_y=0.5f,pixels_per_unit=64;
+    runtime::Transform world{};
+};
 class PlaySession final {
   public:
     ~PlaySession();
@@ -60,6 +71,7 @@ class PlaySession final {
     [[nodiscard]] foundation::Result<comp::PropertyValue> ReadComponentProperty(runtime::SceneNodeId placement,
         comp::PrefabNodeId node,gameplay::TypeId type,gameplay::entities::EntityPartId part,comp::PropertyId property) const;
     [[nodiscard]] const composition::SceneCompositionInstance *Scene() const noexcept;
+    [[nodiscard]] foundation::Result<PlaySprite> ReadSprite(runtime::SceneNodeId placement) const;
   private:
     struct Impl;
     explicit PlaySession(std::unique_ptr<Impl> impl);
@@ -68,5 +80,7 @@ class PlaySession final {
     std::unique_ptr<Impl> impl_;
     bool ticking_ = false;
     friend class EditorProject;
+    friend class ProjectFolder;
+    [[nodiscard]] foundation::Result<void> InstallSprites(const std::filesystem::path &root,std::vector<PlaySprite> sprites);
 };
 } // namespace epidemic::game::editor

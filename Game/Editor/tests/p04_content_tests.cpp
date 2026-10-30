@@ -27,6 +27,14 @@ void ReadCopiedImage(){
     const auto payload=std::dynamic_pointer_cast<const ed::ImagePayload>(services.manager->GetPayload(lease.resource));
     Check(payload && payload->image.pixels[0]==std::byte{128} && payload->image.pixels[2]==std::byte{0},"Cross-process relocated last-good pixels");
     ex::Take(services.manager->Release(lease));
+    auto play=ex::Take(project->Play(ex::Options(schema)));
+    for(std::uint64_t i=0;i<3;++i){
+        const auto sprite=ex::Take(play->ReadSprite(epidemic::runtime::SceneNodeId{42+i}));
+        Check(sprite.texture==source.id && sprite.cooked_key==source.cooked_key && sprite.width==1 && sprite.height==1,
+            "Cross-process Sprite identity/resource generation");
+        Check(sprite.world.position.x==static_cast<float>(static_cast<int>(i)*3-3),"Cross-process Sprite placement transform");
+    }
+    ex::Take(play->Stop());Check(!play->ReadSprite(epidemic::runtime::SceneNodeId{42}),"Stopped session retained Sprite access");
 }
 int main(int argc,char **argv){
  try{
@@ -35,7 +43,11 @@ int main(int argc,char **argv){
     const auto root=fs::path{EPIDEMIC_EDITOR_TEST_DIRECTORY}/"p04-browser-import";
     std::error_code ec;fs::remove_all(root,ec);
     ex::Schema schema;
-    auto project=ex::Take(ed::ProjectFolder::Create(root,"Browser Test",ex::Definition(schema),schema.View()));
+    auto definition=ex::Definition(schema);
+    auto &scene=std::get<epidemic::game::composition::SceneCompositionDefinition>(definition.documents.front().data);
+    scene.scene.nodes.front().local_transform.position.x=-3;
+    for(std::uint64_t i=1;i<3;++i){auto node=scene.scene.nodes.front();node.id=epidemic::runtime::SceneNodeId{42+i};node.local_transform.position.x=static_cast<float>(static_cast<int>(i)*3-3);scene.scene.nodes.push_back(node);auto placement=scene.placements.front();placement.node=node.id;scene.placements.push_back(placement);}
+    auto project=ex::Take(ed::ProjectFolder::Create(root,"Browser Test",std::move(definition),schema.View()));
     fs::create_directories(root/"Content"/"Sprites");
     {std::ofstream out(root/"Content"/"Sprites"/"bad.png",std::ios::binary);out<<"not a png";}
     Check(!ed::ImportProjectPng(*project,"Sprites/bad.png"),"Invalid PNG must fail without registering an asset");
@@ -124,7 +136,13 @@ int main(int argc,char **argv){
     ex::Take(project->Save());
     project.reset();project=ex::Take(ed::ProjectFolder::Open(root,schema.View()));
     Check(project->Sources().back().cooked_key==last_good.cooked_key,"Last-good survives corrupted source and reopening");
+    ex::Take(project->SetPrefabSprite(epidemic::runtime::AssetId::FromString("example.prefab"),texture));
+    ex::Take(project->Save());
+    fs::create_directories(root/"Content/.imports");
+    {std::ofstream staging(root/"Content/.imports/unfinished.png");staging<<"private incomplete source";}
+    Check(!project->IndexSource(".IMPORTS/unfinished.png",type),"Private staging path accepted as an asset");
     ex::Take(project->CloneTo(copied)); // Broken source still transports last-good cooked data.
+    Check(!fs::exists(copied/"Content/.imports"),"Clone copied private import staging files");
     fs::remove(image); ex::Take(project->Save());
     Check(!ed::BrowseContent(*project,{"Sprites/","real.png",{}}).items.front().present,"Missing source remains visible and saveable");
 #endif

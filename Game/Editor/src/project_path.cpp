@@ -10,6 +10,15 @@
 #endif
 
 namespace epidemic::game::editor {
+bool IsPrivateContentPath(std::string_view relative) noexcept {
+    const auto first=relative.substr(0,relative.find('/'));
+    const auto equal=[&](std::string_view expected){
+        if(first.size()!=expected.size())return false;
+        for(std::size_t i=0;i<first.size();++i){const char c=first[i]>='A' && first[i]<='Z'?static_cast<char>(first[i]+('a'-'A')):first[i];if(c!=expected[i])return false;}
+        return true;
+    };
+    return equal(".imports") || equal(".trash");
+}
 foundation::Result<std::filesystem::path> ResolveProjectPath(const std::filesystem::path &root,std::string_view relative) {
     using Result=foundation::Result<std::filesystem::path>;
     const auto reject=[] { return Result::Failure(foundation::Error::Create("editor.project_path","unsafe project-relative path")); };

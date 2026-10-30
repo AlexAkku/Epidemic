@@ -19,7 +19,7 @@ class ContentImportQueue final {
     [[nodiscard]] bool Busy() const noexcept {return pending_ || !queued_.empty();}
     [[nodiscard]] std::vector<HotAssetEvent> Poll(ProjectFolder &folder);
   private:
-    struct Request {std::uint64_t job=0,epoch=0;std::filesystem::path root,source;std::string destination;runtime::AssetId duplicate_of{};};
+    struct Request {std::uint64_t job=0,epoch=0;std::filesystem::path root,source;std::string destination;runtime::AssetId duplicate_of{};std::uint64_t asset_revision=0;};
     struct Pending {
         Request request;
         std::shared_ptr<std::atomic_bool> cancel;

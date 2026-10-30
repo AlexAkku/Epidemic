@@ -130,6 +130,26 @@ int main() {
         (void)imports.Poll(*project);imports.Cancel();
         for(int attempt=0;attempt<400 && imports.Busy();++attempt){(void)imports.Poll(*project);std::this_thread::sleep_for(std::chrono::milliseconds{5});}
         Check(!imports.Busy() && !fs::exists(root/"Content/Sprites/cancelled.png") && !project->IsDirty(),"Cancelled import published authoring state");
+        ex::Take(imports.Enqueue(*project,root/"Content/Sprites/copied.png","Sprites/duplicate.png",copied));
+        epidemic::runtime::AssetId duplicated;
+        for(int attempt=0;attempt<400 && !duplicated.IsValid();++attempt){
+            for(const auto &event:imports.Poll(*project)){
+                Check(event.kind!=ed::HotAssetEventKind::Failed,"Duplicate failed");
+                if(event.kind==ed::HotAssetEventKind::Updated)duplicated=event.id;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds{5});
+        }
+        Check(duplicated.IsValid() && duplicated!=copied,"Duplicate reused identity");
+        ex::Take(project->Undo());Check(!project->IsDirty() && !fs::exists(root/"Content/Sprites/duplicate.png"),"Duplicate Undo lost savepoint");
+        ex::Take(imports.Enqueue(*project,root/"Content/Sprites/copied.png","Sprites/stale-duplicate.png",copied));
+        ex::Take(project->SetPrefabSprite(prefab,copied)); // Metadata changes after queueing invalidate the copy.
+        bool stale=false;
+        for(int attempt=0;attempt<400 && !stale;++attempt){
+            for(const auto &event:imports.Poll(*project))if(event.kind==ed::HotAssetEventKind::Failed)stale=event.diagnostic.starts_with("editor.duplicate_stale");
+            std::this_thread::sleep_for(std::chrono::milliseconds{5});
+        }
+        Check(stale && !fs::exists(root/"Content/Sprites/stale-duplicate.png"),"Stale duplicate published inconsistent metadata");
+        ex::Take(project->Undo());Check(!project->IsDirty(),"Rejected duplicate corrupted history");
         const auto sheet_asset=ex::Take(ed::ImportProjectPng(*project,"Sprites/sheet.png"));
         ed::sheets::Grid grid{1,1,1,1,0,0,0,0};
         auto regions=ed::sheets::BuildGrid(sheet_asset.Raw(),grid);

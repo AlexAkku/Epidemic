@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <exception>
 #include <deque>
+#include "Epidemic/Game/Editor/image_resource.h"
+#include "Epidemic/Runtime/Resources/resource_services.h"
 
 namespace epidemic::game::editor {
 namespace {
@@ -34,6 +36,10 @@ void Archetypes(const comp::PrefabNode &node, const ProjectSchema &schema, gamep
 }
 struct PlayRuntime {
     std::shared_ptr<const ProjectSnapshot> source;
+    std::unique_ptr<ImageResourceLoader> image_loader;
+    runtime::ResourceServices images;
+    std::vector<runtime::ResourceLease> image_leases;
+    std::unordered_map<runtime::SceneNodeId,PlaySprite> sprites;
     std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend;
     gameplay::entities::EntityService entities;
     gameplay::runtime_bridge::RuntimeBridgeService bridge;
@@ -51,6 +57,7 @@ struct PlayRuntime {
         : backend(std::move(representation)), bridge(*backend), components(entities, schema.components),
           prefabs(entities, schema.components, components, behaviors), context{entities, components, behaviors, prefabs, bridge} {}
     ~PlayRuntime() {
+        if(images.manager)for(const auto &lease:image_leases)(void)images.manager->Release(lease);
         for (const auto &[id, instance] : instances) { (void)id; for (const auto &object : instance->Objects()) object.scope->Invalidate(); }
     }
 };
@@ -163,6 +170,40 @@ foundation::Result<comp::PropertyValue> PlaySession::ReadComponentProperty(runti
     const auto handle=std::find_if(object->components.begin(),object->components.end(),[&](const auto &value) { return value.type==type && value.part==part; });
     if (handle==object->components.end()) return Result::Failure(Error("editor.play_component_missing"));
     return impl_->runtime->context.components.ReadProperty(*handle,property);
+}
+foundation::Result<void> PlaySession::InstallSprites(const std::filesystem::path &root,std::vector<PlaySprite> sprites){
+    try{
+        if(!IsPlaying() || impl_->runtime->image_loader)return foundation::Result<void>::Failure(Error("editor.play_sprite_state"));
+        auto &state=*impl_->runtime;
+        state.image_loader=std::make_unique<ImageResourceLoader>(root);
+        state.images=Take(runtime::CreateResourceServices({std::size_t{64}*1024*1024}));
+        Take(state.images.loaders->RegisterLoader(*state.image_loader));Take(state.images.loaders->Freeze());
+        for(auto &sprite:sprites){
+            const auto id=Take(state.image_loader->Register(sprite.cooked_key));
+            const auto lease=Take(state.images.manager->RequestLease({id,state.image_loader->GetResourceType()}));
+            try{state.image_leases.push_back(lease);}catch(...){(void)state.images.manager->Release(lease);throw;}
+            Take(state.images.manager->ProcessPendingLoads());
+            const auto image=std::dynamic_pointer_cast<const ImagePayload>(state.images.manager->GetPayload(lease.resource));
+            if(!image)throw Failure{Error("editor.play_sprite_payload")};
+            if(sprite.region_id==0){sprite.width=image->image.width;sprite.height=image->image.height;}
+            if(sprite.width==0 || sprite.height==0 || sprite.x>image->image.width || sprite.width>image->image.width-sprite.x ||
+               sprite.y>image->image.height || sprite.height>image->image.height-sprite.y)throw Failure{Error("editor.play_sprite_region")};
+            if(!state.sprites.emplace(sprite.placement,std::move(sprite)).second)throw Failure{Error("editor.play_sprite_duplicate")};
+        }
+        return foundation::Result<void>::Success();
+    }catch(const Failure &failure){return foundation::Result<void>::Failure(failure.error);}
+    catch(const std::exception &error){return foundation::Result<void>::Failure(foundation::Error::Create("editor.play_sprite_exception",error.what()));}
+}
+foundation::Result<PlaySprite> PlaySession::ReadSprite(runtime::SceneNodeId placement) const {
+    using R=foundation::Result<PlaySprite>;
+    if(!IsPlaying() || ticking_)return R::Failure(Error("editor.play_inactive_or_busy"));
+    const auto &state=*impl_->runtime;const auto found=state.sprites.find(placement);
+    if(found==state.sprites.end())return R::Failure(Error("editor.play_sprite_missing"));
+    const auto *instance=Instance(placement);const auto *object=instance?instance->Find(instance->Definition()->root.id):nullptr;
+    if(!object)return R::Failure(Error("editor.play_object_missing"));
+    const auto transform=composition::GetEntityWorldTransform(state.scene,state.entities,object->handle);
+    if(!transform)return R::Failure(transform.GetError());
+    auto value=found->second;value.world=transform.Value();return R::Success(std::move(value));
 }
 std::vector<std::shared_ptr<const PlayActivation>> PlaySession::Activations() const {
     std::vector<std::shared_ptr<const PlayActivation>> handles;

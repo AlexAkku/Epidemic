@@ -121,7 +121,7 @@ class ProjectFolder final {
     [[nodiscard]] foundation::Result<void> StageDeleteSource(runtime::AssetId id,bool allow_broken_references=false);
     [[nodiscard]] foundation::Result<void> RestoreSource(runtime::AssetId id);
     [[nodiscard]] foundation::Result<runtime::AssetId> CommitImportedPng(PreparedCookedPng &&candidate,
-        std::string_view destination,runtime::AssetId duplicate_of={});
+        std::string_view destination,runtime::AssetId duplicate_of={},std::uint64_t expected_duplicate_revision=0);
     // Fresh sealed snapshot; never unseal or mutate Runtime Assets catalog.
     [[nodiscard]] foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>> BuildSourceCatalog() const;
     [[nodiscard]] std::uint64_t Revision() const noexcept { return editor_->Revision(); }

@@ -191,7 +191,8 @@ void RuntimePlacement() {
     ed::PlayContext *context=nullptr;
     ed::EditorWorkspace workspace{schema.View(),[&]{
         auto options=ex::Options(schema);
-        options.bindings=[&context,factory=std::move(options.bindings)](ed::PlayContext &value,runtime::AssetId asset){context=&value;return factory(value,asset);};
+        auto factory=std::make_shared<decltype(options.bindings)>(std::move(options.bindings));
+        options.bindings=[&context,factory](ed::PlayContext &value,runtime::AssetId asset){context=&value;return (*factory)(value,asset);};
         return options;
     }};
     const auto file=std::filesystem::path{EPIDEMIC_EDITOR_TEST_DIRECTORY}/"runtime-placement.epidemic";
@@ -211,7 +212,7 @@ void RuntimePlacement() {
     ex::Take(context->SetWorldTransform(owners[1],moved));
     Check(ex::Take(context->WorldTransform(owners[1])).position.x==25);
     Check(ex::Take(context->WorldTransform(owners[0])).position.x==4);
-    const auto entity=context->entities.Resolve(owners[1]);Check(entity.has_value());
+    const auto entity=context->entities.Resolve(owners[1]);if(!entity)throw std::runtime_error("Runtime placement Entity missing");
     ex::Take(context->entities.RequestDestroy(entity->id,gameplay::entities::EntityDestroyReason::OwnerRequest));
     Check(!context->WorldTransform(owners[1]));ex::Take(workspace.Tick(runtime::GameDuration{0}));
     Check(context->scene->entities.size()==2 && workspace.Project()->Snapshot()==source);
@@ -243,6 +244,7 @@ void FolderWorkspace() {
         {std::ofstream out(external,std::ios::binary);out.write(reinterpret_cast<const char *>(png),sizeof(png));}
         ex::Take(workspace.ImportPng(external,"sprite.png"));ex::Take(workspace.Save());
         const auto asset=workspace.Folder()->Sources().front();
+        ex::Take(workspace.AssignPrefabSprite(runtime::AssetId::FromString("example.prefab"),asset.id));ex::Take(workspace.Save());
         workspace.EnableContentWatch(false);ex::Take(workspace.Play());ex::Take(workspace.Stop());
         ex::Take(workspace.ReimportPng(asset.id)); // Explicit jobs work with automatic watching disabled.
         Check(!workspace.IsDirty()); // Acknowledges queueing, not publication.
@@ -256,7 +258,10 @@ void FolderWorkspace() {
         };
         Check(await(ed::HotAssetEventKind::Recovered));
         Check(workspace.Folder()->Sources().front().generation==asset.generation && !workspace.IsDirty());
-        ex::Take(workspace.Play());ex::Take(workspace.ReimportPng(asset.id));
+        ex::Take(workspace.Play());
+        const auto frozen=ex::Take(workspace.Session()->ReadSprite(runtime::SceneNodeId{42}));
+        Check(frozen.texture==asset.id && frozen.generation==asset.generation && frozen.width==1 && frozen.height==1);
+        ex::Take(workspace.ReimportPng(asset.id));
         Check(await(ed::HotAssetEventKind::Recovered));
         workspace.EnableContentWatch(true);
         const auto authored=workspace.Project()->Snapshot();
@@ -266,6 +271,11 @@ void FolderWorkspace() {
         Check(workspace.Session()->IsPlaying() && workspace.Project()->Snapshot()==authored);
         const auto updated=workspace.Folder()->Sources().front();
         Check(updated.generation==asset.generation+1 && updated.id==asset.id && updated.cooked_key!=asset.cooked_key);
+        const auto stable=ex::Take(workspace.Session()->ReadSprite(runtime::SceneNodeId{42}));
+        Check(stable.cooked_key==frozen.cooked_key && stable.generation==frozen.generation);
+        ex::Take(workspace.Stop());Check(workspace.Session() && !workspace.Session()->IsPlaying() && !workspace.Session()->ReadSprite(runtime::SceneNodeId{42}));
+        ex::Take(workspace.Play());
+        Check(ex::Take(workspace.Session()->ReadSprite(runtime::SceneNodeId{42})).cooked_key==updated.cooked_key);
         ex::Take(workspace.Save());
         {std::ofstream out(clone/"Content/sprite.png",std::ios::binary);out<<"broken";}
         ex::Take(workspace.ReimportPng(asset.id));Check(await(ed::HotAssetEventKind::Failed));

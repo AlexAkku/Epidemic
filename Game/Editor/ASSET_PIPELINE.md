@@ -13,12 +13,12 @@ its UI never receives a mutable EditorProject or Assets catalog.
 | Platform file packages | Bounded reads and atomic individual file publication |
 | Resources loader/manager | ImageResourceLoader, immutable ImagePayload, bounded processing and leases |
 | Runtime Presentation | Owner-thread CreateTexture/Texture; retained texture ownership for recorded frames |
-| Scene/Prefab/PlaySession | Prefab roots bind to existing runtime Scene nodes; Sprite resource/session integration remains partial |
+| Scene/Prefab/PlaySession | Prefab roots bind to existing runtime Scene nodes; session-owned Sprite resource generations with canonical runtime transforms |
 | Streaming | No replacement importer or resource manager is introduced |
 
 ## Publication decisions
 
-- Descriptor/commit schema 1.0.0, source index 1.3.0; 1.0/1.1/1.2 indexes remain readable.
+- Descriptor/commit schema 1.0.0, source index 1.4.0; 1.0/1.1/1.2/1.3 indexes remain readable.
   Unsupported versions fail explicitly. Authoring archive wire format is unchanged.
 - Commit-last immutable revision files cover authoring and source metadata together.
   Source move journal is separate: uncommitted moves are rolled back under the
@@ -63,6 +63,14 @@ queries and hides its runtime node. This is an identity adapter, not a second
 Scene or Entity store; internal Prefab child Entities are not implicitly assigned
 new spatial nodes. Authoring snapshots remain independent.
 
+Folder Play resolves only entry-Scene Sprite bindings, pins their cooked Resources
+leases and copies visual metadata. ReadSprite returns detached metadata and the
+current canonical runtime world transform. Reimport can publish a new authoring
+generation while the session retains its original pixels/key. The next Play uses
+the current generation. Stop releases the session's leases; ReadSprite then fails.
+Missing used textures/regions fail Play with a specific diagnostic. The native
+Scene View remains an authoring view, not a replacement game renderer.
+
 ContentHotReload has one owned asynchronous slot, including cancelled work until
 it finishes. Disabling automatic watching cancels automatic work; explicit jobs
 remain available through a bounded queue. Reset/Cancel request cancellation without waiting; Poll reaps ready
@@ -87,8 +95,8 @@ EditorWorkspace::ReimportPng now acknowledges queueing; completion/errors arrive
 through PollContent, including when automatic watching is disabled. Authoring
 preview may update during Play; the running game's snapshot/resource generation
 is independent and stays stable until the next Play. Stop does not change the
-watch preference. Initial
-Copy/Import and the explicit synchronous CookProjectPng API remain synchronous.
+watch preference. Browser copy/import uses the worker queue; explicit synchronous
+ImportExternalPng/CookProjectPng remain available to headless callers.
 
 ImageResourceLoader no longer has a 256-key lifetime ceiling. A loader dedicated
 to one ResourceManager calls CollectUnused after preview lease release: eviction
@@ -108,3 +116,26 @@ milestones complete on the strength of the PNG MVP.
 
 WebAssembly/Web builds are mandatory before release, after the remaining
 functionality. This overrides earlier statements that Web is optional.
+
+## Source lifecycle and browser jobs
+
+External PNG import/duplicate in the native browser queues a streamed private copy
+and cook on a single owned worker (128 queued requests maximum). ProjectFolder
+publishes the prepared source and manifest metadata on its owner thread. Reset or
+Cancel invalidates publication without joining an active worker; final destruction
+drains it. Completed staged copies are removed when discarded. The destination
+must name a new path beneath an existing Content directory.
+
+Staged delete retains AssetId, cooked key and incoming references, moving bytes to
+Content/.Trash/<AssetId>/. Referenced deletion requires explicit broken-reference
+consent. Restore and global Undo/Redo use the existing move journal. Undoing an
+unsaved import keeps an identity tombstone without making the logical savepoint
+dirty. No irreversible purge is exposed. Import duplication allocates a new AssetId;
+region IDs remain scoped to their new texture owner. A queued duplicate rejects
+changed asset metadata revisions/fingerprints; retry after reimport or publication.
+
+Browser preview reads cooked artifacts on one worker with latest-selection discard;
+Resources publication, the bounded thumbnail LRU and GPU upload stay on the owner
+thread. A prepared artifact is consumed by the existing ImageResourceLoader, not a
+second ResourceManager. Workspace retains the last 64 content notices with sequence
+numbers so the desktop and browser do not consume each other's completion events.
