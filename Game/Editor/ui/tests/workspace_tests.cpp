@@ -3,6 +3,9 @@
 #include <cstdio>
 #include <limits>
 #include <cmath>
+#include <chrono>
+#include <fstream>
+#include <thread>
 
 using namespace epidemic;
 namespace ed = game::editor;
@@ -187,6 +190,32 @@ void FolderWorkspace() {
         Check(workspace.Folder() && workspace.Project()->Snapshot()->Find(scene)->name=="Folder scene");
         ex::Take(workspace.Play()); ex::Take(workspace.Stop());
         Check(!workspace.IsDirty());
+#ifdef _WIN32
+        constexpr unsigned char png[]={137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,31,21,196,137,0,0,0,13,73,68,65,84,120,156,99,248,207,192,208,0,0,4,129,1,128,44,85,206,176,0,0,0,0,73,69,78,68,174,66,96,130};
+        const auto external=root/"external.png";
+        {std::ofstream out(external,std::ios::binary);out.write(reinterpret_cast<const char *>(png),sizeof(png));}
+        ex::Take(workspace.ImportPng(external,"sprite.png"));ex::Take(workspace.Save());
+        const auto asset=workspace.Folder()->Sources().front();
+        workspace.EnableContentWatch(false);ex::Take(workspace.Play());ex::Take(workspace.Stop());
+        Check(!workspace.ReimportPng(asset.id)); // Stop preserves explicit disable.
+        workspace.EnableContentWatch(true);ex::Take(workspace.ReimportPng(asset.id));
+        Check(!workspace.IsDirty()); // Acknowledges queueing, not publication.
+        const auto await=[&](ed::HotAssetEventKind kind){
+            const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds{5};
+            while(std::chrono::steady_clock::now()<deadline){
+                for(const auto &event:workspace.PollContent())if(event.id==asset.id && event.kind==kind)return true;
+                std::this_thread::sleep_for(std::chrono::milliseconds{5});
+            }
+            return false;
+        };
+        Check(await(ed::HotAssetEventKind::Recovered));
+        Check(workspace.Folder()->Sources().front().generation==asset.generation && !workspace.IsDirty());
+        ex::Take(workspace.Play());Check(!workspace.ReimportPng(asset.id));
+        {std::ofstream out(clone/"Content/sprite.png",std::ios::binary);out<<"broken";}
+        Check(workspace.PollContent().empty()); // No publication while playing.
+        ex::Take(workspace.Stop());Check(await(ed::HotAssetEventKind::Failed));
+        Check(workspace.Folder()->Sources().front().cooked_key==asset.cooked_key && !workspace.IsDirty());
+#endif
     }
     ed::EditorWorkspace reopened{schema.View(),[&]{return ex::Options(schema);}};
     ex::Take(reopened.Open(root/"Project.epidemicproj"));

@@ -3,6 +3,8 @@
 #include "Epidemic/Runtime/Resources/resource_loader.h"
 #include "Epidemic/Runtime/Resources/resource_manager.h"
 #include <atomic>
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <unordered_map>
@@ -34,12 +36,25 @@ class ImageResourceLoader final : public runtime::IResourceLoader {
 };
 // Produces an unreferenced, immutable cooked PNG on a worker thread.
 // No ProjectFolder, AssetCatalog, Resources or Renderer mutation takes place.
-// The owner must independently confirm the source signature before publishing
-// the returned key through ProjectFolder::PublishCooked.
-struct PreparedCookedPng { std::string key; };
+// The read lease prevents replacement/writes until owner publication or discard.
+// Only the preparation function can construct this metadata publication proof.
+class PreparedCookedPng final {
+  public:
+    [[nodiscard]] const std::string &Key() const noexcept { return key_; }
+    [[nodiscard]] bool Rebuilt() const noexcept { return rebuilt_; }
+  private:
+    friend class ProjectFolder;
+    friend foundation::Result<PreparedCookedPng> PrepareCookedPng(
+        const std::filesystem::path &,std::string_view,const std::atomic_bool *,std::string_view);
+    std::string key_,relative_;
+    std::filesystem::path root_;
+    std::uint64_t source_hash_=0;
+    std::shared_ptr<void> source_read_;
+    bool rebuilt_=false;
+};
 [[nodiscard]] foundation::Result<PreparedCookedPng> PrepareCookedPng(
     const std::filesystem::path &root, std::string_view relative,
-    const std::atomic_bool *cancel = nullptr);
+    const std::atomic_bool *cancel = nullptr, std::string_view previous_key = {});
 // Same PBGRA source pixels, nearest reduction; bounded to a 128x128 preview.
 [[nodiscard]] DecodedPng MakeImageThumbnail(const DecodedPng &image);
 } // namespace epidemic::game::editor

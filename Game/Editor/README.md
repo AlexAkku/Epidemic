@@ -140,11 +140,15 @@ TRS/bounds once per changed immutable snapshot; the viewport retains only IDs,
 labels, XY bounds and a transient camera. It does not tick, serialize or rebuild
 the Scene on idle paints. During Play it still displays authoring, not simulation.
 Visible nodes draw world AABBs, or transformed unit-box placeholders without
-bounds. Sprite bindings are not yet present in these authoring documents; missing
-or nonresident visual assets never block placeholders. Hidden nodes remain in
+bounds. Folder projects can bind PNG textures/regions to Prefab definitions using
+source-index metadata; legacy authoring archives themselves retain their format.
+Resident Sprites use transformed pivot-aware quads for rendering and picking;
+missing/nonresident visuals use placeholders. Selection outlines/Fit still use
+authored bounds. Hidden nodes remain in
 the hierarchy but are not drawn or picked. Labels include full base-36 IDs.
 Greater SceneNodeId draws last and wins overlapping picks, independently of
-selection. Thin/subpixel bounds use the same minimum 14-DIP box for display/picking.
+selection. Placeholder bounds use the same minimum 14-DIP box for display/picking;
+resident Sprite hit tests use their actual transformed quad.
 Left click selects through the shared workspace selection; an unapplied field
 blocks selection changes. Middle drag or left drag on empty space pans; wheel
 zooms around the cursor. Frame selection (`F` with viewport focus) and Fit scene
@@ -288,7 +292,8 @@ the dev build uses its source path to locate the template.
 The demo uses three spatially separated, differently scaled unit-box placeholders
 for a shared Enemy definition. Role strings live in Movement.label; viewport/tree
 labels use Prefab name and stable ID, matching SceneSnapshot's existing contract.
-There are no new Sprite bindings, asset formats, runtime services or UI frameworks.
+This legacy demo archive itself contains no Sprite bindings. Folder-project
+Sprite support is described in [the asset pipeline contract](ASSET_PIPELINE.md).
 Headless --edit-demo / --read-demo and native --demo-smoke operate on Temp copies
 of this same archive. The native result is also reloaded by a new headless process.
 Hidden native smoke verifies the owned controls and viewport; real desktop UX/DPI
@@ -334,5 +339,11 @@ folder copies committed data with IDs preserved. View / Content Browser provides
 PNG copy/import/reimport, path search, rename/move, separate move Undo/Redo, Save
 and a thumbnail preview through Resources/Presentation. See
 [folder contract](PROJECT_FOLDER.md) and [PNG/browser limits](CONTENT_BROWSER_AND_PNG.md).
-This is the minimal browser; it does not yet provide Sprite assignment, duplicate,
-staged delete, multi-selection or typed drag/drop.
+Use as Prefab Sprite assigns a selected PNG to the selected Prefab definition.
+Duplicate, staged delete, multi-selection and typed drag/drop remain unavailable.
+Reimport acknowledges an asynchronous request; completion/errors arrive through
+Workspace PollContent. Processing is suspended during Play or when explicitly
+disabled. Stop preserves the watch preference. Copy/import remains synchronous.
+The root watcher operates without the browser. Cancel/Reset do not wait; final
+service destruction drains its worker. See [the current pipeline contract](ASSET_PIPELINE.md)
+for fingerprint auditing, source read leases and registration reclamation limits.

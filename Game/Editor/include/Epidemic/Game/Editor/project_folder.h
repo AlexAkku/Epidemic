@@ -11,6 +11,7 @@
 #include <vector>
 
 namespace epidemic::game::editor {
+class PreparedCookedPng;
 struct ProjectSourceAsset {
     runtime::AssetId id{};
     runtime::AssetType type{};
@@ -96,6 +97,8 @@ class ProjectFolder final {
         std::string_view content_relative_path, runtime::AssetType type, std::string cooked_key = {});
     [[nodiscard]] foundation::Result<void> ReindexSource(runtime::AssetId id);
     [[nodiscard]] foundation::Result<void> PublishCooked(runtime::AssetId id, std::string key);
+    // Worker-verified source lease: metadata-only publication, no content I/O.
+    [[nodiscard]] foundation::Result<void> PublishCooked(runtime::AssetId id, const PreparedCookedPng &candidate);
     // Renames or moves a source within Content while preserving its AssetId.
     // Rejects destination conflicts and does not affect authored references.
     [[nodiscard]] foundation::Result<void> MoveSource(runtime::AssetId id, std::string_view new_content_path);

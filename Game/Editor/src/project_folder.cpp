@@ -1,6 +1,7 @@
 #include "Epidemic/Game/Editor/project_folder.h"
 #include "Epidemic/Game/Editor/project_path.h"
 #include "Epidemic/Game/Editor/png_import.h"
+#include "Epidemic/Game/Editor/image_resource.h"
 #include "project_archive.h"
 #include "Epidemic/Platform/iplatform_runtime.h"
 #include "Epidemic/Runtime/Serialization/serialization_services.h"
@@ -586,6 +587,24 @@ VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, std::string key) {
         return VoidResult::Success();
     } catch(const Failure &f){return VoidResult::Failure(f.error);}
     catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_cooked","Cannot publish cooked candidate"));}
+}
+VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, const PreparedCookedPng &candidate) {
+    try {
+        Require(candidate.source_read_ && candidate.root_==root_ && candidate.key_.size()==64 &&
+            candidate.key_.find_first_not_of("0123456789abcdef")==std::string::npos,
+            "editor.folder_cooked","Invalid prepared source lease");
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
+        Require(found!=assets_.end() && found->relative_path=="Content/"+candidate.relative_ &&
+            found->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} &&
+            found->generation<std::numeric_limits<std::uint32_t>::max(),
+            "editor.folder_cooked","Prepared source identity changed");
+        if(found->cooked_key!=candidate.key_ || found->source_hash!=candidate.source_hash_) {
+            auto key=candidate.key_; // Allocate before changing any published field.
+            found->cooked_key.swap(key);found->source_hash=candidate.source_hash_;++found->generation;asset_dirty_=true;
+        }
+        return VoidResult::Success();
+    }catch(const Failure &f){return VoidResult::Failure(f.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_cooked","Cannot publish prepared candidate"));}
 }
 VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view new_content_path) {
     try {

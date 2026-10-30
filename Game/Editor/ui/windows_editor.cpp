@@ -1037,7 +1037,7 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     if (msg==WM_CLOSE) { scene_view_->Cancel(); if (CanReplace()) { const auto result=workspace_.Stop(); if (result) { KillTimer(hwnd_,1); timer_running_=false; closed_=true; } else Diagnostics(); } return 0; }
     if (msg==WM_TIMER && wp==1) { if (timer_running_) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); } return 0; }
     if (msg==WM_TIMER && wp==2) {
-        if(content_timer_running_ && workspace_.Folder() && (!workspace_.Session() || !workspace_.Session()->IsPlaying())) {
+        if(content_timer_running_) {
             const auto events=workspace_.PollContent();
             if(!events.empty()) {
                 for(const auto &event:events) if(event.kind==ed::HotAssetEventKind::Failed ||

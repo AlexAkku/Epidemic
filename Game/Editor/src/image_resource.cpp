@@ -29,7 +29,8 @@ std::filesystem::path Cooked(const std::filesystem::path &root,std::string_view 
     Require(Key(key),"editor.image_key");
     return Take(ResolveProjectPath(root,".epidemic/Cache/images/"+std::string(key)+".image"));
 }
-std::string Fingerprint(const std::filesystem::path &path){
+struct SourceDigest {std::string key;std::uint64_t hash=14695981039346656037ULL;};
+SourceDigest Fingerprint(const std::filesystem::path &path,const std::atomic_bool *cancel=nullptr){
 #ifdef _WIN32
     struct Hash {
         BCRYPT_ALG_HANDLE algorithm=nullptr; BCRYPT_HASH_HANDLE hash=nullptr; std::vector<unsigned char> object;
@@ -44,46 +45,30 @@ std::string Fingerprint(const std::filesystem::path &path){
     auto recipe=std::string(kRecipe);
     Require(BCryptHashData(state.hash,reinterpret_cast<PUCHAR>(recipe.data()),static_cast<ULONG>(recipe.size()),0)>=0,"editor.image_digest");
     std::ifstream input(path,std::ios::binary);Require(input.good(),"editor.image_source");
+    SourceDigest result;
     std::array<unsigned char,65536> bytes{};std::uint64_t total=0;
     while(input){input.read(reinterpret_cast<char *>(bytes.data()),static_cast<std::streamsize>(bytes.size()));
+        Require(!cancel || !cancel->load(std::memory_order_relaxed),"editor.image_cancelled");
         total+=static_cast<std::uint64_t>(input.gcount());Require(total<=128ULL*1024*1024,"editor.png_source_limit");
+        for(std::streamsize i=0;i<input.gcount();++i){result.hash^=bytes[static_cast<std::size_t>(i)];result.hash*=1099511628211ULL;}
         Require(BCryptHashData(state.hash,bytes.data(),static_cast<ULONG>(input.gcount()),0)>=0,"editor.image_digest");}
     Require(input.eof() && !input.bad(),"editor.image_source");
     std::array<unsigned char,32> digest{};Require(BCryptFinishHash(state.hash,digest.data(),static_cast<ULONG>(digest.size()),0)>=0,"editor.image_digest");
     constexpr char hex[]="0123456789abcdef";std::string key;key.reserve(64);
-    for(const auto byte:digest){key.push_back(hex[byte/16]);key.push_back(hex[byte%16]);}return key;
+    for(const auto byte:digest){key.push_back(hex[byte/16]);key.push_back(hex[byte%16]);}result.key=std::move(key);return result;
 #else
-    (void)path;throw Failure{Error("editor.png_windows_only")};
+    (void)path;(void)cancel;throw Failure{Error("editor.png_windows_only")};
 #endif
 }
 }
 foundation::Result<runtime::AssetId> CookProjectPng(ProjectFolder &project,std::string_view relative,const std::atomic_bool *cancel){
     using R=foundation::Result<runtime::AssetId>;
     try{
-        const auto cancelled=[&]{Require(!cancel || !cancel->load(),"editor.image_cancelled");};cancelled();
-        const auto path=Take(project.ResolveMount("Content",relative));
-        const auto key=Fingerprint(path);
-        auto image=Take(DecodePng(path));cancelled();
-        Require(image.pixels.size()<runtime::kMaxDocumentBytes-4096,"editor.image_cooked_limit");
-        // Detect an external writer between fingerprint and decoder reads.
-        Require(key==Fingerprint(path),"editor.image_source_changed");
-        auto services=Take(runtime::CreateSerializationServices());auto writer=services.archives->CreateWriter();
-        Require(writer!=nullptr,"editor.image_codec");
-        Take(writer->WriteUInt64("width",image.width));Take(writer->WriteUInt64("height",image.height));
-        Take(writer->WriteString("recipe",kRecipe));Take(writer->WriteString("key",key));
-        Take(writer->WriteBytes("pixels",image.pixels));
-        const auto bytes=Take(runtime::EncodeDocument(Take(writer->Finalize(kImageType,kVersion))));
-        const auto destination=Cooked(project.Root(),key);std::error_code ec;
-        std::filesystem::create_directories(destination.parent_path(),ec);Require(!ec,"editor.image_cache");
-        cancelled();Take(platform::CommitFilePackage(foundation::Path{destination},bytes,runtime::kMaxDocumentBytes));
-        cancelled();
-        // All allocations/IO above precede source metadata publication. A failed
-        // candidate leaves the old key/generation and active leases untouched.
+        auto prepared=Take(PrepareCookedPng(project.Root(),relative,cancel));
         for(const auto &record:project.Sources())if(record.relative_path=="Content/"+std::string(relative)){
-            Require(record.type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")},"editor.image_type");
-            const auto id=record.id;Take(project.PublishCooked(id,key));return R::Success(id);
+            const auto id=record.id;Take(project.PublishCooked(id,prepared));return R::Success(id);
         }
-        return project.IndexSource(relative,{foundation::StringId::FromString("epidemic.texture.png")},key);
+        return project.IndexSource(relative,{foundation::StringId::FromString("epidemic.texture.png")},prepared.Key());
     }catch(const Failure &failure){return R::Failure(failure.error);}
     catch(const std::exception &){return R::Failure(Error("editor.image_failure"));}
 }
@@ -123,18 +108,28 @@ foundation::Result<runtime::ResourceLoadArtifact> ImageResourceLoader::Load(runt
     catch(const std::exception &){return R::Failure(Error("editor.image_load"));}
 }
 foundation::Result<PreparedCookedPng> PrepareCookedPng(
-    const std::filesystem::path &root,std::string_view relative,const std::atomic_bool *cancel){
+    const std::filesystem::path &root,std::string_view relative,const std::atomic_bool *cancel,std::string_view previous_key){
     using R=foundation::Result<PreparedCookedPng>;
     try {
         const auto check=[&]{Require(!cancel || !cancel->load(std::memory_order_relaxed),"editor.image_cancelled");};
         check();
         const auto path=Take(ResolveProjectPath(root,"Content/"+std::string(relative)));
-        const auto key=Fingerprint(path);
+        PreparedCookedPng prepared;
+#ifdef _WIN32
+        const auto handle=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+        Require(handle!=INVALID_HANDLE_VALUE,"editor.image_source_busy");
+        prepared.source_read_=std::shared_ptr<void>(handle,[](void *value){CloseHandle(value);});
+#endif
+        const auto digest=Fingerprint(path,cancel);
+        prepared.key_=digest.key;prepared.source_hash_=digest.hash;prepared.root_=root;prepared.relative_=relative;
+        const auto &key=prepared.key_;
         check();
+        // Periodic audit/startup reconciliation needs hashing, not repeat decoding.
+        if(key==previous_key && std::filesystem::is_regular_file(Cooked(root,key)))return R::Success(std::move(prepared));
         auto image=Take(DecodePng(path));
         check();
         Require(image.pixels.size()<runtime::kMaxDocumentBytes-4096,"editor.image_cooked_limit");
-        Require(key==Fingerprint(path),"editor.image_source_changed");
+        // The source lease denies writes/delete, so hash and decoder see one file.
         auto services=Take(runtime::CreateSerializationServices());auto writer=services.archives->CreateWriter();
         Require(writer!=nullptr,"editor.image_codec");
         Take(writer->WriteUInt64("width",image.width));Take(writer->WriteUInt64("height",image.height));
@@ -147,7 +142,8 @@ foundation::Result<PreparedCookedPng> PrepareCookedPng(
         check();
         Take(platform::CommitFilePackage(foundation::Path{destination},bytes,runtime::kMaxDocumentBytes));
         check();
-        return R::Success({key});
+        prepared.rebuilt_=true;
+        return R::Success(std::move(prepared));
     }catch(const Failure &failure){return R::Failure(failure.error);}
     catch(const std::exception &){return R::Failure(Error("editor.image_prepare"));}
 }

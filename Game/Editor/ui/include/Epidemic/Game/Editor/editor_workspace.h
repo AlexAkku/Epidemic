@@ -34,8 +34,13 @@ class EditorWorkspace final {
     [[nodiscard]] foundation::Result<void> UndoAssetMove();
     [[nodiscard]] foundation::Result<void> RedoAssetMove();
     [[nodiscard]] const ProjectFolder *Folder() const noexcept { return folder_.get(); }
-    [[nodiscard]] std::vector<HotAssetEvent> PollContent() {return folder_ ? hot_reload_.Poll(*folder_) : std::vector<HotAssetEvent>{};}
-    void EnableContentWatch(bool enabled) noexcept {hot_reload_.SetEnabled(enabled);}
+    [[nodiscard]] std::vector<HotAssetEvent> PollContent() {
+        if(folder_)return hot_reload_.Poll(*folder_);
+        hot_reload_.SetEnabled(false);return {};
+    }
+    void EnableContentWatch(bool enabled) noexcept {
+        content_watch_enabled_=enabled;hot_reload_.SetEnabled(enabled && (!session_ || !session_->IsPlaying()));
+    }
     [[nodiscard]] bool IsDirty() const noexcept { return folder_ ? folder_->IsDirty() : project_ && project_->IsDirty(); }
     [[nodiscard]] foundation::Result<void> Execute(std::vector<Command> commands, std::uint64_t expected_revision);
     [[nodiscard]] foundation::Result<void> Save();
@@ -69,6 +74,7 @@ class EditorWorkspace final {
     std::unique_ptr<EditorProject> project_;
     std::unique_ptr<ProjectFolder> folder_;
     ContentHotReload hot_reload_;
+    bool content_watch_enabled_=true;
     std::unique_ptr<PlaySession> session_;
     UiSelection selection_;
     std::optional<foundation::Error> error_;

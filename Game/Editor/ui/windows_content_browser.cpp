@@ -131,7 +131,7 @@ struct Browser final {
             Error("AssetId: "+std::to_string(source.id.Raw())+" | generation: "+std::to_string(source.generation)+"\r\n"+source.relative_path+"\r\n"+(source.cooked_key.empty()?"No cooked image":source.cooked_key));
             if(source.cooked_key.empty()){ClearPreview();return;}
             const auto id=loader->Register(source.cooked_key);if(!id){Error(id.GetError().code);return;}
-            const auto candidate=resources.manager->RequestLease({id.Value(),loader->GetResourceType()});if(!candidate){Error(candidate.GetError().code);return;}
+            const auto candidate=resources.manager->RequestLease({id.Value(),loader->GetResourceType()});if(!candidate){loader->CollectUnused(*resources.manager);Error(candidate.GetError().code);return;}
             const auto loaded=resources.manager->ProcessPendingLoads();
             const auto payload=std::dynamic_pointer_cast<const ImagePayload>(resources.manager->GetPayload(candidate.Value().resource));
             if(!loaded || !payload){(void)resources.manager->Release(candidate.Value());loader->CollectUnused(*resources.manager);Error("Image load failed; previous preview retained. Reimport to rebuild missing cache.");return;}

@@ -23,7 +23,7 @@ foundation::Result<void> EditorWorkspace::Finish(foundation::Result<void> &&resu
 foundation::Result<void> EditorWorkspace::Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate) {
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    folder_.reset(); project_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    hot_reload_.SetEnabled(false);folder_.reset(); project_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::Open(const std::filesystem::path &file, bool discard_dirty) {
@@ -61,9 +61,13 @@ foundation::Result<void> EditorWorkspace::ImportPng(const std::filesystem::path 
 }
 foundation::Result<void> EditorWorkspace::ReimportPng(runtime::AssetId asset) {
     if (!folder_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+    if(!content_watch_enabled_ || (session_ && session_->IsPlaying()))
+        return Finish(foundation::Result<void>::Failure(Error("editor.ui.asset_processing_suspended")));
     for(const auto &record:folder_->Sources())if(record.id==asset){
-        const auto imported=CookProjectPng(*folder_,record.relative_path.substr(8));
-        return Finish(imported?foundation::Result<void>::Success():foundation::Result<void>::Failure(imported.GetError()));
+        if(record.type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
+            return Finish(foundation::Result<void>::Failure(Error("editor.image_type")));
+        hot_reload_.Request(asset);
+        return Finish(foundation::Result<void>::Success()); // Completion/error arrives through PollContent.
     }
     return Finish(foundation::Result<void>::Failure(Error("editor.ui.unknown_asset")));
 }
@@ -97,12 +101,15 @@ foundation::Result<void> EditorWorkspace::Redo() {
 foundation::Result<void> EditorWorkspace::Play() {
     if (!Project()) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_project")));
     if (session_ && session_->IsPlaying()) return Finish(foundation::Result<void>::Failure(Error("editor.ui.already_playing")));
+    hot_reload_.SetEnabled(false);
     auto candidate = folder_ ? folder_->Play(play_options_()) : project_->Play(play_options_());
-    if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
+    if (!candidate) {hot_reload_.SetEnabled(content_watch_enabled_);return Finish(foundation::Result<void>::Failure(candidate.GetError()));}
     session_ = std::move(candidate).Value(); return Finish(foundation::Result<void>::Success());
 }
 foundation::Result<void> EditorWorkspace::Stop() {
-    return Finish(session_ ? session_->Stop() : foundation::Result<void>::Success());
+    auto stopped=session_ ? session_->Stop() : foundation::Result<void>::Success();
+    if(stopped)hot_reload_.SetEnabled(content_watch_enabled_);
+    return Finish(std::move(stopped));
 }
 foundation::Result<void> EditorWorkspace::Tick(runtime::GameDuration advance) {
     if (!session_ || !session_->IsPlaying()) return foundation::Result<void>::Success();
