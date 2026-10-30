@@ -46,6 +46,16 @@ its UI never receives a mutable EditorProject or Assets catalog.
 
 ## Current acceptance boundary
 
+Sprite/sheet edits use typed AssetEditRequest commands with an asset revision
+guard. A whole batch is applied to a separate immutable visual candidate and
+preflighted through the source index Encode/Decode before publication. Invalid
+batches do not change state, history or dirty/savepoint. Convenience setters route
+through this API. Folder Undo/Redo orders document commands, visual transactions
+and journalled file moves together; use Folder/Workspace CanUndo, not only the
+legacy authoring project's history. Visual snapshots share history ownership,
+bounded to64transactions and a soft32MiB budget (the newest step is retained).
+Undo does not roll back independently published cooked generations.
+
 Play binds each placed Prefab root Entity handle (full128-bit EntityId) to the
 actual node created by Runtime Scene, including parent TRS. PlayContext world
 transform operations read/write that registry. Entity destruction invalidates

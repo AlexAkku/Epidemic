@@ -894,7 +894,7 @@ void Desktop::Diagnostics() {
         else { (void)workspace_.Stop(); playing=false; local_error_="Cannot start Play timer; session stopped."; }
     } else if (!playing && timer_running_) { KillTimer(hwnd_,1); timer_running_=false; }
     SetText(ControlHandle(Status),std::string{playing?"PLAYING SNAPSHOT | ":"AUTHORING | "}+(project?(workspace_.IsDirty()?"Unsaved changes":"Saved"):"Open a project or create an example")+(Draft()?" | Unapplied field":""));
-    EnableWindow(ControlHandle(Save),project!=nullptr); EnableWindow(ControlHandle(Undo),project && project->CanUndo()); EnableWindow(ControlHandle(Redo),project && project->CanRedo());
+    EnableWindow(ControlHandle(Save),project!=nullptr); EnableWindow(ControlHandle(Undo),workspace_.CanUndo()); EnableWindow(ControlHandle(Redo),workspace_.CanRedo());
     EnableWindow(ControlHandle(Play),project && !playing); EnableWindow(ControlHandle(Stop),playing); EnableWindow(ControlHandle(SendEvent),playing);
     const auto selection=workspace_.Selection(); const auto snapshot=project?project->Snapshot():nullptr; const auto *doc=snapshot?snapshot->Find(selection.document):nullptr;
     const bool graph=doc && std::holds_alternative<graph::GraphDefinition>(doc->data), prefab=selection.kind==ed::UiElement::PrefabNode;

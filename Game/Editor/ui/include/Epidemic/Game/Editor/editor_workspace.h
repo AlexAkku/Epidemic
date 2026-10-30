@@ -43,6 +43,10 @@ class EditorWorkspace final {
     }
     [[nodiscard]] bool IsDirty() const noexcept { return folder_ ? folder_->IsDirty() : project_ && project_->IsDirty(); }
     [[nodiscard]] foundation::Result<void> Execute(std::vector<Command> commands, std::uint64_t expected_revision);
+    [[nodiscard]] foundation::Result<void> Execute(const AssetEditRequest &request);
+    [[nodiscard]] std::uint64_t AssetRevision() const noexcept {return folder_?folder_->AssetRevision():0;}
+    [[nodiscard]] bool CanUndo() const noexcept {return folder_?folder_->CanUndo():project_ && project_->CanUndo();}
+    [[nodiscard]] bool CanRedo() const noexcept {return folder_?folder_->CanRedo():project_ && project_->CanRedo();}
     [[nodiscard]] foundation::Result<void> Save();
     [[nodiscard]] foundation::Result<void> Undo();
     [[nodiscard]] foundation::Result<void> Redo();

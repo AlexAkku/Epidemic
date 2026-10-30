@@ -12,6 +12,7 @@
 
 namespace epidemic::game::editor {
 class PreparedCookedPng;
+struct AssetEditRequest;
 struct ProjectSourceAsset {
     runtime::AssetId id{};
     runtime::AssetType type{};
@@ -27,6 +28,7 @@ struct ProjectSourceAsset {
 struct SpriteSheetDefinition {
     runtime::AssetId texture{};
     std::vector<sheets::Region> regions;
+    [[nodiscard]] bool operator==(const SpriteSheetDefinition &) const = default;
 };
 // Typed Prefab -> texture assignment. Sprite identity is a stable AssetId,
 // not a filename or a generic component string property. The association is
@@ -46,6 +48,11 @@ struct PrefabSpriteBinding {
 // This is NOT the content importer/browser or a security boundary against
 // adversarial filesystem replacement (TOCTOU/reparse-point attacks).
 class ProjectFolder final {
+    struct VisualState {
+        std::vector<PrefabSpriteBinding> sprites;
+        std::vector<SpriteSheetDefinition> sheets;
+        [[nodiscard]] bool operator==(const VisualState &) const = default;
+    };
   public:
     [[nodiscard]] static foundation::Result<std::unique_ptr<ProjectFolder>> Create(
         const std::filesystem::path &root, std::string title,
@@ -66,6 +73,10 @@ class ProjectFolder final {
     // Clone committed portable data only; refuses pending authoring edits.
     [[nodiscard]] foundation::Result<void> CloneTo(const std::filesystem::path &destination) const;
     [[nodiscard]] foundation::Result<EditReceipt> Execute(const EditRequest &request);
+    [[nodiscard]] foundation::Result<void> Execute(const AssetEditRequest &request);
+    [[nodiscard]] std::uint64_t AssetRevision() const noexcept { return asset_revision_; }
+    [[nodiscard]] bool CanUndo() const noexcept {return edit_cursor_!=0;}
+    [[nodiscard]] bool CanRedo() const noexcept {return edit_cursor_<edits_.size();}
     [[nodiscard]] foundation::Result<void> Undo();
     [[nodiscard]] foundation::Result<void> Redo();
     [[nodiscard]] foundation::Result<std::unique_ptr<PlaySession>> Play(PlayOptions options) const;
@@ -77,8 +88,9 @@ class ProjectFolder final {
     [[nodiscard]] std::uint64_t Generation() const noexcept { return generation_; }
     [[nodiscard]] bool IsDirty() const noexcept { return asset_dirty_ || sprite_dirty_ || editor_->IsDirty(); }
     [[nodiscard]] const std::vector<ProjectSourceAsset> &Sources() const noexcept { return assets_; }
-    [[nodiscard]] const std::vector<PrefabSpriteBinding> &SpriteBindings() const noexcept { return sprites_; }
-    [[nodiscard]] const std::vector<SpriteSheetDefinition> &SpriteSheets() const noexcept { return sheets_; }
+    // Borrowed until the next owner-thread publication; never cache element pointers.
+    [[nodiscard]] const std::vector<PrefabSpriteBinding> &SpriteBindings() const noexcept { return visuals_->sprites; }
+    [[nodiscard]] const std::vector<SpriteSheetDefinition> &SpriteSheets() const noexcept { return visuals_->sheets; }
     // Whole-image binding remains backward compatible. Region ID 0 means full image.
     [[nodiscard]] foundation::Result<void> SetPrefabSpriteRegion(runtime::AssetId prefab,
         runtime::AssetId texture,std::uint64_t region_id,float pivot_x=0.5f,
@@ -115,13 +127,21 @@ class ProjectFolder final {
   private:
     struct WriterLock;
     struct MoveRecord { runtime::AssetId id; std::string before, after; };
+    struct EditStep {
+        enum class Kind {Document,Move,Visual};Kind kind=Kind::Document;
+        MoveRecord move;
+        std::shared_ptr<const VisualState> before,after;
+    };
+    [[nodiscard]] std::vector<EditStep> PrepareEdit(EditStep step) const;
+    void RefreshVisualDirty() noexcept;
+    [[nodiscard]] foundation::Result<void> RestoreEdit(const EditStep &step,bool forward);
     [[nodiscard]] foundation::Result<void> ApplySourceMove(runtime::AssetId id, std::string_view relative);
     std::vector<std::pair<std::string,std::string>> pending_moves_;
-    std::vector<MoveRecord> move_history_;
-    std::size_t move_cursor_=0;
+    std::vector<EditStep> edits_;
+    std::size_t edit_cursor_=0;
     std::vector<ProjectSourceAsset> saved_assets_;
-    std::vector<PrefabSpriteBinding> sprites_;
-    std::vector<SpriteSheetDefinition> sheets_;
+    std::shared_ptr<const VisualState> visuals_=std::make_shared<VisualState>();
+    std::shared_ptr<const VisualState> saved_visuals_=visuals_;
     ProjectFolder(std::filesystem::path root, std::string title, const ProjectSchema &schema);
     [[nodiscard]] static foundation::Result<std::unique_ptr<ProjectFolder>> CreateWithIds(
         const std::filesystem::path &root, std::string title, ProjectDefinition definition,
@@ -134,6 +154,7 @@ class ProjectFolder final {
     std::unique_ptr<WriterLock> lock_;
     std::uint64_t generation_ = 0;
     std::uint64_t next_asset_number_ = 1;
+    std::uint64_t asset_revision_=0;
     std::vector<ProjectSourceAsset> assets_;
     bool asset_dirty_ = false;
     bool sprite_dirty_ = false;

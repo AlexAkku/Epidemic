@@ -89,6 +89,9 @@ foundation::Result<void> EditorWorkspace::Execute(std::vector<Command> commands,
 foundation::Result<void> EditorWorkspace::Save() {
     return Finish(folder_ ? folder_->Save() : project_ ? project_->Save() : foundation::Result<void>::Failure(Error("editor.ui.no_project")));
 }
+foundation::Result<void> EditorWorkspace::Execute(const AssetEditRequest &request){
+    return Finish(folder_?folder_->Execute(request):foundation::Result<void>::Failure(Error("editor.ui.no_folder")),true);
+}
 foundation::Result<void> EditorWorkspace::Undo() {
     return Finish(folder_ ? folder_->Undo() : project_ ? project_->Undo() : foundation::Result<void>::Failure(Error("editor.ui.no_project")), true);
 }

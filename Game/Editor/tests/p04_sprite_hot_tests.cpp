@@ -1,4 +1,6 @@
 #include "Epidemic/Game/Editor/content_hot_reload.h"
+#include "Epidemic/Game/Editor/asset_commands.h"
+#include <limits>
 #include "Epidemic/Game/Editor/content_dependencies.h"
 #include "Epidemic/Game/Editor/image_resource.h"
 #include "../example/demo_game.h"
@@ -36,6 +38,27 @@ int main() {
         const auto incoming=deps.Incoming(id);
         Check(incoming.size()==1 && incoming.front().dependent==prefab,"typed reverse reference missing");
         ex::Take(project->Save());
+        const auto original=project->SpriteBindings().front();const auto revision=project->AssetRevision();
+        auto changed=original;changed.pivot_x=0.5f;
+        auto invalid=changed;invalid.pixels_per_unit=std::numeric_limits<float>::quiet_NaN();
+        Check(!project->Execute(ed::AssetEditRequest{revision,{ed::AssetSetSprite{changed},ed::AssetSetSprite{invalid}}}),"Asset batch partially accepted NaN");
+        Check(project->AssetRevision()==revision && project->SpriteBindings().front()==original && !project->IsDirty(),"Failed asset batch changed state/savepoint");
+        // Serialization preserves finite positive subnormal PPU; do not impose
+        // an arbitrary cutoff just to turn it into a negative fixture.
+        invalid.pixels_per_unit=std::numeric_limits<float>::denorm_min();
+        ex::Take(project->Execute(ed::AssetEditRequest{revision,{ed::AssetSetSprite{invalid}}}));
+        Check(project->SpriteBindings().front().pixels_per_unit==invalid.pixels_per_unit,"Archive preflight changed a representable value");
+        ex::Take(project->Undo());Check(!project->IsDirty(),"Metadata Undo lost savepoint");
+        const auto edit_revision=project->AssetRevision();
+        const auto name=project->Snapshot()->Find(prefab)->name;
+        ex::Take(project->Execute(ed::EditRequest{project->Authoring().Revision(),{ed::RenameDocument{prefab,"Renamed prefab"}}}));
+        ex::Take(project->Execute(ed::AssetEditRequest{edit_revision,{ed::AssetSetSprite{changed}}}));
+        ex::Take(project->Undo());
+        Check(project->SpriteBindings().front()==original && project->Snapshot()->Find(prefab)->name=="Renamed prefab","Undo skipped the latest asset command");
+        ex::Take(project->Undo());Check(project->Snapshot()->Find(prefab)->name==name && !project->IsDirty(),"Mixed Undo lost the original savepoint");
+        ex::Take(project->Redo());ex::Take(project->Redo());Check(project->SpriteBindings().front()==changed,"Mixed Redo did not restore asset command");
+        ex::Take(project->Undo());ex::Take(project->Undo());
+        Check(!project->Execute(ed::AssetEditRequest{revision,{ed::AssetSetSprite{changed}}}),"Stale asset command was accepted");
         ex::Take(project->SetPrefabSprite(prefab,id,0.75f,0.25f,32));
         ex::Take(project->MoveSource(id,"Sprites/dirty-probe.png"));
         ex::Take(project->UndoAssetMove());

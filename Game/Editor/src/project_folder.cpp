@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/project_folder.h"
+#include "Epidemic/Game/Editor/asset_commands.h"
 #include "Epidemic/Game/Editor/project_path.h"
 #include "Epidemic/Game/Editor/png_import.h"
 #include "Epidemic/Game/Editor/image_resource.h"
@@ -460,8 +461,8 @@ Result<std::unique_ptr<ProjectFolder>> ProjectFolder::Open(const std::filesystem
         folder->generation_=restored->commit.generation;
         folder->editor_=std::move(restored->editor);
         folder->assets_=std::move(restored->index.records);
-        folder->sprites_=std::move(restored->index.sprites);
-        folder->sheets_=std::move(restored->index.sheets);
+        folder->visuals_=std::make_shared<VisualState>(VisualState{std::move(restored->index.sprites),std::move(restored->index.sheets)});
+        folder->saved_visuals_=folder->visuals_;
         folder->saved_assets_=folder->assets_;
         folder->next_asset_number_=restored->index.next;
         return R::Success(std::move(folder));
@@ -475,7 +476,7 @@ VoidResult ProjectFolder::Save() {
         // The process lock prevents concurrent editor writers; a manual external
         // edit to a committed marker is detected on reopening, not hot-reloaded.
         const auto next=generation_+1;
-        SourceIndex index{next_asset_number_,assets_,sprites_,sheets_};
+        SourceIndex index{next_asset_number_,assets_,visuals_->sprites,visuals_->sheets};
         // Source availability is diagnostic, not authoring validity. Preserve
         // missing/failed source references and their last-good cooked key.
         for(const auto &source:index.records) (void)SafeAt(root_,source.relative_path);
@@ -506,7 +507,7 @@ VoidResult ProjectFolder::Save() {
         generation_=next;
         editor_->saved_state_=editor_->current_->state_id;
         editor_->saved_documents_.swap(saved_documents);
-        saved_assets_=std::move(index.records);asset_dirty_=false;sprite_dirty_=false;
+        saved_assets_=std::move(index.records);saved_visuals_=visuals_;asset_dirty_=false;sprite_dirty_=false;
         pending_moves_.clear();
         {std::error_code ignored;std::filesystem::remove(journal_path,ignored);}
         // Convenience descriptor, not recovery authority. Failure here does not
@@ -516,15 +517,47 @@ VoidResult ProjectFolder::Save() {
     } catch(const Failure &failure) {return VoidResult::Failure(failure.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_io","Project commit failed"));}
 }
+std::vector<ProjectFolder::EditStep> ProjectFolder::PrepareEdit(EditStep step) const {
+    auto result=edits_;result.resize(edit_cursor_);result.push_back(std::move(step));
+    const auto bytes=[](const std::shared_ptr<const VisualState> &state){
+        if(!state)return std::size_t{0};
+        auto total=state->sprites.size()*sizeof(PrefabSpriteBinding)+state->sheets.size()*sizeof(SpriteSheetDefinition);
+        for(const auto &sheet:state->sheets){total+=sheet.regions.size()*sizeof(sheets::Region);for(const auto &region:sheet.regions)total+=region.name.size();}
+        return total;
+    };
+    auto total=std::size_t{0};for(const auto &entry:result)total+=bytes(entry.before)+bytes(entry.after);
+    while(result.size()>1 && (result.size()>64 || total>std::size_t{32}*1024*1024)){
+        total-=bytes(result.front().before)+bytes(result.front().after);result.erase(result.begin());
+    }
+    return result;
+}
+void ProjectFolder::RefreshVisualDirty() noexcept {sprite_dirty_=visuals_!=saved_visuals_ && *visuals_!=*saved_visuals_;}
 Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {
+    try{
     if(request.expected_revision!=editor_->Revision())return editor_->Execute(request);
     for(const auto &command:request.commands)if(const auto *created=std::get_if<CreateDocument>(&command))
         if(std::any_of(assets_.begin(),assets_.end(),[&](const auto &source){return source.id==created->document.id;}))
             return Result<EditReceipt>::Failure(Error("editor.folder_identity","Document ID is reserved by a source asset"));
-    return editor_->Execute(request);
+    auto history=PrepareEdit({});const auto revision=editor_->Revision();
+    auto edited=editor_->Execute(request);
+    if(edited && revision!=editor_->Revision()){edits_.swap(history);edit_cursor_=edits_.size();}
+    return edited;
+    }catch(const std::exception &){return Result<EditReceipt>::Failure(Error("editor.folder_history","Cannot prepare document command history"));}
 }
-VoidResult ProjectFolder::Undo(){return editor_->Undo();}
-VoidResult ProjectFolder::Redo(){return editor_->Redo();}
+VoidResult ProjectFolder::RestoreEdit(const EditStep &step,bool forward){
+    if(step.kind==EditStep::Kind::Document)return forward?editor_->Redo():editor_->Undo();
+    if(step.kind==EditStep::Kind::Move){const auto moved=ApplySourceMove(step.move.id,(forward?step.move.after:step.move.before).substr(8));if(moved)++asset_revision_;return moved;}
+    visuals_=forward?step.after:step.before;RefreshVisualDirty();++asset_revision_;
+    return VoidResult::Success();
+}
+VoidResult ProjectFolder::Undo(){
+    if(!CanUndo())return VoidResult::Failure(Error("editor.undo_empty","No project command to undo"));
+    const auto restored=RestoreEdit(edits_[edit_cursor_-1],false);if(restored)--edit_cursor_;return restored;
+}
+VoidResult ProjectFolder::Redo(){
+    if(!CanRedo())return VoidResult::Failure(Error("editor.redo_empty","No project command to redo"));
+    const auto restored=RestoreEdit(edits_[edit_cursor_],true);if(restored)++edit_cursor_;return restored;
+}
 Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) const {return editor_->Play(std::move(options));}
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path roles intentionally share their public value types.
 Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount,std::string_view relative) const {
@@ -556,7 +589,7 @@ Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path,runtim
             id=runtime::AssetId{foundation::StringId::FromString(key)};
         } while(!id.IsValid() || editor_->used_ids_.contains({id.Raw(),0}) || editor_->Snapshot()->assets->Contains(id) ||
                 std::any_of(assets_.begin(),assets_.end(),[&](const auto &a){return a.id==id;}));
-        assets_.push_back({id,type,qualified,HashFileStream(source),1,std::move(cooked_key)});asset_dirty_=true;
+        assets_.push_back({id,type,qualified,HashFileStream(source),1,std::move(cooked_key)});asset_dirty_=true;++asset_revision_;
         return R::Success(id);
     } catch(const Failure &f) {return R::Failure(f.error);}
     catch(const std::exception &) {return R::Failure(Error("editor.folder_source","Cannot index source"));}
@@ -582,7 +615,7 @@ VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, std::string key) {
             "editor.folder_cooked","Unknown source or generation overflow");
         const auto hash=HashFileStream(SafeAt(root_,found->relative_path));
         if(found->cooked_key!=key || found->source_hash!=hash) {
-            found->cooked_key.swap(key);found->source_hash=hash;++found->generation;asset_dirty_=true;
+            found->cooked_key.swap(key);found->source_hash=hash;++found->generation;asset_dirty_=true;++asset_revision_;
         }
         return VoidResult::Success();
     } catch(const Failure &f){return VoidResult::Failure(f.error);}
@@ -600,7 +633,7 @@ VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, const PreparedCooke
             "editor.folder_cooked","Prepared source identity changed");
         if(found->cooked_key!=candidate.key_ || found->source_hash!=candidate.source_hash_) {
             auto key=candidate.key_; // Allocate before changing any published field.
-            found->cooked_key.swap(key);found->source_hash=candidate.source_hash_;++found->generation;asset_dirty_=true;
+            found->cooked_key.swap(key);found->source_hash=candidate.source_hash_;++found->generation;asset_dirty_=true;++asset_revision_;
         }
         return VoidResult::Success();
     }catch(const Failure &f){return VoidResult::Failure(f.error);}
@@ -641,22 +674,23 @@ VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view 
 VoidResult ProjectFolder::MoveSource(runtime::AssetId id,std::string_view relative) {
     try {
         const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
-        Require(found!=assets_.end(),"editor.folder_move_history","Unknown asset or move history full");
-        auto history=move_history_;history.resize(move_cursor_);if(history.size()==64)history.erase(history.begin());history.push_back({id,found->relative_path,"Content/"+std::string(relative)});
+        Require(found!=assets_.end(),"editor.folder_move_history","Unknown asset");
+        EditStep step;step.kind=EditStep::Kind::Move;step.move={id,found->relative_path,"Content/"+std::string(relative)};
+        auto history=PrepareEdit(std::move(step));
         const auto moved=ApplySourceMove(id,relative);if(!moved)return moved;
-        move_history_.swap(history);move_cursor_=move_history_.size();return VoidResult::Success();
+        edits_.swap(history);edit_cursor_=edits_.size();++asset_revision_;return VoidResult::Success();
     }catch(const Failure &failure){return VoidResult::Failure(failure.error);}
     catch(const std::exception &){return VoidResult::Failure(Error("editor.folder_move_history","Cannot prepare move history"));}
 }
 VoidResult ProjectFolder::UndoAssetMove() {
-    if(move_cursor_==0)return VoidResult::Failure(Error("editor.folder_move_history","No asset move to undo"));
-    const auto &record=move_history_[move_cursor_-1];const auto result=ApplySourceMove(record.id,record.before.substr(8));
-    if(result)--move_cursor_;return result;
+    if(!CanUndo() || edits_[edit_cursor_-1].kind!=EditStep::Kind::Move)
+        return VoidResult::Failure(Error("editor.folder_move_history","The last command is not a source move"));
+    return Undo();
 }
 VoidResult ProjectFolder::RedoAssetMove() {
-    if(move_cursor_>=move_history_.size())return VoidResult::Failure(Error("editor.folder_move_history","No asset move to redo"));
-    const auto &record=move_history_[move_cursor_];const auto result=ApplySourceMove(record.id,record.after.substr(8));
-    if(result)++move_cursor_;return result;
+    if(!CanRedo() || edits_[edit_cursor_].kind!=EditStep::Kind::Move)
+        return VoidResult::Failure(Error("editor.folder_move_history","The next command is not a source move"));
+    return Redo();
 }
 VoidResult ProjectFolder::SetPrefabSprite(runtime::AssetId prefab,runtime::AssetId texture,
     float pivot_x,float pivot_y,float pixels_per_unit) {
@@ -664,51 +698,58 @@ VoidResult ProjectFolder::SetPrefabSprite(runtime::AssetId prefab,runtime::Asset
 }
 VoidResult ProjectFolder::SetPrefabSpriteRegion(runtime::AssetId prefab,runtime::AssetId texture,
     std::uint64_t region_id,float pivot_x,float pivot_y,float pixels_per_unit) {
-    if(!prefab.IsValid() || !std::isfinite(pivot_x) || !std::isfinite(pivot_y) ||
-        pivot_x<0 || pivot_x>1 || pivot_y<0 || pivot_y>1 ||
-        !std::isfinite(pixels_per_unit) || pixels_per_unit<=0 || pixels_per_unit>4096)
-        return VoidResult::Failure(Error("editor.sprite_binding","Invalid Sprite parameters"));
-    const auto *document=editor_->Snapshot()->Find(prefab);
-    if(!document || document->Kind()!=DocumentKind::Prefab)
-        return VoidResult::Failure(Error("editor.sprite_prefab","Prefab document not found"));
-    auto next=sprites_;
-    next.erase(std::remove_if(next.begin(),next.end(),[&](const auto &s){return s.prefab==prefab;}),next.end());
-    if(texture.IsValid()) {
-        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &s){return s.id==texture;});
-        if(found==assets_.end() || found->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} || found->cooked_key.empty())
-            return VoidResult::Failure(Error("editor.sprite_texture","Texture must be a cooked PNG asset"));
-        if(region_id){
-            auto sheet=std::find_if(sheets_.begin(),sheets_.end(),[&](const auto &s){return s.texture==texture;});
-            if(sheet==sheets_.end() || std::none_of(sheet->regions.begin(),sheet->regions.end(),
-                [&](const auto &r){return r.id==region_id && !r.missing;}))
-                return VoidResult::Failure(Error("editor.sprite_region","Unknown or retired sprite region"));
-        }
-        next.push_back({prefab,texture,region_id,pivot_x,pivot_y,pixels_per_unit});
-    }
-    if(next!=sprites_) {sprites_.swap(next);sprite_dirty_=true;}
-    return VoidResult::Success();
+    return Execute(AssetEditRequest{asset_revision_,{AssetSetSprite{{prefab,texture,region_id,pivot_x,pivot_y,pixels_per_unit}}}});
 }
-VoidResult ProjectFolder::SetSpriteSheet(runtime::AssetId texture,
-    std::vector<sheets::Region> regions,std::uint32_t width,std::uint32_t height) {
-    const auto asset=std::find_if(assets_.begin(),assets_.end(),[&](const auto &a){return a.id==texture;});
-    if(asset==assets_.end() || asset->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
-        return VoidResult::Failure(Error("editor.sheet_parent","Sprite sheet requires indexed PNG"));
-    const auto source=ResolveProjectPath(root_,asset->relative_path);
-    if(!source)return VoidResult::Failure(source.GetError());
-    const auto png=DecodePng(source.Value());
-    if(!png || png.Value().width!=width || png.Value().height!=height)
-        return VoidResult::Failure(Error("editor.sheet_source","Sheet dimensions differ from decoded PNG"));
-    const auto validated=sheets::Validate(width,height,regions);
-    if(!validated)return VoidResult::Failure(Error("editor.sheet_regions",validated.error));
-    std::vector<SpriteSheetDefinition> next=sheets_;
-    auto old=std::find_if(next.begin(),next.end(),[&](const auto &s){return s.texture==texture;});
-    if(old!=next.end()){
-        auto reconciled=sheets::Reconcile(old->regions,regions);
-        if(!reconciled)return VoidResult::Failure(Error("editor.sheet_regions",reconciled.error));
-        old->regions=std::move(reconciled.value);
-    }else next.push_back({texture,std::move(regions)});
-    sheets_.swap(next);sprite_dirty_=true;
-    return VoidResult::Success();
+VoidResult ProjectFolder::SetSpriteSheet(runtime::AssetId texture,std::vector<sheets::Region> regions,
+    std::uint32_t width,std::uint32_t height){
+    return Execute(AssetEditRequest{asset_revision_,{AssetSetSheet{{texture,std::move(regions)},width,height}}});
+}
+VoidResult ProjectFolder::Execute(const AssetEditRequest &request){
+    try{
+        Require(request.expected_revision==asset_revision_,"editor.asset_revision","Asset view is stale");
+        Require(!request.commands.empty() && request.commands.size()<=128,"editor.asset_commands","Invalid asset command count");
+        auto candidate=std::make_shared<VisualState>(*visuals_);
+        for(const auto &command:request.commands){
+            if(const auto *set=std::get_if<AssetSetSprite>(&command)){
+                const auto &binding=set->binding;
+                Require(binding.prefab.IsValid() && std::isfinite(binding.pivot_x) && std::isfinite(binding.pivot_y) && binding.pivot_x>=0 && binding.pivot_x<=1 && binding.pivot_y>=0 && binding.pivot_y<=1 && std::isfinite(binding.pixels_per_unit) && binding.pixels_per_unit>0 && binding.pixels_per_unit<=4096,"editor.sprite_binding","Invalid Sprite parameters");
+                const auto *document=Snapshot()->Find(binding.prefab);
+                Require(document && document->Kind()==DocumentKind::Prefab,"editor.sprite_prefab","Prefab not found");
+                if(binding.texture.IsValid()){
+                    const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==binding.texture;});
+                    Require(source!=assets_.end() && source->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} && !source->cooked_key.empty(),"editor.sprite_texture","Sprite requires cooked PNG");
+                    if(binding.region_id){
+                        const auto sheet=std::find_if(candidate->sheets.begin(),candidate->sheets.end(),[&](const auto &value){return value.texture==binding.texture;});
+                        Require(sheet!=candidate->sheets.end() && std::any_of(sheet->regions.begin(),sheet->regions.end(),[&](const auto &region){return region.id==binding.region_id && !region.missing;}),"editor.sprite_region","Region missing or retired");
+                    }
+                }
+                std::erase_if(candidate->sprites,[&](const auto &value){return value.prefab==binding.prefab;});
+                if(binding.texture.IsValid())candidate->sprites.push_back(binding);
+            }else{
+                const auto &sheet_command=std::get<AssetSetSheet>(command);auto regions=sheet_command.sheet.regions;
+                const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==sheet_command.sheet.texture;});
+                Require(source!=assets_.end() && source->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")},"editor.sheet_parent","Sheet requires indexed PNG");
+                const auto png=Take(DecodePng(SafeAt(root_,source->relative_path)));
+                Require(png.width==sheet_command.width && png.height==sheet_command.height,"editor.sheet_source","Sheet dimensions differ from source");
+                const auto validated=sheets::Validate(sheet_command.width,sheet_command.height,regions);
+                Require(static_cast<bool>(validated),"editor.sheet_regions",validated.error);
+                const auto old=std::find_if(candidate->sheets.begin(),candidate->sheets.end(),[&](const auto &value){return value.texture==sheet_command.sheet.texture;});
+                if(old!=candidate->sheets.end()){
+                    auto reconciled=sheets::Reconcile(old->regions,regions);Require(static_cast<bool>(reconciled),"editor.sheet_reconcile",reconciled.error);old->regions=std::move(reconciled.value);
+                }else candidate->sheets.push_back({sheet_command.sheet.texture,std::move(regions)});
+            }
+        }
+        std::sort(candidate->sprites.begin(),candidate->sprites.end(),[](const auto &a,const auto &b){return a.prefab.Raw()<b.prefab.Raw();});
+        std::sort(candidate->sheets.begin(),candidate->sheets.end(),[](const auto &a,const auto &b){return a.texture.Raw()<b.texture.Raw();});
+        auto canonical=DecodeSources(EncodeSources({next_asset_number_,assets_,candidate->sprites,candidate->sheets}));
+        candidate->sprites=std::move(canonical.sprites);candidate->sheets=std::move(canonical.sheets);
+        if(*candidate==*visuals_)return VoidResult::Success();
+        EditStep step;step.kind=EditStep::Kind::Visual;step.before=visuals_;step.after=candidate;
+        auto history=PrepareEdit(std::move(step));
+        visuals_=std::move(candidate);edits_.swap(history);edit_cursor_=edits_.size();++asset_revision_;RefreshVisualDirty();
+        return VoidResult::Success();
+    }catch(const Failure &failure){return VoidResult::Failure(failure.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.asset_command_failed","Asset transaction rejected"));}
 }
 Result<std::shared_ptr<const runtime::IAssetCatalog>> ProjectFolder::BuildSourceCatalog() const {
     using R=Result<std::shared_ptr<const runtime::IAssetCatalog>>;
