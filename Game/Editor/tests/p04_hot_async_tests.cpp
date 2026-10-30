@@ -164,7 +164,7 @@ int main(){
             Check(until(burst,[&](const auto &events){return std::any_of(events.begin(),events.end(),[&](const auto &e){return e.id==id&&e.kind==ed::HotAssetEventKind::Recovered;});}),"Replacement with last-good bytes did not recover");
             const auto cooked=root/".epidemic/Cache/images"/(good.cooked_key+".image");
             fs::rename(cooked,root/".epidemic/Cache/images"/(good.cooked_key+".unavailable"));
-            burst.Request(id);
+            ex::Take(burst.Request(*folder,id));
             // Busy is global: a peer audit may start in the publication Poll.
             Check(until(burst,[&](const auto &events){return fs::exists(cooked)&&std::any_of(events.begin(),events.end(),[&](const auto &e){return e.id==id&&e.kind==ed::HotAssetEventKind::Recovered;});}),"Explicit reimport did not rebuild/publish/notify cooked data");
             Check(folder->Sources().front().cooked_key==good.cooked_key && folder->Sources().front().generation==good.generation,"Force reimport changed the stable last-good generation");

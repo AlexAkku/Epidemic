@@ -39,7 +39,7 @@ class EditorWorkspace final {
         hot_reload_.SetEnabled(false);return {};
     }
     void EnableContentWatch(bool enabled) noexcept {
-        content_watch_enabled_=enabled;hot_reload_.SetEnabled(enabled && (!session_ || !session_->IsPlaying()));
+        content_watch_enabled_=enabled;hot_reload_.SetEnabled(enabled);
     }
     [[nodiscard]] bool IsDirty() const noexcept { return folder_ ? folder_->IsDirty() : project_ && project_->IsDirty(); }
     [[nodiscard]] foundation::Result<void> Execute(std::vector<Command> commands, std::uint64_t expected_revision);

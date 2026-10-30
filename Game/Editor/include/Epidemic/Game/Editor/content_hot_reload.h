@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <deque>
 
 namespace epidemic::game::editor {
 enum class HotAssetEventKind { Queued, Updated, Missing, Failed, Recovered, Cancelled };
@@ -35,7 +36,8 @@ class ContentHotReload final {
     ~ContentHotReload();
     void Reset(const ProjectFolder &folder);
     void SetEnabled(bool enabled) noexcept;
-    void Request(runtime::AssetId asset);
+    void Cancel() noexcept;
+    [[nodiscard]] foundation::Result<void> Request(const ProjectFolder &folder,runtime::AssetId asset);
     [[nodiscard]] bool Enabled() const noexcept { return enabled_; }
     [[nodiscard]] bool Busy() const noexcept { return pending_!=nullptr; }
     [[nodiscard]] std::vector<HotAssetEvent> Poll(ProjectFolder &folder);
@@ -55,6 +57,7 @@ class ContentHotReload final {
         std::uint64_t initial_generation=0;
         std::string initial_cooked_key;
         std::uint64_t initial_source_hash=0,epoch=0;
+        bool manual=false;
         std::uintmax_t size=0;
         std::filesystem::file_time_type write{};
         std::shared_ptr<std::atomic_bool> cancel;
@@ -68,6 +71,7 @@ class ContentHotReload final {
     std::uint64_t epoch_=0;
     Prepare prepare_;
     std::chrono::milliseconds audit_interval_;
+    std::deque<runtime::AssetId> manual_;
     bool enabled_=true;
 };
 } // namespace epidemic::game::editor

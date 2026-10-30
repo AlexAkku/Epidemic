@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <chrono>
 #include <system_error>
+#include <array>
 
 namespace epidemic::game::editor {
 namespace {
@@ -37,15 +38,34 @@ void ContentHotReload::CancelPending() noexcept {
     }catch(...){return;} // Retain ownership if the readiness query fails.
 }
 void ContentHotReload::SetEnabled(bool enabled) noexcept {
-    if(enabled_==enabled){if(!enabled)CancelPending();return;}
+    if(enabled_==enabled){
+        if(!enabled && pending_ && (!pending_->manual || pending_->cancel->load()))CancelPending();
+        return;
+    }
     enabled_=enabled;
-    if(!enabled_){++epoch_;CancelPending();}
+    if(!enabled_){if(pending_ && !pending_->manual)CancelPending();}
     else for(auto &[id,state]:tracked_){(void)id;state.dirty=true;}
 }
-void ContentHotReload::Request(runtime::AssetId asset){auto &state=tracked_[asset.Raw()];state.dirty=true;state.force=true;}
+void ContentHotReload::Cancel() noexcept {
+    ++epoch_;CancelPending();manual_.clear();
+    for(auto &[id,state]:tracked_){(void)id;state.force=false;state.dirty=false;state.next_audit=std::chrono::steady_clock::now()+audit_interval_;}
+}
+foundation::Result<void> ContentHotReload::Request(const ProjectFolder &folder,runtime::AssetId asset){
+    using R=foundation::Result<void>;
+    const auto found=std::find_if(folder.Sources().begin(),folder.Sources().end(),[&](const auto &source){return source.id==asset;});
+    if(found==folder.Sources().end() || found->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
+        return R::Failure(foundation::Error::Create("editor.image_type","Reimport requires an indexed PNG"));
+    if(root_!=folder.Root())Reset(folder);
+    auto &state=tracked_[asset.Raw()];
+    if(!state.force){
+        if(manual_.size()>=128)return R::Failure(foundation::Error::Create("editor.asset_queue_full","Wait for pending imports"));
+        manual_.push_back(asset);state.force=true;
+    }
+    state.dirty=true;return R::Success();
+}
 void ContentHotReload::Reset(const ProjectFolder &folder) {
     ++epoch_;CancelPending();
-    root_=folder.Root();tracked_.clear();cursor_=0;
+    root_=folder.Root();tracked_.clear();manual_.clear();cursor_=0;
     // First observations are audit candidates, not trusted content baselines.
 }
 std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
@@ -61,7 +81,7 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
             catch(...){return foundation::Result<PreparedCookedPng>::Failure(
                 foundation::Error::Create("editor.asset_worker_exception","Unknown worker exception"));}
         }();
-        if(complete->epoch!=epoch_ || complete->cancel->load(std::memory_order_relaxed) || !enabled_){
+        if(complete->epoch!=epoch_ || complete->cancel->load(std::memory_order_relaxed) || (!enabled_ && !complete->manual)){
             events.push_back({complete->id,HotAssetEventKind::Cancelled,"editor.asset_cancelled"});
         }else{
             auto &state=tracked_[complete->id.Raw()];
@@ -87,13 +107,21 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
         }
         // 'finished' and its source read lease are released before another job.
     }
-    if(!enabled_)return events;
+    if(!enabled_ && manual_.empty())return events;
     const auto &sources=folder.Sources();
     if(sources.empty())return events;
     constexpr std::size_t kStatsPerPoll=32;
-    const auto count=std::min(kStatsPerPoll,sources.size());
+    std::array<std::size_t,kStatsPerPoll+1> candidates{};std::size_t count=0;
+    if(!manual_.empty()){
+        const auto source=std::find_if(sources.begin(),sources.end(),[&](const auto &asset){return asset.id==manual_.front();});
+        if(source==sources.end()){
+            events.push_back({manual_.front(),HotAssetEventKind::Failed,"editor.asset_unknown"});manual_.pop_front();
+        }else candidates[count++]=static_cast<std::size_t>(source-sources.begin());
+    }
+    const auto stats=enabled_?std::min(kStatsPerPoll,sources.size()):0;
+    for(std::size_t i=0;i<stats;++i)candidates[count++]=(cursor_+i)%sources.size();
     for(std::size_t i=0;i<count;++i){
-        const auto index=(cursor_+i)%sources.size();
+        const auto index=candidates[i];
         const auto &source=sources[index];
         if(source.type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})continue;
         auto &state=tracked_[source.id.Raw()];
@@ -103,6 +131,7 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
         if(!signature.present){
             if(!state.missing_reported)events.push_back({source.id,HotAssetEventKind::Missing,"editor.asset_missing: "+source.relative_path});
             state.missing_reported=true;state.missing=true;state.seen=false;state.stable=0;state.dirty=true;state.failed=true;
+            if(state.force){state.force=false;if(!manual_.empty() && manual_.front()==source.id)manual_.pop_front();}
             continue;
         }
         if(!state.seen || state.size!=signature.size || state.write!=signature.write){
@@ -115,12 +144,14 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
         auto next=std::make_unique<Pending>();
         next->id=source.id;next->relative=relative;next->size=signature.size;next->write=signature.write;
         next->epoch=epoch_;next->initial_generation=source.generation;
+        next->manual=state.force;
         next->initial_cooked_key=source.cooked_key;next->initial_source_hash=source.source_hash;
         next->cancel=std::make_shared<std::atomic_bool>(false);
         state.dirty=false;state.next_audit=now+audit_interval_;
         try{
             next->worker=std::async(std::launch::async,prepare_,root_,next->relative,next->cancel.get(),state.force?std::string{}:next->initial_cooked_key);
             state.force=false;
+            if(next->manual && !manual_.empty() && manual_.front()==source.id)manual_.pop_front();
             pending_=std::move(next);
             cursor_=(index+1)%sources.size();
             events.push_back({source.id,HotAssetEventKind::Queued,"editor.asset_queued: "+relative});
@@ -130,7 +161,7 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
             events.push_back({source.id,HotAssetEventKind::Failed,"editor.asset_worker_unavailable"});
         }
     }
-    cursor_=(cursor_+count)%sources.size();
+    cursor_=(cursor_+stats)%sources.size();
     return events;
 }
 } // namespace epidemic::game::editor

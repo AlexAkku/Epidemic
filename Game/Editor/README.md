@@ -342,8 +342,9 @@ and a thumbnail preview through Resources/Presentation. See
 Use as Prefab Sprite assigns a selected PNG to the selected Prefab definition.
 Duplicate, staged delete, multi-selection and typed drag/drop remain unavailable.
 Reimport acknowledges an asynchronous request; completion/errors arrive through
-Workspace PollContent. Processing is suspended during Play or when explicitly
-disabled. Stop preserves the watch preference. Copy/import remains synchronous.
+Workspace PollContent. Manual reimport remains available with the automatic
+watcher disabled and during Play; authoring preview can update while the game
+retains its session snapshot. Stop preserves the watch preference. Copy/import remains synchronous.
 The root watcher operates without the browser. Cancel/Reset do not wait; final
 service destruction drains its worker. See [the current pipeline contract](ASSET_PIPELINE.md)
 for fingerprint auditing, source read leases and registration reclamation limits.

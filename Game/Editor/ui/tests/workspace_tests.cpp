@@ -197,8 +197,7 @@ void FolderWorkspace() {
         ex::Take(workspace.ImportPng(external,"sprite.png"));ex::Take(workspace.Save());
         const auto asset=workspace.Folder()->Sources().front();
         workspace.EnableContentWatch(false);ex::Take(workspace.Play());ex::Take(workspace.Stop());
-        Check(!workspace.ReimportPng(asset.id)); // Stop preserves explicit disable.
-        workspace.EnableContentWatch(true);ex::Take(workspace.ReimportPng(asset.id));
+        ex::Take(workspace.ReimportPng(asset.id)); // Explicit jobs work with automatic watching disabled.
         Check(!workspace.IsDirty()); // Acknowledges queueing, not publication.
         const auto await=[&](ed::HotAssetEventKind kind){
             const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds{5};
@@ -210,11 +209,21 @@ void FolderWorkspace() {
         };
         Check(await(ed::HotAssetEventKind::Recovered));
         Check(workspace.Folder()->Sources().front().generation==asset.generation && !workspace.IsDirty());
-        ex::Take(workspace.Play());Check(!workspace.ReimportPng(asset.id));
+        ex::Take(workspace.Play());ex::Take(workspace.ReimportPng(asset.id));
+        Check(await(ed::HotAssetEventKind::Recovered));
+        workspace.EnableContentWatch(true);
+        const auto authored=workspace.Project()->Snapshot();
+        constexpr unsigned char blue[]={137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,31,21,196,137,0,0,0,13,73,68,65,84,120,156,99,96,96,248,223,0,0,2,131,1,128,67,187,248,3,0,0,0,0,73,69,78,68,174,66,96,130};
+        {std::ofstream out(clone/"Content/sprite.png",std::ios::binary);out.write(reinterpret_cast<const char *>(blue),sizeof(blue));}
+        Check(await(ed::HotAssetEventKind::Updated));
+        Check(workspace.Session()->IsPlaying() && workspace.Project()->Snapshot()==authored);
+        const auto updated=workspace.Folder()->Sources().front();
+        Check(updated.generation==asset.generation+1 && updated.id==asset.id && updated.cooked_key!=asset.cooked_key);
+        ex::Take(workspace.Save());
         {std::ofstream out(clone/"Content/sprite.png",std::ios::binary);out<<"broken";}
-        Check(workspace.PollContent().empty()); // No publication while playing.
-        ex::Take(workspace.Stop());Check(await(ed::HotAssetEventKind::Failed));
-        Check(workspace.Folder()->Sources().front().cooked_key==asset.cooked_key && !workspace.IsDirty());
+        ex::Take(workspace.ReimportPng(asset.id));Check(await(ed::HotAssetEventKind::Failed));
+        ex::Take(workspace.Stop());
+        Check(workspace.Folder()->Sources().front().cooked_key==updated.cooked_key && !workspace.IsDirty());
 #endif
     }
     ed::EditorWorkspace reopened{schema.View(),[&]{return ex::Options(schema);}};

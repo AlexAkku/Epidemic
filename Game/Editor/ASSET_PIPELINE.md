@@ -47,7 +47,8 @@ its UI never receives a mutable EditorProject or Assets catalog.
 ## Current acceptance boundary
 
 ContentHotReload has one owned asynchronous slot, including cancelled work until
-it finishes. Disable/Reset request cancellation without waiting; Poll reaps ready
+it finishes. Disabling automatic watching cancels automatic work; explicit jobs
+remain available through a bounded queue. Reset/Cancel request cancellation without waiting; Poll reaps ready
 work even while disabled. Final service destruction joins its worker; WIC decode
 itself is not preempted. No detached worker outlives its owner. Epoch/path/source
 generation checks discard stale completion and schedule the current source again.
@@ -66,9 +67,10 @@ while this short lease exists. Prepared publication is metadata-only and checks
 the source identity; it does not hash or decode on the UI thread. Unchanged audits
 skip decoding when the cooked blob exists. Explicit Reimport forces a rebuild.
 EditorWorkspace::ReimportPng now acknowledges queueing; completion/errors arrive
-through PollContent. Play suspends publication; Stop restores the user's watch
-preference. Reimport fails explicitly while Play/asset processing is suspended.
-Initial
+through PollContent, including when automatic watching is disabled. Authoring
+preview may update during Play; the running game's snapshot/resource generation
+is independent and stays stable until the next Play. Stop does not change the
+watch preference. Initial
 Copy/Import and the explicit synchronous CookProjectPng API remain synchronous.
 
 ImageResourceLoader no longer has a 256-key lifetime ceiling. A loader dedicated
