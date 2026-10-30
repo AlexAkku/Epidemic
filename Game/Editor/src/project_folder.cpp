@@ -1,5 +1,6 @@
 #include "Epidemic/Game/Editor/project_folder.h"
 #include "Epidemic/Game/Editor/asset_commands.h"
+#include "Epidemic/Game/Editor/content_dependencies.h"
 #include "Epidemic/Game/Editor/project_path.h"
 #include "Epidemic/Game/Editor/png_import.h"
 #include "Epidemic/Game/Editor/image_resource.h"
@@ -58,6 +59,7 @@ constexpr runtime::SchemaVersion kVersion{1,0,0};
 constexpr runtime::SchemaVersion kSourcesVersion{1,1,0};
 constexpr runtime::SchemaVersion kSpriteSourcesVersion{1,2,0};
 constexpr runtime::SchemaVersion kSheetSourcesVersion{1,3,0};
+constexpr runtime::SchemaVersion kLifecycleSourcesVersion{1,4,0};
 
 struct Commit {
     std::uint64_t generation=0, project=0, entry_scene=0, authoring_hash=0, assets_hash=0;
@@ -121,7 +123,7 @@ Bytes EncodeSources(const SourceIndex &index) {
         const auto &a=index.records[i]; Take(w->BeginArrayElement(i));
         Take(w->WriteUInt64("id",a.id.Raw())); Take(w->WriteUInt64("type",a.type.value.Raw()));
         Take(w->WriteString("path",a.relative_path));Take(w->WriteUInt64("hash",a.source_hash));
-        Take(w->WriteUInt64("generation",a.generation)); Take(w->WriteString("cooked",a.cooked_key)); Take(w->EndArrayElement());
+        Take(w->WriteUInt64("generation",a.generation)); Take(w->WriteString("cooked",a.cooked_key));Take(w->WriteString("original",a.original_path)); Take(w->EndArrayElement());
     }
     Take(w->EndArray());
     Require(index.sprites.size()<=kMaxSources,"editor.sprite_limit","Too many sprite bindings");
@@ -147,13 +149,13 @@ Bytes EncodeSources(const SourceIndex &index) {
         Take(w->WriteString("regions",metadata.value));Take(w->EndArrayElement());
     }
     Take(w->EndArray());
-    return Take(runtime::EncodeDocument(Take(w->Finalize(kSourcesType,kSheetSourcesVersion))));
+    return Take(runtime::EncodeDocument(Take(w->Finalize(kSourcesType,kLifecycleSourcesVersion))));
 }
 SourceIndex DecodeSources(std::span<const std::byte> data) {
     auto doc=Take(runtime::DecodeDocument(data));
     Require(doc.GetTypeId()==kSourcesType,"editor.folder_sources","Wrong source index type");
     Require(doc.GetSchemaVersion()==kVersion || doc.GetSchemaVersion()==kSourcesVersion ||
-        (doc.GetSchemaVersion()==kSpriteSourcesVersion || doc.GetSchemaVersion()==kSheetSourcesVersion),"editor.folder_version","Unsupported source index version");
+        (doc.GetSchemaVersion()==kSpriteSourcesVersion || (doc.GetSchemaVersion()==kSheetSourcesVersion || doc.GetSchemaVersion()==kLifecycleSourcesVersion)),"editor.folder_version","Unsupported source index version");
     auto services=Take(runtime::CreateSerializationServices()); auto r=Take(services.archives->CreateReader(doc));
     SourceIndex index; index.next=Take(r->ReadUInt64("next"));
     const auto count=Take(r->BeginArray("sources"));
@@ -166,8 +168,10 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
         a.type=runtime::AssetType{foundation::StringId{Take(r->ReadUInt64("type"))}};
         a.relative_path=Take(r->ReadString("path")); a.source_hash=Take(r->ReadUInt64("hash"));
         a.generation=Take(r->ReadUInt64("generation"));
-        if(doc.GetSchemaVersion()==kSourcesVersion || doc.GetSchemaVersion()==kSpriteSourcesVersion || doc.GetSchemaVersion()==kSheetSourcesVersion)
+        if(doc.GetSchemaVersion()==kSourcesVersion || doc.GetSchemaVersion()==kSpriteSourcesVersion || (doc.GetSchemaVersion()==kSheetSourcesVersion || doc.GetSchemaVersion()==kLifecycleSourcesVersion))
             a.cooked_key=Take(r->ReadString("cooked"));
+        if(doc.GetSchemaVersion()==kLifecycleSourcesVersion)a.original_path=Take(r->ReadString("original"));
+        Require(a.original_path.empty() || (a.original_path.starts_with("Content/") && a.original_path.size()<=runtime::kMaxAssetPathBytes && a.relative_path.starts_with("Content/.Trash/")),"editor.folder_trash","Invalid staged delete metadata");
         Require(a.cooked_key.empty() || (a.cooked_key.size()==64 && a.cooked_key.find_first_not_of("0123456789abcdef")==std::string::npos),"editor.folder_sources","Invalid cooked key");
         Take(r->EndArrayElement());
         Require(a.id.IsValid() && a.type.IsValid() && a.generation>0 &&
@@ -181,7 +185,7 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
         index.records.push_back(std::move(a));
     }
     Take(r->EndArray());
-    if(doc.GetSchemaVersion()==kSpriteSourcesVersion || doc.GetSchemaVersion()==kSheetSourcesVersion) {
+    if(doc.GetSchemaVersion()==kSpriteSourcesVersion || (doc.GetSchemaVersion()==kSheetSourcesVersion || doc.GetSchemaVersion()==kLifecycleSourcesVersion)) {
         const auto sprites=Take(r->BeginArray("sprites"));
         Require(sprites<=kMaxSources,"editor.sprite_limit","Too many sprite bindings");
         std::set<std::uint64_t> prefabs;
@@ -190,7 +194,7 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
             PrefabSpriteBinding s;
             s.prefab=runtime::AssetId{foundation::StringId{Take(r->ReadUInt64("prefab"))}};
             s.texture=runtime::AssetId{foundation::StringId{Take(r->ReadUInt64("texture"))}};
-            if(doc.GetSchemaVersion()==kSheetSourcesVersion)s.region_id=Take(r->ReadUInt64("region"));
+            if((doc.GetSchemaVersion()==kSheetSourcesVersion || doc.GetSchemaVersion()==kLifecycleSourcesVersion))s.region_id=Take(r->ReadUInt64("region"));
             s.pivot_x=static_cast<float>(Take(r->ReadDouble("pivot_x")));
             s.pivot_y=static_cast<float>(Take(r->ReadDouble("pivot_y")));
             s.pixels_per_unit=static_cast<float>(Take(r->ReadDouble("ppu")));
@@ -205,7 +209,7 @@ SourceIndex DecodeSources(std::span<const std::byte> data) {
         }
         Take(r->EndArray());
     }
-    if(doc.GetSchemaVersion()==kSheetSourcesVersion){
+    if((doc.GetSchemaVersion()==kSheetSourcesVersion || doc.GetSchemaVersion()==kLifecycleSourcesVersion)){
         const auto sheets_count=Take(r->BeginArray("sheets"));
         Require(sheets_count<=kMaxSources,"editor.sheet_limit","Too many spritesheets");
         std::set<std::uint64_t> sheet_ids;
@@ -531,6 +535,17 @@ std::vector<ProjectFolder::EditStep> ProjectFolder::PrepareEdit(EditStep step) c
     }
     return result;
 }
+void ProjectFolder::RefreshAssetDirty() noexcept {
+    // Records keep insertion order. Undone imports retain new tombstones solely
+    // for identity reservation; they do not change the logical save point.
+    std::size_t saved=0;asset_dirty_=false;
+    for(const auto &value:assets_){
+        if(saved<saved_assets_.size() && saved_assets_[saved].id==value.id){
+            if(value!=saved_assets_[saved++]){asset_dirty_=true;return;}
+        }else if(!value.IsTrashed()){asset_dirty_=true;return;}
+    }
+    asset_dirty_=saved!=saved_assets_.size();
+}
 void ProjectFolder::RefreshVisualDirty() noexcept {sprite_dirty_=visuals_!=saved_visuals_ && *visuals_!=*saved_visuals_;}
 Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {
     try{
@@ -545,6 +560,11 @@ Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {
     }catch(const std::exception &){return Result<EditReceipt>::Failure(Error("editor.folder_history","Cannot prepare document command history"));}
 }
 VoidResult ProjectFolder::RestoreEdit(const EditStep &step,bool forward){
+    if(step.kind==EditStep::Kind::Lifecycle){
+        const auto applied=ApplySourceLifecycle(forward?step.after_source:step.before_source);if(!applied)return applied;
+        const auto &visual=forward?step.after:step.before;if(visual){visuals_=visual;RefreshVisualDirty();}
+        return applied;
+    }
     if(step.kind==EditStep::Kind::Document)return forward?editor_->Redo():editor_->Undo();
     if(step.kind==EditStep::Kind::Move){const auto moved=ApplySourceMove(step.move.id,(forward?step.move.after:step.move.before).substr(8));if(moved)++asset_revision_;return moved;}
     visuals_=forward?step.after:step.before;RefreshVisualDirty();++asset_revision_;
@@ -569,6 +589,7 @@ Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount
 Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path,runtime::AssetType type,std::string cooked_key) {
     using R=Result<runtime::AssetId>;
     try {
+        Require(!path.starts_with(".Trash/") && !path.starts_with(".imports/"),"editor.import_destination","Reserved source directory");
         Require(type.IsValid() && !path.empty() && path.size()<=runtime::kMaxAssetPathBytes-8 && next_asset_number_<std::numeric_limits<std::uint64_t>::max() && assets_.size()<kMaxSources,
             "editor.folder_sources","Invalid source registration");
         Require(cooked_key.empty() || (cooked_key.size()==64 && cooked_key.find_first_not_of("0123456789abcdef")==std::string::npos),"editor.folder_cooked","Invalid cooked key");
@@ -627,7 +648,7 @@ VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, const PreparedCooke
             candidate.key_.find_first_not_of("0123456789abcdef")==std::string::npos,
             "editor.folder_cooked","Invalid prepared source lease");
         const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
-        Require(found!=assets_.end() && found->relative_path=="Content/"+candidate.relative_ &&
+        Require(found!=assets_.end() && !found->IsTrashed() && found->relative_path=="Content/"+candidate.relative_ &&
             found->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} &&
             found->generation<std::numeric_limits<std::uint32_t>::max(),
             "editor.folder_cooked","Prepared source identity changed");
@@ -666,7 +687,7 @@ VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view 
         pending_moves_.swap(pending);
         std::filesystem::rename(old_path,new_path,ec);
         Require(!ec,"editor.folder_io","Cannot move source file");
-        found->relative_path.swap(relative);asset_dirty_=assets_!=saved_assets_;
+        found->relative_path.swap(relative);RefreshAssetDirty();
         return VoidResult::Success();
     } catch(const Failure &f) {return VoidResult::Failure(f.error);}
     catch(const std::exception &) {return VoidResult::Failure(Error("editor.folder_io","Move source failed"));}
@@ -674,7 +695,8 @@ VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view 
 VoidResult ProjectFolder::MoveSource(runtime::AssetId id,std::string_view relative) {
     try {
         const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
-        Require(found!=assets_.end(),"editor.folder_move_history","Unknown asset");
+        Require(found!=assets_.end() && !found->IsTrashed(),"editor.folder_move_history","Unknown active asset");
+        Require(!relative.starts_with(".Trash/") && !relative.starts_with(".imports/"),"editor.import_destination","Reserved source directory");
         EditStep step;step.kind=EditStep::Kind::Move;step.move={id,found->relative_path,"Content/"+std::string(relative)};
         auto history=PrepareEdit(std::move(step));
         const auto moved=ApplySourceMove(id,relative);if(!moved)return moved;
@@ -691,6 +713,83 @@ VoidResult ProjectFolder::RedoAssetMove() {
     if(!CanRedo() || edits_[edit_cursor_].kind!=EditStep::Kind::Move)
         return VoidResult::Failure(Error("editor.folder_move_history","The next command is not a source move"));
     return Redo();
+}
+VoidResult ProjectFolder::ApplySourceLifecycle(const ProjectSourceAsset &target){
+    try{
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==target.id;});
+        Require(found!=assets_.end(),"editor.asset_unknown","Source asset not found");
+        auto original=target.original_path;
+        auto checked=assets_;
+        const auto index=static_cast<std::size_t>(found-assets_.begin());
+        checked[index].relative_path=target.relative_path;checked[index].original_path=target.original_path;
+        (void)DecodeSources(EncodeSources({next_asset_number_,checked,visuals_->sprites,visuals_->sheets}));
+        const auto destination=SafeAt(root_,target.relative_path);std::error_code error;
+        std::filesystem::create_directories(destination.parent_path(),error);Require(!error,"editor.asset_restore","Cannot prepare source destination");
+        (void)SafeAt(root_,target.relative_path); // Re-check newly created ancestors.
+        if(found->relative_path!=target.relative_path){const auto moved=ApplySourceMove(target.id,target.relative_path.substr(8));if(!moved)return moved;}
+        found->original_path.swap(original);RefreshAssetDirty();++asset_revision_;
+        return VoidResult::Success();
+    }catch(const Failure &failure){return VoidResult::Failure(failure.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.asset_restore","Cannot restore source disposition"));}
+}
+Result<runtime::AssetId> ProjectFolder::CommitImportedPng(PreparedCookedPng &&candidate,
+    std::string_view destination,runtime::AssetId duplicate_of){
+    using R=Result<runtime::AssetId>;
+    try{
+        Require(candidate.root_==root_ && candidate.staging_cleanup_ && candidate.source_read_.use_count()==1 && candidate.relative_.starts_with(".imports/"),"editor.import_proof","Import requires exclusively owned staged source");
+        Require(!destination.empty() && !destination.starts_with(".Trash/") && !destination.starts_with(".imports/"),"editor.import_destination","Invalid destination");
+        const auto target=SafeAt(root_,"Content/"+std::string(destination));std::error_code error;
+        Require(!std::filesystem::exists(target,error) && !error && std::filesystem::is_directory(target.parent_path(),error) && !error,"editor.import_destination","Destination exists or parent missing");
+        auto counter=next_asset_number_;runtime::AssetId id;
+        do{
+            Require(counter<std::numeric_limits<std::uint64_t>::max(),"editor.folder_sources","Identity counter exhausted");
+            id=runtime::AssetId::FromString("epidemic.project.asset/"+std::to_string(Snapshot()->definition.id.Raw())+"/"+std::to_string(counter++));
+        }while(!id.IsValid() || editor_->used_ids_.contains({id.Raw(),0}) || Snapshot()->assets->Contains(id) || std::any_of(assets_.begin(),assets_.end(),[&](const auto &source){return source.id==id;}));
+        ProjectSourceAsset record{id,{foundation::StringId::FromString("epidemic.texture.png")},"Content/"+std::string(destination),candidate.source_hash_,1,candidate.key_,{}};
+        auto records=assets_;records.push_back(record);auto visual=std::make_shared<VisualState>(*visuals_);
+        if(duplicate_of.IsValid()){
+            const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==duplicate_of;});
+            Require(source!=assets_.end() && !source->IsTrashed() && source->type==record.type,"editor.duplicate_source","Duplicate source no longer exists");
+            const auto sheet=std::find_if(visuals_->sheets.begin(),visuals_->sheets.end(),[&](const auto &value){return value.texture==duplicate_of;});
+            if(sheet!=visuals_->sheets.end())visual->sheets.push_back({id,sheet->regions});
+        }
+        (void)DecodeSources(EncodeSources({counter,records,visual->sprites,visual->sheets}));
+        EditStep step;step.kind=EditStep::Kind::Lifecycle;step.after_source=record;step.before_source=record;
+        step.before_source.original_path=record.relative_path;
+        step.before_source.relative_path="Content/.Trash/"+std::to_string(id.Raw())+"/"+target.filename().generic_string();
+        step.before=visuals_;step.after=visual;auto history=PrepareEdit(std::move(step));
+        const auto stage=SafeAt(root_,"Content/"+candidate.relative_);
+        candidate.source_read_.reset(); // Finished worker; allow the atomic rename.
+        std::filesystem::rename(stage,target,error);Require(!error,"editor.import_commit","Cannot publish staged source file");
+        assets_.swap(records);next_asset_number_=counter;visuals_=std::move(visual);edits_.swap(history);edit_cursor_=edits_.size();
+        asset_dirty_=true;RefreshVisualDirty();++asset_revision_;
+        return R::Success(id);
+    }catch(const Failure &failure){return R::Failure(failure.error);}
+    catch(const std::exception &){return R::Failure(Error("editor.import_commit","Cannot publish import"));}
+}
+VoidResult ProjectFolder::StageDeleteSource(runtime::AssetId id,bool allow_broken_references){
+    try{
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
+        Require(found!=assets_.end() && !found->IsTrashed(),"editor.asset_unknown","Active source not found");
+        Require(allow_broken_references || BuildContentDependencyIndex(*this).Incoming(id).empty(),"editor.asset_referenced","Source has incoming references; replace or explicitly keep broken references");
+        EditStep step;step.kind=EditStep::Kind::Lifecycle;step.before_source=*found;step.after_source=*found;
+        step.after_source.original_path=found->relative_path;
+        step.after_source.relative_path="Content/.Trash/"+std::to_string(id.Raw())+"/"+std::filesystem::path(found->relative_path).filename().generic_string();
+        auto history=PrepareEdit(step);const auto removed=ApplySourceLifecycle(step.after_source);if(!removed)return removed;
+        edits_.swap(history);edit_cursor_=edits_.size();return VoidResult::Success();
+    }catch(const Failure &failure){return VoidResult::Failure(failure.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.asset_delete","Cannot stage source deletion"));}
+}
+VoidResult ProjectFolder::RestoreSource(runtime::AssetId id){
+    try{
+        const auto found=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==id;});
+        Require(found!=assets_.end() && found->IsTrashed(),"editor.asset_unknown","Trashed source not found");
+        EditStep step;step.kind=EditStep::Kind::Lifecycle;step.before_source=*found;step.after_source=*found;
+        step.after_source.relative_path=found->original_path;step.after_source.original_path.clear();
+        auto history=PrepareEdit(step);const auto restored=ApplySourceLifecycle(step.after_source);if(!restored)return restored;
+        edits_.swap(history);edit_cursor_=edits_.size();return VoidResult::Success();
+    }catch(const Failure &failure){return VoidResult::Failure(failure.error);}
+    catch(const std::exception &){return VoidResult::Failure(Error("editor.asset_restore","Cannot restore staged source"));}
 }
 VoidResult ProjectFolder::SetPrefabSprite(runtime::AssetId prefab,runtime::AssetId texture,
     float pivot_x,float pivot_y,float pixels_per_unit) {
@@ -717,7 +816,7 @@ VoidResult ProjectFolder::Execute(const AssetEditRequest &request){
                 Require(document && document->Kind()==DocumentKind::Prefab,"editor.sprite_prefab","Prefab not found");
                 if(binding.texture.IsValid()){
                     const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==binding.texture;});
-                    Require(source!=assets_.end() && source->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} && !source->cooked_key.empty(),"editor.sprite_texture","Sprite requires cooked PNG");
+                    Require(source!=assets_.end() && !source->IsTrashed() && source->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} && !source->cooked_key.empty(),"editor.sprite_texture","Sprite requires cooked PNG");
                     if(binding.region_id){
                         const auto sheet=std::find_if(candidate->sheets.begin(),candidate->sheets.end(),[&](const auto &value){return value.texture==binding.texture;});
                         Require(sheet!=candidate->sheets.end() && std::any_of(sheet->regions.begin(),sheet->regions.end(),[&](const auto &region){return region.id==binding.region_id && !region.missing;}),"editor.sprite_region","Region missing or retired");
@@ -728,7 +827,7 @@ VoidResult ProjectFolder::Execute(const AssetEditRequest &request){
             }else{
                 const auto &sheet_command=std::get<AssetSetSheet>(command);auto regions=sheet_command.sheet.regions;
                 const auto source=std::find_if(assets_.begin(),assets_.end(),[&](const auto &asset){return asset.id==sheet_command.sheet.texture;});
-                Require(source!=assets_.end() && source->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")},"editor.sheet_parent","Sheet requires indexed PNG");
+                Require(source!=assets_.end() && !source->IsTrashed() && source->type==runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")},"editor.sheet_parent","Sheet requires indexed PNG");
                 const auto png=Take(DecodePng(SafeAt(root_,source->relative_path)));
                 Require(png.width==sheet_command.width && png.height==sheet_command.height,"editor.sheet_source","Sheet dimensions differ from source");
                 const auto validated=sheets::Validate(sheet_command.width,sheet_command.height,regions);
@@ -755,6 +854,7 @@ Result<std::shared_ptr<const runtime::IAssetCatalog>> ProjectFolder::BuildSource
     using R=Result<std::shared_ptr<const runtime::IAssetCatalog>>;
     auto catalog=runtime::CreateAssetServices();if(!catalog)return R::Failure(catalog.GetError());
     for(const auto &a:assets_) {
+        if(a.IsTrashed())continue;
         runtime::AssetMetadata metadata;
         metadata.id=a.id;metadata.type=a.type;
         metadata.location={runtime::AssetLocationKind::FilePath,a.relative_path};

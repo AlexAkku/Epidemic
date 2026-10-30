@@ -3,6 +3,7 @@
 #include "Epidemic/Game/Editor/play_session.h"
 #include "Epidemic/Game/Editor/project_folder.h"
 #include "Epidemic/Game/Editor/content_hot_reload.h"
+#include "Epidemic/Game/Editor/content_import_queue.h"
 
 namespace epidemic::game::editor {
 enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection, PrefabComponent };
@@ -28,16 +29,21 @@ class EditorWorkspace final {
     [[nodiscard]] foundation::Result<void> NewFolder(const std::filesystem::path &root, std::string title, ProjectDefinition definition, bool discard_dirty = false);
     [[nodiscard]] foundation::Result<void> CloneFolder(const std::filesystem::path &destination);
     [[nodiscard]] foundation::Result<void> ImportPng(const std::filesystem::path &source, std::string_view relative);
+    [[nodiscard]] foundation::Result<std::uint64_t> QueueImportPng(const std::filesystem::path &source,std::string destination);
+    [[nodiscard]] foundation::Result<std::uint64_t> QueueDuplicate(runtime::AssetId source,std::string destination);
+    [[nodiscard]] foundation::Result<void> DeleteAsset(runtime::AssetId asset,bool keep_broken_references=false);
+    [[nodiscard]] foundation::Result<void> RestoreAsset(runtime::AssetId asset);
     [[nodiscard]] foundation::Result<void> ReimportPng(runtime::AssetId asset);
     [[nodiscard]] foundation::Result<void> AssignPrefabSprite(runtime::AssetId prefab, runtime::AssetId texture);
     [[nodiscard]] foundation::Result<void> MoveAsset(runtime::AssetId asset, std::string_view relative);
     [[nodiscard]] foundation::Result<void> UndoAssetMove();
     [[nodiscard]] foundation::Result<void> RedoAssetMove();
     [[nodiscard]] const ProjectFolder *Folder() const noexcept { return folder_.get(); }
-    [[nodiscard]] std::vector<HotAssetEvent> PollContent() {
-        if(folder_)return hot_reload_.Poll(*folder_);
-        hot_reload_.SetEnabled(false);return {};
-    }
+    [[nodiscard]] std::vector<HotAssetEvent> PollContent();
+    [[nodiscard]] std::vector<HotAssetEvent> ContentEventsSince(std::uint64_t revision) const;
+    [[nodiscard]] std::uint64_t ContentRevision() const noexcept {return content_revision_;}
+    [[nodiscard]] bool AssetJobsBusy() const noexcept {return hot_reload_.Busy() || imports_.Busy();}
+    void CancelAssetJobs() noexcept {hot_reload_.Cancel();imports_.Cancel();}
     void EnableContentWatch(bool enabled) noexcept {
         content_watch_enabled_=enabled;hot_reload_.SetEnabled(enabled);
     }
@@ -78,6 +84,9 @@ class EditorWorkspace final {
     std::unique_ptr<EditorProject> project_;
     std::unique_ptr<ProjectFolder> folder_;
     ContentHotReload hot_reload_;
+    ContentImportQueue imports_;
+    std::deque<std::pair<std::uint64_t,HotAssetEvent>> content_events_;
+    std::uint64_t content_revision_=0;
     bool content_watch_enabled_=true;
     std::unique_ptr<PlaySession> session_;
     UiSelection selection_;

@@ -23,7 +23,7 @@ foundation::Result<void> EditorWorkspace::Finish(foundation::Result<void> &&resu
 foundation::Result<void> EditorWorkspace::Adopt(foundation::Result<std::unique_ptr<EditorProject>> candidate) {
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    hot_reload_.Cancel();hot_reload_.SetEnabled(false);folder_.reset(); project_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
+    CancelAssetJobs();hot_reload_.SetEnabled(false);content_events_.clear();++content_revision_;folder_.reset(); project_ = std::move(candidate).Value(); session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::Open(const std::filesystem::path &file, bool discard_dirty) {
@@ -40,7 +40,7 @@ foundation::Result<void> EditorWorkspace::OpenFolder(const std::filesystem::path
     auto candidate = ProjectFolder::Open(root, schema_);
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    project_.reset(); folder_ = std::move(candidate).Value(); hot_reload_.Reset(*folder_);hot_reload_.SetEnabled(content_watch_enabled_); session_.reset(); selection_ = {};
+    project_.reset(); folder_ = std::move(candidate).Value(); hot_reload_.Reset(*folder_);hot_reload_.SetEnabled(content_watch_enabled_);imports_.Reset(folder_->Root());content_events_.clear();++content_revision_; session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::NewFolder(const std::filesystem::path &root, std::string title, ProjectDefinition definition, bool discard_dirty) {
@@ -48,7 +48,7 @@ foundation::Result<void> EditorWorkspace::NewFolder(const std::filesystem::path 
     auto candidate = ProjectFolder::Create(root, std::move(title), std::move(definition), schema_);
     if (!candidate) return Finish(foundation::Result<void>::Failure(candidate.GetError()));
     const auto stopped = Stop(); if (!stopped) return stopped;
-    project_.reset(); folder_ = std::move(candidate).Value(); hot_reload_.Reset(*folder_);hot_reload_.SetEnabled(content_watch_enabled_); session_.reset(); selection_ = {};
+    project_.reset(); folder_ = std::move(candidate).Value(); hot_reload_.Reset(*folder_);hot_reload_.SetEnabled(content_watch_enabled_);imports_.Reset(folder_->Root());content_events_.clear();++content_revision_; session_.reset(); selection_ = {};
     return Finish(foundation::Result<void>::Success(), true);
 }
 foundation::Result<void> EditorWorkspace::CloneFolder(const std::filesystem::path &destination) {
@@ -58,6 +58,41 @@ foundation::Result<void> EditorWorkspace::ImportPng(const std::filesystem::path 
     if (!folder_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
     const auto imported=ImportExternalPng(*folder_,source,relative);
     return Finish(imported?foundation::Result<void>::Success():foundation::Result<void>::Failure(imported.GetError()));
+}
+foundation::Result<std::uint64_t> EditorWorkspace::QueueImportPng(const std::filesystem::path &source,std::string destination){
+    auto result=folder_?imports_.Enqueue(*folder_,source,std::move(destination)):
+        foundation::Result<std::uint64_t>::Failure(Error("editor.ui.no_folder"));
+    if(!result)error_=result.GetError();else error_.reset();return result;
+}
+foundation::Result<std::uint64_t> EditorWorkspace::QueueDuplicate(runtime::AssetId source,std::string destination){
+    using R=foundation::Result<std::uint64_t>;
+    if(!folder_)return R::Failure(Error("editor.ui.no_folder"));
+    for(const auto &asset:folder_->Sources())if(asset.id==source && !asset.IsTrashed()){
+        const auto path=folder_->ResolveMount("Content",asset.relative_path.substr(8));
+        if(!path)return R::Failure(path.GetError());
+        return imports_.Enqueue(*folder_,path.Value(),std::move(destination),source);
+    }
+    return R::Failure(Error("editor.asset_unknown"));
+}
+foundation::Result<void> EditorWorkspace::DeleteAsset(runtime::AssetId asset,bool keep_broken_references){
+    auto result=folder_?folder_->StageDeleteSource(asset,keep_broken_references):foundation::Result<void>::Failure(Error("editor.ui.no_folder"));
+    if(result)hot_reload_.Reset(*folder_);return Finish(std::move(result));
+}
+foundation::Result<void> EditorWorkspace::RestoreAsset(runtime::AssetId asset){
+    auto result=folder_?folder_->RestoreSource(asset):foundation::Result<void>::Failure(Error("editor.ui.no_folder"));
+    if(result)hot_reload_.Reset(*folder_);return Finish(std::move(result));
+}
+std::vector<HotAssetEvent> EditorWorkspace::PollContent(){
+    if(!folder_){hot_reload_.Cancel();imports_.Cancel();return {};}
+    auto events=hot_reload_.Poll(*folder_);auto imported=imports_.Poll(*folder_);
+    events.insert(events.end(),std::make_move_iterator(imported.begin()),std::make_move_iterator(imported.end()));
+    for(const auto &event:events){content_events_.emplace_back(++content_revision_,event);if(content_events_.size()>64)content_events_.pop_front();}
+    return events;
+}
+std::vector<HotAssetEvent> EditorWorkspace::ContentEventsSince(std::uint64_t revision) const {
+    std::vector<HotAssetEvent> result;
+    for(const auto &[sequence,event]:content_events_)if(sequence>revision)result.push_back(event);
+    return result;
 }
 foundation::Result<void> EditorWorkspace::ReimportPng(runtime::AssetId asset) {
     if (!folder_) return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_folder")));

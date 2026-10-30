@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <unordered_map>
@@ -24,6 +25,7 @@ class ImageResourceLoader final : public runtime::IResourceLoader {
   public:
     explicit ImageResourceLoader(std::filesystem::path root) : root_(std::move(root)) {}
     [[nodiscard]] foundation::Result<runtime::ResourceId> Register(std::string key);
+    [[nodiscard]] foundation::Result<void> StagePrepared(runtime::ResourceLoadArtifact artifact);
     // Call after releasing preview leases. Referenced/queued resources survive;
     // retired registrations can be re-created by Register before a new request.
     void CollectUnused(runtime::IResourceManager &manager);
@@ -33,6 +35,7 @@ class ImageResourceLoader final : public runtime::IResourceLoader {
   private:
     std::filesystem::path root_;
     std::unordered_map<std::uint64_t,std::string> keys_;
+    std::optional<runtime::ResourceLoadArtifact> prepared_;
 };
 // Produces an unreferenced, immutable cooked PNG on a worker thread.
 // No ProjectFolder, AssetCatalog, Resources or Renderer mutation takes place.
@@ -46,15 +49,21 @@ class PreparedCookedPng final {
     friend class ProjectFolder;
     friend foundation::Result<PreparedCookedPng> PrepareCookedPng(
         const std::filesystem::path &,std::string_view,const std::atomic_bool *,std::string_view);
+    friend foundation::Result<PreparedCookedPng> PrepareImportedPng(
+        const std::filesystem::path &,const std::filesystem::path &,const std::atomic_bool *);
     std::string key_,relative_;
     std::filesystem::path root_;
     std::uint64_t source_hash_=0;
-    std::shared_ptr<void> source_read_;
+    std::shared_ptr<const std::filesystem::path> staging_cleanup_;
+    std::shared_ptr<void> source_read_; // Released before staging_cleanup_.
     bool rebuilt_=false;
 };
 [[nodiscard]] foundation::Result<PreparedCookedPng> PrepareCookedPng(
     const std::filesystem::path &root, std::string_view relative,
     const std::atomic_bool *cancel = nullptr, std::string_view previous_key = {});
+[[nodiscard]] foundation::Result<PreparedCookedPng> PrepareImportedPng(
+    const std::filesystem::path &root,const std::filesystem::path &external,
+    const std::atomic_bool *cancel=nullptr);
 // Same PBGRA source pixels, nearest reduction; bounded to a 128x128 preview.
 [[nodiscard]] DecodedPng MakeImageThumbnail(const DecodedPng &image);
 } // namespace epidemic::game::editor

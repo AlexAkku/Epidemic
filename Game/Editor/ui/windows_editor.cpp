@@ -199,6 +199,7 @@ class Desktop final {
     std::string local_error_, log_text_;
     int field_ = -1;
     bool refreshing_ = false, closed_ = false, timer_running_ = false, content_timer_running_=false, scene_document_=false, edit_overrides_=false;
+    std::uint64_t content_seen_=0;
     bool inspector_actions_=false;
 };
 void Desktop::Controls() {
@@ -564,7 +565,7 @@ void Desktop::SyncScene(bool reset) {
     ShowWindow(ControlHandle(Hint),scene?SW_HIDE:SW_SHOW);
     scene_view_->Sync(snapshot,scene?selection.document:AssetId{},selection.kind==ed::UiElement::SceneNode?SceneNodeId{selection.element}:SceneNodeId{},dpi_,reset);
     if(workspace_.Folder() && !content_timer_running_) {content_timer_running_=SetTimer(hwnd_,2,300,nullptr)!=0;}
-    else if(!workspace_.Folder() && content_timer_running_) {KillTimer(hwnd_,2);content_timer_running_=false;}
+    else if(!workspace_.Folder() && content_timer_running_ && !workspace_.AssetJobsBusy()) {KillTimer(hwnd_,2);content_timer_running_=false;}
     EnableWindow(ControlHandle(FrameSelection),scene && selection.kind==ed::UiElement::SceneNode);
 }
 bool Desktop::PickScene(SceneNodeId node) {
@@ -1038,12 +1039,15 @@ LRESULT Desktop::Message(UINT msg,WPARAM wp,LPARAM lp) {
     if (msg==WM_TIMER && wp==1) { if (timer_running_) { (void)workspace_.Tick(GameDuration{1}); Diagnostics(); } return 0; }
     if (msg==WM_TIMER && wp==2) {
         if(content_timer_running_) {
-            const auto events=workspace_.PollContent();
-            if(!events.empty()) {
+            (void)workspace_.PollContent();
+            const auto events=workspace_.ContentEventsSince(content_seen_);
+            if(workspace_.ContentRevision()!=content_seen_) {
+                content_seen_=workspace_.ContentRevision();
                 for(const auto &event:events) if(event.kind==ed::HotAssetEventKind::Failed ||
                     event.kind==ed::HotAssetEventKind::Missing) {local_error_=event.diagnostic;break;}
                 SyncScene();Diagnostics();
             }
+            if(!workspace_.Folder() && !workspace_.AssetJobsBusy()){KillTimer(hwnd_,2);content_timer_running_=false;}
         }
         return 0;
     }

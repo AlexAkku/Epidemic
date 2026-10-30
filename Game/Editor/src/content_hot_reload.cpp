@@ -53,7 +53,7 @@ void ContentHotReload::Cancel() noexcept {
 foundation::Result<void> ContentHotReload::Request(const ProjectFolder &folder,runtime::AssetId asset){
     using R=foundation::Result<void>;
     const auto found=std::find_if(folder.Sources().begin(),folder.Sources().end(),[&](const auto &source){return source.id==asset;});
-    if(found==folder.Sources().end() || found->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
+    if(found==folder.Sources().end() || found->IsTrashed() || found->type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
         return R::Failure(foundation::Error::Create("editor.image_type","Reimport requires an indexed PNG"));
     if(root_!=folder.Root())Reset(folder);
     auto &state=tracked_[asset.Raw()];
@@ -88,7 +88,7 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
             const auto &sources=folder.Sources();
             const auto found=std::find_if(sources.begin(),sources.end(),[&](const auto &asset){return asset.id==complete->id;});
             const auto signature=Observe(folder,complete->relative);
-            if(found==sources.end() || found->relative_path!="Content/"+complete->relative ||
+            if(found==sources.end() || found->IsTrashed() || found->relative_path!="Content/"+complete->relative ||
                 found->generation!=complete->initial_generation || found->cooked_key!=complete->initial_cooked_key ||
                 found->source_hash!=complete->initial_source_hash || !signature.present ||
                 signature.size!=complete->size || signature.write!=complete->write){
@@ -123,7 +123,7 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
     for(std::size_t i=0;i<count;++i){
         const auto index=candidates[i];
         const auto &source=sources[index];
-        if(source.type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})continue;
+        if(source.IsTrashed() || source.type!=runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})continue;
         auto &state=tracked_[source.id.Raw()];
         if(state.path!=source.relative_path){const auto force=state.force;state={};state.path=source.relative_path;state.force=force;}
         const auto relative=source.relative_path.substr(8);

@@ -88,10 +88,21 @@ void ImageResourceLoader::CollectUnused(runtime::IResourceManager &manager){
         else ++entry; // In-use leases, including pending requests, retain their key.
     }
 }
+foundation::Result<void> ImageResourceLoader::StagePrepared(runtime::ResourceLoadArtifact artifact){
+    const auto image=std::dynamic_pointer_cast<const ImagePayload>(artifact.payload);
+    if(!keys_.contains(artifact.resource_id.Raw()) || artifact.type!=GetResourceType() || !artifact.dependencies.empty() ||
+       !image || image->image.width==0 || image->image.height==0 || image->image.width>4096 || image->image.height>4096 ||
+       image->image.pixels.size()!=std::size_t{image->image.width}*image->image.height*4)
+        return foundation::Result<void>::Failure(Error("editor.image_prepared"));
+    prepared_=std::move(artifact);return foundation::Result<void>::Success();
+}
 foundation::Result<runtime::ResourceLoadArtifact> ImageResourceLoader::Load(runtime::ResourceRequest request){
     using R=foundation::Result<runtime::ResourceLoadArtifact>;
     try{
         Require(request.type==GetResourceType(),"editor.image_type");
+        if(prepared_ && prepared_->resource_id==request.resource_id){
+            auto ready=std::move(*prepared_);prepared_.reset();return R::Success(std::move(ready));
+        }
         const auto entry=keys_.find(request.resource_id.Raw());
         Require(entry!=keys_.end(),"editor.image_unknown");
         const auto bytes=Take(platform::ReadFilePackage(foundation::Path{Cooked(root_,entry->second)},runtime::kMaxDocumentBytes));
@@ -146,6 +157,45 @@ foundation::Result<PreparedCookedPng> PrepareCookedPng(
         return R::Success(std::move(prepared));
     }catch(const Failure &failure){return R::Failure(failure.error);}
     catch(const std::exception &){return R::Failure(Error("editor.image_prepare"));}
+}
+foundation::Result<PreparedCookedPng> PrepareImportedPng(const std::filesystem::path &root,
+    const std::filesystem::path &external,const std::atomic_bool *cancel){
+    using R=foundation::Result<PreparedCookedPng>;
+    try{
+#ifdef _WIN32
+        const auto check=[&]{Require(!cancel || !cancel->load(std::memory_order_relaxed),"editor.image_cancelled");};check();
+        const auto input_handle=CreateFileW(external.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+        Require(input_handle!=INVALID_HANDLE_VALUE,"editor.image_source_busy");
+        auto input_lease=std::shared_ptr<void>(input_handle,[](void *handle){CloseHandle(handle);});
+        std::array<unsigned char,16> random{};
+        Require(BCryptGenRandom(nullptr,random.data(),static_cast<ULONG>(random.size()),BCRYPT_USE_SYSTEM_PREFERRED_RNG)>=0,"editor.image_stage_id");
+        constexpr char digits[]="0123456789abcdef";std::string relative=".imports/";
+        for(const auto byte:random){relative+=digits[byte/16];relative+=digits[byte%16];}relative+=".png";
+        const auto stage=Take(ResolveProjectPath(root,"Content/"+relative));std::error_code error;
+        std::filesystem::create_directories(stage.parent_path(),error);Require(!error,"editor.image_stage");
+        (void)Take(ResolveProjectPath(root,"Content/"+relative));
+        Require(!std::filesystem::exists(stage),"editor.image_stage_collision");
+        auto cleanup=std::shared_ptr<const std::filesystem::path>(new std::filesystem::path(stage),[](const std::filesystem::path *path){
+            std::error_code ignored;std::filesystem::remove(*path,ignored);delete path;
+        });
+        {
+            std::ifstream input(external,std::ios::binary);std::ofstream output(stage,std::ios::binary);
+            Require(input.good() && output.good(),"editor.image_copy");
+            std::array<char,65536> bytes{};std::uint64_t copied=0;
+            while(input){input.read(bytes.data(),static_cast<std::streamsize>(bytes.size()));check();
+                copied+=static_cast<std::uint64_t>(input.gcount());Require(copied<=128ULL*1024*1024,"editor.png_source_limit");
+                output.write(bytes.data(),input.gcount());Require(output.good(),"editor.image_copy");
+            }
+            Require(input.eof() && !input.bad(),"editor.image_copy");output.flush();Require(output.good(),"editor.image_copy");
+        }
+        input_lease.reset();
+        auto prepared=Take(PrepareCookedPng(root,relative,cancel));prepared.staging_cleanup_=std::move(cleanup);
+        return R::Success(std::move(prepared));
+#else
+        (void)root;(void)external;(void)cancel;return R::Failure(Error("editor.png_windows_only"));
+#endif
+    }catch(const Failure &failure){return R::Failure(failure.error);}
+    catch(const std::exception &){return R::Failure(Error("editor.image_copy"));}
 }
 DecodedPng MakeImageThumbnail(const DecodedPng &image){
     if(!image.width || !image.height || image.width>4096 || image.height>4096 || image.pixels.size()!=static_cast<std::size_t>(image.width)*image.height*4)return {};

@@ -11,6 +11,7 @@ struct BrowserFilter {
     std::string path_prefix;
     std::string search;
     std::optional<runtime::AssetType> type;
+    bool show_trashed=false;
 };
 struct BrowserItem {
     runtime::AssetId id{};
@@ -19,6 +20,7 @@ struct BrowserItem {
     std::uint64_t generation=0;
     std::uint64_t source_hash=0;
     bool present=false;
+    bool trashed=false;
 };
 struct BrowserListing {
     std::vector<BrowserItem> items;

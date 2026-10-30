@@ -4,6 +4,7 @@
 #include "windows_editor_style.h"
 #include "Epidemic/Game/Editor/content_browser.h"
 #include "Epidemic/Game/Editor/content_hot_reload.h"
+#include "Epidemic/Game/Editor/content_dependencies.h"
 #include "Epidemic/Game/Editor/image_resource.h"
 #include "Epidemic/Game/Editor/content_thumbnail_cache.h"
 #include "Epidemic/Runtime/Resources/resource_services.h"
@@ -14,6 +15,8 @@
 #include <algorithm>
 #include <array>
 #include <stdexcept>
+#include <future>
+#include <thread>
 namespace epidemic::game::editor {
 namespace {
 std::wstring Wide(std::string_view text){
@@ -33,13 +36,15 @@ std::string Text(HWND handle){
     GetWindowTextW(handle,text.data(),size+1);text.resize(static_cast<std::size_t>(size));return Utf8(text);
 }
 struct Browser final {
-    enum : int { Search=200, List, Path, Import, Reimport, Rename, Save, Preview, Info, Close, UndoMove, RedoMove, AssignPrefab };
+    enum : int { Search=200, List, Path, Import, Reimport, Rename, Save, Preview, Info, Close, UndoMove, RedoMove, AssignPrefab, Duplicate, Delete, Restore, CancelJobs, References, ShowTrash };
     EditorWorkspace &workspace;
     bool smoke=false;
     HWND window=nullptr;
     EditorStyle style;
     BrowserListing listing;
     runtime::AssetId selection{};
+    std::uint64_t content_seen=0;
+    bool show_trash=false;
     ThumbnailCache thumbnails{std::size_t{16}*1024*1024,128};
     std::unique_ptr<runtime::presentation::Renderer> renderer;
     runtime::presentation::RendererTexturePtr texture;
@@ -48,6 +53,8 @@ struct Browser final {
     runtime::ResourceServices resources;
     std::optional<runtime::ResourceLease> lease;
     std::uint32_t image_width=0,image_height=0;
+    std::string desired_key,working_key;
+    std::future<foundation::Result<runtime::ResourceLoadArtifact>> preview_job;
     explicit Browser(EditorWorkspace &value,bool test):workspace(value),smoke(test){}
     HWND Control(int id)const{return GetDlgItem(window,id);}
     void Label(int id,std::string_view text)const{SetWindowTextW(Control(id),Wide(text).c_str());}
@@ -83,9 +90,12 @@ struct Browser final {
         SendMessageW(Control(Path),EM_SETCUEBANNER,TRUE,reinterpret_cast<LPARAM>(L"Destination relative to Content (e.g. Enemy.png)"));
         Add(Import,L"BUTTON",L"Import PNG...",WS_TABSTOP);
         Add(Reimport,L"BUTTON",L"Reimport",WS_TABSTOP);Add(Rename,L"BUTTON",L"Rename / Move",WS_TABSTOP);
-        Add(UndoMove,L"BUTTON",L"Undo move",WS_TABSTOP);Add(RedoMove,L"BUTTON",L"Redo move",WS_TABSTOP);
+        Add(UndoMove,L"BUTTON",L"Undo",WS_TABSTOP);Add(RedoMove,L"BUTTON",L"Redo",WS_TABSTOP);
         Add(Save,L"BUTTON",L"Save project",WS_TABSTOP);Add(Close,L"BUTTON",L"Close",WS_TABSTOP);
         Add(AssignPrefab,L"BUTTON",L"Use as Prefab Sprite",WS_TABSTOP);
+        Add(Duplicate,L"BUTTON",L"Duplicate",WS_TABSTOP);Add(Delete,L"BUTTON",L"Delete",WS_TABSTOP);
+        Add(Restore,L"BUTTON",L"Restore",WS_TABSTOP);Add(CancelJobs,L"BUTTON",L"Cancel jobs",WS_TABSTOP);
+        Add(References,L"BUTTON",L"References",WS_TABSTOP);Add(ShowTrash,L"BUTTON",L"Show trash",WS_TABSTOP);
         Add(Preview,L"STATIC",L"",WS_BORDER);
         Add(Info,L"EDIT",L"",ES_READONLY|ES_MULTILINE|WS_VSCROLL);
         loader=std::make_unique<ImageResourceLoader>(workspace.Folder()->Root());
@@ -108,17 +118,19 @@ struct Browser final {
         move(Preview,margin+left+gap,top,right,std::max(row,static_cast<int>(bounds.bottom)-top-scale(240)));
         move(Info,margin+left+gap,std::max(top+row,static_cast<int>(bounds.bottom)-scale(230)),right,scale(104));
         move(Path,margin,bounds.bottom-scale(122),width,row);
-        move(AssignPrefab,margin,bounds.bottom-scale(155),std::min(width,scale(240)),row);
+        const int secondary=std::max(scale(70),(width-6*gap)/7);int secondary_x=margin;
+        for(int id:{AssignPrefab,Duplicate,Delete,Restore,CancelJobs,References,ShowTrash}){move(id,secondary_x,bounds.bottom-scale(155),secondary,row);secondary_x+=secondary+gap;}
         const int button=std::max(scale(70),(width-6*gap)/7),y=bounds.bottom-scale(80);
         int x=margin;for(int id:{Import,Reimport,Rename,UndoMove,RedoMove,Save,Close}){move(id,x,y,button,row);x+=button+gap;}
         if(renderer){RECT preview{};GetClientRect(Control(Preview),&preview);renderer->SetClientExtent(static_cast<unsigned>(std::max(1L,preview.right)),static_cast<unsigned>(std::max(1L,preview.bottom)));renderer->Resize();}
         InvalidateRect(Control(Preview),nullptr,FALSE);
     }
     void Refresh(){
-        listing=BrowseContent(*workspace.Folder(),{"",Text(Control(Search)),{}});
+        BrowserFilter filter;filter.search=Text(Control(Search));filter.show_trashed=show_trash;
+        listing=BrowseContent(*workspace.Folder(),filter);
         SendMessageW(Control(List),LB_RESETCONTENT,0,0);
         for(std::size_t i=0;i<listing.items.size();++i){const auto &item=listing.items[i];
-            const auto text=Wide(std::string(item.present?"":"[Missing] ")+item.path+"  ["+std::to_string(item.id.Raw())+"]");
+            const auto text=Wide(std::string(item.trashed?"[Trash] ":item.present?"":"[Missing] ")+item.path+"  ["+std::to_string(item.id.Raw())+"]");
             SendMessageW(Control(List),LB_ADDSTRING,0,reinterpret_cast<LPARAM>(text.c_str()));
             if(item.id==selection)SendMessageW(Control(List),LB_SETCURSEL,i,0);
         }
@@ -126,41 +138,63 @@ struct Browser final {
     }
     void Select(){
         const auto index=SendMessageW(Control(List),LB_GETCURSEL,0,0);if(index==LB_ERR || static_cast<std::size_t>(index)>=listing.items.size())return;
-        const auto &item=listing.items[static_cast<std::size_t>(index)];selection=item.id;Label(Path,item.path);
+        const auto &item=listing.items[static_cast<std::size_t>(index)];selection=item.id;Label(Path,item.path.starts_with("Content/")?item.path.substr(8):item.path);
         for(const auto &source:workspace.Folder()->Sources())if(source.id==selection){
             Error("AssetId: "+std::to_string(source.id.Raw())+" | generation: "+std::to_string(source.generation)+"\r\n"+source.relative_path+"\r\n"+(source.cooked_key.empty()?"No cooked image":source.cooked_key));
-            if(source.cooked_key.empty()){ClearPreview();return;}
-            const auto id=loader->Register(source.cooked_key);if(!id){Error(id.GetError().code);return;}
+            if(source.cooked_key.empty() || source.IsTrashed()){desired_key.clear();ClearPreview();return;}
+            desired_key=source.cooked_key;PumpPreview();return;
+        }
+    }
+    void PumpPreview(){
+        if(preview_job.valid()){
+            if(preview_job.wait_for(std::chrono::milliseconds{0})!=std::future_status::ready)return;
+            auto result=preview_job.get();
+            if(working_key==desired_key){
+                if(!result){Error(result.GetError().code+": last-good preview retained");desired_key.clear();return;}
+                PublishPreview(working_key,std::move(result).Value());desired_key.clear();return;
+            }
+        }
+        if(desired_key.empty())return;
+        working_key=desired_key;const auto root=workspace.Folder()->Root();const auto key=working_key;
+        preview_job=std::async(std::launch::async,[root,key]{
+            ImageResourceLoader worker{root};const auto id=worker.Register(key);
+            if(!id)return foundation::Result<runtime::ResourceLoadArtifact>::Failure(id.GetError());
+            return worker.Load({id.Value(),worker.GetResourceType()});
+        });
+    }
+    void PublishPreview(const std::string &key,runtime::ResourceLoadArtifact artifact){
+            const auto id=loader->Register(key);if(!id){Error(id.GetError().code);return;}
+            const auto staged=loader->StagePrepared(std::move(artifact));if(!staged){Error(staged.GetError().code);return;}
             const auto candidate=resources.manager->RequestLease({id.Value(),loader->GetResourceType()});if(!candidate){loader->CollectUnused(*resources.manager);Error(candidate.GetError().code);return;}
             const auto loaded=resources.manager->ProcessPendingLoads();
             const auto payload=std::dynamic_pointer_cast<const ImagePayload>(resources.manager->GetPayload(candidate.Value().resource));
-            if(!loaded || !payload){(void)resources.manager->Release(candidate.Value());loader->CollectUnused(*resources.manager);Error("Image load failed; previous preview retained. Reimport to rebuild missing cache.");return;}
+            if(!loaded || !payload){(void)resources.manager->Release(candidate.Value());loader->CollectUnused(*resources.manager);Error("Image publication failed; previous preview retained.");return;}
             try{
                 if(!renderer){RECT bounds{};GetClientRect(Control(Preview),&bounds);
                     renderer=std::make_unique<runtime::presentation::Renderer>(Control(Preview),std::span<const runtime::presentation::SpriteEntry>{},0);
                     renderer->SetClientExtent(static_cast<unsigned>(std::max(1L,bounds.right)),static_cast<unsigned>(std::max(1L,bounds.bottom)));renderer->Resize();}
                 DecodedPng thumbnail;
-                if(auto cached=thumbnails.Get(source.cooked_key))
+                if(auto cached=thumbnails.Get(key))
                     thumbnail={cached->width,cached->height,std::move(cached->bgra)};
                 else {
                     thumbnail=MakeImageThumbnail(payload->image);
-                    (void)thumbnails.Put(source.cooked_key,{thumbnail.width,thumbnail.height,thumbnail.pixels});
+                    (void)thumbnails.Put(key,{thumbnail.width,thumbnail.height,thumbnail.pixels});
                 }
                 auto candidate_texture=renderer->CreateTexture(thumbnail.width,thumbnail.height,thumbnail.pixels);
                 ClearPreview();lease=candidate.Value();texture=std::move(candidate_texture);image_width=thumbnail.width;image_height=thumbnail.height;
                 InvalidateRect(Control(Preview),nullptr,FALSE);
             }catch(...){(void)resources.manager->Release(candidate.Value());loader->CollectUnused(*resources.manager);throw;}
-            return;
-        }
     }
     void Smoke(){
         bool found=false;
         for(std::size_t i=0;i<listing.items.size();++i)if(listing.items[i].path.ends_with(".png")){
-            SendMessageW(Control(List),LB_SETCURSEL,i,0);Select();found=texture && lease.has_value();break;}
+            SendMessageW(Control(List),LB_SETCURSEL,i,0);Select();
+            for(int attempt=0;attempt<600 && (!desired_key.empty() || preview_job.valid());++attempt){PumpPreview();std::this_thread::sleep_for(std::chrono::milliseconds{5});}
+            found=texture && lease.has_value();break;}
         if(!found)throw std::runtime_error("Content smoke: no resident PNG/texture preview");
         Paint();Layout();Paint();ClearPreview();
         if(resources.manager->GetMemoryStatistics().resident_bytes!=0 || resources.manager->GetMemoryStatistics().invariant_failure_count!=0)throw std::runtime_error("Content smoke: leaked resident image after release");
-        Select();Paint();
+        Select();for(int attempt=0;attempt<600 && (!desired_key.empty() || preview_job.valid());++attempt){PumpPreview();std::this_thread::sleep_for(std::chrono::milliseconds{5});}Paint();
         if(!texture || !lease)throw std::runtime_error("Content smoke: repeated preview lost resource");
         EndDialog(window,0);
     }
@@ -192,19 +226,36 @@ struct Browser final {
             }
             Result(workspace.AssignPrefabSprite(prefab,selection));return;
         }
-        if(id==UndoMove){Result(workspace.UndoAssetMove());return;}
-        if(id==RedoMove){Result(workspace.RedoAssetMove());return;}
+        if(id==UndoMove){Result(workspace.Undo());return;}
+        if(id==RedoMove){Result(workspace.Redo());return;}
         if(id==Save){Result(workspace.Save());return;}
         if(id==Rename){Result(workspace.MoveAsset(selection,Text(Control(Path))));return;}
-        if(id==Reimport){const auto result=workspace.ReimportPng(selection);Result(result);if(result)Select();return;}
+        if(id==CancelJobs){workspace.CancelAssetJobs();Error("Cancellation requested; already published assets are retained.");return;}
+        if(id==ShowTrash){show_trash=!show_trash;Refresh();return;}
+        if(id==Restore){Result(workspace.RestoreAsset(selection));return;}
+        if(id==Delete){
+            auto result=workspace.DeleteAsset(selection);
+            if(!result && result.GetError().code=="editor.asset_referenced"){
+                if(MessageBoxW(window,L"This asset has incoming references. Move to trash and keep broken references?",L"Delete asset",MB_YESNO|MB_ICONWARNING)!=IDYES)return;
+                result=workspace.DeleteAsset(selection,true);
+            }
+            Result(result);return;
+        }
+        if(id==Duplicate){const auto result=workspace.QueueDuplicate(selection,Text(Control(Path)));if(!result)Error(result.GetError().code+": "+result.GetError().message);else Error("Duplicate queued. Enter a new Content path before duplicating.");return;}
+        if(id==References){
+            const auto index=BuildContentDependencyIndex(*workspace.Folder());const auto incoming=index.Incoming(selection);
+            std::string text="Incoming references: "+std::to_string(incoming.size());
+            for(const auto &ref:incoming)text+="\r\n"+std::to_string(ref.dependent.Raw());
+            Error(text);return;
+        }
+        if(id==Reimport){const auto result=workspace.ReimportPng(selection);if(!result)Result(result);else Error("Reimport queued. Last-good preview remains until publication.");return;}
         if(id==Import){
             std::array<wchar_t,32768> path{};OPENFILENAMEW dialog{};dialog.lStructSize=sizeof(dialog);dialog.hwndOwner=window;
             dialog.lpstrFilter=L"PNG image\0*.png\0\0";dialog.lpstrFile=path.data();dialog.nMaxFile=static_cast<DWORD>(path.size());dialog.Flags=OFN_EXPLORER|OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
             if(!GetOpenFileNameW(&dialog)){if(CommDlgExtendedError())Error("File dialog failed");return;}
             const std::filesystem::path external{path.data()};auto relative=Text(Control(Path));if(relative.empty())relative=Utf8(external.filename().wstring());
-            const auto result=workspace.ImportPng(external,relative);Result(result);if(result){
-                for(const auto &source:workspace.Folder()->Sources())if(source.relative_path=="Content/"+relative)selection=source.id;
-                Refresh();Select();}
+            const auto result=workspace.QueueImportPng(external,relative);
+            if(!result)Error(result.GetError().code+": "+result.GetError().message);else Error("Import queued. Source copy and PNG preparation run off the UI thread.");
         }
     }
     static LRESULT CALLBACK PreviewProc(HWND hwnd,UINT message,WPARAM wp,LPARAM lp,UINT_PTR,DWORD_PTR data)noexcept{
@@ -222,7 +273,10 @@ struct Browser final {
             if(message==WM_DRAWITEM && lp && self->DrawButton(*reinterpret_cast<const DRAWITEMSTRUCT *>(lp)))return TRUE;
             if(message==WM_CLOSE){EndDialog(hwnd,0);return TRUE;}
             if(message==WM_TIMER && wp==20) {
-                const auto events=self->workspace.PollContent();
+                self->PumpPreview();
+                (void)self->workspace.PollContent();
+                const auto events=self->workspace.ContentEventsSince(self->content_seen);
+                self->content_seen=self->workspace.ContentRevision();
                 if(!events.empty()) {
                     self->Refresh();
                     for(const auto &event:events)if(event.id==self->selection && event.kind==HotAssetEventKind::Updated)self->Select();

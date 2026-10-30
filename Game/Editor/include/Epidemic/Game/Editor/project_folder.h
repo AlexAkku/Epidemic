@@ -21,6 +21,8 @@ struct ProjectSourceAsset {
     std::uint64_t generation = 1;
     // SHA-256 key of immutable serialized image; empty for uncooked sources.
     std::string cooked_key;
+    std::string original_path; // Nonempty: staged delete; bytes retained under Content/.Trash.
+    [[nodiscard]] bool IsTrashed() const noexcept {return !original_path.empty();}
     [[nodiscard]] bool operator==(const ProjectSourceAsset &) const = default;
 };
 
@@ -116,6 +118,10 @@ class ProjectFolder final {
     [[nodiscard]] foundation::Result<void> MoveSource(runtime::AssetId id, std::string_view new_content_path);
     [[nodiscard]] foundation::Result<void> UndoAssetMove();
     [[nodiscard]] foundation::Result<void> RedoAssetMove();
+    [[nodiscard]] foundation::Result<void> StageDeleteSource(runtime::AssetId id,bool allow_broken_references=false);
+    [[nodiscard]] foundation::Result<void> RestoreSource(runtime::AssetId id);
+    [[nodiscard]] foundation::Result<runtime::AssetId> CommitImportedPng(PreparedCookedPng &&candidate,
+        std::string_view destination,runtime::AssetId duplicate_of={});
     // Fresh sealed snapshot; never unseal or mutate Runtime Assets catalog.
     [[nodiscard]] foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>> BuildSourceCatalog() const;
     [[nodiscard]] std::uint64_t Revision() const noexcept { return editor_->Revision(); }
@@ -128,13 +134,16 @@ class ProjectFolder final {
     struct WriterLock;
     struct MoveRecord { runtime::AssetId id; std::string before, after; };
     struct EditStep {
-        enum class Kind {Document,Move,Visual};Kind kind=Kind::Document;
+        enum class Kind {Document,Move,Visual,Lifecycle};Kind kind=Kind::Document;
         MoveRecord move;
         std::shared_ptr<const VisualState> before,after;
+        ProjectSourceAsset before_source,after_source;
     };
     [[nodiscard]] std::vector<EditStep> PrepareEdit(EditStep step) const;
     void RefreshVisualDirty() noexcept;
+    void RefreshAssetDirty() noexcept;
     [[nodiscard]] foundation::Result<void> RestoreEdit(const EditStep &step,bool forward);
+    [[nodiscard]] foundation::Result<void> ApplySourceLifecycle(const ProjectSourceAsset &target);
     [[nodiscard]] foundation::Result<void> ApplySourceMove(runtime::AssetId id, std::string_view relative);
     std::vector<std::pair<std::string,std::string>> pending_moves_;
     std::vector<EditStep> edits_;

@@ -183,7 +183,7 @@ void NativeSceneView::RefreshSprites() {
     }
     // Derived frame lookups only: ProjectFolder remains the authoritative index.
     std::unordered_map<std::uint64_t,const ProjectSourceAsset *> sources;
-    for(const auto &source:folder->Sources())sources.emplace(source.id.Raw(),&source);
+    for(const auto &source:folder->Sources())if(!source.IsTrashed())sources.emplace(source.id.Raw(),&source);
     std::unordered_map<std::uint64_t,const SpriteSheetDefinition *> sheets;
     for(const auto &sheet:folder->SpriteSheets())sheets.emplace(sheet.texture.Raw(),&sheet);
     std::unordered_map<std::uint64_t,SpriteCache::Draw> bindings;

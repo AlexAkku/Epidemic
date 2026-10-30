@@ -1,5 +1,7 @@
 #include "Epidemic/Game/Editor/content_hot_reload.h"
+#include "Epidemic/Game/Editor/content_import_queue.h"
 #include "Epidemic/Game/Editor/asset_commands.h"
+#include "Epidemic/Game/Editor/content_browser.h"
 #include <limits>
 #include "Epidemic/Game/Editor/content_dependencies.h"
 #include "Epidemic/Game/Editor/image_resource.h"
@@ -59,6 +61,17 @@ int main() {
         ex::Take(project->Redo());ex::Take(project->Redo());Check(project->SpriteBindings().front()==changed,"Mixed Redo did not restore asset command");
         ex::Take(project->Undo());ex::Take(project->Undo());
         Check(!project->Execute(ed::AssetEditRequest{revision,{ed::AssetSetSprite{changed}}}),"Stale asset command was accepted");
+        Check(!project->StageDeleteSource(id),"Referenced source was deleted without explicit policy");
+        ex::Take(project->StageDeleteSource(id,true));
+        Check(project->Sources().front().IsTrashed() && !fs::exists(root/"Content/Sprites/dummy.png"),"Staged delete did not preserve a tombstone");
+        Check(ed::BrowseContent(*project).items.empty() && ed::BuildContentDependencyIndex(*project).Incoming(id).size()==1,"Staged delete lost stable references");
+        Check(!ex::Take(project->BuildSourceCatalog())->Contains(id),"Deleted source remained available in active catalog");
+        ex::Take(project->Undo());Check(fs::exists(root/"Content/Sprites/dummy.png") && !project->IsDirty(),"Delete Undo did not restore file/savepoint");
+        ex::Take(project->Redo());ex::Take(project->Save());project.reset();
+        project=ex::Take(ed::ProjectFolder::Open(root,schema.View()));
+        Check(project->Sources().front().id==id && project->Sources().front().IsTrashed(),"Deleted identity not preserved by reopen");
+        ex::Take(project->RestoreSource(id));ex::Take(project->Save());
+        Check(fs::exists(root/"Content/Sprites/dummy.png") && project->SpriteBindings().front()==original,"Restore did not restore original bytes/path/refs");
         ex::Take(project->SetPrefabSprite(prefab,id,0.75f,0.25f,32));
         ex::Take(project->MoveSource(id,"Sprites/dirty-probe.png"));
         ex::Take(project->UndoAssetMove());
@@ -95,6 +108,28 @@ int main() {
         constexpr unsigned char png[]={137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,31,21,196,137,0,0,0,13,73,68,65,84,120,156,99,248,207,192,208,0,0,4,129,1,128,44,85,206,176,0,0,0,0,73,69,78,68,174,66,96,130};
         {std::ofstream out(root/"Content/Sprites/sheet.png",std::ios::binary);
             out.write(reinterpret_cast<const char *>(png),sizeof(png));}
+        ex::Take(project->Save());
+        ed::ContentImportQueue imports;
+        ex::Take(imports.Enqueue(*project,root/"Content/Sprites/sheet.png","Sprites/copied.png"));
+        bool imported=false;epidemic::runtime::AssetId copied;
+        for(int attempt=0;attempt<400 && !imported;++attempt){
+            for(const auto &event:imports.Poll(*project)){
+                Check(event.kind!=ed::HotAssetEventKind::Failed,"Queued import failed");
+                if(event.kind==ed::HotAssetEventKind::Updated){copied=event.id;imported=true;}
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds{5});
+        }
+        Check(imported && copied.IsValid() && fs::exists(root/"Content/Sprites/copied.png"),"Queued import did not publish source");
+        Check(project->IsDirty(),"Import did not mark project dirty");
+        ex::Take(project->Undo());
+        Check(!project->IsDirty() && !fs::exists(root/"Content/Sprites/copied.png"),"Import Undo lost savepoint or file atomicity");
+        ex::Take(project->Redo());
+        Check(fs::exists(root/"Content/Sprites/copied.png"),"Import Redo did not restore source");
+        ex::Take(project->Save());
+        ex::Take(imports.Enqueue(*project,root/"Content/Sprites/sheet.png","Sprites/cancelled.png"));
+        (void)imports.Poll(*project);imports.Cancel();
+        for(int attempt=0;attempt<400 && imports.Busy();++attempt){(void)imports.Poll(*project);std::this_thread::sleep_for(std::chrono::milliseconds{5});}
+        Check(!imports.Busy() && !fs::exists(root/"Content/Sprites/cancelled.png") && !project->IsDirty(),"Cancelled import published authoring state");
         const auto sheet_asset=ex::Take(ed::ImportProjectPng(*project,"Sprites/sheet.png"));
         ed::sheets::Grid grid{1,1,1,1,0,0,0,0};
         auto regions=ed::sheets::BuildGrid(sheet_asset.Raw(),grid);
