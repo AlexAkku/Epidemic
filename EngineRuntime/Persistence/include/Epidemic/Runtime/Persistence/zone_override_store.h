@@ -12,6 +12,7 @@
 namespace epidemic::runtime {
 struct ZoneOverrideSnapshot {
     PersistenceLocation location{};
+
     std::vector<PersistentObjectId> record_ids;
     std::vector<TombstoneRecord> tombstones;
     std::vector<LazyRuleRecord> lazy_rules;
@@ -26,4 +27,5 @@ class IZoneOverrideStore {
     FindZoneOverride(const PersistenceLocation &location) const = 0;
     [[nodiscard]] virtual std::vector<ZoneOverrideSnapshot> ListZoneOverrides() const = 0;
 };
+
 } // namespace epidemic::runtime

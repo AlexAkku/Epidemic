@@ -18,83 +18,112 @@ constexpr std::uint32_t kCompositionOnePpm = 1'000'000;
 
 struct MaterialId {
     TypeId value{};
+
     [[nodiscard]] static constexpr MaterialId FromString(std::string_view name) noexcept {
         return MaterialId{TypeId::FromString(name)};
+
     }
+
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value.Raw();
     }
+
     [[nodiscard]] constexpr bool operator==(const MaterialId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const MaterialId &) const noexcept = default;
 };
 
 struct SubstanceId {
     TypeId value{};
+
     [[nodiscard]] static constexpr SubstanceId FromString(std::string_view name) noexcept {
         return SubstanceId{TypeId::FromString(name)};
+
     }
+
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value.Raw();
     }
+
     [[nodiscard]] constexpr bool operator==(const SubstanceId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const SubstanceId &) const noexcept = default;
 };
 
 struct MaterialSlotId {
     TypeId value{};
+
     [[nodiscard]] static constexpr MaterialSlotId FromString(std::string_view name) noexcept {
         return MaterialSlotId{TypeId::FromString(name)};
+
     }
+
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value.Raw();
     }
+
     [[nodiscard]] constexpr bool operator==(const MaterialSlotId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const MaterialSlotId &) const noexcept = default;
 };
 
 struct MaterialReactionId {
     TypeId value{};
+
     [[nodiscard]] static constexpr MaterialReactionId FromString(std::string_view name) noexcept {
         return MaterialReactionId{TypeId::FromString(name)};
+
     }
+
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value.Raw();
     }
+
     [[nodiscard]] constexpr bool operator==(const MaterialReactionId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const MaterialReactionId &) const noexcept = default;
 };
 
 struct MaterialResponseTypeId {
     TypeId value{};
-    [[nodiscard]] static constexpr MaterialResponseTypeId FromString(std::string_view name) noexcept {
+
+    [[nodiscard]] static constexpr MaterialResponseTypeId
+    FromString(std::string_view name) noexcept {
         return MaterialResponseTypeId{TypeId::FromString(name)};
+
     }
+
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value.IsValid();
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value.Raw();
     }
-    [[nodiscard]] constexpr bool operator==(const MaterialResponseTypeId &) const noexcept = default;
-    [[nodiscard]] constexpr auto operator<=>(const MaterialResponseTypeId &) const noexcept = default;
+
+    [[nodiscard]] constexpr bool
+    operator==(const MaterialResponseTypeId &) const noexcept = default;
+    [[nodiscard]] constexpr auto
+    operator<=>(const MaterialResponseTypeId &) const noexcept = default;
 };
 
 struct TypeHash {
     template <typename T> [[nodiscard]] std::size_t operator()(const T &id) const noexcept {
         return std::hash<TypeId>{}(id.value);
     }
+
 };
 
 struct MaterialPhysicalProfile {
@@ -122,12 +151,17 @@ struct MaterialChemicalProfile {
 
 struct MaterialDefinition {
     MaterialId id{};
+
     std::string canonical_name;
     GameplayTagSet tags;
     MaterialPhysicalProfile physical{};
+
     MaterialThermalProfile thermal{};
+
     MaterialChemicalProfile chemical{};
+
     Revision revision{};
+
 };
 
 enum class SubstancePhase {
@@ -139,6 +173,7 @@ enum class SubstancePhase {
 
 struct SubstanceDefinition {
     SubstanceId id{};
+
     std::string canonical_name;
     SubstancePhase phase = SubstancePhase::Solid;
     GameplayTagSet tags;
@@ -155,6 +190,7 @@ struct SubstanceDefinition {
 
 struct MaterialConstituent {
     MaterialId material{};
+
     std::uint32_t weight_ppm = 0;
 
     [[nodiscard]] constexpr bool operator==(const MaterialConstituent &) const noexcept = default;
@@ -171,17 +207,20 @@ struct SubstanceAmount {
     std::int64_t micro = 0;
 
     constexpr SubstanceAmount() noexcept = default;
+
     constexpr SubstanceAmount(std::int64_t value_micro) noexcept : micro(value_micro) {
     }
 
     [[nodiscard]] constexpr bool IsPositive() const noexcept {
         return micro > 0;
     }
+
     [[nodiscard]] constexpr bool operator==(const SubstanceAmount &) const noexcept = default;
 };
 
 struct SubstanceQuantity {
     SubstanceId substance{};
+
     SubstanceAmount amount{};
 
     [[nodiscard]] constexpr bool operator==(const SubstanceQuantity &) const noexcept = default;
@@ -189,7 +228,9 @@ struct SubstanceQuantity {
 
 struct SubstanceExposure {
     SubstanceId substance{};
+
     SubstanceAmount amount{};
+
     std::uint32_t coverage_ppm = 0;
 
     [[nodiscard]] constexpr bool operator==(const SubstanceExposure &) const noexcept = default;
@@ -207,7 +248,9 @@ struct DynamicMaterialState {
 
 struct MaterialSlotKey {
     GameplayObjectRef subject{};
+
     MaterialSlotId slot{};
+
     [[nodiscard]] constexpr bool operator==(const MaterialSlotKey &) const noexcept = default;
 };
 
@@ -218,13 +261,17 @@ struct MaterialSlotKeyHash {
         seed ^= slot + 0x9E3779B97F4A7C15ull + (seed << 6u) + (seed >> 2u);
         return seed;
     }
+
 };
 
 struct MaterialSlotState {
     MaterialSlotKey key{};
+
     MaterialComposition composition;
     DynamicMaterialState dynamic{};
+
     Revision revision{};
+
 };
 
 enum class MaterialStimulusType {
@@ -239,10 +286,13 @@ enum class MaterialStimulusType {
 
 struct MaterialStimulus {
     GameplayObjectRef target{};
+
     MaterialSlotId slot{};
+
     MaterialStimulusType type = MaterialStimulusType::Heat;
     std::int64_t magnitude_micro = 0;
     GameplayContext context{};
+
 };
 
 enum class ReactionThresholdField {
@@ -259,24 +309,33 @@ struct MaterialReactionRule {
     // combustion, corrosion, or chemistry solver. Higher-level simulation/integration
     // code is responsible for deciding when stimuli are applied over gameplay time.
     MaterialReactionId id{};
+
     std::string canonical_name;
     MaterialStimulusType stimulus = MaterialStimulusType::Heat;
     std::optional<TagId> required_material_tag{};
+
     std::optional<TagId> required_substance_tag{};
+
     ReactionThresholdField threshold_field = ReactionThresholdField::StimulusMagnitude;
     std::int64_t min_threshold_micro = 0;
     MaterialResponseTypeId response_type{};
+
     std::int64_t response_magnitude_micro = 0;
     int priority = 0;
 };
 
 struct MaterialResponse {
     MaterialResponseTypeId type{};
+
     MaterialReactionId reaction{};
+
     GameplayObjectRef subject{};
+
     MaterialSlotId slot{};
+
     std::int64_t magnitude_micro = 0;
     GameplayContext context{};
+
 };
 
 enum class MaterialChangeKind {
@@ -293,23 +352,32 @@ struct MaterialChange {
     std::uint64_t sequence = 0;
     MaterialChangeKind kind = MaterialChangeKind::Assigned;
     MaterialSlotKey key{};
+
     SubstanceId substance{};
+
     MaterialResponseTypeId response{};
+
     MaterialReactionId reaction{};
+
     Revision revision{};
+
     GameplayContext context{};
+
 };
 
 struct MaterialChangeBatch {
     std::vector<MaterialChange> changes;
     bool snapshot_required = false;
     ChangeCursor oldest_available_cursor{};
+
     ChangeCursor latest_cursor{};
+
 };
 
 struct MaterialsSnapshot {
     std::vector<MaterialSlotState> states;
     Revision revision{};
+
     std::uint64_t change_epoch = 1;
 };
 
@@ -332,59 +400,72 @@ class MaterialService {
     [[nodiscard]] foundation::Result<MaterialId> RegisterMaterial(MaterialDefinition definition);
     [[nodiscard]] foundation::Result<SubstanceId> RegisterSubstance(SubstanceDefinition definition);
     [[nodiscard]] foundation::Result<MaterialSlotId> RegisterSlot(std::string_view canonical_name);
-    [[nodiscard]] foundation::Result<MaterialReactionId> RegisterReaction(MaterialReactionRule rule);
+    [[nodiscard]] foundation::Result<MaterialReactionId>
+    RegisterReaction(MaterialReactionRule rule);
+
     void Freeze() noexcept {
         frozen_ = true;
     }
+
     [[nodiscard]] bool IsFrozen() const noexcept {
         return frozen_;
     }
 
     [[nodiscard]] const MaterialDefinition *FindMaterial(MaterialId id) const noexcept;
     [[nodiscard]] const SubstanceDefinition *FindSubstance(SubstanceId id) const noexcept;
+
     [[nodiscard]] bool IsSlotRegistered(MaterialSlotId id) const noexcept {
         return slots_.contains(id);
     }
 
-    [[nodiscard]] foundation::Result<void> AssignComposition(GameplayObjectRef subject, MaterialSlotId slot,
+    [[nodiscard]] foundation::Result<void> AssignComposition(GameplayObjectRef subject,
+                                                             MaterialSlotId slot,
                                                              MaterialComposition composition,
                                                              GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> RemoveSlot(GameplayObjectRef subject, MaterialSlotId slot,
-                                                      GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void>
+    RemoveSlot(GameplayObjectRef subject, MaterialSlotId slot, GameplayContext context = {});
     [[nodiscard]] foundation::Result<std::uint64_t> RemoveSubject(GameplayObjectRef subject,
                                                                   GameplayContext context = {});
 
-    [[nodiscard]] foundation::Result<void> ApplySubstanceExposure(GameplayObjectRef subject, MaterialSlotId slot,
-                                                                  SubstanceId substance, SubstanceAmount amount,
-                                                                  std::uint32_t coverage_ppm,
-                                                                  GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> SetContainedSubstance(GameplayObjectRef subject, MaterialSlotId slot,
-                                                                 SubstanceId substance, SubstanceAmount amount,
-                                                                 GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> RemoveContainedSubstance(GameplayObjectRef subject, MaterialSlotId slot,
+    [[nodiscard]] foundation::Result<void>
+    ApplySubstanceExposure(GameplayObjectRef subject, MaterialSlotId slot, SubstanceId substance,
+                           SubstanceAmount amount, std::uint32_t coverage_ppm,
+                           GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void>
+    SetContainedSubstance(GameplayObjectRef subject, MaterialSlotId slot, SubstanceId substance,
+                          SubstanceAmount amount, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> RemoveContainedSubstance(GameplayObjectRef subject,
+                                                                    MaterialSlotId slot,
                                                                     SubstanceId substance,
                                                                     GameplayContext context = {});
-    [[nodiscard]] foundation::Result<void> RemoveSubstanceExposure(GameplayObjectRef subject, MaterialSlotId slot,
-                                                                   SubstanceId substance, GameplayContext context = {});
+    [[nodiscard]] foundation::Result<void> RemoveSubstanceExposure(GameplayObjectRef subject,
+                                                                   MaterialSlotId slot,
+                                                                   SubstanceId substance,
+                                                                   GameplayContext context = {});
 
     [[nodiscard]] foundation::Result<std::vector<MaterialResponse>>
     EvaluateStimulus(const MaterialStimulus &stimulus, const GameplayTagRegistry &tags) const;
-    [[nodiscard]] foundation::Result<std::vector<MaterialResponse>> ApplyStimulus(const MaterialStimulus &stimulus,
-                                                                                  const GameplayTagRegistry &tags);
+    [[nodiscard]] foundation::Result<std::vector<MaterialResponse>>
+    ApplyStimulus(const MaterialStimulus &stimulus, const GameplayTagRegistry &tags);
 
-    [[nodiscard]] std::optional<MaterialSlotState> FindState(GameplayObjectRef subject, MaterialSlotId slot) const;
+    [[nodiscard]] std::optional<MaterialSlotState> FindState(GameplayObjectRef subject,
+                                                             MaterialSlotId slot) const;
     [[nodiscard]] std::vector<MaterialSlotState> FindSlots(GameplayObjectRef subject) const;
     [[nodiscard]] std::vector<MaterialSlotState> FindExposedTo(SubstanceId substance) const;
-    [[nodiscard]] std::vector<MaterialSlotState> FindByMaterialTag(TagId tag, const GameplayTagRegistry &tags) const;
+    [[nodiscard]] std::vector<MaterialSlotState>
+    FindByMaterialTag(TagId tag, const GameplayTagRegistry &tags) const;
 
   private:
     [[nodiscard]] std::vector<MaterialChange> ChangesSinceSequence(std::uint64_t sequence) const;
 
   public:
     [[nodiscard]] MaterialChangeBatch ReadChangesSince(ChangeCursor cursor) const;
+
     [[nodiscard]] ChangeCursor LatestChangeCursor() const noexcept {
         return {journal_epoch_, last_change_sequence_};
+
     }
+
     void PruneChangesBefore(std::uint64_t sequence);
 
     [[nodiscard]] MaterialsSnapshot CaptureSnapshot() const;
@@ -393,25 +474,29 @@ class MaterialService {
     // belong to the save scope without introducing a dependency from Materials to
     // Entities or another persistence owner. The returned snapshot is deterministic
     // regardless of the input order and contains no state for other subjects.
-    [[nodiscard]] MaterialsSnapshot CaptureSnapshot(std::span<const GameplayObjectRef> subjects) const;
+    [[nodiscard]] MaterialsSnapshot
+    CaptureSnapshot(std::span<const GameplayObjectRef> subjects) const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(MaterialsSnapshot snapshot);
     [[nodiscard]] MaterialsDiagnostics GetDiagnostics() const noexcept;
+
     [[nodiscard]] Revision CurrentRevision() const noexcept {
         return revision_;
     }
 
   private:
-    [[nodiscard]] foundation::Result<void> ValidateComposition(MaterialComposition &composition) const;
+    [[nodiscard]] foundation::Result<void>
+    ValidateComposition(MaterialComposition &composition) const;
     [[nodiscard]] bool HasMaterialTag(const MaterialSlotState &state, TagId required,
                                       const GameplayTagRegistry &tags) const;
     [[nodiscard]] bool HasSubstanceTag(const MaterialSlotState &state, TagId required,
                                        const GameplayTagRegistry &tags) const;
-    [[nodiscard]] std::int64_t ThresholdValue(const MaterialSlotState &state, const MaterialStimulus &stimulus,
+    [[nodiscard]] std::int64_t ThresholdValue(const MaterialSlotState &state,
+                                              const MaterialStimulus &stimulus,
                                               const MaterialReactionRule &rule,
                                               const GameplayTagRegistry &tags) const noexcept;
-    [[nodiscard]] std::vector<MaterialResponse> EvaluateRules(const MaterialSlotState &state,
-                                                              const MaterialStimulus &stimulus,
-                                                              const GameplayTagRegistry &tags) const;
+    [[nodiscard]] std::vector<MaterialResponse>
+    EvaluateRules(const MaterialSlotState &state, const MaterialStimulus &stimulus,
+                  const GameplayTagRegistry &tags) const;
     [[nodiscard]] foundation::Result<Revision> PrepareRevision() const;
     [[nodiscard]] bool CanRecordChanges(std::size_t count) const noexcept;
     void RecordChange(MaterialChange change) noexcept;
@@ -424,6 +509,7 @@ class MaterialService {
     std::unordered_map<MaterialSlotKey, MaterialSlotState, MaterialSlotKeyHash> states_;
 
     Revision revision_{};
+
     bool frozen_ = false;
     std::vector<MaterialChange> changes_;
     std::uint64_t next_change_sequence_ = 1;
@@ -434,4 +520,5 @@ class MaterialService {
     std::uint64_t stimuli_ = 0;
     std::uint64_t reactions_triggered_ = 0;
 };
+
 } // namespace epidemic::gameplay::materials

@@ -3,15 +3,20 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestCrimeServiceSaveParticipant() {
     std::cerr << "[participant] framework.crime: bootstrap\n";
     epidemic::gameplay::crime::CrimeService owner;
     crime::JurisdictionRecord jurisdiction;
     jurisdiction.id = crime::JurisdictionId::FromString("participant.jurisdiction");
-    jurisdiction.area = {GameplayDomainId::FromString("participant.crime"), GameplayObjectId::FromString("area")};
+    jurisdiction.area = {GameplayDomainId::FromString("participant.crime"),
+                         GameplayObjectId::FromString("area")};
+
     jurisdiction.authority_group = {GameplayDomainId::FromString("participant.crime"),
                                     GameplayObjectId::FromString("authority")};
-    participant_tests::Check(bool(owner.RegisterJurisdiction(jurisdiction)), "crime fixture jurisdiction");
+
+    participant_tests::Check(bool(owner.RegisterJurisdiction(jurisdiction)),
+                             "crime fixture jurisdiction");
     const auto jurisdiction_id = jurisdiction.id;
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
@@ -20,30 +25,23 @@ void TestCrimeServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.crime", {});
     std::cerr << "[participant] framework.crime: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.crime: non-empty seed\n";
     crime::BountyRecord bounty;
-    bounty.offender = {GameplayDomainId::FromString("participant.crime"), GameplayObjectId::FromString("offender")};
+    bounty.offender = {GameplayDomainId::FromString("participant.crime"),
+                       GameplayObjectId::FromString("offender")};
+
     bounty.jurisdiction = jurisdiction_id;
     bounty.amount = 10;
     participant_tests::Check(bool(owner.CreateBounty(std::move(bounty))), "seed actual bounty");
     std::cerr << "[participant] framework.crime: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().bounties.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().bounties.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestOwnershipServiceSaveParticipant() {
     std::cerr << "[participant] framework.ownership: bootstrap\n";
     epidemic::gameplay::ownership::OwnershipService owner;
@@ -54,34 +52,32 @@ void TestOwnershipServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.ownership", {});
     std::cerr << "[participant] framework.ownership: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.ownership: non-empty seed\n";
     ownership::OwnershipRecord record;
-    record.property = {GameplayDomainId::FromString("participant.ownership"), GameplayObjectId::FromString("property")};
-    record.owner = {GameplayDomainId::FromString("participant.ownership"), GameplayObjectId::FromString("owner")};
-    participant_tests::Check(bool(owner.AssignOwnership(std::move(record))), "seed actual ownership record");
+    record.property = {GameplayDomainId::FromString("participant.ownership"),
+                       GameplayObjectId::FromString("property")};
+
+    record.owner = {GameplayDomainId::FromString("participant.ownership"),
+                    GameplayObjectId::FromString("owner")};
+
+    participant_tests::Check(bool(owner.AssignOwnership(std::move(record))),
+                             "seed actual ownership record");
     std::cerr << "[participant] framework.ownership: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().records.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().records.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestSocietyServiceSaveParticipant() {
     std::cerr << "[participant] framework.society: bootstrap\n";
     epidemic::gameplay::society::SocietyService owner;
     society::SocialGroupDefinition group;
-    group.group = {GameplayDomainId::FromString("participant.society"), GameplayObjectId::FromString("group")};
+    group.group = {GameplayDomainId::FromString("participant.society"),
+                   GameplayObjectId::FromString("group")};
+
     group.type = society::SocialGroupTypeId::FromString("participant.society.group_type");
     participant_tests::Check(bool(owner.RegisterGroup(group)), "society fixture group");
     const auto society_group = group.group;
@@ -92,29 +88,23 @@ void TestSocietyServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.society", {});
     std::cerr << "[participant] framework.society: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.society: non-empty seed\n";
     society::MembershipRecord membership;
-    membership.member = {GameplayDomainId::FromString("participant.society"), GameplayObjectId::FromString("member")};
+    membership.member = {GameplayDomainId::FromString("participant.society"),
+                         GameplayObjectId::FromString("member")};
+
     membership.group = society_group;
-    participant_tests::Check(bool(owner.AddMembership(std::move(membership))), "seed actual society membership");
+    participant_tests::Check(bool(owner.AddMembership(std::move(membership))),
+                             "seed actual society membership");
     std::cerr << "[participant] framework.society: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().memberships.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().memberships.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestCrimeSocietyAdapterSaveParticipant() {
     std::cerr << "[participant] integration.social_legal: bootstrap\n";
     crime::CrimeService crime;
@@ -127,39 +117,48 @@ void TestCrimeSocietyAdapterSaveParticipant() {
     participant_tests::Check(bool(crime.RegisterLaw(law)), "social/legal fixture law");
     const GameplayObjectRef crime_area{GameplayDomainId::FromString("participant.area.domain"),
                                        GameplayObjectId::FromString("participant.area")};
+
     crime::JurisdictionRecord jurisdiction;
     jurisdiction.id = crime::JurisdictionId::FromString("participant.jurisdiction");
     jurisdiction.area = crime_area;
     jurisdiction.authority_group = {GameplayDomainId::FromString("participant.authority.domain"),
                                     GameplayObjectId::FromString("participant.authority")};
+
     jurisdiction.active_laws.push_back(law.id);
-    participant_tests::Check(bool(crime.RegisterJurisdiction(jurisdiction)), "social/legal fixture jurisdiction");
+    participant_tests::Check(bool(crime.RegisterJurisdiction(jurisdiction)),
+                             "social/legal fixture jurisdiction");
     participant_tests::FreezeOwner(crime);
     crime::CrimeCandidate candidate;
     candidate.type = crime_type;
     candidate.offender = {GameplayDomainId::FromString("participant.actor.domain"),
                           GameplayObjectId::FromString("participant.offender")};
+
     candidate.area = crime_area;
-    auto recorded_crime = crime.EvaluateCrimeCandidate(candidate, crime::CrimeCandidatePolicy::RecordAlways);
+    auto recorded_crime =
+        crime.EvaluateCrimeCandidate(candidate, crime::CrimeCandidatePolicy::RecordAlways);
     participant_tests::Check(bool(recorded_crime) && recorded_crime.Value().crime.has_value(),
                              "social/legal fixture crime");
     social_legal_integration::SocialLegalMappings mappings(crime, society);
     participant_tests::FreezeOwner(mappings);
     participant_tests::FreezeOwner(society);
     social_legal_integration::CrimeSocietyAdapter owner(crime, society, mappings);
-    participant_tests::Check(bool(owner.ProcessCrimeLifecycle()), "social/legal fixture lifecycle cursor");
+    participant_tests::Check(bool(owner.ProcessCrimeLifecycle()),
+                             "social/legal fixture lifecycle cursor");
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] integration.social_legal: contract\n";
     auto participant = savegame::CreateCrimeSocietyAdapterSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "integration.social_legal",
                              {savegame::SaveParticipantId::FromString("framework.crime"),
                               savegame::SaveParticipantId::FromString("framework.society")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureCheckpoint();
-        checkpoint.crime_cursor.sequence = 0;
-        return owner.RestoreCheckpoint(std::move(checkpoint));
-    });
+    participant_tests::CheckChangedStatePublication(*participant,
+                                                    [&]() -> ::epidemic::foundation::Result<void> {
+                                                        auto checkpoint = owner.CaptureCheckpoint();
+                                                        checkpoint.crime_cursor.sequence = 0;
+                                                        return owner.RestoreCheckpoint(
+                                                            std::move(checkpoint));
+                                                    });
 }
+
 int main() {
     TestCrimeServiceSaveParticipant();
     TestOwnershipServiceSaveParticipant();

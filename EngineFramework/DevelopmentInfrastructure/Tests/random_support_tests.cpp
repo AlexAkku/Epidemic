@@ -15,11 +15,13 @@ void Check(bool condition, int code) {
     if (!condition) {
         std::exit(code);
     }
+
 }
 
 void CheckClose(double actual, double expected, double epsilon, int code) {
     Check(std::fabs(actual - expected) <= epsilon, code);
 }
+
 } // namespace
 
 int main() {
@@ -61,7 +63,8 @@ int main() {
     RandomSequence different_seed({43}, combat);
     RandomSequence different_stream({42}, loot);
     Check(RandomSequence({42}, combat).NextU64Unchecked() != different_seed.NextU64Unchecked(), 20);
-    Check(RandomSequence({42}, combat).NextU64Unchecked() != different_stream.NextU64Unchecked(), 21);
+    Check(RandomSequence({42}, combat).NextU64Unchecked() != different_stream.NextU64Unchecked(),
+          21);
 
     RandomSequence uniform({42}, combat);
     Check(uniform.UniformUnchecked(1) == 0, 22);
@@ -69,7 +72,10 @@ int main() {
     for (int index = 0; index < 128; ++index) {
         Check(uniform.UniformUnchecked(17) < 17, 24);
     }
-    Check(RandomSequence({42}, combat).UniformUnchecked(10) == RandomSequence({42}, combat).UniformUnchecked(10), 25);
+
+    Check(RandomSequence({42}, combat).UniformUnchecked(10) ==
+              RandomSequence({42}, combat).UniformUnchecked(10),
+          25);
     Check(RandomSequence({42}, combat).UniformUnchecked(std::numeric_limits<std::uint64_t>::max()) <
               std::numeric_limits<std::uint64_t>::max(),
           26);
@@ -83,7 +89,8 @@ int main() {
 
     RandomSequence real({42}, RandomStream::FromString("real"));
     CheckClose(real.Uniform01Unchecked(), 0.77932763623837287, 0.0000000000000002, 29);
-    CheckClose(RandomSequence({42}, RandomStream::FromString("real")).UniformRealUnchecked(10.0, 20.0),
+    CheckClose(RandomSequence({42}, RandomStream::FromString("real"))
+                   .UniformRealUnchecked(10.0, 20.0),
                17.79327636238373, 0.00000000000001, 30);
     for (int index = 0; index < 128; ++index) {
         const auto value = real.UniformRealUnchecked(-2.0, 3.0);
@@ -100,18 +107,25 @@ int main() {
 
     RandomSequence weighted({42}, RandomStream::FromString("weighted"));
     const std::array<std::uint64_t, 4> weights{0, 4, 6, 0};
+
     const auto weighted_index = weighted.WeightedIndex(weights);
     Check(weighted_index && *weighted_index == 2, 36);
     const std::array<std::uint64_t, 0> empty_weights{};
+
     Check(!weighted.WeightedIndex(empty_weights), 37);
     const std::array<std::uint64_t, 3> zero_weights{0, 0, 0};
+
     Check(!weighted.WeightedIndex(zero_weights), 38);
-    const std::array<std::uint64_t, 2> overflow_weights{std::numeric_limits<std::uint64_t>::max(), 1};
+    const std::array<std::uint64_t, 2> overflow_weights{std::numeric_limits<std::uint64_t>::max(),
+                                                        1};
+
     Check(!weighted.WeightedIndex(overflow_weights), 39);
     const std::array<std::uint64_t, 1> single_weight{9};
+
     Check(weighted.WeightedIndex(single_weight).value_or(99) == 0, 40);
 
     std::vector<int> shuffled{1, 2, 3, 4, 5};
+
     RandomSequence({42}, RandomStream::FromString("shuffle.items")).ShuffleUnchecked(shuffled);
     Check((shuffled == std::vector<int>{2, 5, 3, 1, 4}), 41);
     std::vector<int> sorted = shuffled;
@@ -121,6 +135,7 @@ int main() {
     RandomSequence({1}, RandomStream::FromString("shuffle.items")).ShuffleUnchecked(empty);
     Check(empty.empty(), 43);
     std::array<int, 1> one{7};
+
     RandomSequence({1}, RandomStream::FromString("shuffle.items")).ShuffleUnchecked(one);
     Check(one[0] == 7, 44);
 
@@ -132,17 +147,21 @@ int main() {
     Check(restored_result.has_value(), 45);
     auto restored = *restored_result;
     Check(restored.NextU64Unchecked() == after_snapshot, 46);
-    Check(restored.TryRestoreSnapshot({RandomSeed{42}, RandomStream::FromString("snapshot"), 0}), 47);
+    Check(restored.TryRestoreSnapshot({RandomSeed{42}, RandomStream::FromString("snapshot"), 0}),
+          47);
     Check(restored.NextU64Unchecked() == before, 48);
 
     RandomSequence exhausted({42}, combat, std::numeric_limits<std::uint64_t>::max() - 1);
     (void)exhausted.NextU64Unchecked();
-    Check(exhausted.IsExhausted() && exhausted.Sequence() == std::numeric_limits<std::uint64_t>::max(), 49);
+    Check(exhausted.IsExhausted() &&
+              exhausted.Sequence() == std::numeric_limits<std::uint64_t>::max(),
+          49);
     const auto exhausted_snapshot = exhausted.CaptureSnapshot();
     auto exhausted_restore = RandomSequence::TryFromSnapshot(exhausted_snapshot);
     Check(exhausted_restore.has_value() && exhausted_restore->IsExhausted(), 50);
 
     const RandomSequenceSnapshot invalid_snapshot{RandomSeed{99}, RandomStream{}, 7};
+
     Check(!RandomSequence::IsValidSnapshot(invalid_snapshot), 51);
     Check(!RandomSequence::TryFromSnapshot(invalid_snapshot).has_value(), 52);
     const auto preserved_snapshot = restored.CaptureSnapshot();
@@ -156,17 +175,33 @@ int main() {
                                      std::numeric_limits<std::uint64_t>::max());
     Check(!exhausted_checked.TryNextU64().has_value(), 60);
     Check(!exhausted_checked.TryUniform(2).has_value(), 61);
-    Check(!RandomSequence({1}, RandomStream::FromString("invalid.uniform")).TryUniform(0).has_value(), 62);
-    Check(!RandomSequence({1}, RandomStream::FromString("invalid.range")).TryUniformRange(9, 9).has_value(), 63);
-    Check(!RandomSequence({1}, RandomStream::FromString("invalid.range")).TryUniformRange(10, 9).has_value(), 64);
-    Check(!RandomSequence({1}, RandomStream::FromString("invalid.real")).TryUniformReal(2.0, 2.0).has_value(), 65);
-    Check(!RandomSequence({1}, RandomStream::FromString("invalid.real")).TryUniformReal(3.0, 2.0).has_value(), 66);
+    Check(!RandomSequence({1}, RandomStream::FromString("invalid.uniform"))
+               .TryUniform(0)
+               .has_value(),
+          62);
+    Check(!RandomSequence({1}, RandomStream::FromString("invalid.range"))
+               .TryUniformRange(9, 9)
+               .has_value(),
+          63);
+    Check(!RandomSequence({1}, RandomStream::FromString("invalid.range"))
+               .TryUniformRange(10, 9)
+               .has_value(),
+          64);
+    Check(!RandomSequence({1}, RandomStream::FromString("invalid.real"))
+               .TryUniformReal(2.0, 2.0)
+               .has_value(),
+          65);
+    Check(!RandomSequence({1}, RandomStream::FromString("invalid.real"))
+               .TryUniformReal(3.0, 2.0)
+               .has_value(),
+          66);
     Check(!RandomSequence({1}, RandomStream::FromString("invalid.real"))
                .TryUniformReal(std::numeric_limits<double>::infinity(), 2.0)
                .has_value(),
           67);
     Check(!RandomSequence({1}, RandomStream::FromString("invalid.real"))
-               .TryUniformReal(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max())
+               .TryUniformReal(-std::numeric_limits<double>::max(),
+                               std::numeric_limits<double>::max())
                .has_value(),
           71);
     Check(RandomSequence({1}, RandomStream::FromString("safe.max"))
@@ -176,6 +211,7 @@ int main() {
     RandomSequence exhausted_weighted({1}, RandomStream::FromString("weighted.exhausted"),
                                       std::numeric_limits<std::uint64_t>::max());
     const std::array<std::uint64_t, 2> needs_entropy_weights{1, 1};
+
     Check(!exhausted_weighted.WeightedIndex(needs_entropy_weights).has_value(), 69);
     Check(!exhausted_checked.TryRollMicro(500'000).has_value(), 70);
     bool invalid_stream_rejected = false;
@@ -185,6 +221,7 @@ int main() {
     } catch (const std::invalid_argument &) {
         invalid_stream_rejected = true;
     }
+
     Check(invalid_stream_rejected, 72);
 
     const double adjacent_min = 1.0;
@@ -194,5 +231,6 @@ int main() {
         const auto value = adjacent.TryUniformReal(adjacent_min, adjacent_max);
         Check(value.has_value() && *value >= adjacent_min && *value < adjacent_max, 73);
     }
+
     return 0;
 }

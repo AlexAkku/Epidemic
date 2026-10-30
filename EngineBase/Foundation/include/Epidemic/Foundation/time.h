@@ -30,7 +30,8 @@ class FrameTime {
     // Converts any std::chrono duration into the engine-native duration domain.
     // Non-finite floating inputs and values outside Duration's representable range are rejected.
     template <typename Rep, typename Period>
-    [[nodiscard]] static constexpr FrameTime FromChrono(std::chrono::duration<Rep, Period> duration) {
+    [[nodiscard]] static constexpr FrameTime
+    FromChrono(std::chrono::duration<Rep, Period> duration) {
         using source_duration = std::chrono::duration<Rep, Period>;
         using destination_rep = Duration::rep;
 
@@ -42,6 +43,7 @@ class FrameTime {
                 std::cmp_greater(duration.count(), std::numeric_limits<destination_rep>::max())) {
                 throw std::out_of_range("FrameTime duration is outside the native range");
             }
+
             return FrameTime(Duration(static_cast<destination_rep>(duration.count())));
         } else {
             using checked_duration = std::chrono::duration<long double, Duration::period>;
@@ -49,6 +51,7 @@ class FrameTime {
                 if (!std::isfinite(static_cast<long double>(duration.count()))) {
                     throw std::invalid_argument("FrameTime duration must be finite");
                 }
+
             }
 
             const long double converted = checked_duration(duration).count();
@@ -56,14 +59,17 @@ class FrameTime {
                 throw std::out_of_range("FrameTime duration is outside the native range");
             }
 
-            const long double minimum = static_cast<long double>(std::numeric_limits<destination_rep>::min());
-            const long double maximum = static_cast<long double>(std::numeric_limits<destination_rep>::max());
+            const long double minimum =
+                static_cast<long double>(std::numeric_limits<destination_rep>::min());
+            const long double maximum =
+                static_cast<long double>(std::numeric_limits<destination_rep>::max());
             if (converted < minimum || converted > maximum) {
                 throw std::out_of_range("FrameTime duration is outside the native range");
             }
 
             return FrameTime(std::chrono::duration_cast<Duration>(duration));
         }
+
     }
 
     // Builds a FrameTime from seconds.
@@ -110,6 +116,7 @@ class FrameTime {
     }
 
     Duration duration_{};
+
 };
 
 // Monotonic frame counter wrapper.
@@ -133,6 +140,7 @@ class FrameIndex {
         if (value_ == std::numeric_limits<std::uint64_t>::max()) {
             throw std::overflow_error("FrameIndex overflow");
         }
+
         return FrameIndex(value_ + 1);
     }
 
@@ -142,6 +150,7 @@ class FrameIndex {
         if (value_ == std::numeric_limits<std::uint64_t>::max()) {
             throw std::overflow_error("FrameIndex overflow");
         }
+
         ++value_;
         return *this;
     }
@@ -159,7 +168,9 @@ class FrameIndex {
 
   private:
     std::uint64_t value_{};
+
 };
+
 } // namespace epidemic::foundation
 
 namespace std {
@@ -168,5 +179,7 @@ template <> struct hash<epidemic::foundation::FrameIndex> {
     [[nodiscard]] size_t operator()(const epidemic::foundation::FrameIndex &value) const noexcept {
         return hash<std::uint64_t>{}(value.Value());
     }
+
 };
+
 } // namespace std

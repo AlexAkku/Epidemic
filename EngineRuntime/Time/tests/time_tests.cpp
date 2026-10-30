@@ -25,8 +25,10 @@ using epidemic::runtime::TimeRuntime;
 using epidemic::runtime::ValidateTimeOptions;
 
 bool SameCheckpoint(const TimeCheckpoint &left, const TimeCheckpoint &right) {
-    if (left.now != right.now || left.time_scale != right.time_scale || left.paused != right.paused ||
-        left.tick_remainder_numerator != right.tick_remainder_numerator || left.revision != right.revision ||
+    if (left.now != right.now || left.time_scale != right.time_scale ||
+        left.paused != right.paused ||
+        left.tick_remainder_numerator != right.tick_remainder_numerator ||
+        left.revision != right.revision ||
         left.game_ticks_per_real_second != right.game_ticks_per_real_second ||
         left.calendar.hours_per_day != right.calendar.hours_per_day ||
         left.calendar.days_per_month != right.calendar.days_per_month ||
@@ -36,17 +38,22 @@ bool SameCheckpoint(const TimeCheckpoint &left, const TimeCheckpoint &right) {
     }
 
     for (std::size_t index = 0; index < left.phase_boundaries.size(); ++index) {
-        if (left.phase_boundaries[index].start_minute != right.phase_boundaries[index].start_minute ||
+        if (left.phase_boundaries[index].start_minute !=
+                right.phase_boundaries[index].start_minute ||
             left.phase_boundaries[index].phase != right.phase_boundaries[index].phase) {
             return false;
         }
+
     }
+
     return true;
 }
 
 bool TestGameTimeArithmeticWorks() {
     const GameTimePoint start{120};
+
     const GameDuration delta{45};
+
     const GameTimePoint end = start + delta;
 
     return end.ticks == 165 && (end - delta).ticks == 120 && (end - start).ticks == 45;
@@ -57,23 +64,26 @@ bool TestInitialSnapshotIsStable() {
     const auto snapshot = runtime.GetSnapshot();
 
     return runtime.Now().ticks == 0 && IsZero(runtime.LastDelta()) && snapshot.calendar.year == 1 &&
-           snapshot.calendar.month == 1 && snapshot.calendar.day == 1 && !snapshot.paused && snapshot.revision == 0;
+           snapshot.calendar.month == 1 && snapshot.calendar.day == 1 && !snapshot.paused &&
+           snapshot.revision == 0;
 }
 
 bool TestDeterministicAccumulationKeepsFractionalRemainder() {
     TimeOptions options{};
+
     options.game_ticks_per_real_second = 10;
     TimeRuntime runtime(options);
 
     const auto first = runtime.Advance(std::chrono::milliseconds(50));
     const auto second = runtime.Advance(std::chrono::milliseconds(50));
 
-    return first && second && first.Value().current.now.ticks == 0 && second.Value().current.now.ticks == 1 &&
-           runtime.Now().ticks == 1;
+    return first && second && first.Value().current.now.ticks == 0 &&
+           second.Value().current.now.ticks == 1 && runtime.Now().ticks == 1;
 }
 
 bool TestDifferentFrameSplitsProduceSameGameTime() {
     TimeOptions options{};
+
     options.game_ticks_per_real_second = 20;
 
     TimeRuntime single_step(options);
@@ -100,21 +110,26 @@ bool TestNegativeAdvancePreservesObservableState() {
     const auto before_events = runtime.GetEvents();
     const auto result = runtime.Advance(std::chrono::microseconds{-1});
 
-    return !result && result.GetError().HasCode("time.invalid_delta") && runtime.GetSnapshot() == before_snapshot &&
-           SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) && runtime.GetEvents() == before_events;
+    return !result && result.GetError().HasCode("time.invalid_delta") &&
+           runtime.GetSnapshot() == before_snapshot &&
+           SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) &&
+           runtime.GetEvents() == before_events;
 }
 
 bool TestRationalAccumulatorAvoidsFloatingDrift() {
     TimeOptions options{};
+
     options.initial_time_scale = TimeScale{1, 3};
+
     TimeRuntime runtime(options);
 
     const auto first = runtime.Advance(std::chrono::seconds(1));
     const auto second = runtime.Advance(std::chrono::seconds(1));
     const auto third = runtime.Advance(std::chrono::seconds(1));
 
-    return first && second && third && first.Value().current.now.ticks == 0 && second.Value().current.now.ticks == 0 &&
-           third.Value().current.now.ticks == 1 && runtime.Now().ticks == 1;
+    return first && second && third && first.Value().current.now.ticks == 0 &&
+           second.Value().current.now.ticks == 0 && third.Value().current.now.ticks == 1 &&
+           runtime.Now().ticks == 1;
 }
 
 bool TestPauseResume() {
@@ -135,8 +150,9 @@ bool TestInvalidTimeScaleIsRejected() {
     const auto zero_numerator = runtime.SetTimeScale(TimeScale{0, 1});
     const auto zero_denominator = runtime.SetTimeScale(TimeScale{1, 0});
 
-    return !negative && negative.GetError().HasCode("time.invalid_scale") && !zero_numerator && !zero_denominator &&
-           runtime.GetSnapshot().time_scale == TimeScale{};
+    return !negative && negative.GetError().HasCode("time.invalid_scale") && !zero_numerator &&
+           !zero_denominator && runtime.GetSnapshot().time_scale == TimeScale{};
+
 }
 
 bool TestTimeScaleChangesDeltaMultiplier() {
@@ -155,11 +171,14 @@ bool TestTimeScaleIsNormalized() {
     const auto scale = runtime.SetTimeScale(TimeScale{10, 4});
 
     return scale && runtime.GetSnapshot().time_scale == TimeScale{5, 2};
+
 }
 
 bool TestTimeScaleChangeDropsFractionalRemainder() {
     TimeOptions options{};
+
     options.initial_time_scale = TimeScale{1, 3};
+
     TimeRuntime runtime(options);
 
     const auto fractional = runtime.Advance(std::chrono::seconds(1));
@@ -172,7 +191,9 @@ bool TestTimeScaleChangeDropsFractionalRemainder() {
 
 bool TestSkipDropsFractionalRemainder() {
     TimeOptions options{};
+
     options.initial_time_scale = TimeScale{1, 3};
+
     TimeRuntime runtime(options);
 
     const auto fractional = runtime.Advance(std::chrono::seconds(1));
@@ -184,7 +205,8 @@ bool TestSkipDropsFractionalRemainder() {
     const auto after_skip = runtime.CaptureCheckpoint();
     const auto advanced = runtime.Advance(std::chrono::seconds(2));
 
-    return skipped && after_skip.tick_remainder_numerator == 0 && advanced && runtime.Now().ticks == 1;
+    return skipped && after_skip.tick_remainder_numerator == 0 && advanced &&
+           runtime.Now().ticks == 1;
 }
 
 bool TestTimeSkipProducesJumpEvent() {
@@ -192,9 +214,10 @@ bool TestTimeSkipProducesJumpEvent() {
     const auto result = runtime.Skip(GameDuration{90});
 
     const auto &events = runtime.GetEvents();
-    return result && runtime.Now().ticks == 90 && runtime.LastDelta().ticks == 90 && !events.empty() &&
-           events.front().kind == TimeEventKind::TimeJumped && result.Value().previous.now.ticks == 0 &&
-           result.Value().current.now.ticks == 90 && !result.Value().events.empty() &&
+    return result && runtime.Now().ticks == 90 && runtime.LastDelta().ticks == 90 &&
+           !events.empty() && events.front().kind == TimeEventKind::TimeJumped &&
+           result.Value().previous.now.ticks == 0 && result.Value().current.now.ticks == 90 &&
+           !result.Value().events.empty() &&
            result.Value().events.front().kind == TimeEventKind::TimeJumped;
 }
 
@@ -223,8 +246,9 @@ bool TestCalendarConversion() {
 
     const auto date = runtime.GetSnapshot().calendar;
     const auto point = runtime.ToGameTimePoint(date);
-    return date.year == 1 && date.month == 1 && date.day == 2 && date.hour == 1 && date.minute == 1 &&
-           date.second == 0 && point && point.Value().ticks == runtime.Now().ticks;
+    return date.year == 1 && date.month == 1 && date.day == 2 && date.hour == 1 &&
+           date.minute == 1 && date.second == 0 && point &&
+           point.Value().ticks == runtime.Now().ticks;
 }
 
 bool TestCalendarSecondsRoundTrip() {
@@ -236,8 +260,9 @@ bool TestCalendarSecondsRoundTrip() {
 
     const auto date = runtime.GetSnapshot().calendar;
     const auto point = runtime.ToGameTimePoint(date);
-    return date.year == 1 && date.month == 1 && date.day == 2 && date.hour == 1 && date.minute == 1 &&
-           date.second == 42 && point && point.Value().ticks == runtime.Now().ticks;
+    return date.year == 1 && date.month == 1 && date.day == 2 && date.hour == 1 &&
+           date.minute == 1 && date.second == 42 && point &&
+           point.Value().ticks == runtime.Now().ticks;
 }
 
 bool TestDateValidation() {
@@ -246,21 +271,24 @@ bool TestDateValidation() {
     const auto invalid_minute = runtime.ToGameTimePoint(CalendarDate{1, 1, 1, 0, 60, 0});
     const auto invalid_second = runtime.ToGameTimePoint(CalendarDate{1, 1, 1, 0, 0, 60});
 
-    return !invalid_month && invalid_month.GetError().HasCode("time.invalid_date") && !invalid_minute &&
-           !invalid_second;
+    return !invalid_month && invalid_month.GetError().HasCode("time.invalid_date") &&
+           !invalid_minute && !invalid_second;
 }
 
 bool TestCalendarDateOverflowIsRejected() {
     TimeRuntime runtime;
-    const auto result = runtime.ToGameTimePoint(CalendarDate{std::numeric_limits<std::int64_t>::max(), 1, 1, 0, 0, 0});
+    const auto result = runtime.ToGameTimePoint(
+        CalendarDate{std::numeric_limits<std::int64_t>::max(), 1, 1, 0, 0, 0});
 
     return !result && result.GetError().HasCode("time.overflow");
 }
 
 bool TestAdvanceOverflowIsRejected() {
     TimeOptions options{};
+
     options.game_ticks_per_real_second = std::numeric_limits<std::int64_t>::max();
     options.initial_time_scale = TimeScale{std::numeric_limits<std::int64_t>::max(), 1};
+
     TimeRuntime runtime(options);
 
     const auto result = runtime.Advance(std::chrono::seconds(1));
@@ -270,17 +298,21 @@ bool TestAdvanceOverflowIsRejected() {
 
 bool TestScaleDenominatorOverflowIsRejected() {
     TimeOptions options{};
+
     options.initial_time_scale = TimeScale{1, std::numeric_limits<std::int64_t>::max()};
+
     TimeRuntime runtime(options);
     const auto before = runtime.CaptureCheckpoint();
 
     const auto result = runtime.Advance(std::chrono::microseconds{1});
 
-    return !result && result.GetError().HasCode("time.overflow") && SameCheckpoint(runtime.CaptureCheckpoint(), before);
+    return !result && result.GetError().HasCode("time.overflow") &&
+           SameCheckpoint(runtime.CaptureCheckpoint(), before);
 }
 
 bool TestLongRunStaysDeterministic() {
     TimeOptions options{};
+
     options.game_ticks_per_real_second = 120;
     TimeRuntime runtime(options);
 
@@ -328,7 +360,8 @@ bool TestLargeSkipReportsCrossedPhaseBoundaryWhenFinalPhaseMatches() {
 
     const auto &events = runtime.GetEvents();
     return events.size() == 3 && events[0].kind == TimeEventKind::TimeJumped &&
-           events[1].kind == TimeEventKind::DayChanged && events[2].kind == TimeEventKind::DayPhaseChanged;
+           events[1].kind == TimeEventKind::DayChanged &&
+           events[2].kind == TimeEventKind::DayPhaseChanged;
 }
 
 bool TestRevisionIncrementsOnlyOnChanges() {
@@ -367,7 +400,8 @@ bool TestLastDeltaOnlyRefreshDoesNotIncrementRevision() {
 
     return idle && idle.Value().current.last_delta.ticks == 0 &&
            idle.Value().current.revision == revision_after_advance &&
-           runtime.CaptureCheckpoint().tick_remainder_numerator == checkpoint_after_advance.tick_remainder_numerator;
+           runtime.CaptureCheckpoint().tick_remainder_numerator ==
+               checkpoint_after_advance.tick_remainder_numerator;
 }
 
 bool TestFactoryCreatesSplitServices() {
@@ -381,24 +415,29 @@ bool TestFactoryCreatesSplitServices() {
 
 bool TestFactoryRejectsInvalidOptions() {
     TimeOptions invalid_rate{};
+
     invalid_rate.game_ticks_per_real_second = 0;
 
     TimeOptions invalid_boundary{};
+
     invalid_boundary.phase_boundaries = {
         PhaseBoundary{24 * 60, DayPhase::Day},
     };
 
     TimeOptions duplicate_boundary{};
+
     duplicate_boundary.phase_boundaries = {
         PhaseBoundary{60, DayPhase::Dawn},
         PhaseBoundary{60, DayPhase::Day},
     };
 
     TimeOptions overflowing_calendar{};
+
     overflowing_calendar.calendar.days_per_month = std::numeric_limits<std::uint32_t>::max();
     overflowing_calendar.calendar.months_per_year = std::numeric_limits<std::uint32_t>::max();
 
     TimeOptions short_day_with_defaults{};
+
     short_day_with_defaults.calendar.hours_per_day = 12;
 
     const auto rate_result = CreateTimeServices(invalid_rate);
@@ -406,21 +445,26 @@ bool TestFactoryRejectsInvalidOptions() {
     const auto duplicate_result = ValidateTimeOptions(duplicate_boundary);
     const auto calendar_result = ValidateTimeOptions(overflowing_calendar);
     const auto default_boundary_result = CreateTimeServices(short_day_with_defaults);
-    return !rate_result && rate_result.GetError().HasCode("time.invalid_options") && !boundary_result &&
-           boundary_result.GetError().HasCode("time.invalid_phase_boundary") && !duplicate_result &&
-           duplicate_result.GetError().HasCode("time.duplicate_phase_boundary") && !calendar_result &&
-           calendar_result.GetError().HasCode("time.overflow") && !default_boundary_result &&
+    return !rate_result && rate_result.GetError().HasCode("time.invalid_options") &&
+           !boundary_result && boundary_result.GetError().HasCode("time.invalid_phase_boundary") &&
+           !duplicate_result &&
+           duplicate_result.GetError().HasCode("time.duplicate_phase_boundary") &&
+           !calendar_result && calendar_result.GetError().HasCode("time.overflow") &&
+           !default_boundary_result &&
            default_boundary_result.GetError().HasCode("time.invalid_phase_boundary");
 }
 
 bool TestCheckpointCapturesCanonicalPersistentState() {
     TimeOptions options{};
+
     options.game_ticks_per_real_second = 7;
     options.initial_time_scale = TimeScale{10, 4};
+
     options.phase_boundaries = {
         PhaseBoundary{120, DayPhase::Day},
         PhaseBoundary{0, DayPhase::Night},
     };
+
     TimeRuntime runtime(options);
     const auto advanced = runtime.Advance(std::chrono::milliseconds{100});
     if (!advanced) {
@@ -430,12 +474,14 @@ bool TestCheckpointCapturesCanonicalPersistentState() {
     const auto checkpoint = runtime.CaptureCheckpoint();
     return checkpoint.time_scale == TimeScale{5, 2} && checkpoint.tick_remainder_numerator != 0 &&
            checkpoint.game_ticks_per_real_second == 7 && checkpoint.calendar.hours_per_day == 24 &&
-           checkpoint.phase_boundaries.size() == 2 && checkpoint.phase_boundaries[0].start_minute == 0 &&
+           checkpoint.phase_boundaries.size() == 2 &&
+           checkpoint.phase_boundaries[0].start_minute == 0 &&
            checkpoint.phase_boundaries[1].start_minute == 120;
 }
 
 bool TestCheckpointContinuationPreservesFractionalRemainder() {
     TimeOptions options{};
+
     options.initial_time_scale = TimeScale{1, 3};
 
     TimeRuntime control(options);
@@ -443,6 +489,7 @@ bool TestCheckpointContinuationPreservesFractionalRemainder() {
     if (!seeded) {
         return false;
     }
+
     const auto checkpoint = control.CaptureCheckpoint();
     if (checkpoint.tick_remainder_numerator == 0) {
         return false;
@@ -453,7 +500,8 @@ bool TestCheckpointContinuationPreservesFractionalRemainder() {
     const auto control_next = control.Advance(std::chrono::seconds{2});
     const auto restored_next = restored.Advance(std::chrono::seconds{2});
 
-    return restore && control_next && restored_next && control.GetSnapshot() == restored.GetSnapshot() &&
+    return restore && control_next && restored_next &&
+           control.GetSnapshot() == restored.GetSnapshot() &&
            SameCheckpoint(control.CaptureCheckpoint(), restored.CaptureCheckpoint()) &&
            control.GetEvents() == restored.GetEvents();
 }
@@ -473,23 +521,30 @@ bool TestInvalidCheckpointPreservesLiveClock() {
         const auto restore = runtime.RestoreCheckpoint(invalid);
         return !restore && restore.GetError().HasCode("time.invalid_checkpoint") &&
                runtime.GetSnapshot() == before_snapshot &&
-               SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) && runtime.GetEvents() == before_events;
+               SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) &&
+               runtime.GetEvents() == before_events;
     };
 
     auto invalid_scale = before_checkpoint;
     invalid_scale.time_scale = TimeScale{2, 2};
+
     auto invalid_time = before_checkpoint;
     invalid_time.now = GameTimePoint{-1};
+
     auto invalid_negative_remainder = before_checkpoint;
     invalid_negative_remainder.tick_remainder_numerator = -1;
     auto invalid_large_remainder = before_checkpoint;
-    invalid_large_remainder.tick_remainder_numerator = invalid_large_remainder.time_scale.denominator * 1000000;
+    invalid_large_remainder.tick_remainder_numerator =
+        invalid_large_remainder.time_scale.denominator * 1000000;
     auto unrepresentable_remainder_scale = before_checkpoint;
-    unrepresentable_remainder_scale.time_scale = TimeScale{1, std::numeric_limits<std::int64_t>::max()};
+    unrepresentable_remainder_scale.time_scale =
+        TimeScale{1, std::numeric_limits<std::int64_t>::max()};
+
     unrepresentable_remainder_scale.tick_remainder_numerator = 1;
 
     return rejects_without_mutation(invalid_scale) && rejects_without_mutation(invalid_time) &&
-           rejects_without_mutation(invalid_negative_remainder) && rejects_without_mutation(invalid_large_remainder) &&
+           rejects_without_mutation(invalid_negative_remainder) &&
+           rejects_without_mutation(invalid_large_remainder) &&
            rejects_without_mutation(unrepresentable_remainder_scale);
 }
 
@@ -499,15 +554,18 @@ bool TestIncompatibleCheckpointPreservesLiveClock() {
     if (!source_advance) {
         return false;
     }
+
     const auto checkpoint = source.CaptureCheckpoint();
 
     TimeOptions destination_options{};
+
     destination_options.game_ticks_per_real_second = 2;
     TimeRuntime destination(destination_options);
     const auto destination_seed = destination.Skip(GameDuration{7});
     if (!destination_seed) {
         return false;
     }
+
     const auto before_snapshot = destination.GetSnapshot();
     const auto before_checkpoint = destination.CaptureCheckpoint();
     const auto before_events = destination.GetEvents();
@@ -528,12 +586,15 @@ bool TestIncompatibleCheckpointPreservesLiveClock() {
     auto invalid_phase_enum = destination.CaptureCheckpoint();
     invalid_phase_enum.phase_boundaries[0].phase = static_cast<DayPhase>(99);
 
-    return rejects_without_mutation(incompatible_rate) && rejects_without_mutation(incompatible_calendar) &&
-           rejects_without_mutation(incompatible_phases) && rejects_without_mutation(invalid_phase_enum);
+    return rejects_without_mutation(incompatible_rate) &&
+           rejects_without_mutation(incompatible_calendar) &&
+           rejects_without_mutation(incompatible_phases) &&
+           rejects_without_mutation(invalid_phase_enum);
 }
 
 bool TestRestoreAllocationFailurePreservesLiveClock() {
     TimeOptions options{};
+
     options.initial_time_scale = TimeScale{1, 3};
 
     TimeRuntime source(options);
@@ -541,6 +602,7 @@ bool TestRestoreAllocationFailurePreservesLiveClock() {
     if (!source_advance) {
         return false;
     }
+
     const auto target = source.CaptureCheckpoint();
 
     TimeRuntime destination(options);
@@ -548,6 +610,7 @@ bool TestRestoreAllocationFailurePreservesLiveClock() {
     if (!destination_seed) {
         return false;
     }
+
     const auto before_snapshot = destination.GetSnapshot();
     const auto before_checkpoint = destination.CaptureCheckpoint();
     const auto before_events = destination.GetEvents();
@@ -577,6 +640,7 @@ bool TestRestoreClearsTransientStateAndRestoresPause() {
     if (!source_advance || !pause) {
         return false;
     }
+
     const auto checkpoint = source.CaptureCheckpoint();
 
     TimeRuntime destination;
@@ -602,14 +666,16 @@ bool TestRevisionExhaustionPreservesState() {
     const auto before_checkpoint = runtime.CaptureCheckpoint();
     const auto fractional = runtime.Advance(std::chrono::microseconds{1});
     if (fractional || !fractional.GetError().HasCode("time.revision_exhausted") ||
-        runtime.GetSnapshot() != before_snapshot || !SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) ||
+        runtime.GetSnapshot() != before_snapshot ||
+        !SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) ||
         !runtime.GetEvents().empty()) {
         return false;
     }
 
     const auto failed = runtime.Skip(GameDuration{1});
     return !failed && failed.GetError().HasCode("time.revision_exhausted") &&
-           runtime.GetSnapshot() == before_snapshot && SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) &&
+           runtime.GetSnapshot() == before_snapshot &&
+           SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) &&
            runtime.GetEvents().empty();
 }
 
@@ -619,6 +685,7 @@ bool TestMutationAllocationFailurePreservesObservableState() {
     if (!seeded) {
         return false;
     }
+
     const auto before_snapshot = runtime.GetSnapshot();
     const auto before_checkpoint = runtime.CaptureCheckpoint();
     const auto before_events = runtime.GetEvents();
@@ -632,7 +699,8 @@ bool TestMutationAllocationFailurePreservesObservableState() {
     }
 
     return saw_bad_alloc && runtime.GetSnapshot() == before_snapshot &&
-           SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) && runtime.GetEvents() == before_events;
+           SameCheckpoint(runtime.CaptureCheckpoint(), before_checkpoint) &&
+           runtime.GetEvents() == before_events;
 }
 
 bool TestOverflowFailuresPreserveObservableState() {
@@ -641,12 +709,14 @@ bool TestOverflowFailuresPreserveObservableState() {
     if (!to_max || runtime.GetEvents().empty()) {
         return false;
     }
+
     const auto before_snapshot = runtime.GetSnapshot();
     const auto before_delta = runtime.LastDelta();
     const auto before_events = runtime.GetEvents();
     const auto overflow = runtime.Skip(GameDuration{1});
-    return !overflow && overflow.GetError().HasCode("time.overflow") && runtime.GetSnapshot() == before_snapshot &&
-           runtime.LastDelta() == before_delta && runtime.GetEvents() == before_events;
+    return !overflow && overflow.GetError().HasCode("time.overflow") &&
+           runtime.GetSnapshot() == before_snapshot && runtime.LastDelta() == before_delta &&
+           runtime.GetEvents() == before_events;
 }
 
 bool TestIdempotentMutationsDoNotClearEvents() {
@@ -655,15 +725,19 @@ bool TestIdempotentMutationsDoNotClearEvents() {
     if (!pause || runtime.GetEvents().empty()) {
         return false;
     }
+
     const auto pause_events = runtime.GetEvents();
     const auto second_pause = runtime.Pause();
     if (!second_pause || runtime.GetEvents() != pause_events) {
         return false;
     }
+
     const auto resume = runtime.Resume();
-    if (!resume || runtime.GetEvents().empty() || runtime.GetEvents().front().kind != TimeEventKind::Resumed) {
+    if (!resume || runtime.GetEvents().empty() ||
+        runtime.GetEvents().front().kind != TimeEventKind::Resumed) {
         return false;
     }
+
     const auto resume_events = runtime.GetEvents();
     const auto second_resume = runtime.Resume();
     return second_resume && runtime.GetEvents() == resume_events;
@@ -671,15 +745,18 @@ bool TestIdempotentMutationsDoNotClearEvents() {
 
 bool TestInvalidPhaseAndDirectInvalidConstructionAreRejected() {
     TimeOptions invalid_phase{};
+
     invalid_phase.phase_boundaries = {
         PhaseBoundary{0, static_cast<DayPhase>(99)},
     };
+
     const auto factory_result = CreateTimeServices(invalid_phase);
     if (factory_result || !factory_result.GetError().HasCode("time.invalid_phase")) {
         return false;
     }
 
     TimeOptions invalid_calendar{};
+
     invalid_calendar.calendar.hours_per_day = 0;
     try {
         TimeRuntime runtime(invalid_calendar);
@@ -688,10 +765,12 @@ bool TestInvalidPhaseAndDirectInvalidConstructionAreRejected() {
     } catch (const std::invalid_argument &) {
         return true;
     }
+
 }
 
 bool TestConfigurablePhaseBoundaries() {
     TimeOptions options{};
+
     options.phase_boundaries = {
         PhaseBoundary{0, DayPhase::Night},
         PhaseBoundary{1, DayPhase::Day},
@@ -701,6 +780,7 @@ bool TestConfigurablePhaseBoundaries() {
     const auto advanced = runtime.Skip(GameDuration{60});
     return advanced && runtime.GetSnapshot().day_phase == DayPhase::Day;
 }
+
 } // namespace
 
 int main() {
@@ -713,123 +793,163 @@ int main() {
     if (!TestGameTimeArithmeticWorks()) {
         return 1;
     }
+
     if (!TestInitialSnapshotIsStable()) {
         return 2;
     }
+
     if (!TestDeterministicAccumulationKeepsFractionalRemainder()) {
         return 3;
     }
+
     if (!TestDifferentFrameSplitsProduceSameGameTime()) {
         return 4;
     }
+
     if (!TestNegativeAdvancePreservesObservableState()) {
         return 35;
     }
+
     if (!TestRationalAccumulatorAvoidsFloatingDrift()) {
         return 29;
     }
+
     if (!TestPauseResume()) {
         return 5;
     }
+
     if (!TestInvalidTimeScaleIsRejected()) {
         return 6;
     }
+
     if (!TestTimeScaleChangesDeltaMultiplier()) {
         return 7;
     }
+
     if (!TestTimeScaleIsNormalized()) {
         return 17;
     }
+
     if (!TestTimeScaleChangeDropsFractionalRemainder()) {
         return 31;
     }
+
     if (!TestSkipDropsFractionalRemainder()) {
         return 36;
     }
+
     if (!TestTimeSkipProducesJumpEvent()) {
         return 8;
     }
+
     if (!TestNegativeSkipIsRejected()) {
         return 18;
     }
+
     if (!TestSkipOverflowIsRejected()) {
         return 19;
     }
+
     if (!TestCalendarConversion()) {
         return 9;
     }
+
     if (!TestCalendarSecondsRoundTrip()) {
         return 10;
     }
+
     if (!TestDateValidation()) {
         return 16;
     }
+
     if (!TestCalendarDateOverflowIsRejected()) {
         return 20;
     }
+
     if (!TestAdvanceOverflowIsRejected()) {
         return 21;
     }
+
     if (!TestScaleDenominatorOverflowIsRejected()) {
         return 37;
     }
+
     if (!TestLongRunStaysDeterministic()) {
         return 22;
     }
+
     if (!TestDayAndPhaseTransitions()) {
         return 11;
     }
+
     if (!TestLargeSkipReportsCrossedPhaseBoundaryWhenFinalPhaseMatches()) {
         return 38;
     }
+
     if (!TestRevisionIncrementsOnlyOnChanges()) {
         return 12;
     }
+
     if (!TestFractionalRemainderMutationIncrementsRevision()) {
         return 47;
     }
+
     if (!TestLastDeltaOnlyRefreshDoesNotIncrementRevision()) {
         return 30;
     }
+
     if (!TestFactoryCreatesSplitServices()) {
         return 13;
     }
+
     if (!TestFactoryRejectsInvalidOptions()) {
         return 14;
     }
+
     if (!TestCheckpointCapturesCanonicalPersistentState()) {
         return 39;
     }
+
     if (!TestCheckpointContinuationPreservesFractionalRemainder()) {
         return 40;
     }
+
     if (!TestInvalidCheckpointPreservesLiveClock()) {
         return 41;
     }
+
     if (!TestIncompatibleCheckpointPreservesLiveClock()) {
         return 42;
     }
+
     if (!TestRestoreAllocationFailurePreservesLiveClock()) {
         return 43;
     }
+
     if (!TestRestoreClearsTransientStateAndRestoresPause()) {
         return 44;
     }
+
     if (!TestRevisionExhaustionPreservesState()) {
         return 45;
     }
+
     if (!TestMutationAllocationFailurePreservesObservableState()) {
         return 46;
     }
+
     if (!TestOverflowFailuresPreserveObservableState()) {
         return 32;
     }
+
     if (!TestIdempotentMutationsDoNotClearEvents()) {
         return 33;
     }
+
     if (!TestInvalidPhaseAndDirectInvalidConstructionAreRejected()) {
         return 34;
     }
+
     if (!TestConfigurablePhaseBoundaries()) {
         return 15;
     }

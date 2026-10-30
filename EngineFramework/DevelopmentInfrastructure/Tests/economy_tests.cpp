@@ -4,16 +4,21 @@
 #include <limits>
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::economy;
+
 namespace {
 void Check(bool v, const char *m) {
     if (!v) {
         std::cerr << m << '\n';
         std::exit(1);
     }
+
 }
+
 GameplayObjectRef Ref(const char *d, const char *i) {
     return {GameplayDomainId::FromString(d), GameplayObjectId::FromString(i)};
+
 }
+
 class Price final : public IPriceProvider {
   public:
     std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const override {
@@ -26,9 +31,12 @@ class Price final : public IPriceProvider {
         quote.quantity = request.quantity;
         quote.unit_amount = 123;
         quote.dependencies_revision = Revision{7};
+
         return quote;
     }
+
 };
+
 class BadPrice final : public IPriceProvider {
   public:
     std::optional<PriceQuote> Quote(const PriceQuoteRequest &request) const override {
@@ -42,8 +50,11 @@ class BadPrice final : public IPriceProvider {
         quote.unit_amount = 1;
         return quote;
     }
+
 };
+
 } // namespace
+
 int main() {
     EconomyService s;
     CurrencyDefinition coin;
@@ -52,11 +63,14 @@ int main() {
     Check(static_cast<bool>(cid), "currency");
     Price price;
     BadPrice bad_price;
-    Check(static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.bad"), 100, &bad_price)),
+    Check(static_cast<bool>(
+              s.AddPriceProvider(PriceProviderId::FromString("provider.bad"), 100, &bad_price)),
           "bad provider registered");
-    Check(static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 10, &price)),
+    Check(static_cast<bool>(
+              s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 10, &price)),
           "price provider registered");
-    Check(!static_cast<bool>(s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 0, &price)),
+    Check(!static_cast<bool>(
+              s.AddPriceProvider(PriceProviderId::FromString("provider.good"), 0, &price)),
           "duplicate provider id rejected");
     ContractTermsSchema terms_schema;
     terms_schema.type = ContractTypeId::FromString("contract.payload");
@@ -101,20 +115,25 @@ int main() {
 
     // B29 regression: account state is a volatile monetary precondition and is
     // checked again after reservation, before final balance mutation.
-    Check(static_cast<bool>(s.SetAccountState(bid.Value(), AccountState::Frozen)), "freeze buyer after reserve");
-    Check(!static_cast<bool>(s.CommitTrade(tx.Value())), "frozen source invalidates reserved trade");
+    Check(static_cast<bool>(s.SetAccountState(bid.Value(), AccountState::Frozen)),
+          "freeze buyer after reserve");
+    Check(!static_cast<bool>(s.CommitTrade(tx.Value())),
+          "frozen source invalidates reserved trade");
     Check(s.GetBalance(bid.Value()) == 800 && s.GetBalance(sid.Value()) == 250,
           "failed commit leaves balances unchanged");
-    Check(static_cast<bool>(s.SetAccountState(bid.Value(), AccountState::Active)), "unfreeze buyer");
+    Check(static_cast<bool>(s.SetAccountState(bid.Value(), AccountState::Active)),
+          "unfreeze buyer");
     Check(static_cast<bool>(s.CommitTrade(tx.Value())), "commit trade");
-    Check(s.GetBalance(bid.Value()) == 700 && s.GetBalance(sid.Value()) == 350, "trade funds moved");
+    Check(s.GetBalance(bid.Value()) == 700 && s.GetBalance(sid.Value()) == 350,
+          "trade funds moved");
 
     EconomicAccount closable;
     closable.owner = Ref("actor", "closable");
     closable.currency = cid.Value();
     auto closable_id = s.CreateAccount(closable);
     Check(static_cast<bool>(closable_id), "create closable account");
-    Check(static_cast<bool>(s.SetAccountState(closable_id.Value(), AccountState::Closed)), "close account");
+    Check(static_cast<bool>(s.SetAccountState(closable_id.Value(), AccountState::Closed)),
+          "close account");
     Check(!static_cast<bool>(s.SetAccountState(closable_id.Value(), AccountState::Active)),
           "closed account cannot reopen");
     MarketState market;
@@ -122,14 +141,16 @@ int main() {
     auto mid = s.CreateMarket(market);
     Check(static_cast<bool>(mid), "market");
     auto commodity = EconomicCommodityId::FromString("commodity.food");
-    Check(
-        static_cast<bool>(s.SetMarketIndicator({mid.Value(), commodity, 10, 20, 1'200'000, GameplayTimePoint{10}, {}})),
-        "indicator");
-    Check(s.GetMarketIndicator(mid.Value(), commodity)->price_index_micro == 1'200'000, "indicator stored");
+    Check(static_cast<bool>(s.SetMarketIndicator(
+              {mid.Value(), commodity, 10, 20, 1'200'000, GameplayTimePoint{10}, {}})),
+          "indicator");
+    Check(s.GetMarketIndicator(mid.Value(), commodity)->price_index_micro == 1'200'000,
+          "indicator stored");
     EconomicValueRef value;
     value.type = EconomicValueTypeId::FromString("item");
     value.definition = TypeId::FromString("item.apple");
-    Check(s.GetPriceQuote(value, cid.Value())->unit_amount == 123, "invalid higher-priority quote skipped");
+    Check(s.GetPriceQuote(value, cid.Value())->unit_amount == 123,
+          "invalid higher-priority quote skipped");
     DebtRecord debt;
     debt.debtor = buyer.owner;
     debt.creditor = seller.owner;
@@ -142,6 +163,7 @@ int main() {
 
     EconomicContract contract;
     contract.parties = {buyer.owner, seller.owner};
+
     contract.type = ContractTypeId::FromString("contract.sale");
     contract.currency = cid.Value();
     contract.amount = 250;
@@ -152,16 +174,20 @@ int main() {
 
     EconomicContract payload_contract;
     payload_contract.parties = {buyer.owner, seller.owner};
+
     payload_contract.type = terms_schema.type;
     payload_contract.currency = cid.Value();
     payload_contract.amount = 10;
     payload_contract.terms_schema = terms_schema.schema;
     payload_contract.terms_payload = {std::byte{1}, std::byte{2}};
+
     auto payload_contract_id = s.CreateContract(payload_contract);
     Check(static_cast<bool>(payload_contract_id), "typed contract terms accepted");
     payload_contract.id = {};
+
     payload_contract.terms_schema = TypeId::FromString("contract.payload.wrong");
-    Check(!static_cast<bool>(s.CreateContract(payload_contract)), "unregistered contract terms rejected");
+    Check(!static_cast<bool>(s.CreateContract(payload_contract)),
+          "unregistered contract terms rejected");
 
     EconomicOffer cancelled_offer;
     cancelled_offer.seller = seller.owner;
@@ -177,6 +203,7 @@ int main() {
 
     EconomicOffer scoped_offer = cancelled_offer;
     scoped_offer.id = {};
+
     scoped_offer.buyer_scope = buyer.owner;
     scoped_offer.unit_price = 10;
     auto scoped_offer_id = s.CreateOffer(scoped_offer);
@@ -198,9 +225,11 @@ int main() {
     Check(s.FindOffers(seller.owner).empty(), "accepted offer removed from active query");
     const auto *accepted_tx = s.FindTransaction(offer_tx.Value());
     Check(accepted_tx != nullptr, "accepted offer creates trade transaction");
-    Check(accepted_tx->source_offer == scoped_offer_id.Value() && accepted_tx->accepted_quantity == 1,
+    Check(accepted_tx->source_offer == scoped_offer_id.Value() &&
+              accepted_tx->accepted_quantity == 1,
           "trade records offer provenance");
-    Check(accepted_tx->plan.monetary_transfers.size() == 1 && accepted_tx->plan.monetary_transfers.front().amount == 10,
+    Check(accepted_tx->plan.monetary_transfers.size() == 1 &&
+              accepted_tx->plan.monetary_transfers.front().amount == 10,
           "offer settlement amount is canonical and cannot be caller supplied");
     auto snap = s.CaptureSnapshot();
     Check(snap.offers.empty(), "terminal offers omitted from snapshot");
@@ -211,7 +240,8 @@ int main() {
     auto duplicate_debt_snapshot = snap;
     duplicate_debt_snapshot.debts.push_back(duplicate_debt_snapshot.debts.front());
     EconomyService invalid_restore;
-    Check(static_cast<bool>(invalid_restore.RegisterCurrency(coin)), "invalid restore currency def");
+    Check(static_cast<bool>(invalid_restore.RegisterCurrency(coin)),
+          "invalid restore currency def");
     Check(static_cast<bool>(invalid_restore.RegisterContractTermsSchema(terms_schema)),
           "invalid restore contract schema");
     invalid_restore.Freeze();
@@ -220,14 +250,17 @@ int main() {
     auto invalid_generator_snapshot = snap;
     invalid_generator_snapshot.account_ids.scope = 0xDEAD;
     EconomyService invalid_generator_restore;
-    Check(static_cast<bool>(invalid_generator_restore.RegisterCurrency(coin)), "generator restore currency def");
+    Check(static_cast<bool>(invalid_generator_restore.RegisterCurrency(coin)),
+          "generator restore currency def");
     invalid_generator_restore.Freeze();
-    Check(!static_cast<bool>(invalid_generator_restore.RestoreSnapshot(std::move(invalid_generator_snapshot))),
+    Check(!static_cast<bool>(
+              invalid_generator_restore.RestoreSnapshot(std::move(invalid_generator_snapshot))),
           "foreign generator scope rejected");
 
     EconomyService restored;
     Check(static_cast<bool>(restored.RegisterCurrency(coin)), "restore currency def");
-    Check(static_cast<bool>(restored.RegisterContractTermsSchema(terms_schema)), "restore contract schema");
+    Check(static_cast<bool>(restored.RegisterContractTermsSchema(terms_schema)),
+          "restore contract schema");
     restored.Freeze();
     Check(static_cast<bool>(restored.RestoreSnapshot(std::move(snap))), "restore economy");
     Check(restored.GetBalance(bid.Value()) == 700, "balance restored");
@@ -240,9 +273,12 @@ int main() {
     terminal_debt.principal = 5;
     auto terminal_debt_id = restored.CreateDebt(terminal_debt);
     Check(static_cast<bool>(terminal_debt_id), "terminal debt created");
-    Check(!static_cast<bool>(restored.CompactDebt(terminal_debt_id.Value())), "active debt cannot compact");
-    Check(static_cast<bool>(restored.ResolveDebt(terminal_debt_id.Value(), DebtState::Paid)), "debt resolved");
-    Check(static_cast<bool>(restored.CompactDebt(terminal_debt_id.Value())), "terminal debt compacted");
+    Check(!static_cast<bool>(restored.CompactDebt(terminal_debt_id.Value())),
+          "active debt cannot compact");
+    Check(static_cast<bool>(restored.ResolveDebt(terminal_debt_id.Value(), DebtState::Paid)),
+          "debt resolved");
+    Check(static_cast<bool>(restored.CompactDebt(terminal_debt_id.Value())),
+          "terminal debt compacted");
 
     EconomyService journal;
     Check(static_cast<bool>(journal.RegisterCurrency(coin)), "journal currency");
@@ -259,9 +295,11 @@ int main() {
 
     auto overflow_snapshot = restored.CaptureSnapshot();
     overflow_snapshot.revision = Revision{std::numeric_limits<std::uint64_t>::max()};
+
     EconomyService exhausted;
     Check(static_cast<bool>(exhausted.RegisterCurrency(coin)), "exhausted restore currency def");
-    Check(static_cast<bool>(exhausted.RegisterContractTermsSchema(terms_schema)), "exhausted restore contract schema");
+    Check(static_cast<bool>(exhausted.RegisterContractTermsSchema(terms_schema)),
+          "exhausted restore contract schema");
     exhausted.Freeze();
     Check(static_cast<bool>(exhausted.RestoreSnapshot(std::move(overflow_snapshot))),
           "max revision snapshot restores read-only state");
@@ -276,7 +314,8 @@ int main() {
     Check(exhausted.CaptureSnapshot().markets.size() == markets_before,
           "failed exhausted mutation leaves authoritative state unchanged");
 
-    // ECO-09/ECO-10: runtime records require the frozen registry and canonical initial lifecycle states.
+    // ECO-09/ECO-10: runtime records require the frozen registry and canonical initial lifecycle
+    // states.
     EconomyService prefreeze;
     auto prefreeze_currency = prefreeze.RegisterCurrency(coin);
     Check(static_cast<bool>(prefreeze_currency), "prefreeze currency");
@@ -294,12 +333,16 @@ int main() {
     prefreeze_debt.principal = 1;
     EconomicContract prefreeze_contract;
     prefreeze_contract.parties = {prefreeze_debt.debtor, prefreeze_debt.creditor};
+
     prefreeze_contract.type = ContractTypeId::FromString("contract.prefreeze");
     prefreeze_contract.currency = prefreeze_currency.Value();
     prefreeze_contract.amount = 1;
-    Check(!static_cast<bool>(prefreeze.CreateOffer(prefreeze_offer)), "offer creation before freeze rejected");
-    Check(!static_cast<bool>(prefreeze.CreateDebt(prefreeze_debt)), "debt creation before freeze rejected");
-    Check(!static_cast<bool>(prefreeze.CreateContract(prefreeze_contract)), "contract creation before freeze rejected");
+    Check(!static_cast<bool>(prefreeze.CreateOffer(prefreeze_offer)),
+          "offer creation before freeze rejected");
+    Check(!static_cast<bool>(prefreeze.CreateDebt(prefreeze_debt)),
+          "debt creation before freeze rejected");
+    Check(!static_cast<bool>(prefreeze.CreateContract(prefreeze_contract)),
+          "contract creation before freeze rejected");
     Check(prefreeze.CaptureSnapshot().offers.empty() && prefreeze.CaptureSnapshot().debts.empty() &&
               prefreeze.CaptureSnapshot().contracts.empty(),
           "prefreeze failures do not publish runtime state");
@@ -312,24 +355,31 @@ int main() {
     invalid_account.owner = Ref("actor", "invalid-account");
     invalid_account.currency = invalid_states_currency.Value();
     invalid_account.state = static_cast<AccountState>(99);
-    Check(!static_cast<bool>(invalid_states.CreateAccount(invalid_account)), "invalid account state rejected");
+    Check(!static_cast<bool>(invalid_states.CreateAccount(invalid_account)),
+          "invalid account state rejected");
     auto invalid_offer = prefreeze_offer;
     invalid_offer.currency = invalid_states_currency.Value();
     invalid_offer.state = static_cast<OfferState>(99);
-    Check(!static_cast<bool>(invalid_states.CreateOffer(invalid_offer)), "invalid offer state rejected");
+    Check(!static_cast<bool>(invalid_states.CreateOffer(invalid_offer)),
+          "invalid offer state rejected");
     auto invalid_debt = prefreeze_debt;
     invalid_debt.currency = invalid_states_currency.Value();
     invalid_debt.state = static_cast<DebtState>(99);
-    Check(!static_cast<bool>(invalid_states.CreateDebt(invalid_debt)), "invalid debt state rejected");
+    Check(!static_cast<bool>(invalid_states.CreateDebt(invalid_debt)),
+          "invalid debt state rejected");
     auto invalid_contract = prefreeze_contract;
     invalid_contract.currency = invalid_states_currency.Value();
     invalid_contract.state = static_cast<ContractState>(99);
-    Check(!static_cast<bool>(invalid_states.CreateContract(invalid_contract)), "invalid contract state rejected");
-    Check(invalid_states.CaptureSnapshot().accounts.empty() && invalid_states.CaptureSnapshot().offers.empty() &&
-              invalid_states.CaptureSnapshot().debts.empty() && invalid_states.CaptureSnapshot().contracts.empty(),
+    Check(!static_cast<bool>(invalid_states.CreateContract(invalid_contract)),
+          "invalid contract state rejected");
+    Check(invalid_states.CaptureSnapshot().accounts.empty() &&
+              invalid_states.CaptureSnapshot().offers.empty() &&
+              invalid_states.CaptureSnapshot().debts.empty() &&
+              invalid_states.CaptureSnapshot().contracts.empty(),
           "invalid lifecycle values leave state unchanged");
 
-    // ECO-03/ECO-02: aggregate availability is validated before reservation IDs/state are published.
+    // ECO-03/ECO-02: aggregate availability is validated before reservation IDs/state are
+    // published.
     EconomyService aggregate;
     auto aggregate_currency = aggregate.RegisterCurrency(coin);
     Check(static_cast<bool>(aggregate_currency), "aggregate currency");
@@ -343,13 +393,18 @@ int main() {
     aggregate_destination.currency = aggregate_currency.Value();
     auto aggregate_source_id = aggregate.CreateAccount(aggregate_source);
     auto aggregate_destination_id = aggregate.CreateAccount(aggregate_destination);
-    Check(static_cast<bool>(aggregate_source_id) && static_cast<bool>(aggregate_destination_id), "aggregate accounts");
+    Check(static_cast<bool>(aggregate_source_id) && static_cast<bool>(aggregate_destination_id),
+          "aggregate accounts");
     TradePlan aggregate_plan;
     aggregate_plan.buyer = aggregate_source.owner;
     aggregate_plan.seller = aggregate_destination.owner;
-    aggregate_plan.monetary_transfers = {
-        {aggregate_source_id.Value(), aggregate_destination_id.Value(), 60, aggregate_currency.Value()},
-        {aggregate_source_id.Value(), aggregate_destination_id.Value(), 60, aggregate_currency.Value()}};
+    aggregate_plan.monetary_transfers = {{aggregate_source_id.Value(),
+                                          aggregate_destination_id.Value(), 60,
+                                          aggregate_currency.Value()},
+                                         {aggregate_source_id.Value(),
+                                          aggregate_destination_id.Value(), 60,
+                                          aggregate_currency.Value()}};
+
     auto aggregate_tx = aggregate.PrepareTrade(aggregate_plan);
     Check(static_cast<bool>(aggregate_tx), "aggregate trade prepared");
     const auto aggregate_before = aggregate.CaptureSnapshot();
@@ -360,7 +415,8 @@ int main() {
               aggregate_before.reservations.size() == aggregate_after.reservations.size(),
           "failed aggregate reservation consumes no IDs or reservations");
     const auto *aggregate_tx_after = aggregate.FindTransaction(aggregate_tx.Value());
-    Check(aggregate_tx_after != nullptr && aggregate_tx_after->state == TradeTransactionState::Prepared &&
+    Check(aggregate_tx_after != nullptr &&
+              aggregate_tx_after->state == TradeTransactionState::Prepared &&
               aggregate_tx_after->reservations.empty(),
           "failed aggregate reservation leaves transaction prepared");
 
@@ -377,17 +433,20 @@ int main() {
     expiring_offer.currency = expiration_currency.Value();
     expiring_offer.unit_price = 1;
     expiring_offer.expires_at = GameplayTimePoint{10};
+
     auto expiring_offer_id = expiration_seed.CreateOffer(expiring_offer);
     Check(static_cast<bool>(expiring_offer_id), "expiring offer created");
     auto expiration_snapshot = expiration_seed.CaptureSnapshot();
     expiration_snapshot.revision = Revision{std::numeric_limits<std::uint64_t>::max()};
+
     for (auto &offer_record : expiration_snapshot.offers)
         offer_record.revision = expiration_snapshot.revision;
     EconomyService expiration_exhausted;
     auto expiration_exhausted_currency = expiration_exhausted.RegisterCurrency(coin);
     Check(static_cast<bool>(expiration_exhausted_currency), "expiration exhausted currency");
     expiration_exhausted.Freeze();
-    Check(static_cast<bool>(expiration_exhausted.RestoreSnapshot(expiration_snapshot)), "expiration exhausted restore");
+    Check(static_cast<bool>(expiration_exhausted.RestoreSnapshot(expiration_snapshot)),
+          "expiration exhausted restore");
     auto expiration_result = expiration_exhausted.ExpireOffers(GameplayTimePoint{11});
     Check(!expiration_result && expiration_result.GetError().HasCode("gameplay.revision_exhausted"),
           "expiration rejects exhausted revision");

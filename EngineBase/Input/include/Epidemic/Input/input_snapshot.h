@@ -7,10 +7,12 @@
 
 namespace epidemic::input {
 // This file defines the frame-stable input snapshot published by InputSystem.
-// Consumers read this snapshot after PublishSnapshot() to observe normalized keyboard and mouse state.
+// Consumers read this snapshot after PublishSnapshot() to observe normalized keyboard and mouse
+// state.
 
 struct InputSnapshot {
     std::uint64_t update_index{};
+
     KeyboardState keyboard;
     MouseState mouse;
 
@@ -23,5 +25,7 @@ struct InputSnapshot {
     [[nodiscard]] bool HasCapture() const noexcept {
         return mouse.HasCapture();
     }
+
 };
-}
+
+} // namespace epidemic::input

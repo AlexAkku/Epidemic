@@ -17,20 +17,27 @@ class PlacementProvider final : public IConstructionPlacementProvider {
         projection.capability_available = true;
         projection.spacing_clear = true;
         projection.revision = {1};
+
         if (request.target.area)
             projection.footprint.volume.area = *request.target.area;
         if (request.target.position) {
             projection.footprint.volume.min = *request.target.position;
-            projection.footprint.volume.max = {request.target.position->x_mm + 100, request.target.position->y_mm + 100,
+            projection.footprint.volume.max = {request.target.position->x_mm + 100,
+                                               request.target.position->y_mm + 100,
                                                request.target.position->z_mm + 100};
+
         }
+
         return foundation::Result<PlacementSemanticProjection>::Success(projection);
     }
 
     [[nodiscard]] Revision CurrentRevision() const noexcept override {
         return {1};
+
     }
+
 };
+
 } // namespace
 
 int main() {
@@ -55,9 +62,12 @@ int main() {
     recipe.canonical_name = "game.bridge";
     recipe.result_entity_archetype = TypeId::FromString("game.bridge.entity");
     recipe.footprint_size_mm = {100, 100, 100};
+
     if (!c.RegisterRecipe(recipe))
         return 3;
-    GameplayObjectRef wall{GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("wall")};
+    GameplayObjectRef wall{GameplayDomainId::FromString("test.entity"),
+                           GameplayObjectId::FromString("wall")};
+
     PlacementSocket sock;
     sock.id = PlacementSocketId::FromString("socket.wall.1");
     sock.owner = wall;
@@ -68,13 +78,18 @@ int main() {
     late_socket.id = PlacementSocketId::FromString("socket.wall.late");
     if (c.RegisterSocket(late_socket))
         return 54;
-    GameplayObjectRef actor{GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("actor")};
-    GameplayObjectRef area{GameplayDomainId::FromString("test.area"), GameplayObjectId::FromString("river")};
+    GameplayObjectRef actor{GameplayDomainId::FromString("test.entity"),
+                            GameplayObjectId::FromString("actor")};
+
+    GameplayObjectRef area{GameplayDomainId::FromString("test.area"),
+                           GameplayObjectId::FromString("river")};
+
     PlacementRequest req;
     req.actor = actor;
     req.recipe = recipe.id;
     req.placement_rule = free_def.id;
     req.target.position = WorldPosition{1, 2, 3};
+
     req.target.area = area;
     auto val = c.ValidatePlacement(req);
     if (!val || val.Value().availability != PlacementAvailability::Available)
@@ -142,12 +157,15 @@ int main() {
         return 13;
     if (restored.FindSocket(sock.id)->state != SocketState::Occupied)
         return 14;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 46;
     ConstructionService empty_journal;
     if (!empty_journal
-             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 53;
 
@@ -170,7 +188,8 @@ int main() {
         return 48;
     const auto construction_exhausted = restored.CaptureSnapshot();
     if (construction_exhausted.change_epoch <= epoch_before_rollover ||
-        construction_exhausted.next_change_sequence != 2 || construction_exhausted.journal.size() != 1 ||
+        construction_exhausted.next_change_sequence != 2 ||
+        construction_exhausted.journal.size() != 1 ||
         construction_exhausted.journal.front().sequence != 1)
         return 49;
     if (!restored.ReadChangesSince(ChangeCursor{epoch_before_rollover, 0}).snapshot_required)
@@ -199,6 +218,7 @@ int main() {
     staged_recipe.canonical_name = "game.instant.bridge";
     staged_recipe.result_entity_archetype = TypeId::FromString("game.instant.bridge.entity");
     staged_recipe.footprint_size_mm = {100, 100, 100};
+
     PlacementOutputTemplate extra_output;
     extra_output.type = PlacementOutputTypeId::FromString("construction.output.custom");
     extra_output.subject_is_target_area = true;
@@ -223,6 +243,7 @@ int main() {
     instant_req.recipe = staged_recipe.id;
     instant_req.placement_rule = instant_def.id;
     instant_req.target.position = WorldPosition{4, 5, 6};
+
     instant_req.target.area = area;
     auto instant_plan = exhausted.PreparePlacementPlan(instant_req);
     if (!instant_plan)
@@ -243,6 +264,7 @@ int main() {
     expiring.Freeze();
     PlacementRequest expiring_req = req;
     expiring_req.context.time = {100};
+
     auto expiring_plan = expiring.PreparePlacementPlan(expiring_req);
     if (!expiring_plan)
         return 42;
@@ -255,7 +277,9 @@ int main() {
 
     // CST-03: time overflow is rejected before the placement-plan generator advances.
     PlacementRequest overflow_plan_request = req;
-    overflow_plan_request.context.time = GameplayTimePoint{std::numeric_limits<std::int64_t>::max()};
+    overflow_plan_request.context.time =
+        GameplayTimePoint{std::numeric_limits<std::int64_t>::max()};
+
     const auto plan_generator_before = expiring.CaptureSnapshot().plan_ids;
     auto overflow_plan = expiring.PreparePlacementPlan(overflow_plan_request);
     const auto plan_generator_after = expiring.CaptureSnapshot().plan_ids;
@@ -264,17 +288,24 @@ int main() {
         plan_generator_before.next != plan_generator_after.next)
         return 55;
 
-    // Goal 4 external-provider failure evidence: provider rejection is propagated before plan publication.
+    // Goal 4 external-provider failure evidence: provider rejection is propagated before plan
+    // publication.
     class FailingPlacementProvider final : public IConstructionPlacementProvider {
       public:
-        [[nodiscard]] foundation::Result<PlacementSemanticProjection> Project(const PlacementRequest &) const override {
+        [[nodiscard]] foundation::Result<PlacementSemanticProjection>
+        Project(const PlacementRequest &) const override {
             return foundation::Result<PlacementSemanticProjection>::Failure(
-                foundation::Error::Create("test.construction.provider_failure", "forced placement provider failure"));
+                foundation::Error::Create("test.construction.provider_failure",
+                                          "forced placement provider failure"));
         }
+
         [[nodiscard]] Revision CurrentRevision() const noexcept override {
             return {1};
+
         }
+
     };
+
     FailingPlacementProvider failing_provider;
     ConstructionService provider_failure_service;
     provider_failure_service.SetPlacementProvider(&failing_provider);
@@ -285,14 +316,17 @@ int main() {
     const auto provider_failure_before = provider_failure_service.CaptureSnapshot();
     const auto provider_failure_result = provider_failure_service.PreparePlacementPlan(req);
     const auto provider_failure_after = provider_failure_service.CaptureSnapshot();
-    if (provider_failure_result || !provider_failure_result.GetError().HasCode("test.construction.provider_failure") ||
+    if (provider_failure_result ||
+        !provider_failure_result.GetError().HasCode("test.construction.provider_failure") ||
         provider_failure_after.revision != provider_failure_before.revision ||
         provider_failure_after.plan_ids.next != provider_failure_before.plan_ids.next ||
         provider_failure_after.plans.size() != provider_failure_before.plans.size())
         return 1091;
 
-    // Goal 4 exact public-API evidence: virtual placement-provider destruction through the public interface.
+    // Goal 4 exact public-API evidence: virtual placement-provider destruction through the public
+    // interface.
     IConstructionPlacementProvider *construction_destructor_probe = new PlacementProvider{};
+
     delete construction_destructor_probe;
 
     return 0;

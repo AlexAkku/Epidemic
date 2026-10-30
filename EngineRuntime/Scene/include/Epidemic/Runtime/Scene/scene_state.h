@@ -36,11 +36,14 @@ using SceneDirtyMask = std::uint32_t;
     return (mask & ToSceneDirtyMask(flag)) != 0u;
 }
 
-[[nodiscard]] constexpr SceneDirtyMask AddSceneDirtyFlag(SceneDirtyMask mask, SceneDirtyFlags flag) noexcept {
+[[nodiscard]] constexpr SceneDirtyMask AddSceneDirtyFlag(SceneDirtyMask mask,
+                                                         SceneDirtyFlags flag) noexcept {
     return mask | ToSceneDirtyMask(flag);
 }
 
-[[nodiscard]] constexpr SceneDirtyMask ClearSceneDirtyFlag(SceneDirtyMask mask, SceneDirtyFlags flag) noexcept {
+[[nodiscard]] constexpr SceneDirtyMask ClearSceneDirtyFlag(SceneDirtyMask mask,
+                                                           SceneDirtyFlags flag) noexcept {
     return mask & ~ToSceneDirtyMask(flag);
 }
+
 } // namespace epidemic::runtime

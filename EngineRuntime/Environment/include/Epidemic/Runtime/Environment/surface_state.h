@@ -16,10 +16,13 @@ enum class SurfaceConditionKind {
     Drying,
 };
 
-// condition is derived from wetness/snow/mud/ice by Environment mutations; caller-provided condition is not authoritative.
+// condition is derived from wetness/snow/mud/ice by Environment mutations; caller-provided
+// condition is not authoritative.
 struct SurfaceState {
     SurfaceId surface_id{};
+
     RegionId region_id{};
+
     SurfaceConditionKind condition = SurfaceConditionKind::Dry;
     float wetness = 0.0f;
     float snow_depth = 0.0f;
@@ -31,19 +34,25 @@ struct SurfaceState {
     [[nodiscard]] constexpr bool operator==(const SurfaceState &) const noexcept = default;
 };
 
-[[nodiscard]] constexpr SurfaceConditionKind DeriveSurfaceCondition(const SurfaceState &state) noexcept {
+[[nodiscard]] constexpr SurfaceConditionKind
+DeriveSurfaceCondition(const SurfaceState &state) noexcept {
     if (state.ice_thickness > 0.0f) {
         return SurfaceConditionKind::Icy;
     }
+
     if (state.snow_depth > 0.0f) {
         return SurfaceConditionKind::SnowCovered;
     }
+
     if (state.mud_depth > 0.0f) {
         return SurfaceConditionKind::Muddy;
     }
+
     if (state.wetness > 0.0f) {
         return SurfaceConditionKind::Wet;
     }
+
     return SurfaceConditionKind::Dry;
 }
+
 } // namespace epidemic::runtime

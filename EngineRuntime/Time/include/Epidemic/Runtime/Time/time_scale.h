@@ -9,4 +9,5 @@ struct TimeScale {
 
     [[nodiscard]] constexpr bool operator==(const TimeScale &) const noexcept = default;
 };
+
 } // namespace epidemic::runtime

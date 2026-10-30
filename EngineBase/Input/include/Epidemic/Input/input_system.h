@@ -31,10 +31,17 @@ class InputSystem final : public IInputSystem {
 
   private:
     KeyboardState keyboard_state_{};
+
     MouseState mouse_state_{};
+
     InputSnapshot current_snapshot_{};
+
     std::vector<epidemic::platform::PlatformEvent> pending_platform_events_{};
+
     std::vector<InputEvent> current_events_{};
+
     std::uint64_t next_update_index_{};
+
 };
-}
+
+} // namespace epidemic::input

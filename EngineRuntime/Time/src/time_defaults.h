@@ -11,5 +11,7 @@ namespace epidemic::runtime::detail {
         PhaseBoundary{8 * 60, DayPhase::Day},    PhaseBoundary{18 * 60, DayPhase::Dusk},
         PhaseBoundary{21 * 60, DayPhase::Night},
     };
+
 }
+
 } // namespace epidemic::runtime::detail

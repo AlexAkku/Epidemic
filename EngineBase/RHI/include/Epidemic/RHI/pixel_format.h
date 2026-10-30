@@ -26,4 +26,5 @@ enum class RhiPixelFormat : std::uint8_t {
 
     return "Unknown";
 }
+
 } // namespace epidemic::rhi

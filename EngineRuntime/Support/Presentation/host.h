@@ -4,17 +4,20 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 namespace epidemic::runtime::presentation {
 struct FrameInput {
-    int wheelDelta=0;
+    int wheelDelta = 0;
     bool down[24]{}, pressed[24]{}, mousePressed = false, mouseDown = false;
 };
+
 struct WindowEvent {
     int type;
     unsigned width, height;
     bool focused;
     char text = 0;
 };
+
 class Host {
     struct Impl;
     std::unique_ptr<Impl> impl_;
@@ -22,7 +25,8 @@ class Host {
   public:
     explicit Host(std::string title);
     ~Host();
-    void Run(std::function<void(const std::vector<WindowEvent> &)> events, std::function<void()> tick);
+    void Run(std::function<void(const std::vector<WindowEvent> &)> events,
+             std::function<void()> tick);
     void Stop();
     bool Focused() const;
     bool Minimized() const;
@@ -35,4 +39,5 @@ class Host {
     static bool AnimationEnabled();
     static void ShowError(std::string_view message);
 };
-}
+
+} // namespace epidemic::runtime::presentation

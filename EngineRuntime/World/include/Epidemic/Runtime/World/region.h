@@ -8,6 +8,7 @@
 namespace epidemic::runtime {
 struct RegionDescriptor {
     RegionId id{};
+
     foundation::StringId name{};
 
     [[nodiscard]] constexpr bool operator==(const RegionDescriptor &) const noexcept = default;
@@ -21,4 +22,5 @@ class IRegionRegistry {
     virtual void Freeze() noexcept = 0;
     [[nodiscard]] virtual bool IsFrozen() const noexcept = 0;
 };
-}
+
+} // namespace epidemic::runtime

@@ -26,12 +26,17 @@ class IArchiveReader {
     [[nodiscard]] virtual foundation::Result<void> EndArrayElement() = 0;
     [[nodiscard]] virtual foundation::Result<void> EndArray() = 0;
 
-    [[nodiscard]] virtual foundation::Result<std::string> ReadString(std::string_view name) const = 0;
-    [[nodiscard]] virtual foundation::Result<std::uint64_t> ReadUInt64(std::string_view name) const = 0;
-    [[nodiscard]] virtual foundation::Result<std::int64_t> ReadInt64(std::string_view name) const = 0;
+    [[nodiscard]] virtual foundation::Result<std::string>
+    ReadString(std::string_view name) const = 0;
+    [[nodiscard]] virtual foundation::Result<std::uint64_t>
+    ReadUInt64(std::string_view name) const = 0;
+    [[nodiscard]] virtual foundation::Result<std::int64_t>
+    ReadInt64(std::string_view name) const = 0;
     [[nodiscard]] virtual foundation::Result<double> ReadDouble(std::string_view name) const = 0;
     [[nodiscard]] virtual foundation::Result<bool> ReadBool(std::string_view name) const = 0;
-    [[nodiscard]] virtual foundation::Result<std::vector<std::byte>> ReadBytes(std::string_view name) const = 0;
+    [[nodiscard]] virtual foundation::Result<std::vector<std::byte>>
+    ReadBytes(std::string_view name) const = 0;
     [[nodiscard]] virtual foundation::Result<bool> IsNull(std::string_view name) const = 0;
 };
+
 } // namespace epidemic::runtime

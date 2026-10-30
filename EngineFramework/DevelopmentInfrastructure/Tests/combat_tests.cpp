@@ -13,6 +13,7 @@ using namespace epidemic::gameplay::combat;
 namespace {
 GameplayObjectRef Obj(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
+
 }
 
 DamageRequest Request(GameplayObjectRef attacker, GameplayObjectRef target, DamageTypeId damage,
@@ -25,9 +26,12 @@ DamageRequest Request(GameplayObjectRef attacker, GameplayObjectRef target, Dama
     req.profile = profile;
     req.base_amount_micro = amount;
     req.seed = {123};
+
     req.context.time = {now};
+
     return req;
 }
+
 } // namespace
 
 int main(int argc, char **argv) {
@@ -57,8 +61,8 @@ int main(int argc, char **argv) {
             return 4;
         const auto transition = identity();
         flow("state.request", transition.data());
-        const auto plan =
-            owner.PrepareDamage(Request(Obj("auditor.attacker"), target, damage.Value(), registered.Value(), 10, 1));
+        const auto plan = owner.PrepareDamage(
+            Request(Obj("auditor.attacker"), target, damage.Value(), registered.Value(), 10, 1));
         if (!plan)
             return 5;
         const auto committed = owner.CommitDamage(plan.Value(), {1});
@@ -69,6 +73,7 @@ int main(int argc, char **argv) {
         action("action.end", "combat-action");
         return 0;
     }
+
 #else
     (void)argc;
     (void)argv;
@@ -125,25 +130,26 @@ int main(int argc, char **argv) {
 
     const auto attacker = Obj("a");
     const auto target = Obj("b");
-    if (!s.RegisterCombatant(target,
-                             {{hp.Value(), 100'000'000, 100'000'000}, {posture_id.Value(), 10'000'000, 10'000'000}}))
+    if (!s.RegisterCombatant(target, {{hp.Value(), 100'000'000, 100'000'000},
+                                      {posture_id.Value(), 10'000'000, 10'000'000}}))
         return 7;
 
-    auto req = Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 10);
+    auto req =
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 10);
     auto plan = s.PrepareDamage(req);
-    if (!plan || plan.Value().final_amount_micro != 20'000'000 || plan.Value().prepared_at.ticks != 10 ||
-        plan.Value().expires_at.ticks != 15)
+    if (!plan || plan.Value().final_amount_micro != 20'000'000 ||
+        plan.Value().prepared_at.ticks != 10 || plan.Value().expires_at.ticks != 15)
         return 8;
     auto result = s.CommitDamage(plan.Value(), {10});
     if (!result || result.Value().resource_after_micro != 80'000'000)
         return 9;
 
-    auto superseded_first =
-        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
+    auto superseded_first = s.PrepareDamage(
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
     if (!superseded_first)
         return 10;
-    auto superseding_second =
-        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
+    auto superseding_second = s.PrepareDamage(
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 20));
     if (!superseding_second)
         return 11;
     auto superseded_commit = s.CommitDamage(superseded_first.Value(), {20});
@@ -153,8 +159,8 @@ int main(int argc, char **argv) {
     if (!superseding_commit)
         return 13;
 
-    auto stale =
-        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 30));
+    auto stale = s.PrepareDamage(
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 10'000'000, 30));
     if (!stale)
         return 14;
     if (!s.ModifyResource(target, hp.Value(), 1'000'000))
@@ -163,16 +169,16 @@ int main(int argc, char **argv) {
     if (rejected || !rejected.GetError().HasCode("gameplay.stale_revision"))
         return 16;
 
-    auto expiring =
-        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 40));
+    auto expiring = s.PrepareDamage(
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 40));
     if (!expiring)
         return 17;
     auto expired_commit = s.CommitDamage(expiring.Value(), {45});
     if (expired_commit || !expired_commit.GetError().HasCode("gameplay.combat.plan_expired"))
         return 18;
 
-    auto cancellable =
-        s.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 50));
+    auto cancellable = s.PrepareDamage(
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 50));
     if (!cancellable || !s.CancelDamagePlan(cancellable.Value().id))
         return 19;
     auto cancelled_commit = s.CommitDamage(cancellable.Value(), {50});
@@ -180,11 +186,11 @@ int main(int argc, char **argv) {
         return 20;
 
     const auto downed_target = Obj("downed");
-    if (!s.RegisterCombatant(downed_target,
-                             {{hp.Value(), 100'000'000, 100'000'000}, {posture_id.Value(), 10'000'000, 10'000'000}}))
+    if (!s.RegisterCombatant(downed_target, {{hp.Value(), 100'000'000, 100'000'000},
+                                             {posture_id.Value(), 10'000'000, 10'000'000}}))
         return 21;
-    auto down_plan =
-        s.PrepareDamage(Request(attacker, downed_target, physical.Value(), posture_profile_id.Value(), 20'000'000, 60));
+    auto down_plan = s.PrepareDamage(Request(attacker, downed_target, physical.Value(),
+                                             posture_profile_id.Value(), 20'000'000, 60));
     if (!down_plan)
         return 22;
     auto down_result = s.CommitDamage(down_plan.Value(), {60});
@@ -200,8 +206,8 @@ int main(int argc, char **argv) {
     if (!s.TransitionLifeState(downed_target, CombatLifeState::Alive))
         return 26;
 
-    auto kill_plan =
-        s.PrepareDamage(Request(attacker, downed_target, physical.Value(), health_profile_id.Value(), 100'000'000, 70));
+    auto kill_plan = s.PrepareDamage(Request(attacker, downed_target, physical.Value(),
+                                             health_profile_id.Value(), 100'000'000, 70));
     if (!kill_plan)
         return 27;
     auto kill_result = s.CommitDamage(kill_plan.Value(), {70});
@@ -214,8 +220,8 @@ int main(int argc, char **argv) {
     const auto expiry_target = Obj("expiry");
     if (!s.RegisterCombatant(expiry_target, {{hp.Value(), 100'000'000, 100'000'000}}))
         return 30;
-    auto abandoned =
-        s.PrepareDamage(Request(attacker, expiry_target, physical.Value(), health_profile_id.Value(), 1'000'000, 80));
+    auto abandoned = s.PrepareDamage(Request(attacker, expiry_target, physical.Value(),
+                                             health_profile_id.Value(), 1'000'000, 80));
     if (!abandoned || s.ExpirePreparedPlans({84}) != 0 || s.ExpirePreparedPlans({85}) != 1)
         return 31;
 
@@ -259,31 +265,36 @@ int main(int argc, char **argv) {
     restored.ReleaseResourceReservation(resource_reservation.Value());
     const auto resource_after_release = restored.GetResource(target, hp.Value());
     if (!resource_after_release ||
-        resource_after_release.Value().current_micro != resource_before_reservation.Value().current_micro ||
+        resource_after_release.Value().current_micro !=
+            resource_before_reservation.Value().current_micro ||
         restored.FindResourceReservation(resource_reservation.Value()) != nullptr)
         return 39;
     restored.ReleaseResourceReservation(resource_reservation.Value());
     const auto resource_after_second_release = restored.GetResource(target, hp.Value());
-    if (!resource_after_second_release ||
-        resource_after_second_release.Value().current_micro != resource_before_reservation.Value().current_micro)
+    if (!resource_after_second_release || resource_after_second_release.Value().current_micro !=
+                                              resource_before_reservation.Value().current_micro)
         return 40;
 
     const auto before_huge_reservation = restored.CaptureSnapshot();
-    auto huge_reservation = restored.ReserveResource(target, hp.Value(), std::numeric_limits<std::int64_t>::max());
-    if (huge_reservation || !huge_reservation.GetError().HasCode("gameplay.combat.resource_unavailable"))
+    auto huge_reservation =
+        restored.ReserveResource(target, hp.Value(), std::numeric_limits<std::int64_t>::max());
+    if (huge_reservation ||
+        !huge_reservation.GetError().HasCode("gameplay.combat.resource_unavailable"))
         return 41;
     const auto after_huge_reservation = restored.CaptureSnapshot();
-    if (after_huge_reservation.resource_reservation_ids.next != before_huge_reservation.resource_reservation_ids.next ||
-        after_huge_reservation.resource_reservations.size() != before_huge_reservation.resource_reservations.size())
+    if (after_huge_reservation.resource_reservation_ids.next !=
+            before_huge_reservation.resource_reservation_ids.next ||
+        after_huge_reservation.resource_reservations.size() !=
+            before_huge_reservation.resource_reservations.size())
         return 42;
 
     // CMB-04/CMB-05: a failed replacement prepare cannot destroy the previously prepared plan.
-    auto preserved_plan =
-        restored.PrepareDamage(Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 150));
+    auto preserved_plan = restored.PrepareDamage(
+        Request(attacker, target, physical.Value(), health_profile_id.Value(), 1'000'000, 150));
     if (!preserved_plan)
         return 43;
-    auto invalid_request =
-        Request(attacker, target, physical.Value(), DamageProfileId::FromString("missing.profile"), 1'000'000, 150);
+    auto invalid_request = Request(attacker, target, physical.Value(),
+                                   DamageProfileId::FromString("missing.profile"), 1'000'000, 150);
     auto invalid_prepare = restored.PrepareDamage(invalid_request);
     if (invalid_prepare || !invalid_prepare.GetError().HasCode("gameplay.combat.damage_invalid"))
         return 44;
@@ -292,15 +303,16 @@ int main(int argc, char **argv) {
 
     // CMB-07: revision exhaustion rejects the mutation without touching resource state.
     auto exhausted_snapshot = restored.CaptureSnapshot();
-    auto exhausted_record = std::find_if(exhausted_snapshot.combatants.begin(), exhausted_snapshot.combatants.end(),
-                                         [&](const auto &record) {
-                                             return record.subject == target;
-                                         });
+    auto exhausted_record =
+        std::find_if(exhausted_snapshot.combatants.begin(), exhausted_snapshot.combatants.end(),
+                     [&](const auto &record) { return record.subject == target; });
     if (exhausted_record == exhausted_snapshot.combatants.end())
         return 46;
     exhausted_record->revision = Revision{std::numeric_limits<std::uint64_t>::max()};
+
     CombatService revision_exhausted;
-    if (!revision_exhausted.RegisterResource(health) || !revision_exhausted.RegisterResource(posture) ||
+    if (!revision_exhausted.RegisterResource(health) ||
+        !revision_exhausted.RegisterResource(posture) ||
         !revision_exhausted.RegisterDamageType("game.damage.physical") ||
         !revision_exhausted.RegisterDamageProfile(health_profile) ||
         !revision_exhausted.RegisterDamageProfile(posture_profile) ||
@@ -312,12 +324,14 @@ int main(int argc, char **argv) {
     const auto exhausted_before = revision_exhausted.GetResource(target, hp.Value());
     auto exhausted_mutation = revision_exhausted.ModifyResource(target, hp.Value(), -1);
     const auto exhausted_after = revision_exhausted.GetResource(target, hp.Value());
-    if (exhausted_mutation || !exhausted_mutation.GetError().HasCode("gameplay.revision_exhausted") ||
+    if (exhausted_mutation ||
+        !exhausted_mutation.GetError().HasCode("gameplay.revision_exhausted") ||
         !exhausted_before || !exhausted_after ||
         exhausted_before.Value().current_micro != exhausted_after.Value().current_micro)
         return 49;
 
-    // G4-COMBAT-001: preserve-ratio scaling is exact at the signed 64-bit boundary on every toolchain.
+    // G4-COMBAT-001: preserve-ratio scaling is exact at the signed 64-bit boundary on every
+    // toolchain.
     CombatService ratio_service;
     CombatResourceDefinition ratio_resource;
     ratio_resource.canonical_name = "game.ratio_boundary";
@@ -334,7 +348,8 @@ int main(int argc, char **argv) {
     if (!ratio_service.SetResourceMaximum(ratio_subject, ratio_id.Value(), kMax - 1, true))
         return 52;
     const auto ratio_state = ratio_service.GetResource(ratio_subject, ratio_id.Value());
-    if (!ratio_state || ratio_state.Value().maximum_micro != kMax - 1 || ratio_state.Value().current_micro != kMax - 2)
+    if (!ratio_state || ratio_state.Value().maximum_micro != kMax - 1 ||
+        ratio_state.Value().current_micro != kMax - 2)
         return 53;
 
     // Cover normal, signed and zero-policy combinations allowed by the resource API.
@@ -357,24 +372,31 @@ int main(int argc, char **argv) {
         return 56;
 
     const auto negative_value_subject = Obj("ratio_negative_value");
-    if (!signed_ratio_service.RegisterCombatant(negative_value_subject, {{signed_id.Value(), -50, 100}}) ||
-        !signed_ratio_service.SetResourceMaximum(negative_value_subject, signed_id.Value(), 200, true))
+    if (!signed_ratio_service.RegisterCombatant(negative_value_subject,
+                                                {{signed_id.Value(), -50, 100}}) ||
+        !signed_ratio_service.SetResourceMaximum(negative_value_subject, signed_id.Value(), 200,
+                                                 true))
         return 57;
     signed_state = signed_ratio_service.GetResource(negative_value_subject, signed_id.Value());
     if (!signed_state || signed_state.Value().current_micro != -100)
         return 58;
 
     const auto negative_new_max_subject = Obj("ratio_negative_new_max");
-    if (!signed_ratio_service.RegisterCombatant(negative_new_max_subject, {{signed_id.Value(), 50, 100}}) ||
-        !signed_ratio_service.SetResourceMaximum(negative_new_max_subject, signed_id.Value(), -200, true))
+    if (!signed_ratio_service.RegisterCombatant(negative_new_max_subject,
+                                                {{signed_id.Value(), 50, 100}}) ||
+        !signed_ratio_service.SetResourceMaximum(negative_new_max_subject, signed_id.Value(), -200,
+                                                 true))
         return 59;
     signed_state = signed_ratio_service.GetResource(negative_new_max_subject, signed_id.Value());
-    if (!signed_state || signed_state.Value().maximum_micro != -200 || signed_state.Value().current_micro != -200)
+    if (!signed_state || signed_state.Value().maximum_micro != -200 ||
+        signed_state.Value().current_micro != -200)
         return 60;
 
     const auto negative_old_max_subject = Obj("ratio_negative_old_max");
-    if (!signed_ratio_service.RegisterCombatant(negative_old_max_subject, {{signed_id.Value(), -100, -100}}) ||
-        !signed_ratio_service.SetResourceMaximum(negative_old_max_subject, signed_id.Value(), 100, true))
+    if (!signed_ratio_service.RegisterCombatant(negative_old_max_subject,
+                                                {{signed_id.Value(), -100, -100}}) ||
+        !signed_ratio_service.SetResourceMaximum(negative_old_max_subject, signed_id.Value(), 100,
+                                                 true))
         return 61;
     signed_state = signed_ratio_service.GetResource(negative_old_max_subject, signed_id.Value());
     if (!signed_state || signed_state.Value().current_micro != 100)
@@ -382,8 +404,10 @@ int main(int argc, char **argv) {
 
     const auto min_boundary_subject = Obj("ratio_min_boundary");
     const auto kMin = std::numeric_limits<std::int64_t>::min();
-    if (!signed_ratio_service.RegisterCombatant(min_boundary_subject, {{signed_id.Value(), kMin, kMin}}) ||
-        !signed_ratio_service.SetResourceMaximum(min_boundary_subject, signed_id.Value(), kMax, true))
+    if (!signed_ratio_service.RegisterCombatant(min_boundary_subject,
+                                                {{signed_id.Value(), kMin, kMin}}) ||
+        !signed_ratio_service.SetResourceMaximum(min_boundary_subject, signed_id.Value(), kMax,
+                                                 true))
         return 63;
     signed_state = signed_ratio_service.GetResource(min_boundary_subject, signed_id.Value());
     if (!signed_state || signed_state.Value().current_micro != kMax)
@@ -408,12 +432,16 @@ int main(int argc, char **argv) {
 
     // Increasing the maximum with a fixed non-negative ratio must not decrease current value.
     const auto monotonic_subject = Obj("ratio_monotonic");
-    if (!signed_ratio_service.RegisterCombatant(monotonic_subject, {{signed_id.Value(), kMax / 3, kMax}}))
+    if (!signed_ratio_service.RegisterCombatant(monotonic_subject,
+                                                {{signed_id.Value(), kMax / 3, kMax}}))
         return 68;
-    const auto monotonic_before = signed_ratio_service.GetResource(monotonic_subject, signed_id.Value());
-    if (!signed_ratio_service.SetResourceMaximum(monotonic_subject, signed_id.Value(), kMax - 1, true))
+    const auto monotonic_before =
+        signed_ratio_service.GetResource(monotonic_subject, signed_id.Value());
+    if (!signed_ratio_service.SetResourceMaximum(monotonic_subject, signed_id.Value(), kMax - 1,
+                                                 true))
         return 69;
-    const auto monotonic_after = signed_ratio_service.GetResource(monotonic_subject, signed_id.Value());
+    const auto monotonic_after =
+        signed_ratio_service.GetResource(monotonic_subject, signed_id.Value());
     if (!monotonic_before || !monotonic_after ||
         monotonic_after.Value().current_micro > monotonic_before.Value().current_micro)
         return 70;

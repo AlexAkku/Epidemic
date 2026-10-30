@@ -20,7 +20,8 @@ struct PersistenceSnapshot {
 };
 
 // Semantic validation shared by service composition and durable backend adapters.
-[[nodiscard]] foundation::Result<void> ValidatePersistenceSnapshot(const PersistenceSnapshot &snapshot);
+[[nodiscard]] foundation::Result<void>
+ValidatePersistenceSnapshot(const PersistenceSnapshot &snapshot);
 
 // Closed enum domain. Callers must use one of these three durability levels.
 enum class PersistenceDurability {
@@ -38,7 +39,8 @@ class IPersistenceBackend {
     // durable snapshot authoritative. A successful return accepts the complete snapshot exactly
     // once at the requested durability level. Separate Save()/Flush() transaction APIs are not part
     // of the Runtime Persistence contract.
-    [[nodiscard]] virtual foundation::Result<void> CommitSnapshot(const PersistenceSnapshot &snapshot,
-                                                                  PersistenceDurability durability) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    CommitSnapshot(const PersistenceSnapshot &snapshot, PersistenceDurability durability) = 0;
 };
+
 } // namespace epidemic::runtime

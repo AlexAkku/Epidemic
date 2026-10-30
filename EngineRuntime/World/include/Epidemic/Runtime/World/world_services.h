@@ -26,5 +26,6 @@ struct WorldServices {
     std::shared_ptr<IWorldDemotionAuthority> demotion_authority;
 };
 
-[[nodiscard]] foundation::Result<WorldServices> CreateWorldServices(const WorldOptions &options = {});
+[[nodiscard]] foundation::Result<WorldServices>
+CreateWorldServices(const WorldOptions &options = {});
 } // namespace epidemic::runtime

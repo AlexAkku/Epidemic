@@ -17,7 +17,8 @@ namespace epidemic::foundation {
 template <typename TValue> class Result {
   public:
     static_assert(!std::is_reference_v<TValue>, "Result does not support reference types");
-    static_assert(!std::is_same_v<std::remove_cv_t<TValue>, Error>, "Result<Error> is ambiguous and unsupported");
+    static_assert(!std::is_same_v<std::remove_cv_t<TValue>, Error>,
+                  "Result<Error> is ambiguous and unsupported");
 
     // Wraps a success payload into Result<TValue>.
     // Input: owned success value.
@@ -112,17 +113,20 @@ template <typename TValue> class Result {
         Storage(Storage &&) noexcept(std::is_nothrow_move_constructible_v<Variant>) = default;
 
         Storage &operator=(const Storage &other)
-            requires(std::is_copy_constructible_v<Variant> && std::is_nothrow_move_assignable_v<Variant>)
+            requires(std::is_copy_constructible_v<Variant> &&
+                     std::is_nothrow_move_assignable_v<Variant>)
         {
             if (this != &other) {
                 Variant staged(other.value_);
                 value_ = std::move(staged);
             }
+
             return *this;
         }
 
         Storage &operator=(const Storage &)
-            requires(!(std::is_copy_constructible_v<Variant> && std::is_nothrow_move_assignable_v<Variant>))
+            requires(!(std::is_copy_constructible_v<Variant> &&
+                       std::is_nothrow_move_assignable_v<Variant>))
         = delete;
 
         Storage &operator=(Storage &&) noexcept
@@ -186,6 +190,7 @@ template <> class Result<void> {
         if (!HasValue()) {
             throw std::runtime_error("Result<void> does not contain success");
         }
+
     }
 
     // Returns the stored failure payload.
@@ -215,6 +220,7 @@ template <> class Result<void> {
                 error_ = std::move(staged);
                 has_value_ = other.has_value_;
             }
+
             return *this;
         }
 
@@ -230,6 +236,7 @@ template <> class Result<void> {
 
       private:
         bool has_value_{false};
+
         Error error_;
     };
 
@@ -239,4 +246,5 @@ template <> class Result<void> {
 
     Storage storage_;
 };
+
 } // namespace epidemic::foundation

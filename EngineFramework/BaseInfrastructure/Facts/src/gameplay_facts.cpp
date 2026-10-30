@@ -11,19 +11,26 @@ namespace detail {
 namespace {
 thread_local std::string_view g_facts_fault_point;
 }
+
 void SetFactsFaultPointForTesting(std::string_view point) noexcept {
     g_facts_fault_point = point;
 }
+
 void ClearFactsFaultPointForTesting() noexcept {
     g_facts_fault_point = {};
+
 }
+
 } // namespace detail
 
 void FactsPublicationFaultPointForInternalTest(std::string_view point) {
     if (!detail::g_facts_fault_point.empty() && detail::g_facts_fault_point == point) {
         detail::g_facts_fault_point = {};
+
         throw std::bad_alloc{};
+
     }
+
 }
 
 namespace {
@@ -35,14 +42,18 @@ namespace {
     return std::tie(left.envelope.tick.value, left.envelope.sequence) <
            std::tie(right.envelope.tick.value, right.envelope.sequence);
 }
+
 } // namespace
 
 GameplayFactsService::GameplayFactsService() {
-    const auto registered = RegisterEventType<FactChange>(
-        kFactChangedEventName, GameplayDomainId::FromString(kFactsDomainName), HistoryPolicy::None);
+    const auto registered =
+        RegisterEventType<FactChange>(kFactChangedEventName,
+                                      GameplayDomainId::FromString(kFactsDomainName),
+                                      HistoryPolicy::None);
     if (registered) {
         fact_changed_event_type_ = registered.Value();
     }
+
 }
 
 void GameplayFactsService::Freeze() {
@@ -51,30 +62,36 @@ void GameplayFactsService::Freeze() {
             if (left.priority != right.priority) {
                 return left.priority < right.priority;
             }
+
             return left.id.Raw() < right.id.Raw();
         });
     }
+
     frozen_ = true;
 }
 
-foundation::Result<void> GameplayFactsService::ValidateEventPayload(EventTypeId type,
-                                                                    std::type_index payload_type) const {
+foundation::Result<void>
+GameplayFactsService::ValidateEventPayload(EventTypeId type, std::type_index payload_type) const {
     const auto found = event_types_.find(type);
     if (found == event_types_.end()) {
         return foundation::Result<void>::Failure(
             foundation::Error::Create("gameplay.event_unknown", "event type is not registered"));
     }
+
     if (found->second.payload_type != payload_type) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.event_payload_mismatch", "event payload C++ type does not match registration"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.event_payload_mismatch",
+                                      "event payload C++ type does not match registration"));
     }
+
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> GameplayFactsService::SubmitBatch(GameplayEventBatch batch) {
     if (!batch.Producer().IsValid()) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.event_batch_invalid", "worker event batch requires a stable producer id"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.event_batch_invalid",
+                                      "worker event batch requires a stable producer id"));
     }
 
     for (const auto &pending : batch.pending_) {
@@ -83,6 +100,7 @@ foundation::Result<void> GameplayFactsService::SubmitBatch(GameplayEventBatch ba
             ++rejected_events_;
             return validation;
         }
+
     }
 
     const auto event_count = batch.pending_.size();
@@ -92,21 +110,28 @@ foundation::Result<void> GameplayFactsService::SubmitBatch(GameplayEventBatch ba
         // key within one accepted wave. Completion timing cannot break a tie.
         // Reject before queue publication; already accepted work stays intact.
         for (const auto &accepted : submitted_batches_) {
-            if (accepted.Producer() != batch.Producer() || accepted.BatchOrder() != batch.BatchOrder())
+            if (accepted.Producer() != batch.Producer() ||
+                accepted.BatchOrder() != batch.BatchOrder())
                 continue;
             for (const auto &candidate : batch.pending_) {
                 for (const auto &pending : accepted.pending_) {
                     if (candidate.context.tick == pending.context.tick &&
                         candidate.local_sequence == pending.local_sequence) {
                         return foundation::Result<void>::Failure(
-                            foundation::Error::Create("gameplay.event_batch_order_collision",
-                                                      "worker batch ordering key already accepted in this wave"));
+                            foundation::Error::
+                                Create("gameplay.event_batch_order_collision",
+                                       "worker batch ordering key already accepted in this wave"));
                     }
+
                 }
+
             }
+
         }
+
         submitted_batches_.push_back(std::move(batch));
     }
+
     published_events_.fetch_add(event_count, std::memory_order_relaxed);
     return foundation::Result<void>::Success();
 }
@@ -134,18 +159,22 @@ foundation::Result<void> GameplayFactsService::MergeSubmittedBatches() {
     flattened.reserve(total);
     for (const auto &batch : batches) {
         for (const auto &pending : batch.pending_) {
-            flattened.push_back(FlattenedEvent{PendingEvent{pending.type, pending.context, pending.subject,
-                                                            pending.scope, pending.payload, pending.payload_type,
-                                                            pending.producer, pending.local_sequence},
-                                               batch.BatchOrder(), pending.local_sequence});
+            flattened.push_back(
+                FlattenedEvent{PendingEvent{pending.type, pending.context, pending.subject,
+                                            pending.scope, pending.payload, pending.payload_type,
+                                            pending.producer, pending.local_sequence},
+                               batch.BatchOrder(), pending.local_sequence});
         }
+
     }
 
-    std::sort(flattened.begin(), flattened.end(), [](const FlattenedEvent &left, const FlattenedEvent &right) {
-        return std::tie(left.event.context.tick.value, left.event.producer.value, left.batch_order,
-                        left.local_sequence) < std::tie(right.event.context.tick.value, right.event.producer.value,
-                                                        right.batch_order, right.local_sequence);
-    });
+    std::sort(flattened.begin(), flattened.end(),
+              [](const FlattenedEvent &left, const FlattenedEvent &right) {
+                  return std::tie(left.event.context.tick.value, left.event.producer.value,
+                                  left.batch_order, left.local_sequence) <
+                         std::tie(right.event.context.tick.value, right.event.producer.value,
+                                  right.batch_order, right.local_sequence);
+              });
     staged_pending.reserve(staged_pending.size() + flattened.size());
     for (auto &item : flattened)
         staged_pending.push_back(std::move(item.event));
@@ -158,22 +187,28 @@ foundation::Result<void> GameplayFactsService::MergeSubmittedBatches() {
 
 foundation::Result<std::uint64_t> GameplayFactsService::Dispatch(EventDispatchLimits limits) {
     if (dispatching_) {
-        return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-            "gameplay.event_dispatch_reentrant", "event dispatch cannot be entered recursively"));
+        return foundation::Result<std::uint64_t>::Failure(
+            foundation::Error::Create("gameplay.event_dispatch_reentrant",
+                                      "event dispatch cannot be entered recursively"));
     }
+
     if (limits.max_events == 0 || limits.max_waves == 0) {
         return foundation::Result<std::uint64_t>::Failure(
-            foundation::Error::Create("gameplay.event_dispatch_invalid_limits", "dispatch limits must be non-zero"));
+            foundation::Error::Create("gameplay.event_dispatch_invalid_limits",
+                                      "dispatch limits must be non-zero"));
     }
 
     struct DispatchGuard {
         bool &value;
+
         explicit DispatchGuard(bool &target) : value(target) {
             value = true;
         }
+
         ~DispatchGuard() {
             value = false;
         }
+
     } guard(dispatching_);
 
     std::uint64_t processed = 0;
@@ -190,16 +225,22 @@ foundation::Result<std::uint64_t> GameplayFactsService::Dispatch(EventDispatchLi
         bool wave_counted = false;
         while (!pending_events_.empty()) {
             if (processed >= limits.max_events) {
-                return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-                    "gameplay.event_budget_exceeded", "event dispatch exceeded max events budget"));
+                return foundation::Result<std::uint64_t>::Failure(
+                    foundation::Error::Create("gameplay.event_budget_exceeded",
+                                              "event dispatch exceeded max events budget"));
             }
+
             if (event_ids_.IsExhausted()) {
                 return foundation::Result<std::uint64_t>::Failure(
-                    foundation::Error::Create("gameplay.event_id_exhausted", "event id generator is exhausted"));
+                    foundation::Error::Create("gameplay.event_id_exhausted",
+                                              "event id generator is exhausted"));
             }
-            if (next_event_sequence_ == 0 || next_event_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
-                return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-                    "gameplay.event_sequence_exhausted", "event sequence counter is exhausted"));
+
+            if (next_event_sequence_ == 0 ||
+                next_event_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
+                return foundation::Result<std::uint64_t>::Failure(
+                    foundation::Error::Create("gameplay.event_sequence_exhausted",
+                                              "event sequence counter is exhausted"));
             }
 
             // Stage the complete committed event, history state and remaining queue before
@@ -210,8 +251,10 @@ foundation::Result<std::uint64_t> GameplayFactsService::Dispatch(EventDispatchLi
             record.envelope.id = staged_ids.Next();
             if (!record.envelope.id.IsValid()) {
                 return foundation::Result<std::uint64_t>::Failure(
-                    foundation::Error::Create("gameplay.event_id_exhausted", "event id generator is exhausted"));
+                    foundation::Error::Create("gameplay.event_id_exhausted",
+                                              "event id generator is exhausted"));
             }
+
             record.envelope.type = pending.type;
             record.envelope.tick = pending.context.tick;
             record.envelope.time = pending.context.time;
@@ -251,22 +294,29 @@ foundation::Result<std::uint64_t> GameplayFactsService::Dispatch(EventDispatchLi
                     } catch (...) {
                         ++subscriber_failures_;
                     }
+
                 }
+
             }
+
         }
+
     }
 
     const auto merged = MergeSubmittedBatches();
     if (!merged)
         return foundation::Result<std::uint64_t>::Failure(merged.GetError());
     if (!pending_events_.empty()) {
-        return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-            "gameplay.event_wave_budget_exceeded", "event dispatch exceeded max wave budget"));
+        return foundation::Result<std::uint64_t>::Failure(
+            foundation::Error::Create("gameplay.event_wave_budget_exceeded",
+                                      "event dispatch exceeded max wave budget"));
     }
+
     return foundation::Result<std::uint64_t>::Success(processed);
 }
 
-void GameplayFactsService::AppendHistoryTo(std::vector<EventRecord> &history, const EventRecord &event) const {
+void GameplayFactsService::AppendHistoryTo(std::vector<EventRecord> &history,
+                                           const EventRecord &event) const {
     const auto type = event_types_.find(event.envelope.type);
     if (type == event_types_.end() || type->second.history_policy == HistoryPolicy::None)
         return;
@@ -275,52 +325,72 @@ void GameplayFactsService::AppendHistoryTo(std::vector<EventRecord> &history, co
     if (type->second.history_policy == HistoryPolicy::Recent) {
         std::size_t count = 0;
         for (auto iterator = history.rbegin(); iterator != history.rend(); ++iterator) {
-            if (iterator->envelope.type == event.envelope.type && ++count > type->second.recent_limit) {
-                const auto erase_index = static_cast<std::size_t>(std::distance(iterator, history.rend()) - 1);
+            if (iterator->envelope.type == event.envelope.type &&
+                ++count > type->second.recent_limit) {
+                const auto erase_index =
+                    static_cast<std::size_t>(std::distance(iterator, history.rend()) - 1);
                 history.erase(history.begin() + static_cast<std::ptrdiff_t>(erase_index));
                 break;
             }
+
         }
+
     }
+
 }
 
-foundation::Result<void> GameplayFactsService::ValidateMutation(const FactTransaction &transaction,
-                                                                const FactTransaction::Mutation &mutation) const {
+foundation::Result<void>
+GameplayFactsService::ValidateMutation(const FactTransaction &transaction,
+                                       const FactTransaction::Mutation &mutation) const {
     const auto type = fact_types_.find(mutation.key.type);
     if (type == fact_types_.end()) {
         return foundation::Result<void>::Failure(
             foundation::Error::Create("gameplay.fact_unknown", "fact type is not registered"));
     }
+
     if (type->second.owner != transaction.owner_) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.fact_owner_violation", "only the registered fact owner may modify this fact type"));
-    }
-    if (!mutation.key.subject.IsValid()) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.fact_invalid_subject", "fact subject must be a valid gameplay object reference"));
-    }
-    if (mutation.kind == FactTransaction::MutationKind::Set && type->second.value_type != mutation.value_type) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.fact_value_mismatch", "fact value C++ type does not match registration"));
-    }
-    if (mutation.kind == FactTransaction::MutationKind::Set && mutation.persistence == FactPersistence::Timed &&
-        !mutation.expires_at.has_value()) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.fact_missing_expiration", "timed fact requires expiration time"));
+            foundation::Error::Create("gameplay.fact_owner_violation",
+                                      "only the registered fact owner may modify this fact type"));
     }
-    if (mutation.kind == FactTransaction::MutationKind::Set && mutation.persistence != FactPersistence::Timed &&
-        mutation.expires_at.has_value()) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.fact_unexpected_expiration", "only timed facts may carry expiration time"));
+
+    if (!mutation.key.subject.IsValid()) {
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.fact_invalid_subject",
+                                      "fact subject must be a valid gameplay object reference"));
     }
+
+    if (mutation.kind == FactTransaction::MutationKind::Set &&
+        type->second.value_type != mutation.value_type) {
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.fact_value_mismatch",
+                                      "fact value C++ type does not match registration"));
+    }
+
+    if (mutation.kind == FactTransaction::MutationKind::Set &&
+        mutation.persistence == FactPersistence::Timed && !mutation.expires_at.has_value()) {
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.fact_missing_expiration",
+                                      "timed fact requires expiration time"));
+    }
+
+    if (mutation.kind == FactTransaction::MutationKind::Set &&
+        mutation.persistence != FactPersistence::Timed && mutation.expires_at.has_value()) {
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.fact_unexpected_expiration",
+                                      "only timed facts may carry expiration time"));
+    }
+
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<std::vector<FactChange>>
-GameplayFactsService::Commit(FactTransaction transaction, GameplayContext context, EventId source_event) {
+GameplayFactsService::Commit(FactTransaction transaction, GameplayContext context,
+                             EventId source_event) {
     if (!transaction.owner_.IsValid()) {
         return foundation::Result<std::vector<FactChange>>::Failure(
-            foundation::Error::Create("gameplay.fact_invalid_owner", "fact transaction owner must be valid"));
+            foundation::Error::Create("gameplay.fact_invalid_owner",
+                                      "fact transaction owner must be valid"));
     }
 
     std::unordered_map<FactKey, bool, FactKeyHash> touched_keys;
@@ -331,9 +401,11 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
         if (!validation)
             return foundation::Result<std::vector<FactChange>>::Failure(validation.GetError());
         if (!touched_keys.emplace(mutation.key, true).second) {
-            return foundation::Result<std::vector<FactChange>>::Failure(foundation::Error::Create(
-                "gameplay.fact_duplicate_mutation", "a fact transaction may mutate each key at most once"));
+            return foundation::Result<std::vector<FactChange>>::Failure(
+                foundation::Error::Create("gameplay.fact_duplicate_mutation",
+                                          "a fact transaction may mutate each key at most once"));
         }
+
         const auto existing = facts_.find(mutation.key);
         if (mutation.kind == FactTransaction::MutationKind::Set) {
             ++real_changes;
@@ -342,25 +414,34 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
         } else if (existing != facts_.end())
             ++real_changes;
     }
+
     if (real_changes == 0)
         return foundation::Result<std::vector<FactChange>>::Success({});
     if (fact_revision_.value == std::numeric_limits<std::uint64_t>::max()) {
         return foundation::Result<std::vector<FactChange>>::Failure(
-            foundation::Error::Create("gameplay.fact_revision_exhausted", "fact revision counter is exhausted"));
+            foundation::Error::Create("gameplay.fact_revision_exhausted",
+                                      "fact revision counter is exhausted"));
     }
+
     if (creates > 0) {
         const auto ids = fact_ids_.GetSnapshot();
         if (ids.next == 0 || creates > std::numeric_limits<std::uint64_t>::max() - ids.next + 1) {
-            return foundation::Result<std::vector<FactChange>>::Failure(foundation::Error::Create(
-                "gameplay.fact_id_exhausted", "fact id generator cannot allocate all new facts atomically"));
+            return foundation::Result<std::vector<FactChange>>::Failure(
+                foundation::Error::
+                    Create("gameplay.fact_id_exhausted",
+                           "fact id generator cannot allocate all new facts atomically"));
         }
+
     }
+
     if (real_changes > std::numeric_limits<std::uint64_t>::max() - next_direct_order_) {
-        return foundation::Result<std::vector<FactChange>>::Failure(foundation::Error::Create(
-            "gameplay.event_order_exhausted", "fact change event order counter is exhausted"));
+        return foundation::Result<std::vector<FactChange>>::Failure(
+            foundation::Error::Create("gameplay.event_order_exhausted",
+                                      "fact change event order counter is exhausted"));
     }
 
     const Revision next_revision{fact_revision_.value + 1};
+
     auto staged_facts = facts_;
     auto staged_ids = fact_ids_;
     auto staged_pending = pending_events_;
@@ -371,18 +452,23 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
         auto existing = staged_facts.find(mutation.key);
         if (mutation.kind == FactTransaction::MutationKind::Remove) {
             if (existing != staged_facts.end()) {
-                changes.push_back(FactChange{FactChangeKind::Removed, mutation.key, existing->second, std::nullopt});
+                changes.push_back(FactChange{FactChangeKind::Removed, mutation.key,
+                                             existing->second, std::nullopt});
                 staged_facts.erase(existing);
             }
+
             continue;
         }
+
         if (existing == staged_facts.end()) {
             FactRecord record;
             record.id = staged_ids.Next();
             if (!record.id.IsValid()) {
-                return foundation::Result<std::vector<FactChange>>::Failure(foundation::Error::Create(
-                    "gameplay.fact_id_exhausted", "fact id generator returned an invalid id"));
+                return foundation::Result<std::vector<FactChange>>::Failure(
+                    foundation::Error::Create("gameplay.fact_id_exhausted",
+                                              "fact id generator returned an invalid id"));
             }
+
             record.key = mutation.key;
             record.owner = transaction.owner_;
             record.created_at = context.time;
@@ -395,7 +481,8 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
             record.value = std::move(mutation.value);
             record.value_type = mutation.value_type;
             staged_facts.emplace(record.key, record);
-            changes.push_back(FactChange{FactChangeKind::Created, record.key, std::nullopt, record});
+            changes.push_back(
+                FactChange{FactChangeKind::Created, record.key, std::nullopt, record});
         } else {
             const FactRecord before = existing->second;
             existing->second.updated_at = context.time;
@@ -406,8 +493,10 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
             existing->second.expires_at = mutation.expires_at;
             existing->second.value = std::move(mutation.value);
             existing->second.value_type = mutation.value_type;
-            changes.push_back(FactChange{FactChangeKind::Updated, mutation.key, before, existing->second});
+            changes.push_back(
+                FactChange{FactChangeKind::Updated, mutation.key, before, existing->second});
         }
+
     }
 
     staged_pending.reserve(staged_pending.size() + changes.size());
@@ -417,8 +506,10 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
         if (source_event.IsValid()) {
             event_context.cause_event = source_event;
             if (!event_context.correlation.IsValid())
-                event_context.correlation = CorrelationId::FromRaw(source_event.High(), source_event.Low());
+                event_context.correlation =
+                    CorrelationId::FromRaw(source_event.High(), source_event.Low());
         }
+
         staged_pending.push_back(PendingEvent{fact_changed_event_type_,
                                               event_context,
                                               change.key.subject,
@@ -440,19 +531,25 @@ GameplayFactsService::Commit(FactTransaction transaction, GameplayContext contex
     return foundation::Result<std::vector<FactChange>>::Success(std::move(changes));
 }
 
-void GameplayFactsService::PublishFactChanges(const std::vector<FactChange> &changes, const GameplayContext &context,
+void GameplayFactsService::PublishFactChanges(const std::vector<FactChange> &changes,
+                                              const GameplayContext &context,
                                               EventId source_event) {
     for (const auto &change : changes) {
         auto event_context = context;
         if (source_event.IsValid()) {
             event_context.cause_event = source_event;
             if (!event_context.correlation.IsValid()) {
-                event_context.correlation = CorrelationId::FromRaw(source_event.High(), source_event.Low());
+                event_context.correlation =
+                    CorrelationId::FromRaw(source_event.High(), source_event.Low());
             }
+
         }
+
         [[maybe_unused]] const auto result =
-            Publish<FactChange>(fact_changed_event_type_, event_context, change.key.subject, change);
+            Publish<FactChange>(fact_changed_event_type_, event_context, change.key.subject,
+                                change);
     }
+
 }
 
 std::optional<FactRecord> GameplayFactsService::FindFact(const FactKey &key) const {
@@ -460,6 +557,7 @@ std::optional<FactRecord> GameplayFactsService::FindFact(const FactKey &key) con
     if (found == facts_.end()) {
         return std::nullopt;
     }
+
     return found->second;
 }
 
@@ -470,45 +568,58 @@ std::vector<FactRecord> GameplayFactsService::FindFacts(FactTypeId type, Gamepla
         if (key.type != type) {
             continue;
         }
+
         if (subject.IsValid() && key.subject != subject) {
             continue;
         }
+
         if (scope.IsValid() && key.scope != scope) {
             continue;
         }
+
         result.push_back(record);
     }
+
     std::sort(result.begin(), result.end(), [](const FactRecord &left, const FactRecord &right) {
         if (left.key.subject != right.key.subject) {
             return left.key.subject < right.key.subject;
         }
+
         return left.key.scope < right.key.scope;
     });
     return result;
 }
 
-foundation::Result<std::uint64_t> GameplayFactsService::ExpireDueFacts(GameplayTimePoint now, GameplayContext context) {
+foundation::Result<std::uint64_t> GameplayFactsService::ExpireDueFacts(GameplayTimePoint now,
+                                                                       GameplayContext context) {
     std::vector<FactKey> due;
     due.reserve(facts_.size());
     for (const auto &[key, record] : facts_) {
-        if (record.persistence == FactPersistence::Timed && record.expires_at.has_value() && *record.expires_at <= now)
+        if (record.persistence == FactPersistence::Timed && record.expires_at.has_value() &&
+            *record.expires_at <= now)
             due.push_back(key);
     }
+
     if (due.empty())
         return foundation::Result<std::uint64_t>::Success(0);
     std::sort(due.begin(), due.end(), [](const FactKey &left, const FactKey &right) {
-        return std::tie(left.type, left.subject, left.scope) < std::tie(right.type, right.subject, right.scope);
+        return std::tie(left.type, left.subject, left.scope) <
+               std::tie(right.type, right.subject, right.scope);
     });
     if (fact_revision_.value == std::numeric_limits<std::uint64_t>::max()) {
         return foundation::Result<std::uint64_t>::Failure(
-            foundation::Error::Create("gameplay.fact_revision_exhausted", "fact revision counter is exhausted"));
+            foundation::Error::Create("gameplay.fact_revision_exhausted",
+                                      "fact revision counter is exhausted"));
     }
+
     if (due.size() > std::numeric_limits<std::uint64_t>::max() - next_direct_order_) {
-        return foundation::Result<std::uint64_t>::Failure(foundation::Error::Create(
-            "gameplay.event_order_exhausted", "fact change event order counter is exhausted"));
+        return foundation::Result<std::uint64_t>::Failure(
+            foundation::Error::Create("gameplay.event_order_exhausted",
+                                      "fact change event order counter is exhausted"));
     }
 
     const Revision next_revision{fact_revision_.value + 1};
+
     auto staged_facts = facts_;
     auto staged_pending = pending_events_;
     std::vector<FactChange> changes;
@@ -520,6 +631,7 @@ foundation::Result<std::uint64_t> GameplayFactsService::ExpireDueFacts(GameplayT
         changes.push_back(FactChange{FactChangeKind::Removed, key, it->second, std::nullopt});
         staged_facts.erase(it);
     }
+
     staged_pending.reserve(staged_pending.size() + changes.size());
     auto next_order = next_direct_order_;
     for (const auto &change : changes) {
@@ -542,7 +654,8 @@ foundation::Result<std::uint64_t> GameplayFactsService::ExpireDueFacts(GameplayT
     return foundation::Result<std::uint64_t>::Success(static_cast<std::uint64_t>(changes.size()));
 }
 
-std::vector<EventRecord> GameplayFactsService::FindHistory(EventTypeId type, GameplayObjectRef subject) const {
+std::vector<EventRecord> GameplayFactsService::FindHistory(EventTypeId type,
+                                                           GameplayObjectRef subject) const {
     HistoryQuery query;
     query.type = type;
     query.subject = subject;
@@ -555,83 +668,109 @@ std::vector<EventRecord> GameplayFactsService::FindHistory(const HistoryQuery &q
         if (query.type && event.envelope.type != *query.type) {
             continue;
         }
+
         if (query.subject.IsValid() && event.envelope.subject != query.subject) {
             continue;
         }
+
         if (query.scope.IsValid() && event.envelope.scope != query.scope) {
             continue;
         }
+
         if (query.actor.IsValid() && event.envelope.context.actor != query.actor) {
             continue;
         }
+
         if (query.instigator.IsValid() && event.envelope.context.instigator != query.instigator) {
             continue;
         }
+
         if (query.source.IsValid() && event.envelope.context.source != query.source) {
             continue;
         }
+
         if (query.from && event.envelope.time < *query.from) {
             continue;
         }
+
         if (query.to && *query.to < event.envelope.time) {
             continue;
         }
+
         if (query.operation && event.envelope.context.operation != *query.operation) {
             continue;
         }
+
         if (query.correlation && event.envelope.context.correlation != *query.correlation) {
             continue;
         }
+
         if (query.cause_event && event.envelope.context.cause_event != *query.cause_event) {
             continue;
         }
+
         result.push_back(event);
     }
+
     std::sort(result.begin(), result.end(), SequenceLess);
     return result;
 }
 
-foundation::Result<void> GameplayFactsService::ValidateHistoryRecords(std::span<const EventRecord> records) const {
+foundation::Result<void>
+GameplayFactsService::ValidateHistoryRecords(std::span<const EventRecord> records) const {
     std::unordered_set<EventId> ids;
     std::unordered_set<std::uint64_t> sequences;
     EventRecord previous;
     bool has_previous = false;
     for (const auto &event : records) {
         if (!event.envelope.id.IsValid() || event.envelope.sequence == 0) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.history_snapshot_invalid", "history contains invalid event id or sequence"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.history_snapshot_invalid",
+                                          "history contains invalid event id or sequence"));
         }
+
         const auto type = event_types_.find(event.envelope.type);
         if (type == event_types_.end() || type->second.payload_type != event.payload_type ||
             type->second.history_policy == HistoryPolicy::None ||
             type->second.history_policy == HistoryPolicy::Recent) {
             return foundation::Result<void>::Failure(
+                foundation::Error::
+                    Create("gameplay.history_snapshot_invalid",
+                           "history event is incompatible with registered persistent event type"));
+        }
+
+        if (!ids.insert(event.envelope.id).second ||
+            !sequences.insert(event.envelope.sequence).second) {
+            return foundation::Result<void>::Failure(
                 foundation::Error::Create("gameplay.history_snapshot_invalid",
-                                          "history event is incompatible with registered persistent event type"));
+                                          "history contains duplicate event ids or sequences"));
         }
-        if (!ids.insert(event.envelope.id).second || !sequences.insert(event.envelope.sequence).second) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.history_snapshot_invalid", "history contains duplicate event ids or sequences"));
-        }
+
         if (has_previous && SequenceLess(event, previous)) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.history_snapshot_invalid", "history records must be deterministically ordered"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.history_snapshot_invalid",
+                                          "history records must be deterministically ordered"));
         }
+
         previous = event;
         has_previous = true;
     }
+
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> GameplayFactsService::CompactHistory(EventTypeId type, const IHistoryCompactor &compactor) {
+foundation::Result<void> GameplayFactsService::CompactHistory(EventTypeId type,
+                                                              const IHistoryCompactor &compactor) {
     const auto info = event_types_.find(type);
     if (info == event_types_.end()) {
         return foundation::Result<void>::Failure(
             foundation::Error::Create("gameplay.event_unknown", "event type is not registered"));
     }
+
     if (info->second.history_policy != HistoryPolicy::PersistentCompactable) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.history_not_compactable", "event type does not allow history compaction"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.history_not_compactable",
+                                      "event type does not allow history compaction"));
     }
 
     std::vector<EventRecord> selected;
@@ -642,6 +781,7 @@ foundation::Result<void> GameplayFactsService::CompactHistory(EventTypeId type, 
         } else {
             retained.push_back(event);
         }
+
     }
 
     std::vector<EventRecord> compacted;
@@ -649,35 +789,46 @@ foundation::Result<void> GameplayFactsService::CompactHistory(EventTypeId type, 
         compacted = compactor.Compact(selected);
     } catch (...) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.history_compactor_exception", "history compactor threw an exception"));
+            foundation::Error::Create("gameplay.history_compactor_exception",
+                                      "history compactor threw an exception"));
     }
+
     for (const auto &event : compacted) {
         if (event.envelope.type != type) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.history_compaction_invalid", "compactor returned an event with the wrong type"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.history_compaction_invalid",
+                                          "compactor returned an event with the wrong type"));
         }
+
     }
+
     retained.insert(retained.end(), compacted.begin(), compacted.end());
     std::sort(retained.begin(), retained.end(), SequenceLess);
     const auto validation = ValidateHistoryRecords(retained);
     if (!validation) {
         return foundation::Result<void>::Failure(validation.GetError());
     }
+
     history_ = std::move(retained);
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<FactsSnapshot> GameplayFactsService::CaptureSnapshot() const {
     if (dispatching_ || !pending_events_.empty()) {
-        return foundation::Result<FactsSnapshot>::Failure(foundation::Error::Create(
-            "gameplay.facts_not_quiescent", "facts snapshot requires a quiescent event boundary"));
+        return foundation::Result<FactsSnapshot>::Failure(
+            foundation::Error::Create("gameplay.facts_not_quiescent",
+                                      "facts snapshot requires a quiescent event boundary"));
     }
+
     {
         std::scoped_lock lock(batch_mutex_);
         if (!submitted_batches_.empty()) {
-            return foundation::Result<FactsSnapshot>::Failure(foundation::Error::Create(
-                "gameplay.facts_not_quiescent", "facts snapshot cannot include pending submitted batches"));
+            return foundation::Result<FactsSnapshot>::Failure(
+                foundation::Error::
+                    Create("gameplay.facts_not_quiescent",
+                           "facts snapshot cannot include pending submitted batches"));
         }
+
     }
 
     FactsSnapshot snapshot;
@@ -686,18 +837,22 @@ foundation::Result<FactsSnapshot> GameplayFactsService::CaptureSnapshot() const 
         if (IsPersistentFact(record.persistence)) {
             snapshot.facts.push_back(record);
         }
+
     }
-    std::sort(snapshot.facts.begin(), snapshot.facts.end(), [](const FactRecord &left, const FactRecord &right) {
-        return left.id < right.id;
-    });
+
+    std::sort(snapshot.facts.begin(), snapshot.facts.end(),
+              [](const FactRecord &left, const FactRecord &right) { return left.id < right.id; });
 
     for (const auto &event : history_) {
         const auto info = event_types_.find(event.envelope.type);
-        if (info != event_types_.end() && (info->second.history_policy == HistoryPolicy::Persistent ||
-                                           info->second.history_policy == HistoryPolicy::PersistentCompactable)) {
+        if (info != event_types_.end() &&
+            (info->second.history_policy == HistoryPolicy::Persistent ||
+             info->second.history_policy == HistoryPolicy::PersistentCompactable)) {
             snapshot.history.push_back(event);
         }
+
     }
+
     snapshot.fact_ids = fact_ids_.GetSnapshot();
     snapshot.event_ids = event_ids_.GetSnapshot();
     snapshot.fact_revision = fact_revision_;
@@ -705,11 +860,14 @@ foundation::Result<FactsSnapshot> GameplayFactsService::CaptureSnapshot() const 
     return foundation::Result<FactsSnapshot>::Success(std::move(snapshot));
 }
 
-foundation::Result<void> GameplayFactsService::ValidateSnapshot(const FactsSnapshot &snapshot) const {
+foundation::Result<void>
+GameplayFactsService::ValidateSnapshot(const FactsSnapshot &snapshot) const {
     if (!MonotonicIdGenerator<FactId>::IsValidSnapshot(snapshot.fact_ids) ||
-        !MonotonicIdGenerator<EventId>::IsValidSnapshot(snapshot.event_ids) || snapshot.next_event_sequence == 0) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.snapshot_counter_invalid", "facts snapshot contains invalid id or sequence counters"));
+        !MonotonicIdGenerator<EventId>::IsValidSnapshot(snapshot.event_ids) ||
+        snapshot.next_event_sequence == 0) {
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.snapshot_counter_invalid",
+                                      "facts snapshot contains invalid id or sequence counters"));
     }
 
     std::unordered_set<FactKey, FactKeyHash> fact_keys;
@@ -720,63 +878,88 @@ foundation::Result<void> GameplayFactsService::ValidateSnapshot(const FactsSnaps
         if (!fact.id.IsValid() || !fact.key.subject.IsValid() || type == fact_types_.end() ||
             type->second.owner != fact.owner || type->second.value_type != fact.value_type ||
             !IsPersistentFact(fact.persistence)) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.fact_snapshot_invalid", "facts snapshot is incompatible with registered fact types"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::
+                    Create("gameplay.fact_snapshot_invalid",
+                           "facts snapshot is incompatible with registered fact types"));
         }
+
         if (fact.persistence == FactPersistence::Timed && !fact.expires_at.has_value()) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.fact_snapshot_invalid", "timed fact snapshot record is missing expiration"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.fact_snapshot_invalid",
+                                          "timed fact snapshot record is missing expiration"));
         }
+
         if (fact.persistence != FactPersistence::Timed && fact.expires_at.has_value()) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.fact_snapshot_invalid", "non-timed fact snapshot record has expiration"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.fact_snapshot_invalid",
+                                          "non-timed fact snapshot record has expiration"));
         }
+
         if (!fact_keys.insert(fact.key).second || !fact_ids.insert(fact.id).second) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.fact_snapshot_invalid", "facts snapshot contains duplicate fact key or id"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.fact_snapshot_invalid",
+                                          "facts snapshot contains duplicate fact key or id"));
         }
+
         if (fact.id.High() == snapshot.fact_ids.scope && fact.id.Low() > max_fact_low) {
             max_fact_low = fact.id.Low();
         }
+
         if (fact.revision.value > snapshot.fact_revision.value) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.fact_snapshot_invalid", "fact revision is ahead of snapshot revision"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.fact_snapshot_invalid",
+                                          "fact revision is ahead of snapshot revision"));
         }
+
     }
+
     if (snapshot.fact_ids.next != 0 && snapshot.fact_ids.next <= max_fact_low) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.snapshot_counter_invalid", "fact id generator snapshot is behind restored facts"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.snapshot_counter_invalid",
+                                      "fact id generator snapshot is behind restored facts"));
     }
 
     const auto history_validation = ValidateHistoryRecords(snapshot.history);
     if (!history_validation) {
         return history_validation;
     }
+
     std::uint64_t max_event_low = 0;
     std::uint64_t max_sequence = 0;
     for (const auto &event : snapshot.history) {
-        if (event.envelope.id.High() == snapshot.event_ids.scope && event.envelope.id.Low() > max_event_low) {
+        if (event.envelope.id.High() == snapshot.event_ids.scope &&
+            event.envelope.id.Low() > max_event_low) {
             max_event_low = event.envelope.id.Low();
         }
+
         if (event.envelope.sequence > max_sequence) {
             max_sequence = event.envelope.sequence;
         }
+
     }
+
     if (snapshot.event_ids.next != 0 && snapshot.event_ids.next <= max_event_low) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.snapshot_counter_invalid", "event id generator snapshot is behind restored history"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.snapshot_counter_invalid",
+                                      "event id generator snapshot is behind restored history"));
     }
+
     if (snapshot.next_event_sequence <= max_sequence) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.snapshot_counter_invalid", "event sequence counter is behind restored history"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.snapshot_counter_invalid",
+                                      "event sequence counter is behind restored history"));
     }
+
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> GameplayFactsService::RestoreSnapshot(FactsSnapshot snapshot) {
     if (dispatching_) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.restore_during_dispatch", "facts snapshot cannot be restored while dispatching events"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::
+                Create("gameplay.restore_during_dispatch",
+                       "facts snapshot cannot be restored while dispatching events"));
     }
 
     const auto validation = ValidateSnapshot(snapshot);
@@ -800,10 +983,12 @@ foundation::Result<void> GameplayFactsService::RestoreSnapshot(FactsSnapshot sna
         std::scoped_lock lock(batch_mutex_);
         submitted_batches_.clear();
     }
+
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<FactsPersistenceSnapshot> GameplayFactsService::CapturePersistenceSnapshot() const {
+foundation::Result<FactsPersistenceSnapshot>
+GameplayFactsService::CapturePersistenceSnapshot() const {
     const auto memory = CaptureSnapshot();
     if (!memory) {
         return foundation::Result<FactsPersistenceSnapshot>::Failure(memory.GetError());
@@ -820,36 +1005,48 @@ foundation::Result<FactsPersistenceSnapshot> GameplayFactsService::CapturePersis
     for (const auto &fact : memory.Value().facts) {
         const auto codec = fact_codecs_.find(fact.key.type);
         if (codec == fact_codecs_.end() || codec->second.cpp_type != fact.value_type) {
-            return foundation::Result<FactsPersistenceSnapshot>::Failure(foundation::Error::Create(
-                "gameplay.fact_codec_missing", "persistent fact type has no compatible registered codec"));
+            return foundation::Result<FactsPersistenceSnapshot>::Failure(
+                foundation::Error::
+                    Create("gameplay.fact_codec_missing",
+                           "persistent fact type has no compatible registered codec"));
         }
+
         auto encoded = codec->second.encode(fact.value);
         if (!encoded) {
             return foundation::Result<FactsPersistenceSnapshot>::Failure(encoded.GetError());
         }
-        output.facts.push_back(PersistentFactRecord{fact.id, fact.key, fact.owner, fact.created_at, fact.updated_at,
-                                                    fact.revision, fact.source_operation, fact.source_event,
-                                                    fact.persistence, fact.expires_at, codec->second.schema,
-                                                    codec->second.version, std::move(encoded).Value()});
+
+        output.facts.push_back(
+            PersistentFactRecord{fact.id, fact.key, fact.owner, fact.created_at, fact.updated_at,
+                                 fact.revision, fact.source_operation, fact.source_event,
+                                 fact.persistence, fact.expires_at, codec->second.schema,
+                                 codec->second.version, std::move(encoded).Value()});
     }
 
     for (const auto &event : memory.Value().history) {
         const auto codec = event_codecs_.find(event.envelope.type);
         if (codec == event_codecs_.end() || codec->second.cpp_type != event.payload_type) {
-            return foundation::Result<FactsPersistenceSnapshot>::Failure(foundation::Error::Create(
-                "gameplay.event_codec_missing", "persistent event type has no compatible registered codec"));
+            return foundation::Result<FactsPersistenceSnapshot>::Failure(
+                foundation::Error::
+                    Create("gameplay.event_codec_missing",
+                           "persistent event type has no compatible registered codec"));
         }
+
         auto encoded = codec->second.encode(event.payload);
         if (!encoded) {
             return foundation::Result<FactsPersistenceSnapshot>::Failure(encoded.GetError());
         }
-        output.history.push_back(PersistentEventRecord{event.envelope, codec->second.schema, codec->second.version,
+
+        output.history.push_back(PersistentEventRecord{event.envelope, codec->second.schema,
+                                                       codec->second.version,
                                                        std::move(encoded).Value()});
     }
+
     return foundation::Result<FactsPersistenceSnapshot>::Success(std::move(output));
 }
 
-foundation::Result<void> GameplayFactsService::RestorePersistenceSnapshot(FactsPersistenceSnapshot snapshot) {
+foundation::Result<void>
+GameplayFactsService::RestorePersistenceSnapshot(FactsPersistenceSnapshot snapshot) {
     FactsSnapshot decoded;
     decoded.fact_ids = snapshot.fact_ids;
     decoded.event_ids = snapshot.event_ids;
@@ -863,9 +1060,11 @@ foundation::Result<void> GameplayFactsService::RestorePersistenceSnapshot(FactsP
         const auto codec = fact_codecs_.find(persisted.key.type);
         if (info == fact_types_.end() || codec == fact_codecs_.end() ||
             codec->second.schema != persisted.payload_schema || persisted.payload_version == 0) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.fact_codec_mismatch", "persistent fact payload schema is not registered"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.fact_codec_mismatch",
+                                          "persistent fact payload schema is not registered"));
         }
+
         auto value = codec->second.decode(persisted.payload, persisted.payload_version);
         if (!value || value.Value().type() != info->second.value_type) {
             return foundation::Result<void>::Failure(
@@ -873,6 +1072,7 @@ foundation::Result<void> GameplayFactsService::RestorePersistenceSnapshot(FactsP
                                                   "decoded fact payload has the wrong C++ type")
                       : value.GetError());
         }
+
         FactRecord record;
         record.id = persisted.id;
         record.key = persisted.key;
@@ -894,9 +1094,11 @@ foundation::Result<void> GameplayFactsService::RestorePersistenceSnapshot(FactsP
         const auto codec = event_codecs_.find(persisted.envelope.type);
         if (info == event_types_.end() || codec == event_codecs_.end() ||
             codec->second.schema != persisted.payload_schema || persisted.payload_version == 0) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "gameplay.event_codec_mismatch", "persistent event payload schema is not registered"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("gameplay.event_codec_mismatch",
+                                          "persistent event payload schema is not registered"));
         }
+
         auto payload = codec->second.decode(persisted.payload, persisted.payload_version);
         if (!payload || payload.Value().type() != info->second.payload_type) {
             return foundation::Result<void>::Failure(
@@ -904,6 +1106,7 @@ foundation::Result<void> GameplayFactsService::RestorePersistenceSnapshot(FactsP
                                                     "decoded event payload has the wrong C++ type")
                         : payload.GetError());
         }
+
         decoded.history.push_back(
             EventRecord{persisted.envelope, std::move(payload).Value(), info->second.payload_type});
     }
@@ -917,7 +1120,9 @@ FactsDiagnostics GameplayFactsService::GetDiagnostics() const noexcept {
         if (IsPersistentFact(fact.persistence)) {
             ++persistent;
         }
+
     }
+
     return FactsDiagnostics{published_events_.load(std::memory_order_relaxed),
                             dispatched_events_,
                             dispatch_waves_,
@@ -926,7 +1131,9 @@ FactsDiagnostics GameplayFactsService::GetDiagnostics() const noexcept {
                             facts_.size(),
                             persistent,
                             history_.size()};
+
 }
+
 } // namespace epidemic::gameplay::facts
 
 void FactsPublicationFaultPointForInternalTest(std::string_view point) {

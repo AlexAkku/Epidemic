@@ -26,4 +26,5 @@ inline void ResetAllocationFault() noexcept {
     g_allocation_fault = AllocationFaultPoint::None;
     return true;
 }
+
 } // namespace epidemic::gameplay::perception::internal_test

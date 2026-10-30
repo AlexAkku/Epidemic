@@ -19,28 +19,36 @@ class PlacementProvider final : public IConstructionPlacementProvider {
         projection.capability_available = true;
         projection.spacing_clear = true;
         projection.revision = {1};
+
         if (request.target.area)
             projection.footprint.volume.area = *request.target.area;
         if (request.target.position) {
             projection.footprint.volume.min = *request.target.position;
-            projection.footprint.volume.max = {request.target.position->x_mm + 100, request.target.position->y_mm + 100,
+            projection.footprint.volume.max = {request.target.position->x_mm + 100,
+                                               request.target.position->y_mm + 100,
                                                request.target.position->z_mm + 100};
+
         }
+
         return foundation::Result<PlacementSemanticProjection>::Success(projection);
     }
 
     [[nodiscard]] Revision CurrentRevision() const noexcept override {
         return {1};
+
     }
+
 };
 
-PlacementOutputOperation NavigationOutput(GameplayObjectRef area, const ConstructionNavigationLayerPayload &payload) {
+PlacementOutputOperation NavigationOutput(GameplayObjectRef area,
+                                          const ConstructionNavigationLayerPayload &payload) {
     PlacementOutputOperation output;
     output.type = PlacementOutputTypeId::FromString("construction.output.navigation_layer");
     output.subject = area;
     output.payload = EncodeNavigationLayerPayload(payload);
     return output;
 }
+
 } // namespace
 
 int main() {
@@ -56,6 +64,7 @@ int main() {
     p.canonical_name = "game.human";
     p.default_mode = walk;
     p.allowed_modes = {walk};
+
     if (!t.RegisterProfile(p))
         return 2;
     t.Freeze();
@@ -83,6 +92,7 @@ int main() {
     recipe.id = ConstructionRecipeId::FromString("game.bridge");
     recipe.canonical_name = "game.bridge";
     recipe.footprint_size_mm = {100, 100, 100};
+
     PlacementOutputTemplate output;
     output.type = PlacementOutputTypeId::FromString("construction.output.navigation_layer");
     output.subject_is_target_area = true;
@@ -98,9 +108,15 @@ int main() {
         return 5;
     c.Freeze();
 
-    GameplayObjectRef actor{GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("actor")};
-    GameplayObjectRef a{GameplayDomainId::FromString("test.area"), GameplayObjectId::FromString("a")};
-    GameplayObjectRef b{GameplayDomainId::FromString("test.area"), GameplayObjectId::FromString("b")};
+    GameplayObjectRef actor{GameplayDomainId::FromString("test.entity"),
+                            GameplayObjectId::FromString("actor")};
+
+    GameplayObjectRef a{GameplayDomainId::FromString("test.area"),
+                        GameplayObjectId::FromString("a")};
+
+    GameplayObjectRef b{GameplayDomainId::FromString("test.area"),
+                        GameplayObjectId::FromString("b")};
+
     if (!t.AssignProfile(actor, p.id))
         return 6;
     if (!n.SetProfile({actor, d.id, {}, {}}))
@@ -121,15 +137,18 @@ int main() {
     timed_block.decision = NavigationDecisionKind::Deny;
     timed_block.lifetime = NavigationLayerLifetime::Timed;
     timed_block.expires_at = GameplayTimePoint{10};
+
     if (!n.AddLayer(timed_block))
         return 9;
     TraversalNavigationAdapter tn;
     GameplayContext before_expiry;
     before_expiry.time = GameplayTimePoint{5};
+
     if (tn.CanUseLink(t, n, actor, link.id, before_expiry).decision != NavigationDecisionKind::Deny)
         return 10;
     GameplayContext after_expiry;
     after_expiry.time = GameplayTimePoint{11};
+
     if (tn.CanUseLink(t, n, actor, link.id, after_expiry).decision == NavigationDecisionKind::Deny)
         return 11;
 
@@ -138,6 +157,7 @@ int main() {
     req.recipe = recipe.id;
     req.placement_rule = def.id;
     req.target.position = construction::WorldPosition{0, 0, 0};
+
     req.target.area = b;
     auto plan = c.PreparePlacementPlan(req);
     if (!plan)
@@ -154,7 +174,8 @@ int main() {
         return 14;
     const auto layer_id = NavigationLayerIdFor(placed, source_key);
     const auto *layer = n.FindLayer(layer_id);
-    if (layer == nullptr || layer->area != b || layer->additive_cost_micro != 500 || !layer->source.IsValid())
+    if (layer == nullptr || layer->area != b || layer->additive_cost_micro != 500 ||
+        !layer->source.IsValid())
         return 15;
     auto replay = cn.ProcessPendingOutputs(c, n);
     if (!replay || replay.Value() != 0)
@@ -186,21 +207,25 @@ int main() {
     if (!processed || processed.Value() != 2 || n.FindLayer(layer_id) != nullptr)
         return 23;
 
-    // Unsupported/corrupted durable schema is rejected and remains pending rather than being acknowledged.
+    // Unsupported/corrupted durable schema is rejected and remains pending rather than being
+    // acknowledged.
     auto malformed = NavigationOutput(b, payload);
     malformed.payload.front() = std::byte{0};
+
     if (!c.EnqueuePlacedObjectOutput(placed, std::move(malformed)))
         return 24;
     processed = cn.ProcessPendingOutputs(c, n);
     if (processed || c.PendingOutputs().size() != 1)
         return 25;
 
-    // M28: the helper is explicit about cancelling the caller-supplied sessions; it no longer pretends to inspect a link.
+    // M28: the helper is explicit about cancelling the caller-supplied sessions; it no longer
+    // pretends to inspect a link.
     auto session = t.StartSession(actor, walk);
     if (!session)
         return 26;
     ConstructionTraversalAdapter ct;
     std::vector<TraversalSessionId> ids{session.Value()};
+
     if (!ct.CancelTraversalSessions(t, ids))
         return 27;
     if (t.FindSession(session.Value()) != nullptr)

@@ -19,4 +19,5 @@ struct TimeEvent {
 
     [[nodiscard]] constexpr bool operator==(const TimeEvent &) const noexcept = default;
 };
+
 } // namespace epidemic::runtime

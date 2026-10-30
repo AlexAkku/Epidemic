@@ -20,7 +20,9 @@ using ResourceGeneration = std::uint32_t;
 
 struct OwnedResourceDependency {
     ResourceLease lease{};
+
     ResourceId id{};
+
     bool required = true;
 };
 
@@ -30,19 +32,24 @@ struct OwnedResourceDependency {
 // NOLINTNEXTLINE(bugprone-exception-escape)
 struct ResourceSlot {
     ResourceId id{};
+
     ResourceType type{};
+
     ResourceGeneration generation = 1;
     ResourceState state = ResourceState::Unknown;
     std::uint32_t reference_count = 0;
     std::unordered_set<ResourceAcquisitionId> active_acquisitions;
     ResourcePayloadPtr payload{};
+
     std::size_t memory_bytes = 0;
     std::vector<OwnedResourceDependency> dependency_handles;
     std::optional<ResourceLoadArtifact> pending_artifact{};
+
 };
 
 struct ResourceLoadJob {
     ResourceRequest request{};
+
     ResourceGeneration generation = 0;
 };
 
@@ -71,6 +78,7 @@ class ResourceWaitingQueue {
     [[nodiscard]] bool IsEmpty() const noexcept;
     [[nodiscard]] std::size_t Size() const noexcept;
     [[nodiscard]] bool Contains(ResourceId id, ResourceGeneration generation) const noexcept;
+
     void FailNextPublishForTesting() noexcept {
         fail_next_publish_for_testing_ = true;
     }
@@ -98,7 +106,8 @@ class ResourceManager final : public IResourceManager {
     explicit ResourceManager(IResourceLoaderRegistry *loader_registry);
 
     [[nodiscard]] foundation::Result<ResourceLease> RequestLease(ResourceRequest request) override;
-    [[nodiscard]] foundation::Result<ResourceProcessingStats> ProcessPendingLoads(RuntimeBudget budget = {}) override;
+    [[nodiscard]] foundation::Result<ResourceProcessingStats>
+    ProcessPendingLoads(RuntimeBudget budget = {}) override;
     [[nodiscard]] foundation::Result<void> Release(ResourceLease lease) override;
     [[nodiscard]] foundation::Result<void> Evict(ResourceId id) override;
     [[nodiscard]] std::size_t EvictUnreferenced() override;
@@ -118,51 +127,67 @@ class ResourceManager final : public IResourceManager {
     void FailNextQueueEnqueueForTesting() noexcept {
         load_queue_.FailNextEnqueueForTesting();
     }
+
     void SetNextAcquisitionIdForTesting(ResourceAcquisitionId value) noexcept {
         next_acquisition_id_ = value;
     }
+
     [[nodiscard]] ResourceAcquisitionId NextAcquisitionIdForTesting() const noexcept {
         return next_acquisition_id_;
     }
+
     void SetSlotReferenceCountForTesting(ResourceId id, std::uint32_t value) {
         if (auto *slot = cache_.Find(id))
             slot->reference_count = value;
     }
+
     void SetSlotGenerationForTesting(ResourceId id, ResourceGeneration value) {
         if (auto *slot = cache_.Find(id))
             slot->generation = value;
     }
+
     void SetResidentBytesForTesting(std::size_t value) noexcept {
         resident_bytes_ = value;
     }
+
     void FailNextDependencyPublishForTesting() noexcept {
         fail_next_dependency_publish_for_testing_ = true;
     }
+
     void FailNextAcquisitionPublishForTesting() noexcept {
         fail_next_acquisition_publish_for_testing_ = true;
     }
+
     void FailNextDependencyGraphReplaceForTesting() noexcept {
         dependency_graph_.FailNextReplaceForTesting();
     }
+
     void FailNextWaitingOwnerPublishForTesting() noexcept {
         waiting_queue_.FailNextPublishForTesting();
     }
+
     void FailNextLoadingOwnerPublishForTesting() noexcept {
         fail_next_loading_owner_publish_for_testing_ = true;
     }
+
     void SetDependenciesForTesting(ResourceId id, std::vector<ResourceDependency> dependencies) {
         dependency_graph_.SetDependencies(id, std::move(dependencies));
     }
+
     [[nodiscard]] bool HasDependencyPathForTesting(ResourceId from, ResourceId to) const {
         return HasDependencyPath(from, to);
     }
+
     [[nodiscard]] std::size_t LoadQueueSizeForTesting() const noexcept {
         return load_queue_.Size();
     }
+
     [[nodiscard]] std::size_t WaitingQueueSizeForTesting() const noexcept {
         return waiting_queue_.Size();
     }
-    [[nodiscard]] bool HasWaitingOwnerForTesting(ResourceId id, ResourceGeneration generation) const noexcept {
+
+    [[nodiscard]] bool HasWaitingOwnerForTesting(ResourceId id,
+                                                 ResourceGeneration generation) const noexcept {
         return waiting_queue_.Contains(id, generation);
     }
 
@@ -172,20 +197,24 @@ class ResourceManager final : public IResourceManager {
     [[nodiscard]] foundation::Result<ResourceAcquisitionId> PeekAcquisitionId() const;
     void CommitAcquisitionId() noexcept;
     [[nodiscard]] static bool IsHandleCurrent(const ResourceSlot &slot, ResourceHandle handle);
-    [[nodiscard]] static foundation::Result<ResourceGeneration> NextGeneration(ResourceGeneration generation);
+    [[nodiscard]] static foundation::Result<ResourceGeneration>
+    NextGeneration(ResourceGeneration generation);
     [[nodiscard]] static foundation::Result<void> ValidateRequest(const ResourceRequest &request);
 
     [[nodiscard]] foundation::Result<void> ReleaseDependencyHandles(ResourceSlot &slot);
-    [[nodiscard]] foundation::Result<void> ReleaseDependencyHandles(std::vector<OwnedResourceDependency> &handles);
+    [[nodiscard]] foundation::Result<void>
+    ReleaseDependencyHandles(std::vector<OwnedResourceDependency> &handles);
     void RecordInvariantFailure() noexcept;
     [[nodiscard]] foundation::Result<void> RollbackLoadAttempt(ResourceSlot &slot);
-    [[nodiscard]] foundation::Result<void> LoadSlot(ResourceSlot &slot, const ResourceRequest &request,
-                                                    ResourceProcessingStats &stats);
-    [[nodiscard]] foundation::Result<void> FinishLoadedArtifact(ResourceSlot &slot, ResourceProcessingStats &stats);
-    [[nodiscard]] foundation::Result<bool> ResolveDependencies(ResourceSlot &slot,
-                                                               const ResourceLoadArtifact &artifact);
+    [[nodiscard]] foundation::Result<void>
+    LoadSlot(ResourceSlot &slot, const ResourceRequest &request, ResourceProcessingStats &stats);
+    [[nodiscard]] foundation::Result<void> FinishLoadedArtifact(ResourceSlot &slot,
+                                                                ResourceProcessingStats &stats);
+    [[nodiscard]] foundation::Result<bool>
+    ResolveDependencies(ResourceSlot &slot, const ResourceLoadArtifact &artifact);
     [[nodiscard]] bool HasDependencyPath(ResourceId from, ResourceId to) const;
-    [[nodiscard]] foundation::Result<void> CommitReadyPayload(ResourceSlot &slot, ResourceProcessingStats &stats);
+    [[nodiscard]] foundation::Result<void> CommitReadyPayload(ResourceSlot &slot,
+                                                              ResourceProcessingStats &stats);
     [[nodiscard]] bool CanFit(std::size_t bytes) const noexcept;
     void RemovePayload(ResourceSlot &slot);
 
@@ -203,4 +232,5 @@ class ResourceManager final : public IResourceManager {
     bool fail_next_acquisition_publish_for_testing_ = false;
     bool fail_next_loading_owner_publish_for_testing_ = false;
 };
+
 } // namespace epidemic::runtime

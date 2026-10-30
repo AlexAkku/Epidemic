@@ -12,11 +12,12 @@ using namespace epidemic::gameplay::integration;
 namespace epidemic::gameplay::integration::test_support {
 void FailNextResourceReservationTokenPublicationForTest() noexcept;
 void ResetProcessResourceFailureSeamsForTest() noexcept;
-}
+} // namespace epidemic::gameplay::integration::test_support
 
 namespace {
 [[nodiscard]] GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
+
 }
 
 [[nodiscard]] ProcessRecipe MakeResourceRecipe(const char *name, ProcessDefinitionId definition,
@@ -32,7 +33,8 @@ namespace {
                              {},
                              EncodeProcessResourcePayload({stockpile, input})});
     recipe.outputs.push_back({ProcessOutputId::FromString("test.output.sword"),
-                              ResourceProcessOutputHandler::OutputType(), 1, OutputDeliveryPolicy::OnCompletion,
+                              ResourceProcessOutputHandler::OutputType(), 1,
+                              OutputDeliveryPolicy::OnCompletion,
                               EncodeProcessResourcePayload({stockpile, output})});
     return recipe;
 }
@@ -40,6 +42,7 @@ namespace {
 [[nodiscard]] int Require(bool condition, int code) {
     return condition ? 0 : code;
 }
+
 } // namespace
 
 int main() {
@@ -58,25 +61,29 @@ int main() {
     const auto worker_a = Ref("test.worker", "a");
     const auto worker_b = Ref("test.worker", "b");
 
-    auto stockpile_a = resources.CreateStockpile({{}, worker_a, {}, area_a, StockpileState::Active, {}});
-    auto stockpile_b = resources.CreateStockpile({{}, worker_b, {}, area_b, StockpileState::Active, {}});
+    auto stockpile_a =
+        resources.CreateStockpile({{}, worker_a, {}, area_a, StockpileState::Active, {}});
+    auto stockpile_b =
+        resources.CreateStockpile({{}, worker_b, {}, area_b, StockpileState::Active, {}});
     if (!stockpile_a || !stockpile_b)
         return 2;
     if (!resources.Add(stockpile_a.Value(), {iron_id.Value(), 10}) ||
         !resources.Add(stockpile_b.Value(), {iron_id.Value(), 10}))
         return 3;
 
-    const auto roundtrip =
-        DecodeProcessResourcePayload(EncodeProcessResourcePayload({stockpile_a.Value(), iron_id.Value()}));
-    if (!roundtrip || roundtrip->stockpile != stockpile_a.Value() || roundtrip->resource != iron_id.Value())
+    const auto roundtrip = DecodeProcessResourcePayload(
+        EncodeProcessResourcePayload({stockpile_a.Value(), iron_id.Value()}));
+    if (!roundtrip || roundtrip->stockpile != stockpile_a.Value() ||
+        roundtrip->resource != iron_id.Value())
         return 4;
     auto invalid_payload = EncodeProcessResourcePayload({stockpile_a.Value(), iron_id.Value()});
     invalid_payload.bytes[0] = static_cast<std::byte>(2);
     if (DecodeProcessResourcePayload(invalid_payload))
         return 5;
 
-    const auto reservation_roundtrip = DecodeProcessResourceReservationPayload(EncodeProcessResourceReservationPayload(
-        {ResourceReservationId{GameplayObjectId::FromString("test.reservation")}}));
+    const auto reservation_roundtrip =
+        DecodeProcessResourceReservationPayload(EncodeProcessResourceReservationPayload(
+            {ResourceReservationId{GameplayObjectId::FromString("test.reservation")}}));
     if (!reservation_roundtrip || !reservation_roundtrip->reservation.IsValid())
         return 6;
 
@@ -97,15 +104,17 @@ int main() {
     seam_request.actor = worker_a;
     const auto seam_before = resources.CaptureSnapshot();
     integration::test_support::FailNextResourceReservationTokenPublicationForTest();
-    const auto seam_result = in_provider.Reserve(seam_input, seam_request,
-                                                 ProcessInstanceId{GameplayObjectId::FromString("test.process.seam")});
+    const auto seam_result =
+        in_provider.Reserve(seam_input, seam_request,
+                            ProcessInstanceId{GameplayObjectId::FromString("test.process.seam")});
     if (seam_result)
         return 32;
     const auto seam_after = resources.CaptureSnapshot();
     if (seam_after.reservations.size() != seam_before.reservations.size() ||
         seam_after.reservation_ids.scope != seam_before.reservation_ids.scope ||
         seam_after.reservation_ids.next != seam_before.reservation_ids.next ||
-        seam_after.revision != seam_before.revision || resources.GetAmount(stockpile_a.Value(), iron_id.Value()) != 10)
+        seam_after.revision != seam_before.revision ||
+        resources.GetAmount(stockpile_a.Value(), iron_id.Value()) != 10)
         return 33;
     integration::test_support::ResetProcessResourceFailureSeamsForTest();
 
@@ -116,16 +125,21 @@ int main() {
     def.canonical_name = "test.process.craft";
     def.kind = ProcessKindId::FromString("test.kind");
     def.timing = ProcessTimingPolicy::Timed;
-    def.steps.push_back(
-        {ProcessStepId::FromString("test.step"), TypeId::FromString("test.step"), GameplayDuration{5}, {}, {}});
+    def.steps.push_back({ProcessStepId::FromString("test.step"),
+                         TypeId::FromString("test.step"),
+                         GameplayDuration{5},
+                         {},
+                         {}});
     auto def_id = processes.RegisterDefinition(def);
     if (!def_id)
         return 7;
 
-    auto recipe_a = processes.RegisterRecipe(MakeResourceRecipe(
-        "test.recipe.sword_a", def_id.Value(), stockpile_a.Value(), iron_id.Value(), sword_id.Value()));
-    auto recipe_b = processes.RegisterRecipe(MakeResourceRecipe(
-        "test.recipe.sword_b", def_id.Value(), stockpile_b.Value(), iron_id.Value(), sword_id.Value()));
+    auto recipe_a = processes.RegisterRecipe(MakeResourceRecipe("test.recipe.sword_a",
+                                                                def_id.Value(), stockpile_a.Value(),
+                                                                iron_id.Value(), sword_id.Value()));
+    auto recipe_b = processes.RegisterRecipe(MakeResourceRecipe("test.recipe.sword_b",
+                                                                def_id.Value(), stockpile_b.Value(),
+                                                                iron_id.Value(), sword_id.Value()));
     if (!recipe_a || !recipe_b)
         return 8;
     processes.Freeze(); // freeze process definitions for integration simulation
@@ -134,6 +148,7 @@ int main() {
     start_a.recipe = recipe_a.Value();
     start_a.actor = worker_a;
     start_a.now = GameplayTimePoint{0};
+
     start_a.seed = 1;
     start_a.simulation_area = area_a;
     auto proc_a = processes.StartProcess(start_a);
@@ -142,6 +157,7 @@ int main() {
     start_b.recipe = recipe_b.Value();
     start_b.actor = worker_b;
     start_b.now = GameplayTimePoint{0};
+
     start_b.seed = 2;
     start_b.simulation_area = area_b;
     auto proc_b = processes.StartProcess(start_b);
@@ -178,13 +194,17 @@ int main() {
                            &process_layer))
         return 14;
 
-    auto summary_a = sim.SimulateInterval(region_a.Value(), GameplayTimePoint{0}, GameplayTimePoint{5});
+    auto summary_a =
+        sim.SimulateInterval(region_a.Value(), GameplayTimePoint{0}, GameplayTimePoint{5});
     if (!summary_a)
         return 15;
-    if (const int failure =
-            Require(processes.FindInstance(proc_a.Value())->state == ProcessInstanceState::Completed, 16))
+    if (const int failure = Require(processes.FindInstance(proc_a.Value())->state ==
+                                        ProcessInstanceState::Completed,
+                                    16))
         return failure;
-    if (const int failure = Require(processes.FindInstance(proc_b.Value())->state == ProcessInstanceState::Running, 17))
+    if (const int failure =
+            Require(processes.FindInstance(proc_b.Value())->state == ProcessInstanceState::Running,
+                    17))
         return failure;
     if (resources.GetAmount(stockpile_a.Value(), iron_id.Value()) != 8 ||
         resources.GetAmount(stockpile_a.Value(), sword_id.Value()) != 1 ||
@@ -192,7 +212,8 @@ int main() {
         resources.GetAmount(stockpile_b.Value(), sword_id.Value()) != 0)
         return 18;
 
-    auto summary_b = sim.SimulateInterval(region_b.Value(), GameplayTimePoint{0}, GameplayTimePoint{5});
+    auto summary_b =
+        sim.SimulateInterval(region_b.Value(), GameplayTimePoint{0}, GameplayTimePoint{5});
     if (!summary_b)
         return 19;
     if (processes.FindInstance(proc_b.Value())->state != ProcessInstanceState::Completed)
@@ -200,6 +221,7 @@ int main() {
 
     StartProcessRequest start_a2 = start_a;
     start_a2.now = GameplayTimePoint{5};
+
     start_a2.seed = 3;
     auto proc_a2 = processes.StartProcess(start_a2);
     if (!proc_a2)
@@ -209,13 +231,17 @@ int main() {
     prepared_task.layer = ProcessesSimulationLayer::StaticLayer();
     prepared_task.area = area_a;
     prepared_task.from = GameplayTimePoint{5};
+
     prepared_task.to = GameplayTimePoint{10};
+
     auto prepared = process_layer.Prepare(prepared_task);
-    if (!prepared || prepared.Value().operations != 1 || prepared.Value().prepared_operations.size() != 1)
+    if (!prepared || prepared.Value().operations != 1 ||
+        prepared.Value().prepared_operations.size() != 1)
         return 22;
 
     StartProcessRequest start_a3 = start_a;
     start_a3.now = GameplayTimePoint{5};
+
     start_a3.seed = 4;
     auto proc_a3 = processes.StartProcess(start_a3);
     if (!proc_a3)
@@ -236,7 +262,9 @@ int main() {
     SimulationTask no_area_task;
     no_area_task.layer = ProcessesSimulationLayer::StaticLayer();
     no_area_task.from = GameplayTimePoint{5};
+
     no_area_task.to = GameplayTimePoint{10};
+
     auto no_area_prepare = process_layer.Prepare(no_area_task);
     if (!no_area_prepare || no_area_prepare.Value().state != SimulationTaskState::Skipped)
         return 29;

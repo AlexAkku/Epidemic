@@ -22,9 +22,9 @@
 
 namespace epidemic::core {
 // This file implements the EngineBase application lifecycle and frame loop.
-// Most behavioral contracts are documented in application.h; the local helpers below support those contracts.
-// Этот файл реализует жизненный цикл приложения EngineBase и цикл кадра.
-// Большинство поведенческих контрактов документировано в application.h.
+// Most behavioral contracts are documented in application.h; the local helpers below support those
+// contracts. Этот файл реализует жизненный цикл приложения EngineBase и цикл кадра. Большинство
+// поведенческих контрактов документировано в application.h.
 
 namespace {
 // Process-start opt-in avoids changing the installed ApplicationOptions ABI.
@@ -32,6 +32,7 @@ bool FrameTextLoggingEnabled() noexcept {
     static const bool enabled = [] {
 #if defined(_MSC_VER)
         char value[2]{};
+
         std::size_t required = 0;
         return ::getenv_s(&required, value, sizeof(value), "EPIDEMIC_LOG_FRAME_EVENTS") == 0 &&
                required == 2 && value[0] == '1';
@@ -42,12 +43,16 @@ bool FrameTextLoggingEnabled() noexcept {
     }();
     return enabled;
 }
+
 // Throws when a required core service is missing from the application service container.
 // Выбрасывается, когда запрошенный сервис ядра не найден в контейнере сервисов приложения.
-template <typename TService> void EnsureRegistered(const ServiceContainer &services, std::string_view service_name) {
+template <typename TService>
+void EnsureRegistered(const ServiceContainer &services, std::string_view service_name) {
     if (!services.Contains<TService>()) {
-        throw std::runtime_error("Required service is not registered: " + std::string(service_name));
+        throw std::runtime_error("Required service is not registered: " +
+                                 std::string(service_name));
     }
+
 }
 
 // Converts a frame phase enum to its backing array index.
@@ -77,7 +82,9 @@ void UpdatePhaseDiagnostics(FramePhase phase, std::int64_t duration_micros) noex
     default:
         break;
     }
+
 }
+
 } // namespace
 
 Application::Application(ApplicationOptions options) : options_(std::move(options)) {
@@ -89,7 +96,9 @@ Application::~Application() {
             Shutdown();
         } catch (...) {
         }
+
     }
+
 }
 
 ModuleRegistry &Application::Modules() noexcept {
@@ -117,17 +126,24 @@ int Application::Bootstrap() {
         if (const auto runtime_name = configuration->GetRuntimeName(); runtime_name.has_value()) {
             logger->Info("Application", "Config", "Runtime name: " + *runtime_name);
         }
+
         if (const auto worker_count = configuration->GetWorkerCount(); worker_count.has_value()) {
             diagnostics::GlobalCounters().Set(diagnostics::CounterId::WorkerCount,
                                               static_cast<std::int64_t>(*worker_count));
-            logger->Info("Application", "Config", "Worker threads: " + std::to_string(*worker_count));
-        }
-        if (const auto memory_tracking = configuration->GetMemoryTrackingEnabled(); memory_tracking.has_value()) {
             logger->Info("Application", "Config",
-                         std::string("Memory tracking: ") + (*memory_tracking ? "enabled" : "disabled"));
+                         "Worker threads: " + std::to_string(*worker_count));
         }
+
+        if (const auto memory_tracking = configuration->GetMemoryTrackingEnabled();
+            memory_tracking.has_value()) {
+            logger->Info("Application", "Config",
+                         std::string("Memory tracking: ") +
+                             (*memory_tracking ? "enabled" : "disabled"));
+        }
+
         if (options_.frame_limit.has_value()) {
-            logger->Info("Application", "Config", "Frame limit: " + std::to_string(*options_.frame_limit));
+            logger->Info("Application", "Config",
+                         "Frame limit: " + std::to_string(*options_.frame_limit));
         }
 
         modules_.BootstrapAll(services_, *logger);
@@ -138,6 +154,7 @@ int Application::Bootstrap() {
         state_ = State::Failed;
         throw;
     }
+
 }
 
 int Application::Initialize() {
@@ -157,6 +174,7 @@ int Application::Initialize() {
         state_ = State::Failed;
         throw;
     }
+
 }
 
 int Application::Tick() {
@@ -174,6 +192,7 @@ int Application::Tick() {
         state_ = State::Failed;
         throw;
     }
+
 }
 
 int Application::Run() {
@@ -204,6 +223,7 @@ int Application::Run() {
         state_ = State::Failed;
         throw;
     }
+
 }
 
 int Application::Shutdown() {
@@ -234,15 +254,19 @@ int Application::Shutdown() {
             scheduler_quiesced = true;
         } catch (const std::exception &exception) {
             logger->Error("Application", "Shutdown",
-                          "Task scheduler shutdown reported an error: " + std::string(exception.what()));
+                          "Task scheduler shutdown reported an error: " +
+                              std::string(exception.what()));
             if (!first_error) {
                 first_error = std::current_exception();
             }
+
         } catch (...) {
-            logger->Error("Application", "Shutdown", "Task scheduler shutdown reported an unknown error");
+            logger->Error("Application", "Shutdown",
+                          "Task scheduler shutdown reported an unknown error");
             if (!first_error) {
                 first_error = std::current_exception();
             }
+
         }
 
         if (scheduler_quiesced) {
@@ -263,16 +287,21 @@ int Application::Shutdown() {
                 modules_.ShutdownAll(services_, *logger);
             } catch (const std::exception &exception) {
                 logger->Error("Application", "Shutdown",
-                              "Module shutdown reported an error: " + std::string(exception.what()));
+                              "Module shutdown reported an error: " +
+                                  std::string(exception.what()));
                 if (!first_error) {
                     first_error = std::current_exception();
                 }
+
             } catch (...) {
-                logger->Error("Application", "Shutdown", "Module shutdown reported an unknown error");
+                logger->Error("Application", "Shutdown",
+                              "Module shutdown reported an unknown error");
                 if (!first_error) {
                     first_error = std::current_exception();
                 }
+
             }
+
         }
 
         logger->Info("Application", "Lifecycle", "Shutdown finished");
@@ -280,11 +309,13 @@ int Application::Shutdown() {
         if (first_error) {
             std::rethrow_exception(first_error);
         }
+
         return 0;
     } catch (...) {
         state_ = State::Failed;
         throw;
     }
+
 }
 
 void Application::RequestStop() noexcept {
@@ -307,13 +338,16 @@ std::optional<std::uint64_t> Application::FrameLimit() const noexcept {
     return options_.frame_limit;
 }
 
-void Application::AddFramePhaseHandler(FramePhase phase, FramePhaseCallback callback, std::string debug_name) {
+void Application::AddFramePhaseHandler(FramePhase phase, FramePhaseCallback callback,
+                                       std::string debug_name) {
     std::vector<FramePhaseHandlerRegistration> registrations;
-    registrations.push_back(FramePhaseHandlerRegistration{phase, std::move(callback), std::move(debug_name)});
+    registrations.push_back(
+        FramePhaseHandlerRegistration{phase, std::move(callback), std::move(debug_name)});
     AddFramePhaseHandlersAtomic(std::move(registrations));
 }
 
-void Application::AddFramePhaseHandlersAtomic(std::vector<FramePhaseHandlerRegistration> registrations) {
+void Application::AddFramePhaseHandlersAtomic(
+    std::vector<FramePhaseHandlerRegistration> registrations) {
     if (registrations.empty()) {
         return;
     }
@@ -322,9 +356,11 @@ void Application::AddFramePhaseHandlersAtomic(std::vector<FramePhaseHandlerRegis
         if (!registration.callback) {
             throw std::invalid_argument("Frame phase handler must not be empty");
         }
+
         if (ToIndex(registration.phase) >= FramePhaseCount()) {
             throw std::invalid_argument("Frame phase handler requires a valid frame phase");
         }
+
     }
 
     auto candidate_handlers = phase_handlers_;
@@ -336,6 +372,7 @@ void Application::AddFramePhaseHandlersAtomic(std::vector<FramePhaseHandlerRegis
     for (std::size_t index = 0; index < phase_handlers_.size(); ++index) {
         phase_handlers_[index].swap(candidate_handlers[index]);
     }
+
 }
 
 void Application::ScheduleMainThreadTask(MainThreadTask task, std::string debug_name) {
@@ -383,34 +420,41 @@ void Application::ExecuteFrame() {
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::EventBusDispatchedEvents, 0);
 
     if (FrameTextLoggingEnabled()) {
-        logger->Debug("Application", "Frame", "Frame " + std::to_string(frame_context.frame_index.Value()) + " started");
+        logger->Debug("Application", "Frame",
+                      "Frame " + std::to_string(frame_context.frame_index.Value()) + " started");
     }
 
     for (const auto phase : FramePhaseOrder()) {
         if (phase == FramePhase::TickModules && StopRequested()) {
             break;
         }
+
         ExecutePhase(phase, frame_context, *logger);
     }
 
     diagnostics::GlobalCounters().Increment(diagnostics::CounterId::Frames);
-    const auto frame_time_micros =
-        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - tick_start).count();
+    const auto frame_time_micros = std::chrono::duration_cast<std::chrono::microseconds>(
+                                       std::chrono::steady_clock::now() - tick_start)
+                                       .count();
     diagnostics::GlobalCounters().Set(diagnostics::CounterId::FrameTimeMicros, frame_time_micros);
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-    auditor::shadow::frame(static_cast<std::uint64_t>(
-        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - tick_start).count()));
+    auditor::shadow::frame(
+        static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                       std::chrono::steady_clock::now() - tick_start)
+                                       .count()));
 #endif
 
     if (FrameTextLoggingEnabled()) {
         logger->Debug("Application", "Frame",
-                      "Frame " + std::to_string(frame_context.frame_index.Value()) + " finished in " +
-                          std::to_string(frame_time_micros) + " us");
+                      "Frame " + std::to_string(frame_context.frame_index.Value()) +
+                          " finished in " + std::to_string(frame_time_micros) + " us");
     }
+
     executed_frame_count_ = detail::AdvanceExecutedFrameCount(executed_frame_count_);
 }
 
-void Application::ExecutePhase(FramePhase phase, const FrameContext &frame_context, diagnostics::ILogger &logger) {
+void Application::ExecutePhase(FramePhase phase, const FrameContext &frame_context,
+                               diagnostics::ILogger &logger) {
     const auto phase_start = std::chrono::steady_clock::now();
 
     switch (phase) {
@@ -419,16 +463,19 @@ void Application::ExecutePhase(FramePhase phase, const FrameContext &frame_conte
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::PumpPlatformEvents: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::PumpPlatformEvents");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::UpdateInput: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::UpdateInput");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::DrainEvents: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::DrainEvents");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
@@ -436,51 +483,61 @@ void Application::ExecutePhase(FramePhase phase, const FrameContext &frame_conte
         static_cast<void>(event_bus->DrainQueued());
         break;
     }
+
     case FramePhase::RunScheduledMainThreadTasks: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::RunScheduledMainThreadTasks");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         static_cast<void>(RunScheduledMainThreadTasks());
         break;
     }
+
     case FramePhase::TickModules: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::TickModules");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         modules_.TickAll(services_, logger, frame_context);
         break;
     }
+
     case FramePhase::RhiBeginFrame: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::RhiBeginFrame");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::RhiEndFrame: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::RhiEndFrame");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::Present: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::Present");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::EndFrame: {
         EPIDEMIC_PROFILE_SCOPE("Application::Phase::EndFrame");
         ExecuteRegisteredPhaseHandlers(phase, frame_context);
         break;
     }
+
     case FramePhase::Count:
         break;
     }
 
-    const auto duration_micros =
-        std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - phase_start).count();
+    const auto duration_micros = std::chrono::duration_cast<std::chrono::microseconds>(
+                                     std::chrono::steady_clock::now() - phase_start)
+                                     .count();
     UpdatePhaseDiagnostics(phase, duration_micros);
 }
 
-void Application::ExecuteRegisteredPhaseHandlers(FramePhase phase, const FrameContext &frame_context) {
+void Application::ExecuteRegisteredPhaseHandlers(FramePhase phase,
+                                                 const FrameContext &frame_context) {
     for (const auto &handler : phase_handlers_[ToIndex(phase)]) {
         handler.callback(frame_context);
     }
+
 }
 
 FrameContext Application::BuildNextFrameContext() {
@@ -504,6 +561,7 @@ FrameContext Application::BuildNextFrameContext() {
         foundation::FrameTime::FromDuration(now - run_start_time_),
         foundation::FrameTime::FromDuration(raw_delta_time),
     };
+
     return current_frame_context_;
 }
 
@@ -514,4 +572,5 @@ bool Application::ReachedFrameLimit() const noexcept {
 std::size_t Application::RunScheduledMainThreadTasks() {
     return services_.Get<IMainThreadDispatcher>()->Drain();
 }
+
 } // namespace epidemic::core

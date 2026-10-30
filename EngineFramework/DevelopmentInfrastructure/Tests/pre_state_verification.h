@@ -34,7 +34,9 @@ enum class StateFacet {
 
 struct FacetCheck {
     StateFacet facet{StateFacet::PrimaryRecords};
+
     bool passed{false};
+
     std::string detail;
 };
 
@@ -47,7 +49,9 @@ struct ComparisonReport {
             if (check.facet == facet) {
                 return true;
             }
+
         }
+
         return false;
     }
 
@@ -60,7 +64,9 @@ struct ComparisonReport {
             if (!check.passed) {
                 return false;
             }
+
         }
+
         return true;
     }
 
@@ -69,7 +75,9 @@ struct ComparisonReport {
             if (!HasFacet(facet)) {
                 return false;
             }
+
         }
+
         return true;
     }
 
@@ -78,24 +86,31 @@ struct ComparisonReport {
             if (!HasFacet(facet)) {
                 return false;
             }
+
         }
+
         return true;
     }
 
-    [[nodiscard]] bool PassedAndCovers(std::initializer_list<StateFacet> required_facets) const noexcept {
+    [[nodiscard]] bool
+    PassedAndCovers(std::initializer_list<StateFacet> required_facets) const noexcept {
         const auto passed = Passed();
         const auto covers = Covers(required_facets);
         if (!passed || !covers) {
-            std::fprintf(stderr, "%s pre-state comparison failed: passed=%d covers=%d\n", scope.c_str(), passed,
-                         covers);
+            std::fprintf(stderr, "%s pre-state comparison failed: passed=%d covers=%d\n",
+                         scope.c_str(), passed, covers);
             for (const auto &check : checks) {
                 if (!check.passed) {
                     const auto facet = ToString(check.facet);
-                    std::fprintf(stderr, "  failed facet=%.*s detail=%s\n", static_cast<int>(facet.size()),
-                                 facet.data(), check.detail.c_str());
+                    std::fprintf(stderr, "  failed facet=%.*s detail=%s\n",
+                                 static_cast<int>(facet.size()), facet.data(),
+                                 check.detail.c_str());
                 }
+
             }
+
         }
+
         return passed && covers;
     }
 
@@ -103,46 +118,68 @@ struct ComparisonReport {
         const auto passed = Passed();
         const auto covers = Covers(required_facets);
         if (!passed || !covers) {
-            std::fprintf(stderr, "%s pre-state comparison failed: passed=%d covers=%d\n", scope.c_str(), passed,
-                         covers);
+            std::fprintf(stderr, "%s pre-state comparison failed: passed=%d covers=%d\n",
+                         scope.c_str(), passed, covers);
             for (const auto &check : checks) {
                 if (!check.passed) {
                     const auto facet = ToString(check.facet);
-                    std::fprintf(stderr, "  failed facet=%.*s detail=%s\n", static_cast<int>(facet.size()),
-                                 facet.data(), check.detail.c_str());
+                    std::fprintf(stderr, "  failed facet=%.*s detail=%s\n",
+                                 static_cast<int>(facet.size()), facet.data(),
+                                 check.detail.c_str());
                 }
+
             }
+
         }
+
         return passed && covers;
     }
+
 };
 
-inline constexpr std::array RequiredMutationFacets{StateFacet::PrimaryRecords,   StateFacet::RecordPayloads,
-                                                   StateFacet::SecondaryIndexes, StateFacet::IdGenerators,
-                                                   StateFacet::Revisions,        StateFacet::PublicReadModels};
+inline constexpr std::array RequiredMutationFacets{StateFacet::PrimaryRecords,
+                                                   StateFacet::RecordPayloads,
+                                                   StateFacet::SecondaryIndexes,
+                                                   StateFacet::IdGenerators,
+                                                   StateFacet::Revisions,
+                                                   StateFacet::PublicReadModels};
 
-inline constexpr std::array RequiredJournaledMutationFacets{
-    StateFacet::PrimaryRecords,      StateFacet::RecordPayloads,  StateFacet::SecondaryIndexes,
-    StateFacet::IdGenerators,        StateFacet::Revisions,       StateFacet::Journal,
-    StateFacet::JournalEpoch,        StateFacet::JournalSequence, StateFacet::JournalRetainedRecords,
-    StateFacet::JournalLatestCursor, StateFacet::PublicReadModels};
+inline constexpr std::array RequiredJournaledMutationFacets{StateFacet::PrimaryRecords,
+                                                            StateFacet::RecordPayloads,
+                                                            StateFacet::SecondaryIndexes,
+                                                            StateFacet::IdGenerators,
+                                                            StateFacet::Revisions,
+                                                            StateFacet::Journal,
+                                                            StateFacet::JournalEpoch,
+                                                            StateFacet::JournalSequence,
+                                                            StateFacet::JournalRetainedRecords,
+                                                            StateFacet::JournalLatestCursor,
+                                                            StateFacet::PublicReadModels};
 
-inline constexpr std::array RequiredJournaledMutationFacetsWithoutIdGenerator{StateFacet::PrimaryRecords,
-                                                                              StateFacet::RecordPayloads,
-                                                                              StateFacet::SecondaryIndexes,
-                                                                              StateFacet::Revisions,
-                                                                              StateFacet::Journal,
-                                                                              StateFacet::JournalEpoch,
-                                                                              StateFacet::JournalSequence,
-                                                                              StateFacet::JournalRetainedRecords,
-                                                                              StateFacet::JournalLatestCursor,
-                                                                              StateFacet::PublicReadModels};
+inline constexpr std::array
+    RequiredJournaledMutationFacetsWithoutIdGenerator{StateFacet::PrimaryRecords,
+                                                      StateFacet::RecordPayloads,
+                                                      StateFacet::SecondaryIndexes,
+                                                      StateFacet::Revisions,
+                                                      StateFacet::Journal,
+                                                      StateFacet::JournalEpoch,
+                                                      StateFacet::JournalSequence,
+                                                      StateFacet::JournalRetainedRecords,
+                                                      StateFacet::JournalLatestCursor,
+                                                      StateFacet::PublicReadModels};
 
-inline constexpr std::array RequiredExternalMutationFacets{
-    StateFacet::PrimaryRecords,      StateFacet::RecordPayloads,    StateFacet::SecondaryIndexes,
-    StateFacet::IdGenerators,        StateFacet::Revisions,         StateFacet::Journal,
-    StateFacet::JournalEpoch,        StateFacet::JournalSequence,   StateFacet::JournalRetainedRecords,
-    StateFacet::JournalLatestCursor, StateFacet::ExternalCallbacks, StateFacet::PublicReadModels};
+inline constexpr std::array RequiredExternalMutationFacets{StateFacet::PrimaryRecords,
+                                                           StateFacet::RecordPayloads,
+                                                           StateFacet::SecondaryIndexes,
+                                                           StateFacet::IdGenerators,
+                                                           StateFacet::Revisions,
+                                                           StateFacet::Journal,
+                                                           StateFacet::JournalEpoch,
+                                                           StateFacet::JournalSequence,
+                                                           StateFacet::JournalRetainedRecords,
+                                                           StateFacet::JournalLatestCursor,
+                                                           StateFacet::ExternalCallbacks,
+                                                           StateFacet::PublicReadModels};
 
 class StateComparator {
   public:
@@ -155,7 +192,8 @@ class StateComparator {
     }
 
     template <typename TValue>
-    StateComparator &RequireEqual(StateFacet facet, const TValue &before, const TValue &after, std::string detail) {
+    StateComparator &RequireEqual(StateFacet facet, const TValue &before, const TValue &after,
+                                  std::string detail) {
         return Require(facet, before == after, std::move(detail));
     }
 
@@ -213,20 +251,24 @@ class StateComparator {
 }
 
 template <typename TSnapshot>
-[[nodiscard]] ComparisonReport CompareSnapshotState(std::string scope, const TSnapshot &before, const TSnapshot &after,
+[[nodiscard]] ComparisonReport CompareSnapshotState(std::string scope, const TSnapshot &before,
+                                                    const TSnapshot &after,
                                                     std::initializer_list<StateFacet> facets) {
     StateComparator comparator(std::move(scope));
     for (const auto facet : facets) {
         comparator.RequireEqual(facet, before, after, std::string(ToString(facet)));
     }
+
     return std::move(comparator).Finish();
 }
 
 template <typename TCaptureBefore, typename TCaptureAfter, typename TCompare>
-[[nodiscard]] ComparisonReport CompareCapturedState(std::string scope, TCaptureBefore &&capture_before,
-                                                    TCaptureAfter &&capture_after, TCompare &&compare) {
+[[nodiscard]] ComparisonReport
+CompareCapturedState(std::string scope, TCaptureBefore &&capture_before,
+                     TCaptureAfter &&capture_after, TCompare &&compare) {
     auto before = capture_before();
     auto after = capture_after();
     return compare(std::move(scope), before, after);
 }
+
 } // namespace epidemic::tests::pre_state

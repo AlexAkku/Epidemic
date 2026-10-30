@@ -5,7 +5,8 @@
 
 namespace epidemic::input {
 // This file defines the normalized mouse buttons recognized by EngineBase input code.
-// The enum includes Unknown so platform backends can reject unsupported raw button values explicitly.
+// The enum includes Unknown so platform backends can reject unsupported raw button values
+// explicitly.
 
 enum class MouseButton : std::uint8_t {
     Left = 0,
@@ -55,4 +56,5 @@ enum class MouseButton : std::uint8_t {
 
     return "Unknown";
 }
-}
+
+} // namespace epidemic::input

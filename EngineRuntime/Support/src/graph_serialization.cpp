@@ -7,28 +7,46 @@ namespace {
 // Keep the archive's original Result error across the adapter's local transfer
 // helpers. Allocation/other exceptions remain handled by the existing typed boundary.
 struct TransferFailure final : std::exception {
-    explicit TransferFailure(foundation::Error value) : error(std::move(value)) {}
-    const char *what() const noexcept override { return error.message.c_str(); }
+    explicit TransferFailure(foundation::Error value) : error(std::move(value)) {
+    }
+
+    const char *what() const noexcept override {
+        return error.message.c_str();
+    }
+
     foundation::Error error;
 };
+
 void Need(const foundation::Result<void> &result) {
-    if (!result) throw TransferFailure{result.GetError()};
+    if (!result)
+        throw TransferFailure{result.GetError()};
+
 }
+
 template <typename T> T Take(foundation::Result<T> result) {
-    if (!result) throw TransferFailure{result.GetError()};
+    if (!result)
+        throw TransferFailure{result.GetError()};
+
     return std::move(result).Value();
 }
+
 void Require(bool value, std::string_view code) {
-    if (!value) throw TransferFailure{foundation::Error::Create(code, "graph archive rejected")};
+    if (!value)
+        throw TransferFailure{foundation::Error::Create(code, "graph archive rejected")};
+
 }
+
 graph::ElementId ReadId(IArchiveReader &reader, std::string_view field) {
     return graph::ElementId{Take(reader.ReadUInt64(field))};
+
 }
+
 std::string ReadLabel(IArchiveReader &reader) {
     auto name = Take(reader.ReadString("name"));
     Require(name.size() <= graph::kMaxLabelBytes, "graph.limit_exceeded");
     return name;
 }
+
 void WriteDefinition(const graph::GraphDefinition &definition, IArchiveWriter &writer) {
     Need(writer.WriteUInt64("asset_id", definition.asset_id.Raw()));
     Need(writer.WriteString("name", definition.name));
@@ -50,9 +68,11 @@ void WriteDefinition(const graph::GraphDefinition &definition, IArchiveWriter &w
             Need(writer.WriteUInt64("type_id", port.type_id.Raw()));
             Need(writer.EndArrayElement());
         }
+
         Need(writer.EndArray());
         Need(writer.EndArrayElement());
     }
+
     Need(writer.EndArray());
     Need(writer.BeginArray("connections", definition.connections.size()));
     for (std::size_t index = 0; index < definition.connections.size(); ++index) {
@@ -63,11 +83,14 @@ void WriteDefinition(const graph::GraphDefinition &definition, IArchiveWriter &w
         Need(writer.WriteUInt64("input", connection.input_port.Raw()));
         Need(writer.EndArrayElement());
     }
+
     Need(writer.EndArray());
 }
+
 graph::GraphDefinition ReadDefinition(IArchiveReader &reader) {
     graph::GraphDefinition definition;
     definition.asset_id = AssetId{ReadId(reader, "asset_id")};
+
     definition.name = ReadLabel(reader);
     const auto node_count = Take(reader.BeginArray("nodes"));
     Require(node_count <= graph::kMaxNodes, "graph.limit_exceeded");
@@ -90,18 +113,22 @@ graph::GraphDefinition ReadDefinition(IArchiveReader &reader) {
             port.name = ReadLabel(reader);
             const auto kind = Take(reader.ReadUInt64("kind"));
             const auto direction = Take(reader.ReadUInt64("direction"));
-            Require(kind <= static_cast<std::uint64_t>(graph::PortKind::Event), "graph.invalid_port_kind");
-            Require(direction <= static_cast<std::uint64_t>(graph::PortDirection::Output), "graph.invalid_port_direction");
+            Require(kind <= static_cast<std::uint64_t>(graph::PortKind::Event),
+                    "graph.invalid_port_kind");
+            Require(direction <= static_cast<std::uint64_t>(graph::PortDirection::Output),
+                    "graph.invalid_port_direction");
             port.kind = static_cast<graph::PortKind>(kind);
             port.direction = static_cast<graph::PortDirection>(direction);
             port.type_id = ReadId(reader, "type_id");
             node.ports.push_back(std::move(port));
             Need(reader.EndArrayElement());
         }
+
         Need(reader.EndArray());
         definition.nodes.push_back(std::move(node));
         Need(reader.EndArrayElement());
     }
+
     Need(reader.EndArray());
     const auto connection_count = Take(reader.BeginArray("connections"));
     Require(connection_count <= graph::kMaxConnections, "graph.limit_exceeded");
@@ -115,17 +142,28 @@ graph::GraphDefinition ReadDefinition(IArchiveReader &reader) {
         definition.connections.push_back(connection);
         Need(reader.EndArrayElement());
     }
+
     Need(reader.EndArray());
     return definition;
 }
+
 } // namespace
 
 foundation::StringId GraphDefinitionSerializer::GetTypeId() const {
     return foundation::StringId::FromString("epidemic.graph_definition");
 }
-SchemaVersion GraphDefinitionSerializer::GetSchemaVersion() const { return {1, 0, 0}; }
-std::type_index GraphDefinitionSerializer::GetCppType() const { return typeid(graph::GraphDefinition); }
-foundation::Result<void> GraphDefinitionSerializer::Serialize(const void *object, IArchiveWriter &writer) const {
+
+SchemaVersion GraphDefinitionSerializer::GetSchemaVersion() const {
+    return {1, 0, 0};
+
+}
+
+std::type_index GraphDefinitionSerializer::GetCppType() const {
+    return typeid(graph::GraphDefinition);
+}
+
+foundation::Result<void> GraphDefinitionSerializer::Serialize(const void *object,
+                                                              IArchiveWriter &writer) const {
     const auto &definition = *static_cast<const graph::GraphDefinition *>(object);
     try {
         Need(graph::ValidateGraph(definition, known_types_));
@@ -134,8 +172,11 @@ foundation::Result<void> GraphDefinitionSerializer::Serialize(const void *object
     } catch (const TransferFailure &failure) {
         return foundation::Result<void>::Failure(failure.error);
     }
+
 }
-foundation::Result<void> GraphDefinitionSerializer::Deserialize(IArchiveReader &reader, void *object) const {
+
+foundation::Result<void> GraphDefinitionSerializer::Deserialize(IArchiveReader &reader,
+                                                                void *object) const {
     try {
         auto candidate = ReadDefinition(reader);
         Need(graph::ValidateGraph(candidate, known_types_));
@@ -144,5 +185,7 @@ foundation::Result<void> GraphDefinitionSerializer::Deserialize(IArchiveReader &
     } catch (const TransferFailure &failure) {
         return foundation::Result<void>::Failure(failure.error);
     }
+
 }
+
 } // namespace epidemic::runtime

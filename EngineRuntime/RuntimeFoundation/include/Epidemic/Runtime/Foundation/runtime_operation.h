@@ -19,4 +19,5 @@ enum class AsyncOperationStatus {
 [[nodiscard]] constexpr bool IsActiveOperationStatus(AsyncOperationStatus status) noexcept {
     return !IsTerminalOperationStatus(status);
 }
-}
+
+} // namespace epidemic::runtime

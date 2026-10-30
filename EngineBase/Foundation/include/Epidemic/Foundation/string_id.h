@@ -34,10 +34,12 @@ template <typename Tag> struct BasicId {
     [[nodiscard]] static constexpr BasicId FromString(std::string_view source) noexcept {
         if (source.empty()) {
             return BasicId{0};
+
         }
 
         const auto hash = HashString(source);
         return BasicId{hash == 0 ? 1 : hash};
+
     }
 
     // Returns true when the id is non-zero.
@@ -60,10 +62,15 @@ template <typename Tag> struct BasicId {
 };
 
 struct StringIdTag {};
+
 struct NameIdTag {};
+
 struct ModuleIdTag {};
+
 struct ServiceIdTag {};
+
 struct EventTypeIdTag {};
+
 } // namespace detail
 
 using StringId = detail::BasicId<detail::StringIdTag>;
@@ -76,8 +83,11 @@ using EventTypeId = detail::BasicId<detail::EventTypeIdTag>;
 namespace std {
 template <typename Tag> struct hash<epidemic::foundation::detail::BasicId<Tag>> {
     // Hashes the raw id so typed ids can be used in unordered containers.
-    [[nodiscard]] size_t operator()(const epidemic::foundation::detail::BasicId<Tag> &value) const noexcept {
+    [[nodiscard]] size_t
+    operator()(const epidemic::foundation::detail::BasicId<Tag> &value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
+
 } // namespace std

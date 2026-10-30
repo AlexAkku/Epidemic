@@ -1,2 +1,35 @@
+# Epidemic C++ formatting policy. Requires clang-format >= 14.
 BasedOnStyle: LLVM
+Language: Cpp
+
+ColumnLimit: 100
+IndentWidth: 4
+ContinuationIndentWidth: 4
+UseTab: Never
+
+# Important: Windows SDK headers and other dependencies are order-sensitive.
 SortIncludes: Never
+SortUsingDeclarations: Never
+
+# Keep C++ operators readable.
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeCpp11BracedList: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+BreakBeforeBinaryOperators: None
+
+# Prefer fitting statements into the 100-column limit where possible.
+# Clang-format may still split short constructs for language/style reasons.
+BinPackArguments: true
+BinPackParameters: BinPack
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+PenaltyBreakBeforeFirstCallParameter: 1000
+
+# Definition spacing; all other closing-brace blank lines use Format-Epidemic.py.
+SeparateDefinitionBlocks: Always
+MaxEmptyLinesToKeep: 1

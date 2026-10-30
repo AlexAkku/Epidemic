@@ -9,17 +9,26 @@
 namespace epidemic::runtime {
 namespace detail {
 struct AssetIdTag {};
+
 struct ResourceIdTag {};
+
 struct RuntimeObjectIdTag {};
+
 struct PersistentObjectIdTag {};
+
 struct LazyRuleIdTag {};
+
 struct RegionIdTag {};
+
 struct ChunkIdTag {};
+
 struct SurfaceIdTag {};
+
 struct SimulationZoneIdTag {};
 
 template <typename Tag> struct NumericRuntimeId {
     constexpr NumericRuntimeId() noexcept = default;
+
     constexpr explicit NumericRuntimeId(std::uint64_t raw_value) noexcept : value(raw_value) {
     }
 
@@ -39,15 +48,18 @@ template <typename Tag> struct NumericRuntimeId {
 
     [[nodiscard]] constexpr bool operator==(const NumericRuntimeId &) const noexcept = default;
 };
+
 } // namespace detail
 
 struct AssetId {
     constexpr AssetId() noexcept = default;
+
     constexpr explicit AssetId(foundation::StringId raw_value) noexcept : value(raw_value) {
     }
 
     [[nodiscard]] static constexpr AssetId FromString(std::string_view source) noexcept {
         return AssetId{foundation::StringId::FromString(source)};
+
     }
 
     [[nodiscard]] constexpr bool IsValid() const noexcept {
@@ -65,15 +77,18 @@ struct AssetId {
     [[nodiscard]] constexpr bool operator==(const AssetId &) const noexcept = default;
 
     foundation::StringId value{};
+
 };
 
 struct ResourceId {
     constexpr ResourceId() noexcept = default;
+
     constexpr explicit ResourceId(foundation::StringId raw_value) noexcept : value(raw_value) {
     }
 
     [[nodiscard]] static constexpr ResourceId FromString(std::string_view source) noexcept {
         return ResourceId{foundation::StringId::FromString(source)};
+
     }
 
     [[nodiscard]] constexpr bool IsValid() const noexcept {
@@ -91,6 +106,7 @@ struct ResourceId {
     [[nodiscard]] constexpr bool operator==(const ResourceId &) const noexcept = default;
 
     foundation::StringId value{};
+
 };
 
 struct RuntimeObjectId : detail::NumericRuntimeId<detail::RuntimeObjectIdTag> {
@@ -120,66 +136,79 @@ struct SurfaceId : detail::NumericRuntimeId<detail::SurfaceIdTag> {
 struct SimulationZoneId : detail::NumericRuntimeId<detail::SimulationZoneIdTag> {
     using detail::NumericRuntimeId<detail::SimulationZoneIdTag>::NumericRuntimeId;
 };
-}
+
+} // namespace epidemic::runtime
 
 namespace std {
 template <typename Tag> struct hash<epidemic::runtime::detail::NumericRuntimeId<Tag>> {
-    [[nodiscard]] size_t operator()(epidemic::runtime::detail::NumericRuntimeId<Tag> value) const noexcept {
+    [[nodiscard]] size_t
+    operator()(epidemic::runtime::detail::NumericRuntimeId<Tag> value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::AssetId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::AssetId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::ResourceId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::ResourceId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::RuntimeObjectId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::RuntimeObjectId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::PersistentObjectId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::PersistentObjectId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::LazyRuleId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::LazyRuleId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::RegionId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::RegionId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::ChunkId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::ChunkId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::SurfaceId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::SurfaceId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
 
 template <> struct hash<epidemic::runtime::SimulationZoneId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::SimulationZoneId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
+
 } // namespace std

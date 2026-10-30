@@ -17,4 +17,5 @@ class IAssetLocationResolver {
     // Allocation failure may propagate and cannot mutate catalog state.
     [[nodiscard]] virtual foundation::Result<AssetLocation> Resolve(AssetId id) const = 0;
 };
-}
+
+} // namespace epidemic::runtime

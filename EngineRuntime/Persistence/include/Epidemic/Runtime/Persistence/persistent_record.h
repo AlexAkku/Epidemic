@@ -13,16 +13,24 @@
 namespace epidemic::runtime {
 struct PersistentObjectRecord {
     PersistentObjectId persistent_id{};
+
     AssetId asset_id{};
+
     PersistentObjectKind kind = PersistentObjectKind::Unknown;
     PersistenceTier tier = PersistenceTier::Disposable;
     PersistenceState state = PersistenceState::Clean;
     PersistenceLocation location{};
+
     PersistencePayload payload{};
+
     GameTimePoint created_game_time{};
+
     GameTimePoint last_observed_game_time{};
+
     ObjectProtectionMask protection_flags{};
+
     std::uint64_t condition_hash = 0;
     std::uint64_t revision = 0;
 };
+
 } // namespace epidemic::runtime

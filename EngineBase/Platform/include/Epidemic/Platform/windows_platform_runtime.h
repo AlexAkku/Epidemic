@@ -41,7 +41,8 @@ class WindowsPlatformRuntime final : public IPlatformRuntime, public IWindowSyst
     [[nodiscard]] bool IsExitRequested() const override;
 
     // Creates a new Win32 window and returns it as an IWindow implementation.
-    [[nodiscard]] epidemic::foundation::Result<WindowPtr> CreateWindow(const WindowCreateInfo &create_info) override;
+    [[nodiscard]] epidemic::foundation::Result<WindowPtr>
+    CreateWindow(const WindowCreateInfo &create_info) override;
 
     // Drains and returns accumulated PlatformEvent values.
     [[nodiscard]] std::vector<PlatformEvent> DrainEvents() override;
@@ -57,4 +58,5 @@ class WindowsPlatformRuntime final : public IPlatformRuntime, public IWindowSyst
 
     std::unique_ptr<Impl> impl_;
 };
+
 } // namespace epidemic::platform

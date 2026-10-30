@@ -26,7 +26,9 @@ struct SceneNodeId {
 
 struct SceneNode {
     SceneNodeId id{};
+
     SceneNodeId parent_id{};
+
     SceneAttachmentState attachment_state = SceneAttachmentState::Detached;
     SceneMobility mobility = SceneMobility::Dynamic;
     SceneVisibilityState visibility = SceneVisibilityState::Visible;
@@ -35,6 +37,7 @@ struct SceneNode {
 
     [[nodiscard]] constexpr bool operator==(const SceneNode &) const noexcept = default;
 };
+
 } // namespace epidemic::runtime
 
 namespace std {
@@ -42,5 +45,7 @@ template <> struct hash<epidemic::runtime::SceneNodeId> {
     [[nodiscard]] size_t operator()(epidemic::runtime::SceneNodeId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
+
 } // namespace std

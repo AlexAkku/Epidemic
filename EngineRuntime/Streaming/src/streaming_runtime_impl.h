@@ -24,20 +24,23 @@ class InMemoryResidencyController final : public IResidencyController {
     std::unordered_map<ChunkId, StreamingState> chunk_states_;
 };
 
-class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery, public IStreamingController {
+class StreamingRuntime final : public IStreamingRuntime,
+                               public IStreamingQuery,
+                               public IStreamingController {
   public:
     explicit StreamingRuntime(StreamingDependencies dependencies = {},
                               IStreamingPriorityResolver *priority_resolver = nullptr);
 
-    [[nodiscard]] foundation::Result<StreamingDemandHandle> Request(const StreamingTarget &target,
-                                                                    StreamingPriorityClass priority) override;
+    [[nodiscard]] foundation::Result<StreamingDemandHandle>
+    Request(const StreamingTarget &target, StreamingPriorityClass priority) override;
     [[nodiscard]] foundation::Result<void> ReleaseDemand(StreamingDemandHandle demand) override;
     [[nodiscard]] foundation::Result<void> CancelRequest(StreamingRequestHandle request) override;
     [[nodiscard]] foundation::Result<void> Shutdown() override;
     [[nodiscard]] StreamingState GetChunkState(ChunkId chunk) const override;
     void SetBudget(const StreamingBudget &budget) override;
     [[nodiscard]] StreamingTickResult Tick() override;
-    [[nodiscard]] std::optional<StreamingProgress> GetProgress(StreamingRequestHandle request) const override;
+    [[nodiscard]] std::optional<StreamingProgress>
+    GetProgress(StreamingRequestHandle request) const override;
     [[nodiscard]] StreamingStatistics GetStatistics() const override;
 
     [[nodiscard]] std::size_t RecordCount() const noexcept;
@@ -47,44 +50,59 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     void SetNextRequestValueForTesting(std::uint64_t value) noexcept {
         next_request_value_ = value;
     }
+
     void SetNextDemandValueForTesting(std::uint64_t value) noexcept {
         next_demand_value_ = value;
     }
+
     void SetNextRequestGenerationForTesting(std::uint32_t value) noexcept {
         next_request_generation_ = value;
     }
+
     void SetNextDemandGenerationForTesting(std::uint32_t value) noexcept {
         next_demand_generation_ = value;
     }
+
     void SetNextCompletionSequenceForTesting(std::uint64_t value) noexcept {
         next_completion_sequence_ = value;
     }
+
     bool SetRevisionForTesting(StreamingRequestHandle handle, std::uint64_t value) noexcept;
+
     [[nodiscard]] std::uint64_t NextRequestValueForTesting() const noexcept {
         return next_request_value_;
     }
+
     [[nodiscard]] std::uint64_t NextDemandValueForTesting() const noexcept {
         return next_demand_value_;
     }
+
     [[nodiscard]] bool IsShuttingDownForTesting() const noexcept;
+
     void FailNextRequestPublicationForTesting() noexcept {
         fail_next_request_publication_for_testing_ = true;
     }
+
     void FailNextChunkMappingPublicationForTesting() noexcept {
         fail_next_chunk_mapping_publication_for_testing_ = true;
     }
+
     void FailNextDemandPublicationForTesting() noexcept {
         fail_next_demand_publication_for_testing_ = true;
     }
+
     void FailNextWorkListPreparationForTesting() noexcept {
         fail_next_work_list_preparation_for_testing_ = true;
     }
+
     void FailNextTickResultPreparationForTesting() noexcept {
         fail_next_tick_result_preparation_for_testing_ = true;
     }
+
     [[nodiscard]] const StreamingBudget &BudgetForTesting() const noexcept {
         return budget_;
     }
+
     void SetStatisticsForTesting(StreamingStatistics value) noexcept {
         statistics_ = value;
     }
@@ -92,6 +110,7 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
   private:
     struct DemandRecord {
         StreamingDemandHandle handle{};
+
         StreamingPriorityClass priority = StreamingPriorityClass::Normal;
         bool active = true;
     };
@@ -99,7 +118,9 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     struct PendingStepResult {
         std::size_t cursor = 0;
         RuntimeBudget accepted_budget{};
+
         StreamingStepResult result{};
+
     };
 
     static_assert(std::is_nothrow_move_constructible_v<PendingStepResult>);
@@ -107,6 +128,7 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
 
     struct RequestRecord {
         StreamingRequest request{};
+
         StreamingState state = StreamingState::NotRequested;
         float progress = 0.0f;
         std::uint64_t revision = 0;
@@ -134,7 +156,8 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     [[nodiscard]] static bool IsValidPlanStep(StreamingPlanStep step) noexcept;
     [[nodiscard]] static foundation::Result<void> ValidatePlan(const ProgressiveLoadPlan &plan);
     [[nodiscard]] static std::optional<ChunkId> GetChunkTarget(const StreamingTarget &target);
-    [[nodiscard]] static foundation::Result<void> ReserveRevision(const RequestRecord &record, std::uint64_t count = 1);
+    [[nodiscard]] static foundation::Result<void> ReserveRevision(const RequestRecord &record,
+                                                                  std::uint64_t count = 1);
     static void CommitState(RequestRecord &record, StreamingState state, float progress) noexcept;
     static void SaturatingIncrement(std::uint64_t &counter) noexcept;
 
@@ -143,17 +166,24 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     [[nodiscard]] RequestRecord *FindByDemand(StreamingDemandHandle demand);
     [[nodiscard]] const RequestRecord *FindByDemand(StreamingDemandHandle demand) const;
     [[nodiscard]] std::vector<StreamingRequestId> BuildWorkList() const;
-    [[nodiscard]] foundation::Result<void> AdvanceRequest(RequestRecord &record, RuntimeBudget available_budget);
-    [[nodiscard]] foundation::Result<void> ExecutePlanStep(RequestRecord &record, RuntimeBudget available_budget);
-    [[nodiscard]] foundation::Result<void> Rollback(RequestRecord &record, StreamingState terminal_state);
-    [[nodiscard]] foundation::Result<void> ReleaseLastDemand(RequestRecord &record, StreamingDemandHandle demand);
+    [[nodiscard]] foundation::Result<void> AdvanceRequest(RequestRecord &record,
+                                                          RuntimeBudget available_budget);
+    [[nodiscard]] foundation::Result<void> ExecutePlanStep(RequestRecord &record,
+                                                           RuntimeBudget available_budget);
+    [[nodiscard]] foundation::Result<void> Rollback(RequestRecord &record,
+                                                    StreamingState terminal_state);
+    [[nodiscard]] foundation::Result<void> ReleaseLastDemand(RequestRecord &record,
+                                                             StreamingDemandHandle demand);
     [[nodiscard]] foundation::Result<void> BeginUnload(RequestRecord &record);
+
     struct PreparedTerminalTransition {
         std::uint64_t completion_sequence = 0;
     };
+
     [[nodiscard]] foundation::Result<PreparedTerminalTransition>
     PrepareTerminalTransition(const RequestRecord &record) const;
-    void CommitTerminal(RequestRecord &record, StreamingState state, PreparedTerminalTransition prepared) noexcept;
+    void CommitTerminal(RequestRecord &record, StreamingState state,
+                        PreparedTerminalTransition prepared) noexcept;
     [[nodiscard]] foundation::Result<void> CancelWaitingForPredecessor(RequestRecord &record);
     void ClearGraphLinks(RequestRecord &record);
     [[nodiscard]] IResidencyController *ResidencyController() const noexcept;
@@ -166,9 +196,11 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     void CleanupHistoryIfNeeded();
 
     StreamingDependencies dependencies_{};
+
     IStreamingPriorityResolver *priority_resolver_ = nullptr;
 
     StreamingBudget budget_{};
+
     std::unordered_map<StreamingRequestId, RequestRecord> requests_;
     std::unordered_map<ChunkId, StreamingRequestId> chunk_to_request_;
     std::unordered_map<ChunkId, StreamingState> chunk_states_;
@@ -179,11 +211,9 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     std::uint64_t next_completion_sequence_ = 1;
     std::size_t history_limit_ = 64;
     StreamingStatistics statistics_{};
-    enum class Lifecycle {
-        Running,
-        ShuttingDown,
-        Shutdown
-    };
+
+    enum class Lifecycle { Running, ShuttingDown, Shutdown };
+
     Lifecycle lifecycle_ = Lifecycle::Running;
     bool fail_next_request_publication_for_testing_ = false;
     bool fail_next_chunk_mapping_publication_for_testing_ = false;
@@ -191,4 +221,5 @@ class StreamingRuntime final : public IStreamingRuntime, public IStreamingQuery,
     bool fail_next_work_list_preparation_for_testing_ = false;
     bool fail_next_tick_result_preparation_for_testing_ = false;
 };
+
 } // namespace epidemic::runtime::streaming

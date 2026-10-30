@@ -56,4 +56,5 @@ class MainThreadDispatcher final : public IMainThreadDispatcher {
     std::mutex mutex_;
     std::queue<PendingTask> tasks_;
 };
+
 } // namespace epidemic::core

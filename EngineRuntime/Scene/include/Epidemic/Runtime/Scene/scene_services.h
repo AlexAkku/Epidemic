@@ -19,5 +19,6 @@ struct SceneServices {
     std::shared_ptr<ISceneSnapshotProvider> snapshots;
 };
 
-[[nodiscard]] foundation::Result<SceneServices> CreateSceneServices(const SceneOptions &options = {});
+[[nodiscard]] foundation::Result<SceneServices>
+CreateSceneServices(const SceneOptions &options = {});
 } // namespace epidemic::runtime

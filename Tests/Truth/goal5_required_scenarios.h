@@ -5,20 +5,27 @@
 namespace goal5_test_utility {
 inline fw::GameplayObjectRef ScenarioPlayer() {
     return {fw::combat::CombatService::Domain(), fw::GameplayObjectId::FromString("ms5.player")};
+
 }
+
 inline fw::GameplayObjectRef ScenarioEnemy() {
-    return {fw::combat::CombatService::Domain(), fw::GameplayObjectId::FromString("whole.reward.enemy")};
+    return {fw::combat::CombatService::Domain(),
+            fw::GameplayObjectId::FromString("whole.reward.enemy")};
+
 }
+
 inline fw::GameplayTimePoint ScenarioNow(WholeComposition &engine) {
     const auto clock = engine.framework.time.GetClock(engine.framework.clock);
     TRUTH_REQUIRE(clock);
     return clock->now;
 }
+
 struct RequiredScenarioServices {
     std::unique_ptr<ig::CombatAbilityResourceProvider> ability_resources;
     std::unique_ptr<ig::ResourceProcessInputProvider> process_inputs;
     std::unique_ptr<ig::ResourceProcessOutputHandler> process_outputs;
     fw::resources::ResourceStockpileId stockpile{};
+
     void Bootstrap(FrameworkCompositionView &view, std::uint64_t seed) {
         fw::progression::AttributeDefinition attack;
         attack.canonical_name = "ms5.attack";
@@ -72,6 +79,7 @@ struct RequiredScenarioServices {
         step.type = ig::CombatDamageEffectHandler::StaticType();
         step.magnitude_micro = 20'000'000;
         step.payload = {ig::CombatDamageEffectHandler::PayloadType(), std::move(payload.bytes)};
+
         effect.steps.push_back(std::move(step));
         const auto effect_id = view.effects.RegisterDefinition(std::move(effect));
         TRUTH_REQUIRE(effect_id);
@@ -86,7 +94,9 @@ struct RequiredScenarioServices {
         ability.targeting = fw::abilities::AbilityTargetPolicy::SingleTarget;
         ability.timing.kind = fw::abilities::AbilityTimingKind::CastTime;
         ability.timing.cast_duration = {5};
-        ability.costs.push_back({mana, 10'000'000, fw::abilities::AbilityCostPolicy::ReserveThenCommit});
+
+        ability.costs.push_back(
+            {mana, 10'000'000, fw::abilities::AbilityCostPolicy::ReserveThenCommit});
         ability.outputs.push_back({action, 1'000'000, {}});
         TRUTH_REQUIRE(view.abilities.RegisterDefinition(ability));
         TRUTH_REQUIRE(view.ability_effects.Map(action, effect_id.Value()));
@@ -101,8 +111,10 @@ struct RequiredScenarioServices {
         perceiver.id = fw::perception::PerceiverProfileId::FromString("ms5.perceiver");
         perceiver.canonical_name = "ms5.perceiver";
         perceiver.senses = {hearing.id};
+
         TRUTH_REQUIRE(view.perception.RegisterProfileDefinition(perceiver));
-        view.perception.SetTemporalPolicy({fw::GameplayDuration{5}, fw::GameplayDuration{1}, 100'000});
+        view.perception.SetTemporalPolicy(
+            {fw::GameplayDuration{5}, fw::GameplayDuration{1}, 100'000});
         fw::ai::AIGoalDefinition goal;
         goal.id = fw::ai::AIGoalId::FromString("ms5.known.target");
         goal.canonical_name = "ms5.known.target";
@@ -113,9 +125,11 @@ struct RequiredScenarioServices {
         known.id = fw::ai::AIConsiderationId::FromString("ms5.known");
         known.evaluator = fw::ai::AIService::InputEvaluatorId();
         ig::PerceptionKnowledgeMapping mapping;
-        known.input_key = fw::ai::AIInputKeyId::FromType(fw::TypeId{mapping.observed_topic.value.Raw()});
+        known.input_key =
+            fw::ai::AIInputKeyId::FromType(fw::TypeId{mapping.observed_topic.value.Raw()});
         known.scope = fw::ai::AIConsiderationScope::Target;
         goal.considerations = {known};
+
         TRUTH_REQUIRE(view.ai.RegisterGoal(goal));
         fw::ai::AIGoalDefinition idle;
         idle.id = fw::ai::AIGoalId::FromString("ms5.idle");
@@ -128,7 +142,9 @@ struct RequiredScenarioServices {
         ai.id = fw::ai::AIProfileId::FromString("ms5.ai");
         ai.canonical_name = "ms5.ai";
         ai.default_goals = {goal.id, idle.id};
+
         ai.think_interval = {1};
+
         TRUTH_REQUIRE(view.ai.RegisterProfile(ai));
 
         fw::resources::ResourceType iron;
@@ -139,8 +155,8 @@ struct RequiredScenarioServices {
         TRUTH_REQUIRE(iron_id);
         const auto product_id = view.resources.RegisterResourceType(product);
         TRUTH_REQUIRE(product_id);
-        const auto stock =
-            view.resources.CreateStockpile({{}, ScenarioPlayer(), {}, {}, fw::resources::StockpileState::Active, {}});
+        const auto stock = view.resources.CreateStockpile(
+            {{}, ScenarioPlayer(), {}, {}, fw::resources::StockpileState::Active, {}});
         TRUTH_REQUIRE(stock);
         stockpile = stock.Value();
         TRUTH_REQUIRE(view.resources.Add(stockpile, {iron_id.Value(), 10}));
@@ -162,30 +178,33 @@ struct RequiredScenarioServices {
         fw::processes::ProcessRecipe recipe;
         recipe.canonical_name = "ms5.recipe";
         recipe.process = process_id.Value();
-        recipe.inputs.push_back({fw::processes::ProcessInputId::FromString("ms5.input"),
-                                 fw::processes::ProcessInputTypeId::FromString("framework.input.resource"),
-                                 2,
-                                 fw::processes::InputConsumptionPolicy::ReserveThenConsume,
-                                 {},
-                                 ig::EncodeProcessResourcePayload({stockpile, iron_id.Value()})});
-        recipe.outputs.push_back({fw::processes::ProcessOutputId::FromString("ms5.output"),
-                                  ig::ResourceProcessOutputHandler::OutputType(), 1,
-                                  fw::processes::OutputDeliveryPolicy::OnCompletion,
-                                  ig::EncodeProcessResourcePayload({stockpile, product_id.Value()})});
+        recipe.inputs.push_back(
+            {fw::processes::ProcessInputId::FromString("ms5.input"),
+             fw::processes::ProcessInputTypeId::FromString("framework.input.resource"),
+             2,
+             fw::processes::InputConsumptionPolicy::ReserveThenConsume,
+             {},
+             ig::EncodeProcessResourcePayload({stockpile, iron_id.Value()})});
+        recipe.outputs.push_back(
+            {fw::processes::ProcessOutputId::FromString("ms5.output"),
+             ig::ResourceProcessOutputHandler::OutputType(), 1,
+             fw::processes::OutputDeliveryPolicy::OnCompletion,
+             ig::EncodeProcessResourcePayload({stockpile, product_id.Value()})});
         TRUTH_REQUIRE(view.processes.RegisterRecipe(recipe));
     }
+
 };
+
 template <typename Use>
-decltype(auto) WithRequiredScenarioComposition(const ScenarioDescriptor &descriptor, const std::filesystem::path &path,
-                                               Use &&use) {
+decltype(auto) WithRequiredScenarioComposition(const ScenarioDescriptor &descriptor,
+                                               const std::filesystem::path &path, Use &&use) {
     RequiredScenarioServices services;
     return WithWholeComposition(
         path,
         [&](FrameworkCompositionView &view) {
             services.Bootstrap(view, descriptor.seed_set.front());
         },
-        [&](WholeComposition &engine) -> decltype(auto) {
-            return use(engine, services);
-        });
+        [&](WholeComposition &engine) -> decltype(auto) { return use(engine, services); });
 }
-}
+
+} // namespace goal5_test_utility

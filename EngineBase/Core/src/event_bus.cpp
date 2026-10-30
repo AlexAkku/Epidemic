@@ -10,14 +10,18 @@
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 #include <atomic>
 #include <shadow_probe.h>
+
 namespace {
 std::atomic<std::uint64_t> next_auditor_event_id{1};
+
 }
+
 #endif
 
 namespace epidemic::core::events {
 // This file implements the baseline event bus.
-// Delivery copies the current handler list before invocation so handlers run outside the internal mutex.
+// Delivery copies the current handler list before invocation so handlers run outside the internal
+// mutex.
 
 // Registers a type-erased handler in the sync or queued subscription table.
 IEventBus::HandlerToken EventBus::SubscribeImpl(std::type_index event_type, EventDispatchMode mode,
@@ -32,7 +36,8 @@ IEventBus::HandlerToken EventBus::SubscribeImpl(std::type_index event_type, Even
         throw std::overflow_error("EventBus handler token space is exhausted");
     }
 
-    auto &subscriptions = mode == EventDispatchMode::Sync ? sync_subscriptions_ : queued_subscriptions_;
+    auto &subscriptions =
+        mode == EventDispatchMode::Sync ? sync_subscriptions_ : queued_subscriptions_;
     const auto token = next_token_;
     if (const auto existing = subscriptions.find(event_type); existing != subscriptions.end()) {
         existing->second.push_back(Subscription{token, std::move(handler)});
@@ -41,6 +46,7 @@ IEventBus::HandlerToken EventBus::SubscribeImpl(std::type_index event_type, Even
         candidate_bucket.push_back(Subscription{token, std::move(handler)});
         subscriptions.emplace(event_type, std::move(candidate_bucket));
     }
+
     next_token_ = detail::AdvanceHandlerToken(token);
     return token;
 }
@@ -55,14 +61,16 @@ void EventBus::EnqueueImpl(std::type_index event_type, std::any event) {
     std::scoped_lock lock(mutex_);
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     const auto correlation = next_auditor_event_id.fetch_add(1, std::memory_order_relaxed);
-    queued_events_.push(QueuedEvent{event_type, std::move(event), correlation, auditor::shadow::child_context()});
+    queued_events_.push(
+        QueuedEvent{event_type, std::move(event), correlation, auditor::shadow::child_context()});
 #else
     queued_events_.push(QueuedEvent{event_type, std::move(event)});
 #endif
     diagnostics::GlobalCounters().Increment(diagnostics::CounterId::EventBusQueuedEvents);
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     // A publish event proves acceptance to the queued bus, not handler success.
-    queued_events_.back().auditor_context.cause = auditor::shadow::emit_causal("event.publish", correlation);
+    queued_events_.back().auditor_context.cause =
+        auditor::shadow::emit_causal("event.publish", correlation);
 #endif
 }
 
@@ -86,8 +94,8 @@ std::size_t EventBus::DrainQueued() {
                 break;
             }
 
-            // Copy every potentially throwing subscriber before removing the event. If copying fails,
-            // the queued event remains authoritative and a later DrainQueued() can retry it.
+            // Copy every potentially throwing subscriber before removing the event. If copying
+            // fails, the queued event remains authoritative and a later DrainQueued() can retry it.
             const auto &front = queued_events_.front();
             if (const auto subscriptions = queued_subscriptions_.find(front.type);
                 subscriptions != queued_subscriptions_.end()) {
@@ -95,6 +103,7 @@ std::size_t EventBus::DrainQueued() {
                 for (const auto &subscription : subscriptions->second) {
                     handlers.push_back(subscription.handler);
                 }
+
             }
 
             next_event = std::move(queued_events_.front());
@@ -113,12 +122,14 @@ std::size_t EventBus::DrainQueued() {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
             auto handler_context = auditor::shadow::child_context();
             const auto handler_id = auditor::shadow::identity();
-            handler_context.cause = auditor::shadow::emit_causal("event.handler.submit", handler_id.data());
+            handler_context.cause =
+                auditor::shadow::emit_causal("event.handler.submit", handler_id.data());
             const auditor::shadow::ContextScope handler_scope(handler_context);
             auditor::shadow::flow("event.handler.execute", handler_id.data());
 #endif
             handler(next_event.payload);
         }
+
         ++drained;
     }
 
@@ -130,7 +141,8 @@ bool EventBus::Unsubscribe(HandlerToken token) {
     std::scoped_lock lock(mutex_);
 
     auto erase_from_subscriptions = [token](auto &subscriptions) {
-        for (auto subscription_it = subscriptions.begin(); subscription_it != subscriptions.end(); ++subscription_it) {
+        for (auto subscription_it = subscriptions.begin(); subscription_it != subscriptions.end();
+             ++subscription_it) {
             auto &bucket = subscription_it->second;
             for (auto bucket_it = bucket.begin(); bucket_it != bucket.end(); ++bucket_it) {
                 if (bucket_it->token == token) {
@@ -138,15 +150,19 @@ bool EventBus::Unsubscribe(HandlerToken token) {
                     if (bucket.empty()) {
                         subscriptions.erase(subscription_it);
                     }
+
                     return true;
                 }
+
             }
+
         }
 
         return false;
     };
 
-    return erase_from_subscriptions(sync_subscriptions_) || erase_from_subscriptions(queued_subscriptions_);
+    return erase_from_subscriptions(sync_subscriptions_) ||
+           erase_from_subscriptions(queued_subscriptions_);
 }
 
 // Copies synchronous subscribers and invokes them outside the lock.
@@ -170,18 +186,21 @@ void EventBus::DispatchSync(std::type_index event_type, const std::any &event) {
         for (const auto &subscription : it->second) {
             handlers.push_back(subscription.handler);
         }
+
     }
 
     for (const auto &handler : handlers) {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
         auto handler_context = auditor::shadow::child_context();
         const auto handler_id = auditor::shadow::identity();
-        handler_context.cause = auditor::shadow::emit_causal("event.handler.submit", handler_id.data());
+        handler_context.cause =
+            auditor::shadow::emit_causal("event.handler.submit", handler_id.data());
         const auditor::shadow::ContextScope handler_scope(handler_context);
         auditor::shadow::flow("event.handler.execute", handler_id.data());
 #endif
         handler(event);
     }
+
 }
 
 // Copies queued subscribers and invokes them outside the lock.
@@ -198,10 +217,13 @@ void EventBus::DispatchQueued(std::type_index event_type, const std::any &event)
         for (const auto &subscription : it->second) {
             handlers.push_back(subscription.handler);
         }
+
     }
 
     for (const auto &handler : handlers) {
         handler(event);
     }
+
 }
+
 } // namespace epidemic::core::events

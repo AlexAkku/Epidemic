@@ -14,4 +14,5 @@ enum class FaultPoint {
 void SetFaultPoint(FaultPoint fault_point) noexcept;
 void ClearFaultPoint() noexcept;
 } // namespace epidemic::rhi::d3d11::testing
+
 #endif

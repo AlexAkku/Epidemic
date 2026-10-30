@@ -57,4 +57,5 @@ void BasicConfiguration::SetBool(std::string key, bool value) {
     std::scoped_lock lock(mutex_);
     bool_values_.insert_or_assign(std::move(key), value);
 }
+
 } // namespace epidemic::core::config

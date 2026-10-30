@@ -9,10 +9,12 @@ struct SerializationRuntimeTestAccess;
 
 class SerializerRegistry final : public ISerializerRegistry {
   public:
-    [[nodiscard]] foundation::Result<void> RegisterSerializer(std::shared_ptr<const ISerializer> serializer) override;
+    [[nodiscard]] foundation::Result<void>
+    RegisterSerializer(std::shared_ptr<const ISerializer> serializer) override;
     [[nodiscard]] foundation::Result<void> Freeze() override;
     [[nodiscard]] bool IsFrozen() const noexcept override;
-    [[nodiscard]] std::shared_ptr<const ISerializer> FindSerializer(foundation::StringId type_id) const override;
+    [[nodiscard]] std::shared_ptr<const ISerializer>
+    FindSerializer(foundation::StringId type_id) const override;
     [[nodiscard]] bool HasSerializer(foundation::StringId type_id) const override;
 
   private:
@@ -22,4 +24,5 @@ class SerializerRegistry final : public ISerializerRegistry {
     bool frozen_ = false;
     bool fail_next_registration_allocation_for_testing_ = false;
 };
+
 } // namespace epidemic::runtime

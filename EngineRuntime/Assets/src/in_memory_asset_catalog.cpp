@@ -28,6 +28,7 @@ namespace {
                 parts.pop_back();
                 continue;
             }
+
             parts.push_back(part);
             continue;
         }
@@ -40,8 +41,10 @@ namespace {
         if (!normalized.empty()) {
             normalized += '/';
         }
+
         normalized += element;
     }
+
     return absolute ? "/" + normalized : normalized;
 }
 
@@ -49,10 +52,12 @@ namespace {
     if (path.empty()) {
         return false;
     }
+
     // Any rooted slash/backslash form is host-rooted (POSIX, UNC, device path, etc.).
     if (path.front() == '/' || path.front() == '\\') {
         return true;
     }
+
     // Windows drive-relative paths ("C:foo" and "C:") are not engine-root-relative.
     return path.size() >= 2 && std::isalpha(static_cast<unsigned char>(path[0])) && path[1] == ':';
 }
@@ -76,15 +81,19 @@ namespace {
         if (part.empty() || part == ".") {
             continue;
         }
+
         if (part == "..") {
             if (depth == 0) {
                 return false;
             }
+
             --depth;
             continue;
         }
+
         ++depth;
     }
+
     return true;
 }
 
@@ -94,7 +103,9 @@ namespace {
         if (!seen.insert(dependency.asset_id).second) {
             return true;
         }
+
     }
+
     return false;
 }
 
@@ -104,9 +115,12 @@ namespace {
         if (!seen.insert(tag).second) {
             return true;
         }
+
     }
+
     return false;
 }
+
 } // namespace
 
 AssetLocation CanonicalizeAssetLocation(AssetLocation location) {
@@ -118,11 +132,13 @@ bool IsValidAssetLocation(const AssetLocation &location) noexcept {
     if (!IsValidAssetLocationKind(location.kind)) {
         return false;
     }
+
     if (!IsSafeRelativePath(location.path)) {
         return false;
     }
 
-    if ((location.kind == AssetLocationKind::PackageEntry || location.kind == AssetLocationKind::VirtualPath) &&
+    if ((location.kind == AssetLocationKind::PackageEntry ||
+         location.kind == AssetLocationKind::VirtualPath) &&
         !location.mount_id.IsValid()) {
         return false;
     }
@@ -137,7 +153,8 @@ bool IsValidAssetLocation(const AssetLocation &location) noexcept {
 foundation::Result<void> InMemoryAssetCatalog::RegisterAsset(const AssetMetadata &metadata) {
     if (sealed_) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("asset.catalog_sealed", "asset catalog is sealed and cannot be mutated"));
+            foundation::Error::Create("asset.catalog_sealed",
+                                      "asset catalog is sealed and cannot be mutated"));
     }
 
     auto normalized = ValidateAndNormalize(metadata);
@@ -153,6 +170,7 @@ foundation::Result<void> InMemoryAssetCatalog::RegisterAsset(const AssetMetadata
     if (fail_next_catalog_publication_for_testing_) {
         fail_next_catalog_publication_for_testing_ = false;
         throw std::bad_alloc{};
+
     }
 
     assets_.emplace(normalized.Value().id, std::move(normalized).Value());
@@ -188,11 +206,13 @@ std::vector<AssetMetadata> InMemoryAssetCatalog::FindByType(AssetType type) cons
         if (metadata.type == type) {
             matches.push_back(metadata);
         }
+
     }
 
-    std::sort(matches.begin(), matches.end(), [](const AssetMetadata &left, const AssetMetadata &right) {
-        return left.id.Raw() < right.id.Raw();
-    });
+    std::sort(matches.begin(), matches.end(),
+              [](const AssetMetadata &left, const AssetMetadata &right) {
+                  return left.id.Raw() < right.id.Raw();
+              });
     return matches;
 }
 
@@ -209,12 +229,15 @@ std::vector<AssetMetadata> InMemoryAssetCatalog::FindByTag(foundation::StringId 
                 matches.push_back(metadata);
                 break;
             }
+
         }
+
     }
 
-    std::sort(matches.begin(), matches.end(), [](const AssetMetadata &left, const AssetMetadata &right) {
-        return left.id.Raw() < right.id.Raw();
-    });
+    std::sort(matches.begin(), matches.end(),
+              [](const AssetMetadata &left, const AssetMetadata &right) {
+                  return left.id.Raw() < right.id.Raw();
+              });
     return matches;
 }
 
@@ -226,7 +249,8 @@ bool InMemoryAssetCatalog::IsSealed() const {
     return sealed_;
 }
 
-foundation::Result<AssetDependencyManifest> InMemoryAssetCatalog::BuildDependencyManifest(AssetId root) const {
+foundation::Result<AssetDependencyManifest>
+InMemoryAssetCatalog::BuildDependencyManifest(AssetId root) const {
     if (!root.IsValid()) {
         return foundation::Result<AssetDependencyManifest>::Failure(
             foundation::Error::Create("asset.invalid_id", "manifest root id must be valid"));
@@ -238,14 +262,17 @@ foundation::Result<AssetDependencyManifest> InMemoryAssetCatalog::BuildDependenc
     }
 
     AssetDependencyManifest manifest{};
+
     manifest.root = root;
 
     enum class VisitState : std::uint8_t {
         Visiting,
         Visited,
     };
+
     struct Frame {
         AssetId id{};
+
         std::size_t dependency_index = 0;
     };
 
@@ -263,7 +290,8 @@ foundation::Result<AssetDependencyManifest> InMemoryAssetCatalog::BuildDependenc
         const auto metadata = FindById(frame.id);
         if (!metadata) {
             return foundation::Result<AssetDependencyManifest>::Failure(
-                foundation::Error::Create("asset.missing_dependency", "required asset dependency is not registered"));
+                foundation::Error::Create("asset.missing_dependency",
+                                          "required asset dependency is not registered"));
         }
 
         if (frame.dependency_index >= metadata->dependencies.size()) {
@@ -276,18 +304,22 @@ foundation::Result<AssetDependencyManifest> InMemoryAssetCatalog::BuildDependenc
         const auto dependency_metadata = FindById(dependency.asset_id);
         if (!dependency_metadata) {
             if (dependency.required) {
-                return foundation::Result<AssetDependencyManifest>::Failure(foundation::Error::Create(
-                    "asset.missing_dependency", "required asset dependency is not registered"));
+                return foundation::Result<AssetDependencyManifest>::Failure(
+                    foundation::Error::Create("asset.missing_dependency",
+                                              "required asset dependency is not registered"));
             }
+
             const auto [requirement, inserted] =
                 manifest_requirements.emplace(dependency.asset_id, dependency.required);
             if (!inserted && dependency.required) {
                 requirement->second = true;
             }
+
             continue;
         }
 
-        const auto [requirement, inserted] = manifest_requirements.emplace(dependency.asset_id, dependency.required);
+        const auto [requirement, inserted] =
+            manifest_requirements.emplace(dependency.asset_id, dependency.required);
         if (!inserted && dependency.required) {
             requirement->second = true;
         }
@@ -296,8 +328,10 @@ foundation::Result<AssetDependencyManifest> InMemoryAssetCatalog::BuildDependenc
         if (state != states.end()) {
             if (state->second == VisitState::Visiting) {
                 return foundation::Result<AssetDependencyManifest>::Failure(
-                    foundation::Error::Create("asset.dependency_cycle", "asset dependency graph contains a cycle"));
+                    foundation::Error::Create("asset.dependency_cycle",
+                                              "asset dependency graph contains a cycle"));
             }
+
             continue;
         }
 
@@ -320,7 +354,8 @@ foundation::Result<AssetDependencyManifest> InMemoryAssetCatalog::BuildDependenc
 foundation::Result<AssetLocation> InMemoryAssetCatalog::Resolve(AssetId id) const {
     if (!id.IsValid()) {
         return foundation::Result<AssetLocation>::Failure(
-            foundation::Error::Create("asset.invalid_id", "asset location resolve id must be valid"));
+            foundation::Error::Create("asset.invalid_id",
+                                      "asset location resolve id must be valid"));
     }
 
     const auto iterator = assets_.find(id);
@@ -332,60 +367,75 @@ foundation::Result<AssetLocation> InMemoryAssetCatalog::Resolve(AssetId id) cons
     return foundation::Result<AssetLocation>::Success(iterator->second.location);
 }
 
-foundation::Result<AssetMetadata> InMemoryAssetCatalog::ValidateAndNormalize(const AssetMetadata &metadata) const {
+foundation::Result<AssetMetadata>
+InMemoryAssetCatalog::ValidateAndNormalize(const AssetMetadata &metadata) const {
     if (!metadata.id.IsValid()) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_id", "asset id must be valid before registration"));
+            foundation::Error::Create("asset.invalid_id",
+                                      "asset id must be valid before registration"));
     }
 
     if (!metadata.type.IsValid()) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_type", "asset type must be valid before registration"));
+            foundation::Error::Create("asset.invalid_type",
+                                      "asset type must be valid before registration"));
     }
 
     if (!IsValidAssetState(metadata.state)) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_state", "asset state is outside the declared enum domain"));
+            foundation::Error::Create("asset.invalid_state",
+                                      "asset state is outside the declared enum domain"));
     }
 
     if (!IsValidAssetLocationKind(metadata.location.kind)) {
-        return foundation::Result<AssetMetadata>::Failure(foundation::Error::Create(
-            "asset.invalid_location", "asset location kind is outside the declared enum domain"));
+        return foundation::Result<AssetMetadata>::Failure(
+            foundation::Error::Create("asset.invalid_location",
+                                      "asset location kind is outside the declared enum domain"));
     }
 
     if (metadata.location.path.size() > kMaxAssetPathBytes) {
-        return foundation::Result<AssetMetadata>::Failure(foundation::Error::Create(
-            "asset.metadata_too_large", "asset location path exceeds the supported size limit"));
+        return foundation::Result<AssetMetadata>::Failure(
+            foundation::Error::Create("asset.metadata_too_large",
+                                      "asset location path exceeds the supported size limit"));
     }
+
     if (metadata.dependencies.size() > kMaxAssetDependencies) {
-        return foundation::Result<AssetMetadata>::Failure(foundation::Error::Create(
-            "asset.metadata_too_large", "asset dependency list exceeds the supported size limit"));
+        return foundation::Result<AssetMetadata>::Failure(
+            foundation::Error::Create("asset.metadata_too_large",
+                                      "asset dependency list exceeds the supported size limit"));
     }
+
     if (metadata.tags.size() > kMaxAssetTags) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.metadata_too_large", "asset tag list exceeds the supported size limit"));
+            foundation::Error::Create("asset.metadata_too_large",
+                                      "asset tag list exceeds the supported size limit"));
     }
 
     if (!IsValidAssetLocation(metadata.location)) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_location", "asset location must be an engine-root-relative path"));
+            foundation::Error::Create("asset.invalid_location",
+                                      "asset location must be an engine-root-relative path"));
     }
 
     if (metadata.version == 0) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_version", "asset metadata version must be greater than zero"));
+            foundation::Error::Create("asset.invalid_version",
+                                      "asset metadata version must be greater than zero"));
     }
 
     for (const AssetDependency &dependency : metadata.dependencies) {
         if (!dependency.asset_id.IsValid()) {
             return foundation::Result<AssetMetadata>::Failure(
-                foundation::Error::Create("asset.invalid_dependency", "asset dependency id must be valid"));
+                foundation::Error::Create("asset.invalid_dependency",
+                                          "asset dependency id must be valid"));
         }
 
         if (dependency.asset_id == metadata.id) {
             return foundation::Result<AssetMetadata>::Failure(
-                foundation::Error::Create("asset.self_dependency", "asset cannot depend on itself"));
+                foundation::Error::Create("asset.self_dependency",
+                                          "asset cannot depend on itself"));
         }
+
     }
 
     for (const foundation::StringId tag : metadata.tags) {
@@ -393,11 +443,13 @@ foundation::Result<AssetMetadata> InMemoryAssetCatalog::ValidateAndNormalize(con
             return foundation::Result<AssetMetadata>::Failure(
                 foundation::Error::Create("asset.invalid_tag", "asset tag id must be valid"));
         }
+
     }
 
     if (HasDuplicateDependency(metadata.dependencies)) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_dependency", "duplicate asset dependencies are not allowed"));
+            foundation::Error::Create("asset.invalid_dependency",
+                                      "duplicate asset dependencies are not allowed"));
     }
 
     if (HasDuplicateTag(metadata.tags)) {
@@ -408,13 +460,15 @@ foundation::Result<AssetMetadata> InMemoryAssetCatalog::ValidateAndNormalize(con
     if (fail_next_metadata_candidate_build_for_testing_) {
         fail_next_metadata_candidate_build_for_testing_ = false;
         throw std::bad_alloc{};
+
     }
 
     AssetMetadata normalized = metadata;
     normalized.location = CanonicalizeAssetLocation(normalized.location);
     if (!IsValidAssetLocation(normalized.location)) {
         return foundation::Result<AssetMetadata>::Failure(
-            foundation::Error::Create("asset.invalid_location", "asset location must contain a valid canonical path"));
+            foundation::Error::Create("asset.invalid_location",
+                                      "asset location must contain a valid canonical path"));
     }
 
     return foundation::Result<AssetMetadata>::Success(std::move(normalized));

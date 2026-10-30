@@ -11,4 +11,5 @@ class IStreamingPriorityResolver {
 
     [[nodiscard]] virtual StreamingPriorityClass ResolvePriority(ChunkId chunk) const = 0;
 };
+
 } // namespace epidemic::runtime::streaming

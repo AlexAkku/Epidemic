@@ -16,4 +16,5 @@ class IViewSystem {
     [[nodiscard]] virtual ViewId GetMainView() const = 0;
     [[nodiscard]] virtual ViewLifecycle GetViewLifecycle(ViewId view) const = 0;
 };
+
 } // namespace epidemic::runtime::renderer

@@ -11,7 +11,8 @@ namespace {
 
 constexpr auto NavigationOutputType =
     construction::PlacementOutputTypeId::FromString("construction.output.navigation_layer");
-constexpr auto ConstructionPlacedObjectDomain = GameplayDomainId::FromString("framework.construction.placed_object");
+constexpr auto ConstructionPlacedObjectDomain =
+    GameplayDomainId::FromString("framework.construction.placed_object");
 constexpr std::uint16_t NavigationPayloadVersion = 1;
 constexpr std::size_t NavigationPayloadSize = 70;
 
@@ -49,41 +50,49 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     AppendU64(bytes, std::bit_cast<std::uint64_t>(value));
 }
 
-[[nodiscard]] bool ReadU8(std::span<const std::byte> bytes, std::size_t &offset, std::uint8_t &value) noexcept {
+[[nodiscard]] bool ReadU8(std::span<const std::byte> bytes, std::size_t &offset,
+                          std::uint8_t &value) noexcept {
     if (offset >= bytes.size())
         return false;
     value = std::to_integer<std::uint8_t>(bytes[offset++]);
     return true;
 }
 
-[[nodiscard]] bool ReadU16(std::span<const std::byte> bytes, std::size_t &offset, std::uint16_t &value) noexcept {
+[[nodiscard]] bool ReadU16(std::span<const std::byte> bytes, std::size_t &offset,
+                           std::uint16_t &value) noexcept {
     if (bytes.size() - offset < 2)
         return false;
     value = 0;
     for (unsigned shift = 0; shift < 16; shift += 8)
-        value |= static_cast<std::uint16_t>(std::to_integer<std::uint8_t>(bytes[offset++])) << shift;
+        value |= static_cast<std::uint16_t>(std::to_integer<std::uint8_t>(bytes[offset++]))
+                 << shift;
     return true;
 }
 
-[[nodiscard]] bool ReadU32(std::span<const std::byte> bytes, std::size_t &offset, std::uint32_t &value) noexcept {
+[[nodiscard]] bool ReadU32(std::span<const std::byte> bytes, std::size_t &offset,
+                           std::uint32_t &value) noexcept {
     if (bytes.size() - offset < 4)
         return false;
     value = 0;
     for (unsigned shift = 0; shift < 32; shift += 8)
-        value |= static_cast<std::uint32_t>(std::to_integer<std::uint8_t>(bytes[offset++])) << shift;
+        value |= static_cast<std::uint32_t>(std::to_integer<std::uint8_t>(bytes[offset++]))
+                 << shift;
     return true;
 }
 
-[[nodiscard]] bool ReadU64(std::span<const std::byte> bytes, std::size_t &offset, std::uint64_t &value) noexcept {
+[[nodiscard]] bool ReadU64(std::span<const std::byte> bytes, std::size_t &offset,
+                           std::uint64_t &value) noexcept {
     if (bytes.size() - offset < 8)
         return false;
     value = 0;
     for (unsigned shift = 0; shift < 64; shift += 8)
-        value |= static_cast<std::uint64_t>(std::to_integer<std::uint8_t>(bytes[offset++])) << shift;
+        value |= static_cast<std::uint64_t>(std::to_integer<std::uint8_t>(bytes[offset++]))
+                 << shift;
     return true;
 }
 
-[[nodiscard]] bool ReadI32(std::span<const std::byte> bytes, std::size_t &offset, std::int32_t &value) noexcept {
+[[nodiscard]] bool ReadI32(std::span<const std::byte> bytes, std::size_t &offset,
+                           std::int32_t &value) noexcept {
     std::uint32_t raw = 0;
     if (!ReadU32(bytes, offset, raw))
         return false;
@@ -91,7 +100,8 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     return true;
 }
 
-[[nodiscard]] bool ReadI64(std::span<const std::byte> bytes, std::size_t &offset, std::int64_t &value) noexcept {
+[[nodiscard]] bool ReadI64(std::span<const std::byte> bytes, std::size_t &offset,
+                           std::int64_t &value) noexcept {
     std::uint64_t raw = 0;
     if (!ReadU64(bytes, offset, raw))
         return false;
@@ -113,53 +123,64 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     return raw <= static_cast<std::uint8_t>(navigation_semantics::NavigationLayerLifetime::Timed);
 }
 
-[[nodiscard]] bool SameLayerSemantics(const navigation_semantics::NavigationSemanticLayer &current,
-                                      const navigation_semantics::NavigationSemanticLayer &desired) noexcept {
-    return current.id == desired.id && current.area == desired.area && current.source == desired.source &&
-           current.type == desired.type && current.priority == desired.priority &&
-           current.lifetime == desired.lifetime && current.decision == desired.decision &&
+[[nodiscard]] bool
+SameLayerSemantics(const navigation_semantics::NavigationSemanticLayer &current,
+                   const navigation_semantics::NavigationSemanticLayer &desired) noexcept {
+    return current.id == desired.id && current.area == desired.area &&
+           current.source == desired.source && current.type == desired.type &&
+           current.priority == desired.priority && current.lifetime == desired.lifetime &&
+           current.decision == desired.decision &&
            current.additive_cost_micro == desired.additive_cost_micro &&
            current.multiplier_micro == desired.multiplier_micro && current.tags.Values().empty() &&
            current.requirement == desired.requirement &&
            current.required_parameter_micro == desired.required_parameter_micro &&
            current.expires_at == desired.expires_at;
 }
+
 } // namespace
 
 bool TraversalNavigationCapabilityProvider::HasCapability(
-    GameplayObjectRef subject, TypeId capability, navigation_semantics::Fixed min_parameter_micro) const noexcept {
-    return traversal_.HasCapability(subject, traversal::TraversalCapabilityId{capability}, min_parameter_micro);
+    GameplayObjectRef subject, TypeId capability,
+    navigation_semantics::Fixed min_parameter_micro) const noexcept {
+    return traversal_.HasCapability(subject, traversal::TraversalCapabilityId{capability},
+                                    min_parameter_micro);
 }
 
 navigation_semantics::NavigationPermissionResult TraversalNavigationAdapter::CanUseLink(
-    const traversal::TraversalService &traversal, const navigation_semantics::NavigationSemanticsService &navigation,
-    GameplayObjectRef subject, navigation_semantics::NavigationLinkId link, const GameplayContext &context) const {
+    const traversal::TraversalService &traversal,
+    const navigation_semantics::NavigationSemanticsService &navigation, GameplayObjectRef subject,
+    navigation_semantics::NavigationLinkId link, const GameplayContext &context) const {
     const auto *state = traversal.FindState(subject);
-    const auto traversal_mode = state != nullptr
-                                    ? navigation_semantics::TraversalModeSemanticId{state->current_mode.value}
-                                    : navigation_semantics::TraversalModeSemanticId{};
+    const auto traversal_mode =
+        state != nullptr ? navigation_semantics::TraversalModeSemanticId{state->current_mode.value}
 
-    // NavigationSemantics::CanUseLink is the canonical link-aware evaluator. It forwards the complete
-    // GameplayContext to the same evaluator used by path queries and also enforces the concrete link state.
+                         : navigation_semantics::TraversalModeSemanticId{};
+
+    // NavigationSemantics::CanUseLink is the canonical link-aware evaluator. It forwards the
+    // complete GameplayContext to the same evaluator used by path queries and also enforces the
+    // concrete link state.
     auto nav_result = navigation.CanUseLink(subject, link, traversal_mode, context);
     if (nav_result.decision == navigation_semantics::NavigationDecisionKind::Deny)
         return nav_result;
 
-    if (state == nullptr ||
-        traversal.CanUseMode(subject, state->current_mode).kind == traversal::TraversalResultKind::Rejected) {
+    if (state == nullptr || traversal.CanUseMode(subject, state->current_mode).kind ==
+                                traversal::TraversalResultKind::Rejected) {
         nav_result.decision = navigation_semantics::NavigationDecisionKind::Deny;
-        nav_result.availability = navigation_semantics::NavigationAvailability::TraversalUnsupported;
-        nav_result.reasons.push_back(
-            {navigation_semantics::NavigationReasonId::FromString("navigation.traversal_mode_rejected"),
-             {},
-             {},
-             link,
-             navigation_semantics::NavigationDecisionKind::Deny});
+        nav_result.availability =
+            navigation_semantics::NavigationAvailability::TraversalUnsupported;
+        nav_result.reasons.push_back({navigation_semantics::NavigationReasonId::FromString(
+                                          "navigation.traversal_mode_rejected"),
+                                      {},
+                                      {},
+                                      link,
+                                      navigation_semantics::NavigationDecisionKind::Deny});
     }
+
     return nav_result;
 }
 
-std::vector<std::byte> EncodeNavigationLayerPayload(const ConstructionNavigationLayerPayload &payload) {
+std::vector<std::byte>
+EncodeNavigationLayerPayload(const ConstructionNavigationLayerPayload &payload) {
     std::vector<std::byte> bytes;
     bytes.reserve(NavigationPayloadSize);
     AppendU8(bytes, static_cast<std::uint8_t>('E'));
@@ -182,10 +203,11 @@ std::vector<std::byte> EncodeNavigationLayerPayload(const ConstructionNavigation
     return bytes;
 }
 
-navigation_semantics::NavigationLayerId NavigationLayerIdFor(construction::PlacedObjectId placed_object,
-                                                             TypeId source_key) noexcept {
+navigation_semantics::NavigationLayerId
+NavigationLayerIdFor(construction::PlacedObjectId placed_object, TypeId source_key) noexcept {
     if (!placed_object.IsValid() || !source_key.IsValid())
         return {};
+
     auto high = Mix64(placed_object.value.High() ^ source_key.Raw() ^ 0x4E41564C41594552ull);
     auto low = Mix64(placed_object.value.Low() ^ source_key.Raw() ^ 0x434F4E5354525543ull);
     if (high == 0 && low == 0)
@@ -193,8 +215,8 @@ navigation_semantics::NavigationLayerId NavigationLayerIdFor(construction::Place
     return navigation_semantics::NavigationLayerId::FromRaw(high, low);
 }
 
-foundation::Result<ConstructionNavigationLayerPayload>
-ConstructionNavigationAdapter::DecodePayload(const construction::PlacementOutputOperation &output) const {
+foundation::Result<ConstructionNavigationLayerPayload> ConstructionNavigationAdapter::DecodePayload(
+    const construction::PlacementOutputOperation &output) const {
     if (output.type != NavigationOutputType || !output.placed_record.IsValid() ||
         output.payload.size() != NavigationPayloadSize)
         return foundation::Result<ConstructionNavigationLayerPayload>::Failure(
@@ -210,16 +232,19 @@ ConstructionNavigationAdapter::DecodePayload(const construction::PlacementOutput
     std::int32_t priority = 0;
     std::int64_t additive = 0, multiplier = 0, required_parameter = 0, expires_at = 0;
 
-    if (!ReadU8(bytes, offset, magic_e) || !ReadU8(bytes, offset, magic_n) || !ReadU8(bytes, offset, magic_a) ||
-        !ReadU8(bytes, offset, magic_v) || !ReadU16(bytes, offset, version) || !ReadU8(bytes, offset, operation) ||
-        !ReadU8(bytes, offset, decision) || !ReadU8(bytes, offset, lifetime) || !ReadU8(bytes, offset, flags) ||
-        !ReadU64(bytes, offset, source_key) || !ReadU64(bytes, offset, layer_type) ||
-        !ReadI32(bytes, offset, priority) || !ReadI64(bytes, offset, additive) || !ReadI64(bytes, offset, multiplier) ||
+    if (!ReadU8(bytes, offset, magic_e) || !ReadU8(bytes, offset, magic_n) ||
+        !ReadU8(bytes, offset, magic_a) || !ReadU8(bytes, offset, magic_v) ||
+        !ReadU16(bytes, offset, version) || !ReadU8(bytes, offset, operation) ||
+        !ReadU8(bytes, offset, decision) || !ReadU8(bytes, offset, lifetime) ||
+        !ReadU8(bytes, offset, flags) || !ReadU64(bytes, offset, source_key) ||
+        !ReadU64(bytes, offset, layer_type) || !ReadI32(bytes, offset, priority) ||
+        !ReadI64(bytes, offset, additive) || !ReadI64(bytes, offset, multiplier) ||
         !ReadU64(bytes, offset, requirement) || !ReadI64(bytes, offset, required_parameter) ||
-        !ReadI64(bytes, offset, expires_at) || offset != bytes.size() || magic_e != static_cast<std::uint8_t>('E') ||
-        magic_n != static_cast<std::uint8_t>('N') || magic_a != static_cast<std::uint8_t>('A') ||
-        magic_v != static_cast<std::uint8_t>('V') || version != NavigationPayloadVersion ||
-        !IsValidOperation(operation) || !IsValidDecision(decision) || !IsValidLifetime(lifetime) || (flags & ~1u) != 0u)
+        !ReadI64(bytes, offset, expires_at) || offset != bytes.size() ||
+        magic_e != static_cast<std::uint8_t>('E') || magic_n != static_cast<std::uint8_t>('N') ||
+        magic_a != static_cast<std::uint8_t>('A') || magic_v != static_cast<std::uint8_t>('V') ||
+        version != NavigationPayloadVersion || !IsValidOperation(operation) ||
+        !IsValidDecision(decision) || !IsValidLifetime(lifetime) || (flags & ~1u) != 0u)
         return foundation::Result<ConstructionNavigationLayerPayload>::Failure(
             Error("gameplay.integration.construction_navigation_payload_invalid",
                   "construction navigation output schema is invalid or unsupported"));
@@ -228,6 +253,7 @@ ConstructionNavigationAdapter::DecodePayload(const construction::PlacementOutput
     payload.operation = static_cast<ConstructionNavigationOperation>(operation);
     payload.source_key = TypeId::FromRaw(source_key);
     payload.layer_type = navigation_semantics::NavigationLayerTypeId{TypeId::FromRaw(layer_type)};
+
     payload.decision = static_cast<navigation_semantics::NavigationDecisionKind>(decision);
     payload.lifetime = static_cast<navigation_semantics::NavigationLayerLifetime>(lifetime);
     payload.priority = priority;
@@ -238,13 +264,15 @@ ConstructionNavigationAdapter::DecodePayload(const construction::PlacementOutput
     if ((flags & 1u) != 0u)
         payload.expires_at = GameplayTimePoint{expires_at};
 
-    if (!payload.source_key.IsValid() || payload.multiplier_micro < 0 || payload.required_parameter_micro < 0)
+    if (!payload.source_key.IsValid() || payload.multiplier_micro < 0 ||
+        payload.required_parameter_micro < 0)
         return foundation::Result<ConstructionNavigationLayerPayload>::Failure(
             Error("gameplay.integration.construction_navigation_payload_invalid",
                   "construction navigation output contains invalid semantics"));
     if (payload.operation != ConstructionNavigationOperation::Remove) {
         if (!output.subject.IsValid() || !payload.layer_type.IsValid() ||
-            (payload.lifetime == navigation_semantics::NavigationLayerLifetime::Timed && !payload.expires_at) ||
+            (payload.lifetime == navigation_semantics::NavigationLayerLifetime::Timed &&
+             !payload.expires_at) ||
             ((payload.decision == navigation_semantics::NavigationDecisionKind::RequireCapability ||
               payload.decision == navigation_semantics::NavigationDecisionKind::RequireFact) &&
              !payload.requirement.IsValid()))
@@ -252,6 +280,7 @@ ConstructionNavigationAdapter::DecodePayload(const construction::PlacementOutput
                 Error("gameplay.integration.construction_navigation_payload_invalid",
                       "construction navigation add/update semantics are incomplete"));
     }
+
     return foundation::Result<ConstructionNavigationLayerPayload>::Success(payload);
 }
 
@@ -268,6 +297,7 @@ ConstructionNavigationAdapter::BuildLayer(const construction::PlacementOutputOpe
     layer.id = stable_id;
     layer.area = output.subject;
     layer.source = GameplayObjectRef{ConstructionPlacedObjectDomain, output.placed_record.value};
+
     layer.type = payload.layer_type;
     layer.decision = payload.decision;
     layer.lifetime = payload.lifetime;
@@ -277,12 +307,15 @@ ConstructionNavigationAdapter::BuildLayer(const construction::PlacementOutputOpe
     layer.requirement = payload.requirement;
     layer.required_parameter_micro = payload.required_parameter_micro;
     layer.expires_at = payload.expires_at;
-    return foundation::Result<navigation_semantics::NavigationSemanticLayer>::Success(std::move(layer));
+    return foundation::Result<navigation_semantics::NavigationSemanticLayer>::Success(
+        std::move(layer));
 }
 
-foundation::Result<construction::PlacementOutputId> ConstructionNavigationAdapter::QueueNavigationOperation(
-    construction::ConstructionService &construction, construction::PlacedObjectId placed_object, GameplayObjectRef area,
-    const ConstructionNavigationLayerPayload &payload, GameplayContext context) const {
+foundation::Result<construction::PlacementOutputId>
+ConstructionNavigationAdapter::QueueNavigationOperation(
+    construction::ConstructionService &construction, construction::PlacedObjectId placed_object,
+    GameplayObjectRef area, const ConstructionNavigationLayerPayload &payload,
+    GameplayContext context) const {
     if (!placed_object.IsValid() || !payload.source_key.IsValid() ||
         (payload.operation != ConstructionNavigationOperation::Remove && !area.IsValid()))
         return foundation::Result<construction::PlacementOutputId>::Failure(
@@ -297,10 +330,9 @@ foundation::Result<construction::PlacementOutputId> ConstructionNavigationAdapte
     return construction.EnqueuePlacedObjectOutput(placed_object, std::move(output), context);
 }
 
-foundation::Result<std::size_t>
-ConstructionNavigationAdapter::ProcessPendingOutputs(construction::ConstructionService &construction,
-                                                     navigation_semantics::NavigationSemanticsService &navigation,
-                                                     GameplayContext context) const {
+foundation::Result<std::size_t> ConstructionNavigationAdapter::ProcessPendingOutputs(
+    construction::ConstructionService &construction,
+    navigation_semantics::NavigationSemanticsService &navigation, GameplayContext context) const {
     std::size_t processed = 0;
     for (const auto &entry : construction.PendingOutputs()) {
         if (entry.operation.type != NavigationOutputType)
@@ -310,7 +342,8 @@ ConstructionNavigationAdapter::ProcessPendingOutputs(construction::ConstructionS
         if (!decoded)
             return foundation::Result<std::size_t>::Failure(decoded.GetError());
         const auto &payload = decoded.Value();
-        const auto stable_id = NavigationLayerIdFor(entry.operation.placed_record, payload.source_key);
+        const auto stable_id =
+            NavigationLayerIdFor(entry.operation.placed_record, payload.source_key);
         if (!stable_id.IsValid())
             return foundation::Result<std::size_t>::Failure(
                 Error("gameplay.integration.construction_navigation_identity_invalid",
@@ -324,6 +357,7 @@ ConstructionNavigationAdapter::ProcessPendingOutputs(construction::ConstructionS
                 if (!removed)
                     return foundation::Result<std::size_t>::Failure(removed.GetError());
             }
+
         } else {
             auto built = BuildLayer(entry.operation, payload, stable_id);
             if (!built)
@@ -338,23 +372,28 @@ ConstructionNavigationAdapter::ProcessPendingOutputs(construction::ConstructionS
                 } else if (!SameLayerSemantics(*existing, desired)) {
                     return foundation::Result<std::size_t>::Failure(
                         Error("gameplay.integration.construction_navigation_add_conflict",
-                              "construction navigation add conflicts with the existing stable layer"));
+                              "construction navigation add conflicts with the existing stable "
+                              "layer"));
                 }
+
             } else {
                 if (existing == nullptr)
                     return foundation::Result<std::size_t>::Failure(
                         Error("gameplay.integration.construction_navigation_update_missing",
                               "construction navigation update targets a missing stable layer"));
                 if (existing->lifetime != desired.lifetime)
-                    return foundation::Result<std::size_t>::Failure(
-                        Error("gameplay.integration.construction_navigation_update_identity_conflict",
-                              "construction navigation update cannot change immutable layer lifetime"));
+                    return foundation::Result<std::size_t>::Failure(Error(
+                        "gameplay.integration.construction_navigation_update_identity_conflict",
+                        "construction navigation update cannot change immutable layer lifetime"));
                 if (!SameLayerSemantics(*existing, desired)) {
-                    auto updated = navigation.UpdateLayer(stable_id, std::move(desired), existing->revision, context);
+                    auto updated = navigation.UpdateLayer(stable_id, std::move(desired),
+                                                          existing->revision, context);
                     if (!updated)
                         return foundation::Result<std::size_t>::Failure(updated.GetError());
                 }
+
             }
+
         }
 
         auto acknowledged = construction.AcknowledgeOutput(entry.id, context);
@@ -362,22 +401,25 @@ ConstructionNavigationAdapter::ProcessPendingOutputs(construction::ConstructionS
             return foundation::Result<std::size_t>::Failure(acknowledged.GetError());
         ++processed;
     }
+
     return foundation::Result<std::size_t>::Success(processed);
 }
 
-foundation::Result<void>
-ConstructionTraversalAdapter::CancelTraversalSessions(traversal::TraversalService &traversal,
-                                                      std::span<const traversal::TraversalSessionId> sessions,
-                                                      GameplayContext context) const {
+foundation::Result<void> ConstructionTraversalAdapter::CancelTraversalSessions(
+    traversal::TraversalService &traversal, std::span<const traversal::TraversalSessionId> sessions,
+    GameplayContext context) const {
     const auto reason = traversal::TraversalReasonId::FromString("traversal.route_invalidated");
     for (const auto session : sessions) {
-        // A repeated reconciliation pass is allowed after the session has already reached a terminal state.
+        // A repeated reconciliation pass is allowed after the session has already reached a
+        // terminal state.
         if (traversal.FindSession(session) == nullptr)
             continue;
         auto cancelled = traversal.CancelSession(session, reason, context);
         if (!cancelled)
             return cancelled;
     }
+
     return foundation::Result<void>::Success();
 }
+
 } // namespace epidemic::gameplay::traversal_navigation_construction

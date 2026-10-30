@@ -16,4 +16,5 @@ class IResidencyController {
     [[nodiscard]] virtual foundation::Result<void> DeactivateChunk(ChunkId chunk) = 0;
     [[nodiscard]] virtual foundation::Result<void> UnloadChunk(ChunkId chunk) = 0;
 };
+
 } // namespace epidemic::runtime::streaming

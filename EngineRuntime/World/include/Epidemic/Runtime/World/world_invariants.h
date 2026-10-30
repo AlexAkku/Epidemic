@@ -17,6 +17,7 @@ namespace epidemic::runtime {
     case ResidencyState::Unloading:
         return true;
     }
+
     return false;
 }
 
@@ -27,6 +28,7 @@ namespace epidemic::runtime {
     case ObjectRealityLevel::Physical:
         return true;
     }
+
     return false;
 }
 
@@ -39,14 +41,14 @@ namespace epidemic::runtime {
     case PersistenceTier::QuestCritical:
         return true;
     }
+
     return false;
 }
 
-[[nodiscard]] foundation::Result<void> ValidateRealityResidencyCombination(ObjectRealityLevel reality,
-                                                                           ResidencyState residency);
+[[nodiscard]] foundation::Result<void>
+ValidateRealityResidencyCombination(ObjectRealityLevel reality, ResidencyState residency);
 
-[[nodiscard]] foundation::Result<void> ValidateWorldObjectInvariant(const WorldObjectSnapshot &object,
-                                                                    const IRegionRegistry &regions,
-                                                                    const IChunkRegistry &chunks,
-                                                                    const IWorldQuery &objects);
+[[nodiscard]] foundation::Result<void>
+ValidateWorldObjectInvariant(const WorldObjectSnapshot &object, const IRegionRegistry &regions,
+                             const IChunkRegistry &chunks, const IWorldQuery &objects);
 } // namespace epidemic::runtime

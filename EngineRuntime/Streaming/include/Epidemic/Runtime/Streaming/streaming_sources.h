@@ -19,7 +19,8 @@ class IStreamingPersistenceSource {
   public:
     virtual ~IStreamingPersistenceSource() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> PrepareChunkData(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    PrepareChunkData(const StreamingRequest &request) = 0;
 };
 
 class IStreamingResourceSource {
@@ -28,7 +29,8 @@ class IStreamingResourceSource {
     // success. Streaming itself never repeats a successfully completed release phase.
     virtual ~IStreamingResourceSource() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> PrepareChunkResources(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    PrepareChunkResources(const StreamingRequest &request) = 0;
     [[nodiscard]] virtual foundation::Result<void> ReleaseChunkResources(ChunkId chunk) = 0;
 };
 
@@ -43,7 +45,8 @@ class IStreamingDataSource {
     // partial result has been durably accounted.
     virtual ~IStreamingDataSource() = default;
 
-    [[nodiscard]] virtual foundation::Result<ProgressiveLoadPlan> BuildLoadPlan(const StreamingRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<ProgressiveLoadPlan>
+    BuildLoadPlan(const StreamingRequest &request) = 0;
     [[nodiscard]] virtual foundation::Result<StreamingStepResult>
     ExecuteStep(const StreamingRequest &request, StreamingPlanStepRecord step,
                 const RuntimeBudget &available_budget) = 0;
@@ -64,6 +67,8 @@ class IStreamingPriorityProvider {
   public:
     virtual ~IStreamingPriorityProvider() = default;
 
-    [[nodiscard]] virtual StreamingPriorityClass GetPriority(const StreamingTarget &target) const = 0;
+    [[nodiscard]] virtual StreamingPriorityClass
+    GetPriority(const StreamingTarget &target) const = 0;
 };
+
 } // namespace epidemic::runtime::streaming

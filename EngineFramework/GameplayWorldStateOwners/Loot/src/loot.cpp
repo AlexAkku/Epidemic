@@ -17,12 +17,18 @@ template <class E> [[nodiscard]] constexpr bool EnumInRange(E value, E last) noe
     const auto raw = static_cast<U>(value);
     return raw >= 0 && raw <= static_cast<U>(last);
 }
+
 } // namespace
-LootService::LootService() : execution_ids_(GameplayObjectId::FromString("framework.loot.executions").High()) {
+
+LootService::LootService()
+    : execution_ids_(GameplayObjectId::FromString("framework.loot.executions").High()) {
 }
-foundation::Result<RewardTypeId> LootService::RegisterRewardHandler(std::string name, IRewardHandler *handler) {
+
+foundation::Result<RewardTypeId> LootService::RegisterRewardHandler(std::string name,
+                                                                    IRewardHandler *handler) {
     if (frozen_)
-        return foundation::Result<RewardTypeId>::Failure(Error("gameplay.registry_frozen", "loot registry frozen"));
+        return foundation::Result<RewardTypeId>::Failure(
+            Error("gameplay.registry_frozen", "loot registry frozen"));
     const auto id = RewardTypeId::FromString(name);
     if (name.empty() || !handler || handler->Type() != id || handlers_.contains(id))
         return foundation::Result<RewardTypeId>::Failure(
@@ -30,6 +36,7 @@ foundation::Result<RewardTypeId> LootService::RegisterRewardHandler(std::string 
     handlers_[id] = handler;
     return foundation::Result<RewardTypeId>::Success(id);
 }
+
 foundation::Result<RewardDefinitionId> LootService::RegisterRewardDefinition(RewardDefinition d) {
     if (frozen_)
         return foundation::Result<RewardDefinitionId>::Failure(
@@ -40,17 +47,19 @@ foundation::Result<RewardDefinitionId> LootService::RegisterRewardDefinition(Rew
     const auto e = RewardDefinitionId::FromString(d.canonical_name);
     if (!d.id.IsValid())
         d.id = e;
-    if (d.id != e || !d.type.IsValid() || d.min_quantity_micro < 0 || d.max_quantity_micro < d.min_quantity_micro ||
-        rewards_.contains(d.id))
+    if (d.id != e || !d.type.IsValid() || d.min_quantity_micro < 0 ||
+        d.max_quantity_micro < d.min_quantity_micro || rewards_.contains(d.id))
         return foundation::Result<RewardDefinitionId>::Failure(
             Error("gameplay.loot.reward_invalid", "invalid or duplicate reward definition"));
     const auto id = d.id;
     rewards_.emplace(id, std::move(d));
     return foundation::Result<RewardDefinitionId>::Success(id);
 }
+
 foundation::Result<LootTableId> LootService::RegisterLootTable(LootTableDefinition d) {
     if (frozen_)
-        return foundation::Result<LootTableId>::Failure(Error("gameplay.registry_frozen", "loot registry frozen"));
+        return foundation::Result<LootTableId>::Failure(
+            Error("gameplay.registry_frozen", "loot registry frozen"));
     if (d.canonical_name.empty() || d.entries.empty())
         return foundation::Result<LootTableId>::Failure(
             Error("gameplay.loot.table_invalid", "loot table name and entries required"));
@@ -64,14 +73,17 @@ foundation::Result<LootTableId> LootService::RegisterLootTable(LootTableDefiniti
     std::unordered_set<LootEntryId, IdHash> ids;
     for (const auto &entry : d.entries) {
         if (!entry.id.IsValid() || (!entry.reward.IsValid() && !entry.nested_table.IsValid()) ||
-            (entry.reward.IsValid() && entry.nested_table.IsValid()) || entry.chance_micro > 1'000'000 ||
-            !ids.insert(entry.id).second)
-            return foundation::Result<LootTableId>::Failure(Error("gameplay.loot.entry_invalid", "invalid loot entry"));
+            (entry.reward.IsValid() && entry.nested_table.IsValid()) ||
+            entry.chance_micro > 1'000'000 || !ids.insert(entry.id).second)
+            return foundation::Result<LootTableId>::Failure(
+                Error("gameplay.loot.entry_invalid", "invalid loot entry"));
     }
+
     const auto id = d.id;
     tables_.emplace(id, std::move(d));
     return foundation::Result<LootTableId>::Success(id);
 }
+
 foundation::Result<void> LootService::ValidateNestedTables() const {
     std::unordered_map<LootTableId, std::uint8_t, IdHash> marks;
     const auto visit = [&](auto &&self, LootTableId id) -> bool {
@@ -90,17 +102,21 @@ foundation::Result<void> LootService::ValidateNestedTables() const {
             if (e.nested_table.IsValid() && !self(self, e.nested_table))
                 return false;
         }
+
         m = 2;
         return true;
     };
+
     for (const auto &[id, t] : tables_) {
         (void)t;
         if (!visit(visit, id))
             return foundation::Result<void>::Failure(
                 Error("gameplay.loot.table_cycle", "loot table has cycle or unknown reference"));
     }
+
     return foundation::Result<void>::Success();
 }
+
 foundation::Result<void> LootService::Freeze() {
     auto valid = ValidateNestedTables();
     if (!valid)
@@ -111,6 +127,7 @@ foundation::Result<void> LootService::Freeze() {
             return foundation::Result<void>::Failure(
                 Error("gameplay.loot.reward_handler_missing", "reward definition has no handler"));
     }
+
     for (const auto &[id, table] : tables_) {
         (void)id;
         std::uint64_t total_weight = 0;
@@ -119,56 +136,77 @@ foundation::Result<void> LootService::Freeze() {
                               table.policy == LootRollPolicy::PickNWithoutReplacement;
         for (const auto &entry : table.entries) {
             if (entry.condition.IsValid() && conditions_ == nullptr)
-                return foundation::Result<void>::Failure(Error("gameplay.loot.condition_provider_missing",
-                                                               "conditional loot requires a condition provider"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.loot.condition_provider_missing",
+                          "conditional loot requires a condition provider"));
             if (weighted) {
                 if (entry.weight > UINT64_MAX - total_weight)
                     return foundation::Result<void>::Failure(
-                        Error("gameplay.loot.weight_overflow", "loot table weight sum overflows uint64"));
+                        Error("gameplay.loot.weight_overflow",
+                              "loot table weight sum overflows uint64"));
                 total_weight += entry.weight;
             }
+
         }
+
         if (weighted && total_weight == 0)
             return foundation::Result<void>::Failure(
-                Error("gameplay.loot.zero_weight_table", "weighted loot table must contain positive total weight"));
+                Error("gameplay.loot.zero_weight_table",
+                      "weighted loot table must contain positive total weight"));
     }
+
     frozen_ = true;
     return foundation::Result<void>::Success();
 }
+
 foundation::Result<bool> LootService::EntryAllowed(const LootEntry &e, const LootContext &c) const {
     if (!e.condition.IsValid())
         return foundation::Result<bool>::Success(true);
     if (!conditions_)
         return foundation::Result<bool>::Failure(
-            Error("gameplay.loot.condition_provider_missing", "conditional loot requires a condition provider"));
+            Error("gameplay.loot.condition_provider_missing",
+                  "conditional loot requires a condition provider"));
     try {
         return foundation::Result<bool>::Success(conditions_->Evaluate(e.condition, c));
     } catch (...) {
         return foundation::Result<bool>::Failure(
-            Error("gameplay.loot.condition_exception", "loot condition provider threw an exception"));
+            Error("gameplay.loot.condition_exception",
+                  "loot condition provider threw an exception"));
     }
+
 }
-foundation::Result<void> LootService::EmitEntry(const LootEntry &e, const LootContext &c, random::RandomSequence &seq,
-                                                std::vector<RewardOperation> &out, std::uint32_t depth) {
+
+foundation::Result<void> LootService::EmitEntry(const LootEntry &e, const LootContext &c,
+                                                random::RandomSequence &seq,
+                                                std::vector<RewardOperation> &out,
+                                                std::uint32_t depth) {
     if (e.nested_table.IsValid())
         return GenerateTable(e.nested_table, c, seq, out, depth + 1);
     auto r = rewards_.find(e.reward);
     if (r == rewards_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.loot.reward_missing", "reward definition missing"));
-    const auto range = static_cast<std::uint64_t>(r->second.max_quantity_micro - r->second.min_quantity_micro);
-    const auto quantity = r->second.min_quantity_micro + static_cast<std::int64_t>(seq.UniformUnchecked(range + 1));
-    out.push_back(
-        {r->second.type, r->second.id, c.recipient, quantity, r->second.quality, r->second.payload, c.gameplay});
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.reward_missing", "reward definition missing"));
+    const auto range =
+        static_cast<std::uint64_t>(r->second.max_quantity_micro - r->second.min_quantity_micro);
+    const auto quantity =
+        r->second.min_quantity_micro + static_cast<std::int64_t>(seq.UniformUnchecked(range + 1));
+    out.push_back({r->second.type, r->second.id, c.recipient, quantity, r->second.quality,
+                   r->second.payload, c.gameplay});
     return foundation::Result<void>::Success();
 }
-foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootContext &c, random::RandomSequence &seq,
-                                                    std::vector<RewardOperation> &out, std::uint32_t depth) {
+
+foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootContext &c,
+                                                    random::RandomSequence &seq,
+                                                    std::vector<RewardOperation> &out,
+                                                    std::uint32_t depth) {
     diagnostics_.max_nested_depth = std::max<std::uint64_t>(diagnostics_.max_nested_depth, depth);
     if (depth > 64)
-        return foundation::Result<void>::Failure(Error("gameplay.loot.depth_exceeded", "nested loot depth exceeded"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.depth_exceeded", "nested loot depth exceeded"));
     auto it = tables_.find(id);
     if (it == tables_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.loot.table_missing", "loot table missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.table_missing", "loot table missing"));
     const auto &table = it->second;
     ++diagnostics_.rolls;
     std::vector<const LootEntry *> allowed;
@@ -180,6 +218,7 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
         if (allowed_result.Value())
             allowed.push_back(&e);
     }
+
     if (allowed.empty())
         return foundation::Result<void>::Success();
     const auto pickWeighted = [&](const std::vector<const LootEntry *> &pool) -> const LootEntry * {
@@ -194,8 +233,10 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
                 return e;
             roll -= e->weight;
         }
+
         return pool.back();
     };
+
     switch (table.policy) {
     case LootRollPolicy::WeightedOne: {
         auto *e = pickWeighted(allowed);
@@ -204,8 +245,10 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
             if (!r)
                 return r;
         }
+
         break;
     }
+
     case LootRollPolicy::WeightedMany:
         for (std::uint32_t n = 0; n < table.rolls; ++n) {
             auto *e = pickWeighted(allowed);
@@ -214,7 +257,9 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
                 if (!r)
                     return r;
             }
+
         }
+
         break;
     case LootRollPolicy::IndependentChance:
         for (auto *e : allowed)
@@ -223,6 +268,7 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
                 if (!r)
                     return r;
             }
+
         break;
     case LootRollPolicy::GuaranteedAll:
         for (auto *e : allowed) {
@@ -230,6 +276,7 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
             if (!r)
                 return r;
         }
+
         break;
     case LootRollPolicy::PickNWithoutReplacement: {
         auto pool = allowed;
@@ -243,11 +290,15 @@ foundation::Result<void> LootService::GenerateTable(LootTableId id, const LootCo
                 return r;
             pool.erase(std::find(pool.begin(), pool.end(), e));
         }
+
         break;
     }
+
     }
+
     return foundation::Result<void>::Success();
 }
+
 foundation::Result<RewardBundle> LootService::Preview(LootTableId table, LootContext context) {
     if (!frozen_)
         return foundation::Result<RewardBundle>::Failure(
@@ -262,7 +313,8 @@ foundation::Result<RewardBundle> LootService::Preview(LootTableId table, LootCon
     return foundation::Result<RewardBundle>::Success(std::move(bundle));
 }
 
-foundation::Result<RewardBundle> LootService::GenerateTracked(LootTableId table, LootContext context) {
+foundation::Result<RewardBundle> LootService::GenerateTracked(LootTableId table,
+                                                              LootContext context) {
     if (!frozen_)
         return foundation::Result<RewardBundle>::Failure(
             Error("gameplay.registry_not_frozen", "loot registry not frozen"));
@@ -276,6 +328,7 @@ foundation::Result<RewardBundle> LootService::GenerateTracked(LootTableId table,
     auto staged_ids = execution_ids_;
     const auto raw_id = staged_ids.Next();
     RewardExecutionId id{raw_id};
+
     if (!id.IsValid())
         return foundation::Result<RewardBundle>::Failure(
             Error("gameplay.loot.id_exhausted", "reward execution id generator exhausted"));
@@ -293,30 +346,37 @@ foundation::Result<RewardBundle> LootService::GenerateTracked(LootTableId table,
     return foundation::Result<RewardBundle>::Success(it->second);
 }
 
-foundation::Result<void> LootService::DiscardGenerated(RewardExecutionId id, GameplayContext context) {
+foundation::Result<void> LootService::DiscardGenerated(RewardExecutionId id,
+                                                       GameplayContext context) {
     auto it = generated_.find(id);
     if (it == generated_.end())
         return foundation::Result<void>::Failure(
             Error("gameplay.loot.generated_missing", "generated reward bundle missing"));
-    const auto recipient = it->second.rewards.empty() ? GameplayObjectRef{} : it->second.rewards.front().recipient;
+    const auto recipient =
+        it->second.rewards.empty() ? GameplayObjectRef{} : it->second.rewards.front().recipient;
     generated_.erase(it);
     Record({0, LootChangeKind::Discarded, id, recipient, context});
     return foundation::Result<void>::Success();
 }
-foundation::Result<RewardExecutionId> LootService::MakePending(RewardBundle bundle,
-                                                               std::optional<GameplayTimePoint> expires) {
+
+foundation::Result<RewardExecutionId>
+LootService::MakePending(RewardBundle bundle, std::optional<GameplayTimePoint> expires) {
     if (!bundle.id.IsValid() || pending_.contains(bundle.id) || claimed_.contains(bundle.id))
         return foundation::Result<RewardExecutionId>::Failure(
             Error("gameplay.loot.pending_invalid", "invalid or duplicate pending reward"));
     auto generated = generated_.find(bundle.id);
     if (generated == generated_.end())
         return foundation::Result<RewardExecutionId>::Failure(
-            Error("gameplay.loot.bundle_untrusted", "reward bundle was not generated by this service"));
+            Error("gameplay.loot.bundle_untrusted",
+                  "reward bundle was not generated by this service"));
 
     const auto id = generated->first;
     PendingReward pending{generated->second, PendingRewardState::Available, expires, {}, {1}};
-    const auto recipient =
-        pending.bundle.rewards.empty() ? GameplayObjectRef{} : pending.bundle.rewards.front().recipient;
+
+    const auto recipient = pending.bundle.rewards.empty()
+                               ? GameplayObjectRef{}
+
+                               : pending.bundle.rewards.front().recipient;
     const auto event_context = pending.bundle.context;
     auto [inserted_it, inserted] = pending_.emplace(id, std::move(pending));
     if (!inserted)
@@ -329,8 +389,8 @@ foundation::Result<RewardExecutionId> LootService::MakePending(RewardBundle bund
     return foundation::Result<RewardExecutionId>::Success(id);
 }
 
-foundation::Result<RewardExecutionId> LootService::MakePending(RewardExecutionId id,
-                                                               std::optional<GameplayTimePoint> expires) {
+foundation::Result<RewardExecutionId>
+LootService::MakePending(RewardExecutionId id, std::optional<GameplayTimePoint> expires) {
     if (!id.IsValid())
         return foundation::Result<RewardExecutionId>::Failure(
             Error("gameplay.loot.pending_invalid", "invalid pending reward id"));
@@ -361,12 +421,14 @@ foundation::Result<void> LootService::BindSchedule(RewardExecutionId id, Schedul
     it->second.revision = *next_revision;
     return foundation::Result<void>::Success();
 }
+
 foundation::Result<void> LootService::Claim(RewardExecutionId id, GameplayContext context) {
     if (claimed_.contains(id))
         return foundation::Result<void>::Success();
     auto it = pending_.find(id);
     if (it == pending_.end() || it->second.state != PendingRewardState::Available)
-        return foundation::Result<void>::Failure(Error("gameplay.loot.reward_unavailable", "reward is not available"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.reward_unavailable", "reward is not available"));
 
     // Stage every fallible local publication before external Prepare/Commit.
     std::unordered_set<RewardExecutionId, IdHash> staged_claimed;
@@ -383,7 +445,9 @@ foundation::Result<void> LootService::Claim(RewardExecutionId id, GameplayContex
                 staged_claimed.erase(evicted);
                 staged_order.pop_front();
             }
+
         }
+
     } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.loot.allocation_failed", "failed to stage claim publication"));
@@ -402,17 +466,22 @@ foundation::Result<void> LootService::Claim(RewardExecutionId id, GameplayContex
         if (h == handlers_.end()) {
             for (auto stage = stages.rbegin(); stage != stages.rend(); ++stage)
                 stage->first->Cancel(stage->second);
-            return foundation::Result<void>::Failure(Error("gameplay.loot.handler_missing", "reward handler missing"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.loot.handler_missing", "reward handler missing"));
         }
+
         auto prepared = [&]() -> foundation::Result<RewardDeliveryStage> {
             try {
                 return h->second->Prepare(op);
             } catch (...) {
                 return foundation::Result<RewardDeliveryStage>::Failure(
-                    Error("gameplay.loot.prepare_exception", "reward handler Prepare threw an exception"));
+                    Error("gameplay.loot.prepare_exception",
+                          "reward handler Prepare threw an exception"));
             }
+
         }();
-        if (!prepared || !EnumInRange(prepared.Value().disposition, RewardDeliveryDisposition::Rejected) ||
+        if (!prepared ||
+            !EnumInRange(prepared.Value().disposition, RewardDeliveryDisposition::Rejected) ||
             prepared.Value().disposition == RewardDeliveryDisposition::Rejected ||
             prepared.Value().disposition == RewardDeliveryDisposition::Unavailable) {
             for (auto stage = stages.rbegin(); stage != stages.rend(); ++stage)
@@ -425,6 +494,7 @@ foundation::Result<void> LootService::Claim(RewardExecutionId id, GameplayContex
                                         "reward delivery rejected or returned invalid disposition"))
                             : foundation::Result<void>::Failure(prepared.GetError());
         }
+
         auto stage_value = std::move(prepared).Value();
         try {
             stages.emplace_back(h->second, std::move(stage_value));
@@ -433,8 +503,10 @@ foundation::Result<void> LootService::Claim(RewardExecutionId id, GameplayContex
             for (auto stage = stages.rbegin(); stage != stages.rend(); ++stage)
                 stage->first->Cancel(stage->second);
             return foundation::Result<void>::Failure(
-                Error("gameplay.loot.allocation_failed", "failed to retain prepared reward delivery"));
+                Error("gameplay.loot.allocation_failed",
+                      "failed to retain prepared reward delivery"));
         }
+
     }
 
     for (auto &stage : stages)
@@ -445,42 +517,55 @@ foundation::Result<void> LootService::Claim(RewardExecutionId id, GameplayContex
     claimed_history_floor_low_ = staged_floor;
     if (diagnostics_.claims != std::numeric_limits<std::uint64_t>::max())
         ++diagnostics_.claims;
-    const auto recipient =
-        it->second.bundle.rewards.empty() ? GameplayObjectRef{} : it->second.bundle.rewards.front().recipient;
+    const auto recipient = it->second.bundle.rewards.empty()
+                               ? GameplayObjectRef{}
+
+                               : it->second.bundle.rewards.front().recipient;
     pending_.erase(it);
     diagnostics_.pending = pending_.size();
     Record({0, LootChangeKind::Claimed, id, recipient, context});
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> LootService::Expire(RewardExecutionId id, GameplayTimePoint now, GameplayContext context) {
+foundation::Result<void> LootService::Expire(RewardExecutionId id, GameplayTimePoint now,
+                                             GameplayContext context) {
     auto it = pending_.find(id);
     if (it == pending_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.loot.pending_missing", "pending reward missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.pending_missing", "pending reward missing"));
     if (!it->second.expires_at || it->second.expires_at->ticks > now.ticks)
-        return foundation::Result<void>::Failure(Error("gameplay.loot.not_due", "reward not due to expire"));
-    const auto recipient =
-        it->second.bundle.rewards.empty() ? GameplayObjectRef{} : it->second.bundle.rewards.front().recipient;
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.not_due", "reward not due to expire"));
+    const auto recipient = it->second.bundle.rewards.empty()
+                               ? GameplayObjectRef{}
+
+                               : it->second.bundle.rewards.front().recipient;
     pending_.erase(it);
     diagnostics_.pending = pending_.size();
     Record({0, LootChangeKind::Expired, id, recipient, context});
     return foundation::Result<void>::Success();
 }
+
 foundation::Result<void> LootService::Cancel(RewardExecutionId id, GameplayContext context) {
     auto it = pending_.find(id);
     if (it == pending_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.loot.pending_missing", "pending reward missing"));
-    const auto recipient =
-        it->second.bundle.rewards.empty() ? GameplayObjectRef{} : it->second.bundle.rewards.front().recipient;
+        return foundation::Result<void>::Failure(
+            Error("gameplay.loot.pending_missing", "pending reward missing"));
+    const auto recipient = it->second.bundle.rewards.empty()
+                               ? GameplayObjectRef{}
+
+                               : it->second.bundle.rewards.front().recipient;
     pending_.erase(it);
     diagnostics_.pending = pending_.size();
     Record({0, LootChangeKind::Cancelled, id, recipient, context});
     return foundation::Result<void>::Success();
 }
+
 const PendingReward *LootService::FindPending(RewardExecutionId id) const noexcept {
     auto it = pending_.find(id);
     return it == pending_.end() ? nullptr : &it->second;
 }
+
 std::vector<PendingReward> LootService::PendingFor(GameplayObjectRef recipient) const {
     std::vector<PendingReward> o;
     for (const auto &[id, p] : pending_) {
@@ -489,11 +574,11 @@ std::vector<PendingReward> LootService::PendingFor(GameplayObjectRef recipient) 
             p.bundle.rewards.front().recipient == recipient)
             o.push_back(p);
     }
-    std::sort(o.begin(), o.end(), [](auto &a, auto &b) {
-        return a.bundle.id < b.bundle.id;
-    });
+
+    std::sort(o.begin(), o.end(), [](auto &a, auto &b) { return a.bundle.id < b.bundle.id; });
     return o;
 }
+
 std::vector<PendingReward> LootService::AllPending() const {
     std::vector<PendingReward> out;
     out.reserve(pending_.size());
@@ -502,11 +587,12 @@ std::vector<PendingReward> LootService::AllPending() const {
         if (pending.state == PendingRewardState::Available)
             out.push_back(pending);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.bundle.id < b.bundle.id;
-    });
+
+    std::sort(out.begin(), out.end(),
+              [](const auto &a, const auto &b) { return a.bundle.id < b.bundle.id; });
     return out;
 }
+
 RewardClaimHistoryStatus LootService::ClaimHistoryStatus(RewardExecutionId id) const noexcept {
     if (claimed_.contains(id))
         return RewardClaimHistoryStatus::Claimed;
@@ -516,34 +602,42 @@ RewardClaimHistoryStatus LootService::ClaimHistoryStatus(RewardExecutionId id) c
         return RewardClaimHistoryStatus::HistoryExpired;
     return RewardClaimHistoryStatus::Unknown;
 }
+
 bool LootService::WasClaimed(RewardExecutionId id) const noexcept {
     return ClaimHistoryStatus(id) == RewardClaimHistoryStatus::Claimed;
 }
+
 std::vector<LootChange> LootService::ChangesSinceSequence(std::uint64_t sequence) const {
     return ReadChangesSinceSequence(sequence).changes;
 }
+
 LootChangeBatch LootService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     LootChangeBatch batch;
-    const auto latest =
-        next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1;
-    batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
+    const auto latest = next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
+                                                   : next_change_sequence_ - 1;
+    batch.oldest_available_sequence =
+        changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
     if (next_change_sequence_ == 0 || sequence > latest) {
         batch.snapshot_required = true;
         return batch;
     }
+
     if (changes_.empty()) {
         batch.snapshot_required = sequence < latest;
         return batch;
     }
-    if (sequence < batch.oldest_available_sequence && batch.oldest_available_sequence - sequence > 1) {
+
+    if (sequence < batch.oldest_available_sequence &&
+        batch.oldest_available_sequence - sequence > 1) {
         batch.snapshot_required = true;
         return batch;
     }
-    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes), [&](const auto &change) {
-        return change.sequence > sequence;
-    });
+
+    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes),
+                 [&](const auto &change) { return change.sequence > sequence; });
     return batch;
 }
+
 LootSnapshot LootService::CaptureSnapshot() const {
     LootSnapshot snapshot;
     snapshot.execution_ids = execution_ids_.GetSnapshot();
@@ -554,28 +648,32 @@ LootSnapshot LootService::CaptureSnapshot() const {
         (void)id;
         snapshot.generated.push_back(bundle);
     }
+
     for (const auto &[id, pending] : pending_) {
         (void)id;
         snapshot.pending.push_back(pending);
     }
+
     snapshot.claimed.assign(claimed_order_.begin(), claimed_order_.end());
-    std::sort(snapshot.generated.begin(), snapshot.generated.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.pending.begin(), snapshot.pending.end(), [](const auto &a, const auto &b) {
-        return a.bundle.id < b.bundle.id;
-    });
+    std::sort(snapshot.generated.begin(), snapshot.generated.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.pending.begin(), snapshot.pending.end(),
+              [](const auto &a, const auto &b) { return a.bundle.id < b.bundle.id; });
     snapshot.change_epoch = journal_epoch_;
     return snapshot;
 }
+
 foundation::Result<void> LootService::RestoreSnapshot(LootSnapshot snapshot) {
-    const auto next_journal_epoch =
-        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    const auto next_journal_epoch = CheckedNextChangeEpoch(
+        snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
-    if (internal_test::ConsumeAllocationFault(internal_test::AllocationFaultPoint::RestoreGenerated))
+
+    if (internal_test::ConsumeAllocationFault(
+            internal_test::AllocationFaultPoint::RestoreGenerated))
         return foundation::Result<void>::Failure(
             Error("gameplay.loot.publication_failed", "generated restore staging failed"));
     std::unordered_map<RewardExecutionId, RewardBundle, IdHash> restored_generated;
@@ -584,7 +682,8 @@ foundation::Result<void> LootService::RestoreSnapshot(LootSnapshot snapshot) {
     std::deque<RewardExecutionId> restored_claimed_order;
     std::deque<LootChange> restored_changes;
 
-    if (snapshot.generated.size() > kGeneratedCapacity || snapshot.claimed.size() > kClaimedTombstoneCapacity ||
+    if (snapshot.generated.size() > kGeneratedCapacity ||
+        snapshot.claimed.size() > kClaimedTombstoneCapacity ||
         snapshot.journal.size() > kChangeJournalCapacity)
         return foundation::Result<void>::Failure(
             Error("gameplay.loot.restore_invalid", "snapshot capacity or sequence is invalid"));
@@ -601,31 +700,36 @@ foundation::Result<void> LootService::RestoreSnapshot(LootSnapshot snapshot) {
             return foundation::Result<void>::Failure(
                 Error("gameplay.loot.restore_invalid", "invalid generated bundle"));
         for (const auto &operation : bundle.rewards)
-            if (!operation.type.IsValid() || !operation.definition.IsValid() || !operation.recipient.IsValid() ||
-                operation.quantity_micro < 0 || !handlers_.contains(operation.type) ||
-                !rewards_.contains(operation.definition))
+            if (!operation.type.IsValid() || !operation.definition.IsValid() ||
+                !operation.recipient.IsValid() || operation.quantity_micro < 0 ||
+                !handlers_.contains(operation.type) || !rewards_.contains(operation.definition))
                 return foundation::Result<void>::Failure(
                     Error("gameplay.loot.restore_invalid", "invalid generated reward operation"));
         max_execution_low = std::max(max_execution_low, bundle.id.value.Low());
         restored_generated.emplace(bundle.id, std::move(bundle));
     }
+
     if (internal_test::ConsumeAllocationFault(internal_test::AllocationFaultPoint::RestorePending))
         return foundation::Result<void>::Failure(
             Error("gameplay.loot.publication_failed", "pending restore staging failed"));
     for (auto &pending : snapshot.pending) {
         if (!pending.bundle.id.IsValid() || pending.bundle.id.value.High() != expected_scope ||
-            pending.state != PendingRewardState::Available || restored_generated.contains(pending.bundle.id) ||
-            restored_pending.contains(pending.bundle.id) || restored_claimed.contains(pending.bundle.id))
-            return foundation::Result<void>::Failure(Error("gameplay.loot.restore_invalid", "invalid pending reward"));
+            pending.state != PendingRewardState::Available ||
+            restored_generated.contains(pending.bundle.id) ||
+            restored_pending.contains(pending.bundle.id) ||
+            restored_claimed.contains(pending.bundle.id))
+            return foundation::Result<void>::Failure(
+                Error("gameplay.loot.restore_invalid", "invalid pending reward"));
         for (const auto &operation : pending.bundle.rewards)
-            if (!operation.type.IsValid() || !operation.definition.IsValid() || !operation.recipient.IsValid() ||
-                operation.quantity_micro < 0 || !handlers_.contains(operation.type) ||
-                !rewards_.contains(operation.definition))
+            if (!operation.type.IsValid() || !operation.definition.IsValid() ||
+                !operation.recipient.IsValid() || operation.quantity_micro < 0 ||
+                !handlers_.contains(operation.type) || !rewards_.contains(operation.definition))
                 return foundation::Result<void>::Failure(
                     Error("gameplay.loot.restore_invalid", "invalid pending reward operation"));
         max_execution_low = std::max(max_execution_low, pending.bundle.id.value.Low());
         restored_pending.emplace(pending.bundle.id, std::move(pending));
     }
+
     for (const auto id : snapshot.claimed) {
         if (!id.IsValid() || id.value.High() != expected_scope || restored_generated.contains(id) ||
             restored_pending.contains(id) || !restored_claimed.insert(id).second)
@@ -634,10 +738,13 @@ foundation::Result<void> LootService::RestoreSnapshot(LootSnapshot snapshot) {
         max_execution_low = std::max(max_execution_low, id.value.Low());
         restored_claimed_order.push_back(id);
     }
+
     if (snapshot.next_change_sequence == 0 &&
-        (snapshot.journal.empty() || snapshot.journal.back().sequence != std::numeric_limits<std::uint64_t>::max()))
+        (snapshot.journal.empty() ||
+         snapshot.journal.back().sequence != std::numeric_limits<std::uint64_t>::max()))
         return foundation::Result<void>::Failure(
-            Error("gameplay.loot.restore_invalid", "exhausted loot journal is missing terminal sequence"));
+            Error("gameplay.loot.restore_invalid",
+                  "exhausted loot journal is missing terminal sequence"));
 
     if (internal_test::ConsumeAllocationFault(internal_test::AllocationFaultPoint::RestoreJournal))
         return foundation::Result<void>::Failure(
@@ -655,7 +762,8 @@ foundation::Result<void> LootService::RestoreSnapshot(LootSnapshot snapshot) {
 
     if (snapshot.execution_ids.next != 0 && snapshot.execution_ids.next <= max_execution_low)
         return foundation::Result<void>::Failure(
-            Error("gameplay.loot.restore_invalid", "reward execution generator is behind restored ids"));
+            Error("gameplay.loot.restore_invalid",
+                  "reward execution generator is behind restored ids"));
 
     generated_.swap(restored_generated);
     pending_.swap(restored_pending);
@@ -669,9 +777,11 @@ foundation::Result<void> LootService::RestoreSnapshot(LootSnapshot snapshot) {
     journal_epoch_ = *next_journal_epoch;
     return foundation::Result<void>::Success();
 }
+
 LootDiagnostics LootService::GetDiagnostics() const noexcept {
     return diagnostics_;
 }
+
 void LootService::Record(LootChange change) noexcept {
     if (next_change_sequence_ == 0)
         return;
@@ -689,6 +799,9 @@ void LootService::Record(LootChange change) noexcept {
         next_change_sequence_ = 1;
         return;
     }
-    next_change_sequence_ = sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
+
+    next_change_sequence_ =
+        sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
 }
+
 } // namespace epidemic::gameplay::loot

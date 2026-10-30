@@ -10,4 +10,4 @@ namespace epidemic::game::editor {
 // open/commit against replacement races; this is not an atomic filesystem sandbox.
 [[nodiscard]] foundation::Result<std::filesystem::path>
 ResolveProjectPath(const std::filesystem::path &root, std::string_view relative);
-}
+} // namespace epidemic::game::editor

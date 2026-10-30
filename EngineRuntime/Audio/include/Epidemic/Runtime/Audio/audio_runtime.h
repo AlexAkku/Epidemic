@@ -9,7 +9,8 @@
 
 namespace epidemic::runtime::audio {
 // Public contracts for Audio runtime services. The interfaces expose registry, emitter, listener,
-// mixer and event-queue behavior while keeping backend ownership behind the implementation boundary.
+// mixer and event-queue behavior while keeping backend ownership behind the implementation
+// boundary.
 
 class ISoundRegistry {
   public:
@@ -26,29 +27,38 @@ class IAudioBackend {
 
     // Freeze contract for retryable Runtime projection:
     //  * Initialize failure/exception means Audio services were not created.
-    //  * CreateVoice/CreateBackendListener success transfers one backend object to the caller; failure/exception
+    //  * CreateVoice/CreateBackendListener success transfers one backend object to the caller;
+    //  failure/exception
     //    means no object was acquired.
-    //  * Setters and Play/Pause/Stop are safe to repeat with the same handle/value. A reported failure/exception
-    //    either leaves that command unapplied or permits an exact retry without duplicating a semantic effect.
-    //  * DestroyVoice/DestroyBackendListener failure/exception leaves ownership alive and retryable.
-    //  * Update(delta) failure/exception means delta was not accepted or temporally advanced. Retrying the same
+    //  * Setters and Play/Pause/Stop are safe to repeat with the same handle/value. A reported
+    //  failure/exception
+    //    either leaves that command unapplied or permits an exact retry without duplicating a
+    //    semantic effect.
+    //  * DestroyVoice/DestroyBackendListener failure/exception leaves ownership alive and
+    //  retryable.
+    //  * Update(delta) failure/exception means delta was not accepted or temporally advanced.
+    //  Retrying the same
     //    delta after a failed Update therefore advances backend time exactly once.
     [[nodiscard]] virtual bool IsEnabled() const = 0;
-    [[nodiscard]] virtual foundation::Result<void> Initialize(const AudioBackendOptions &options) = 0;
-    [[nodiscard]] virtual foundation::Result<BackendVoiceHandle> CreateVoice(const AudioVoiceDesc &desc) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    Initialize(const AudioBackendOptions &options) = 0;
+    [[nodiscard]] virtual foundation::Result<BackendVoiceHandle>
+    CreateVoice(const AudioVoiceDesc &desc) = 0;
     [[nodiscard]] virtual foundation::Result<void> DestroyVoice(BackendVoiceHandle handle) = 0;
     [[nodiscard]] virtual foundation::Result<void> Play(BackendVoiceHandle handle) = 0;
     [[nodiscard]] virtual foundation::Result<void> Pause(BackendVoiceHandle handle) = 0;
     [[nodiscard]] virtual foundation::Result<void> Stop(BackendVoiceHandle handle) = 0;
     [[nodiscard]] virtual bool IsVoiceFinished(BackendVoiceHandle handle) const = 0;
-    [[nodiscard]] virtual foundation::Result<void> SetGain(BackendVoiceHandle handle, float gain) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SetSpatialState(BackendVoiceHandle handle,
-                                                                   const AudioSpatialState &state) = 0;
-    [[nodiscard]] virtual foundation::Result<void> CreateBackendListener(AudioListenerHandle handle,
-                                                                         const Transform &transform) = 0;
-    [[nodiscard]] virtual foundation::Result<void> DestroyBackendListener(AudioListenerHandle handle) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SetBackendListenerTransform(AudioListenerHandle handle,
-                                                                               const Transform &transform) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetGain(BackendVoiceHandle handle,
+                                                           float gain) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    SetSpatialState(BackendVoiceHandle handle, const AudioSpatialState &state) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    CreateBackendListener(AudioListenerHandle handle, const Transform &transform) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    DestroyBackendListener(AudioListenerHandle handle) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    SetBackendListenerTransform(AudioListenerHandle handle, const Transform &transform) = 0;
     [[nodiscard]] virtual foundation::Result<void> Update(RuntimeFrameDuration delta) = 0;
 };
 
@@ -64,14 +74,16 @@ class IAudioTransformSource {
   public:
     virtual ~IAudioTransformSource() = default;
 
-    [[nodiscard]] virtual foundation::Result<Transform> ReadTransform(AudioTransformId id) const = 0;
+    [[nodiscard]] virtual foundation::Result<Transform>
+    ReadTransform(AudioTransformId id) const = 0;
 };
 
 class IAudioRuntime {
   public:
     virtual ~IAudioRuntime() = default;
 
-    [[nodiscard]] virtual foundation::Result<AudioEmitterHandle> CreateEmitterHandle(const AudioEmitterDesc &desc) = 0;
+    [[nodiscard]] virtual foundation::Result<AudioEmitterHandle>
+    CreateEmitterHandle(const AudioEmitterDesc &desc) = 0;
 
     [[nodiscard]] virtual foundation::Result<void> DestroyEmitter(AudioEmitterHandle handle) = 0;
 
@@ -86,12 +98,15 @@ class IAudioRuntime {
     [[nodiscard]] virtual foundation::Result<void> FadeOut(AudioEmitterHandle handle,
                                                            RuntimeFrameDuration duration) = 0;
 
-    [[nodiscard]] virtual foundation::Result<void> FadeIn(AudioEmitterHandle handle, RuntimeFrameDuration duration) = 0;
+    [[nodiscard]] virtual foundation::Result<void> FadeIn(AudioEmitterHandle handle,
+                                                          RuntimeFrameDuration duration) = 0;
 
-    // Virtualization releases the backend voice; calling Play(handle) later restarts playback from the clip beginning.
+    // Virtualization releases the backend voice; calling Play(handle) later restarts playback from
+    // the clip beginning.
     [[nodiscard]] virtual foundation::Result<void> Virtualize(AudioEmitterHandle handle) = 0;
 
-    [[nodiscard]] virtual foundation::Result<EmitterState> GetEmitterState(AudioEmitterHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<EmitterState>
+    GetEmitterState(AudioEmitterHandle handle) const = 0;
 
     [[nodiscard]] virtual foundation::Result<AudioEmitterSnapshot>
     GetEmitterSnapshot(AudioEmitterHandle handle) const = 0;
@@ -147,7 +162,7 @@ struct AudioServices {
     std::shared_ptr<IAudioBackend> backend;
 };
 
-[[nodiscard]] foundation::Result<AudioServices> CreateAudioServices(AudioOptions options = {},
-                                                                    AudioDependencies dependencies = {});
+[[nodiscard]] foundation::Result<AudioServices>
+CreateAudioServices(AudioOptions options = {}, AudioDependencies dependencies = {});
 [[nodiscard]] foundation::Result<AudioServices> CreateMockAudioServices(AudioOptions options = {});
 } // namespace epidemic::runtime::audio

@@ -14,8 +14,9 @@ foundation::Error Error(std::string_view code, std::string_view message) {
 }
 
 EnvironmentFixed Saturate(std::int64_t value) {
-    return static_cast<EnvironmentFixed>(std::clamp<std::int64_t>(value, std::numeric_limits<EnvironmentFixed>::min(),
-                                                                  std::numeric_limits<EnvironmentFixed>::max()));
+    return static_cast<EnvironmentFixed>(
+        std::clamp<std::int64_t>(value, std::numeric_limits<EnvironmentFixed>::min(),
+                                 std::numeric_limits<EnvironmentFixed>::max()));
 }
 
 bool SameHazard(const EnvironmentHazard &a, const EnvironmentHazard &b) {
@@ -23,15 +24,17 @@ bool SameHazard(const EnvironmentHazard &a, const EnvironmentHazard &b) {
 }
 
 bool SameContext(const GameplayContext &a, const GameplayContext &b) {
-    return a.tick == b.tick && a.time == b.time && a.operation == b.operation && a.correlation == b.correlation &&
-           a.actor == b.actor && a.instigator == b.instigator && a.source == b.source &&
-           a.parent_operation == b.parent_operation && a.cause_event == b.cause_event;
+    return a.tick == b.tick && a.time == b.time && a.operation == b.operation &&
+           a.correlation == b.correlation && a.actor == b.actor && a.instigator == b.instigator &&
+           a.source == b.source && a.parent_operation == b.parent_operation &&
+           a.cause_event == b.cause_event;
 }
 
 bool SameLayer(const EnvironmentLayer &a, const EnvironmentLayer &b) {
     return a.id == b.id && a.type == b.type && a.bounds == b.bounds && a.area_ref == b.area_ref &&
-           a.priority == b.priority && a.blend == b.blend && a.custom_blend == b.custom_blend && a.values == b.values &&
-           a.tags.Values() == b.tags.Values() && a.created_at == b.created_at && a.expires_at == b.expires_at &&
+           a.priority == b.priority && a.blend == b.blend && a.custom_blend == b.custom_blend &&
+           a.values == b.values && a.tags.Values() == b.tags.Values() &&
+           a.created_at == b.created_at && a.expires_at == b.expires_at &&
            a.persistence == b.persistence && SameContext(a.context, b.context) &&
            a.hazards.size() == b.hazards.size() &&
            std::equal(a.hazards.begin(), a.hazards.end(), b.hazards.begin(), SameHazard);
@@ -47,6 +50,7 @@ bool IsValid(EnvironmentBlendPolicy value) noexcept {
     case EnvironmentBlendPolicy::CustomRegistered:
         return true;
     }
+
     return false;
 }
 
@@ -57,6 +61,7 @@ bool IsValid(EnvironmentPersistence value) noexcept {
     case EnvironmentPersistence::Persistent:
         return true;
     }
+
     return false;
 }
 
@@ -77,18 +82,22 @@ template <typename TValue> void EraseSorted(std::vector<TValue> &values, TValue 
     if (position != values.end() && *position == value)
         values.erase(position);
 }
+
 } // namespace
 
 EnvironmentService::EnvironmentService()
     : ids_(GameplayObjectId::FromString("framework.environment.layer.seed").High()) {
 }
 
-EnvironmentService::CellKey EnvironmentService::CellFor(EnvironmentPosition position) const noexcept {
+EnvironmentService::CellKey
+EnvironmentService::CellFor(EnvironmentPosition position) const noexcept {
     return {FloorDiv(position.x_mm, kSpatialCellMm), FloorDiv(position.y_mm, kSpatialCellMm),
             FloorDiv(position.z_mm, kSpatialCellMm)};
+
 }
 
-std::vector<EnvironmentService::CellKey> EnvironmentService::CellsFor(const EnvironmentAabb &bounds) const {
+std::vector<EnvironmentService::CellKey>
+EnvironmentService::CellsFor(const EnvironmentAabb &bounds) const {
     const auto low = CellFor(bounds.min);
     const auto high = CellFor(bounds.max);
     if (high.x < low.x || high.y < low.y || high.z < low.z)
@@ -97,8 +106,8 @@ std::vector<EnvironmentService::CellKey> EnvironmentService::CellsFor(const Envi
     const auto nx = static_cast<std::uint64_t>(high.x - low.x + 1);
     const auto ny = static_cast<std::uint64_t>(high.y - low.y + 1);
     const auto nz = static_cast<std::uint64_t>(high.z - low.z + 1);
-    if (nx == 0 || ny == 0 || nz == 0 || nx > kMaxIndexedCells || ny > kMaxIndexedCells || nz > kMaxIndexedCells ||
-        nx > kMaxIndexedCells / ny || nx * ny > kMaxIndexedCells / nz)
+    if (nx == 0 || ny == 0 || nz == 0 || nx > kMaxIndexedCells || ny > kMaxIndexedCells ||
+        nz > kMaxIndexedCells || nx > kMaxIndexedCells / ny || nx * ny > kMaxIndexedCells / nz)
         return {};
 
     std::vector<CellKey> cells;
@@ -146,6 +155,7 @@ void EnvironmentService::UnindexLayer(const EnvironmentLayer &layer) noexcept {
         if (found->second.empty())
             spatial_index_.erase(found);
     }
+
 }
 
 void EnvironmentService::RebuildSpatialIndex() {
@@ -206,11 +216,13 @@ void EnvironmentService::Record(EnvironmentChange change) noexcept {
         } else {
             next_change_sequence_ = 0;
         }
+
         return;
     }
 
     last_change_sequence_ = sequence;
-    next_change_sequence_ = sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
+    next_change_sequence_ =
+        sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
     while (changes_.size() > kChangeJournalCapacity)
         changes_.pop_front();
 }
@@ -218,66 +230,82 @@ void EnvironmentService::Record(EnvironmentChange change) noexcept {
 foundation::Result<void> EnvironmentService::ValidateValues(const EnvironmentValues &values) const {
     if ((values.present & ~kEnvironmentAllValues) != 0)
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.invalid_values", "environment value mask contains unknown fields"));
+            Error("gameplay.environment.invalid_values",
+                  "environment value mask contains unknown fields"));
 
     const auto normalized = [](EnvironmentFixed value) {
         return value >= 0 && value <= kEnvironmentOne;
     };
-    if (!normalized(values.humidity) || !normalized(values.precipitation) || !normalized(values.visibility) ||
-        !normalized(values.light_exposure) || values.wind_strength < 0 || values.wind_x < -kEnvironmentOne ||
-        values.wind_x > kEnvironmentOne || values.wind_y < -kEnvironmentOne || values.wind_y > kEnvironmentOne ||
-        values.wind_z < -kEnvironmentOne || values.wind_z > kEnvironmentOne) {
+
+    if (!normalized(values.humidity) || !normalized(values.precipitation) ||
+        !normalized(values.visibility) || !normalized(values.light_exposure) ||
+        values.wind_strength < 0 || values.wind_x < -kEnvironmentOne ||
+        values.wind_x > kEnvironmentOne || values.wind_y < -kEnvironmentOne ||
+        values.wind_y > kEnvironmentOne || values.wind_z < -kEnvironmentOne ||
+        values.wind_z > kEnvironmentOne) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.invalid_values", "environment values are outside supported ranges"));
+            Error("gameplay.environment.invalid_values",
+                  "environment values are outside supported ranges"));
     }
 
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> EnvironmentService::ValidateLayer(const EnvironmentLayer &layer) const {
-    if (!layer.id.IsValid() || !layer.type.IsValid() || !types_.contains(layer.type) || !IsValid(layer.blend) ||
-        !IsValid(layer.persistence) || (layer.bounds && !layer.bounds->IsValid()) ||
-        (layer.blend == EnvironmentBlendPolicy::CustomRegistered && !blend_handlers_.contains(layer.custom_blend))) {
+    if (!layer.id.IsValid() || !layer.type.IsValid() || !types_.contains(layer.type) ||
+        !IsValid(layer.blend) || !IsValid(layer.persistence) ||
+        (layer.bounds && !layer.bounds->IsValid()) ||
+        (layer.blend == EnvironmentBlendPolicy::CustomRegistered &&
+         !blend_handlers_.contains(layer.custom_blend))) {
         return foundation::Result<void>::Failure(
             Error("gameplay.environment.invalid_layer", "invalid environment layer"));
     }
 
     if (layer.expires_at && layer.expires_at->ticks <= layer.created_at.ticks)
-        return foundation::Result<void>::Failure(Error("gameplay.environment.invalid_time_range",
-                                                       "environment layer expiration must be later than creation"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.environment.invalid_time_range",
+                  "environment layer expiration must be later than creation"));
 
     if (auto values = ValidateValues(layer.values); !values)
         return values;
 
     std::unordered_set<EnvironmentHazardTypeId, HazardHash> seen_hazards;
     for (const auto &hazard : layer.hazards) {
-        if (!hazard.type.IsValid() || !hazard_types_.contains(hazard.type) || hazard.intensity < 0 ||
-            !seen_hazards.insert(hazard.type).second) {
+        if (!hazard.type.IsValid() || !hazard_types_.contains(hazard.type) ||
+            hazard.intensity < 0 || !seen_hazards.insert(hazard.type).second) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.environment.invalid_hazard", "environment hazard is invalid or duplicated"));
+                Error("gameplay.environment.invalid_hazard",
+                      "environment hazard is invalid or duplicated"));
         }
+
     }
 
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> EnvironmentService::RegisterLayerType(EnvironmentLayerTypeId id, std::string canonical_name) {
+foundation::Result<void> EnvironmentService::RegisterLayerType(EnvironmentLayerTypeId id,
+                                                               std::string canonical_name) {
     if (frozen_)
-        return foundation::Result<void>::Failure(Error("gameplay.registry_frozen", "environment registry is frozen"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.registry_frozen", "environment registry is frozen"));
     if (!id.IsValid() || canonical_name.empty() || types_.contains(id))
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.invalid_type", "invalid or duplicate environment layer type"));
+            Error("gameplay.environment.invalid_type",
+                  "invalid or duplicate environment layer type"));
     types_.emplace(id, std::move(canonical_name));
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> EnvironmentService::RegisterBlendHandler(EnvironmentBlendHandlerId id,
-                                                                  std::string canonical_name, BlendHandler handler) {
+                                                                  std::string canonical_name,
+                                                                  BlendHandler handler) {
     if (frozen_)
-        return foundation::Result<void>::Failure(Error("gameplay.registry_frozen", "environment registry is frozen"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.registry_frozen", "environment registry is frozen"));
     if (!id.IsValid() || canonical_name.empty() || !handler || blend_handlers_.contains(id))
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.invalid_blend_handler", "invalid or duplicate environment blend handler"));
+            Error("gameplay.environment.invalid_blend_handler",
+                  "invalid or duplicate environment blend handler"));
     blend_handlers_.emplace(id, std::make_pair(std::move(canonical_name), std::move(handler)));
     return foundation::Result<void>::Success();
 }
@@ -285,36 +313,43 @@ foundation::Result<void> EnvironmentService::RegisterBlendHandler(EnvironmentBle
 foundation::Result<void> EnvironmentService::RegisterHazardType(EnvironmentHazardTypeId id,
                                                                 std::string canonical_name) {
     if (frozen_)
-        return foundation::Result<void>::Failure(Error("gameplay.registry_frozen", "environment registry is frozen"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.registry_frozen", "environment registry is frozen"));
     if (!id.IsValid() || canonical_name.empty() || hazard_types_.contains(id))
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.invalid_hazard_type", "invalid or duplicate environment hazard type"));
+            Error("gameplay.environment.invalid_hazard_type",
+                  "invalid or duplicate environment hazard type"));
     hazard_types_.emplace(id, std::move(canonical_name));
     return foundation::Result<void>::Success();
 }
 
 void EnvironmentService::AdvanceGeneratorPast(EnvironmentLayerId id) noexcept {
     const auto snapshot = ids_.GetSnapshot();
-    if (!id.IsValid() || id.value.High() != snapshot.scope || snapshot.next == 0 || id.value.Low() < snapshot.next)
+    if (!id.IsValid() || id.value.High() != snapshot.scope || snapshot.next == 0 ||
+        id.value.Low() < snapshot.next)
         return;
 
     auto advanced = snapshot;
-    advanced.next = id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : id.value.Low() + 1;
+    advanced.next =
+        id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : id.value.Low() + 1;
     (void)ids_.Restore(advanced);
 }
 
 foundation::Result<EnvironmentLayerId> EnvironmentService::AddLayer(EnvironmentLayer layer) {
     if (!frozen_)
         return foundation::Result<EnvironmentLayerId>::Failure(
-            Error("gameplay.registry_not_frozen", "environment service must be frozen before runtime operations"));
+            Error("gameplay.registry_not_frozen",
+                  "environment service must be frozen before runtime operations"));
 
     auto staged_ids = ids_;
     const bool caller_supplied_id = layer.id.IsValid();
     if (!caller_supplied_id)
         layer.id = EnvironmentLayerId{staged_ids.Next()};
+
     if (!layer.id.IsValid())
         return foundation::Result<EnvironmentLayerId>::Failure(
-            Error("gameplay.environment.layer_id_exhausted", "environment layer id generator is exhausted"));
+            Error("gameplay.environment.layer_id_exhausted",
+                  "environment layer id generator is exhausted"));
     if (layers_.contains(layer.id))
         return foundation::Result<EnvironmentLayerId>::Failure(
             Error("gameplay.environment.invalid_layer", "duplicate environment layer"));
@@ -322,7 +357,8 @@ foundation::Result<EnvironmentLayerId> EnvironmentService::AddLayer(EnvironmentL
         return foundation::Result<EnvironmentLayerId>::Failure(valid.GetError());
     if (!CanRecordChanges(1))
         return foundation::Result<EnvironmentLayerId>::Failure(
-            Error("gameplay.change_sequence_exhausted", "environment change sequence is exhausted"));
+            Error("gameplay.change_sequence_exhausted",
+                  "environment change sequence is exhausted"));
 
     auto revision = PrepareRevision();
     if (!revision)
@@ -331,10 +367,12 @@ foundation::Result<EnvironmentLayerId> EnvironmentService::AddLayer(EnvironmentL
     if (caller_supplied_id && layer.id.value.High() == staged_ids.Scope().Raw()) {
         auto snapshot = staged_ids.GetSnapshot();
         if (snapshot.next != 0 && layer.id.value.Low() >= snapshot.next) {
-            snapshot.next =
-                layer.id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : layer.id.value.Low() + 1;
+            snapshot.next = layer.id.value.Low() == std::numeric_limits<std::uint64_t>::max()
+                                ? 0
+                                : layer.id.value.Low() + 1;
             (void)staged_ids.Restore(snapshot);
         }
+
     }
 
     layer.revision = revision.Value();
@@ -348,10 +386,12 @@ foundation::Result<EnvironmentLayerId> EnvironmentService::AddLayer(EnvironmentL
         large_layers_.swap(staged.large_layers_);
     } catch (const std::exception &) {
         return foundation::Result<EnvironmentLayerId>::Failure(
-            Error("gameplay.environment.storage_failed", "failed to stage environment layer storage"));
+            Error("gameplay.environment.storage_failed",
+                  "failed to stage environment layer storage"));
     } catch (...) {
         return foundation::Result<EnvironmentLayerId>::Failure(
-            Error("gameplay.environment.storage_failed", "failed to stage environment layer storage"));
+            Error("gameplay.environment.storage_failed",
+                  "failed to stage environment layer storage"));
     }
 
     ids_ = staged_ids;
@@ -363,7 +403,8 @@ foundation::Result<EnvironmentLayerId> EnvironmentService::AddLayer(EnvironmentL
 foundation::Result<void> EnvironmentService::UpdateLayer(EnvironmentLayer layer) {
     if (!frozen_)
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_not_frozen", "environment service must be frozen before runtime operations"));
+            Error("gameplay.registry_not_frozen",
+                  "environment service must be frozen before runtime operations"));
 
     const auto found = layers_.find(layer.id);
     if (found == layers_.end())
@@ -374,8 +415,8 @@ foundation::Result<void> EnvironmentService::UpdateLayer(EnvironmentLayer layer)
     if (SameLayer(found->second, layer))
         return foundation::Result<void>::Success();
     if (!CanRecordChanges(1))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.change_sequence_exhausted", "environment change sequence is exhausted"));
+        return foundation::Result<void>::Failure(Error("gameplay.change_sequence_exhausted",
+                                                       "environment change sequence is exhausted"));
 
     auto revision = PrepareRevision();
     if (!revision)
@@ -391,8 +432,8 @@ foundation::Result<void> EnvironmentService::UpdateLayer(EnvironmentLayer layer)
         global_layers_.swap(staged.global_layers_);
         large_layers_.swap(staged.large_layers_);
     } catch (...) {
-        return foundation::Result<void>::Failure(
-            Error("gameplay.environment.storage_failed", "failed to stage environment layer update"));
+        return foundation::Result<void>::Failure(Error("gameplay.environment.storage_failed",
+                                                       "failed to stage environment layer update"));
     }
 
     revision_ = revision.Value();
@@ -400,17 +441,19 @@ foundation::Result<void> EnvironmentService::UpdateLayer(EnvironmentLayer layer)
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> EnvironmentService::RemoveLayer(EnvironmentLayerId id, GameplayContext context) {
+foundation::Result<void> EnvironmentService::RemoveLayer(EnvironmentLayerId id,
+                                                         GameplayContext context) {
     if (!frozen_)
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_not_frozen", "environment service must be frozen before runtime operations"));
+            Error("gameplay.registry_not_frozen",
+                  "environment service must be frozen before runtime operations"));
     const auto found = layers_.find(id);
     if (found == layers_.end())
         return foundation::Result<void>::Failure(
             Error("gameplay.environment.layer_missing", "environment layer missing"));
     if (!CanRecordChanges(1))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.change_sequence_exhausted", "environment change sequence is exhausted"));
+        return foundation::Result<void>::Failure(Error("gameplay.change_sequence_exhausted",
+                                                       "environment change sequence is exhausted"));
 
     auto revision = PrepareRevision();
     if (!revision)
@@ -424,11 +467,13 @@ foundation::Result<void> EnvironmentService::RemoveLayer(EnvironmentLayerId id, 
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> EnvironmentService::ExpireLayer(EnvironmentLayerId id, GameplayTimePoint now,
+foundation::Result<void> EnvironmentService::ExpireLayer(EnvironmentLayerId id,
+                                                         GameplayTimePoint now,
                                                          GameplayContext context) {
     if (!frozen_)
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_not_frozen", "environment service must be frozen before runtime operations"));
+            Error("gameplay.registry_not_frozen",
+                  "environment service must be frozen before runtime operations"));
     const auto found = layers_.find(id);
     if (found == layers_.end())
         return foundation::Result<void>::Failure(
@@ -437,8 +482,8 @@ foundation::Result<void> EnvironmentService::ExpireLayer(EnvironmentLayerId id, 
         return foundation::Result<void>::Failure(
             Error("gameplay.environment.layer_not_due", "environment layer is not due to expire"));
     if (!CanRecordChanges(1))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.change_sequence_exhausted", "environment change sequence is exhausted"));
+        return foundation::Result<void>::Failure(Error("gameplay.change_sequence_exhausted",
+                                                       "environment change sequence is exhausted"));
 
     auto revision = PrepareRevision();
     if (!revision)
@@ -454,10 +499,12 @@ foundation::Result<void> EnvironmentService::ExpireLayer(EnvironmentLayerId id, 
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> EnvironmentService::SweepExpired(GameplayTimePoint now, GameplayContext context) {
+foundation::Result<void> EnvironmentService::SweepExpired(GameplayTimePoint now,
+                                                          GameplayContext context) {
     if (!frozen_)
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_not_frozen", "environment service must be frozen before runtime operations"));
+            Error("gameplay.registry_not_frozen",
+                  "environment service must be frozen before runtime operations"));
 
     std::vector<EnvironmentLayerId> ids;
     for (const auto &[id, layer] : layers_)
@@ -467,8 +514,8 @@ foundation::Result<void> EnvironmentService::SweepExpired(GameplayTimePoint now,
     if (ids.empty())
         return foundation::Result<void>::Success();
     if (!CanRecordChanges(ids.size()))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.change_sequence_exhausted", "environment change sequence is exhausted"));
+        return foundation::Result<void>::Failure(Error("gameplay.change_sequence_exhausted",
+                                                       "environment change sequence is exhausted"));
 
     auto revision = PrepareRevision();
     if (!revision)
@@ -486,16 +533,19 @@ foundation::Result<void> EnvironmentService::SweepExpired(GameplayTimePoint now,
         if (expired_ != std::numeric_limits<std::uint64_t>::max())
             ++expired_;
     }
+
     return foundation::Result<void>::Success();
 }
 
 std::optional<EnvironmentLayer> EnvironmentService::GetLayer(EnvironmentLayerId id) const noexcept {
     const auto found = layers_.find(id);
     return found == layers_.end() ? std::nullopt : std::optional<EnvironmentLayer>{found->second};
+
 }
 
 std::vector<EnvironmentLayer> EnvironmentService::FindLayers(EnvironmentPosition position) const {
-    std::unordered_set<EnvironmentLayerId, IdHash> ids(global_layers_.begin(), global_layers_.end());
+    std::unordered_set<EnvironmentLayerId, IdHash> ids(global_layers_.begin(),
+                                                       global_layers_.end());
     ids.insert(large_layers_.begin(), large_layers_.end());
     const auto cell = CellFor(position);
     if (const auto found = spatial_index_.find(cell); found != spatial_index_.end())
@@ -508,6 +558,7 @@ std::vector<EnvironmentLayer> EnvironmentService::FindLayers(EnvironmentPosition
         if (!layer.bounds || layer.bounds->Contains(position))
             result.push_back(layer);
     }
+
     std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
         if (a.priority != b.priority)
             return a.priority < b.priority;
@@ -516,13 +567,15 @@ std::vector<EnvironmentLayer> EnvironmentService::FindLayers(EnvironmentPosition
     return result;
 }
 
-foundation::Result<void> EnvironmentService::Blend(EnvironmentValues &base, const EnvironmentLayer &layer) const {
+foundation::Result<void> EnvironmentService::Blend(EnvironmentValues &base,
+                                                   const EnvironmentLayer &layer) const {
     const auto &added = layer.values;
     if (layer.blend == EnvironmentBlendPolicy::CustomRegistered) {
         const auto handler = blend_handlers_.find(layer.custom_blend);
         if (handler == blend_handlers_.end())
             return foundation::Result<void>::Failure(
-                Error("gameplay.environment.blend_handler_missing", "environment blend handler is missing"));
+                Error("gameplay.environment.blend_handler_missing",
+                      "environment blend handler is missing"));
 
         try {
             auto blended = handler->second.second(base, added);
@@ -531,25 +584,31 @@ foundation::Result<void> EnvironmentService::Blend(EnvironmentValues &base, cons
                     ++blend_failures_;
                 return foundation::Result<void>::Failure(blended.GetError());
             }
+
             if (auto valid = ValidateValues(blended.Value()); !valid) {
                 if (blend_failures_ != std::numeric_limits<std::uint64_t>::max())
                     ++blend_failures_;
-                return foundation::Result<void>::Failure(Error("gameplay.environment.invalid_blend_result",
-                                                               "custom environment blend returned invalid values"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.environment.invalid_blend_result",
+                          "custom environment blend returned invalid values"));
             }
+
             base = std::move(blended).Value();
             return foundation::Result<void>::Success();
         } catch (const std::exception &) {
             if (blend_failures_ != std::numeric_limits<std::uint64_t>::max())
                 ++blend_failures_;
             return foundation::Result<void>::Failure(
-                Error("gameplay.environment.blend_exception", "custom environment blend handler threw an exception"));
+                Error("gameplay.environment.blend_exception",
+                      "custom environment blend handler threw an exception"));
         } catch (...) {
             if (blend_failures_ != std::numeric_limits<std::uint64_t>::max())
                 ++blend_failures_;
             return foundation::Result<void>::Failure(
-                Error("gameplay.environment.blend_exception", "custom environment blend handler threw an exception"));
+                Error("gameplay.environment.blend_exception",
+                      "custom environment blend handler threw an exception"));
         }
+
     }
 
     const auto apply = [policy = layer.blend](EnvironmentFixed current, EnvironmentFixed value) {
@@ -567,8 +626,10 @@ foundation::Result<void> EnvironmentService::Blend(EnvironmentValues &base, cons
         case EnvironmentBlendPolicy::CustomRegistered:
             return value;
         }
+
         return value;
     };
+
     const auto has = [&](EnvironmentValueField field) {
         return (added.present & static_cast<EnvironmentValueMask>(field)) != 0;
     };
@@ -586,6 +647,7 @@ foundation::Result<void> EnvironmentService::Blend(EnvironmentValues &base, cons
         base.wind_y = apply(base.wind_y, added.wind_y);
         base.wind_z = apply(base.wind_z, added.wind_z);
     }
+
     if (has(EnvironmentValueField::Visibility))
         base.visibility = apply(base.visibility, added.visibility);
     if (has(EnvironmentValueField::LightExposure))
@@ -594,8 +656,9 @@ foundation::Result<void> EnvironmentService::Blend(EnvironmentValues &base, cons
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<EnvironmentSample> EnvironmentService::Sample(EnvironmentPosition position, GameplayTimePoint time,
-                                                                 std::span<const GameplayObjectRef> scopes) const {
+foundation::Result<EnvironmentSample>
+EnvironmentService::Sample(EnvironmentPosition position, GameplayTimePoint time,
+                           std::span<const GameplayObjectRef> scopes) const {
     if (samples_ != std::numeric_limits<std::uint64_t>::max())
         ++samples_;
 
@@ -606,9 +669,11 @@ foundation::Result<EnvironmentSample> EnvironmentService::Sample(EnvironmentPosi
 
     const auto layers = FindLayers(position);
     for (const auto &layer : layers) {
-        if (layer.created_at.ticks > time.ticks || (layer.expires_at && layer.expires_at->ticks <= time.ticks))
+        if (layer.created_at.ticks > time.ticks ||
+            (layer.expires_at && layer.expires_at->ticks <= time.ticks))
             continue;
-        if (layer.area_ref.IsValid() && std::find(scopes.begin(), scopes.end(), layer.area_ref) == scopes.end())
+        if (layer.area_ref.IsValid() &&
+            std::find(scopes.begin(), scopes.end(), layer.area_ref) == scopes.end())
             continue;
 
         if (auto blended = Blend(sample.values, layer); !blended)
@@ -635,9 +700,8 @@ EnvironmentSnapshot EnvironmentService::CaptureSnapshot() const {
     for (const auto &[_, layer] : layers_)
         if (layer.persistence == EnvironmentPersistence::Persistent)
             snapshot.layers.push_back(layer);
-    std::sort(snapshot.layers.begin(), snapshot.layers.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(snapshot.layers.begin(), snapshot.layers.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     snapshot.ids = ids_.GetSnapshot();
     snapshot.revision = revision_;
     snapshot.change_epoch = journal_epoch_;
@@ -645,33 +709,41 @@ EnvironmentSnapshot EnvironmentService::CaptureSnapshot() const {
 }
 
 foundation::Result<void> EnvironmentService::RestoreSnapshot(EnvironmentSnapshot snapshot) {
-    const auto next_journal_epoch =
-        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    const auto next_journal_epoch = CheckedNextChangeEpoch(
+        snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
+
     if (!frozen_)
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_not_frozen", "environment service must be frozen before restore"));
+            Error("gameplay.registry_not_frozen",
+                  "environment service must be frozen before restore"));
 
     const auto expected_scope = ids_.GetSnapshot().scope;
-    if (!MonotonicIdGenerator<GameplayObjectId>::IsValidSnapshot(snapshot.ids) || snapshot.ids.scope != expected_scope)
+    if (!MonotonicIdGenerator<GameplayObjectId>::IsValidSnapshot(snapshot.ids) ||
+        snapshot.ids.scope != expected_scope)
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.restore_invalid", "invalid environment id generator snapshot"));
+            Error("gameplay.environment.restore_invalid",
+                  "invalid environment id generator snapshot"));
 
     std::unordered_map<EnvironmentLayerId, EnvironmentLayer, IdHash> rebuilt;
     std::uint64_t max_low = 0;
     for (auto &layer : snapshot.layers) {
-        if (layer.persistence != EnvironmentPersistence::Persistent || layer.revision > snapshot.revision)
-            return foundation::Result<void>::Failure(Error(
-                "gameplay.environment.restore_invalid", "snapshot contains non-persistent or future-revision layer"));
+        if (layer.persistence != EnvironmentPersistence::Persistent ||
+            layer.revision > snapshot.revision)
+            return foundation::Result<void>::Failure(
+                Error("gameplay.environment.restore_invalid",
+                      "snapshot contains non-persistent or future-revision layer"));
         if (auto valid = ValidateLayer(layer); !valid)
             return foundation::Result<void>::Failure(
                 Error("gameplay.environment.restore_invalid", "invalid layer in snapshot"));
         if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
-            return foundation::Result<void>::Failure(Error(
-                "gameplay.environment.storage_failed", "failed while constructing environment snapshot candidates"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.environment.storage_failed",
+                      "failed while constructing environment snapshot candidates"));
         if (!rebuilt.emplace(layer.id, layer).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.environment.restore_invalid", "duplicate layer in snapshot"));
@@ -681,7 +753,8 @@ foundation::Result<void> EnvironmentService::RestoreSnapshot(EnvironmentSnapshot
 
     if (snapshot.ids.next != 0 && snapshot.ids.next <= max_low)
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.restore_invalid", "environment id generator can reproduce restored ids"));
+            Error("gameplay.environment.restore_invalid",
+                  "environment id generator can reproduce restored ids"));
 
     try {
         EnvironmentService staged = *this;
@@ -689,14 +762,16 @@ foundation::Result<void> EnvironmentService::RestoreSnapshot(EnvironmentSnapshot
         staged.RebuildSpatialIndex();
         if (test_seam::Consume(test_seam::FaultPoint::RestoreBeforeCommit))
             return foundation::Result<void>::Failure(
-                Error("gameplay.environment.storage_failed", "failed to stage environment snapshot indexes"));
+                Error("gameplay.environment.storage_failed",
+                      "failed to stage environment snapshot indexes"));
         layers_.swap(staged.layers_);
         spatial_index_.swap(staged.spatial_index_);
         global_layers_.swap(staged.global_layers_);
         large_layers_.swap(staged.large_layers_);
     } catch (...) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.environment.storage_failed", "failed to stage environment snapshot indexes"));
+            Error("gameplay.environment.storage_failed",
+                  "failed to stage environment snapshot indexes"));
     }
 
     (void)ids_.Restore(snapshot.ids);
@@ -708,23 +783,28 @@ foundation::Result<void> EnvironmentService::RestoreSnapshot(EnvironmentSnapshot
     return foundation::Result<void>::Success();
 }
 
-std::vector<EnvironmentChange> EnvironmentService::ChangesSinceSequence(std::uint64_t sequence) const {
+std::vector<EnvironmentChange>
+EnvironmentService::ChangesSinceSequence(std::uint64_t sequence) const {
     return ReadChangesSinceSequence(sequence).changes;
 }
 
 EnvironmentChangeBatch EnvironmentService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     EnvironmentChangeBatch batch;
     batch.latest_sequence = LatestChangeCursor().sequence;
-    batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
+    batch.oldest_available_sequence =
+        changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
     if (next_change_sequence_ == 0 || sequence > batch.latest_sequence) {
         batch.snapshot_required = true;
         return batch;
     }
+
     if (changes_.empty()) {
         batch.snapshot_required = sequence < batch.latest_sequence;
         return batch;
     }
-    if (sequence < batch.oldest_available_sequence && batch.oldest_available_sequence - sequence > 1) {
+
+    if (sequence < batch.oldest_available_sequence &&
+        batch.oldest_available_sequence - sequence > 1) {
         batch.snapshot_required = true;
         return batch;
     }
@@ -749,4 +829,5 @@ EnvironmentDiagnostics EnvironmentService::GetDiagnostics() const noexcept {
     diagnostics.blend_failures = blend_failures_;
     return diagnostics;
 }
+
 } // namespace epidemic::gameplay::environment

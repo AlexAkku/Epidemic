@@ -34,13 +34,7 @@ enum class StreamingState {
     RollbackFailed
 };
 
-enum class StreamingPriorityClass {
-    Critical,
-    High,
-    Normal,
-    Low,
-    Background
-};
+enum class StreamingPriorityClass { Critical, High, Normal, Low, Background };
 
 struct StreamingRequestId {
     std::uint64_t value = 0;
@@ -49,18 +43,21 @@ struct StreamingRequestId {
         return value != 0;
     }
 
-    [[nodiscard]] friend constexpr bool operator==(StreamingRequestId, StreamingRequestId) noexcept = default;
+    [[nodiscard]] friend constexpr bool operator==(StreamingRequestId,
+                                                   StreamingRequestId) noexcept = default;
 };
 
 struct StreamingRequestHandle {
     StreamingRequestId id{};
+
     std::uint32_t generation = 0;
 
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return id.IsValid() && generation != 0;
     }
 
-    [[nodiscard]] friend constexpr bool operator==(StreamingRequestHandle, StreamingRequestHandle) noexcept = default;
+    [[nodiscard]] friend constexpr bool operator==(StreamingRequestHandle,
+                                                   StreamingRequestHandle) noexcept = default;
 };
 
 struct StreamingDemandId {
@@ -70,43 +67,53 @@ struct StreamingDemandId {
         return value != 0;
     }
 
-    [[nodiscard]] friend constexpr bool operator==(StreamingDemandId, StreamingDemandId) noexcept = default;
+    [[nodiscard]] friend constexpr bool operator==(StreamingDemandId,
+                                                   StreamingDemandId) noexcept = default;
 };
 
 struct StreamingDemandHandle {
     StreamingDemandId id{};
+
     StreamingRequestHandle request{};
+
     std::uint32_t generation = 0;
 
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return id.IsValid() && request.IsValid() && generation != 0;
     }
 
-    [[nodiscard]] friend constexpr bool operator==(StreamingDemandHandle, StreamingDemandHandle) noexcept = default;
+    [[nodiscard]] friend constexpr bool operator==(StreamingDemandHandle,
+                                                   StreamingDemandHandle) noexcept = default;
 };
 
 struct ChunkStreamingTarget {
     ChunkId chunk{};
+
 };
 
 struct RegionStreamingTarget {
     RegionId region{};
+
 };
 
 struct AssetStreamingTarget {
     AssetId asset{};
+
 };
 
 struct ObjectStreamingTarget {
     RuntimeObjectId object{};
+
 };
 
 struct ResourceGroupStreamingTarget {
     foundation::StringId group{};
+
 };
 
-using StreamingTarget = std::variant<ChunkStreamingTarget, RegionStreamingTarget, ObjectStreamingTarget,
-                                     ResourceGroupStreamingTarget, AssetStreamingTarget>;
+using StreamingTarget =
+    std::variant<ChunkStreamingTarget, RegionStreamingTarget, ObjectStreamingTarget,
+                 ResourceGroupStreamingTarget, AssetStreamingTarget>;
 
 enum class StreamingPlanStep {
     ResolveTarget,
@@ -123,15 +130,19 @@ struct StreamingPlanStepRecord {
     std::size_t processed_bytes = 0;
 
     constexpr StreamingPlanStepRecord() = default;
+
     constexpr StreamingPlanStepRecord(StreamingPlanStep value) noexcept : step(value) {
     }
+
     constexpr StreamingPlanStepRecord(StreamingPlanStep value, std::size_t estimated,
                                       std::size_t processed = 0) noexcept
         : step(value), estimated_bytes(estimated), processed_bytes(processed) {
     }
+
     constexpr operator StreamingPlanStep() const noexcept {
         return step;
     }
+
 };
 
 struct StreamingStepResult {
@@ -143,6 +154,7 @@ struct StreamingStepResult {
 // present it must be unique and final so external commit cannot precede plan completion.
 struct ProgressiveLoadPlan {
     std::vector<StreamingPlanStepRecord> steps{};
+
     std::size_t cursor = 0;
 };
 
@@ -153,28 +165,38 @@ struct StreamingCancellationToken {
 
 struct StreamingRequest {
     StreamingRequestId id{};
+
     StreamingRequestHandle handle{};
+
     StreamingTarget target{ChunkStreamingTarget{}};
+
     StreamingPriorityClass priority = StreamingPriorityClass::Normal;
     std::uint32_t demand_count = 1;
     StreamingCancellationToken cancellation{};
+
     ProgressiveLoadPlan load_plan{};
+
 };
 
 struct StreamingBudget {
     std::chrono::microseconds cpu_budget{};
+
     std::size_t max_requests = 0;
     std::size_t max_bytes = 0;
 
     [[nodiscard]] constexpr bool IsUnlimited() const noexcept {
         return cpu_budget.count() == 0 && max_requests == 0 && max_bytes == 0;
     }
+
 };
 
 struct StreamingProgress {
     StreamingRequestId id{};
+
     StreamingRequestHandle handle{};
+
     StreamingTarget target{ChunkStreamingTarget{}};
+
     StreamingState state = StreamingState::NotRequested;
     float progress = 0.0f;
     std::uint32_t demand_count = 0;
@@ -184,8 +206,11 @@ struct StreamingProgress {
 
 struct StreamingTickFailure {
     StreamingRequestHandle handle{};
+
     StreamingTarget target{ChunkStreamingTarget{}};
+
     foundation::Error error{};
+
 };
 
 struct StreamingTickResult {
@@ -204,16 +229,19 @@ struct StreamingStatistics {
     std::uint64_t budget_violations = 0;
     std::uint64_t failed = 0;
 };
+
 } // namespace epidemic::runtime::streaming
 
 template <> struct std::hash<epidemic::runtime::streaming::StreamingRequestId> {
     std::size_t operator()(epidemic::runtime::streaming::StreamingRequestId id) const noexcept {
         return std::hash<std::uint64_t>{}(id.value);
     }
+
 };
 
 template <> struct std::hash<epidemic::runtime::streaming::StreamingDemandId> {
     std::size_t operator()(epidemic::runtime::streaming::StreamingDemandId id) const noexcept {
         return std::hash<std::uint64_t>{}(id.value);
     }
+
 };

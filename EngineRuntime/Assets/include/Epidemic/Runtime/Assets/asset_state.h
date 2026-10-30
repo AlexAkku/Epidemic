@@ -24,6 +24,8 @@ enum class AssetState {
     case AssetState::Deprecated:
         return true;
     }
+
     return false;
 }
-}
+
+} // namespace epidemic::runtime

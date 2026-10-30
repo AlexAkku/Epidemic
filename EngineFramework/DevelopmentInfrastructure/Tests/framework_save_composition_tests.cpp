@@ -16,6 +16,7 @@
 #include <fstream>
 #include <iterator>
 using namespace epidemic::gameplay;
+
 void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
     epidemic::gameplay::facts::GameplayFactsService facts;
     epidemic::gameplay::time::GameplayTimeService time;
@@ -54,13 +55,16 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
     // Shared authoritative owners, not independently constructed adapter fixtures.
     integration::TradeCoordinator trade(economy, items, ownership);
     integration::AbilityEffectsDispatcher ability_effects(effects);
-    participant_tests::Check(bool(ability_effects.FreezeMappings()), "freeze ability/effect mappings");
+    participant_tests::Check(bool(ability_effects.FreezeMappings()),
+                             "freeze ability/effect mappings");
     const auto clock = time.RegisterClock("composition.clock");
-    const auto action = time.RegisterAction("composition.ability", abilities::AbilityService::Domain());
+    const auto action =
+        time.RegisterAction("composition.ability", abilities::AbilityService::Domain());
     participant_tests::Check(bool(clock) && bool(action), "composition time contracts");
     integration::AbilityTimeAdapter ability_time(time, abilities, clock.Value(), action.Value());
     integration::ConditionProgressionAdapter condition_progression(conditions, progression);
-    participant_tests::Check(bool(condition_progression.FreezeMappings()), "freeze condition/progression mappings");
+    participant_tests::Check(bool(condition_progression.FreezeMappings()),
+                             "freeze condition/progression mappings");
     integration::DeathRewardAdapter death_reward(combat, loot);
     participant_tests::Check(bool(death_reward.FreezeMappings()), "freeze death/reward mappings");
     population_simulation::PopulationEncounterAdapter population_encounter;
@@ -68,51 +72,66 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
     social_legal_integration::SocialLegalMappings social_mappings(crime, society);
     participant_tests::Check(bool(social_mappings.Freeze()), "freeze social/legal mappings");
     social_legal_integration::CrimeSocietyAdapter social_legal(crime, society, social_mappings);
-    state_integration::StateFactsAdapter state_facts(entities, materials, conditions, effects, facts);
-    state_integration::StateLifecycleAdapter state_lifecycle(entities, materials, conditions, effects);
+    state_integration::StateFactsAdapter state_facts(entities, materials, conditions, effects,
+                                                     facts);
+    state_integration::StateLifecycleAdapter state_lifecycle(entities, materials, conditions,
+                                                             effects);
     state_integration::ConditionEffectsAdapter state_delivery(conditions, effects);
     state_integration::StateTimeAdapter state_time(conditions, effects, time);
-    participant_tests::Check(bool(state_facts.RegisterContracts()) && bool(state_time.RegisterContracts()),
+    participant_tests::Check(bool(state_facts.RegisterContracts()) &&
+                                 bool(state_time.RegisterContracts()),
                              "state contracts");
-    state_integration::StateIntegrationPersistence state(state_facts, state_lifecycle, state_delivery, state_time);
+    state_integration::StateIntegrationPersistence state(state_facts, state_lifecycle,
+                                                         state_delivery, state_time);
     world_integration::WorldFactsAdapter world_facts(world, environment, interaction, facts);
     participant_tests::Check(bool(world_facts.RegisterContracts()), "world/facts contracts");
     integration::ScheduledTriggerDispatcher scheduled(time);
     narrative_integration::NarrativeExternalConsequenceOutbox narrative_outbox;
+
     // A real immutable effect handler/definition/mapping is required even for an empty inbox.
     class NoopHandler final : public effects::IEffectHandler {
       public:
         effects::EffectTypeId Type() const noexcept override {
             return effects::EffectTypeId::FromString("composition.noop");
         }
+
         effects::EffectHandlerCapabilities Capabilities() const noexcept override {
             return {true, false, false, true};
+
         }
+
         epidemic::foundation::Result<effects::EffectPrepareResult>
         Prepare(const effects::EffectOperation &) const override {
             return epidemic::foundation::Result<effects::EffectPrepareResult>::Success(
                 {effects::EffectPrepareDisposition::Accepted, {}});
         }
+
         epidemic::foundation::Result<effects::EffectCommitResult>
-        Commit(const effects::EffectOperation &, const effects::RegisteredEffectPayload &) noexcept override {
+        Commit(const effects::EffectOperation &,
+               const effects::RegisteredEffectPayload &) noexcept override {
             return epidemic::foundation::Result<effects::EffectCommitResult>::Success(
                 {effects::EffectCommitDisposition::Applied, {}});
         }
+
     };
+
     auto handler = std::make_shared<NoopHandler>();
-    participant_tests::Check(bool(effects.RegisterHandler("composition.noop", handler)), "composition effect handler");
+    participant_tests::Check(bool(effects.RegisterHandler("composition.noop", handler)),
+                             "composition effect handler");
     effects::EffectDefinition bundle;
     bundle.canonical_name = "composition.bundle";
     bundle.steps.push_back({handler->Type(), effects::EffectTargetSelector::AllTargets, 1, {}});
     const auto effect = effects.RegisterDefinition(std::move(bundle));
     participant_tests::Check(bool(effect), "composition effect bundle");
-    const auto interaction_type = interaction::InteractionTypeId::FromString("composition.interaction");
+    const auto interaction_type =
+        interaction::InteractionTypeId::FromString("composition.interaction");
     interaction::InteractionDefinition definition;
     definition.type = interaction_type;
     definition.canonical_name = "composition.interaction";
     participant_tests::Check(bool(interaction.RegisterDefinition(std::move(definition))),
                              "composition interaction definition");
-    interaction_effects_integration::InteractionEffectExecutor interaction_effects(effects, interaction_type);
+    interaction_effects_integration::InteractionEffectExecutor
+        interaction_effects(effects, interaction_type);
     participant_tests::Check(bool(interaction_effects.RegisterEffect(effect.Value())),
                              "register interaction/effect mapping");
     participant_tests::FreezeOwner(facts);
@@ -149,14 +168,16 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
     participant_tests::FreezeOwner(society);
     participant_tests::FreezeOwner(traversal);
     participant_tests::FreezeOwner(world);
-    participant_tests::Check(bool(interaction_effects.Freeze(interaction)), "freeze interaction/effect mapping");
+    participant_tests::Check(bool(interaction_effects.Freeze(interaction)),
+                             "freeze interaction/effect mapping");
     participant_tests::Check(bool(scheduled.Freeze()), "freeze scheduled dispatcher");
     death_reward.RestoreCursor(combat.LatestChangeCursor());
-    participant_tests::Check(
-        bool(state_facts.PublishPendingChanges()) && bool(state_lifecycle.ProcessEntityChanges()) &&
-            bool(state_delivery.ProcessPending()) && bool(state_time.SynchronizeConditionSchedules()) &&
-            bool(state_time.SynchronizeDeferredEffects()),
-        "initialize state cursors");
+    participant_tests::Check(bool(state_facts.PublishPendingChanges()) &&
+                                 bool(state_lifecycle.ProcessEntityChanges()) &&
+                                 bool(state_delivery.ProcessPending()) &&
+                                 bool(state_time.SynchronizeConditionSchedules()) &&
+                                 bool(state_time.SynchronizeDeferredEffects()),
+                             "initialize state cursors");
     world_facts.ResetCursorsToLatest();
     // Rebind adapter cursors to the shared bootstrap owners before capturing them.
     auto social_checkpoint = social_legal.CaptureCheckpoint();
@@ -186,30 +207,40 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
     owned.push_back(savegame::CreateLootServiceSaveParticipant(loot, workspace));
     owned.push_back(savegame::CreateMaterialServiceSaveParticipant(materials, workspace));
     owned.push_back(savegame::CreateNarrativeServiceSaveParticipant(narrative, workspace));
-    owned.push_back(savegame::CreateNavigationSemanticsServiceSaveParticipant(navigation_semantics, workspace));
+    owned.push_back(
+        savegame::CreateNavigationSemanticsServiceSaveParticipant(navigation_semantics, workspace));
     owned.push_back(savegame::CreateNeedsLifeServiceSaveParticipant(needs_life, workspace));
     owned.push_back(savegame::CreateOwnershipServiceSaveParticipant(ownership, workspace));
     owned.push_back(savegame::CreatePerceptionServiceSaveParticipant(perception, workspace));
     owned.push_back(savegame::CreatePopulationServiceSaveParticipant(population, workspace));
     owned.push_back(savegame::CreateProcessesServiceSaveParticipant(processes, workspace));
     owned.push_back(savegame::CreateProgressionServiceSaveParticipant(progression, workspace));
-    owned.push_back(savegame::CreateResourcesProductionServiceSaveParticipant(resources, workspace));
+    owned.push_back(
+        savegame::CreateResourcesProductionServiceSaveParticipant(resources, workspace));
     owned.push_back(savegame::CreateRolesJobsServiceSaveParticipant(roles_jobs, workspace));
     owned.push_back(savegame::CreateSimulationServiceSaveParticipant(simulation, workspace));
     owned.push_back(savegame::CreateSocietyServiceSaveParticipant(society, workspace));
     owned.push_back(savegame::CreateTraversalServiceSaveParticipant(traversal, workspace));
     owned.push_back(savegame::CreateWorldServiceSaveParticipant(world, workspace));
-    owned.push_back(std::make_unique<integration::ScheduledTriggerDispatcherSaveParticipant>(scheduled));
     owned.push_back(
-        std::make_unique<narrative_integration::NarrativeExternalConsequenceSaveParticipant>(narrative_outbox));
+        std::make_unique<integration::ScheduledTriggerDispatcherSaveParticipant>(scheduled));
+    owned.push_back(
+        std::make_unique<narrative_integration::NarrativeExternalConsequenceSaveParticipant>(
+            narrative_outbox));
     owned.push_back(savegame::CreateTradeCoordinatorSaveParticipant(trade, workspace));
-    owned.push_back(savegame::CreateAbilityEffectsDispatcherSaveParticipant(ability_effects, workspace));
+    owned.push_back(
+        savegame::CreateAbilityEffectsDispatcherSaveParticipant(ability_effects, workspace));
     owned.push_back(savegame::CreateAbilityTimeAdapterSaveParticipant(ability_time, workspace));
-    owned.push_back(savegame::CreateConditionProgressionAdapterSaveParticipant(condition_progression, workspace));
+    owned.push_back(
+        savegame::CreateConditionProgressionAdapterSaveParticipant(condition_progression,
+                                                                   workspace));
     owned.push_back(savegame::CreateDeathRewardAdapterSaveParticipant(death_reward, workspace));
-    owned.push_back(savegame::CreateInteractionEffectExecutorSaveParticipant(interaction_effects, workspace));
-    owned.push_back(savegame::CreatePopulationEncounterAdapterSaveParticipant(population_encounter, workspace));
-    owned.push_back(savegame::CreatePopulationLifecycleAdapterSaveParticipant(population_lifecycle, workspace));
+    owned.push_back(
+        savegame::CreateInteractionEffectExecutorSaveParticipant(interaction_effects, workspace));
+    owned.push_back(
+        savegame::CreatePopulationEncounterAdapterSaveParticipant(population_encounter, workspace));
+    owned.push_back(
+        savegame::CreatePopulationLifecycleAdapterSaveParticipant(population_lifecycle, workspace));
     owned.push_back(savegame::CreateCrimeSocietyAdapterSaveParticipant(social_legal, workspace));
     owned.push_back(savegame::CreateStateIntegrationPersistenceSaveParticipant(state, workspace));
     owned.push_back(savegame::CreateWorldFactsAdapterSaveParticipant(world_facts, workspace));
@@ -392,7 +423,8 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
          0,
          savegame::SaveParticipantRequirement::Required,
          {}},
-        {savegame::SaveParticipantId::FromString("integration.narrative.external_consequence_delivery"),
+        {savegame::SaveParticipantId::FromString(
+             "integration.narrative.external_consequence_delivery"),
          1,
          0,
          savegame::SaveParticipantRequirement::Required,
@@ -472,6 +504,7 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
           savegame::SaveParticipantId::FromString("framework.interaction"),
           savegame::SaveParticipantId::FromString("framework.facts")}},
     };
+
     const std::vector<std::string> fixture_names{
         "framework.facts",
         "framework.time",
@@ -521,6 +554,7 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
         "integration.state",
         "integration.world_facts",
     };
+
     savegame::SaveGameOrchestrator orchestrator;
     auto missing = participants;
     missing.pop_back();
@@ -529,23 +563,28 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
     participant_tests::Check(bool(orchestrator.RegisterComposition(participants, {}, expected)),
                              "all reviewed real participants register and freeze");
     const auto order = orchestrator.ResolveOrder();
-    participant_tests::Check(orchestrator.RegistryFrozen() && bool(order) && order.Value().size() == expected.size(),
+    participant_tests::Check(orchestrator.RegistryFrozen() && bool(order) &&
+                                 order.Value().size() == expected.size(),
                              "exact participant set closes registry");
     for (std::size_t i = 0; i < participants.size(); ++i) {
         auto &participant = *participants[i];
         participant_tests::Check(!orchestrator.RegisterParticipant(participant),
                                  "late registration rejected for every real participant");
         auto snapshot = participant.CaptureSnapshot({});
-        participant_tests::Check(bool(snapshot) && bool(participant.ValidateSnapshot(snapshot.Value(), {})),
-                                 "every registered real participant captures a valid bootstrap checkpoint");
-        const auto path = (recording.empty() ? std::filesystem::path(EPIDEMIC_SAVE_FIXTURES) : recording) /
-                          "participant" / fixture_names[i] / "v1.bin";
+        participant_tests::
+            Check(bool(snapshot) && bool(participant.ValidateSnapshot(snapshot.Value(), {})),
+                  "every registered real participant captures a valid bootstrap checkpoint");
+        const auto path =
+            (recording.empty() ? std::filesystem::path(EPIDEMIC_SAVE_FIXTURES) : recording) /
+            "participant" / fixture_names[i] / "v1.bin";
         if (!recording.empty()) {
-            participant_tests::Check(!std::filesystem::exists(path), "never overwrite historical participant fixture");
+            participant_tests::Check(!std::filesystem::exists(path),
+                                     "never overwrite historical participant fixture");
             std::filesystem::create_directories(path.parent_path());
             std::ofstream file(path, std::ios::binary);
             const auto &bytes = snapshot.Value().payload;
-            file.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+            file.write(reinterpret_cast<const char *>(bytes.data()),
+                       static_cast<std::streamsize>(bytes.size()));
             participant_tests::Check(bool(file), "record explicit participant fixture");
         } else {
             std::ifstream file(path, std::ios::binary);
@@ -561,8 +600,11 @@ void TestFrameworkSaveComposition(const std::filesystem::path &recording = {}) {
             participant_tests::Check(historical.payload == snapshot.Value().payload,
                                      "schema-v1 bootstrap bytes remain stable");
         }
+
     }
+
 }
+
 int main(int argc, char **argv) {
     if (argc == 3 && std::string_view(argv[1]) == "--record-participant-fixtures")
         TestFrameworkSaveComposition(argv[2]);

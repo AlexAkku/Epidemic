@@ -9,6 +9,7 @@ using namespace epidemic::gameplay::resources;
 namespace {
 [[nodiscard]] GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
+
 }
 
 [[nodiscard]] bool RegisterWood(ResourcesProductionService &service, ResourceTypeId &wood) {
@@ -24,8 +25,9 @@ namespace {
 [[nodiscard]] bool SameCoreSnapshot(const ResourcesSnapshot &a, const ResourcesSnapshot &b) {
     return a.stockpiles.size() == b.stockpiles.size() && a.amounts.size() == b.amounts.size() &&
            a.nodes.size() == b.nodes.size() && a.sites.size() == b.sites.size() &&
-           a.reservations.size() == b.reservations.size() && a.capabilities.size() == b.capabilities.size() &&
-           a.plans.size() == b.plans.size() && a.transactions.size() == b.transactions.size() &&
+           a.reservations.size() == b.reservations.size() &&
+           a.capabilities.size() == b.capabilities.size() && a.plans.size() == b.plans.size() &&
+           a.transactions.size() == b.transactions.size() &&
            a.stockpile_ids.next == b.stockpile_ids.next && a.node_ids.next == b.node_ids.next &&
            a.site_ids.next == b.site_ids.next && a.reservation_ids.next == b.reservation_ids.next &&
            a.capability_ids.next == b.capability_ids.next && a.plan_ids.next == b.plan_ids.next &&
@@ -70,19 +72,23 @@ namespace {
     plan.desired_output = wood;
     plan.target_quantity = 1;
 
-    if (!HasRevisionExhausted(service.CreateStockpile({{}, owner, {}, {}, StockpileState::Active, {}})) ||
+    if (!HasRevisionExhausted(
+            service.CreateStockpile({{}, owner, {}, {}, StockpileState::Active, {}})) ||
         !SameCoreSnapshot(before, service.CaptureSnapshot()))
         return false;
-    if (!HasRevisionExhausted(service.CreateNode(node)) || !SameCoreSnapshot(before, service.CaptureSnapshot()))
+    if (!HasRevisionExhausted(service.CreateNode(node)) ||
+        !SameCoreSnapshot(before, service.CaptureSnapshot()))
         return false;
     if (!HasRevisionExhausted(service.CreateProductionSite(site)) ||
         !SameCoreSnapshot(before, service.CaptureSnapshot()))
         return false;
     if (!HasRevisionExhausted(service.Reserve(source.Value(), {{wood, 1}}, owner)) ||
-        !SameCoreSnapshot(before, service.CaptureSnapshot()) || service.GetReservedAmount(source.Value(), wood) != 0)
+        !SameCoreSnapshot(before, service.CaptureSnapshot()) ||
+        service.GetReservedAmount(source.Value(), wood) != 0)
         return false;
     if (!HasRevisionExhausted(service.Transfer(source.Value(), destination.Value(), {{wood, 1}})) ||
-        !SameCoreSnapshot(before, service.CaptureSnapshot()) || service.GetAmount(source.Value(), wood) != 100 ||
+        !SameCoreSnapshot(before, service.CaptureSnapshot()) ||
+        service.GetAmount(source.Value(), wood) != 100 ||
         service.GetAmount(destination.Value(), wood) != 0)
         return false;
     if (!HasRevisionExhausted(service.CreateProductionCapability(capability)) ||
@@ -97,8 +103,8 @@ namespace {
 [[nodiscard]] bool TestPublicationFaultAtomicity() {
     const auto owner = Ref("fault.owner");
 
-    for (const auto point :
-         {internal_test::AllocationFaultPoint::PrimaryInsert, internal_test::AllocationFaultPoint::JournalAppend}) {
+    for (const auto point : {internal_test::AllocationFaultPoint::PrimaryInsert,
+                             internal_test::AllocationFaultPoint::JournalAppend}) {
         ResourcesProductionService service;
         ResourceTypeId wood;
         if (!RegisterWood(service, wood))
@@ -106,7 +112,8 @@ namespace {
         service.Freeze();
         const auto before = service.CaptureSnapshot();
         internal_test::ArmAllocationFault(point);
-        const auto result = service.CreateStockpile({{}, owner, {}, {}, StockpileState::Active, {}});
+        const auto result =
+            service.CreateStockpile({{}, owner, {}, {}, StockpileState::Active, {}});
         internal_test::ResetAllocationFault();
         if (result || !result.GetError().HasCode("gameplay.resources.publication_failed") ||
             !SameCoreSnapshot(before, service.CaptureSnapshot()))
@@ -143,16 +150,19 @@ namespace {
         if (!from || !to || !service.Add(from.Value(), {wood, 10}))
             return false;
         const auto before = service.CaptureSnapshot();
-        internal_test::ArmAllocationFault(internal_test::AllocationFaultPoint::TransactionPublication);
+        internal_test::ArmAllocationFault(
+            internal_test::AllocationFaultPoint::TransactionPublication);
         const auto result = service.Transfer(from.Value(), to.Value(), {{wood, 1}});
         internal_test::ResetAllocationFault();
         if (result || !result.GetError().HasCode("gameplay.resources.publication_failed") ||
-            !SameCoreSnapshot(before, service.CaptureSnapshot()) || service.GetAmount(from.Value(), wood) != 10 ||
-            service.GetAmount(to.Value(), wood) != 0)
+            !SameCoreSnapshot(before, service.CaptureSnapshot()) ||
+            service.GetAmount(from.Value(), wood) != 10 || service.GetAmount(to.Value(), wood) != 0)
             return false;
     }
+
     return true;
 }
+
 } // namespace
 
 int main() {
@@ -183,14 +193,16 @@ int main() {
     if (s.GetReservedAmount(a.Value(), wood) != 0 || s.GetAvailableAmount(a.Value(), wood) != 70)
         return 8;
 
-    auto exact_reserve = s.Reserve(a.Value(), {{wood, 35}, {wood, 35}}, owner, TypeId::FromString("test.reserve"));
+    auto exact_reserve =
+        s.Reserve(a.Value(), {{wood, 35}, {wood, 35}}, owner, TypeId::FromString("test.reserve"));
     if (!exact_reserve)
         return 9;
     if (s.GetReservedAmount(a.Value(), wood) != 70 || s.GetAvailableAmount(a.Value(), wood) != 0)
         return 10;
     if (!s.ReleaseReservation(exact_reserve.Value()))
         return 11;
-    if (s.GetReservedAmount(a.Value(), wood) != 0 || s.FindReservation(exact_reserve.Value()) != nullptr)
+    if (s.GetReservedAmount(a.Value(), wood) != 0 ||
+        s.FindReservation(exact_reserve.Value()) != nullptr)
         return 12;
 
     if (!s.SetStockpileState(b.Value(), StockpileState::Disabled))
@@ -215,6 +227,7 @@ int main() {
     node.state = ResourceNodeState::Depleted;
     node.maximum_amount = 10;
     node.last_regenerated_at = GameplayTimePoint{0};
+
     auto node_id = s.CreateNode(node);
     if (!node_id)
         return 20;
@@ -228,7 +241,9 @@ int main() {
             if (n.remaining_amount != 10 || n.last_regenerated_at.ticks != 4)
                 return 22;
         }
+
     }
+
     if (!found_node)
         return 23;
     if (s.RegenerateNode(node_id.Value(), GameplayTimePoint{3}))
@@ -236,6 +251,7 @@ int main() {
 
     ResourceNode overflow_node = node;
     overflow_node.last_regenerated_at = GameplayTimePoint{std::numeric_limits<std::int64_t>::min()};
+
     overflow_node.remaining_amount = 1;
     overflow_node.maximum_amount = 10;
     overflow_node.regeneration_rate_per_tick = 1;
@@ -244,7 +260,8 @@ int main() {
         return 46;
     const auto overflow_before = s.CaptureSnapshot();
     auto overflow_regen =
-        s.RegenerateNode(overflow_node_id.Value(), GameplayTimePoint{std::numeric_limits<std::int64_t>::max()});
+        s.RegenerateNode(overflow_node_id.Value(),
+                         GameplayTimePoint{std::numeric_limits<std::int64_t>::max()});
     if (overflow_regen || !overflow_regen.GetError().HasCode("gameplay.time_overflow"))
         return 47;
     const auto overflow_after = s.CaptureSnapshot();
@@ -268,6 +285,7 @@ int main() {
                                    {{wood, 12}},
                                    GameplayDuration{5},
                                    {}};
+
     ResourcesProductionService p;
     ResourceTypeId pwood;
     if (!RegisterWood(p, pwood))
@@ -278,7 +296,8 @@ int main() {
     p.Freeze();
     auto in = p.CreateStockpile({{}, owner, {}, {}, StockpileState::Active, {}});
     auto out = p.CreateStockpile({{}, owner, {}, {}, StockpileState::Active, {}});
-    auto site = p.CreateProductionSite({{}, owner, {}, {}, ProductionSiteState::Active, 1'000'000, {}});
+    auto site =
+        p.CreateProductionSite({{}, owner, {}, {}, ProductionSiteState::Active, 1'000'000, {}});
     if (!in || !out || !site)
         return 27;
     if (!p.Add(in.Value(), {pwood, 100}))
@@ -299,7 +318,9 @@ int main() {
         return 37;
     if (!restored.ReadChangesSince(pre_restore_cursor).snapshot_required)
         return 49;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 50;
     if (restored.GetAmount(in.Value(), restored_wood) != 100)
@@ -337,15 +358,19 @@ int main() {
         if (!journal.Add(js.Value(), {jwood, 1}))
             return 43;
     }
+
     auto batch = journal.ReadChangesSince(ChangeCursor{});
     if (!batch.snapshot_required)
         return 44;
-    if (!journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!journal
+             .ReadChangesSince(
+                 journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 55;
     ResourcesProductionService empty_journal;
     if (!empty_journal
-             .ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(
+                 journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 56;
     if (journal.ReadChangesSince(journal.LatestChangeCursor()).changes.size() != 0)
@@ -353,15 +378,17 @@ int main() {
 
     // Goal 4: deterministic module-local restore seams replace process-global allocation hooks.
     const auto allocation_before = restored.CaptureSnapshot();
-    for (const auto point :
-         {internal_test::AllocationFaultPoint::RestorePrimary, internal_test::AllocationFaultPoint::RestoreDerived}) {
+    for (const auto point : {internal_test::AllocationFaultPoint::RestorePrimary,
+                             internal_test::AllocationFaultPoint::RestoreDerived}) {
         auto allocation_target = allocation_before;
         internal_test::ArmAllocationFault(point);
         const auto restored_under_fault = restored.RestoreSnapshot(std::move(allocation_target));
         internal_test::ResetAllocationFault();
-        if (restored_under_fault || !SameCoreSnapshot(allocation_before, restored.CaptureSnapshot()))
+        if (restored_under_fault ||
+            !SameCoreSnapshot(allocation_before, restored.CaptureSnapshot()))
             return 941;
     }
+
     if (!TestRevisionExhaustionKeepsAllGenerators())
         return 942;
     if (!TestPublicationFaultAtomicity())

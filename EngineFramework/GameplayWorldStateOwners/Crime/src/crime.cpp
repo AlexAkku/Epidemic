@@ -32,6 +32,7 @@ foundation::Error Error(std::string_view c, std::string_view m) {
     case CrimeCaseState::Resolved:
         return true;
     }
+
     return false;
 }
 
@@ -43,16 +44,18 @@ foundation::Error Error(std::string_view c, std::string_view m) {
     switch (from) {
     case CrimeCaseState::Open:
         return to == CrimeCaseState::Reported || to == CrimeCaseState::UnderInvestigation ||
-               to == CrimeCaseState::Wanted || to == CrimeCaseState::Dismissed || to == CrimeCaseState::Expired;
+               to == CrimeCaseState::Wanted || to == CrimeCaseState::Dismissed ||
+               to == CrimeCaseState::Expired;
     case CrimeCaseState::Reported:
         return to == CrimeCaseState::UnderInvestigation || to == CrimeCaseState::Wanted ||
                to == CrimeCaseState::Dismissed || to == CrimeCaseState::Expired;
     case CrimeCaseState::UnderInvestigation:
-        return to == CrimeCaseState::Wanted || to == CrimeCaseState::Dismissed || to == CrimeCaseState::Resolved ||
-               to == CrimeCaseState::Expired;
-    case CrimeCaseState::Wanted:
-        return to == CrimeCaseState::Punished || to == CrimeCaseState::Forgiven || to == CrimeCaseState::Dismissed ||
+        return to == CrimeCaseState::Wanted || to == CrimeCaseState::Dismissed ||
                to == CrimeCaseState::Resolved || to == CrimeCaseState::Expired;
+    case CrimeCaseState::Wanted:
+        return to == CrimeCaseState::Punished || to == CrimeCaseState::Forgiven ||
+               to == CrimeCaseState::Dismissed || to == CrimeCaseState::Resolved ||
+               to == CrimeCaseState::Expired;
     case CrimeCaseState::Punished:
     case CrimeCaseState::Forgiven:
     case CrimeCaseState::Expired:
@@ -60,6 +63,7 @@ foundation::Error Error(std::string_view c, std::string_view m) {
     case CrimeCaseState::Resolved:
         return false;
     }
+
     return false;
 }
 
@@ -72,6 +76,7 @@ foundation::Error Error(std::string_view c, std::string_view m) {
     case BountyState::Transferred:
         return true;
     }
+
     return false;
 }
 
@@ -86,6 +91,7 @@ foundation::Error Error(std::string_view c, std::string_view m) {
     default:
         return false;
     }
+
 }
 
 [[nodiscard]] bool IsDerivedProofState(CrimeProofState state) noexcept {
@@ -101,17 +107,20 @@ foundation::Error Error(std::string_view c, std::string_view m) {
     case CrimeProofState::Resolved:
         return false;
     }
+
     return false;
 }
 
 template <class TWrappedId>
-void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &generator, TWrappedId id) noexcept {
+void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &generator,
+                                    TWrappedId id) noexcept {
     if (!id.IsValid())
         return;
     auto snapshot = generator.GetSnapshot();
     if (id.value.High() != snapshot.scope || snapshot.next == 0 || id.value.Low() < snapshot.next)
         return;
-    snapshot.next = id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : id.value.Low() + 1;
+    snapshot.next =
+        id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : id.value.Low() + 1;
     (void)generator.Restore(snapshot);
 }
 
@@ -124,48 +133,59 @@ void TrackMaxLowForScope(TWrappedId id, std::uint64_t scope, std::uint64_t &max_
 [[nodiscard]] bool ContainsId(const std::vector<CrimeRecordId> &ids, CrimeRecordId id) noexcept {
     return std::binary_search(ids.begin(), ids.end(), id);
 }
+
 } // namespace
 
 foundation::Result<void> CrimeService::RegisterLaw(LawDefinition law) {
     if (definitions_frozen_)
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.definitions_frozen", "crime definitions frozen"));
-    if (!law.id.IsValid() || !law.crime_type.IsValid() || laws_.contains(law.id) || law.severity_micro < 0 ||
-        law.default_bounty < 0 || law.statute_of_limitations.ticks < 0)
-        return foundation::Result<void>::Failure(Error("gameplay.crime.invalid_law", "invalid or duplicate law"));
+    if (!law.id.IsValid() || !law.crime_type.IsValid() || laws_.contains(law.id) ||
+        law.severity_micro < 0 || law.default_bounty < 0 || law.statute_of_limitations.ticks < 0)
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.invalid_law", "invalid or duplicate law"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     law.revision = *next;
     try {
         if (!laws_.emplace(law.id, std::move(law)).second)
-            return foundation::Result<void>::Failure(Error("gameplay.crime.invalid_law", "invalid or duplicate law"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.crime.invalid_law", "invalid or duplicate law"));
     } catch (...) {
-        return foundation::Result<void>::Failure(Error("gameplay.crime.allocation_failed", "failed to register law"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.allocation_failed", "failed to register law"));
     }
+
     revision_ = *next;
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> CrimeService::RegisterLawResponseDefinition(LawResponseDefinition definition) {
+foundation::Result<void>
+CrimeService::RegisterLawResponseDefinition(LawResponseDefinition definition) {
     if (definitions_frozen_)
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.definitions_frozen", "crime definitions frozen"));
     if (!definition.id.IsValid() || response_definitions_.contains(definition.id))
         return foundation::Result<void>::Failure(
-            Error("gameplay.crime.invalid_response_definition", "invalid or duplicate law response definition"));
+            Error("gameplay.crime.invalid_response_definition",
+                  "invalid or duplicate law response definition"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     definition.revision = *next;
     try {
         if (!response_definitions_.emplace(definition.id, std::move(definition)).second)
             return foundation::Result<void>::Failure(
-                Error("gameplay.crime.invalid_response_definition", "invalid or duplicate law response definition"));
+                Error("gameplay.crime.invalid_response_definition",
+                      "invalid or duplicate law response definition"));
     } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to register law response"));
     }
+
     revision_ = *next;
     return foundation::Result<void>::Success();
 }
@@ -174,8 +194,8 @@ foundation::Result<void> CrimeService::RegisterJurisdiction(JurisdictionRecord j
     if (definitions_frozen_)
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.definitions_frozen", "crime definitions frozen"));
-    if (!jurisdiction.id.IsValid() || !jurisdiction.area.IsValid() || !jurisdiction.authority_group.IsValid() ||
-        jurisdictions_.contains(jurisdiction.id))
+    if (!jurisdiction.id.IsValid() || !jurisdiction.area.IsValid() ||
+        !jurisdiction.authority_group.IsValid() || jurisdictions_.contains(jurisdiction.id))
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.invalid_jurisdiction", "invalid or duplicate jurisdiction"));
     std::sort(jurisdiction.active_laws.begin(), jurisdiction.active_laws.end());
@@ -189,7 +209,8 @@ foundation::Result<void> CrimeService::RegisterJurisdiction(JurisdictionRecord j
                 Error("gameplay.crime.unknown_law", "jurisdiction references unknown law"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     jurisdiction.revision = *next;
     try {
         if (!jurisdictions_.emplace(jurisdiction.id, std::move(jurisdiction)).second)
@@ -199,6 +220,7 @@ foundation::Result<void> CrimeService::RegisterJurisdiction(JurisdictionRecord j
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to register jurisdiction"));
     }
+
     revision_ = *next;
     return foundation::Result<void>::Success();
 }
@@ -208,16 +230,21 @@ foundation::Result<AuthorityId> CrimeService::RegisterAuthority(AuthorityRecord 
         return foundation::Result<AuthorityId>::Failure(
             Error("gameplay.crime.definitions_frozen", "crime definitions frozen"));
     if (!authority.authority_group.IsValid() || !jurisdictions_.contains(authority.jurisdiction))
-        return foundation::Result<AuthorityId>::Failure(Error("gameplay.crime.invalid_authority", "invalid authority"));
+        return foundation::Result<AuthorityId>::Failure(
+            Error("gameplay.crime.invalid_authority", "invalid authority"));
     for (const auto &[id, existing] : authorities_) {
         (void)id;
-        if (existing.authority_group == authority.authority_group && existing.jurisdiction == authority.jurisdiction)
+        if (existing.authority_group == authority.authority_group &&
+            existing.jurisdiction == authority.jurisdiction)
             return foundation::Result<AuthorityId>::Failure(
-                Error("gameplay.crime.duplicate_authority", "duplicate authority for jurisdiction"));
+                Error("gameplay.crime.duplicate_authority",
+                      "duplicate authority for jurisdiction"));
     }
+
     auto staged_ids = authority_ids_;
     if (!authority.id.IsValid()) {
         authority.id = AuthorityId{staged_ids.Next()};
+
         if (!authority.id.IsValid())
             return foundation::Result<AuthorityId>::Failure(
                 Error("gameplay.crime.id_exhausted", "authority id generator exhausted"));
@@ -240,6 +267,7 @@ foundation::Result<AuthorityId> CrimeService::RegisterAuthority(AuthorityRecord 
         return foundation::Result<AuthorityId>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to register authority"));
     }
+
     authority_ids_ = staged_ids;
     revision_ = *next;
     return foundation::Result<AuthorityId>::Success(id);
@@ -255,18 +283,23 @@ foundation::Result<void> CrimeService::FreezeDefinitions() {
                 return foundation::Result<void>::Failure(
                     Error("gameplay.crime.unknown_law", "jurisdiction references unknown law"));
         }
+
     }
+
     for (const auto &[id, authority] : authorities_) {
         (void)id;
         if (!jurisdictions_.contains(authority.jurisdiction))
             return foundation::Result<void>::Failure(
-                Error("gameplay.crime.invalid_authority", "authority references unknown jurisdiction"));
+                Error("gameplay.crime.invalid_authority",
+                      "authority references unknown jurisdiction"));
     }
+
     definitions_frozen_ = true;
     return foundation::Result<void>::Success();
 }
 
-std::optional<JurisdictionRecord> CrimeService::GetApplicableJurisdiction(GameplayObjectRef area) const {
+std::optional<JurisdictionRecord>
+CrimeService::GetApplicableJurisdiction(GameplayObjectRef area) const {
     ++diagnostics_.jurisdiction_resolutions;
     std::vector<JurisdictionRecord> matches;
     for (const auto &[id, jurisdiction] : jurisdictions_) {
@@ -274,6 +307,7 @@ std::optional<JurisdictionRecord> CrimeService::GetApplicableJurisdiction(Gamepl
         if (jurisdiction.area == area)
             matches.push_back(jurisdiction);
     }
+
     std::sort(matches.begin(), matches.end(), [](const auto &a, const auto &b) {
         if (a.priority != b.priority)
             return a.priority > b.priority;
@@ -284,7 +318,8 @@ std::optional<JurisdictionRecord> CrimeService::GetApplicableJurisdiction(Gamepl
     return matches.front();
 }
 
-const LawDefinition *CrimeService::FindLawFor(CrimeTypeId type, JurisdictionId jurisdiction) const noexcept {
+const LawDefinition *CrimeService::FindLawFor(CrimeTypeId type,
+                                              JurisdictionId jurisdiction) const noexcept {
     auto jit = jurisdictions_.find(jurisdiction);
     if (jit == jurisdictions_.end())
         return nullptr;
@@ -293,19 +328,22 @@ const LawDefinition *CrimeService::FindLawFor(CrimeTypeId type, JurisdictionId j
         if (lit != laws_.end() && lit->second.crime_type == type)
             return &lit->second;
     }
+
     return nullptr;
 }
 
-const LawResponseDefinition *CrimeService::FindResponseDefinition(LawResponseTypeId id) const noexcept {
+const LawResponseDefinition *
+CrimeService::FindResponseDefinition(LawResponseTypeId id) const noexcept {
     auto it = response_definitions_.find(id);
     return it == response_definitions_.end() ? nullptr : &it->second;
 }
 
-foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(CrimeCandidate candidate,
-                                                                               CrimeCandidatePolicy policy) {
+foundation::Result<CrimeEvaluationResult>
+CrimeService::EvaluateCrimeCandidate(CrimeCandidate candidate, CrimeCandidatePolicy policy) {
     if (!definitions_frozen_)
         return foundation::Result<CrimeEvaluationResult>::Failure(
-            Error("gameplay.crime.definitions_not_frozen", "crime definitions must be frozen before evaluation"));
+            Error("gameplay.crime.definitions_not_frozen",
+                  "crime definitions must be frozen before evaluation"));
     if (!candidate.type.IsValid() || !candidate.offender.IsValid())
         return foundation::Result<CrimeEvaluationResult>::Failure(
             Error("gameplay.crime.invalid_candidate", "invalid crime candidate"));
@@ -315,6 +353,7 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
             return foundation::Result<CrimeEvaluationResult>::Failure(
                 Error("gameplay.crime.invalid_witness", "invalid initial crime witness"));
     }
+
     auto jurisdiction = GetApplicableJurisdiction(candidate.area);
     if (!jurisdiction) {
         if (policy == CrimeCandidatePolicy::IgnoreWithoutJurisdiction) {
@@ -322,9 +361,11 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
             ignored.revision = revision_;
             return foundation::Result<CrimeEvaluationResult>::Success(ignored);
         }
+
         return foundation::Result<CrimeEvaluationResult>::Failure(
             Error("gameplay.crime.no_jurisdiction", "no applicable jurisdiction"));
     }
+
     auto law = FindLawFor(candidate.type, jurisdiction->id);
     if (!law)
         return foundation::Result<CrimeEvaluationResult>::Failure(
@@ -337,6 +378,7 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
         out.reasons.push_back(TypeId::FromString("framework.crime.reason.witness_required"));
         return foundation::Result<CrimeEvaluationResult>::Success(std::move(out));
     }
+
     const auto next = NextRevision();
     if (!next)
         return foundation::Result<CrimeEvaluationResult>::Failure(
@@ -346,6 +388,7 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
     auto staged_witness_ids = witness_ids_;
     CrimeRecord record;
     record.id = CrimeRecordId{staged_crime_ids.Next()};
+
     if (!record.id.IsValid())
         return foundation::Result<CrimeEvaluationResult>::Failure(
             Error("gameplay.crime.id_exhausted", "crime id generator exhausted"));
@@ -367,6 +410,7 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
         if (candidate.initial_witness) {
             WitnessRecord witness;
             witness.id = WitnessRecordId{staged_witness_ids.Next()};
+
             if (!witness.id.IsValid())
                 return foundation::Result<CrimeEvaluationResult>::Failure(
                     Error("gameplay.crime.id_exhausted", "witness id generator exhausted"));
@@ -378,10 +422,12 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
             witness.payload = candidate.initial_witness->payload;
             witness.revision = *next;
             record.witnesses.push_back(witness.id);
-            record.proof_state = witness.confidence_micro >= kProofThresholdMicro ? CrimeProofState::Witnessed
-                                                                                  : CrimeProofState::Suspected;
+            record.proof_state = witness.confidence_micro >= kProofThresholdMicro
+                                     ? CrimeProofState::Witnessed
+                                     : CrimeProofState::Suspected;
             initial_witness = std::move(witness);
         }
+
         const auto crime_id = record.id;
         if (!crimes_.emplace(crime_id, record).second)
             return foundation::Result<CrimeEvaluationResult>::Failure(
@@ -393,7 +439,9 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
                 crimes_.erase(crime_id);
                 throw;
             }
+
         }
+
         crime_ids_ = staged_crime_ids;
         witness_ids_ = staged_witness_ids;
         revision_ = *next;
@@ -443,6 +491,7 @@ foundation::Result<CrimeEvaluationResult> CrimeService::EvaluateCrimeCandidate(C
         return foundation::Result<CrimeEvaluationResult>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to create crime record"));
     }
+
 }
 
 CrimeRecord *CrimeService::FindMutableCrime(CrimeRecordId id) noexcept {
@@ -467,6 +516,7 @@ CrimeProofState CrimeService::AggregateProofState(CrimeRecordId crime) const noe
         any_witness = any_witness || witness.confidence_micro > 0;
         strong_witness = strong_witness || witness.confidence_micro >= kProofThresholdMicro;
     }
+
     for (const auto &[id, evidence] : evidence_) {
         (void)id;
         if (evidence.crime != crime)
@@ -474,6 +524,7 @@ CrimeProofState CrimeService::AggregateProofState(CrimeRecordId crime) const noe
         any_evidence = any_evidence || evidence.strength_micro > 0;
         strong_evidence = strong_evidence || evidence.strength_micro >= kProofThresholdMicro;
     }
+
     if (strong_evidence)
         return CrimeProofState::Confirmed;
     if (any_evidence)
@@ -507,11 +558,13 @@ void CrimeService::RecalculateProofState(CrimeRecord &crime, GameplayContext con
             revision_});
 }
 
-foundation::Result<WitnessRecordId> CrimeService::AddWitness(WitnessRecord witness, GameplayContext context) {
+foundation::Result<WitnessRecordId> CrimeService::AddWitness(WitnessRecord witness,
+                                                             GameplayContext context) {
     auto *crime = FindMutableCrime(witness.crime);
     if (!crime || !witness.witness.IsValid() || !witness.witness_type.IsValid() ||
         !ValidMicro(witness.confidence_micro))
-        return foundation::Result<WitnessRecordId>::Failure(Error("gameplay.crime.invalid_witness", "invalid witness"));
+        return foundation::Result<WitnessRecordId>::Failure(
+            Error("gameplay.crime.invalid_witness", "invalid witness"));
     for (const auto &[id, existing] : witnesses_)
         if (existing.crime == witness.crime && existing.witness == witness.witness &&
             existing.witness_type == witness.witness_type)
@@ -523,6 +576,7 @@ foundation::Result<WitnessRecordId> CrimeService::AddWitness(WitnessRecord witne
     auto staged_ids = witness_ids_;
     if (!witness.id.IsValid()) {
         witness.id = WitnessRecordId{staged_ids.Next()};
+
         if (!witness.id.IsValid())
             return foundation::Result<WitnessRecordId>::Failure(
                 Error("gameplay.crime.id_exhausted", "witness id generator exhausted"));
@@ -562,21 +616,26 @@ foundation::Result<WitnessRecordId> CrimeService::AddWitness(WitnessRecord witne
         return foundation::Result<WitnessRecordId>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to add witness"));
     }
+
 }
 
 foundation::Result<void> CrimeService::RemoveWitness(WitnessRecordId id, GameplayContext context) {
     auto it = witnesses_.find(id);
     if (it == witnesses_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.crime.witness_missing", "witness missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.witness_missing", "witness missing"));
     auto *crime = FindMutableCrime(it->second.crime);
     if (!crime)
-        return foundation::Result<void>::Failure(Error("gameplay.crime.crime_missing", "crime missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.crime_missing", "crime missing"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     const auto crime_id = it->second.crime;
     witnesses_.erase(it);
-    crime->witnesses.erase(std::remove(crime->witnesses.begin(), crime->witnesses.end(), id), crime->witnesses.end());
+    crime->witnesses.erase(std::remove(crime->witnesses.begin(), crime->witnesses.end(), id),
+                           crime->witnesses.end());
     crime->revision = *next;
     revision_ = *next;
     Record({0,
@@ -595,12 +654,16 @@ foundation::Result<void> CrimeService::RemoveWitness(WitnessRecordId id, Gamepla
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<EvidenceId> CrimeService::AddEvidence(EvidenceRecord evidence, GameplayContext context) {
+foundation::Result<EvidenceId> CrimeService::AddEvidence(EvidenceRecord evidence,
+                                                         GameplayContext context) {
     auto *crime = FindMutableCrime(evidence.crime);
-    if (!crime || !evidence.source.IsValid() || !evidence.type.IsValid() || !ValidMicro(evidence.strength_micro))
-        return foundation::Result<EvidenceId>::Failure(Error("gameplay.crime.invalid_evidence", "invalid evidence"));
+    if (!crime || !evidence.source.IsValid() || !evidence.type.IsValid() ||
+        !ValidMicro(evidence.strength_micro))
+        return foundation::Result<EvidenceId>::Failure(
+            Error("gameplay.crime.invalid_evidence", "invalid evidence"));
     for (const auto &[id, existing] : evidence_)
-        if (existing.crime == evidence.crime && existing.source == evidence.source && existing.type == evidence.type)
+        if (existing.crime == evidence.crime && existing.source == evidence.source &&
+            existing.type == evidence.type)
             return foundation::Result<EvidenceId>::Success(id);
     const auto next = NextRevision();
     if (!next)
@@ -609,6 +672,7 @@ foundation::Result<EvidenceId> CrimeService::AddEvidence(EvidenceRecord evidence
     auto staged_ids = evidence_ids_;
     if (!evidence.id.IsValid()) {
         evidence.id = EvidenceId{staged_ids.Next()};
+
         if (!evidence.id.IsValid())
             return foundation::Result<EvidenceId>::Failure(
                 Error("gameplay.crime.id_exhausted", "evidence id generator exhausted"));
@@ -648,21 +712,26 @@ foundation::Result<EvidenceId> CrimeService::AddEvidence(EvidenceRecord evidence
         return foundation::Result<EvidenceId>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to add evidence"));
     }
+
 }
 
 foundation::Result<void> CrimeService::RemoveEvidence(EvidenceId id, GameplayContext context) {
     auto it = evidence_.find(id);
     if (it == evidence_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.crime.evidence_missing", "evidence missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.evidence_missing", "evidence missing"));
     auto *crime = FindMutableCrime(it->second.crime);
     if (!crime)
-        return foundation::Result<void>::Failure(Error("gameplay.crime.crime_missing", "crime missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.crime_missing", "crime missing"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     const auto crime_id = it->second.crime;
     evidence_.erase(it);
-    crime->evidence.erase(std::remove(crime->evidence.begin(), crime->evidence.end(), id), crime->evidence.end());
+    crime->evidence.erase(std::remove(crime->evidence.begin(), crime->evidence.end(), id),
+                          crime->evidence.end());
     crime->revision = *next;
     revision_ = *next;
     Record({0,
@@ -684,23 +753,29 @@ foundation::Result<void> CrimeService::RemoveEvidence(EvidenceId id, GameplayCon
 foundation::Result<BountyRecordId> CrimeService::CreateBounty(BountyRecord bounty) {
     if (!bounty.offender.IsValid() || !bounty.jurisdiction.IsValid() || bounty.amount < 0 ||
         !jurisdictions_.contains(bounty.jurisdiction))
-        return foundation::Result<BountyRecordId>::Failure(Error("gameplay.crime.invalid_bounty", "invalid bounty"));
+        return foundation::Result<BountyRecordId>::Failure(
+            Error("gameplay.crime.invalid_bounty", "invalid bounty"));
     if (bounty.expires_at && bounty.expires_at->ticks < 0)
         return foundation::Result<BountyRecordId>::Failure(
             Error("gameplay.crime.invalid_bounty", "invalid bounty expiry"));
     std::sort(bounty.source_crimes.begin(), bounty.source_crimes.end());
-    bounty.source_crimes.erase(std::unique(bounty.source_crimes.begin(), bounty.source_crimes.end()),
+    bounty.source_crimes.erase(std::unique(bounty.source_crimes.begin(),
+                                           bounty.source_crimes.end()),
                                bounty.source_crimes.end());
     for (auto crime_id : bounty.source_crimes) {
         const auto *crime = FindCrime(crime_id);
-        if (!crime || crime->offender != bounty.offender || crime->jurisdiction != bounty.jurisdiction)
-            return foundation::Result<BountyRecordId>::Failure(Error(
-                "gameplay.crime.invalid_bounty_source", "bounty source crime does not match offender/jurisdiction"));
+        if (!crime || crime->offender != bounty.offender ||
+            crime->jurisdiction != bounty.jurisdiction)
+            return foundation::Result<BountyRecordId>::Failure(
+                Error("gameplay.crime.invalid_bounty_source",
+                      "bounty source crime does not match offender/jurisdiction"));
     }
+
     auto oit = active_bounty_index_.find(bounty.offender);
     if (oit != active_bounty_index_.end() && oit->second.contains(bounty.jurisdiction))
         return foundation::Result<BountyRecordId>::Failure(
-            Error("gameplay.crime.active_bounty_exists", "active bounty already exists for offender/jurisdiction"));
+            Error("gameplay.crime.active_bounty_exists",
+                  "active bounty already exists for offender/jurisdiction"));
     const auto next = NextRevision();
     if (!next)
         return foundation::Result<BountyRecordId>::Failure(
@@ -708,6 +783,7 @@ foundation::Result<BountyRecordId> CrimeService::CreateBounty(BountyRecord bount
     auto staged_ids = bounty_ids_;
     if (!bounty.id.IsValid()) {
         bounty.id = BountyRecordId{staged_ids.Next()};
+
         if (!bounty.id.IsValid())
             return foundation::Result<BountyRecordId>::Failure(
                 Error("gameplay.crime.id_exhausted", "bounty id generator exhausted"));
@@ -738,6 +814,7 @@ foundation::Result<BountyRecordId> CrimeService::CreateBounty(BountyRecord bount
                     Error("gameplay.crime.active_bounty_exists", "active bounty already exists"));
             inserted_inner = true;
         }
+
         try {
             bounties_.emplace(id, bounty);
         } catch (...) {
@@ -747,6 +824,7 @@ foundation::Result<BountyRecordId> CrimeService::CreateBounty(BountyRecord bount
                 active_bounty_index_.find(bounty.offender)->second.erase(bounty.jurisdiction);
             throw;
         }
+
         bounty_ids_ = staged_ids;
         revision_ = *next;
         Record({0,
@@ -766,15 +844,19 @@ foundation::Result<BountyRecordId> CrimeService::CreateBounty(BountyRecord bount
         return foundation::Result<BountyRecordId>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to create bounty"));
     }
+
 }
 
-foundation::Result<void> CrimeService::ResolveBounty(BountyRecordId id, BountyState state, GameplayContext context) {
+foundation::Result<void> CrimeService::ResolveBounty(BountyRecordId id, BountyState state,
+                                                     GameplayContext context) {
     if (!IsValidBountyState(state) || state == BountyState::Active)
         return foundation::Result<void>::Failure(
-            Error("gameplay.crime.invalid_bounty_transition", "ResolveBounty requires a valid terminal bounty state"));
+            Error("gameplay.crime.invalid_bounty_transition",
+                  "ResolveBounty requires a valid terminal bounty state"));
     auto it = bounties_.find(id);
     if (it == bounties_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.crime.bounty_missing", "bounty missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.bounty_missing", "bounty missing"));
     if (it->second.state == state)
         return foundation::Result<void>::Success();
     if (it->second.state != BountyState::Active)
@@ -782,7 +864,8 @@ foundation::Result<void> CrimeService::ResolveBounty(BountyRecordId id, BountySt
             Error("gameplay.crime.invalid_bounty_transition", "bounty is already terminal"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     it->second.state = state;
     it->second.revision = *next;
     auto oit = active_bounty_index_.find(it->second.offender);
@@ -791,6 +874,7 @@ foundation::Result<void> CrimeService::ResolveBounty(BountyRecordId id, BountySt
         if (oit->second.empty())
             active_bounty_index_.erase(oit);
     }
+
     revision_ = *next;
     Record({0,
             CrimeChangeKind::BountyResolved,
@@ -809,8 +893,9 @@ foundation::Result<void> CrimeService::ResolveBounty(BountyRecordId id, BountySt
 
 foundation::Result<LawResponseId> CrimeService::GenerateLawResponse(LawResponseRequest request) {
     if (!definitions_frozen_)
-        return foundation::Result<LawResponseId>::Failure(Error(
-            "gameplay.crime.definitions_not_frozen", "crime definitions must be frozen before response generation"));
+        return foundation::Result<LawResponseId>::Failure(
+            Error("gameplay.crime.definitions_not_frozen",
+                  "crime definitions must be frozen before response generation"));
     auto *crime = FindMutableCrime(request.crime);
     const auto *definition = FindResponseDefinition(request.response_type);
     if (!crime || !definition || !request.authority.IsValid())
@@ -818,24 +903,31 @@ foundation::Result<LawResponseId> CrimeService::GenerateLawResponse(LawResponseR
             Error("gameplay.crime.invalid_response", "invalid crime, response type, or authority"));
     if (IsTerminalCase(crime->state))
         return foundation::Result<LawResponseId>::Failure(
-            Error("gameplay.crime.case_terminal", "cannot generate law response for terminal crime"));
-    if (definition->resulting_case_state && (!IsValidCaseState(*definition->resulting_case_state) ||
-                                             !CanTransitionCase(crime->state, *definition->resulting_case_state)))
+            Error("gameplay.crime.case_terminal",
+                  "cannot generate law response for terminal crime"));
+    if (definition->resulting_case_state &&
+        (!IsValidCaseState(*definition->resulting_case_state) ||
+         !CanTransitionCase(crime->state, *definition->resulting_case_state)))
         return foundation::Result<LawResponseId>::Failure(
-            Error("gameplay.crime.invalid_case_transition", "response requires an invalid case transition"));
+            Error("gameplay.crime.invalid_case_transition",
+                  "response requires an invalid case transition"));
     const AuthorityRecord *matching_authority = nullptr;
     for (const auto &[id, authority] : authorities_) {
         (void)id;
-        if (authority.authority_group == request.authority && authority.jurisdiction == crime->jurisdiction &&
+        if (authority.authority_group == request.authority &&
+            authority.jurisdiction == crime->jurisdiction &&
             (authority.capabilities & definition->required_authority_capabilities) ==
                 definition->required_authority_capabilities) {
             matching_authority = &authority;
             break;
         }
+
     }
+
     if (!matching_authority)
         return foundation::Result<LawResponseId>::Failure(
-            Error("gameplay.crime.authority_not_allowed", "authority is not allowed to issue requested response"));
+            Error("gameplay.crime.authority_not_allowed",
+                  "authority is not allowed to issue requested response"));
     const auto next = NextRevision();
     if (!next)
         return foundation::Result<LawResponseId>::Failure(
@@ -843,6 +935,7 @@ foundation::Result<LawResponseId> CrimeService::GenerateLawResponse(LawResponseR
     auto staged_ids = response_ids_;
     LawResponseRecord response;
     response.id = LawResponseId{staged_ids.Next()};
+
     if (!response.id.IsValid())
         return foundation::Result<LawResponseId>::Failure(
             Error("gameplay.crime.id_exhausted", "law response id generator exhausted"));
@@ -858,6 +951,7 @@ foundation::Result<LawResponseId> CrimeService::GenerateLawResponse(LawResponseR
         return foundation::Result<LawResponseId>::Failure(
             Error("gameplay.crime.allocation_failed", "failed to create law response"));
     }
+
     if (definition->resulting_case_state && crime->state != *definition->resulting_case_state)
         crime->state = *definition->resulting_case_state;
     crime->revision = *next;
@@ -895,7 +989,8 @@ foundation::Result<void> CrimeService::ChangeCaseState(CrimeRecordId id, CrimeCa
                                                        GameplayContext context) {
     auto *crime = FindMutableCrime(id);
     if (!crime)
-        return foundation::Result<void>::Failure(Error("gameplay.crime.crime_missing", "crime missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.crime_missing", "crime missing"));
     if (!IsValidCaseState(state))
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.invalid_case_state", "invalid crime case state"));
@@ -906,7 +1001,8 @@ foundation::Result<void> CrimeService::ChangeCaseState(CrimeRecordId id, CrimeCa
             Error("gameplay.crime.invalid_case_transition", "invalid crime case transition"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     crime->state = state;
     crime->revision = *next;
     revision_ = *next;
@@ -929,15 +1025,18 @@ foundation::Result<void> CrimeService::ChangeProofState(CrimeRecordId id, CrimeP
                                                         GameplayContext context) {
     auto *crime = FindMutableCrime(id);
     if (!crime)
-        return foundation::Result<void>::Failure(Error("gameplay.crime.crime_missing", "crime missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.crime_missing", "crime missing"));
     if (IsDerivedProofState(state) && state != AggregateProofState(id))
-        return foundation::Result<void>::Failure(Error(
-            "gameplay.crime.proof_is_derived", "derived proof state must match active witness/evidence aggregate"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.proof_is_derived",
+                  "derived proof state must match active witness/evidence aggregate"));
     if (crime->proof_state == state)
         return foundation::Result<void>::Success();
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     crime->proof_state = state;
     crime->revision = *next;
     revision_ = *next;
@@ -959,7 +1058,8 @@ foundation::Result<void> CrimeService::ChangeProofState(CrimeRecordId id, CrimeP
 foundation::Result<void> CrimeService::ExpireCrime(CrimeRecordId id, GameplayContext context) {
     auto *crime = FindMutableCrime(id);
     if (!crime)
-        return foundation::Result<void>::Failure(Error("gameplay.crime.crime_missing", "crime missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.crime_missing", "crime missing"));
     if (crime->state == CrimeCaseState::Expired)
         return foundation::Result<void>::Success();
     if (IsTerminalCase(crime->state))
@@ -967,7 +1067,8 @@ foundation::Result<void> CrimeService::ExpireCrime(CrimeRecordId id, GameplayCon
             Error("gameplay.crime.case_terminal", "terminal crime cannot be expired again"));
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     crime->state = CrimeCaseState::Expired;
     crime->revision = *next;
     revision_ = *next;
@@ -992,13 +1093,17 @@ std::size_t CrimeService::ExpireDue(GameplayTimePoint now, GameplayContext conte
     std::vector<CrimeRecordId> due_crimes;
     std::vector<BountyRecordId> due_bounties;
     for (const auto &[id, crime] : crimes_) {
-        if (!IsTerminalCase(crime.state) && crime.expires_at && crime.expires_at->ticks <= now.ticks)
+        if (!IsTerminalCase(crime.state) && crime.expires_at &&
+            crime.expires_at->ticks <= now.ticks)
             due_crimes.push_back(id);
     }
+
     for (const auto &[id, bounty] : bounties_) {
-        if (bounty.state == BountyState::Active && bounty.expires_at && bounty.expires_at->ticks <= now.ticks)
+        if (bounty.state == BountyState::Active && bounty.expires_at &&
+            bounty.expires_at->ticks <= now.ticks)
             due_bounties.push_back(id);
     }
+
     std::sort(due_crimes.begin(), due_crimes.end());
     std::sort(due_bounties.begin(), due_bounties.end());
     std::size_t changed = 0;
@@ -1011,22 +1116,26 @@ std::size_t CrimeService::ExpireDue(GameplayTimePoint now, GameplayContext conte
     return changed;
 }
 
-foundation::Result<void> CrimeService::PruneTerminalCrime(CrimeRecordId id, GameplayContext context) {
+foundation::Result<void> CrimeService::PruneTerminalCrime(CrimeRecordId id,
+                                                          GameplayContext context) {
     auto it = crimes_.find(id);
     if (it == crimes_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.crime.crime_missing", "crime missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.crime.crime_missing", "crime missing"));
     if (!IsTerminalCase(it->second.state))
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.case_not_terminal", "only terminal crimes may be pruned"));
     for (const auto &[bid, bounty] : bounties_) {
         (void)bid;
         if (bounty.state == BountyState::Active && ContainsId(bounty.source_crimes, id))
-            return foundation::Result<void>::Failure(
-                Error("gameplay.crime.active_bounty_reference", "active bounty still references crime"));
+            return foundation::Result<void>::Failure(Error("gameplay.crime.active_bounty_reference",
+                                                           "active bounty still references crime"));
     }
+
     const auto next = NextRevision();
     if (!next)
-        return foundation::Result<void>::Failure(Error("gameplay.revision_exhausted", "crime revision is exhausted"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.revision_exhausted", "crime revision is exhausted"));
     const auto offender = it->second.offender;
     const auto victim = it->second.victim;
     const auto jurisdiction = it->second.jurisdiction;
@@ -1038,12 +1147,25 @@ foundation::Result<void> CrimeService::PruneTerminalCrime(CrimeRecordId id, Game
         rit = rit->second.crime == id ? responses_.erase(rit) : std::next(rit);
     for (auto &[bid, bounty] : bounties_) {
         (void)bid;
-        bounty.source_crimes.erase(std::remove(bounty.source_crimes.begin(), bounty.source_crimes.end(), id),
+        bounty.source_crimes.erase(std::remove(bounty.source_crimes.begin(),
+                                               bounty.source_crimes.end(), id),
                                    bounty.source_crimes.end());
     }
+
     crimes_.erase(it);
     revision_ = *next;
-    Record({0, CrimeChangeKind::CrimePruned, id, offender, victim, jurisdiction, {}, {}, {}, {}, context, revision_});
+    Record({0,
+            CrimeChangeKind::CrimePruned,
+            id,
+            offender,
+            victim,
+            jurisdiction,
+            {},
+            {},
+            {},
+            {},
+            context,
+            revision_});
     return foundation::Result<void>::Success();
 }
 
@@ -1072,9 +1194,8 @@ std::vector<CrimeRecord> CrimeService::FindCrimesByOffender(GameplayObjectRef of
         if (crime.offender == offender)
             out.push_back(crime);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -1085,9 +1206,8 @@ std::vector<CrimeRecord> CrimeService::FindCrimesByVictim(GameplayObjectRef vict
         if (crime.victim == victim)
             out.push_back(crime);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -1098,9 +1218,8 @@ std::vector<CrimeRecord> CrimeService::FindCrimesByJurisdiction(JurisdictionId j
         if (crime.jurisdiction == jurisdiction)
             out.push_back(crime);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -1109,12 +1228,12 @@ std::vector<CrimeRecord> CrimeService::FindOpenCases() const {
     for (const auto &[id, crime] : crimes_) {
         (void)id;
         if (crime.state == CrimeCaseState::Open || crime.state == CrimeCaseState::Reported ||
-            crime.state == CrimeCaseState::UnderInvestigation || crime.state == CrimeCaseState::Wanted)
+            crime.state == CrimeCaseState::UnderInvestigation ||
+            crime.state == CrimeCaseState::Wanted)
             out.push_back(crime);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -1125,9 +1244,8 @@ std::vector<WitnessRecord> CrimeService::FindWitnesses(CrimeRecordId crime) cons
         if (witness.crime == crime)
             out.push_back(witness);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -1138,13 +1256,13 @@ std::vector<EvidenceRecord> CrimeService::FindEvidence(CrimeRecordId crime) cons
         if (evidence.crime == crime)
             out.push_back(evidence);
     }
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
-std::optional<BountyRecord> CrimeService::GetBounty(GameplayObjectRef offender, JurisdictionId jurisdiction) const {
+std::optional<BountyRecord> CrimeService::GetBounty(GameplayObjectRef offender,
+                                                    JurisdictionId jurisdiction) const {
     auto oit = active_bounty_index_.find(offender);
     if (oit == active_bounty_index_.end())
         return std::nullopt;
@@ -1164,19 +1282,24 @@ std::vector<CrimeChange> CrimeService::ChangesSinceSequence(std::uint64_t sequen
 CrimeChangeBatch CrimeService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     CrimeChangeBatch batch;
     batch.latest_sequence = LatestChangeCursor().sequence;
-    batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
+    batch.oldest_available_sequence =
+        changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
     if (next_change_sequence_ == 0 || sequence > batch.latest_sequence) {
         batch.snapshot_required = true;
         return batch;
     }
+
     if (changes_.empty()) {
         batch.snapshot_required = sequence < batch.latest_sequence;
         return batch;
     }
-    if (sequence < batch.oldest_available_sequence && batch.oldest_available_sequence - sequence > 1) {
+
+    if (sequence < batch.oldest_available_sequence &&
+        batch.oldest_available_sequence - sequence > 1) {
         batch.snapshot_required = true;
         return batch;
     }
+
     for (const auto &change : changes_)
         if (change.sequence > sequence)
             batch.changes.push_back(change);
@@ -1200,66 +1323,65 @@ CrimeSnapshot CrimeService::CaptureSnapshot() const {
         (void)id;
         snapshot.laws.push_back(law);
     }
+
     for (const auto &[id, definition] : response_definitions_) {
         (void)id;
         snapshot.response_definitions.push_back(definition);
     }
+
     for (const auto &[id, jurisdiction] : jurisdictions_) {
         (void)id;
         snapshot.jurisdictions.push_back(jurisdiction);
     }
+
     for (const auto &[id, authority] : authorities_) {
         (void)id;
         snapshot.authorities.push_back(authority);
     }
+
     for (const auto &[id, crime] : crimes_) {
         (void)id;
         snapshot.crimes.push_back(crime);
     }
+
     for (const auto &[id, witness] : witnesses_) {
         (void)id;
         snapshot.witnesses.push_back(witness);
     }
+
     for (const auto &[id, evidence] : evidence_) {
         (void)id;
         snapshot.evidence.push_back(evidence);
     }
+
     for (const auto &[id, bounty] : bounties_) {
         (void)id;
         snapshot.bounties.push_back(bounty);
     }
+
     for (const auto &[id, response] : responses_) {
         (void)id;
         snapshot.responses.push_back(response);
     }
-    std::sort(snapshot.laws.begin(), snapshot.laws.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(snapshot.laws.begin(), snapshot.laws.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     std::sort(snapshot.response_definitions.begin(), snapshot.response_definitions.end(),
-              [](const auto &a, const auto &b) {
-                  return a.id < b.id;
-              });
-    std::sort(snapshot.jurisdictions.begin(), snapshot.jurisdictions.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.authorities.begin(), snapshot.authorities.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.crimes.begin(), snapshot.crimes.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.witnesses.begin(), snapshot.witnesses.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.evidence.begin(), snapshot.evidence.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.bounties.begin(), snapshot.bounties.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(snapshot.responses.begin(), snapshot.responses.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.jurisdictions.begin(), snapshot.jurisdictions.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.authorities.begin(), snapshot.authorities.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.crimes.begin(), snapshot.crimes.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.witnesses.begin(), snapshot.witnesses.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.evidence.begin(), snapshot.evidence.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.bounties.begin(), snapshot.bounties.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(snapshot.responses.begin(), snapshot.responses.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     snapshot.crime_ids = crime_ids_.GetSnapshot();
     snapshot.witness_ids = witness_ids_.GetSnapshot();
     snapshot.evidence_ids = evidence_ids_.GetSnapshot();
@@ -1273,12 +1395,14 @@ CrimeSnapshot CrimeService::CaptureSnapshot() const {
 }
 
 foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
-    const auto next_journal_epoch =
-        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    const auto next_journal_epoch = CheckedNextChangeEpoch(
+        snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
+
     using LawMap = decltype(laws_);
     using ResponseDefinitionMap = decltype(response_definitions_);
     using JurisdictionMap = decltype(jurisdictions_);
@@ -1300,19 +1424,23 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
     ResponseMap responses;
 
     for (auto &law : snapshot.laws) {
-        if (!law.id.IsValid() || !law.crime_type.IsValid() || law.severity_micro < 0 || law.default_bounty < 0 ||
-            law.statute_of_limitations.ticks < 0 || law.revision.value > snapshot.revision.value ||
-            !laws.emplace(law.id, law).second)
-            return foundation::Result<void>::Failure(Error("gameplay.crime.restore_invalid", "invalid law snapshot"));
+        if (!law.id.IsValid() || !law.crime_type.IsValid() || law.severity_micro < 0 ||
+            law.default_bounty < 0 || law.statute_of_limitations.ticks < 0 ||
+            law.revision.value > snapshot.revision.value || !laws.emplace(law.id, law).second)
+            return foundation::Result<void>::Failure(
+                Error("gameplay.crime.restore_invalid", "invalid law snapshot"));
     }
+
     for (auto &definition : snapshot.response_definitions) {
         if (!definition.id.IsValid() || definition.revision.value > snapshot.revision.value ||
             !response_definitions.emplace(definition.id, definition).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid response definition snapshot"));
     }
+
     for (auto &jurisdiction : snapshot.jurisdictions) {
-        if (!jurisdiction.id.IsValid() || !jurisdiction.area.IsValid() || !jurisdiction.authority_group.IsValid() ||
+        if (!jurisdiction.id.IsValid() || !jurisdiction.area.IsValid() ||
+            !jurisdiction.authority_group.IsValid() ||
             jurisdiction.revision.value > snapshot.revision.value)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid jurisdiction snapshot"));
@@ -1329,13 +1457,16 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "duplicate jurisdiction snapshot"));
     }
+
     for (auto &authority : snapshot.authorities) {
         if (!authority.id.IsValid() || !authority.authority_group.IsValid() ||
-            !jurisdictions.contains(authority.jurisdiction) || authority.revision.value > snapshot.revision.value ||
+            !jurisdictions.contains(authority.jurisdiction) ||
+            authority.revision.value > snapshot.revision.value ||
             !authorities.emplace(authority.id, authority).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid authority snapshot"));
     }
+
     for (const auto &[id, authority] : authorities) {
         for (const auto &[other_id, other] : authorities) {
             if (id < other_id && authority.authority_group == other.authority_group &&
@@ -1343,9 +1474,11 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
                 return foundation::Result<void>::Failure(
                     Error("gameplay.crime.restore_invalid", "duplicate authority semantic key"));
         }
+
     }
 
-    auto temp_find_law = [&](CrimeTypeId type, JurisdictionId jurisdiction) -> const LawDefinition * {
+    auto temp_find_law = [&](CrimeTypeId type,
+                             JurisdictionId jurisdiction) -> const LawDefinition * {
         auto jit = jurisdictions.find(jurisdiction);
         if (jit == jurisdictions.end())
             return nullptr;
@@ -1354,24 +1487,30 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
             if (lit != laws.end() && lit->second.crime_type == type)
                 return &lit->second;
         }
+
         return nullptr;
     };
 
     for (auto &crime : snapshot.crimes) {
         if (!crime.id.IsValid() || !crime.type.IsValid() || !crime.offender.IsValid() ||
-            !jurisdictions.contains(crime.jurisdiction) || !temp_find_law(crime.type, crime.jurisdiction) ||
-            !IsValidCaseState(crime.state) || crime.severity_micro < 0 ||
-            crime.revision.value > snapshot.revision.value || !crimes.emplace(crime.id, crime).second)
-            return foundation::Result<void>::Failure(Error("gameplay.crime.restore_invalid", "invalid crime snapshot"));
+            !jurisdictions.contains(crime.jurisdiction) ||
+            !temp_find_law(crime.type, crime.jurisdiction) || !IsValidCaseState(crime.state) ||
+            crime.severity_micro < 0 || crime.revision.value > snapshot.revision.value ||
+            !crimes.emplace(crime.id, crime).second)
+            return foundation::Result<void>::Failure(
+                Error("gameplay.crime.restore_invalid", "invalid crime snapshot"));
     }
 
     for (auto &witness : snapshot.witnesses) {
-        if (!witness.id.IsValid() || !crimes.contains(witness.crime) || !witness.witness.IsValid() ||
-            !witness.witness_type.IsValid() || !ValidMicro(witness.confidence_micro) ||
-            witness.revision.value > snapshot.revision.value || !witnesses.emplace(witness.id, witness).second)
+        if (!witness.id.IsValid() || !crimes.contains(witness.crime) ||
+            !witness.witness.IsValid() || !witness.witness_type.IsValid() ||
+            !ValidMicro(witness.confidence_micro) ||
+            witness.revision.value > snapshot.revision.value ||
+            !witnesses.emplace(witness.id, witness).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid witness snapshot"));
     }
+
     for (const auto &[id, witness] : witnesses) {
         for (const auto &[other_id, other] : witnesses) {
             if (id < other_id && witness.crime == other.crime && witness.witness == other.witness &&
@@ -1379,21 +1518,26 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
                 return foundation::Result<void>::Failure(
                     Error("gameplay.crime.restore_invalid", "duplicate witness semantic key"));
         }
+
     }
 
     for (auto &item : snapshot.evidence) {
-        if (!item.id.IsValid() || !crimes.contains(item.crime) || !item.source.IsValid() || !item.type.IsValid() ||
-            !ValidMicro(item.strength_micro) || item.revision.value > snapshot.revision.value ||
+        if (!item.id.IsValid() || !crimes.contains(item.crime) || !item.source.IsValid() ||
+            !item.type.IsValid() || !ValidMicro(item.strength_micro) ||
+            item.revision.value > snapshot.revision.value ||
             !evidence.emplace(item.id, item).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid evidence snapshot"));
     }
+
     for (const auto &[id, item] : evidence) {
         for (const auto &[other_id, other] : evidence) {
-            if (id < other_id && item.crime == other.crime && item.source == other.source && item.type == other.type)
+            if (id < other_id && item.crime == other.crime && item.source == other.source &&
+                item.type == other.type)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.crime.restore_invalid", "duplicate evidence semantic key"));
         }
+
     }
 
     for (auto &[crime_id, crime] : crimes) {
@@ -1411,25 +1555,31 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
         auto stored_evidence = crime.evidence;
         std::sort(stored_witnesses.begin(), stored_witnesses.end());
         std::sort(stored_evidence.begin(), stored_evidence.end());
-        if (std::adjacent_find(stored_witnesses.begin(), stored_witnesses.end()) != stored_witnesses.end() ||
-            std::adjacent_find(stored_evidence.begin(), stored_evidence.end()) != stored_evidence.end() ||
+        if (std::adjacent_find(stored_witnesses.begin(), stored_witnesses.end()) !=
+                stored_witnesses.end() ||
+            std::adjacent_find(stored_evidence.begin(), stored_evidence.end()) !=
+                stored_evidence.end() ||
             stored_witnesses != expected_witnesses || stored_evidence != expected_evidence)
             return foundation::Result<void>::Failure(
-                Error("gameplay.crime.restore_invalid", "crime evidence references do not match records"));
+                Error("gameplay.crime.restore_invalid",
+                      "crime evidence references do not match records"));
         crime.witnesses = std::move(stored_witnesses);
         crime.evidence = std::move(stored_evidence);
         if (IsDerivedProofState(crime.proof_state)) {
-            bool any_witness = false, strong_witness = false, any_evidence = false, strong_evidence = false;
+            bool any_witness = false, strong_witness = false, any_evidence = false,
+                 strong_evidence = false;
             for (auto id : crime.witnesses) {
                 const auto &w = witnesses.at(id);
                 any_witness = any_witness || w.confidence_micro > 0;
                 strong_witness = strong_witness || w.confidence_micro >= kProofThresholdMicro;
             }
+
             for (auto id : crime.evidence) {
                 const auto &e = evidence.at(id);
                 any_evidence = any_evidence || e.strength_micro > 0;
                 strong_evidence = strong_evidence || e.strength_micro >= kProofThresholdMicro;
             }
+
             const auto derived = strong_evidence  ? CrimeProofState::Confirmed
                                  : any_evidence   ? CrimeProofState::EvidenceFound
                                  : strong_witness ? CrimeProofState::Witnessed
@@ -1437,19 +1587,24 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
                                                   : CrimeProofState::Unknown;
             if (crime.proof_state != derived)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.crime.restore_invalid", "crime proof state does not match active evidence"));
+                    Error("gameplay.crime.restore_invalid",
+                          "crime proof state does not match active evidence"));
         }
+
     }
 
-    std::unordered_map<GameplayObjectRef, std::unordered_map<JurisdictionId, BountyRecordId, IdHash>>
+    std::unordered_map<GameplayObjectRef,
+                       std::unordered_map<JurisdictionId, BountyRecordId, IdHash>>
         active_bounty_index;
     for (auto &bounty : snapshot.bounties) {
-        if (!bounty.id.IsValid() || !bounty.offender.IsValid() || !jurisdictions.contains(bounty.jurisdiction) ||
-            !IsValidBountyState(bounty.state) || bounty.amount < 0 || bounty.revision.value > snapshot.revision.value)
+        if (!bounty.id.IsValid() || !bounty.offender.IsValid() ||
+            !jurisdictions.contains(bounty.jurisdiction) || !IsValidBountyState(bounty.state) ||
+            bounty.amount < 0 || bounty.revision.value > snapshot.revision.value)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid bounty snapshot"));
         std::sort(bounty.source_crimes.begin(), bounty.source_crimes.end());
-        if (std::adjacent_find(bounty.source_crimes.begin(), bounty.source_crimes.end()) != bounty.source_crimes.end())
+        if (std::adjacent_find(bounty.source_crimes.begin(), bounty.source_crimes.end()) !=
+            bounty.source_crimes.end())
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "duplicate bounty source crime"));
         for (auto crime_id : bounty.source_crimes) {
@@ -1459,6 +1614,7 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
                 return foundation::Result<void>::Failure(
                     Error("gameplay.crime.restore_invalid", "invalid bounty source crime"));
         }
+
         if (!bounties.emplace(bounty.id, bounty).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "duplicate bounty snapshot"));
@@ -1466,14 +1622,18 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
             auto &by_jurisdiction = active_bounty_index[bounty.offender];
             if (!by_jurisdiction.emplace(bounty.jurisdiction, bounty.id).second)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.crime.restore_invalid", "multiple active bounties for offender/jurisdiction"));
+                    Error("gameplay.crime.restore_invalid",
+                          "multiple active bounties for offender/jurisdiction"));
         }
+
     }
 
     for (auto &response : snapshot.responses) {
-        if (!response.id.IsValid() || !crimes.contains(response.crime) || !response.response_type.IsValid() ||
-            !response_definitions.contains(response.response_type) || !response.authority.IsValid() ||
-            response.revision.value > snapshot.revision.value || !responses.emplace(response.id, response).second)
+        if (!response.id.IsValid() || !crimes.contains(response.crime) ||
+            !response.response_type.IsValid() ||
+            !response_definitions.contains(response.response_type) ||
+            !response.authority.IsValid() || response.revision.value > snapshot.revision.value ||
+            !responses.emplace(response.id, response).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.crime.restore_invalid", "invalid response snapshot"));
         const auto &crime = crimes.at(response.crime);
@@ -1481,19 +1641,24 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
         bool authority_ok = false;
         for (const auto &[id, authority] : authorities) {
             (void)id;
-            if (authority.authority_group == response.authority && authority.jurisdiction == crime.jurisdiction &&
+            if (authority.authority_group == response.authority &&
+                authority.jurisdiction == crime.jurisdiction &&
                 (authority.capabilities & definition.required_authority_capabilities) ==
                     definition.required_authority_capabilities) {
                 authority_ok = true;
                 break;
             }
+
         }
+
         if (!authority_ok)
             return foundation::Result<void>::Failure(
-                Error("gameplay.crime.restore_invalid", "response authority is not valid for crime jurisdiction"));
+                Error("gameplay.crime.restore_invalid",
+                      "response authority is not valid for crime jurisdiction"));
     }
 
-    std::uint64_t max_crime = 0, max_witness = 0, max_evidence = 0, max_bounty = 0, max_authority = 0, max_response = 0;
+    std::uint64_t max_crime = 0, max_witness = 0, max_evidence = 0, max_bounty = 0,
+                  max_authority = 0, max_response = 0;
     const auto crime_scope = crime_ids_.Scope().Raw();
     const auto witness_scope = witness_ids_.Scope().Raw();
     const auto evidence_scope = evidence_ids_.Scope().Raw();
@@ -1504,35 +1669,47 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
         (void)value;
         TrackMaxLowForScope(id, crime_scope, max_crime);
     }
+
     for (const auto &[id, value] : witnesses) {
         (void)value;
         TrackMaxLowForScope(id, witness_scope, max_witness);
     }
+
     for (const auto &[id, value] : evidence) {
         (void)value;
         TrackMaxLowForScope(id, evidence_scope, max_evidence);
     }
+
     for (const auto &[id, value] : bounties) {
         (void)value;
         TrackMaxLowForScope(id, bounty_scope, max_bounty);
     }
+
     for (const auto &[id, value] : authorities) {
         (void)value;
         TrackMaxLowForScope(id, authority_scope, max_authority);
     }
+
     for (const auto &[id, value] : responses) {
         (void)value;
         TrackMaxLowForScope(id, response_scope, max_response);
     }
-    if (!ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.crime_ids, crime_ids_.Scope(), max_crime) ||
-        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.witness_ids, witness_ids_.Scope(),
+
+    if (!ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.crime_ids,
+                                                                crime_ids_.Scope(), max_crime) ||
+        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.witness_ids,
+                                                                witness_ids_.Scope(),
                                                                 max_witness) ||
-        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.evidence_ids, evidence_ids_.Scope(),
+        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.evidence_ids,
+                                                                evidence_ids_.Scope(),
                                                                 max_evidence) ||
-        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.bounty_ids, bounty_ids_.Scope(), max_bounty) ||
-        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.authority_ids, authority_ids_.Scope(),
+        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.bounty_ids,
+                                                                bounty_ids_.Scope(), max_bounty) ||
+        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.authority_ids,
+                                                                authority_ids_.Scope(),
                                                                 max_authority) ||
-        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.response_ids, response_ids_.Scope(),
+        !ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(snapshot.response_ids,
+                                                                response_ids_.Scope(),
                                                                 max_response))
         return foundation::Result<void>::Failure(
             Error("gameplay.crime.restore_invalid", "invalid id generator snapshot"));
@@ -1558,6 +1735,7 @@ foundation::Result<void> CrimeService::RestoreSnapshot(CrimeSnapshot snapshot) {
     changes_.clear();
     next_change_sequence_ = 1;
     diagnostics_ = {};
+
     journal_epoch_ = *next_journal_epoch;
     return foundation::Result<void>::Success();
 }
@@ -1579,6 +1757,7 @@ CrimeDiagnostics CrimeService::GetDiagnostics() const noexcept {
         if (crime.state == CrimeCaseState::Wanted)
             ++diagnostics.wanted_subjects;
     }
+
     diagnostics.witnesses = witnesses_.size();
     diagnostics.evidence_records = evidence_.size();
     diagnostics.bounties = bounties_.size();
@@ -1600,11 +1779,14 @@ void CrimeService::Record(CrimeChange change) noexcept {
         } else
             next_change_sequence_ = 0;
     };
-    if (next_change_sequence_ == 0 || next_change_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
+
+    if (next_change_sequence_ == 0 ||
+        next_change_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
         invalidate_journal();
         if (next_change_sequence_ == 0)
             return;
     }
+
     change.sequence = next_change_sequence_;
     try {
         changes_.push_back(std::move(change));
@@ -1612,8 +1794,10 @@ void CrimeService::Record(CrimeChange change) noexcept {
         invalidate_journal();
         return;
     }
+
     ++next_change_sequence_;
     while (changes_.size() > change_journal_capacity_)
         changes_.pop_front();
 }
+
 } // namespace epidemic::gameplay::crime

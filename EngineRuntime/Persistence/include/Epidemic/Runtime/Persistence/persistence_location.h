@@ -9,9 +9,12 @@
 namespace epidemic::runtime {
 struct PersistenceLocation {
     RegionId region_id{};
+
     ChunkId chunk_id{};
+
     foundation::StringId location_tag{};
 
     [[nodiscard]] constexpr bool operator==(const PersistenceLocation &) const noexcept = default;
 };
-}
+
+} // namespace epidemic::runtime

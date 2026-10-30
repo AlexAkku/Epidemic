@@ -31,6 +31,7 @@ struct CalendarDate {
 
     [[nodiscard]] constexpr bool operator==(const CalendarDate &) const noexcept = default;
 };
+
 enum class RecurrenceKind {
     Once,
     FixedInterval,
@@ -59,19 +60,26 @@ struct CalendarPattern {
 struct RecurrenceRule {
     RecurrenceKind kind = RecurrenceKind::Once;
     GameplayDuration interval{};
+
     CalendarPattern calendar{};
+
 };
 
 struct ClockDefinition {
     ClockId id{};
+
     std::string canonical_name;
     std::optional<CalendarDefinition> calendar{};
+
 };
 
 struct ClockState {
     ClockId id{};
+
     GameplayTimePoint now{};
+
     Revision revision{};
+
     bool paused = false;
     std::uint32_t time_scale_milli = 1000;
     std::uint32_t fractional_milli = 0; // accumulated sub-tick numerator remainder, [0, 999]
@@ -79,23 +87,36 @@ struct ClockState {
 
 struct ScheduleEntry {
     ScheduleId id{};
+
     ClockId clock{};
+
     GameplayTimePoint due{};
+
     GameplayObjectRef owner{};
+
     ActionTypeId action{};
+
     RecurrenceRule recurrence{};
+
     CatchUpPolicy catch_up = CatchUpPolicy::FireOnce;
     SchedulePersistence persistence = SchedulePersistence::Session;
     Revision revision{};
+
 };
 
 struct ScheduledTrigger {
     ScheduleId schedule{};
+
     ClockId clock{};
+
     GameplayObjectRef owner{};
+
     ActionTypeId action{};
+
     GameplayTimePoint scheduled_for{};
+
     GameplayTimePoint observed_at{};
+
     std::uint64_t occurrence_count = 1;
 };
 
@@ -118,7 +139,9 @@ struct GameplayTimeSnapshot {
     std::vector<ScheduleEntry> schedules;
     std::vector<ClockId> externally_synchronized_clocks;
     MonotonicIdGenerator<ScheduleId>::Snapshot schedule_ids{};
+
     Revision scheduler_revision{};
+
 };
 
 class GameplayTimeService {
@@ -127,8 +150,9 @@ class GameplayTimeService {
   public:
     GameplayTimeService() = default;
 
-    [[nodiscard]] foundation::Result<ClockId> RegisterClock(std::string_view canonical_name,
-                                                            std::optional<CalendarDefinition> calendar = std::nullopt);
+    [[nodiscard]] foundation::Result<ClockId>
+    RegisterClock(std::string_view canonical_name,
+                  std::optional<CalendarDefinition> calendar = std::nullopt);
 
     [[nodiscard]] foundation::Result<ActionTypeId> RegisterAction(std::string_view canonical_name,
                                                                   GameplayDomainId owner_domain);
@@ -136,9 +160,11 @@ class GameplayTimeService {
     void Freeze() noexcept {
         frozen_ = true;
     }
+
     [[nodiscard]] bool IsFrozen() const noexcept {
         return frozen_;
     }
+
     [[nodiscard]] foundation::Result<void> AdvanceClock(ClockId clock, GameplayDuration real_delta);
     [[nodiscard]] foundation::Result<void> AdvanceTo(ClockId clock, GameplayTimePoint now);
     [[nodiscard]] foundation::Result<void> SetPaused(ClockId clock, bool paused);
@@ -151,9 +177,12 @@ class GameplayTimeService {
     [[nodiscard]] std::optional<ClockState> GetClock(ClockId clock) const noexcept;
     [[nodiscard]] std::optional<ClockDefinition> GetClockDefinition(ClockId clock) const noexcept;
     [[nodiscard]] const ClockDefinition *FindClockDefinition(ClockId clock) const noexcept;
-    [[nodiscard]] foundation::Result<void> ValidateCalendarDate(ClockId clock, const CalendarDate &date) const;
-    [[nodiscard]] foundation::Result<GameplayTimePoint> ToGameplayTime(ClockId clock, const CalendarDate &date) const;
-    [[nodiscard]] foundation::Result<CalendarDate> ToCalendarDate(ClockId clock, GameplayTimePoint time) const;
+    [[nodiscard]] foundation::Result<void> ValidateCalendarDate(ClockId clock,
+                                                                const CalendarDate &date) const;
+    [[nodiscard]] foundation::Result<GameplayTimePoint>
+    ToGameplayTime(ClockId clock, const CalendarDate &date) const;
+    [[nodiscard]] foundation::Result<CalendarDate> ToCalendarDate(ClockId clock,
+                                                                  GameplayTimePoint time) const;
 
     [[nodiscard]] foundation::Result<ScheduleId>
     Schedule(ClockId clock, GameplayTimePoint due, GameplayObjectRef owner, ActionTypeId action,
@@ -161,22 +190,24 @@ class GameplayTimeService {
              SchedulePersistence persistence = SchedulePersistence::Session);
 
     [[nodiscard]] foundation::Result<ScheduleId>
-    ScheduleCalendar(ClockId clock, GameplayObjectRef owner, ActionTypeId action, CalendarPattern pattern,
-                     CatchUpPolicy catch_up = CatchUpPolicy::FireOnce,
+    ScheduleCalendar(ClockId clock, GameplayObjectRef owner, ActionTypeId action,
+                     CalendarPattern pattern, CatchUpPolicy catch_up = CatchUpPolicy::FireOnce,
                      SchedulePersistence persistence = SchedulePersistence::Session);
 
     [[nodiscard]] foundation::Result<void> Cancel(ScheduleId schedule);
     [[nodiscard]] std::uint64_t CancelOwnedBy(GameplayObjectRef owner);
-    [[nodiscard]] foundation::Result<void> Reschedule(ScheduleId schedule, GameplayTimePoint new_due);
+    [[nodiscard]] foundation::Result<void> Reschedule(ScheduleId schedule,
+                                                      GameplayTimePoint new_due);
     [[nodiscard]] bool HasSchedule(ScheduleId schedule) const noexcept;
     [[nodiscard]] std::optional<ScheduleEntry> GetSchedule(ScheduleId schedule) const noexcept;
 
-    [[nodiscard]] foundation::Result<std::vector<ScheduledTrigger>> CollectDue(ClockId clock,
-                                                                               SchedulerBudget budget = {});
+    [[nodiscard]] foundation::Result<std::vector<ScheduledTrigger>>
+    CollectDue(ClockId clock, SchedulerBudget budget = {});
 
     [[nodiscard]] GameplayTimeSnapshot CaptureSnapshot() const;
     [[nodiscard]] foundation::Result<void> RestoreSnapshot(GameplayTimeSnapshot snapshot);
     [[nodiscard]] GameplayTimeDiagnostics GetDiagnostics() const noexcept;
+
     [[nodiscard]] Revision SchedulerRevision() const noexcept {
         return scheduler_revision_;
     }
@@ -184,29 +215,37 @@ class GameplayTimeService {
   private:
     struct ActionTypeInfo {
         ActionTypeId id{};
+
         std::string canonical_name;
         GameplayDomainId owner_domain{};
+
     };
 
     struct ScheduleKey {
         GameplayTimePoint due{};
+
         ScheduleId id{};
 
         [[nodiscard]] bool operator<(const ScheduleKey &other) const noexcept {
             if (due != other.due) {
                 return due < other.due;
             }
+
             return id < other.id;
         }
+
     };
 
-    [[nodiscard]] foundation::Result<void> ValidateRecurrence(ClockId clock, const RecurrenceRule &recurrence) const;
-    [[nodiscard]] foundation::Result<GameplayTimePoint> NextCalendarDue(ClockId clock, CalendarPattern pattern) const;
-    [[nodiscard]] foundation::Result<std::uint64_t> CalculateOccurrences(const ScheduleEntry &entry,
-                                                                         GameplayTimePoint now) const;
+    [[nodiscard]] foundation::Result<void>
+    ValidateRecurrence(ClockId clock, const RecurrenceRule &recurrence) const;
+    [[nodiscard]] foundation::Result<GameplayTimePoint>
+    NextCalendarDue(ClockId clock, CalendarPattern pattern) const;
+    [[nodiscard]] foundation::Result<std::uint64_t>
+    CalculateOccurrences(const ScheduleEntry &entry, GameplayTimePoint now) const;
     [[nodiscard]] foundation::Result<GameplayTimePoint> AdvanceDue(const ScheduleEntry &entry,
                                                                    std::uint64_t occurrences) const;
-    [[nodiscard]] foundation::Result<std::int64_t> RecurrenceIntervalTicks(const ScheduleEntry &entry) const;
+    [[nodiscard]] foundation::Result<std::int64_t>
+    RecurrenceIntervalTicks(const ScheduleEntry &entry) const;
     void InsertScheduleIndex(const ScheduleEntry &entry);
     void RemoveScheduleIndex(const ScheduleEntry &entry);
 
@@ -218,8 +257,11 @@ class GameplayTimeService {
     std::unordered_map<ScheduleId, ScheduleEntry> schedules_;
     std::unordered_map<ClockId, std::set<ScheduleKey>> schedule_index_;
 
-    MonotonicIdGenerator<ScheduleId> schedule_ids_{ScheduleId::FromString("framework.gameplay_time").High()};
+    MonotonicIdGenerator<ScheduleId> schedule_ids_{
+        ScheduleId::FromString("framework.gameplay_time").High()};
+
     Revision scheduler_revision_{};
+
     bool frozen_ = false;
 
     std::uint64_t emitted_triggers_ = 0;
@@ -227,4 +269,5 @@ class GameplayTimeService {
     std::uint64_t catch_up_occurrences_ = 0;
     std::uint64_t budget_exhaustions_ = 0;
 };
+
 } // namespace epidemic::gameplay::time

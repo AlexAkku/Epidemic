@@ -33,5 +33,7 @@ class NativeWindowHandle {
 
   private:
     void *value_{nullptr};
+
 };
+
 } // namespace epidemic::platform

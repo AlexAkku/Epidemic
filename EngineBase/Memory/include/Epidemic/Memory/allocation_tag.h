@@ -61,4 +61,5 @@ enum class AllocationTag : std::uint8_t {
 
     return "Unknown";
 }
+
 } // namespace epidemic::memory

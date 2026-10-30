@@ -10,6 +10,7 @@ using namespace epidemic::gameplay::crime;
 namespace {
 GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
+
 }
 
 void Check(bool condition, const char *message) {
@@ -17,6 +18,7 @@ void Check(bool condition, const char *message) {
         std::cerr << "crime_tests: " << message << '\n';
         std::exit(1);
     }
+
 }
 
 struct Fixture {
@@ -45,7 +47,8 @@ struct Fixture {
         response.id = arrest;
         response.required_authority_capabilities = 0x2;
         response.resulting_case_state = CrimeCaseState::Wanted;
-        Check(static_cast<bool>(service.RegisterLawResponseDefinition(response)), "register response definition");
+        Check(static_cast<bool>(service.RegisterLawResponseDefinition(response)),
+              "register response definition");
 
         JurisdictionRecord jurisdiction_record;
         jurisdiction_record.id = jurisdiction;
@@ -53,7 +56,8 @@ struct Fixture {
         jurisdiction_record.authority_group = guards;
         jurisdiction_record.active_laws.push_back(law_id);
         jurisdiction_record.priority = 10;
-        Check(static_cast<bool>(service.RegisterJurisdiction(jurisdiction_record)), "register jurisdiction");
+        Check(static_cast<bool>(service.RegisterJurisdiction(jurisdiction_record)),
+              "register jurisdiction");
 
         AuthorityRecord authority;
         authority.authority_group = guards;
@@ -65,14 +69,16 @@ struct Fixture {
         clerk_authority.authority_group = clerks;
         clerk_authority.jurisdiction = jurisdiction;
         clerk_authority.capabilities = 0x1;
-        Check(static_cast<bool>(service.RegisterAuthority(clerk_authority)), "register insufficient authority");
+        Check(static_cast<bool>(service.RegisterAuthority(clerk_authority)),
+              "register insufficient authority");
 
         JurisdictionRecord other_jurisdiction;
         other_jurisdiction.id = JurisdictionId::FromString("jur.other");
         other_jurisdiction.area = Ref("other_city");
         other_jurisdiction.authority_group = other_guards;
         other_jurisdiction.active_laws.push_back(law_id);
-        Check(static_cast<bool>(service.RegisterJurisdiction(other_jurisdiction)), "register other jurisdiction");
+        Check(static_cast<bool>(service.RegisterJurisdiction(other_jurisdiction)),
+              "register other jurisdiction");
         AuthorityRecord other_authority;
         other_authority.authority_group = other_guards;
         other_authority.jurisdiction = other_jurisdiction.id;
@@ -82,6 +88,7 @@ struct Fixture {
 
         Check(static_cast<bool>(service.FreezeDefinitions()), "freeze definitions");
     }
+
 };
 
 CrimeCandidate MakeCandidate(const Fixture &fixture, const char *property_name, std::int64_t time) {
@@ -92,9 +99,11 @@ CrimeCandidate MakeCandidate(const Fixture &fixture, const char *property_name, 
     candidate.target_property = Ref(property_name);
     candidate.area = fixture.city;
     candidate.time = GameplayTimePoint{time};
+
     candidate.context.time = candidate.time;
     return candidate;
 }
+
 } // namespace
 
 int main() {
@@ -107,15 +116,18 @@ int main() {
 
     auto witness_required = crime.EvaluateCrimeCandidate(MakeCandidate(fixture, "unseen_apple", 90),
                                                          CrimeCandidatePolicy::RecordIfWitnessed);
-    Check(static_cast<bool>(witness_required), "record-if-witnessed evaluation succeeds without record");
-    Check(!witness_required.Value().crime, "record-if-witnessed does not create crime without witness");
+    Check(static_cast<bool>(witness_required),
+          "record-if-witnessed evaluation succeeds without record");
+    Check(!witness_required.Value().crime,
+          "record-if-witnessed does not create crime without witness");
     Check(crime.FindCrimesByOffender(fixture.player).empty(), "no hidden suspect record created");
 
     auto candidate = MakeCandidate(fixture, "apple", 100);
     auto evaluated = crime.EvaluateCrimeCandidate(candidate, CrimeCandidatePolicy::RecordAlways);
     Check(static_cast<bool>(evaluated) && evaluated.Value().crime.has_value(), "record crime");
     const auto crime_id = *evaluated.Value().crime;
-    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Unknown, "initial proof unknown");
+    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Unknown,
+          "initial proof unknown");
 
     EvidenceRecord strong_evidence;
     strong_evidence.crime = crime_id;
@@ -124,7 +136,8 @@ int main() {
     strong_evidence.strength_micro = 900000;
     auto evidence_id = crime.AddEvidence(strong_evidence);
     Check(static_cast<bool>(evidence_id), "add strong evidence");
-    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Confirmed, "strong evidence confirms crime");
+    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Confirmed,
+          "strong evidence confirms crime");
 
     WitnessRecord weak_witness;
     weak_witness.crime = crime_id;
@@ -142,7 +155,8 @@ int main() {
     Check(crime.FindWitnesses(crime_id).size() == 1, "duplicate witness not stored twice");
 
     auto duplicate_evidence = crime.AddEvidence(strong_evidence);
-    Check(static_cast<bool>(duplicate_evidence) && duplicate_evidence.Value() == evidence_id.Value(),
+    Check(static_cast<bool>(duplicate_evidence) &&
+              duplicate_evidence.Value() == evidence_id.Value(),
           "duplicate evidence is idempotent");
     Check(crime.FindEvidence(crime_id).size() == 1, "duplicate evidence not stored twice");
 
@@ -157,12 +171,15 @@ int main() {
     strong_witness.confidence_micro = 900000;
     auto strong_witness_id = crime.AddWitness(strong_witness);
     Check(static_cast<bool>(strong_witness_id), "add strong witness");
-    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Witnessed, "strong witness raises proof");
-    Check(static_cast<bool>(crime.RemoveWitness(strong_witness_id.Value())), "remove strong witness");
+    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Witnessed,
+          "strong witness raises proof");
+    Check(static_cast<bool>(crime.RemoveWitness(strong_witness_id.Value())),
+          "remove strong witness");
     Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Suspected,
           "removing strong witness falls back to weak witness");
     Check(static_cast<bool>(crime.RemoveWitness(weak_id.Value())), "remove weak witness");
-    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Unknown, "proof returns to unknown");
+    Check(crime.FindCrime(crime_id)->proof_state == CrimeProofState::Unknown,
+          "proof returns to unknown");
 
     auto witnessed_candidate = MakeCandidate(fixture, "pear", 110);
     CrimeCandidateWitness initial;
@@ -170,22 +187,27 @@ int main() {
     initial.witness_type = WitnessTypeId::FromString("witness.visual");
     initial.confidence_micro = 900000;
     initial.observed_at = GameplayTimePoint{110};
+
     witnessed_candidate.initial_witness = initial;
-    auto witnessed = crime.EvaluateCrimeCandidate(witnessed_candidate, CrimeCandidatePolicy::RecordIfWitnessed);
+    auto witnessed =
+        crime.EvaluateCrimeCandidate(witnessed_candidate, CrimeCandidatePolicy::RecordIfWitnessed);
     Check(static_cast<bool>(witnessed) && witnessed.Value().crime.has_value(),
           "record-if-witnessed creates crime with witness");
     Check(crime.FindCrime(*witnessed.Value().crime)->proof_state == CrimeProofState::Witnessed,
           "initial witness contributes to proof");
 
-    auto unauthorized = crime.GenerateLawResponse({crime_id, fixture.arrest, Ref("fake_guards"), fixture.player, {}});
+    auto unauthorized = crime.GenerateLawResponse(
+        {crime_id, fixture.arrest, Ref("fake_guards"), fixture.player, {}});
     Check(!unauthorized, "unregistered authority cannot generate response");
-    auto insufficient = crime.GenerateLawResponse({crime_id, fixture.arrest, fixture.clerks, fixture.player, {}});
+    auto insufficient =
+        crime.GenerateLawResponse({crime_id, fixture.arrest, fixture.clerks, fixture.player, {}});
     Check(!insufficient, "authority without required capability rejected");
-    auto wrong_jurisdiction =
-        crime.GenerateLawResponse({crime_id, fixture.arrest, fixture.other_guards, fixture.player, {}});
+    auto wrong_jurisdiction = crime.GenerateLawResponse(
+        {crime_id, fixture.arrest, fixture.other_guards, fixture.player, {}});
     Check(!wrong_jurisdiction, "authority from another jurisdiction rejected");
 
-    auto response = crime.GenerateLawResponse({crime_id, fixture.arrest, fixture.guards, fixture.player, {}});
+    auto response =
+        crime.GenerateLawResponse({crime_id, fixture.arrest, fixture.guards, fixture.player, {}});
     Check(static_cast<bool>(response), "authorized law response");
     Check(crime.FindCrime(crime_id)->state == CrimeCaseState::Wanted,
           "response definition controls case-state transition");
@@ -195,15 +217,19 @@ int main() {
     bounty.jurisdiction = fixture.jurisdiction;
     bounty.amount = 100;
     bounty.expires_at = GameplayTimePoint{140};
+
     bounty.source_crimes = {crime_id};
+
     auto first_bounty = crime.CreateBounty(bounty);
     Check(static_cast<bool>(first_bounty), "create aggregate bounty");
     Check(!crime.CreateBounty(bounty), "second active bounty for offender/jurisdiction rejected");
     Check(crime.GetBounty(fixture.player, fixture.jurisdiction)->id == first_bounty.Value(),
           "active bounty lookup is deterministic");
-    Check(static_cast<bool>(crime.ResolveBounty(first_bounty.Value(), BountyState::Paid)), "resolve bounty");
+    Check(static_cast<bool>(crime.ResolveBounty(first_bounty.Value(), BountyState::Paid)),
+          "resolve bounty");
 
     bounty.id = {};
+
     auto second_bounty = crime.CreateBounty(bounty);
     Check(static_cast<bool>(second_bounty), "new bounty allowed after previous terminal");
     Check(crime.GetBounty(fixture.player, fixture.jurisdiction)->id == second_bounty.Value(),
@@ -212,19 +238,24 @@ int main() {
     const auto expired_count = crime.ExpireDue(GameplayTimePoint{151});
     Check(expired_count == 2, "due crime and bounty expire by gameplay time");
     Check(crime.FindCrime(crime_id)->state == CrimeCaseState::Expired, "crime statute expiry");
-    Check(!crime.GetBounty(fixture.player, fixture.jurisdiction), "expired bounty leaves active index");
+    Check(!crime.GetBounty(fixture.player, fixture.jurisdiction),
+          "expired bounty leaves active index");
 
     crime.SetChangeJournalCapacity(2);
-    Check(static_cast<bool>(crime.ChangeCaseState(*witnessed.Value().crime, CrimeCaseState::Reported)),
+    Check(static_cast<bool>(
+              crime.ChangeCaseState(*witnessed.Value().crime, CrimeCaseState::Reported)),
           "change case for journal test");
-    Check(static_cast<bool>(crime.ChangeCaseState(*witnessed.Value().crime, CrimeCaseState::UnderInvestigation)),
+    Check(static_cast<bool>(
+              crime.ChangeCaseState(*witnessed.Value().crime, CrimeCaseState::UnderInvestigation)),
           "second journal change");
-    Check(static_cast<bool>(crime.ChangeCaseState(*witnessed.Value().crime, CrimeCaseState::Wanted)),
+    Check(static_cast<bool>(
+              crime.ChangeCaseState(*witnessed.Value().crime, CrimeCaseState::Wanted)),
           "third journal change");
     const auto old_batch = crime.ReadChangesSince(ChangeCursor{});
     Check(old_batch.snapshot_required, "bounded journal requires snapshot for stale reader");
     const auto latest_batch = crime.ReadChangesSince(crime.LatestChangeCursor());
-    Check(!latest_batch.snapshot_required && latest_batch.changes.empty(), "current journal reader is up to date");
+    Check(!latest_batch.snapshot_required && latest_batch.changes.empty(),
+          "current journal reader is up to date");
 
     const auto pre_restore_cursor = crime.LatestChangeCursor();
     Check(pre_restore_cursor.sequence >= 2, "pre-restore journal has multiple changes");
@@ -234,27 +265,32 @@ int main() {
     LawDefinition keep_law;
     keep_law.id = LawId::FromString("law.keep");
     keep_law.crime_type = CrimeTypeId::FromString("crime.keep");
-    Check(static_cast<bool>(preserved.RegisterLaw(keep_law)), "prepare transactional restore target law");
+    Check(static_cast<bool>(preserved.RegisterLaw(keep_law)),
+          "prepare transactional restore target law");
     JurisdictionRecord keep_jurisdiction;
     keep_jurisdiction.id = JurisdictionId::FromString("jur.keep");
     keep_jurisdiction.area = Ref("keep_area");
     keep_jurisdiction.authority_group = Ref("keep_authority");
     keep_jurisdiction.active_laws.push_back(keep_law.id);
-    Check(static_cast<bool>(preserved.RegisterJurisdiction(keep_jurisdiction)), "prepare restore target jurisdiction");
+    Check(static_cast<bool>(preserved.RegisterJurisdiction(keep_jurisdiction)),
+          "prepare restore target jurisdiction");
     Check(static_cast<bool>(preserved.FreezeDefinitions()), "freeze restore target");
     const auto preserved_revision = preserved.CurrentRevision();
 
     auto bad_generator = snapshot;
     bad_generator.crime_ids.next = 1;
-    Check(!preserved.RestoreSnapshot(std::move(bad_generator)), "stale generator snapshot rejected");
-    Check(preserved.CurrentRevision() == preserved_revision, "failed restore leaves revision unchanged");
+    Check(!preserved.RestoreSnapshot(std::move(bad_generator)),
+          "stale generator snapshot rejected");
+    Check(preserved.CurrentRevision() == preserved_revision,
+          "failed restore leaves revision unchanged");
     Check(preserved.GetApplicableJurisdiction(Ref("keep_area")).has_value(),
           "failed restore leaves old state unchanged");
 
     auto bad_reference = snapshot;
     Check(!bad_reference.witnesses.empty(), "snapshot contains witness for corruption test");
     bad_reference.witnesses.front().crime = CrimeRecordId::FromString("missing.crime");
-    Check(!preserved.RestoreSnapshot(std::move(bad_reference)), "dangling witness reference rejected");
+    Check(!preserved.RestoreSnapshot(std::move(bad_reference)),
+          "dangling witness reference rejected");
     Check(preserved.GetApplicableJurisdiction(Ref("keep_area")).has_value(),
           "cross-reference restore failure remains transactional");
 
@@ -262,18 +298,23 @@ int main() {
     Check(static_cast<bool>(restored.RestoreSnapshot(snapshot)), "valid snapshot restore");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "pre-restore crime cursor requires snapshot in new journal epoch");
-    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    Check(restored
+              .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                  std::numeric_limits<std::uint64_t>::max()))
               .snapshot_required,
           "future crime cursor is incompatible");
-    auto epoch_crime =
-        restored.EvaluateCrimeCandidate(MakeCandidate(fixture, "epoch_apple", 170), CrimeCandidatePolicy::RecordAlways);
-    Check(static_cast<bool>(epoch_crime) && epoch_crime.Value().crime.has_value(), "post-restore crime change");
+    auto epoch_crime = restored.EvaluateCrimeCandidate(MakeCandidate(fixture, "epoch_apple", 170),
+                                                       CrimeCandidatePolicy::RecordAlways);
+    Check(static_cast<bool>(epoch_crime) && epoch_crime.Value().crime.has_value(),
+          "post-restore crime change");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "old crime cursor remains incompatible after new epoch changes");
     const auto new_epoch = restored.ReadChangesSince(ChangeCursor{});
-    Check(!new_epoch.snapshot_required && !new_epoch.changes.empty(), "new crime epoch readable from zero");
+    Check(!new_epoch.snapshot_required && !new_epoch.changes.empty(),
+          "new crime epoch readable from zero");
     const auto exact_epoch = restored.ReadChangesSince(new_epoch.latest_cursor);
-    Check(!exact_epoch.snapshot_required && exact_epoch.changes.empty(), "exact crime cursor is current");
+    Check(!exact_epoch.snapshot_required && exact_epoch.changes.empty(),
+          "exact crime cursor is current");
     Check(restored.DefinitionsFrozen(), "definition freeze state restored");
     Check(restored.FindCrimesByOffender(fixture.player).size() == 3,
           "restored and post-restore runtime crimes retained");
@@ -288,7 +329,8 @@ int main() {
     const auto case_before_invalid = restored.FindCrime(live_case)->state;
     auto invalid_case = restored.ChangeCaseState(live_case, static_cast<CrimeCaseState>(99));
     Check(!invalid_case, "out-of-domain crime case state rejected");
-    Check(restored.FindCrime(live_case)->state == case_before_invalid, "invalid case state leaves record unchanged");
+    Check(restored.FindCrime(live_case)->state == case_before_invalid,
+          "invalid case state leaves record unchanged");
     Check(static_cast<bool>(restored.ChangeCaseState(live_case, CrimeCaseState::Reported)),
           "forward case transition succeeds");
     auto reverse_case = restored.ChangeCaseState(live_case, CrimeCaseState::Open);
@@ -302,24 +344,31 @@ int main() {
     invalid_state_bounty.jurisdiction = fixture.jurisdiction;
     invalid_state_bounty.amount = 5;
     invalid_state_bounty.expires_at = GameplayTimePoint{500};
+
     invalid_state_bounty.source_crimes = {live_case};
+
     auto invalid_state_bounty_id = restored.CreateBounty(invalid_state_bounty);
     Check(static_cast<bool>(invalid_state_bounty_id), "bounty for invalid-state regression");
-    auto invalid_bounty_state = restored.ResolveBounty(invalid_state_bounty_id.Value(), static_cast<BountyState>(99));
+    auto invalid_bounty_state =
+        restored.ResolveBounty(invalid_state_bounty_id.Value(), static_cast<BountyState>(99));
     Check(!invalid_bounty_state, "out-of-domain bounty state rejected");
     auto active_bounty_after_invalid = restored.GetBounty(fixture.player, fixture.jurisdiction);
-    Check(active_bounty_after_invalid && active_bounty_after_invalid->id == invalid_state_bounty_id.Value(),
+    Check(active_bounty_after_invalid &&
+              active_bounty_after_invalid->id == invalid_state_bounty_id.Value(),
           "invalid bounty state leaves active index unchanged");
 
     // CRM-08: revision exhaustion rejects a domain mutation with no state change.
     auto exhausted_crime_snapshot = restored.CaptureSnapshot();
     exhausted_crime_snapshot.revision = Revision{std::numeric_limits<std::uint64_t>::max()};
+
     CrimeService revision_exhausted;
     Check(static_cast<bool>(revision_exhausted.RestoreSnapshot(exhausted_crime_snapshot)),
           "max crime revision restores");
     const auto exhausted_case_before = revision_exhausted.FindCrime(live_case)->state;
-    auto exhausted_case_change = revision_exhausted.ChangeCaseState(live_case, CrimeCaseState::UnderInvestigation);
-    Check(!exhausted_case_change && exhausted_case_change.GetError().HasCode("gameplay.revision_exhausted"),
+    auto exhausted_case_change =
+        revision_exhausted.ChangeCaseState(live_case, CrimeCaseState::UnderInvestigation);
+    Check(!exhausted_case_change &&
+              exhausted_case_change.GetError().HasCode("gameplay.revision_exhausted"),
           "crime mutation rejects exhausted revision");
     Check(revision_exhausted.FindCrime(live_case)->state == exhausted_case_before,
           "exhausted crime mutation leaves case unchanged");

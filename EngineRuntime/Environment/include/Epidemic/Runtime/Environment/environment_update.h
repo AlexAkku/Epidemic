@@ -14,18 +14,23 @@
 namespace epidemic::runtime {
 struct EnvironmentUpdateInput {
     GameTimePoint game_time{};
+
     GameDuration game_delta{};
+
     RegionId region_id{};
 
-    [[nodiscard]] constexpr bool operator==(const EnvironmentUpdateInput &) const noexcept = default;
+    [[nodiscard]] constexpr bool
+    operator==(const EnvironmentUpdateInput &) const noexcept = default;
 };
 
 struct EnvironmentStateUpdate {
     RegionId region{};
+
     std::uint64_t source_revision = 0;
     std::optional<WeatherState> weather;
     std::optional<SeasonState> season;
     std::optional<ClimateProfile> climate;
     std::vector<SurfaceState> surfaces;
 };
+
 } // namespace epidemic::runtime

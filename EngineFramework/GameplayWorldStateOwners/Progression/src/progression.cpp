@@ -41,6 +41,7 @@ namespace {
         if (b < 0 && a < std::numeric_limits<std::int64_t>::max() / b)
             return std::numeric_limits<std::int64_t>::max();
     }
+
     return a * b;
 }
 
@@ -57,10 +58,12 @@ namespace {
     return result;
 }
 
-[[nodiscard]] std::uint32_t RankFor(const ProgressionTrackDefinition &definition, std::int64_t progress) noexcept {
-    return static_cast<std::uint32_t>(
-        std::upper_bound(definition.rank_thresholds_micro.begin(), definition.rank_thresholds_micro.end(), progress) -
-        definition.rank_thresholds_micro.begin());
+[[nodiscard]] std::uint32_t RankFor(const ProgressionTrackDefinition &definition,
+                                    std::int64_t progress) noexcept {
+    return static_cast<std::uint32_t>(std::upper_bound(definition.rank_thresholds_micro.begin(),
+                                                       definition.rank_thresholds_micro.end(),
+                                                       progress) -
+                                      definition.rank_thresholds_micro.begin());
 }
 
 [[nodiscard]] bool IsValidModifierOperation(ModifierOperation operation) noexcept {
@@ -74,6 +77,7 @@ namespace {
     case ModifierOperation::ClampMax:
         return true;
     }
+
     return false;
 }
 
@@ -84,13 +88,15 @@ namespace {
     return true;
 }
 
-[[nodiscard]] bool ValidGeneratorSnapshot(const MonotonicIdGenerator<GameplayObjectId>::Snapshot &snapshot,
-                                          std::uint64_t expected_scope, std::uint64_t max_restored_low) noexcept {
+[[nodiscard]] bool
+ValidGeneratorSnapshot(const MonotonicIdGenerator<GameplayObjectId>::Snapshot &snapshot,
+                       std::uint64_t expected_scope, std::uint64_t max_restored_low) noexcept {
     return snapshot.scope != 0 && snapshot.scope == expected_scope &&
            (snapshot.next == 0 || snapshot.next > max_restored_low);
 }
 
-void AdvanceGeneratorPast(MonotonicIdGenerator<GameplayObjectId> &generator, GameplayObjectId id) noexcept {
+void AdvanceGeneratorPast(MonotonicIdGenerator<GameplayObjectId> &generator,
+                          GameplayObjectId id) noexcept {
     if (!id.IsValid() || id.High() != generator.Scope().Raw())
         return;
     auto snapshot = generator.GetSnapshot();
@@ -103,14 +109,17 @@ void AdvanceGeneratorPast(MonotonicIdGenerator<GameplayObjectId> &generator, Gam
 [[nodiscard]] bool CanAdvanceRevisionBy(Revision revision, std::uint64_t count) noexcept {
     return count <= std::numeric_limits<std::uint64_t>::max() - revision.value;
 }
+
 } // namespace
 
 ProgressionService::ProgressionService()
     : modifier_ids_(GameplayObjectId::FromString("framework.progression.modifiers").High()),
-      grant_reservation_ids_(GameplayObjectId::FromString("framework.progression.grant_reservations").High()) {
+      grant_reservation_ids_(
+          GameplayObjectId::FromString("framework.progression.grant_reservations").High()) {
 }
 
-foundation::Result<AttributeTypeId> ProgressionService::RegisterAttribute(AttributeDefinition definition) {
+foundation::Result<AttributeTypeId>
+ProgressionService::RegisterAttribute(AttributeDefinition definition) {
     if (frozen_)
         return foundation::Result<AttributeTypeId>::Failure(
             Error("gameplay.registry_frozen", "progression registry is frozen"));
@@ -120,19 +129,22 @@ foundation::Result<AttributeTypeId> ProgressionService::RegisterAttribute(Attrib
     const auto expected = AttributeTypeId::FromString(definition.canonical_name);
     if (!definition.id.IsValid())
         definition.id = expected;
-    if (definition.id != expected || definition.min_micro > definition.max_micro || attributes_.contains(definition.id))
+    if (definition.id != expected || definition.min_micro > definition.max_micro ||
+        attributes_.contains(definition.id))
         return foundation::Result<AttributeTypeId>::Failure(
             Error("gameplay.progression.attribute_invalid", "invalid or duplicate attribute"));
     for (const auto &term : definition.derived_terms)
         if (!term.source.IsValid())
             return foundation::Result<AttributeTypeId>::Failure(
-                Error("gameplay.progression.attribute_invalid", "derived term has an invalid source"));
+                Error("gameplay.progression.attribute_invalid",
+                      "derived term has an invalid source"));
     const auto id = definition.id;
     attributes_.emplace(id, std::move(definition));
     return foundation::Result<AttributeTypeId>::Success(id);
 }
 
-foundation::Result<ProgressionTrackId> ProgressionService::RegisterTrack(ProgressionTrackDefinition definition) {
+foundation::Result<ProgressionTrackId>
+ProgressionService::RegisterTrack(ProgressionTrackDefinition definition) {
     if (frozen_)
         return foundation::Result<ProgressionTrackId>::Failure(
             Error("gameplay.registry_frozen", "progression registry is frozen"));
@@ -144,13 +156,15 @@ foundation::Result<ProgressionTrackId> ProgressionService::RegisterTrack(Progres
         definition.id = expected;
     const auto &policy = definition.policy;
     if (definition.id != expected || tracks_.contains(definition.id) ||
-        policy.min_progress_micro > policy.max_progress_micro || !StrictlyIncreasing(definition.rank_thresholds_micro))
+        policy.min_progress_micro > policy.max_progress_micro ||
+        !StrictlyIncreasing(definition.rank_thresholds_micro))
         return foundation::Result<ProgressionTrackId>::Failure(
             Error("gameplay.progression.track_invalid", "invalid or duplicate progression track"));
     for (const auto threshold : definition.rank_thresholds_micro)
         if (threshold < policy.min_progress_micro || threshold > policy.max_progress_micro)
             return foundation::Result<ProgressionTrackId>::Failure(
-                Error("gameplay.progression.track_invalid", "rank threshold is outside the track policy range"));
+                Error("gameplay.progression.track_invalid",
+                      "rank threshold is outside the track policy range"));
     const auto id = definition.id;
     tracks_.emplace(id, std::move(definition));
     return foundation::Result<ProgressionTrackId>::Success(id);
@@ -174,25 +188,30 @@ foundation::Result<PerkDefinitionId> ProgressionService::RegisterPerk(PerkDefini
     return foundation::Result<PerkDefinitionId>::Success(id);
 }
 
-foundation::Result<UnlockDefinitionId> ProgressionService::RegisterUnlockDefinition(UnlockDefinition definition) {
+foundation::Result<UnlockDefinitionId>
+ProgressionService::RegisterUnlockDefinition(UnlockDefinition definition) {
     if (frozen_)
         return foundation::Result<UnlockDefinitionId>::Failure(
             Error("gameplay.registry_frozen", "progression registry is frozen"));
-    if (definition.canonical_name.empty() || !definition.type.IsValid() || !definition.value.IsValid())
+    if (definition.canonical_name.empty() || !definition.type.IsValid() ||
+        !definition.value.IsValid())
         return foundation::Result<UnlockDefinitionId>::Failure(
-            Error("gameplay.progression.unlock_definition_invalid", "unlock definition is invalid"));
+            Error("gameplay.progression.unlock_definition_invalid",
+                  "unlock definition is invalid"));
     const auto expected = UnlockDefinitionId::FromString(definition.canonical_name);
     if (!definition.id.IsValid())
         definition.id = expected;
     if (definition.id != expected || unlock_definitions_.contains(definition.id))
         return foundation::Result<UnlockDefinitionId>::Failure(
-            Error("gameplay.progression.unlock_definition_invalid", "invalid or duplicate unlock definition"));
+            Error("gameplay.progression.unlock_definition_invalid",
+                  "invalid or duplicate unlock definition"));
     const auto id = definition.id;
     unlock_definitions_.emplace(id, std::move(definition));
     return foundation::Result<UnlockDefinitionId>::Success(id);
 }
 
-foundation::Result<MilestoneId> ProgressionService::RegisterMilestone(MilestoneDefinition definition) {
+foundation::Result<MilestoneId>
+ProgressionService::RegisterMilestone(MilestoneDefinition definition) {
     if (frozen_)
         return foundation::Result<MilestoneId>::Failure(
             Error("gameplay.registry_frozen", "progression registry is frozen"));
@@ -229,11 +248,13 @@ foundation::Result<void> ProgressionService::Freeze() {
         mark = 2;
         return true;
     };
+
     for (const auto &[id, def] : attributes_) {
         (void)def;
         if (!visit(visit, id))
-            return foundation::Result<void>::Failure(Error("gameplay.progression.attribute_cycle",
-                                                           "derived attribute dependency cycle or unknown dependency"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.progression.attribute_cycle",
+                      "derived attribute dependency cycle or unknown dependency"));
     }
 
     const auto prerequisite_valid = [&](const ProgressionPrerequisite &p) {
@@ -246,28 +267,37 @@ foundation::Result<void> ProgressionService::Freeze() {
         case ProgressionPrerequisiteKind::HasUnlock:
             return p.unlock_type.IsValid() && p.unlock_value.IsValid();
         }
+
         return false;
     };
+
     for (const auto &[id, milestone] : milestones_) {
         (void)id;
         const auto track = tracks_.find(milestone.track);
-        if (track == tracks_.end() || milestone.threshold_micro < track->second.policy.min_progress_micro ||
+        if (track == tracks_.end() ||
+            milestone.threshold_micro < track->second.policy.min_progress_micro ||
             milestone.threshold_micro > track->second.policy.max_progress_micro)
             return foundation::Result<void>::Failure(
-                Error("gameplay.progression.milestone_invalid", "milestone references an invalid track or threshold"));
-        if (!std::all_of(milestone.prerequisites.begin(), milestone.prerequisites.end(), prerequisite_valid))
+                Error("gameplay.progression.milestone_invalid",
+                      "milestone references an invalid track or threshold"));
+        if (!std::all_of(milestone.prerequisites.begin(), milestone.prerequisites.end(),
+                         prerequisite_valid))
             return foundation::Result<void>::Failure(
-                Error("gameplay.progression.prerequisite_invalid", "milestone contains an invalid prerequisite"));
+                Error("gameplay.progression.prerequisite_invalid",
+                      "milestone contains an invalid prerequisite"));
         for (const auto unlock : milestone.unlocks)
             if (!unlock_definitions_.contains(unlock))
-                return foundation::Result<void>::Failure(Error("gameplay.progression.unlock_definition_missing",
-                                                               "milestone references an unknown unlock definition"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.progression.unlock_definition_missing",
+                          "milestone references an unknown unlock definition"));
     }
+
     frozen_ = true;
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ProgressionService::EnsureProfile(GameplayObjectRef subject, GameplayContext context) {
+foundation::Result<void> ProgressionService::EnsureProfile(GameplayObjectRef subject,
+                                                           GameplayContext context) {
     if (!subject.IsValid())
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.subject_invalid", "profile subject is invalid"));
@@ -279,27 +309,33 @@ foundation::Result<void> ProgressionService::EnsureProfile(GameplayObjectRef sub
     Profile profile;
     profile.subject = subject;
     profile.revision = {1};
+
     try {
         if (test_seam::Consume(test_seam::FaultPoint::EnsureProfileBeforePublish))
             throw std::bad_alloc{};
+
         if (!profiles_.emplace(subject, std::move(profile)).second)
             return foundation::Result<void>::Success();
     } catch (const std::bad_alloc &) {
-        return foundation::Result<void>::Failure(
-            Error("gameplay.progression.allocation_failed", "failed to publish progression profile"));
+        return foundation::Result<void>::Failure(Error("gameplay.progression.allocation_failed",
+                                                       "failed to publish progression profile"));
     }
+
     ++revision_.value;
     Record({0, ProgressionChangeKind::ProfileCreated, subject, {}, {}, {}, {}, revision_, context});
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ProgressionService::RemoveProfile(GameplayObjectRef subject, GameplayContext context) {
+foundation::Result<void> ProgressionService::RemoveProfile(GameplayObjectRef subject,
+                                                           GameplayContext context) {
     const auto it = profiles_.find(subject);
     if (it == profiles_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.progression.profile_missing", "profile missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.profile_missing", "profile missing"));
     if (HasPendingProgressGrant(subject))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     if (revision_.value == std::numeric_limits<std::uint64_t>::max())
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.revision_exhausted", "progression revision exhausted"));
@@ -318,15 +354,15 @@ ProgressionService::Profile *ProgressionService::FindProfile(GameplayObjectRef s
     return it == profiles_.end() ? nullptr : &it->second;
 }
 
-const ProgressionService::Profile *ProgressionService::FindProfile(GameplayObjectRef subject) const noexcept {
+const ProgressionService::Profile *
+ProgressionService::FindProfile(GameplayObjectRef subject) const noexcept {
     const auto it = profiles_.find(subject);
     return it == profiles_.end() ? nullptr : &it->second;
 }
 
 bool ProgressionService::HasPendingProgressGrant(GameplayObjectRef subject) const noexcept {
-    return std::any_of(pending_progress_grants_.begin(), pending_progress_grants_.end(), [&](const auto &entry) {
-        return entry.second.subject == subject;
-    });
+    return std::any_of(pending_progress_grants_.begin(), pending_progress_grants_.end(),
+                       [&](const auto &entry) { return entry.second.subject == subject; });
 }
 
 bool ProgressionService::CanBump(const Profile &profile) const noexcept {
@@ -350,6 +386,7 @@ void ProgressionService::Record(ProgressionChange change) {
     try {
         if (test_seam::Consume(test_seam::FaultPoint::JournalAppend))
             throw std::bad_alloc{};
+
         changes_.push_back(std::move(change));
     } catch (const std::bad_alloc &) {
         changes_.clear();
@@ -359,15 +396,20 @@ void ProgressionService::Record(ProgressionChange change) {
         } else {
             next_change_sequence_ = 0;
         }
+
         return;
     }
-    next_change_sequence_ = assigned == std::numeric_limits<std::uint64_t>::max() ? 0 : assigned + 1;
+
+    next_change_sequence_ =
+        assigned == std::numeric_limits<std::uint64_t>::max() ? 0 : assigned + 1;
     while (changes_.size() > kChangeJournalCapacity)
         changes_.pop_front();
 }
 
-foundation::Result<void> ProgressionService::SetBaseAttribute(GameplayObjectRef subject, AttributeTypeId attribute,
-                                                              std::int64_t value, GameplayContext context) {
+foundation::Result<void> ProgressionService::SetBaseAttribute(GameplayObjectRef subject,
+                                                              AttributeTypeId attribute,
+                                                              std::int64_t value,
+                                                              GameplayContext context) {
     auto *profile = FindProfile(subject);
     const auto def = attributes_.find(attribute);
     if (profile == nullptr || def == attributes_.end())
@@ -383,13 +425,23 @@ foundation::Result<void> ProgressionService::SetBaseAttribute(GameplayObjectRef 
     try {
         if (test_seam::Consume(test_seam::FaultPoint::SetBaseAttributeBeforePublish))
             throw std::bad_alloc{};
+
         profile->base_attributes.insert_or_assign(attribute, value);
     } catch (const std::bad_alloc &) {
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.allocation_failed", "failed to publish base attribute"));
     }
+
     (void)Bump(*profile);
-    Record({0, ProgressionChangeKind::AttributeChanged, subject, attribute, {}, {}, {}, revision_, context});
+    Record({0,
+            ProgressionChangeKind::AttributeChanged,
+            subject,
+            attribute,
+            {},
+            {},
+            {},
+            revision_,
+            context});
     return foundation::Result<void>::Success();
 }
 
@@ -405,7 +457,8 @@ ProgressionService::EvaluateAttribute(const Profile &profile, AttributeTypeId at
             Error("gameplay.progression.attribute_cycle", "attribute cycle during evaluation"));
 
     std::int64_t value = def->second.default_micro;
-    if (const auto base = profile.base_attributes.find(attribute); base != profile.base_attributes.end())
+    if (const auto base = profile.base_attributes.find(attribute);
+        base != profile.base_attributes.end())
         value = base->second;
     if (!def->second.derived_terms.empty()) {
         ++derived_evaluations_;
@@ -416,9 +469,12 @@ ProgressionService::EvaluateAttribute(const Profile &profile, AttributeTypeId at
                 visiting.erase(attribute);
                 return source;
             }
+
             value = AddSat(value, MulMicro(source.Value(), term.coefficient_micro));
         }
+
     }
+
     visiting.erase(attribute);
 
     std::vector<const ProgressionModifier *> mods;
@@ -460,8 +516,11 @@ ProgressionService::EvaluateAttribute(const Profile &profile, AttributeTypeId at
             value = std::min(value, m->value_micro);
             break;
         }
+
     }
-    return foundation::Result<std::int64_t>::Success(std::clamp(value, def->second.min_micro, def->second.max_micro));
+
+    return foundation::Result<std::int64_t>::Success(
+        std::clamp(value, def->second.min_micro, def->second.max_micro));
 }
 
 foundation::Result<std::int64_t> ProgressionService::GetAttribute(GameplayObjectRef subject,
@@ -476,27 +535,31 @@ foundation::Result<std::int64_t> ProgressionService::GetAttribute(GameplayObject
 }
 
 foundation::Result<ProgressionModifierId>
-ProgressionService::AddModifier(GameplayObjectRef subject, ProgressionModifier modifier, GameplayContext context) {
+ProgressionService::AddModifier(GameplayObjectRef subject, ProgressionModifier modifier,
+                                GameplayContext context) {
     auto *profile = FindProfile(subject);
-    if (profile == nullptr || !attributes_.contains(modifier.target) || !IsValidModifierOperation(modifier.operation))
+    if (profile == nullptr || !attributes_.contains(modifier.target) ||
+        !IsValidModifierOperation(modifier.operation))
         return foundation::Result<ProgressionModifierId>::Failure(
             Error("gameplay.progression.modifier_invalid", "profile or target attribute missing"));
 
     auto staged_generator = modifier_ids_;
     if (!modifier.id.IsValid()) {
         modifier.id = {staged_generator.Next()};
+
         if (!modifier.id.IsValid())
             return foundation::Result<ProgressionModifierId>::Failure(
                 Error("gameplay.progression.id_exhausted", "progression modifier id exhausted"));
     }
+
     for (const auto &[other_subject, other_profile] : profiles_) {
         (void)other_subject;
-        if (std::any_of(other_profile.modifiers.begin(), other_profile.modifiers.end(), [&](const auto &existing) {
-                return existing.id == modifier.id;
-            }))
+        if (std::any_of(other_profile.modifiers.begin(), other_profile.modifiers.end(),
+                        [&](const auto &existing) { return existing.id == modifier.id; }))
             return foundation::Result<ProgressionModifierId>::Failure(
                 Error("gameplay.already_registered", "modifier id already exists"));
     }
+
     AdvanceGeneratorPast(staged_generator, modifier.id.value);
     if (!CanBump(*profile))
         return foundation::Result<ProgressionModifierId>::Failure(
@@ -507,10 +570,12 @@ ProgressionService::AddModifier(GameplayObjectRef subject, ProgressionModifier m
         staged_modifiers = profile->modifiers;
         if (test_seam::Consume(test_seam::FaultPoint::AddModifierBeforePublish))
             throw std::bad_alloc{};
+
         staged_modifiers.push_back(modifier);
     } catch (const std::bad_alloc &) {
         return foundation::Result<ProgressionModifierId>::Failure(
-            Error("gameplay.progression.allocation_failed", "failed to stage progression modifier"));
+            Error("gameplay.progression.allocation_failed",
+                  "failed to stage progression modifier"));
     }
 
     const auto id = modifier.id;
@@ -521,26 +586,37 @@ ProgressionService::AddModifier(GameplayObjectRef subject, ProgressionModifier m
     return foundation::Result<ProgressionModifierId>::Success(id);
 }
 
-foundation::Result<void> ProgressionService::RemoveModifier(GameplayObjectRef subject, ProgressionModifierId modifier,
+foundation::Result<void> ProgressionService::RemoveModifier(GameplayObjectRef subject,
+                                                            ProgressionModifierId modifier,
                                                             GameplayContext context) {
     auto *p = FindProfile(subject);
     if (!p)
-        return foundation::Result<void>::Failure(Error("gameplay.progression.profile_missing", "profile missing"));
-    const auto it = std::find_if(p->modifiers.begin(), p->modifiers.end(), [&](const auto &m) {
-        return m.id == modifier;
-    });
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.profile_missing", "profile missing"));
+    const auto it = std::find_if(p->modifiers.begin(), p->modifiers.end(),
+                                 [&](const auto &m) { return m.id == modifier; });
     if (it == p->modifiers.end())
-        return foundation::Result<void>::Failure(Error("gameplay.progression.modifier_missing", "modifier missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.modifier_missing", "modifier missing"));
     if (!CanBump(*p))
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.revision_exhausted", "progression revision exhausted"));
     p->modifiers.erase(it);
     Bump(*p);
-    Record({0, ProgressionChangeKind::ModifierRemoved, subject, {}, {}, {}, modifier, revision_, context});
+    Record({0,
+            ProgressionChangeKind::ModifierRemoved,
+            subject,
+            {},
+            {},
+            {},
+            modifier,
+            revision_,
+            context});
     return foundation::Result<void>::Success();
 }
 
-std::uint64_t ProgressionService::RemoveModifiersBySource(GameplayObjectRef subject, GameplayObjectRef source,
+std::uint64_t ProgressionService::RemoveModifiersBySource(GameplayObjectRef subject,
+                                                          GameplayObjectRef source,
                                                           GameplayContext context) {
     auto *p = FindProfile(subject);
     if (!p)
@@ -558,7 +634,8 @@ std::uint64_t ProgressionService::RemoveModifiersBySource(GameplayObjectRef subj
 
 foundation::Result<std::vector<ProgressionModifierId>>
 ProgressionService::ReplaceModifiersBySource(GameplayObjectRef subject, GameplayObjectRef source,
-                                             std::vector<ProgressionModifier> modifiers, GameplayContext context) {
+                                             std::vector<ProgressionModifier> modifiers,
+                                             GameplayContext context) {
     auto *profile = FindProfile(subject);
     if (!profile || !source.IsValid())
         return foundation::Result<std::vector<ProgressionModifierId>>::Failure(
@@ -577,30 +654,36 @@ ProgressionService::ReplaceModifiersBySource(GameplayObjectRef subject, Gameplay
     std::vector<ProgressionModifierId> ids;
     ids.reserve(modifiers.size());
     for (auto &modifier : modifiers) {
-        if (!attributes_.contains(modifier.target) || !IsValidModifierOperation(modifier.operation) ||
+        if (!attributes_.contains(modifier.target) ||
+            !IsValidModifierOperation(modifier.operation) ||
             (modifier.source.IsValid() && modifier.source != source))
             return foundation::Result<std::vector<ProgressionModifierId>>::Failure(
-                Error("gameplay.progression.modifier_invalid", "replacement modifier target or source is invalid"));
+                Error("gameplay.progression.modifier_invalid",
+                      "replacement modifier target or source is invalid"));
         modifier.source = source;
         if (!modifier.id.IsValid()) {
             modifier.id = {staged_generator.Next()};
+
             if (!modifier.id.IsValid())
                 return foundation::Result<std::vector<ProgressionModifierId>>::Failure(
-                    Error("gameplay.progression.id_exhausted", "progression modifier id exhausted"));
+                    Error("gameplay.progression.id_exhausted",
+                          "progression modifier id exhausted"));
         }
+
         if (!allocated.insert(modifier.id).second)
             return foundation::Result<std::vector<ProgressionModifierId>>::Failure(
                 Error("gameplay.already_registered", "duplicate replacement modifier id"));
         for (const auto &[other_subject, other_profile] : profiles_) {
             const auto exists =
-                std::any_of(other_profile.modifiers.begin(), other_profile.modifiers.end(), [&](const auto &existing) {
-                    return existing.id == modifier.id;
-                });
-            const bool replacing_same_record = other_subject == subject && replaceable_ids.contains(modifier.id);
+                std::any_of(other_profile.modifiers.begin(), other_profile.modifiers.end(),
+                            [&](const auto &existing) { return existing.id == modifier.id; });
+            const bool replacing_same_record =
+                other_subject == subject && replaceable_ids.contains(modifier.id);
             if (exists && !replacing_same_record)
                 return foundation::Result<std::vector<ProgressionModifierId>>::Failure(
                     Error("gameplay.already_registered", "replacement modifier id already exists"));
         }
+
         AdvanceGeneratorPast(staged_generator, modifier.id.value);
         ids.push_back(modifier.id);
     }
@@ -620,38 +703,51 @@ ProgressionService::ReplaceModifiersBySource(GameplayObjectRef subject, Gameplay
     profile->modifiers = std::move(staged_modifiers);
     Bump(*profile);
     for (const auto id : removed_ids)
-        Record({0, ProgressionChangeKind::ModifierRemoved, subject, {}, {}, {}, id, revision_, context});
+        Record({0,
+                ProgressionChangeKind::ModifierRemoved,
+                subject,
+                {},
+                {},
+                {},
+                id,
+                revision_,
+                context});
     for (const auto id : ids)
-        Record({0, ProgressionChangeKind::ModifierAdded, subject, {}, {}, {}, id, revision_, context});
+        Record(
+            {0, ProgressionChangeKind::ModifierAdded, subject, {}, {}, {}, id, revision_, context});
     return foundation::Result<std::vector<ProgressionModifierId>>::Success(std::move(ids));
 }
 
-foundation::Result<ProgressionTrackState> ProgressionService::GrantProgress(GameplayObjectRef subject,
-                                                                            ProgressionTrackId track,
-                                                                            std::int64_t amount,
-                                                                            GameplayContext context) {
+foundation::Result<ProgressionTrackState>
+ProgressionService::GrantProgress(GameplayObjectRef subject, ProgressionTrackId track,
+                                  std::int64_t amount, GameplayContext context) {
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<ProgressionTrackState>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     const auto d = tracks_.find(track);
     if (!p || d == tracks_.end())
         return foundation::Result<ProgressionTrackState>::Failure(
             Error("gameplay.progression.track_missing", "profile or track missing"));
     if (amount < 0 && !d->second.policy.allow_decrease)
         return foundation::Result<ProgressionTrackState>::Failure(
-            Error("gameplay.progression.decrease_forbidden", "track policy forbids decreasing progress"));
+            Error("gameplay.progression.decrease_forbidden",
+                  "track policy forbids decreasing progress"));
 
     const auto existing = p->tracks.find(track);
-    ProgressionTrackState before = existing == p->tracks.end()
-                                       ? ProgressionTrackState{track,
-                                                               d->second.policy.min_progress_micro,
-                                                               RankFor(d->second, d->second.policy.min_progress_micro),
-                                                               {}}
-                                       : existing->second;
+    ProgressionTrackState before =
+        existing == p->tracks.end()
+            ? ProgressionTrackState{track,
+                                    d->second.policy.min_progress_micro,
+                                    RankFor(d->second, d->second.policy.min_progress_micro),
+                                    {}}
+
+            : existing->second;
     auto after = before;
-    after.progress_micro = std::clamp(AddSat(before.progress_micro, amount), d->second.policy.min_progress_micro,
-                                      d->second.policy.max_progress_micro);
+    after.progress_micro =
+        std::clamp(AddSat(before.progress_micro, amount), d->second.policy.min_progress_micro,
+                   d->second.policy.max_progress_micro);
     after.rank = RankFor(d->second, after.progress_micro);
     if (after.progress_micro == before.progress_micro && after.rank == before.rank)
         return foundation::Result<ProgressionTrackState>::Success(before);
@@ -662,18 +758,37 @@ foundation::Result<ProgressionTrackState> ProgressionService::GrantProgress(Game
     try {
         if (test_seam::Consume(test_seam::FaultPoint::GrantProgressBeforePublish))
             throw std::bad_alloc{};
+
         p->tracks.insert_or_assign(track, after);
     } catch (const std::bad_alloc &) {
         return foundation::Result<ProgressionTrackState>::Failure(
             Error("gameplay.progression.allocation_failed", "failed to publish progression track"));
     }
+
     ++track_grants_;
     (void)Bump(*p);
-    Record({0, ProgressionChangeKind::TrackProgressChanged, subject, {}, track, {}, {}, revision_, context});
+    Record({0,
+            ProgressionChangeKind::TrackProgressChanged,
+            subject,
+            {},
+            track,
+            {},
+            {},
+            revision_,
+            context});
     if (after.rank != before.rank) {
         ++rank_changes_;
-        Record({0, ProgressionChangeKind::TrackRankChanged, subject, {}, track, {}, {}, revision_, context});
+        Record({0,
+                ProgressionChangeKind::TrackRankChanged,
+                subject,
+                {},
+                track,
+                {},
+                {},
+                revision_,
+                context});
     }
+
     return foundation::Result<ProgressionTrackState>::Success(after);
 }
 
@@ -684,26 +799,32 @@ foundation::Result<ProgressionTrackState> ProgressionService::SetProgress(Gamepl
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<ProgressionTrackState>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     const auto d = tracks_.find(track);
     if (!p || d == tracks_.end())
         return foundation::Result<ProgressionTrackState>::Failure(
             Error("gameplay.progression.track_missing", "profile or track missing"));
     if (!d->second.policy.allow_direct_set)
         return foundation::Result<ProgressionTrackState>::Failure(
-            Error("gameplay.progression.direct_set_forbidden", "track policy forbids direct progress assignment"));
+            Error("gameplay.progression.direct_set_forbidden",
+                  "track policy forbids direct progress assignment"));
 
     const auto existing = p->tracks.find(track);
-    ProgressionTrackState before = existing == p->tracks.end()
-                                       ? ProgressionTrackState{track,
-                                                               d->second.policy.min_progress_micro,
-                                                               RankFor(d->second, d->second.policy.min_progress_micro),
-                                                               {}}
-                                       : existing->second;
-    const auto target = std::clamp(progress, d->second.policy.min_progress_micro, d->second.policy.max_progress_micro);
+    ProgressionTrackState before =
+        existing == p->tracks.end()
+            ? ProgressionTrackState{track,
+                                    d->second.policy.min_progress_micro,
+                                    RankFor(d->second, d->second.policy.min_progress_micro),
+                                    {}}
+
+            : existing->second;
+    const auto target = std::clamp(progress, d->second.policy.min_progress_micro,
+                                   d->second.policy.max_progress_micro);
     if (target < before.progress_micro && !d->second.policy.allow_decrease)
         return foundation::Result<ProgressionTrackState>::Failure(
-            Error("gameplay.progression.decrease_forbidden", "track policy forbids decreasing progress"));
+            Error("gameplay.progression.decrease_forbidden",
+                  "track policy forbids decreasing progress"));
     if (target == before.progress_micro)
         return foundation::Result<ProgressionTrackState>::Success(before);
     if (!CanBump(*p) || before.revision.value == std::numeric_limits<std::uint64_t>::max())
@@ -716,22 +837,41 @@ foundation::Result<ProgressionTrackState> ProgressionService::SetProgress(Gamepl
     try {
         if (test_seam::Consume(test_seam::FaultPoint::GrantProgressBeforePublish))
             throw std::bad_alloc{};
+
         p->tracks.insert_or_assign(track, after);
     } catch (const std::bad_alloc &) {
         return foundation::Result<ProgressionTrackState>::Failure(
             Error("gameplay.progression.allocation_failed", "failed to publish progression track"));
     }
+
     (void)Bump(*p);
-    Record({0, ProgressionChangeKind::TrackProgressChanged, subject, {}, track, {}, {}, revision_, context});
+    Record({0,
+            ProgressionChangeKind::TrackProgressChanged,
+            subject,
+            {},
+            track,
+            {},
+            {},
+            revision_,
+            context});
     if (after.rank != before.rank) {
         ++rank_changes_;
-        Record({0, ProgressionChangeKind::TrackRankChanged, subject, {}, track, {}, {}, revision_, context});
+        Record({0,
+                ProgressionChangeKind::TrackRankChanged,
+                subject,
+                {},
+                track,
+                {},
+                {},
+                revision_,
+                context});
     }
+
     return foundation::Result<ProgressionTrackState>::Success(after);
 }
 
-foundation::Result<ProgressionTrackState> ProgressionService::GetTrack(GameplayObjectRef subject,
-                                                                       ProgressionTrackId track) const {
+foundation::Result<ProgressionTrackState>
+ProgressionService::GetTrack(GameplayObjectRef subject, ProgressionTrackId track) const {
     const auto *p = FindProfile(subject);
     const auto d = tracks_.find(track);
     if (!p || d == tracks_.end())
@@ -739,15 +879,17 @@ foundation::Result<ProgressionTrackState> ProgressionService::GetTrack(GameplayO
             Error("gameplay.progression.track_missing", "profile or track missing"));
     const auto it = p->tracks.find(track);
     if (it == p->tracks.end())
-        return foundation::Result<ProgressionTrackState>::Success(ProgressionTrackState{
-            track, d->second.policy.min_progress_micro, RankFor(d->second, d->second.policy.min_progress_micro), {}});
+        return foundation::Result<ProgressionTrackState>::Success(
+            ProgressionTrackState{track,
+                                  d->second.policy.min_progress_micro,
+                                  RankFor(d->second, d->second.policy.min_progress_micro),
+                                  {}});
     return foundation::Result<ProgressionTrackState>::Success(it->second);
 }
 
-foundation::Result<ProgressionGrantReservationId> ProgressionService::ReserveProgressGrant(GameplayObjectRef subject,
-                                                                                           ProgressionTrackId track,
-                                                                                           std::int64_t amount,
-                                                                                           GameplayContext context) {
+foundation::Result<ProgressionGrantReservationId>
+ProgressionService::ReserveProgressGrant(GameplayObjectRef subject, ProgressionTrackId track,
+                                         std::int64_t amount, GameplayContext context) {
     auto *profile = FindProfile(subject);
     const auto definition = tracks_.find(track);
     if (!profile || definition == tracks_.end())
@@ -755,14 +897,17 @@ foundation::Result<ProgressionGrantReservationId> ProgressionService::ReservePro
             Error("gameplay.progression.track_missing", "profile or track missing"));
     if (HasPendingProgressGrant(subject))
         return foundation::Result<ProgressionGrantReservationId>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile already has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile already has an active progress reservation"));
     if (amount < 0 && !definition->second.policy.allow_decrease)
         return foundation::Result<ProgressionGrantReservationId>::Failure(
-            Error("gameplay.progression.decrease_forbidden", "track policy forbids decreasing progress"));
+            Error("gameplay.progression.decrease_forbidden",
+                  "track policy forbids decreasing progress"));
 
     auto staged_grant_ids = grant_reservation_ids_;
     PendingProgressGrant pending;
     pending.id = ProgressionGrantReservationId{staged_grant_ids.Next()};
+
     if (!pending.id.IsValid())
         return foundation::Result<ProgressionGrantReservationId>::Failure(
             Error("gameplay.progression.id_exhausted", "progress grant reservation id exhausted"));
@@ -778,23 +923,27 @@ foundation::Result<ProgressionGrantReservationId> ProgressionService::ReservePro
         pending.before =
             ProgressionTrackState{track,
                                   definition->second.policy.min_progress_micro,
-                                  RankFor(definition->second, definition->second.policy.min_progress_micro),
+                                  RankFor(definition->second,
+                                          definition->second.policy.min_progress_micro),
                                   {}};
 
     pending.after = pending.before;
-    pending.after.progress_micro =
-        std::clamp(AddSat(pending.before.progress_micro, amount), definition->second.policy.min_progress_micro,
-                   definition->second.policy.max_progress_micro);
+    pending.after.progress_micro = std::clamp(AddSat(pending.before.progress_micro, amount),
+                                              definition->second.policy.min_progress_micro,
+                                              definition->second.policy.max_progress_micro);
     pending.after.rank = RankFor(definition->second, pending.after.progress_micro);
     const auto id = pending.id;
     try {
         if (test_seam::Consume(test_seam::FaultPoint::ReserveProgressBeforePublish))
             throw std::bad_alloc{};
+
         pending_progress_grants_.emplace(id, pending);
     } catch (const std::bad_alloc &) {
         return foundation::Result<ProgressionGrantReservationId>::Failure(
-            Error("gameplay.progression.allocation_failed", "failed to publish progress reservation"));
+            Error("gameplay.progression.allocation_failed",
+                  "failed to publish progress reservation"));
     }
+
     (void)grant_reservation_ids_.Restore(staged_grant_ids.GetSnapshot());
     return foundation::Result<ProgressionGrantReservationId>::Success(id);
 }
@@ -814,10 +963,12 @@ void ProgressionService::CommitProgressGrant(ProgressionGrantReservationId reser
     if (pending.track_existed) {
         if (current == profile->tracks.end() || current->second.id != pending.before.id ||
             current->second.progress_micro != pending.before.progress_micro ||
-            current->second.rank != pending.before.rank || current->second.revision != pending.before.revision) {
+            current->second.rank != pending.before.rank ||
+            current->second.revision != pending.before.revision) {
             pending_progress_grants_.erase(it);
             return;
         }
+
     } else if (current != profile->tracks.end()) {
         pending_progress_grants_.erase(it);
         return;
@@ -829,16 +980,21 @@ void ProgressionService::CommitProgressGrant(ProgressionGrantReservationId reser
         pending_progress_grants_.erase(it);
         return;
     }
+
     if (pending.before.revision.value == std::numeric_limits<std::uint64_t>::max())
         return;
 
     Profile staged;
     std::vector<const MilestoneDefinition *> ordered;
+
     struct StagedMilestoneEvent {
         bool unlock = false;
         UnlockRecord unlock_record{};
+
         MilestoneId milestone{};
+
     };
+
     std::vector<MilestoneId> achieved;
     std::vector<StagedMilestoneEvent> staged_events;
     try {
@@ -853,6 +1009,7 @@ void ProgressionService::CommitProgressGrant(ProgressionGrantReservationId reser
             (void)id;
             ordered.push_back(&milestone);
         }
+
         std::sort(ordered.begin(), ordered.end(), [](const auto *a, const auto *b) {
             if (a->track != b->track)
                 return a->track < b->track;
@@ -861,47 +1018,57 @@ void ProgressionService::CommitProgressGrant(ProgressionGrantReservationId reser
             return a->id < b->id;
         });
 
-        const auto prerequisites_satisfied = [&](const Profile &candidate,
-                                                 const std::vector<ProgressionPrerequisite> &prerequisites) {
-            for (const auto &prerequisite : prerequisites) {
-                switch (prerequisite.kind) {
-                case ProgressionPrerequisiteKind::TrackProgressAtLeast: {
-                    const auto definition = tracks_.find(prerequisite.track);
-                    if (definition == tracks_.end())
-                        return false;
-                    const auto state = candidate.tracks.find(prerequisite.track);
-                    const auto progress = state == candidate.tracks.end() ? definition->second.policy.min_progress_micro
-                                                                          : state->second.progress_micro;
-                    if (progress < prerequisite.progress_micro)
-                        return false;
-                    break;
+        const auto prerequisites_satisfied =
+            [&](const Profile &candidate,
+                const std::vector<ProgressionPrerequisite> &prerequisites) {
+                for (const auto &prerequisite : prerequisites) {
+                    switch (prerequisite.kind) {
+                    case ProgressionPrerequisiteKind::TrackProgressAtLeast: {
+                        const auto definition = tracks_.find(prerequisite.track);
+                        if (definition == tracks_.end())
+                            return false;
+                        const auto state = candidate.tracks.find(prerequisite.track);
+                        const auto progress = state == candidate.tracks.end()
+                                                  ? definition->second.policy.min_progress_micro
+                                                  : state->second.progress_micro;
+                        if (progress < prerequisite.progress_micro)
+                            return false;
+                        break;
+                    }
+
+                    case ProgressionPrerequisiteKind::TrackRankAtLeast: {
+                        const auto definition = tracks_.find(prerequisite.track);
+                        if (definition == tracks_.end())
+                            return false;
+                        const auto state = candidate.tracks.find(prerequisite.track);
+                        const auto rank =
+                            state == candidate.tracks.end()
+                                ? RankFor(definition->second,
+                                          definition->second.policy.min_progress_micro)
+                                : state->second.rank;
+                        if (rank < prerequisite.rank)
+                            return false;
+                        break;
+                    }
+
+                    case ProgressionPrerequisiteKind::HasPerk:
+                        if (!candidate.perks.contains(prerequisite.perk))
+                            return false;
+                        break;
+                    case ProgressionPrerequisiteKind::HasUnlock:
+                        if (std::none_of(candidate.unlocks.begin(), candidate.unlocks.end(),
+                                         [&](const auto &unlock) {
+                                             return unlock.type == prerequisite.unlock_type &&
+                                                    unlock.value == prerequisite.unlock_value;
+                                         }))
+                            return false;
+                        break;
+                    }
+
                 }
-                case ProgressionPrerequisiteKind::TrackRankAtLeast: {
-                    const auto definition = tracks_.find(prerequisite.track);
-                    if (definition == tracks_.end())
-                        return false;
-                    const auto state = candidate.tracks.find(prerequisite.track);
-                    const auto rank = state == candidate.tracks.end()
-                                          ? RankFor(definition->second, definition->second.policy.min_progress_micro)
-                                          : state->second.rank;
-                    if (rank < prerequisite.rank)
-                        return false;
-                    break;
-                }
-                case ProgressionPrerequisiteKind::HasPerk:
-                    if (!candidate.perks.contains(prerequisite.perk))
-                        return false;
-                    break;
-                case ProgressionPrerequisiteKind::HasUnlock:
-                    if (std::none_of(candidate.unlocks.begin(), candidate.unlocks.end(), [&](const auto &unlock) {
-                            return unlock.type == prerequisite.unlock_type && unlock.value == prerequisite.unlock_value;
-                        }))
-                        return false;
-                    break;
-                }
-            }
-            return true;
-        };
+
+                return true;
+            };
 
         for (const auto *milestone : ordered) {
             if (staged.achieved_milestones.contains(milestone->id))
@@ -910,35 +1077,46 @@ void ProgressionService::CommitProgressGrant(ProgressionGrantReservationId reser
             if (definition == tracks_.end())
                 return;
             const auto state = staged.tracks.find(milestone->track);
-            const auto progress = state == staged.tracks.end() ? definition->second.policy.min_progress_micro
-                                                               : state->second.progress_micro;
-            if (progress < milestone->threshold_micro || !prerequisites_satisfied(staged, milestone->prerequisites))
+            const auto progress = state == staged.tracks.end()
+                                      ? definition->second.policy.min_progress_micro
+                                      : state->second.progress_micro;
+            if (progress < milestone->threshold_micro ||
+                !prerequisites_satisfied(staged, milestone->prerequisites))
                 continue;
 
-            const GameplayObjectRef source{
-                Domain(), GameplayObjectId::FromRaw(milestone->id.value.Raw(),
-                                                    milestone->id.value.Raw() ^ 0x9E3779B97F4A7C15ull)};
+            const GameplayObjectRef source{Domain(),
+                                           GameplayObjectId::FromRaw(milestone->id.value.Raw(),
+                                                                     milestone->id.value.Raw() ^
+                                                                         0x9E3779B97F4A7C15ull)};
+
             for (const auto unlock_id : milestone->unlocks) {
                 const auto definition_it = unlock_definitions_.find(unlock_id);
                 if (definition_it == unlock_definitions_.end())
                     return;
-                const UnlockRecord unlock{definition_it->second.type, definition_it->second.value, source};
-                if (std::find(staged.unlocks.begin(), staged.unlocks.end(), unlock) == staged.unlocks.end()) {
+                const UnlockRecord unlock{definition_it->second.type, definition_it->second.value,
+                                          source};
+
+                if (std::find(staged.unlocks.begin(), staged.unlocks.end(), unlock) ==
+                    staged.unlocks.end()) {
                     staged.unlocks.push_back(unlock);
                     staged_events.push_back(StagedMilestoneEvent{true, unlock, {}});
                 }
+
             }
+
             staged.achieved_milestones.insert(milestone->id);
             achieved.push_back(milestone->id);
             staged_events.push_back(StagedMilestoneEvent{false, {}, milestone->id});
         }
+
     } catch (const std::bad_alloc &) {
         return;
     }
 
     const auto milestone_bumps = static_cast<std::uint64_t>(achieved.size());
     const auto total_bumps = milestone_bumps + 1;
-    if (!CanAdvanceRevisionBy(revision_, total_bumps) || !CanAdvanceRevisionBy(profile->revision, total_bumps))
+    if (!CanAdvanceRevisionBy(revision_, total_bumps) ||
+        !CanAdvanceRevisionBy(profile->revision, total_bumps))
         return;
 
     static_assert(std::is_nothrow_move_assignable_v<Profile>);
@@ -970,22 +1148,41 @@ void ProgressionService::CommitProgressGrant(ProgressionGrantReservationId reser
                 revision_,
                 pending.context});
     }
+
     for (const auto &event : staged_events) {
         if (event.unlock) {
-            ProgressionChange unlock_change{
-                0, ProgressionChangeKind::UnlockGranted, pending.subject, {}, {}, {}, {}, revision_, pending.context};
+            ProgressionChange unlock_change{0,
+                                            ProgressionChangeKind::UnlockGranted,
+                                            pending.subject,
+                                            {},
+                                            {},
+                                            {},
+                                            {},
+                                            revision_,
+                                            pending.context};
+
             unlock_change.unlock_type = event.unlock_record.type;
             unlock_change.unlock_value = event.unlock_record.value;
             Record(std::move(unlock_change));
             continue;
         }
+
         ++revision_.value;
         ++profile->revision.value;
-        ProgressionChange milestone_change{
-            0, ProgressionChangeKind::MilestoneReached, pending.subject, {}, {}, {}, {}, revision_, pending.context};
+        ProgressionChange milestone_change{0,
+                                           ProgressionChangeKind::MilestoneReached,
+                                           pending.subject,
+                                           {},
+                                           {},
+                                           {},
+                                           {},
+                                           revision_,
+                                           pending.context};
+
         milestone_change.milestone = event.milestone;
         Record(std::move(milestone_change));
     }
+
     pending_progress_grants_.erase(it);
 }
 
@@ -993,14 +1190,17 @@ void ProgressionService::ReleaseProgressGrant(ProgressionGrantReservationId rese
     pending_progress_grants_.erase(reservation);
 }
 
-foundation::Result<void> ProgressionService::GrantPerk(GameplayObjectRef subject, PerkDefinitionId perk,
+foundation::Result<void> ProgressionService::GrantPerk(GameplayObjectRef subject,
+                                                       PerkDefinitionId perk,
                                                        GameplayContext context) {
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     if (!p || !perks_.contains(perk))
-        return foundation::Result<void>::Failure(Error("gameplay.progression.perk_missing", "profile or perk missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.perk_missing", "profile or perk missing"));
     if (p->perks.contains(perk))
         return foundation::Result<void>::Success();
     if (!CanBump(*p))
@@ -1009,24 +1209,29 @@ foundation::Result<void> ProgressionService::GrantPerk(GameplayObjectRef subject
     try {
         if (test_seam::Consume(test_seam::FaultPoint::GrantPerkBeforePublish))
             throw std::bad_alloc{};
+
         p->perks.insert(perk);
     } catch (const std::bad_alloc &) {
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.allocation_failed", "failed to publish progression perk"));
     }
+
     (void)Bump(*p);
     Record({0, ProgressionChangeKind::PerkGranted, subject, {}, {}, perk, {}, revision_, context});
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ProgressionService::RevokePerk(GameplayObjectRef subject, PerkDefinitionId perk,
+foundation::Result<void> ProgressionService::RevokePerk(GameplayObjectRef subject,
+                                                        PerkDefinitionId perk,
                                                         GameplayContext context) {
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     if (!p)
-        return foundation::Result<void>::Failure(Error("gameplay.progression.profile_missing", "profile missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.profile_missing", "profile missing"));
     if (!p->perks.contains(perk))
         return foundation::Result<void>::Success();
     if (!CanBump(*p))
@@ -1043,14 +1248,17 @@ bool ProgressionService::HasPerk(GameplayObjectRef subject, PerkDefinitionId per
     return p && p->perks.contains(perk);
 }
 
-foundation::Result<void> ProgressionService::GrantUnlock(GameplayObjectRef subject, UnlockRecord unlock,
+foundation::Result<void> ProgressionService::GrantUnlock(GameplayObjectRef subject,
+                                                         UnlockRecord unlock,
                                                          GameplayContext context) {
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     if (!p || !unlock.type.IsValid() || !unlock.value.IsValid())
-        return foundation::Result<void>::Failure(Error("gameplay.progression.unlock_invalid", "invalid unlock"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.unlock_invalid", "invalid unlock"));
     if (std::find(p->unlocks.begin(), p->unlocks.end(), unlock) != p->unlocks.end())
         return foundation::Result<void>::Success();
     if (!CanBump(*p))
@@ -1059,27 +1267,37 @@ foundation::Result<void> ProgressionService::GrantUnlock(GameplayObjectRef subje
     try {
         if (test_seam::Consume(test_seam::FaultPoint::GrantUnlockBeforePublish))
             throw std::bad_alloc{};
+
         p->unlocks.push_back(unlock);
     } catch (const std::bad_alloc &) {
-        return foundation::Result<void>::Failure(
-            Error("gameplay.progression.allocation_failed", "failed to publish progression unlock"));
+        return foundation::Result<void>::Failure(Error("gameplay.progression.allocation_failed",
+                                                       "failed to publish progression unlock"));
     }
+
     (void)Bump(*p);
-    ProgressionChange change{0, ProgressionChangeKind::UnlockGranted, subject, {}, {}, {}, {}, revision_, context};
+    ProgressionChange change{0,       ProgressionChangeKind::UnlockGranted,
+                             subject, {},
+                             {},      {},
+                             {},      revision_,
+                             context};
+
     change.unlock_type = unlock.type;
     change.unlock_value = unlock.value;
     Record(std::move(change));
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ProgressionService::RevokeUnlock(GameplayObjectRef subject, UnlockTypeId type, TypeId value,
+foundation::Result<void> ProgressionService::RevokeUnlock(GameplayObjectRef subject,
+                                                          UnlockTypeId type, TypeId value,
                                                           GameplayContext context) {
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     if (!p)
-        return foundation::Result<void>::Failure(Error("gameplay.progression.profile_missing", "profile missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.profile_missing", "profile missing"));
     const auto found = std::find_if(p->unlocks.begin(), p->unlocks.end(), [&](const auto &u) {
         return u.type == type && u.value == value;
     });
@@ -1088,26 +1306,32 @@ foundation::Result<void> ProgressionService::RevokeUnlock(GameplayObjectRef subj
     if (!CanBump(*p))
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.revision_exhausted", "progression revision exhausted"));
-    std::erase_if(p->unlocks, [&](const auto &u) {
-        return u.type == type && u.value == value;
-    });
+    std::erase_if(p->unlocks, [&](const auto &u) { return u.type == type && u.value == value; });
     (void)Bump(*p);
-    ProgressionChange change{0, ProgressionChangeKind::UnlockRevoked, subject, {}, {}, {}, {}, revision_, context};
+    ProgressionChange change{0,       ProgressionChangeKind::UnlockRevoked,
+                             subject, {},
+                             {},      {},
+                             {},      revision_,
+                             context};
+
     change.unlock_type = type;
     change.unlock_value = value;
     Record(std::move(change));
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ProgressionService::RevokeUnlockFromSource(GameplayObjectRef subject, UnlockTypeId type,
-                                                                    TypeId value, GameplayObjectRef source,
+foundation::Result<void> ProgressionService::RevokeUnlockFromSource(GameplayObjectRef subject,
+                                                                    UnlockTypeId type, TypeId value,
+                                                                    GameplayObjectRef source,
                                                                     GameplayContext context) {
     auto *p = FindProfile(subject);
     if (HasPendingProgressGrant(subject))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     if (!p)
-        return foundation::Result<void>::Failure(Error("gameplay.progression.profile_missing", "profile missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.profile_missing", "profile missing"));
     const auto found = std::find_if(p->unlocks.begin(), p->unlocks.end(), [&](const auto &u) {
         return u.type == type && u.value == value && u.source == source;
     });
@@ -1120,23 +1344,27 @@ foundation::Result<void> ProgressionService::RevokeUnlockFromSource(GameplayObje
         return u.type == type && u.value == value && u.source == source;
     });
     (void)Bump(*p);
-    ProgressionChange change{0, ProgressionChangeKind::UnlockRevoked, subject, {}, {}, {}, {}, revision_, context};
+    ProgressionChange change{0,       ProgressionChangeKind::UnlockRevoked,
+                             subject, {},
+                             {},      {},
+                             {},      revision_,
+                             context};
+
     change.unlock_type = type;
     change.unlock_value = value;
     Record(std::move(change));
     return foundation::Result<void>::Success();
 }
 
-bool ProgressionService::HasUnlock(GameplayObjectRef subject, UnlockTypeId type, TypeId value) const noexcept {
+bool ProgressionService::HasUnlock(GameplayObjectRef subject, UnlockTypeId type,
+                                   TypeId value) const noexcept {
     const auto *p = FindProfile(subject);
-    return p && std::any_of(p->unlocks.begin(), p->unlocks.end(), [&](const auto &u) {
-               return u.type == type && u.value == value;
-           });
+    return p && std::any_of(p->unlocks.begin(), p->unlocks.end(),
+                            [&](const auto &u) { return u.type == type && u.value == value; });
 }
 
-PrerequisiteEvaluation
-ProgressionService::QueryPrerequisites(GameplayObjectRef subject,
-                                       const std::vector<ProgressionPrerequisite> &prerequisites) const {
+PrerequisiteEvaluation ProgressionService::QueryPrerequisites(
+    GameplayObjectRef subject, const std::vector<ProgressionPrerequisite> &prerequisites) const {
     PrerequisiteEvaluation result;
     const auto *profile = FindProfile(subject);
     for (std::size_t i = 0; i < prerequisites.size(); ++i) {
@@ -1148,49 +1376,61 @@ ProgressionService::QueryPrerequisites(GameplayObjectRef subject,
             ok = state && state.Value().progress_micro >= p.progress_micro;
             break;
         }
+
         case ProgressionPrerequisiteKind::TrackRankAtLeast: {
             const auto state = GetTrack(subject, p.track);
             ok = state && state.Value().rank >= p.rank;
             break;
         }
+
         case ProgressionPrerequisiteKind::HasPerk:
             ok = profile && profile->perks.contains(p.perk);
             break;
         case ProgressionPrerequisiteKind::HasUnlock:
-            ok = profile && std::any_of(profile->unlocks.begin(), profile->unlocks.end(), [&](const auto &u) {
+            ok = profile &&
+                 std::any_of(profile->unlocks.begin(), profile->unlocks.end(), [&](const auto &u) {
                      return u.type == p.unlock_type && u.value == p.unlock_value;
                  });
             break;
         }
+
         if (!ok) {
             result.satisfied = false;
             result.unmet_indices.push_back(i);
         }
+
     }
+
     return result;
 }
 
-foundation::Result<std::vector<MilestoneId>> ProgressionService::EvaluateMilestones(GameplayObjectRef subject,
-                                                                                    GameplayContext context) {
+foundation::Result<std::vector<MilestoneId>>
+ProgressionService::EvaluateMilestones(GameplayObjectRef subject, GameplayContext context) {
     auto *profile = FindProfile(subject);
     if (!profile)
         return foundation::Result<std::vector<MilestoneId>>::Failure(
             Error("gameplay.progression.profile_missing", "profile missing"));
     if (HasPendingProgressGrant(subject))
         return foundation::Result<std::vector<MilestoneId>>::Failure(
-            Error("gameplay.progression.profile_reserved", "profile has an active progress reservation"));
+            Error("gameplay.progression.profile_reserved",
+                  "profile has an active progress reservation"));
     return EvaluateMilestonesUnlocked(*profile, subject, context);
 }
 
 foundation::Result<std::vector<MilestoneId>>
-ProgressionService::EvaluateMilestonesUnlocked(Profile &profile, GameplayObjectRef subject, GameplayContext context) {
+ProgressionService::EvaluateMilestonesUnlocked(Profile &profile, GameplayObjectRef subject,
+                                               GameplayContext context) {
     Profile staged;
     std::vector<const MilestoneDefinition *> ordered;
+
     struct StagedMilestoneEvent {
         bool unlock = false;
         UnlockRecord unlock_record{};
+
         MilestoneId milestone{};
+
     };
+
     std::vector<MilestoneId> achieved;
     std::vector<StagedMilestoneEvent> staged_events;
     try {
@@ -1200,6 +1440,7 @@ ProgressionService::EvaluateMilestonesUnlocked(Profile &profile, GameplayObjectR
             (void)id;
             ordered.push_back(&milestone);
         }
+
         std::sort(ordered.begin(), ordered.end(), [](const auto *a, const auto *b) {
             if (a->track != b->track)
                 return a->track < b->track;
@@ -1208,47 +1449,57 @@ ProgressionService::EvaluateMilestonesUnlocked(Profile &profile, GameplayObjectR
             return a->id < b->id;
         });
 
-        const auto prerequisites_satisfied = [&](const Profile &candidate,
-                                                 const std::vector<ProgressionPrerequisite> &prerequisites) {
-            for (const auto &prerequisite : prerequisites) {
-                switch (prerequisite.kind) {
-                case ProgressionPrerequisiteKind::TrackProgressAtLeast: {
-                    const auto definition = tracks_.find(prerequisite.track);
-                    if (definition == tracks_.end())
-                        return false;
-                    const auto state = candidate.tracks.find(prerequisite.track);
-                    const auto progress = state == candidate.tracks.end() ? definition->second.policy.min_progress_micro
-                                                                          : state->second.progress_micro;
-                    if (progress < prerequisite.progress_micro)
-                        return false;
-                    break;
+        const auto prerequisites_satisfied =
+            [&](const Profile &candidate,
+                const std::vector<ProgressionPrerequisite> &prerequisites) {
+                for (const auto &prerequisite : prerequisites) {
+                    switch (prerequisite.kind) {
+                    case ProgressionPrerequisiteKind::TrackProgressAtLeast: {
+                        const auto definition = tracks_.find(prerequisite.track);
+                        if (definition == tracks_.end())
+                            return false;
+                        const auto state = candidate.tracks.find(prerequisite.track);
+                        const auto progress = state == candidate.tracks.end()
+                                                  ? definition->second.policy.min_progress_micro
+                                                  : state->second.progress_micro;
+                        if (progress < prerequisite.progress_micro)
+                            return false;
+                        break;
+                    }
+
+                    case ProgressionPrerequisiteKind::TrackRankAtLeast: {
+                        const auto definition = tracks_.find(prerequisite.track);
+                        if (definition == tracks_.end())
+                            return false;
+                        const auto state = candidate.tracks.find(prerequisite.track);
+                        const auto rank =
+                            state == candidate.tracks.end()
+                                ? RankFor(definition->second,
+                                          definition->second.policy.min_progress_micro)
+                                : state->second.rank;
+                        if (rank < prerequisite.rank)
+                            return false;
+                        break;
+                    }
+
+                    case ProgressionPrerequisiteKind::HasPerk:
+                        if (!candidate.perks.contains(prerequisite.perk))
+                            return false;
+                        break;
+                    case ProgressionPrerequisiteKind::HasUnlock:
+                        if (std::none_of(candidate.unlocks.begin(), candidate.unlocks.end(),
+                                         [&](const auto &unlock) {
+                                             return unlock.type == prerequisite.unlock_type &&
+                                                    unlock.value == prerequisite.unlock_value;
+                                         }))
+                            return false;
+                        break;
+                    }
+
                 }
-                case ProgressionPrerequisiteKind::TrackRankAtLeast: {
-                    const auto definition = tracks_.find(prerequisite.track);
-                    if (definition == tracks_.end())
-                        return false;
-                    const auto state = candidate.tracks.find(prerequisite.track);
-                    const auto rank = state == candidate.tracks.end()
-                                          ? RankFor(definition->second, definition->second.policy.min_progress_micro)
-                                          : state->second.rank;
-                    if (rank < prerequisite.rank)
-                        return false;
-                    break;
-                }
-                case ProgressionPrerequisiteKind::HasPerk:
-                    if (!candidate.perks.contains(prerequisite.perk))
-                        return false;
-                    break;
-                case ProgressionPrerequisiteKind::HasUnlock:
-                    if (std::none_of(candidate.unlocks.begin(), candidate.unlocks.end(), [&](const auto &unlock) {
-                            return unlock.type == prerequisite.unlock_type && unlock.value == prerequisite.unlock_value;
-                        }))
-                        return false;
-                    break;
-                }
-            }
-            return true;
-        };
+
+                return true;
+            };
 
         for (const auto *milestone : ordered) {
             if (staged.achieved_milestones.contains(milestone->id))
@@ -1256,34 +1507,47 @@ ProgressionService::EvaluateMilestonesUnlocked(Profile &profile, GameplayObjectR
             const auto definition = tracks_.find(milestone->track);
             if (definition == tracks_.end())
                 return foundation::Result<std::vector<MilestoneId>>::Failure(
-                    Error("gameplay.progression.track_missing", "milestone track definition is missing"));
+                    Error("gameplay.progression.track_missing",
+                          "milestone track definition is missing"));
             const auto state = staged.tracks.find(milestone->track);
-            const auto progress = state == staged.tracks.end() ? definition->second.policy.min_progress_micro
-                                                               : state->second.progress_micro;
-            if (progress < milestone->threshold_micro || !prerequisites_satisfied(staged, milestone->prerequisites))
+            const auto progress = state == staged.tracks.end()
+                                      ? definition->second.policy.min_progress_micro
+                                      : state->second.progress_micro;
+            if (progress < milestone->threshold_micro ||
+                !prerequisites_satisfied(staged, milestone->prerequisites))
                 continue;
 
-            const GameplayObjectRef source{
-                Domain(), GameplayObjectId::FromRaw(milestone->id.value.Raw(),
-                                                    milestone->id.value.Raw() ^ 0x9E3779B97F4A7C15ull)};
+            const GameplayObjectRef source{Domain(),
+                                           GameplayObjectId::FromRaw(milestone->id.value.Raw(),
+                                                                     milestone->id.value.Raw() ^
+                                                                         0x9E3779B97F4A7C15ull)};
+
             for (const auto unlock_id : milestone->unlocks) {
                 const auto definition_it = unlock_definitions_.find(unlock_id);
                 if (definition_it == unlock_definitions_.end())
-                    return foundation::Result<std::vector<MilestoneId>>::Failure(Error(
-                        "gameplay.progression.unlock_definition_missing", "milestone unlock definition is missing"));
-                const UnlockRecord unlock{definition_it->second.type, definition_it->second.value, source};
-                if (std::find(staged.unlocks.begin(), staged.unlocks.end(), unlock) == staged.unlocks.end()) {
+                    return foundation::Result<std::vector<MilestoneId>>::Failure(
+                        Error("gameplay.progression.unlock_definition_missing",
+                              "milestone unlock definition is missing"));
+                const UnlockRecord unlock{definition_it->second.type, definition_it->second.value,
+                                          source};
+
+                if (std::find(staged.unlocks.begin(), staged.unlocks.end(), unlock) ==
+                    staged.unlocks.end()) {
                     staged.unlocks.push_back(unlock);
                     staged_events.push_back(StagedMilestoneEvent{true, unlock, {}});
                 }
+
             }
+
             staged.achieved_milestones.insert(milestone->id);
             achieved.push_back(milestone->id);
             staged_events.push_back(StagedMilestoneEvent{false, {}, milestone->id});
         }
+
     } catch (const std::bad_alloc &) {
         return foundation::Result<std::vector<MilestoneId>>::Failure(
-            Error("gameplay.progression.allocation_failed", "failed to stage milestone evaluation"));
+            Error("gameplay.progression.allocation_failed",
+                  "failed to stage milestone evaluation"));
     }
 
     if (achieved.empty())
@@ -1297,24 +1561,35 @@ ProgressionService::EvaluateMilestonesUnlocked(Profile &profile, GameplayObjectR
     profile.unlocks.swap(staged.unlocks);
     for (const auto &event : staged_events) {
         if (event.unlock) {
-            ProgressionChange unlock_change{
-                0, ProgressionChangeKind::UnlockGranted, subject, {}, {}, {}, {}, revision_, context};
+            ProgressionChange unlock_change{0,       ProgressionChangeKind::UnlockGranted,
+                                            subject, {},
+                                            {},      {},
+                                            {},      revision_,
+                                            context};
+
             unlock_change.unlock_type = event.unlock_record.type;
             unlock_change.unlock_value = event.unlock_record.value;
             Record(std::move(unlock_change));
             continue;
         }
+
         ++revision_.value;
         ++profile.revision.value;
-        ProgressionChange milestone_change{
-            0, ProgressionChangeKind::MilestoneReached, subject, {}, {}, {}, {}, revision_, context};
+        ProgressionChange milestone_change{0,       ProgressionChangeKind::MilestoneReached,
+                                           subject, {},
+                                           {},      {},
+                                           {},      revision_,
+                                           context};
+
         milestone_change.milestone = event.milestone;
         Record(std::move(milestone_change));
     }
+
     return foundation::Result<std::vector<MilestoneId>>::Success(std::move(achieved));
 }
 
-foundation::Result<ProgressionProfileSnapshot> ProgressionService::GetProfileSnapshot(GameplayObjectRef subject) const {
+foundation::Result<ProgressionProfileSnapshot>
+ProgressionService::GetProfileSnapshot(GameplayObjectRef subject) const {
     const auto *p = FindProfile(subject);
     if (!p)
         return foundation::Result<ProgressionProfileSnapshot>::Failure(
@@ -1328,21 +1603,19 @@ foundation::Result<ProgressionProfileSnapshot> ProgressionService::GetProfileSna
         (void)id;
         out.tracks.push_back(track);
     }
+
     for (const auto &modifier : p->modifiers)
         if (modifier.persistent)
             out.modifiers.push_back(modifier);
     out.perks.assign(p->perks.begin(), p->perks.end());
     out.unlocks = p->unlocks;
     out.achieved_milestones.assign(p->achieved_milestones.begin(), p->achieved_milestones.end());
-    std::sort(out.base_attributes.begin(), out.base_attributes.end(), [](const auto &a, const auto &b) {
-        return a.first < b.first;
-    });
-    std::sort(out.tracks.begin(), out.tracks.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(out.modifiers.begin(), out.modifiers.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(out.base_attributes.begin(), out.base_attributes.end(),
+              [](const auto &a, const auto &b) { return a.first < b.first; });
+    std::sort(out.tracks.begin(), out.tracks.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(out.modifiers.begin(), out.modifiers.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     std::sort(out.perks.begin(), out.perks.end());
     std::sort(out.unlocks.begin(), out.unlocks.end(), [](const auto &a, const auto &b) {
         if (a.type != b.type)
@@ -1355,30 +1628,35 @@ foundation::Result<ProgressionProfileSnapshot> ProgressionService::GetProfileSna
     return foundation::Result<ProgressionProfileSnapshot>::Success(std::move(out));
 }
 
-std::vector<ProgressionChange> ProgressionService::ChangesSinceSequence(std::uint64_t sequence) const {
+std::vector<ProgressionChange>
+ProgressionService::ChangesSinceSequence(std::uint64_t sequence) const {
     return ReadChangesSinceSequence(sequence).changes;
 }
 
 ProgressionChangeBatch ProgressionService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     ProgressionChangeBatch batch;
-    const auto latest =
-        next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1;
-    batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
+    const auto latest = next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
+                                                   : next_change_sequence_ - 1;
+    batch.oldest_available_sequence =
+        changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
     if (next_change_sequence_ == 0 || sequence > latest) {
         batch.snapshot_required = true;
         return batch;
     }
+
     if (changes_.empty()) {
         batch.snapshot_required = sequence < latest;
         return batch;
     }
-    if (sequence < batch.oldest_available_sequence && batch.oldest_available_sequence - sequence > 1) {
+
+    if (sequence < batch.oldest_available_sequence &&
+        batch.oldest_available_sequence - sequence > 1) {
         batch.snapshot_required = true;
         return batch;
     }
-    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes), [&](const auto &c) {
-        return c.sequence > sequence;
-    });
+
+    std::copy_if(changes_.begin(), changes_.end(), std::back_inserter(batch.changes),
+                 [&](const auto &c) { return c.sequence > sequence; });
     return batch;
 }
 
@@ -1395,23 +1673,26 @@ ProgressionSnapshot ProgressionService::CaptureSnapshot() const {
         if (one)
             snapshot.profiles.push_back(std::move(one).Value());
     }
-    std::sort(snapshot.profiles.begin(), snapshot.profiles.end(), [](const auto &a, const auto &b) {
-        return a.subject < b.subject;
-    });
+
+    std::sort(snapshot.profiles.begin(), snapshot.profiles.end(),
+              [](const auto &a, const auto &b) { return a.subject < b.subject; });
     snapshot.change_epoch = journal_epoch_;
     return snapshot;
 }
 
 foundation::Result<void> ProgressionService::RestoreSnapshot(ProgressionSnapshot snapshot) {
-    const auto next_journal_epoch =
-        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    const auto next_journal_epoch = CheckedNextChangeEpoch(
+        snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
+
     if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.allocation_failed", "injected restore candidate allocation failure"));
+            Error("gameplay.progression.allocation_failed",
+                  "injected restore candidate allocation failure"));
     std::unordered_map<GameplayObjectRef, Profile> restored_profiles;
     restored_profiles.reserve(snapshot.profiles.size());
     std::unordered_set<ProgressionModifierId, IdHash> restored_modifier_ids;
@@ -1421,18 +1702,21 @@ foundation::Result<void> ProgressionService::RestoreSnapshot(ProgressionSnapshot
         if (!stored.subject.IsValid() || stored.revision.value > snapshot.revision.value ||
             restored_profiles.contains(stored.subject))
             return foundation::Result<void>::Failure(
-                Error("gameplay.progression.restore_invalid", "invalid or duplicate profile snapshot"));
+                Error("gameplay.progression.restore_invalid",
+                      "invalid or duplicate profile snapshot"));
         Profile profile;
         profile.subject = stored.subject;
         profile.revision = stored.revision;
         for (const auto &[id, value] : stored.base_attributes) {
             const auto def = attributes_.find(id);
-            if (def == attributes_.end() || profile.base_attributes.contains(id) || value < def->second.min_micro ||
-                value > def->second.max_micro)
+            if (def == attributes_.end() || profile.base_attributes.contains(id) ||
+                value < def->second.min_micro || value > def->second.max_micro)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.progression.restore_invalid", "invalid base attribute snapshot"));
+                    Error("gameplay.progression.restore_invalid",
+                          "invalid base attribute snapshot"));
             profile.base_attributes.emplace(id, value);
         }
+
         for (const auto &state : stored.tracks) {
             const auto def = tracks_.find(state.id);
             if (def == tracks_.end() || profile.tracks.contains(state.id) ||
@@ -1444,28 +1728,35 @@ foundation::Result<void> ProgressionService::RestoreSnapshot(ProgressionSnapshot
                     Error("gameplay.progression.restore_invalid", "invalid track snapshot"));
             profile.tracks.emplace(state.id, state);
         }
+
         for (const auto &modifier : stored.modifiers) {
             if (!modifier.id.IsValid() || !attributes_.contains(modifier.target) ||
-                !IsValidModifierOperation(modifier.operation) || !restored_modifier_ids.insert(modifier.id).second)
+                !IsValidModifierOperation(modifier.operation) ||
+                !restored_modifier_ids.insert(modifier.id).second)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.progression.restore_invalid", "invalid or duplicate modifier snapshot"));
+                    Error("gameplay.progression.restore_invalid",
+                          "invalid or duplicate modifier snapshot"));
             if (modifier.id.value.High() == modifier_scope)
                 max_modifier_low = std::max(max_modifier_low, modifier.id.value.Low());
             profile.modifiers.push_back(modifier);
         }
+
         for (const auto perk : stored.perks)
             if (!perks_.contains(perk) || !profile.perks.insert(perk).second)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.progression.restore_invalid", "invalid perk snapshot"));
         for (const auto &unlock : stored.unlocks) {
             if (!unlock.type.IsValid() || !unlock.value.IsValid() ||
-                std::find(profile.unlocks.begin(), profile.unlocks.end(), unlock) != profile.unlocks.end())
+                std::find(profile.unlocks.begin(), profile.unlocks.end(), unlock) !=
+                    profile.unlocks.end())
                 return foundation::Result<void>::Failure(
                     Error("gameplay.progression.restore_invalid", "invalid unlock snapshot"));
             profile.unlocks.push_back(unlock);
         }
+
         for (const auto milestone : stored.achieved_milestones)
-            if (!milestones_.contains(milestone) || !profile.achieved_milestones.insert(milestone).second)
+            if (!milestones_.contains(milestone) ||
+                !profile.achieved_milestones.insert(milestone).second)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.progression.restore_invalid", "invalid milestone snapshot"));
         restored_profiles.emplace(profile.subject, std::move(profile));
@@ -1476,9 +1767,11 @@ foundation::Result<void> ProgressionService::RestoreSnapshot(ProgressionSnapshot
         return foundation::Result<void>::Failure(
             Error("gameplay.progression.restore_invalid", "change journal exceeds capacity"));
     if (snapshot.next_change_sequence == 0 &&
-        (snapshot.journal.empty() || snapshot.journal.back().sequence != std::numeric_limits<std::uint64_t>::max()))
-        return foundation::Result<void>::Failure(Error("gameplay.progression.restore_invalid",
-                                                       "exhausted progression journal is missing terminal sequence"));
+        (snapshot.journal.empty() ||
+         snapshot.journal.back().sequence != std::numeric_limits<std::uint64_t>::max()))
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.restore_invalid",
+                  "exhausted progression journal is missing terminal sequence"));
 
     std::uint64_t previous = 0;
     for (const auto &change : snapshot.journal) {
@@ -1490,17 +1783,21 @@ foundation::Result<void> ProgressionService::RestoreSnapshot(ProgressionSnapshot
         restored_changes.push_back(change);
         previous = change.sequence;
     }
-    if (!ValidGeneratorSnapshot(snapshot.grant_reservation_ids, grant_reservation_ids_.Scope().Raw(), 0))
-        return foundation::Result<void>::Failure(Error("gameplay.progression.restore_invalid",
-                                                       "invalid progression grant reservation id generator snapshot"));
+
+    if (!ValidGeneratorSnapshot(snapshot.grant_reservation_ids,
+                                grant_reservation_ids_.Scope().Raw(), 0))
+        return foundation::Result<void>::Failure(
+            Error("gameplay.progression.restore_invalid",
+                  "invalid progression grant reservation id generator snapshot"));
 
     if (!ValidGeneratorSnapshot(snapshot.modifier_ids, modifier_scope, max_modifier_low))
         return foundation::Result<void>::Failure(
-            Error("gameplay.progression.restore_invalid", "invalid progression modifier id generator snapshot"));
+            Error("gameplay.progression.restore_invalid",
+                  "invalid progression modifier id generator snapshot"));
 
     if (test_seam::Consume(test_seam::FaultPoint::RestoreBeforeCommit))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.progression.allocation_failed", "injected restore publication failure"));
+        return foundation::Result<void>::Failure(Error("gameplay.progression.allocation_failed",
+                                                       "injected restore publication failure"));
     profiles_.swap(restored_profiles);
     changes_.swap(restored_changes);
     (void)modifier_ids_.Restore(snapshot.modifier_ids);
@@ -1518,6 +1815,10 @@ ProgressionDiagnostics ProgressionService::GetDiagnostics() const noexcept {
         (void)subject;
         modifiers += profile.modifiers.size();
     }
-    return {profiles_.size(), attribute_reads_, derived_evaluations_, modifiers, track_grants_, rank_changes_};
+
+    return {profiles_.size(), attribute_reads_, derived_evaluations_,
+            modifiers,        track_grants_,    rank_changes_};
+
 }
+
 } // namespace epidemic::gameplay::progression

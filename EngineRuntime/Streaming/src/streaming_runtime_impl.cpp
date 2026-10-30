@@ -27,12 +27,14 @@ constexpr float kTerminalProgress = 1.0f;
 static_assert(std::is_nothrow_move_constructible_v<foundation::Result<StreamingStepResult>>);
 static_assert(std::is_nothrow_move_assignable_v<ProgressiveLoadPlan>);
 
-[[nodiscard]] foundation::Result<void> StreamingFailure(std::string_view code, std::string_view message) {
+[[nodiscard]] foundation::Result<void> StreamingFailure(std::string_view code,
+                                                        std::string_view message) {
     return foundation::Result<void>::Failure(foundation::Error::Create(code, message));
 }
 
 template <typename TValue>
-[[nodiscard]] foundation::Result<TValue> StreamingFailureValue(std::string_view code, std::string_view message) {
+[[nodiscard]] foundation::Result<TValue> StreamingFailureValue(std::string_view code,
+                                                               std::string_view message) {
     return foundation::Result<TValue>::Failure(foundation::Error::Create(code, message));
 }
 
@@ -40,77 +42,102 @@ template <typename TInteger> void CommitMonotonicCounter(TInteger &next_value) n
     if (next_value == 0) {
         return;
     }
+
     if (next_value == std::numeric_limits<TInteger>::max()) {
         next_value = 0;
     } else {
         ++next_value;
     }
+
 }
 
 [[nodiscard]] bool IsLocalTransitionFailure(const foundation::Error &error) noexcept {
-    return error.HasCode("streaming.completion_sequence_overflow") || error.HasCode("streaming.revision_overflow") ||
-           error.HasCode("streaming.unsupported_target") || error.HasCode("streaming.invalid_chunk");
+    return error.HasCode("streaming.completion_sequence_overflow") ||
+           error.HasCode("streaming.revision_overflow") ||
+           error.HasCode("streaming.unsupported_target") ||
+           error.HasCode("streaming.invalid_chunk");
 }
+
 } // namespace
 
 foundation::Result<void> InMemoryResidencyController::ActivateChunk(ChunkId chunk) {
     if (!chunk.IsValid()) {
-        return StreamingFailure("streaming.invalid_chunk", "chunk id must be valid before activation");
+        return StreamingFailure("streaming.invalid_chunk",
+                                "chunk id must be valid before activation");
     }
+
     const auto iterator = chunk_states_.find(chunk);
     if (iterator != chunk_states_.end()) {
         if (iterator->second == StreamingState::Active) {
             return foundation::Result<void>::Success();
         }
-        if (iterator->second != StreamingState::Deactivating && iterator->second != StreamingState::Unloaded) {
+
+        if (iterator->second != StreamingState::Deactivating &&
+            iterator->second != StreamingState::Unloaded) {
             return StreamingFailure("streaming.invalid_residency_transition",
                                     "chunk cannot be activated from its current residency state");
         }
+
         iterator->second = StreamingState::Active;
         return foundation::Result<void>::Success();
     }
+
     try {
         chunk_states_.emplace(chunk, StreamingState::Active);
     } catch (...) {
-        return StreamingFailure("streaming.allocation_failed", "residency state could not be published");
+        return StreamingFailure("streaming.allocation_failed",
+                                "residency state could not be published");
     }
+
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> InMemoryResidencyController::DeactivateChunk(ChunkId chunk) {
     if (!chunk.IsValid()) {
-        return StreamingFailure("streaming.invalid_chunk", "chunk id must be valid before deactivation");
+        return StreamingFailure("streaming.invalid_chunk",
+                                "chunk id must be valid before deactivation");
     }
+
     const auto iterator = chunk_states_.find(chunk);
     if (iterator == chunk_states_.end()) {
-        return StreamingFailure("streaming.invalid_residency_transition", "unknown chunk cannot be deactivated");
+        return StreamingFailure("streaming.invalid_residency_transition",
+                                "unknown chunk cannot be deactivated");
     }
+
     if (iterator->second == StreamingState::Deactivating) {
         return foundation::Result<void>::Success();
     }
+
     if (iterator->second != StreamingState::Active) {
         return StreamingFailure("streaming.invalid_residency_transition",
                                 "chunk can only be deactivated from Active state");
     }
+
     iterator->second = StreamingState::Deactivating;
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> InMemoryResidencyController::UnloadChunk(ChunkId chunk) {
     if (!chunk.IsValid()) {
-        return StreamingFailure("streaming.invalid_chunk", "chunk id must be valid before unloading");
+        return StreamingFailure("streaming.invalid_chunk",
+                                "chunk id must be valid before unloading");
     }
+
     const auto iterator = chunk_states_.find(chunk);
     if (iterator == chunk_states_.end()) {
-        return StreamingFailure("streaming.invalid_residency_transition", "unknown chunk cannot be unloaded");
+        return StreamingFailure("streaming.invalid_residency_transition",
+                                "unknown chunk cannot be unloaded");
     }
+
     if (iterator->second == StreamingState::Unloaded) {
         return foundation::Result<void>::Success();
     }
+
     if (iterator->second != StreamingState::Deactivating) {
         return StreamingFailure("streaming.invalid_residency_transition",
                                 "chunk can only be unloaded after deactivation");
     }
+
     iterator->second = StreamingState::Unloaded;
     return foundation::Result<void>::Success();
 }
@@ -120,45 +147,59 @@ StreamingState InMemoryResidencyController::GetResidencyState(ChunkId chunk) con
     return iterator == chunk_states_.end() ? StreamingState::NotRequested : iterator->second;
 }
 
-StreamingRuntime::StreamingRuntime(StreamingDependencies dependencies, IStreamingPriorityResolver *priority_resolver)
+StreamingRuntime::StreamingRuntime(StreamingDependencies dependencies,
+                                   IStreamingPriorityResolver *priority_resolver)
     : dependencies_(std::move(dependencies)), priority_resolver_(priority_resolver) {
 }
 
-foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const StreamingTarget &target,
-                                                                    StreamingPriorityClass priority) {
+foundation::Result<StreamingDemandHandle>
+StreamingRuntime::Request(const StreamingTarget &target, StreamingPriorityClass priority) {
     if (lifecycle_ != Lifecycle::Running) {
-        return StreamingFailureValue<StreamingDemandHandle>("streaming.shutdown",
-                                                            "streaming runtime is not accepting new requests");
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.shutdown",
+                                   "streaming runtime is not accepting new requests");
     }
+
     if (!IsValidPriority(priority)) {
-        return StreamingFailureValue<StreamingDemandHandle>("streaming.invalid_priority",
-                                                            "streaming priority is outside the enum domain");
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.invalid_priority",
+                                   "streaming priority is outside the enum domain");
     }
+
     const auto chunk_target = GetChunkTarget(target);
     if (!chunk_target) {
-        return StreamingFailureValue<StreamingDemandHandle>("streaming.unsupported_target",
-                                                            "reference streaming runtime only executes chunk targets");
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.unsupported_target",
+                                   "reference streaming runtime only executes chunk targets");
     }
+
     const ChunkId chunk = *chunk_target;
     if (!chunk.IsValid()) {
-        return StreamingFailureValue<StreamingDemandHandle>("streaming.invalid_chunk",
-                                                            "chunk id must be valid before requesting streaming");
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.invalid_chunk",
+                                   "chunk id must be valid before requesting streaming");
     }
 
     StreamingPriorityClass resolved_priority = priority;
     try {
-        if (resolved_priority == StreamingPriorityClass::Normal && dependencies_.priority_provider) {
+        if (resolved_priority == StreamingPriorityClass::Normal &&
+            dependencies_.priority_provider) {
             resolved_priority = dependencies_.priority_provider->GetPriority(target);
-        } else if (resolved_priority == StreamingPriorityClass::Normal && priority_resolver_ != nullptr) {
+        } else if (resolved_priority == StreamingPriorityClass::Normal &&
+                   priority_resolver_ != nullptr) {
             resolved_priority = priority_resolver_->ResolvePriority(chunk);
         }
+
     } catch (...) {
-        return StreamingFailureValue<StreamingDemandHandle>("streaming.priority_exception",
-                                                            "streaming priority provider threw an exception");
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.priority_exception",
+                                   "streaming priority provider threw an exception");
     }
+
     if (!IsValidPriority(resolved_priority)) {
-        return StreamingFailureValue<StreamingDemandHandle>(
-            "streaming.invalid_priority", "streaming priority provider returned an invalid enum value");
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.invalid_priority",
+                                   "streaming priority provider returned an invalid enum value");
     }
 
     RequestRecord *record = nullptr;
@@ -169,37 +210,49 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
         if (existing_record != nullptr && existing_record->state == StreamingState::Unloading) {
             if (existing_record->successor.has_value()) {
                 RequestRecord *successor = FindRequest(*existing_record->successor);
-                if (successor == nullptr || successor->state != StreamingState::WaitingForPredecessor ||
+                if (successor == nullptr ||
+                    successor->state != StreamingState::WaitingForPredecessor ||
                     successor->predecessor != existing_record->request.id) {
-                    return StreamingFailureValue<StreamingDemandHandle>(
-                        "streaming.invalid_successor_state", "unloading request successor link is inconsistent");
+                    return StreamingFailureValue<
+                        StreamingDemandHandle>("streaming.invalid_successor_state",
+                                               "unloading request successor link is inconsistent");
                 }
+
                 record = successor;
             } else {
                 predecessor = existing_record->request.id;
             }
+
         } else if (existing_record != nullptr && !IsTerminal(existing_record->state)) {
             record = existing_record;
         }
+
     }
 
-    if (!CanAllocateMonotonicId(next_demand_value_) || !CanAllocateMonotonicId(next_demand_generation_)) {
-        return StreamingFailureValue<StreamingDemandHandle>("streaming.id_overflow",
-                                                            "streaming demand id allocator is exhausted");
+    if (!CanAllocateMonotonicId(next_demand_value_) ||
+        !CanAllocateMonotonicId(next_demand_generation_)) {
+        return StreamingFailureValue<
+            StreamingDemandHandle>("streaming.id_overflow",
+                                   "streaming demand id allocator is exhausted");
     }
 
     if (record == nullptr) {
-        if (!CanAllocateMonotonicId(next_request_value_) || !CanAllocateMonotonicId(next_request_generation_)) {
-            return StreamingFailureValue<StreamingDemandHandle>("streaming.id_overflow",
-                                                                "streaming request id allocator is exhausted");
+        if (!CanAllocateMonotonicId(next_request_value_) ||
+            !CanAllocateMonotonicId(next_request_generation_)) {
+            return StreamingFailureValue<
+                StreamingDemandHandle>("streaming.id_overflow",
+                                       "streaming request id allocator is exhausted");
         }
 
         const StreamingRequestId request_id{next_request_value_};
+
         const StreamingRequestHandle request_handle{request_id, next_request_generation_};
+
         const StreamingDemandHandle demand{StreamingDemandId{next_demand_value_}, request_handle,
                                            next_demand_generation_};
 
         StreamingRequest request{};
+
         request.id = request_id;
         request.handle = request_handle;
         request.target = target;
@@ -208,7 +261,8 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
         request.cancellation.generation = request_handle.generation;
         request.load_plan.steps = {StreamingPlanStepRecord{StreamingPlanStep::ResolveTarget, 64, 0},
                                    StreamingPlanStepRecord{StreamingPlanStep::PrepareData, 256, 0},
-                                   StreamingPlanStepRecord{StreamingPlanStep::PrepareResources, 512, 0},
+                                   StreamingPlanStepRecord{StreamingPlanStep::PrepareResources, 512,
+                                                           0},
                                    StreamingPlanStepRecord{StreamingPlanStep::Commit, 128, 0}};
 
         if (dependencies_.data_source) {
@@ -216,22 +270,28 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
             try {
                 built_plan.emplace(dependencies_.data_source->BuildLoadPlan(request));
             } catch (...) {
-                return StreamingFailureValue<StreamingDemandHandle>(
-                    "streaming.data_source_exception", "streaming data source threw while building load plan");
+                return StreamingFailureValue<
+                    StreamingDemandHandle>("streaming.data_source_exception",
+                                           "streaming data source threw while building load plan");
             }
+
             if (!*built_plan) {
                 return foundation::Result<StreamingDemandHandle>::Failure(built_plan->GetError());
             }
+
             request.load_plan = std::move(*built_plan).Value();
         }
+
         const auto valid_plan = ValidatePlan(request.load_plan);
         if (!valid_plan) {
             return foundation::Result<StreamingDemandHandle>::Failure(valid_plan.GetError());
         }
 
         RequestRecord prepared{};
+
         prepared.request = std::move(request);
-        prepared.state = predecessor ? StreamingState::WaitingForPredecessor : StreamingState::Requested;
+        prepared.state =
+            predecessor ? StreamingState::WaitingForPredecessor : StreamingState::Requested;
         prepared.progress = kRequestedProgress;
         prepared.revision = 1;
         prepared.active_demands = 1;
@@ -240,8 +300,9 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
         try {
             prepared.demands.emplace(demand.id, DemandRecord{demand, resolved_priority, true});
         } catch (...) {
-            return StreamingFailureValue<StreamingDemandHandle>("streaming.allocation_failed",
-                                                                "streaming demand could not be prepared");
+            return StreamingFailureValue<
+                StreamingDemandHandle>("streaming.allocation_failed",
+                                       "streaming demand could not be prepared");
         }
 
         bool inserted_request = false;
@@ -253,12 +314,16 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
             if (fail_next_request_publication_for_testing_) {
                 fail_next_request_publication_for_testing_ = false;
                 throw std::bad_alloc{};
+
             }
+
             auto [request_it, inserted] = requests_.emplace(request_id, std::move(prepared));
             if (!inserted) {
-                return StreamingFailureValue<StreamingDemandHandle>("streaming.duplicate_request_id",
-                                                                    "allocated streaming request id already exists");
+                return StreamingFailureValue<
+                    StreamingDemandHandle>("streaming.duplicate_request_id",
+                                           "allocated streaming request id already exists");
             }
+
             inserted_request = true;
             (void)request_it;
 
@@ -273,19 +338,24 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
                     previous_chunk_state = state_it->second;
                     state_it->second = StreamingState::Requested;
                 }
+
                 const auto mapping_it = chunk_to_request_.find(chunk);
                 if (mapping_it == chunk_to_request_.end()) {
                     if (fail_next_chunk_mapping_publication_for_testing_) {
                         fail_next_chunk_mapping_publication_for_testing_ = false;
                         throw std::bad_alloc{};
+
                     }
+
                     chunk_to_request_.emplace(chunk, request_id);
                     inserted_chunk_mapping = true;
                 } else {
                     previous_chunk_mapping = mapping_it->second;
                     mapping_it->second = request_id;
                 }
+
             }
+
         } catch (...) {
             if (inserted_chunk_state) {
                 chunk_states_.erase(chunk);
@@ -294,6 +364,7 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
                 if (state_it != chunk_states_.end())
                     state_it->second = *previous_chunk_state;
             }
+
             if (inserted_chunk_mapping) {
                 chunk_to_request_.erase(chunk);
             } else if (previous_chunk_mapping.has_value()) {
@@ -301,11 +372,14 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
                 if (mapping_it != chunk_to_request_.end())
                     mapping_it->second = *previous_chunk_mapping;
             }
+
             if (inserted_request) {
                 requests_.erase(request_id);
             }
-            return StreamingFailureValue<StreamingDemandHandle>("streaming.allocation_failed",
-                                                                "streaming request publication failed");
+
+            return StreamingFailureValue<
+                StreamingDemandHandle>("streaming.allocation_failed",
+                                       "streaming request publication failed");
         }
 
         if (predecessor) {
@@ -316,6 +390,7 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
                     "streaming.invalid_predecessor_state",
                     "unloading predecessor changed before successor publication");
             }
+
             predecessor_record->successor = request_id;
         }
 
@@ -327,20 +402,26 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
         return foundation::Result<StreamingDemandHandle>::Success(demand);
     }
 
-    const StreamingDemandHandle demand{StreamingDemandId{next_demand_value_}, record->request.handle,
-                                       next_demand_generation_};
+    const StreamingDemandHandle demand{StreamingDemandId{next_demand_value_},
+                                       record->request.handle, next_demand_generation_};
+
     bool inserted_demand = false;
     try {
         if (fail_next_demand_publication_for_testing_) {
             fail_next_demand_publication_for_testing_ = false;
             throw std::bad_alloc{};
+
         }
+
         record->demands.reserve(record->demands.size() + 1);
-        const auto [_, inserted] = record->demands.emplace(demand.id, DemandRecord{demand, resolved_priority, true});
+        const auto [_, inserted] =
+            record->demands.emplace(demand.id, DemandRecord{demand, resolved_priority, true});
         if (!inserted) {
-            return StreamingFailureValue<StreamingDemandHandle>("streaming.duplicate_demand_id",
-                                                                "allocated streaming demand id already exists");
+            return StreamingFailureValue<
+                StreamingDemandHandle>("streaming.duplicate_demand_id",
+                                       "allocated streaming demand id already exists");
         }
+
         inserted_demand = true;
     } catch (...) {
         return StreamingFailureValue<StreamingDemandHandle>("streaming.allocation_failed",
@@ -353,35 +434,43 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
             record->demands.erase(demand.id);
             return foundation::Result<StreamingDemandHandle>::Failure(revision.GetError());
         }
+
         bool inserted_chunk_state = false;
         try {
             if (!chunk_states_.contains(chunk)) {
                 chunk_states_.emplace(chunk, record->state);
                 inserted_chunk_state = true;
             }
+
         } catch (...) {
             record->demands.erase(demand.id);
-            return StreamingFailureValue<StreamingDemandHandle>(
-                "streaming.allocation_failed", "chunk state could not be prepared before reactivation");
+            return StreamingFailureValue<
+                StreamingDemandHandle>("streaming.allocation_failed",
+                                       "chunk state could not be prepared before reactivation");
         }
 
         if (IResidencyController *controller = ResidencyController()) {
             foundation::Result<void> activated =
-                StreamingFailure("streaming.backend_exception", "residency activation failed unexpectedly");
+                StreamingFailure("streaming.backend_exception",
+                                 "residency activation failed unexpectedly");
             try {
                 activated = controller->ActivateChunk(chunk);
             } catch (...) {
                 activated = StreamingFailure("streaming.residency_exception",
                                              "residency controller threw while reactivating chunk");
             }
+
             if (!activated) {
                 record->demands.erase(demand.id);
                 if (inserted_chunk_state) {
                     chunk_states_.erase(chunk);
                 }
+
                 return foundation::Result<StreamingDemandHandle>::Failure(activated.GetError());
             }
+
         }
+
         record->activation_completed = true;
         record->deactivation_completed = false;
         record->resources_released = false;
@@ -395,6 +484,7 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
         return StreamingFailureValue<StreamingDemandHandle>("streaming.internal_error",
                                                             "streaming demand was not published");
     }
+
     ++record->active_demands;
     record->request.demand_count = record->active_demands;
     UpdatePriority(*record);
@@ -405,18 +495,25 @@ foundation::Result<StreamingDemandHandle> StreamingRuntime::Request(const Stream
 
 foundation::Result<void> StreamingRuntime::ReleaseDemand(StreamingDemandHandle demand) {
     if (!demand.IsValid()) {
-        return StreamingFailure("streaming.invalid_handle", "streaming demand handle must be valid");
+        return StreamingFailure("streaming.invalid_handle",
+                                "streaming demand handle must be valid");
     }
+
     RequestRecord *record = FindByDemand(demand);
     if (record == nullptr) {
-        return StreamingFailure("streaming.stale_handle", "streaming demand handle is unknown or stale");
+        return StreamingFailure("streaming.stale_handle",
+                                "streaming demand handle is unknown or stale");
     }
+
     const auto demand_it = record->demands.find(demand.id);
     if (demand_it == record->demands.end() || !demand_it->second.active) {
-        return StreamingFailure("streaming.reference_underflow", "streaming demand has already been released");
+        return StreamingFailure("streaming.reference_underflow",
+                                "streaming demand has already been released");
     }
+
     if (record->active_demands == 0) {
-        return StreamingFailure("streaming.reference_underflow", "streaming demand reference count is already zero");
+        return StreamingFailure("streaming.reference_underflow",
+                                "streaming demand reference count is already zero");
     }
 
     if (record->active_demands == 1) {
@@ -427,6 +524,7 @@ foundation::Result<void> StreamingRuntime::ReleaseDemand(StreamingDemandHandle d
     if (!revision) {
         return revision;
     }
+
     record->demands.erase(demand_it);
     --record->active_demands;
     record->request.demand_count = record->active_demands;
@@ -435,7 +533,8 @@ foundation::Result<void> StreamingRuntime::ReleaseDemand(StreamingDemandHandle d
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> StreamingRuntime::ReleaseLastDemand(RequestRecord &record, StreamingDemandHandle demand) {
+foundation::Result<void> StreamingRuntime::ReleaseLastDemand(RequestRecord &record,
+                                                             StreamingDemandHandle demand) {
     const auto erase_demand = [&]() noexcept {
         record.demands.erase(demand.id);
         record.active_demands = 0;
@@ -451,16 +550,19 @@ foundation::Result<void> StreamingRuntime::ReleaseLastDemand(RequestRecord &reco
         if (!prepared) {
             return foundation::Result<void>::Failure(prepared.GetError());
         }
+
         CommitTerminal(record, StreamingState::Cancelled, prepared.Value());
         MarkCancellationAccepted(record);
         PublishChunkStateIfCurrent(record);
         break;
     }
+
     case StreamingState::WaitingForPredecessor: {
         const auto prepared = PrepareTerminalTransition(record);
         if (!prepared) {
             return foundation::Result<void>::Failure(prepared.GetError());
         }
+
         CommitTerminal(record, StreamingState::Cancelled, prepared.Value());
         ClearGraphLinks(record);
         record.predecessor.reset();
@@ -468,6 +570,7 @@ foundation::Result<void> StreamingRuntime::ReleaseLastDemand(RequestRecord &reco
         MarkCancellationAccepted(record);
         break;
     }
+
     case StreamingState::Loading:
     case StreamingState::Loaded:
     case StreamingState::Activating:
@@ -482,9 +585,12 @@ foundation::Result<void> StreamingRuntime::ReleaseLastDemand(RequestRecord &reco
                     MarkCancellationAccepted(record);
                     PublishChunkStateIfCurrent(record);
                 }
+
             }
+
             return transition;
         }
+
         MarkCancellationAccepted(record);
         break;
     case StreamingState::Resident:
@@ -493,6 +599,7 @@ foundation::Result<void> StreamingRuntime::ReleaseLastDemand(RequestRecord &reco
         if (!transition) {
             return transition;
         }
+
         MarkCancellationAccepted(record);
         break;
     case StreamingState::Deactivating:
@@ -514,6 +621,7 @@ foundation::Result<void> StreamingRuntime::Shutdown() {
     if (lifecycle_ == Lifecycle::Shutdown) {
         return foundation::Result<void>::Success();
     }
+
     lifecycle_ = Lifecycle::ShuttingDown;
 
     // Release live ownership one handle at a time. A failed last-release retains its
@@ -528,24 +636,31 @@ foundation::Result<void> StreamingRuntime::Shutdown() {
                 if (demand.active) {
                     demands.push_back(demand.handle);
                 }
+
             }
+
         }
+
     } catch (...) {
         return StreamingFailure("streaming.shutdown_allocation_failed",
                                 "streaming shutdown work list allocation failed");
     }
-    std::sort(
-        demands.begin(), demands.end(), [](const StreamingDemandHandle &left, const StreamingDemandHandle &right) {
-            return std::tie(left.request.id.value, left.id.value) < std::tie(right.request.id.value, right.id.value);
-        });
+
+    std::sort(demands.begin(), demands.end(),
+              [](const StreamingDemandHandle &left, const StreamingDemandHandle &right) {
+                  return std::tie(left.request.id.value, left.id.value) <
+                         std::tie(right.request.id.value, right.id.value);
+              });
     for (const StreamingDemandHandle demand : demands) {
         if (FindByDemand(demand) == nullptr) {
             continue;
         }
+
         const auto released = ReleaseDemand(demand);
         if (!released) {
             return released;
         }
+
     }
 
     std::vector<StreamingRequestId> ids;
@@ -555,10 +670,12 @@ foundation::Result<void> StreamingRuntime::Shutdown() {
             (void)record;
             ids.push_back(id);
         }
+
     } catch (...) {
         return StreamingFailure("streaming.shutdown_allocation_failed",
                                 "streaming shutdown request list allocation failed");
     }
+
     std::sort(ids.begin(), ids.end(), [](StreamingRequestId left, StreamingRequestId right) {
         return left.value < right.value;
     });
@@ -571,6 +688,7 @@ foundation::Result<void> StreamingRuntime::Shutdown() {
             if (record == nullptr || record->active_demands != 0) {
                 continue;
             }
+
             const StreamingState before = record->state;
             foundation::Result<void> result = foundation::Result<void>::Success();
             switch (record->state) {
@@ -595,37 +713,49 @@ foundation::Result<void> StreamingRuntime::Shutdown() {
             case StreamingState::Failed:
                 break;
             }
+
             if (!result) {
                 return result;
             }
+
             if (record->state != before) {
                 progressed = true;
             }
+
         }
+
     }
 
     for (const auto &[id, record] : requests_) {
         (void)id;
         if (record.active_demands != 0 ||
             (IsLiveWork(record.state) && record.state != StreamingState::WaitingForPredecessor)) {
-            return StreamingFailure("streaming.shutdown_incomplete", "streaming shutdown did not drain all live work");
+            return StreamingFailure("streaming.shutdown_incomplete",
+                                    "streaming shutdown did not drain all live work");
         }
+
     }
+
     lifecycle_ = Lifecycle::Shutdown;
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> StreamingRuntime::CancelRequest(StreamingRequestHandle request) {
     if (!request.IsValid()) {
-        return StreamingFailure("streaming.invalid_handle", "streaming request handle must be valid");
+        return StreamingFailure("streaming.invalid_handle",
+                                "streaming request handle must be valid");
     }
+
     RequestRecord *record = FindRequest(request.id);
     if (record == nullptr || record->request.handle.generation != request.generation) {
-        return StreamingFailure("streaming.stale_handle", "streaming request handle generation is stale");
+        return StreamingFailure("streaming.stale_handle",
+                                "streaming request handle generation is stale");
     }
+
     if (record->active_demands != 0) {
         return StreamingFailure("streaming.active_demands",
-                                "streaming request cancellation requires all demands to be released first");
+                                "streaming request cancellation requires all demands to be "
+                                "released first");
     }
 
     foundation::Result<void> result = foundation::Result<void>::Success();
@@ -636,10 +766,12 @@ foundation::Result<void> StreamingRuntime::CancelRequest(StreamingRequestHandle 
         if (!prepared) {
             return foundation::Result<void>::Failure(prepared.GetError());
         }
+
         CommitTerminal(*record, StreamingState::Cancelled, prepared.Value());
         PublishChunkStateIfCurrent(*record);
         break;
     }
+
     case StreamingState::Loading:
     case StreamingState::Loaded:
     case StreamingState::Activating:
@@ -652,10 +784,13 @@ foundation::Result<void> StreamingRuntime::CancelRequest(StreamingRequestHandle 
                     CommitState(*record, StreamingState::RollbackFailed, record->progress);
                     SaturatingIncrement(statistics_.rollback_failed);
                 }
+
             }
+
             MarkCancellationAccepted(*record);
             return result;
         }
+
         break;
     case StreamingState::Resident:
     case StreamingState::Active:
@@ -663,12 +798,14 @@ foundation::Result<void> StreamingRuntime::CancelRequest(StreamingRequestHandle 
         if (!result) {
             return result;
         }
+
         break;
     case StreamingState::WaitingForPredecessor:
         result = CancelWaitingForPredecessor(*record);
         if (!result) {
             return result;
         }
+
         break;
     case StreamingState::Deactivating:
     case StreamingState::Unloading:
@@ -678,6 +815,7 @@ foundation::Result<void> StreamingRuntime::CancelRequest(StreamingRequestHandle 
     case StreamingState::NotRequested:
         break;
     }
+
     MarkCancellationAccepted(*record);
     return foundation::Result<void>::Success();
 }
@@ -693,26 +831,35 @@ void StreamingRuntime::SetBudget(const StreamingBudget &budget) {
         // Existing public API is void; normalize invalid negative durations to the
         // documented zero/unlimited sentinel instead of publishing contradictory state.
         budget_.cpu_budget = std::chrono::microseconds{0};
+
     }
+
 }
 
 StreamingTickResult StreamingRuntime::Tick() {
     StreamingTickResult result{};
+
     // Runtime-owned preparation is not a semantic request failure. Allocation failure
     // surfaces to the caller before any request mutation or statistics update.
     if (fail_next_work_list_preparation_for_testing_) {
         fail_next_work_list_preparation_for_testing_ = false;
         throw std::bad_alloc{};
+
     }
+
     std::vector<StreamingRequestId> work_list = BuildWorkList();
     if (fail_next_tick_result_preparation_for_testing_) {
         fail_next_tick_result_preparation_for_testing_ = false;
         throw std::bad_alloc{};
+
     }
+
     result.failures.reserve(work_list.size());
 
-    const std::size_t max_requests = budget_.max_requests == 0 ? work_list.size() : budget_.max_requests;
-    const std::size_t max_bytes = budget_.max_bytes == 0 ? std::numeric_limits<std::size_t>::max() : budget_.max_bytes;
+    const std::size_t max_requests =
+        budget_.max_requests == 0 ? work_list.size() : budget_.max_requests;
+    const std::size_t max_bytes =
+        budget_.max_bytes == 0 ? std::numeric_limits<std::size_t>::max() : budget_.max_bytes;
     const auto started = std::chrono::steady_clock::now();
 
     std::size_t processed = 0;
@@ -721,18 +868,24 @@ StreamingTickResult StreamingRuntime::Tick() {
         if (processed >= max_requests || bytes >= max_bytes) {
             break;
         }
-        if (budget_.cpu_budget.count() > 0 && std::chrono::steady_clock::now() - started >= budget_.cpu_budget) {
+
+        if (budget_.cpu_budget.count() > 0 &&
+            std::chrono::steady_clock::now() - started >= budget_.cpu_budget) {
             break;
         }
+
         RequestRecord *record = FindRequest(request_id);
         if (record == nullptr || !IsLiveWork(record->state)) {
             continue;
         }
+
         RuntimeBudget available_budget{};
+
         available_budget.max_bytes = static_cast<std::uint64_t>(max_bytes - bytes);
         const std::size_t before_bytes = record->processed_bytes;
         foundation::Result<void> advanced =
-            StreamingFailure("streaming.runtime_exception", "streaming request failed unexpectedly");
+            StreamingFailure("streaming.runtime_exception",
+                             "streaming request failed unexpectedly");
         try {
             advanced = AdvanceRequest(*record, available_budget);
         } catch (const std::bad_alloc &) {
@@ -740,19 +893,23 @@ StreamingTickResult StreamingRuntime::Tick() {
             // Any externally accepted step has already been stored in pending_step_result.
             throw;
         } catch (...) {
-            advanced = StreamingFailure("streaming.runtime_exception",
-                                        "streaming request processing threw an unexpected exception");
+            advanced =
+                StreamingFailure("streaming.runtime_exception",
+                                 "streaming request processing threw an unexpected exception");
         }
+
         const std::size_t request_bytes =
             record->processed_bytes >= before_bytes ? record->processed_bytes - before_bytes : 0;
         if (request_bytes > std::numeric_limits<std::size_t>::max() - bytes) {
             SaturatingIncrement(statistics_.budget_violations);
             result.failures.push_back(
                 StreamingTickFailure{record->request.handle, record->request.target,
-                                     foundation::Error::Create("streaming.byte_counter_overflow",
-                                                               "streaming tick byte counter overflowed")});
+                                     foundation::Error::
+                                         Create("streaming.byte_counter_overflow",
+                                                "streaming tick byte counter overflowed")});
             break;
         }
+
         bytes += request_bytes;
         if (!advanced) {
             const StreamingState failed_state = record->state;
@@ -771,36 +928,49 @@ StreamingTickResult StreamingRuntime::Tick() {
                                 chunk && chunk_states_.contains(*chunk)) {
                                 chunk_states_.find(*chunk)->second = record->state;
                             }
+
                         }
+
                     }
-                    result.failures.push_back(
-                        StreamingTickFailure{record->request.handle, record->request.target, rolled_back.GetError()});
+
+                    result.failures.push_back(StreamingTickFailure{record->request.handle,
+                                                                   record->request.target,
+                                                                   rolled_back.GetError()});
                 } else {
-                    result.failures.push_back(
-                        StreamingTickFailure{record->request.handle, record->request.target, advanced.GetError()});
+                    result.failures.push_back(StreamingTickFailure{record->request.handle,
+                                                                   record->request.target,
+                                                                   advanced.GetError()});
                 }
+
             } else {
-                result.failures.push_back(
-                    StreamingTickFailure{record->request.handle, record->request.target, advanced.GetError()});
+                result.failures.push_back(StreamingTickFailure{record->request.handle,
+                                                               record->request.target,
+                                                               advanced.GetError()});
             }
+
             SaturatingIncrement(statistics_.failed);
         }
+
         ++processed;
     }
+
     result.processed_requests = processed;
     result.processed_bytes = bytes;
     CleanupHistoryIfNeeded();
     return result;
 }
 
-std::optional<StreamingProgress> StreamingRuntime::GetProgress(StreamingRequestHandle request) const {
+std::optional<StreamingProgress>
+StreamingRuntime::GetProgress(StreamingRequestHandle request) const {
     const RequestRecord *record = FindRequest(request.id);
     if (record == nullptr || record->request.handle.generation != request.generation) {
         return std::nullopt;
     }
+
     return StreamingProgress{record->request.id, record->request.handle, record->request.target,
                              record->state,      record->progress,       record->active_demands,
                              record->revision,   record->processed_bytes};
+
 }
 
 StreamingStatistics StreamingRuntime::GetStatistics() const {
@@ -816,11 +986,13 @@ void StreamingRuntime::CleanupCompletedRecords(std::size_t max_history) {
     CleanupHistoryIfNeeded();
 }
 
-bool StreamingRuntime::SetRevisionForTesting(StreamingRequestHandle handle, std::uint64_t value) noexcept {
+bool StreamingRuntime::SetRevisionForTesting(StreamingRequestHandle handle,
+                                             std::uint64_t value) noexcept {
     RequestRecord *record = FindRequest(handle.id);
     if (record == nullptr || record->request.handle.generation != handle.generation) {
         return false;
     }
+
     record->revision = value;
     return true;
 }
@@ -830,8 +1002,8 @@ bool StreamingRuntime::IsShuttingDownForTesting() const noexcept {
 }
 
 bool StreamingRuntime::IsTerminal(StreamingState state) {
-    return state == StreamingState::Unloaded || state == StreamingState::Cancelled || state == StreamingState::Failed ||
-           state == StreamingState::RollbackFailed;
+    return state == StreamingState::Unloaded || state == StreamingState::Cancelled ||
+           state == StreamingState::Failed || state == StreamingState::RollbackFailed;
 }
 
 bool StreamingRuntime::IsLiveWork(StreamingState state) {
@@ -851,6 +1023,7 @@ int StreamingRuntime::PriorityRank(StreamingPriorityClass priority) {
     case StreamingPriorityClass::Background:
         return 4;
     }
+
     return 5;
 }
 
@@ -863,6 +1036,7 @@ bool StreamingRuntime::IsValidPriority(StreamingPriorityClass priority) noexcept
     case StreamingPriorityClass::Background:
         return true;
     }
+
     return false;
 }
 
@@ -876,16 +1050,21 @@ bool StreamingRuntime::IsValidPlanStep(StreamingPlanStep step) noexcept {
     case StreamingPlanStep::Release:
         return true;
     }
+
     return false;
 }
 
 foundation::Result<void> StreamingRuntime::ValidatePlan(const ProgressiveLoadPlan &plan) {
     if (plan.cursor != 0) {
-        return StreamingFailure("streaming.invalid_plan", "streaming load plan must start at cursor zero");
+        return StreamingFailure("streaming.invalid_plan",
+                                "streaming load plan must start at cursor zero");
     }
+
     if (plan.steps.empty()) {
-        return StreamingFailure("streaming.invalid_plan", "streaming load plan must contain at least one step");
+        return StreamingFailure("streaming.invalid_plan",
+                                "streaming load plan must contain at least one step");
     }
+
     bool commit_seen = false;
     for (std::size_t index = 0; index < plan.steps.size(); ++index) {
         const StreamingPlanStepRecord &step = plan.steps[index];
@@ -893,35 +1072,46 @@ foundation::Result<void> StreamingRuntime::ValidatePlan(const ProgressiveLoadPla
             return StreamingFailure("streaming.invalid_plan_step",
                                     "streaming load plan contains an invalid step enum value");
         }
+
         if (step.processed_bytes != 0) {
-            return StreamingFailure("streaming.invalid_plan", "streaming load plan cannot contain pre-processed bytes");
+            return StreamingFailure("streaming.invalid_plan",
+                                    "streaming load plan cannot contain pre-processed bytes");
         }
+
         if (step.step == StreamingPlanStep::Commit) {
             if (commit_seen || index + 1u != plan.steps.size()) {
-                return StreamingFailure("streaming.invalid_plan",
-                                        "streaming commit step must be unique and final when present");
+                return StreamingFailure("streaming.invalid_plan", "streaming commit step must be "
+                                                                  "unique and final when present");
             }
+
             commit_seen = true;
         }
+
     }
+
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> StreamingRuntime::ReserveRevision(const RequestRecord &record, std::uint64_t count) {
+foundation::Result<void> StreamingRuntime::ReserveRevision(const RequestRecord &record,
+                                                           std::uint64_t count) {
     if (count == 0) {
         return foundation::Result<void>::Success();
     }
+
     if (record.revision > std::numeric_limits<std::uint64_t>::max() - count) {
         return StreamingFailure("streaming.revision_overflow",
                                 "streaming request revision cannot advance beyond UINT64_MAX");
     }
+
     return foundation::Result<void>::Success();
 }
 
-void StreamingRuntime::CommitState(RequestRecord &record, StreamingState state, float progress) noexcept {
+void StreamingRuntime::CommitState(RequestRecord &record, StreamingState state,
+                                   float progress) noexcept {
     if (record.state == state && record.progress == progress) {
         return;
     }
+
     record.state = state;
     record.progress = progress;
     ++record.revision;
@@ -931,12 +1121,14 @@ void StreamingRuntime::SaturatingIncrement(std::uint64_t &counter) noexcept {
     if (counter != std::numeric_limits<std::uint64_t>::max()) {
         ++counter;
     }
+
 }
 
 std::optional<ChunkId> StreamingRuntime::GetChunkTarget(const StreamingTarget &target) {
     if (const auto *chunk = std::get_if<ChunkStreamingTarget>(&target)) {
         return chunk->chunk;
     }
+
     return std::nullopt;
 }
 
@@ -955,24 +1147,31 @@ StreamingRuntime::RequestRecord *StreamingRuntime::FindByDemand(StreamingDemandH
     if (record == nullptr || record->request.handle.generation != demand.request.generation) {
         return nullptr;
     }
+
     const auto iterator = record->demands.find(demand.id);
-    if (iterator == record->demands.end() || iterator->second.handle.generation != demand.generation ||
+    if (iterator == record->demands.end() ||
+        iterator->second.handle.generation != demand.generation ||
         iterator->second.handle.request != demand.request) {
         return nullptr;
     }
+
     return record;
 }
 
-const StreamingRuntime::RequestRecord *StreamingRuntime::FindByDemand(StreamingDemandHandle demand) const {
+const StreamingRuntime::RequestRecord *
+StreamingRuntime::FindByDemand(StreamingDemandHandle demand) const {
     const RequestRecord *record = FindRequest(demand.request.id);
     if (record == nullptr || record->request.handle.generation != demand.request.generation) {
         return nullptr;
     }
+
     const auto iterator = record->demands.find(demand.id);
-    if (iterator == record->demands.end() || iterator->second.handle.generation != demand.generation ||
+    if (iterator == record->demands.end() ||
+        iterator->second.handle.generation != demand.generation ||
         iterator->second.handle.request != demand.request) {
         return nullptr;
     }
+
     return record;
 }
 
@@ -983,18 +1182,24 @@ std::vector<StreamingRequestId> StreamingRuntime::BuildWorkList() const {
         if (IsLiveWork(record.state) && !record.predecessor.has_value()) {
             work_list.push_back(request_id);
         }
+
     }
-    std::sort(work_list.begin(), work_list.end(), [this](StreamingRequestId left, StreamingRequestId right) {
-        const RequestRecord *left_record = FindRequest(left);
-        const RequestRecord *right_record = FindRequest(right);
-        const int left_rank = left_record == nullptr ? 5 : PriorityRank(left_record->max_priority);
-        const int right_rank = right_record == nullptr ? 5 : PriorityRank(right_record->max_priority);
-        return std::tie(left_rank, left.value) < std::tie(right_rank, right.value);
-    });
+
+    std::sort(work_list.begin(), work_list.end(),
+              [this](StreamingRequestId left, StreamingRequestId right) {
+                  const RequestRecord *left_record = FindRequest(left);
+                  const RequestRecord *right_record = FindRequest(right);
+                  const int left_rank =
+                      left_record == nullptr ? 5 : PriorityRank(left_record->max_priority);
+                  const int right_rank =
+                      right_record == nullptr ? 5 : PriorityRank(right_record->max_priority);
+                  return std::tie(left_rank, left.value) < std::tie(right_rank, right.value);
+              });
     return work_list;
 }
 
-foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record, RuntimeBudget available_budget) {
+foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
+                                                          RuntimeBudget available_budget) {
     const auto chunk = GetChunkTarget(record.request.target);
     if (!chunk) {
         return StreamingFailure("streaming.unsupported_target",
@@ -1009,6 +1214,7 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         CommitState(record, StreamingState::Queued, kQueuedProgress);
         break;
     }
+
     case StreamingState::Queued: {
         const auto revision = ReserveRevision(record);
         if (!revision)
@@ -1016,6 +1222,7 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         CommitState(record, StreamingState::Loading, kLoadingProgress);
         break;
     }
+
     case StreamingState::Loading:
         return ExecutePlanStep(record, available_budget);
     case StreamingState::Loaded: {
@@ -1025,6 +1232,7 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         CommitState(record, StreamingState::Activating, kActivatingProgress);
         break;
     }
+
     case StreamingState::Activating: {
         const auto revision = ReserveRevision(record);
         if (!revision)
@@ -1036,22 +1244,27 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
                 return StreamingFailure("streaming.allocation_failed",
                                         "chunk state could not be prepared before activation");
             }
+
         }
+
         try {
             if (IResidencyController *controller = ResidencyController()) {
                 const auto activated = controller->ActivateChunk(*chunk);
                 if (!activated)
                     return activated;
             }
+
         } catch (...) {
             return StreamingFailure("streaming.residency_exception",
                                     "residency controller threw while activating chunk");
         }
+
         record.activation_completed = true;
         CommitState(record, StreamingState::Resident, kResidentProgress);
         SaturatingIncrement(statistics_.committed);
         break;
     }
+
     case StreamingState::Resident: {
         const auto revision = ReserveRevision(record);
         if (!revision)
@@ -1059,6 +1272,7 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         CommitState(record, StreamingState::Active, kActiveProgress);
         break;
     }
+
     case StreamingState::Deactivating: {
         const auto revision = ReserveRevision(record);
         if (!revision)
@@ -1066,6 +1280,7 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         CommitState(record, StreamingState::Unloading, kUnloadingProgress);
         break;
     }
+
     case StreamingState::Unloading: {
         const auto prepared = PrepareTerminalTransition(record);
         if (!prepared)
@@ -1085,12 +1300,16 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
                     if (!released)
                         return released;
                 }
+
             } catch (...) {
                 return StreamingFailure("streaming.resource_exception",
-                                        "streaming resource source threw while releasing chunk resources");
+                                        "streaming resource source threw while releasing chunk "
+                                        "resources");
             }
+
             record.resources_released = true;
         }
+
         if (!record.residency_unloaded) {
             try {
                 if (IResidencyController *controller = ResidencyController()) {
@@ -1098,10 +1317,12 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
                     if (!unloaded)
                         return unloaded;
                 }
+
             } catch (...) {
                 return StreamingFailure("streaming.residency_exception",
                                         "residency controller threw while unloading chunk");
             }
+
             record.residency_unloaded = true;
         }
 
@@ -1110,8 +1331,8 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         if (record.successor) {
             successor = FindRequest(*record.successor);
             if (successor != nullptr) {
-                if (successor->state == StreamingState::WaitingForPredecessor && successor->active_demands > 0 &&
-                    successor->predecessor == record.request.id) {
+                if (successor->state == StreamingState::WaitingForPredecessor &&
+                    successor->active_demands > 0 && successor->predecessor == record.request.id) {
                     successor->predecessor.reset();
                     CommitState(*successor, StreamingState::Requested, kRequestedProgress);
                     const auto successor_chunk = GetChunkTarget(successor->request.target);
@@ -1123,14 +1344,19 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
                         if (state != chunk_states_.end())
                             state->second = successor->state;
                     }
+
                 } else if (successor->predecessor == record.request.id) {
                     successor->predecessor.reset();
                 }
+
             }
+
             record.successor.reset();
         }
+
         break;
     }
+
     default:
         break;
     }
@@ -1141,11 +1367,14 @@ foundation::Result<void> StreamingRuntime::AdvanceRequest(RequestRecord &record,
         if (state != chunk_states_.end()) {
             state->second = record.state;
         }
+
     }
+
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record, RuntimeBudget available_budget) {
+foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record,
+                                                           RuntimeBudget available_budget) {
     if (record.request.load_plan.cursor >= record.request.load_plan.steps.size()) {
         const auto revision = ReserveRevision(record);
         if (!revision)
@@ -1158,23 +1387,28 @@ foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record
     const std::size_t cursor = record.request.load_plan.cursor;
     const StreamingPlanStepRecord current_step = record.request.load_plan.steps[cursor];
     if (!IsValidPlanStep(current_step.step)) {
-        return StreamingFailure("streaming.invalid_plan_step", "streaming plan contains an invalid step enum value");
+        return StreamingFailure("streaming.invalid_plan_step",
+                                "streaming plan contains an invalid step enum value");
     }
 
     if (!record.pending_step_result.has_value()) {
         StreamingStepResult accepted{};
+
         if (dependencies_.data_source) {
             std::optional<foundation::Result<StreamingStepResult>> executed;
             try {
-                executed.emplace(
-                    dependencies_.data_source->ExecuteStep(record.request, current_step, available_budget));
+                executed.emplace(dependencies_.data_source->ExecuteStep(record.request,
+                                                                        current_step,
+                                                                        available_budget));
             } catch (...) {
                 return StreamingFailure("streaming.data_source_exception",
                                         "streaming data source threw while executing load step");
             }
+
             if (!*executed) {
                 return foundation::Result<void>::Failure(executed->GetError());
             }
+
             accepted = executed->Value();
         } else {
             try {
@@ -1183,22 +1417,27 @@ foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record
                     if (!prepared)
                         return prepared;
                 }
+
                 if (current_step.step == StreamingPlanStep::ResolveTarget && WorldSource()) {
                     const auto chunk = GetChunkTarget(record.request.target);
                     if (!chunk)
                         return StreamingFailure("streaming.unsupported_target",
-                                                "reference streaming runtime only resolves chunk targets");
+                                                "reference streaming runtime only resolves chunk "
+                                                "targets");
                     (void)WorldSource()->ResolveRegion(*chunk);
                 }
+
                 if (current_step.step == StreamingPlanStep::PrepareResources && ResourceSource()) {
                     const auto prepared = ResourceSource()->PrepareChunkResources(record.request);
                     if (!prepared)
                         return prepared;
                 }
+
             } catch (...) {
                 return StreamingFailure("streaming.extension_exception",
                                         "streaming extension threw while executing load step");
             }
+
             accepted.processed_bytes = current_step.estimated_bytes;
             accepted.completed = true;
         }
@@ -1225,11 +1464,13 @@ foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record
         return StreamingFailure("streaming.step_budget_violation",
                                 "streaming plan step exceeded the available byte budget");
     }
+
     if (step.processed_bytes > std::numeric_limits<std::size_t>::max() - record.processed_bytes ||
-        step.processed_bytes >
-            std::numeric_limits<std::size_t>::max() - record.request.load_plan.steps[cursor].processed_bytes) {
+        step.processed_bytes > std::numeric_limits<std::size_t>::max() -
+                                   record.request.load_plan.steps[cursor].processed_bytes) {
         SaturatingIncrement(statistics_.budget_violations);
-        return StreamingFailure("streaming.byte_counter_overflow", "streaming request byte counter overflowed");
+        return StreamingFailure("streaming.byte_counter_overflow",
+                                "streaming request byte counter overflowed");
     }
 
     const std::uint64_t revision_increments =
@@ -1245,8 +1486,10 @@ foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record
             if (!committed)
                 return committed;
         } catch (...) {
-            return StreamingFailure("streaming.commit_exception", "streaming commit target threw during commit");
+            return StreamingFailure("streaming.commit_exception",
+                                    "streaming commit target threw during commit");
         }
+
         record.commit_completed = true;
     }
 
@@ -1255,39 +1498,51 @@ foundation::Result<void> StreamingRuntime::ExecutePlanStep(RequestRecord &record
     if (step_completed)
         ++record.request.load_plan.cursor;
     record.progress =
-        std::min(0.70f, kLoadingProgress +
-                            (0.40f * static_cast<float>(record.request.load_plan.cursor)) /
-                                static_cast<float>(std::max<std::size_t>(1, record.request.load_plan.steps.size())));
+        std::min(0.70f,
+                 kLoadingProgress +
+                     (0.40f * static_cast<float>(record.request.load_plan.cursor)) /
+                         static_cast<float>(
+                             std::max<std::size_t>(1, record.request.load_plan.steps.size())));
     ++record.revision;
     if (record.request.load_plan.cursor >= record.request.load_plan.steps.size()) {
         CommitState(record, StreamingState::Loaded, kLoadedProgress);
     }
+
     record.pending_step_result.reset();
-    if (const auto chunk = GetChunkTarget(record.request.target); chunk && chunk_states_.contains(*chunk)) {
+    if (const auto chunk = GetChunkTarget(record.request.target);
+        chunk && chunk_states_.contains(*chunk)) {
         chunk_states_.find(*chunk)->second = record.state;
     }
+
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> StreamingRuntime::Rollback(RequestRecord &record, StreamingState terminal_state) {
+foundation::Result<void> StreamingRuntime::Rollback(RequestRecord &record,
+                                                    StreamingState terminal_state) {
     const auto prepared = PrepareTerminalTransition(record);
     if (!prepared) {
         return foundation::Result<void>::Failure(prepared.GetError());
     }
+
     if (!record.rollback_completed && dependencies_.commit_target) {
         try {
             const auto rolled_back = dependencies_.commit_target->Rollback(record.request);
             if (!rolled_back)
                 return rolled_back;
         } catch (...) {
-            return StreamingFailure("streaming.rollback_exception", "streaming commit target threw during rollback");
+            return StreamingFailure("streaming.rollback_exception",
+                                    "streaming commit target threw during rollback");
         }
+
         record.rollback_completed = true;
     }
+
     CommitTerminal(record, terminal_state, prepared.Value());
-    if (const auto chunk = GetChunkTarget(record.request.target); chunk && chunk_states_.contains(*chunk)) {
+    if (const auto chunk = GetChunkTarget(record.request.target);
+        chunk && chunk_states_.contains(*chunk)) {
         chunk_states_.find(*chunk)->second = record.state;
     }
+
     SaturatingIncrement(statistics_.rolled_back);
     return foundation::Result<void>::Success();
 }
@@ -1307,7 +1562,9 @@ foundation::Result<void> StreamingRuntime::BeginUnload(RequestRecord &record) {
             return StreamingFailure("streaming.allocation_failed",
                                     "chunk state could not be prepared before deactivation");
         }
+
     }
+
     if (!record.deactivation_completed) {
         try {
             if (IResidencyController *controller = ResidencyController()) {
@@ -1315,12 +1572,15 @@ foundation::Result<void> StreamingRuntime::BeginUnload(RequestRecord &record) {
                 if (!deactivated)
                     return deactivated;
             }
+
         } catch (...) {
             return StreamingFailure("streaming.residency_exception",
                                     "residency controller threw while deactivating chunk");
         }
+
         record.deactivation_completed = true;
     }
+
     CommitState(record, StreamingState::Deactivating, kUnloadingProgress);
     chunk_states_.find(*chunk)->second = record.state;
     return foundation::Result<void>::Success();
@@ -1332,10 +1592,13 @@ StreamingRuntime::PrepareTerminalTransition(const RequestRecord &record) const {
     if (!revision) {
         return foundation::Result<PreparedTerminalTransition>::Failure(revision.GetError());
     }
+
     if (!CanAllocateMonotonicId(next_completion_sequence_)) {
-        return StreamingFailureValue<PreparedTerminalTransition>(
-            "streaming.completion_sequence_overflow", "streaming completion sequence allocator is exhausted");
+        return StreamingFailureValue<
+            PreparedTerminalTransition>("streaming.completion_sequence_overflow",
+                                        "streaming completion sequence allocator is exhausted");
     }
+
     return foundation::Result<PreparedTerminalTransition>::Success(
         PreparedTerminalTransition{next_completion_sequence_});
 }
@@ -1351,12 +1614,15 @@ void StreamingRuntime::CommitTerminal(RequestRecord &record, StreamingState stat
 foundation::Result<void> StreamingRuntime::CancelWaitingForPredecessor(RequestRecord &record) {
     if (record.active_demands != 0) {
         return StreamingFailure("streaming.active_demands",
-                                "waiting successor cancellation requires all demands to be released first");
+                                "waiting successor cancellation requires all demands to be "
+                                "released first");
     }
+
     const auto prepared = PrepareTerminalTransition(record);
     if (!prepared) {
         return foundation::Result<void>::Failure(prepared.GetError());
     }
+
     CommitTerminal(record, StreamingState::Cancelled, prepared.Value());
     ClearGraphLinks(record);
     record.predecessor.reset();
@@ -1370,13 +1636,17 @@ void StreamingRuntime::ClearGraphLinks(RequestRecord &record) {
             predecessor != nullptr && predecessor->successor == record.request.id) {
             predecessor->successor.reset();
         }
+
     }
+
     if (record.successor) {
         if (RequestRecord *successor = FindRequest(*record.successor);
             successor != nullptr && successor->predecessor == record.request.id) {
             successor->predecessor.reset();
         }
+
     }
+
 }
 
 IResidencyController *StreamingRuntime::ResidencyController() const noexcept {
@@ -1402,7 +1672,9 @@ void StreamingRuntime::UpdatePriority(RequestRecord &record) noexcept {
         if (demand.active && PriorityRank(demand.priority) < PriorityRank(best)) {
             best = demand.priority;
         }
+
     }
+
     record.max_priority = best;
     record.request.priority = best;
 }
@@ -1413,6 +1685,7 @@ void StreamingRuntime::MarkCancellationAccepted(RequestRecord &record) noexcept 
         record.cancellation_counted = true;
         SaturatingIncrement(statistics_.cancelled);
     }
+
 }
 
 void StreamingRuntime::PublishChunkStateIfCurrent(const RequestRecord &record) noexcept {
@@ -1420,20 +1693,24 @@ void StreamingRuntime::PublishChunkStateIfCurrent(const RequestRecord &record) n
     if (!chunk) {
         return;
     }
+
     const auto mapping = chunk_to_request_.find(*chunk);
     if (mapping == chunk_to_request_.end() || mapping->second != record.request.id) {
         return;
     }
+
     const auto state = chunk_states_.find(*chunk);
     if (state != chunk_states_.end()) {
         state->second = record.state;
     }
+
 }
 
 void StreamingRuntime::CleanupHistoryIfNeeded() {
     if (history_limit_ == 0) {
         return;
     }
+
     while (requests_.size() > history_limit_) {
         auto candidate = requests_.end();
         for (auto iterator = requests_.begin(); iterator != requests_.end(); ++iterator) {
@@ -1443,8 +1720,11 @@ void StreamingRuntime::CleanupHistoryIfNeeded() {
                         std::tie(candidate->second.completion_sequence, candidate->first.value)) {
                     candidate = iterator;
                 }
+
             }
+
         }
+
         if (candidate == requests_.end())
             return;
         ClearGraphLinks(candidate->second);
@@ -1453,8 +1733,12 @@ void StreamingRuntime::CleanupHistoryIfNeeded() {
             if (mapping != chunk_to_request_.end() && mapping->second == candidate->first) {
                 chunk_to_request_.erase(mapping);
             }
+
         }
+
         requests_.erase(candidate);
     }
+
 }
+
 } // namespace epidemic::runtime::streaming

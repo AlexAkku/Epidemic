@@ -42,19 +42,22 @@ class IAllocator {
     // The pointer, bytes, alignment and tag must match the original allocation. nullptr is a no-op.
     // An invalid representable size/alignment is a controlled no-op so callers can retry with the
     // correct metadata without invoking undefined aligned-delete behavior.
-    virtual void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
+    virtual void Deallocate(void *pointer, std::size_t bytes,
+                            std::size_t alignment = alignof(std::max_align_t),
                             AllocationTag tag = AllocationTag::Unknown) noexcept = 0;
 };
 
 // Thin allocator that forwards directly to aligned global new/delete.
 class DefaultAllocator final : public IAllocator {
   public:
-    // Allocates storage through aligned operator new after validating the common allocator contract.
+    // Allocates storage through aligned operator new after validating the common allocator
+    // contract.
     void *Allocate(std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
                    AllocationTag = AllocationTag::Unknown) override {
         if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
             throw std::invalid_argument("allocation alignment must be a non-zero power of two");
         }
+
         if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
             throw std::length_error("allocation size exceeds PTRDIFF_MAX");
         }
@@ -62,6 +65,7 @@ class DefaultAllocator final : public IAllocator {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
         if (auditor::shadow::fail_allocation("DefaultAllocator.Allocate"))
             throw std::bad_alloc{};
+
 #endif
         auto *pointer = ::operator new(NormalizeAllocationSize(bytes), std::align_val_t(alignment));
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
@@ -72,7 +76,8 @@ class DefaultAllocator final : public IAllocator {
     }
 
     // Releases storage through aligned operator delete. Null or invalid requests are ignored.
-    void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
+    void Deallocate(void *pointer, std::size_t bytes,
+                    std::size_t alignment = alignof(std::max_align_t),
                     AllocationTag = AllocationTag::Unknown) noexcept override {
         if (pointer == nullptr || alignment == 0 || (alignment & (alignment - 1)) != 0 ||
             bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
@@ -85,6 +90,7 @@ class DefaultAllocator final : public IAllocator {
 #endif
         ::operator delete(pointer, std::align_val_t(alignment));
     }
+
 };
 
 // TrackingAllocator mirrors the allocation contract of its upstream allocator.
@@ -96,7 +102,8 @@ class DefaultAllocator final : public IAllocator {
 class TrackingAllocator final : public IAllocator {
   public:
     // Binds a tracker interface to an upstream allocator implementation.
-    TrackingAllocator(IMemoryTracker &tracker, IAllocator &upstream) noexcept : tracker_(tracker), upstream_(upstream) {
+    TrackingAllocator(IMemoryTracker &tracker, IAllocator &upstream) noexcept
+        : tracker_(tracker), upstream_(upstream) {
     }
 
     // Allocates through the upstream allocator and records exactly one successful allocation.
@@ -105,6 +112,7 @@ class TrackingAllocator final : public IAllocator {
         if (alignment == 0 || (alignment & (alignment - 1)) != 0) {
             throw std::invalid_argument("allocation alignment must be a non-zero power of two");
         }
+
         if (bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
             throw std::length_error("allocation size exceeds PTRDIFF_MAX");
         }
@@ -119,7 +127,8 @@ class TrackingAllocator final : public IAllocator {
     }
 
     // Frees through the upstream allocator and mirrors a valid non-null free into the tracker.
-    void Deallocate(void *pointer, std::size_t bytes, std::size_t alignment = alignof(std::max_align_t),
+    void Deallocate(void *pointer, std::size_t bytes,
+                    std::size_t alignment = alignof(std::max_align_t),
                     AllocationTag tag = AllocationTag::Unknown) noexcept override {
         if (pointer == nullptr || alignment == 0 || (alignment & (alignment - 1)) != 0 ||
             bytes > static_cast<std::size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
@@ -146,4 +155,5 @@ class IFrameAllocator {
     // Resets transient frame-local allocation state and invalidates the previous frame lifetime.
     virtual void Reset() noexcept = 0;
 };
+
 } // namespace epidemic::memory

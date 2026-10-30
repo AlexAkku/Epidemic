@@ -68,8 +68,10 @@ class MouseState {
 
     // Updates the cursor position and accumulates per-frame deltas.
     void SetPosition(std::int32_t x, std::int32_t y) noexcept {
-        delta_x_ = ClampToInt32(static_cast<std::int64_t>(delta_x_) + static_cast<std::int64_t>(x) - position_x_);
-        delta_y_ = ClampToInt32(static_cast<std::int64_t>(delta_y_) + static_cast<std::int64_t>(y) - position_y_);
+        delta_x_ = ClampToInt32(static_cast<std::int64_t>(delta_x_) + static_cast<std::int64_t>(x) -
+                                position_x_);
+        delta_y_ = ClampToInt32(static_cast<std::int64_t>(delta_y_) + static_cast<std::int64_t>(y) -
+                                position_y_);
         position_x_ = x;
         position_y_ = y;
     }
@@ -84,6 +86,7 @@ class MouseState {
         if (IsKnownMouseButton(button)) {
             buttons_down_[ToIndex(button)] = down;
         }
+
     }
 
     // Marks a button as newly pressed for the current frame.
@@ -91,6 +94,7 @@ class MouseState {
         if (IsKnownMouseButton(button)) {
             buttons_pressed_[ToIndex(button)] = true;
         }
+
     }
 
     // Marks a button as newly released for the current frame.
@@ -98,6 +102,7 @@ class MouseState {
         if (IsKnownMouseButton(button)) {
             buttons_released_[ToIndex(button)] = true;
         }
+
     }
 
     // Updates cached focus state.
@@ -132,9 +137,11 @@ class MouseState {
         if (value < std::numeric_limits<std::int32_t>::min()) {
             return std::numeric_limits<std::int32_t>::min();
         }
+
         if (value > std::numeric_limits<std::int32_t>::max()) {
             return std::numeric_limits<std::int32_t>::max();
         }
+
         return static_cast<std::int32_t>(value);
     }
 
@@ -145,14 +152,25 @@ class MouseState {
     }
 
     std::int32_t position_x_{};
+
     std::int32_t position_y_{};
+
     std::int32_t delta_x_{};
+
     std::int32_t delta_y_{};
+
     std::int32_t wheel_delta_{};
+
     std::array<bool, ButtonCount> buttons_down_{};
+
     std::array<bool, ButtonCount> buttons_pressed_{};
+
     std::array<bool, ButtonCount> buttons_released_{};
+
     bool has_focus_{false};
+
     bool has_capture_{false};
+
 };
-}
+
+} // namespace epidemic::input

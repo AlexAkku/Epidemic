@@ -17,7 +17,7 @@ using namespace epidemic::gameplay::narrative_integration;
 namespace epidemic::gameplay::narrative_integration::detail {
 void SetNarrativeIntegrationFaultPointForTesting(std::string_view point) noexcept;
 void ClearNarrativeIntegrationFaultPointForTesting() noexcept;
-}
+} // namespace epidemic::gameplay::narrative_integration::detail
 
 namespace {
 void Check(bool value, const char *message) {
@@ -25,10 +25,12 @@ void Check(bool value, const char *message) {
         std::cerr << message << '\n';
         std::exit(1);
     }
+
 }
 
 GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
+
 }
 
 class DiscoveryResolver final : public INarrativeConditionResolver {
@@ -42,30 +44,35 @@ class DiscoveryResolver final : public INarrativeConditionResolver {
                 1'000'000,
                 {},
                 {}};
+
     }
+
 };
 
 bool ContainsExecution(const std::vector<NarrativeConsequenceExecution> &executions,
                        NarrativeConsequenceExecutionId id) {
-    return std::any_of(executions.begin(), executions.end(), [id](const auto &execution) {
-        return execution.id == id;
-    });
+    return std::any_of(executions.begin(), executions.end(),
+                       [id](const auto &execution) { return execution.id == id; });
 }
 
-bool SameDelivery(const NarrativeExternalConsequenceDelivery &a, const NarrativeExternalConsequenceDelivery &b) {
-    return a.execution == b.execution && a.consequence == b.consequence && a.type == b.type && a.thread == b.thread &&
-           a.objective == b.objective && a.owner == b.owner && a.correlation == b.correlation && a.state == b.state &&
-           a.payload == b.payload && a.external_operation == b.external_operation && a.created_at == b.created_at &&
+bool SameDelivery(const NarrativeExternalConsequenceDelivery &a,
+                  const NarrativeExternalConsequenceDelivery &b) {
+    return a.execution == b.execution && a.consequence == b.consequence && a.type == b.type &&
+           a.thread == b.thread && a.objective == b.objective && a.owner == b.owner &&
+           a.correlation == b.correlation && a.state == b.state && a.payload == b.payload &&
+           a.external_operation == b.external_operation && a.created_at == b.created_at &&
            a.updated_at == b.updated_at && a.revision == b.revision;
 }
 
-bool SameSnapshot(const NarrativeExternalConsequenceSnapshot &a, const NarrativeExternalConsequenceSnapshot &b) {
+bool SameSnapshot(const NarrativeExternalConsequenceSnapshot &a,
+                  const NarrativeExternalConsequenceSnapshot &b) {
     if (a.revision != b.revision || a.deliveries.size() != b.deliveries.size())
         return false;
     for (std::size_t i = 0; i < a.deliveries.size(); ++i) {
         if (!SameDelivery(a.deliveries[i], b.deliveries[i]))
             return false;
     }
+
     return true;
 }
 
@@ -76,8 +83,10 @@ void WriteU32Le(std::vector<std::byte> &payload, std::size_t offset, std::uint32
 
 savegame::SaveSection DuplicateFirstDeliverySection(savegame::SaveSection section) {
     constexpr std::size_t kOutboxHeaderBytes = 20;
-    Check(section.payload.size() > kOutboxHeaderBytes, "outbox test section has at least one delivery");
-    std::vector<std::byte> record(section.payload.begin() + static_cast<std::ptrdiff_t>(kOutboxHeaderBytes),
+    Check(section.payload.size() > kOutboxHeaderBytes,
+          "outbox test section has at least one delivery");
+    std::vector<std::byte> record(section.payload.begin() +
+                                      static_cast<std::ptrdiff_t>(kOutboxHeaderBytes),
                                   section.payload.end());
     WriteU32Le(section.payload, 16, 2);
     section.payload.insert(section.payload.end(), record.begin(), record.end());
@@ -98,31 +107,38 @@ void TestNarrativeOutboxPublicationAtomicity(const NarrativeConsequenceDefinitio
     epidemic::gameplay::narrative_integration::detail::SetNarrativeIntegrationFaultPointForTesting(
         "outbox.execute.publish");
     const auto failed = outbox.Execute(definition, execution, context);
-    epidemic::gameplay::narrative_integration::detail::ClearNarrativeIntegrationFaultPointForTesting();
+    epidemic::gameplay::narrative_integration::detail::
+        ClearNarrativeIntegrationFaultPointForTesting();
     Check(failed.state == ConsequenceExecutionState::FailedRetryable,
           "outbox publication allocation failure is retryable");
     Check(SameSnapshot(outbox.CaptureSnapshot(), before),
           "outbox publication failure preserves revision and durable records");
 
     const auto retry = outbox.Execute(definition, execution, context);
-    Check(retry.state == ConsequenceExecutionState::Deferred && outbox.PendingDeliveries().size() == 1,
+    Check(retry.state == ConsequenceExecutionState::Deferred &&
+              outbox.PendingDeliveries().size() == 1,
           "outbox publication retry creates exactly one durable delivery");
     const auto retry_revision = outbox.CurrentRevision();
-    Check(outbox.Execute(definition, execution, context).state == ConsequenceExecutionState::Deferred &&
+    Check(outbox.Execute(definition, execution, context).state ==
+                  ConsequenceExecutionState::Deferred &&
               outbox.CurrentRevision() == retry_revision && outbox.PendingDeliveries().size() == 1,
           "duplicate execute after retry is idempotent");
 }
 
-void TestNarrativeOutboxRevisionExhaustion(const NarrativeConsequenceDefinition &definition, GameplayObjectRef owner) {
+void TestNarrativeOutboxRevisionExhaustion(const NarrativeConsequenceDefinition &definition,
+                                           GameplayObjectRef owner) {
     constexpr auto kMaxRevision = std::numeric_limits<std::uint64_t>::max();
     const NarrativeExecutionContext context{.default_owner = owner, .now = GameplayTimePoint{120}};
 
     NarrativeExternalConsequenceSnapshot exhausted_empty;
     exhausted_empty.revision = Revision{kMaxRevision};
+
     NarrativeExternalConsequenceOutbox exhausted_execute;
-    Check(static_cast<bool>(exhausted_execute.RestoreSnapshot(exhausted_empty)), "restore max empty outbox revision");
+    Check(static_cast<bool>(exhausted_execute.RestoreSnapshot(exhausted_empty)),
+          "restore max empty outbox revision");
     NarrativeConsequenceExecution exhausted_execution;
-    exhausted_execution.id = NarrativeConsequenceExecutionId::FromString("execution.exhausted.execute");
+    exhausted_execution.id =
+        NarrativeConsequenceExecutionId::FromString("execution.exhausted.execute");
     exhausted_execution.consequence = definition.id;
     exhausted_execution.correlation = CorrelationId::FromString("exhausted.execute");
     Check(exhausted_execute.Execute(definition, exhausted_execution, context).state ==
@@ -141,53 +157,69 @@ void TestNarrativeOutboxRevisionExhaustion(const NarrativeConsequenceDefinition 
           "prepare pending delivery for exhaustion tests");
     auto pending_max = source.CaptureSnapshot();
     pending_max.revision = Revision{kMaxRevision};
+
     const auto pending_execution = pending_max.deliveries.front().execution;
     const auto pending_operation = pending_max.deliveries.front().external_operation;
 
     NarrativeExternalConsequenceOutbox exhausted_retry;
-    Check(static_cast<bool>(exhausted_retry.RestoreSnapshot(pending_max)), "restore max retry outbox");
+    Check(static_cast<bool>(exhausted_retry.RestoreSnapshot(pending_max)),
+          "restore max retry outbox");
     const auto retry_before = exhausted_retry.CaptureSnapshot();
-    Check(!static_cast<bool>(exhausted_retry.MarkRetryable(pending_execution, GameplayTimePoint{121})),
+    Check(!static_cast<bool>(
+              exhausted_retry.MarkRetryable(pending_execution, GameplayTimePoint{121})),
           "retry transition rejects exhausted revision");
-    Check(SameSnapshot(exhausted_retry.CaptureSnapshot(), retry_before), "retry exhaustion preserves state");
+    Check(SameSnapshot(exhausted_retry.CaptureSnapshot(), retry_before),
+          "retry exhaustion preserves state");
 
     NarrativeExternalConsequenceOutbox exhausted_ack;
-    Check(static_cast<bool>(exhausted_ack.RestoreSnapshot(pending_max)), "restore max acknowledge outbox");
+    Check(static_cast<bool>(exhausted_ack.RestoreSnapshot(pending_max)),
+          "restore max acknowledge outbox");
     const auto ack_before = exhausted_ack.CaptureSnapshot();
-    Check(!static_cast<bool>(
-              exhausted_ack.AcknowledgeApplied(pending_execution, pending_operation, GameplayTimePoint{121})),
+    Check(!static_cast<bool>(exhausted_ack.AcknowledgeApplied(pending_execution, pending_operation,
+                                                              GameplayTimePoint{121})),
           "acknowledge rejects exhausted revision");
-    Check(SameSnapshot(exhausted_ack.CaptureSnapshot(), ack_before), "acknowledge exhaustion preserves state");
+    Check(SameSnapshot(exhausted_ack.CaptureSnapshot(), ack_before),
+          "acknowledge exhaustion preserves state");
 
     NarrativeExternalConsequenceOutbox exhausted_fail;
-    Check(static_cast<bool>(exhausted_fail.RestoreSnapshot(pending_max)), "restore max terminal-fail outbox");
+    Check(static_cast<bool>(exhausted_fail.RestoreSnapshot(pending_max)),
+          "restore max terminal-fail outbox");
     const auto fail_before = exhausted_fail.CaptureSnapshot();
-    Check(!static_cast<bool>(exhausted_fail.FailTerminal(pending_execution, GameplayTimePoint{121})),
+    Check(!static_cast<bool>(
+              exhausted_fail.FailTerminal(pending_execution, GameplayTimePoint{121})),
           "terminal fail rejects exhausted revision");
-    Check(SameSnapshot(exhausted_fail.CaptureSnapshot(), fail_before), "terminal-fail exhaustion preserves state");
+    Check(SameSnapshot(exhausted_fail.CaptureSnapshot(), fail_before),
+          "terminal-fail exhaustion preserves state");
 
     NarrativeExternalConsequenceOutbox terminal_source;
     NarrativeConsequenceExecution terminal_execution;
-    terminal_execution.id = NarrativeConsequenceExecutionId::FromString("execution.exhausted.prune");
+    terminal_execution.id =
+        NarrativeConsequenceExecutionId::FromString("execution.exhausted.prune");
     terminal_execution.consequence = definition.id;
     terminal_execution.correlation = CorrelationId::FromString("exhausted.prune");
-    Check(terminal_source.Execute(definition, terminal_execution, context).state == ConsequenceExecutionState::Deferred,
+    Check(terminal_source.Execute(definition, terminal_execution, context).state ==
+              ConsequenceExecutionState::Deferred,
           "prepare terminal delivery for prune exhaustion test");
     const auto terminal_operation = terminal_source.PendingDeliveries().front().external_operation;
-    Check(static_cast<bool>(
-              terminal_source.AcknowledgeApplied(terminal_execution.id, terminal_operation, GameplayTimePoint{121})),
+    Check(static_cast<bool>(terminal_source.AcknowledgeApplied(terminal_execution.id,
+                                                               terminal_operation,
+                                                               GameplayTimePoint{121})),
           "prepare applied delivery for prune exhaustion test");
     auto terminal_max = terminal_source.CaptureSnapshot();
     terminal_max.revision = Revision{kMaxRevision};
+
     NarrativeExternalConsequenceOutbox exhausted_prune;
-    Check(static_cast<bool>(exhausted_prune.RestoreSnapshot(terminal_max)), "restore max prune outbox");
+    Check(static_cast<bool>(exhausted_prune.RestoreSnapshot(terminal_max)),
+          "restore max prune outbox");
     const auto prune_before = exhausted_prune.CaptureSnapshot();
     Check(!static_cast<bool>(exhausted_prune.PruneConfirmedTerminal(terminal_execution.id)),
           "prune rejects exhausted revision");
-    Check(SameSnapshot(exhausted_prune.CaptureSnapshot(), prune_before), "prune exhaustion preserves state");
+    Check(SameSnapshot(exhausted_prune.CaptureSnapshot(), prune_before),
+          "prune exhaustion preserves state");
 }
 
 class DummyRestoreStage final : public savegame::IRestoreStage {};
+
 } // namespace
 
 int main() {
@@ -196,9 +228,12 @@ int main() {
     NarrativeExternalConsequenceOutbox outbox;
 
     const auto condition_type = NarrativeConditionTypeId::FromString("condition.discovery");
-    const auto consequence_type = NarrativeConsequenceTypeId::FromString("narrative.external_reward");
-    Check(static_cast<bool>(service.RegisterConditionResolver(condition_type, discovery)), "condition resolver");
-    Check(static_cast<bool>(service.RegisterConsequenceHandler(consequence_type, outbox)), "outbox handler");
+    const auto consequence_type =
+        NarrativeConsequenceTypeId::FromString("narrative.external_reward");
+    Check(static_cast<bool>(service.RegisterConditionResolver(condition_type, discovery)),
+          "condition resolver");
+    Check(static_cast<bool>(service.RegisterConsequenceHandler(consequence_type, outbox)),
+          "outbox handler");
 
     const auto thread = NarrativeThreadId::FromString("thread.corpse");
     const auto objective = NarrativeObjectiveId::FromString("objective.investigate_corpse");
@@ -215,6 +250,7 @@ int main() {
     cons.id = consequence;
     cons.type = consequence_type;
     cons.payload = {std::byte{0x11}, std::byte{0x22}, std::byte{0x33}};
+
     Check(static_cast<bool>(service.RegisterConsequenceDefinition(cons)), "consequence definition");
 
     NarrativeBeatDefinition beat_def;
@@ -238,39 +274,49 @@ int main() {
     Check(static_cast<bool>(service.FreezeDefinitions()), "freeze narrative definitions");
 
     NarrativeIntegrationContractRegistry contracts;
-    Check(static_cast<bool>(contracts.RegisterStandardContracts()), "register standard narrative contracts");
-    Check(static_cast<bool>(contracts.RegisterStandardContracts()), "standard contract registration is idempotent");
-    Check(!static_cast<bool>(contracts.RegisterContract({TypeId::FromString("integration.narrative.duplicate"),
-                                                         NarrativeIntegrationContractRegistry::DiscoveryEventType(),
-                                                         {}})),
+    Check(static_cast<bool>(contracts.RegisterStandardContracts()),
+          "register standard narrative contracts");
+    Check(static_cast<bool>(contracts.RegisterStandardContracts()),
+          "standard contract registration is idempotent");
+    Check(!static_cast<bool>(contracts.RegisterContract(
+              {TypeId::FromString("integration.narrative.duplicate"),
+               NarrativeIntegrationContractRegistry::DiscoveryEventType(),
+               {}})),
           "duplicate event type rejected");
 
     const auto player = Ref("game.actor", "player");
     const auto corpse = Ref("entity", "corpse");
     const auto forest = Ref("world.area", "forest");
-    const auto discovery_context = GameplayContext{
-        .time = GameplayTimePoint{100}, .correlation = CorrelationId::FromString("corpse.discovery"), .actor = player};
+    const auto discovery_context =
+        GameplayContext{.time = GameplayTimePoint{100},
+                        .correlation = CorrelationId::FromString("corpse.discovery"),
+                        .actor = player};
 
     NarrativeSemanticEventAdapter events(contracts);
-    Check(!static_cast<bool>(
-              events.ProcessWorldEvent(service, corpse, forest, TagId::FromString("world.test"), discovery_context)),
+    Check(!static_cast<bool>(events.ProcessWorldEvent(service, corpse, forest,
+                                                      TagId::FromString("world.test"),
+                                                      discovery_context)),
           "runtime event processing requires frozen integration contracts");
     Check(static_cast<bool>(contracts.Freeze()), "freeze integration contracts");
-    Check(!static_cast<bool>(contracts.RegisterContract({TypeId::FromString("integration.narrative.after_freeze"),
-                                                         NarrativeEventTypeId::FromString("narrative.after_freeze"),
-                                                         {}})),
+    Check(!static_cast<bool>(contracts.RegisterContract(
+              {TypeId::FromString("integration.narrative.after_freeze"),
+               NarrativeEventTypeId::FromString("narrative.after_freeze"),
+               {}})),
           "contract registration blocked after freeze");
 
     NarrativeProcessBudget exhausted_budget;
     exhausted_budget.max_condition_evaluations = 0;
-    Check(
-        !static_cast<bool>(events.ProcessDiscovery(service, player, corpse, forest, TypeId::FromString("topic.corpse"),
-                                                   discovery_context, exhausted_budget)),
-        "discovery budget exhaustion fails atomically");
-    Check(service.FindClues(player, TypeId::FromString("topic.corpse")).empty(), "failed discovery did not leak clue");
-    Check(service.GetThreadState(thread) == nullptr, "failed discovery did not mutate thread state");
+    Check(!static_cast<bool>(events.ProcessDiscovery(service, player, corpse, forest,
+                                                     TypeId::FromString("topic.corpse"),
+                                                     discovery_context, exhausted_budget)),
+          "discovery budget exhaustion fails atomically");
+    Check(service.FindClues(player, TypeId::FromString("topic.corpse")).empty(),
+          "failed discovery did not leak clue");
+    Check(service.GetThreadState(thread) == nullptr,
+          "failed discovery did not mutate thread state");
 
-    Check(static_cast<bool>(events.ProcessDiscovery(service, player, corpse, forest, TypeId::FromString("topic.corpse"),
+    Check(static_cast<bool>(events.ProcessDiscovery(service, player, corpse, forest,
+                                                    TypeId::FromString("topic.corpse"),
                                                     discovery_context)),
           "process discovery adapter");
     Check(service.FindClues(player, TypeId::FromString("topic.corpse")).size() == 1,
@@ -282,25 +328,29 @@ int main() {
               service.GetObjectiveState(objective)->state == NarrativeObjectiveRuntimeState::Active,
           "objective active from discovery");
 
-    Check(static_cast<bool>(events.ProcessDiscovery(service, player, corpse, forest, TypeId::FromString("topic.corpse"),
+    Check(static_cast<bool>(events.ProcessDiscovery(service, player, corpse, forest,
+                                                    TypeId::FromString("topic.corpse"),
                                                     discovery_context)),
           "duplicate discovery is idempotent");
     Check(service.FindClues(player, TypeId::FromString("topic.corpse")).size() == 1,
           "duplicate discovery did not create second clue");
 
     const auto first_execution =
-        service.ExecutePendingConsequences({.default_owner = player, .now = GameplayTimePoint{110}}, 8);
-    Check(first_execution.empty(), "external consequence remains deferred until downstream acknowledgment");
+        service.ExecutePendingConsequences({.default_owner = player, .now = GameplayTimePoint{110}},
+                                           8);
+    Check(first_execution.empty(),
+          "external consequence remains deferred until downstream acknowledgment");
     auto pending = outbox.PendingDeliveries();
     Check(pending.size() == 1, "external consequence written to durable outbox");
     Check(pending.front().payload == cons.payload, "outbox preserves consequence payload");
     const auto execution_id = pending.front().execution;
-    Check(ContainsExecution(service.FindConsequences(ConsequenceExecutionState::Deferred), execution_id),
+    Check(ContainsExecution(service.FindConsequences(ConsequenceExecutionState::Deferred),
+                            execution_id),
           "narrative consequence is deferred while outbox is pending");
 
     NarrativeExternalConsequenceSaveParticipant save_participant(outbox);
-    Check(save_participant.Id() ==
-                  savegame::SaveParticipantId::FromString("integration.narrative.external_consequence_delivery") &&
+    Check(save_participant.Id() == savegame::SaveParticipantId::FromString(
+                                       "integration.narrative.external_consequence_delivery") &&
               save_participant.SchemaVersion() == 1 && save_participant.Dependencies().empty() &&
               save_participant.Requirement() == savegame::SaveParticipantRequirement::Required,
           "G5 outbox identity/schema/dependencies");
@@ -313,7 +363,8 @@ int main() {
     over_capacity.payload_hash = savegame::SaveGameOrchestrator::HashBytes(over_capacity.payload);
     const auto over_capacity_validation = save_participant.ValidateSnapshot(over_capacity, {});
     Check(!static_cast<bool>(over_capacity_validation) &&
-              over_capacity_validation.GetError().HasCode("gameplay.narrative_integration.delivery_snapshot_capacity"),
+              over_capacity_validation.GetError().HasCode(
+                  "gameplay.narrative_integration.delivery_snapshot_capacity"),
           "outbox wire count above configured capacity rejected before decode allocation");
     Check(!static_cast<bool>(save_participant.StageRestore(over_capacity, {})),
           "outbox stage rejects count above configured capacity");
@@ -323,23 +374,27 @@ int main() {
     huge_count.payload_hash = savegame::SaveGameOrchestrator::HashBytes(huge_count.payload);
     const auto huge_count_validation = save_participant.ValidateSnapshot(huge_count, {});
     Check(!static_cast<bool>(huge_count_validation) &&
-              huge_count_validation.GetError().HasCode("gameplay.narrative_integration.delivery_snapshot_capacity"),
+              huge_count_validation.GetError().HasCode(
+                  "gameplay.narrative_integration.delivery_snapshot_capacity"),
           "huge wire count in short payload is rejected by configured capacity");
 
     auto corrupted = captured.Value();
     corrupted.payload_hash ^= 0x55u;
-    Check(!static_cast<bool>(save_participant.ValidateSnapshot(corrupted, {})), "corrupted save section rejected");
+    Check(!static_cast<bool>(save_participant.ValidateSnapshot(corrupted, {})),
+          "corrupted save section rejected");
     Check(!static_cast<bool>(save_participant.StageRestore(corrupted, {})),
           "corrupted save section rejected during stage");
     Check(outbox.PendingDeliveries().size() == 1, "failed save validation did not mutate outbox");
 
     NarrativeExternalConsequenceOutbox restored_outbox;
     NarrativeExternalConsequenceSaveParticipant restored_participant(restored_outbox);
-    Check(static_cast<bool>(restored_participant.ValidateSnapshot(captured.Value(), {})), "validate persisted outbox");
+    Check(static_cast<bool>(restored_participant.ValidateSnapshot(captured.Value(), {})),
+          "validate persisted outbox");
     auto staged = restored_participant.StageRestore(captured.Value(), {});
     Check(static_cast<bool>(staged), "stage persisted outbox");
     auto stage = std::move(staged).Value();
-    Check(restored_outbox.PendingDeliveries().empty(), "G5 outbox staging leaves live state unchanged");
+    Check(restored_outbox.PendingDeliveries().empty(),
+          "G5 outbox staging leaves live state unchanged");
     restored_participant.CommitRestore(*stage);
     Check(restored_outbox.PendingDeliveries().size() == 1 &&
               restored_outbox.PendingDeliveries().front().execution == execution_id,
@@ -374,28 +429,34 @@ int main() {
     ordered_first.consequence = consequence;
     ordered_first.correlation = CorrelationId::FromString("restore.order.first");
     NarrativeConsequenceExecution ordered_second = ordered_first;
-    ordered_second.id = NarrativeConsequenceExecutionId::FromString("execution.restore.order.second");
+    ordered_second.id =
+        NarrativeConsequenceExecutionId::FromString("execution.restore.order.second");
     ordered_second.correlation = CorrelationId::FromString("restore.order.second");
-    Check(ordered_outbox.Execute(cons, ordered_first, {.default_owner = player, .now = GameplayTimePoint{115}}).state ==
-              ConsequenceExecutionState::Deferred,
+    Check(ordered_outbox
+                  .Execute(cons, ordered_first,
+                           {.default_owner = player, .now = GameplayTimePoint{115}})
+                  .state == ConsequenceExecutionState::Deferred,
           "ordered outbox first delivery");
-    Check(
-        ordered_outbox.Execute(cons, ordered_second, {.default_owner = player, .now = GameplayTimePoint{116}}).state ==
-            ConsequenceExecutionState::Deferred,
-        "ordered outbox second delivery");
+    Check(ordered_outbox
+                  .Execute(cons, ordered_second,
+                           {.default_owner = player, .now = GameplayTimePoint{116}})
+                  .state == ConsequenceExecutionState::Deferred,
+          "ordered outbox second delivery");
     auto unordered_snapshot = ordered_outbox.CaptureSnapshot();
     std::reverse(unordered_snapshot.deliveries.begin(), unordered_snapshot.deliveries.end());
     auto prepared_order = ordered_outbox.PrepareSnapshotForRestore(std::move(unordered_snapshot));
     Check(static_cast<bool>(prepared_order), "prepare restore order snapshot");
     Check(prepared_order.Value().deliveries.size() == 2 &&
-              prepared_order.Value().deliveries[0].revision < prepared_order.Value().deliveries[1].revision,
+              prepared_order.Value().deliveries[0].revision <
+                  prepared_order.Value().deliveries[1].revision,
           "stage restore normalizes delivery order before commit");
 
     auto repeated_stage = restored_participant.StageRestore(captured.Value(), {});
     Check(static_cast<bool>(repeated_stage), "repeat stage persisted outbox");
     auto repeated = std::move(repeated_stage).Value();
     restored_participant.CommitRestore(*repeated);
-    Check(SameSnapshot(restored_outbox.CaptureSnapshot(), captured_snapshot), "repeated restore is stable");
+    Check(SameSnapshot(restored_outbox.CaptureSnapshot(), captured_snapshot),
+          "repeated restore is stable");
 
     NarrativeExternalConsequenceOutbox empty_source;
     NarrativeExternalConsequenceSaveParticipant empty_participant(empty_source);
@@ -405,25 +466,36 @@ int main() {
     Check(static_cast<bool>(empty_stage), "stage empty outbox snapshot");
     auto empty = std::move(empty_stage).Value();
     restored_participant.CommitRestore(*empty);
-    Check(restored_outbox.CaptureSnapshot().deliveries.empty(), "empty outbox restore publishes empty state");
+    Check(restored_outbox.CaptureSnapshot().deliveries.empty(),
+          "empty outbox restore publishes empty state");
     restored_participant.CommitRestore(*stage);
-    Check(restored_outbox.CaptureSnapshot().deliveries.empty(), "G5 outbox stage cannot publish twice");
+    Check(restored_outbox.CaptureSnapshot().deliveries.empty(),
+          "G5 outbox stage cannot publish twice");
 
     const auto external_operation = pending.front().external_operation;
     Check(external_operation.IsValid(), "outbox exposes stable downstream operation id");
-    Check(!static_cast<bool>(outbox.AcknowledgeApplied(execution_id, OperationId::FromString("wrong.operation"),
+    Check(!static_cast<bool>(outbox.AcknowledgeApplied(execution_id,
+                                                       OperationId::FromString("wrong.operation"),
                                                        GameplayTimePoint{111})),
           "outbox rejects non-stable downstream operation id");
-    Check(static_cast<bool>(outbox.AcknowledgeApplied(execution_id, external_operation, GameplayTimePoint{111})),
+    Check(static_cast<bool>(
+              outbox.AcknowledgeApplied(execution_id, external_operation, GameplayTimePoint{111})),
           "acknowledge external consequence");
-    Check(static_cast<bool>(outbox.AcknowledgeApplied(execution_id, external_operation, GameplayTimePoint{111})),
+    Check(static_cast<bool>(
+              outbox.AcknowledgeApplied(execution_id, external_operation, GameplayTimePoint{111})),
           "external consequence acknowledgment is idempotent");
-    Check(service.ExecutePendingConsequences({.default_owner = player, .now = GameplayTimePoint{112}}, 8).size() == 1,
+    Check(service.ExecutePendingConsequences({.default_owner = player,
+                                              .now = GameplayTimePoint{112}},
+                                             8)
+                  .size() == 1,
           "narrative observes downstream acknowledgment exactly once");
-    Check(ContainsExecution(service.FindConsequences(ConsequenceExecutionState::Applied), execution_id),
+    Check(ContainsExecution(service.FindConsequences(ConsequenceExecutionState::Applied),
+                            execution_id),
           "narrative consequence becomes applied after outbox acknowledgment");
-    Check(static_cast<bool>(outbox.PruneConfirmedTerminal(execution_id)), "confirmed terminal delivery can be pruned");
-    Check(outbox.FindDelivery(execution_id) == nullptr, "pruned delivery removed from bounded outbox");
+    Check(static_cast<bool>(outbox.PruneConfirmedTerminal(execution_id)),
+          "confirmed terminal delivery can be pruned");
+    Check(outbox.FindDelivery(execution_id) == nullptr,
+          "pruned delivery removed from bounded outbox");
 
     NarrativeExternalConsequenceOutbox bounded_outbox(1);
     NarrativeConsequenceExecution bounded_first;
@@ -433,8 +505,11 @@ int main() {
     NarrativeConsequenceExecution bounded_second = bounded_first;
     bounded_second.id = NarrativeConsequenceExecutionId::FromString("execution.bounded.second");
     bounded_second.correlation = CorrelationId::FromString("bounded.second");
-    const NarrativeExecutionContext bounded_context{.default_owner = player, .now = GameplayTimePoint{120}};
-    Check(bounded_outbox.Execute(cons, bounded_first, bounded_context).state == ConsequenceExecutionState::Deferred,
+    const NarrativeExecutionContext bounded_context{.default_owner = player,
+                                                    .now = GameplayTimePoint{120}};
+
+    Check(bounded_outbox.Execute(cons, bounded_first, bounded_context).state ==
+              ConsequenceExecutionState::Deferred,
           "bounded outbox accepts first delivery");
     Check(bounded_outbox.Execute(cons, bounded_second, bounded_context).state ==
               ConsequenceExecutionState::FailedRetryable,
@@ -444,13 +519,15 @@ int main() {
     Check(static_cast<bool>(bounded_section), "capture outbox exactly at configured capacity");
     NarrativeExternalConsequenceOutbox bounded_restored(1);
     NarrativeExternalConsequenceSaveParticipant bounded_restored_participant(bounded_restored);
-    Check(static_cast<bool>(bounded_restored_participant.ValidateSnapshot(bounded_section.Value(), {})),
+    Check(static_cast<bool>(
+              bounded_restored_participant.ValidateSnapshot(bounded_section.Value(), {})),
           "validate outbox snapshot exactly at configured capacity");
     auto bounded_stage = bounded_restored_participant.StageRestore(bounded_section.Value(), {});
     Check(static_cast<bool>(bounded_stage), "stage outbox snapshot exactly at configured capacity");
     auto bounded_restore_stage = std::move(bounded_stage).Value();
     bounded_restored_participant.CommitRestore(*bounded_restore_stage);
-    Check(bounded_restored.PendingDeliveries().size() == 1, "restore outbox snapshot exactly at configured capacity");
+    Check(bounded_restored.PendingDeliveries().size() == 1,
+          "restore outbox snapshot exactly at configured capacity");
 
     // Permanent regressions for G4-NARRINT-002 and G4-NARRINT-001.
     TestNarrativeOutboxPublicationAtomicity(cons, player);
@@ -463,8 +540,10 @@ int main() {
     speaker_profile.subject = speaker;
     KnowledgeProfile listener_profile;
     listener_profile.subject = listener;
-    Check(static_cast<bool>(knowledge_service.CreateProfile(speaker_profile)), "speaker knowledge profile");
-    Check(static_cast<bool>(knowledge_service.CreateProfile(listener_profile)), "listener knowledge profile");
+    Check(static_cast<bool>(knowledge_service.CreateProfile(speaker_profile)),
+          "speaker knowledge profile");
+    Check(static_cast<bool>(knowledge_service.CreateProfile(listener_profile)),
+          "listener knowledge profile");
     Check(static_cast<bool>(knowledge_service.FreezeDefinitions()), "freeze knowledge definitions");
 
     KnowledgeTopic bridge_topic;
@@ -481,27 +560,34 @@ int main() {
     learn_request.epistemic_state = KnowledgeEpistemicState::Known;
     learn_request.confidence = KnowledgeConfidence::Certain;
     learn_request.context = {.time = GameplayTimePoint{200}, .actor = speaker};
+
     auto learned = knowledge_service.Learn(std::move(learn_request));
     Check(static_cast<bool>(learned), "learn source knowledge");
-    auto shared = knowledge_service.Share({.speaker = speaker,
-                                           .listener = listener,
-                                           .record = learned.Value(),
-                                           .mode = KnowledgeShareMode::Tell,
-                                           .context = {.time = GameplayTimePoint{201}, .actor = speaker}});
+    auto shared =
+        knowledge_service.Share({.speaker = speaker,
+                                 .listener = listener,
+                                 .record = learned.Value(),
+                                 .mode = KnowledgeShareMode::Tell,
+                                 .context = {.time = GameplayTimePoint{201}, .actor = speaker}});
     Check(static_cast<bool>(shared), "share knowledge with provenance");
 
     KnowledgeNarrativeAdapter knowledge_adapter;
-    auto knowledge_clue = knowledge_adapter.CreateClueFromKnowledge(
-        service, knowledge_service, shared.Value(), forest, {.time = GameplayTimePoint{202}, .actor = listener});
+    auto knowledge_clue = knowledge_adapter.CreateClueFromKnowledge(service, knowledge_service,
+                                                                    shared.Value(), forest,
+                                                                    {.time = GameplayTimePoint{202},
+                                                                     .actor = listener});
     Check(static_cast<bool>(knowledge_clue), "create clue from actual knowledge record");
     const auto *clue = service.GetClue(knowledge_clue.Value());
     Check(clue != nullptr && clue->owner == listener && clue->topic == bridge_topic.id.value,
           "knowledge clue is a derived narrative projection");
     auto reference = KnowledgeNarrativeAdapter::DecodeReference(clue->payload);
     Check(static_cast<bool>(reference), "decode versioned knowledge provenance reference");
-    Check(reference.Value().record == shared.Value(), "knowledge reference preserves source record id");
-    Check(reference.Value().derived_from == learned.Value(), "knowledge reference preserves transmission provenance");
-    Check(reference.Value().original_source_kind == KnowledgeSourceId::FromString("knowledge.direct_perception"),
+    Check(reference.Value().record == shared.Value(),
+          "knowledge reference preserves source record id");
+    Check(reference.Value().derived_from == learned.Value(),
+          "knowledge reference preserves transmission provenance");
+    Check(reference.Value().original_source_kind ==
+              KnowledgeSourceId::FromString("knowledge.direct_perception"),
           "knowledge reference preserves original source kind");
     Check(reference.Value().original_source == bridge_topic.primary_subject,
           "knowledge reference preserves original source object");
@@ -510,12 +596,16 @@ int main() {
               reference.Value().confidence == KnowledgeConfidence::Certain,
           "knowledge reference preserves epistemic semantics");
 
-    auto rumor = knowledge_adapter.CreateRumorFromKnowledge(service, knowledge_service, shared.Value(), listener,
-                                                            GameplayDuration{10},
-                                                            {.time = GameplayTimePoint{210}, .actor = listener});
+    auto rumor =
+        knowledge_adapter.CreateRumorFromKnowledge(service, knowledge_service, shared.Value(),
+                                                   listener, GameplayDuration{10},
+                                                   {.time = GameplayTimePoint{210},
+                                                    .actor = listener});
     Check(static_cast<bool>(rumor), "create rumor from knowledge reference");
-    Check(service.FindRumors(listener, bridge_topic.id.value).size() == 1, "knowledge-backed rumor query");
-    auto expired = service.ExpireRumors(GameplayTimePoint{221}, {.time = GameplayTimePoint{221}, .actor = listener});
+    Check(service.FindRumors(listener, bridge_topic.id.value).size() == 1,
+          "knowledge-backed rumor query");
+    auto expired = service.ExpireRumors(GameplayTimePoint{221},
+                                        {.time = GameplayTimePoint{221}, .actor = listener});
     Check(expired.size() == 1, "knowledge-backed rumor expiration");
 
     return 0;

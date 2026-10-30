@@ -18,13 +18,24 @@
 namespace epidemic::core::tasks {
 #if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
 namespace {
-thread_local const SimpleTaskScheduler *web_executing_scheduler=nullptr;
+thread_local const SimpleTaskScheduler *web_executing_scheduler = nullptr;
+
 struct WebTaskScope {
     const SimpleTaskScheduler *previous;
-    explicit WebTaskScope(const SimpleTaskScheduler *scheduler):previous(web_executing_scheduler){web_executing_scheduler=scheduler;}
-    ~WebTaskScope(){web_executing_scheduler=previous;}
+
+    explicit WebTaskScope(const SimpleTaskScheduler *scheduler)
+        : previous(web_executing_scheduler) {
+        web_executing_scheduler = scheduler;
+    }
+
+    ~WebTaskScope() {
+        web_executing_scheduler = previous;
+    }
+
 };
-}
+
+} // namespace
+
 #endif
 #if defined(EPIDEMIC_CORE_ENABLE_TEST_HOOKS)
 namespace {
@@ -38,25 +49,32 @@ thread_local testing::FaultPoint g_fault_point = testing::FaultPoint::None;
     g_fault_point = testing::FaultPoint::None;
     return true;
 }
+
 } // namespace
+
 #endif
 
 // This file implements the baseline worker-thread scheduler.
-// It captures completion and failure state for individual handles, task groups, and scheduler-wide idle waits.
+// It captures completion and failure state for individual handles, task groups, and scheduler-wide
+// idle waits.
 
 // Shared completion state for one scheduled task.
 struct TaskHandle::State {
     std::mutex mutex;
     std::condition_variable cv;
     bool started{false};
+
     bool completed{false};
+
     bool cancelled{false};
+
     std::weak_ptr<void> owner;
     std::exception_ptr exception;
     std::string debug_name;
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
     auditor::shadow::Context auditor_context;
     auditor::shadow::Identity auditor_job{};
+
 #endif
 };
 
@@ -65,8 +83,10 @@ struct TaskGroup::State {
     std::mutex mutex;
     std::condition_variable cv;
     std::size_t remaining_tasks{0};
+
     std::weak_ptr<void> owner;
     bool owner_bound{false};
+
     std::exception_ptr first_exception;
 };
 
@@ -76,9 +96,12 @@ struct SimpleTaskScheduler::SharedState {
     std::condition_variable idle_cv;
     std::queue<QueuedTask> tasks;
     std::size_t active_tasks{0};
+
     std::size_t completed_tasks{0};
+
     std::exception_ptr first_exception;
     bool stopping{false};
+
 };
 
 // Returns whether this handle references live scheduler state.
@@ -103,7 +126,8 @@ bool TaskGroup::IsValid() const noexcept {
 }
 
 // Starts worker threads and assigns stable diagnostic names.
-SimpleTaskScheduler::SimpleTaskScheduler(std::size_t worker_count) : state_(std::make_shared<SharedState>()) {
+SimpleTaskScheduler::SimpleTaskScheduler(std::size_t worker_count)
+    : state_(std::make_shared<SharedState>()) {
 #if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
     // A browser main thread cannot spawn native workers or block waiting for them.
     // Schedule executes bounded CPU work inline; asynchronous IO must use completions.
@@ -133,9 +157,12 @@ SimpleTaskScheduler::SimpleTaskScheduler(std::size_t worker_count) : state_(std:
 #if defined(EPIDEMIC_CORE_ENABLE_TEST_HOOKS)
             if (ConsumeFault(testing::FaultPoint::AfterWorkerStart)) {
                 throw std::bad_alloc{};
+
             }
+
 #endif
         }
+
     } catch (...) {
         {
             std::scoped_lock lock(state_->mutex);
@@ -143,7 +170,9 @@ SimpleTaskScheduler::SimpleTaskScheduler(std::size_t worker_count) : state_(std:
             for (auto &worker : workers_) {
                 worker.request_stop();
             }
+
         }
+
         state_->cv.notify_all();
         state_->idle_cv.notify_all();
         workers_.clear();
@@ -165,7 +194,9 @@ SimpleTaskScheduler::~SimpleTaskScheduler() {
             Join();
         } catch (...) {
         }
+
     }
+
 }
 
 // Queues an ungrouped task.
@@ -216,21 +247,23 @@ void SimpleTaskScheduler::Wait(const TaskHandle &handle) {
         if (!owner || owner.get() != state_.get()) {
             throw std::invalid_argument("Task handle belongs to a different scheduler");
         }
+
         if (IsWorkerThread(std::this_thread::get_id())) {
-            throw std::runtime_error("Task scheduler Wait cannot block one of its own worker threads");
+            throw std::runtime_error(
+                "Task scheduler Wait cannot block one of its own worker threads");
         }
+
     }
 
     std::unique_lock lock(handle.state_->mutex);
-    handle.state_->cv.wait(lock, [&handle] {
-        return handle.state_->completed;
-    });
+    handle.state_->cv.wait(lock, [&handle] { return handle.state_->completed; });
     const auto exception = handle.state_->exception;
     lock.unlock();
 
     if (exception) {
         std::rethrow_exception(exception);
     }
+
 }
 
 // Blocks until the group becomes empty and then rethrows the first task failure, if any.
@@ -248,32 +281,39 @@ void SimpleTaskScheduler::Wait(const TaskGroup &group) {
                 if (!owner || owner.get() != state_.get()) {
                     throw std::invalid_argument("Task group belongs to a different scheduler");
                 }
+
             }
+
         }
+
         if (IsWorkerThread(std::this_thread::get_id())) {
-            throw std::runtime_error("Task scheduler Wait cannot block one of its own worker threads");
+            throw std::runtime_error(
+                "Task scheduler Wait cannot block one of its own worker threads");
         }
+
     }
 
     std::unique_lock lock(group.state_->mutex);
-    group.state_->cv.wait(lock, [&group] {
-        return group.state_->remaining_tasks == 0;
-    });
+    group.state_->cv.wait(lock, [&group] { return group.state_->remaining_tasks == 0; });
     const auto exception = std::exchange(group.state_->first_exception, nullptr);
     lock.unlock();
 
     if (exception) {
         std::rethrow_exception(exception);
     }
+
 }
 
-// Blocks until the scheduler has no queued or active tasks and then rethrows the first scheduler-level failure.
+// Blocks until the scheduler has no queued or active tasks and then rethrows the first
+// scheduler-level failure.
 void SimpleTaskScheduler::WaitIdle() {
     EPIDEMIC_PROFILE_SCOPE("TaskScheduler::WaitIdle");
     std::unique_lock lock(state_->mutex);
     if (IsWorkerThread(std::this_thread::get_id())) {
-        throw std::runtime_error("Task scheduler WaitIdle cannot block one of its own worker threads");
+        throw std::runtime_error(
+            "Task scheduler WaitIdle cannot block one of its own worker threads");
     }
+
     state_->idle_cv.wait(lock, [state = state_] {
         return state->tasks.empty() && state->active_tasks == 0;
     });
@@ -285,6 +325,7 @@ void SimpleTaskScheduler::WaitIdle() {
     if (first_exception) {
         std::rethrow_exception(first_exception);
     }
+
 }
 
 // Requests worker shutdown without joining any thread. Safe from worker callbacks.
@@ -296,12 +337,14 @@ void SimpleTaskScheduler::RequestStop() noexcept {
             for (auto &worker : workers_) {
                 worker.request_stop();
             }
+
         }
 
         state_->cv.notify_all();
         state_->idle_cv.notify_all();
     } catch (...) {
     }
+
 }
 
 // Joins worker threads after stop has been requested. Calling from a worker is a controlled error.
@@ -310,7 +353,8 @@ void SimpleTaskScheduler::Join() {
     {
         std::scoped_lock lock(state_->mutex);
         if (IsWorkerThread(std::this_thread::get_id())) {
-            throw std::runtime_error("Task scheduler Join/Shutdown cannot be called from a scheduler worker thread");
+            throw std::runtime_error(
+                "Task scheduler Join/Shutdown cannot be called from a scheduler worker thread");
         }
 
         if (workers_.empty()) {
@@ -321,6 +365,7 @@ void SimpleTaskScheduler::Join() {
         for (auto &worker : workers_) {
             worker.request_stop();
         }
+
         workers_to_join = std::move(workers_);
         worker_thread_ids_.clear();
     }
@@ -345,7 +390,9 @@ std::size_t SimpleTaskScheduler::WorkerCount() const noexcept {
 // Returns a snapshot of pending, active, completed, and worker counts.
 TaskDiagnostics SimpleTaskScheduler::GetDiagnostics() const noexcept {
     std::scoped_lock lock(state_->mutex);
-    return TaskDiagnostics{state_->tasks.size(), state_->active_tasks, state_->completed_tasks, worker_names_.size()};
+    return TaskDiagnostics{state_->tasks.size(), state_->active_tasks, state_->completed_tasks,
+                           worker_names_.size()};
+
 }
 
 // Returns the worker names assigned during construction.
@@ -355,7 +402,8 @@ std::vector<std::string> SimpleTaskScheduler::WorkerThreadNames() const {
 }
 
 // Shared implementation for grouped and ungrouped scheduling requests.
-TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGroup::State> group_state,
+TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task,
+                                             std::shared_ptr<TaskGroup::State> group_state,
                                              std::string debug_name) {
     if (!task) {
         throw std::invalid_argument("Scheduled task must be valid");
@@ -384,17 +432,21 @@ TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGrou
                 if (!owner || owner.get() != state_.get()) {
                     throw std::invalid_argument("Task group belongs to a different scheduler");
                 }
+
             } else {
                 bind_group_owner = true;
             }
+
         }
 
-        // Queue insertion is the only fallible publication step. Bind/increment the group only after
-        // it succeeds so a failed Schedule() leaves an empty group reusable.
+        // Queue insertion is the only fallible publication step. Bind/increment the group only
+        // after it succeeds so a failed Schedule() leaves an empty group reusable.
 #if defined(EPIDEMIC_CORE_ENABLE_TEST_HOOKS)
         if (ConsumeFault(testing::FaultPoint::BeforeQueuePush)) {
             throw std::bad_alloc{};
+
         }
+
 #endif
         state_->tasks.push(QueuedTask{std::move(task), handle_state, group_state});
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
@@ -406,8 +458,10 @@ TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGrou
                 group_state->owner = state_;
                 group_state->owner_bound = true;
             }
+
             ++group_state->remaining_tasks;
         }
+
         diagnostics::GlobalCounters().Increment(diagnostics::CounterId::TasksScheduled);
     }
 
@@ -420,13 +474,15 @@ TaskHandle SimpleTaskScheduler::ScheduleImpl(Task task, std::shared_ptr<TaskGrou
 }
 
 // Waits for work, executes tasks, records failures, and updates handle/group completion state.
-void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::stop_token stop_token) {
+void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state,
+                                     std::stop_token stop_token) {
     while (true) {
         QueuedTask queued_task;
         {
             std::unique_lock lock(state->mutex);
 #if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
-            if(state->tasks.empty())return;
+            if (state->tasks.empty())
+                return;
 #endif
             state->cv.wait(lock, [&state, &stop_token] {
                 return state->stopping || stop_token.stop_requested() || !state->tasks.empty();
@@ -445,16 +501,21 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
                 if (!cancelled) {
                     queued_task.handle_state->started = true;
                 }
+
             }
+
             ++state->active_tasks;
 
             if (cancelled) {
                 queued_task.task = {};
+
             }
+
         }
 
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-        const auditor::shadow::ContextScope auditor_scope(queued_task.handle_state->auditor_context);
+        const auditor::shadow::ContextScope auditor_scope(
+            queued_task.handle_state->auditor_context);
         auditor::shadow::flow(queued_task.task ? "job.execute" : "job.cancel",
                               queued_task.handle_state->auditor_job.data());
 #endif
@@ -465,6 +526,7 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
             } catch (...) {
                 task_exception = std::current_exception();
             }
+
         }
 
         if (queued_task.handle_state) {
@@ -479,6 +541,7 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
             if (task_exception && queued_task.group_state->first_exception == nullptr) {
                 queued_task.group_state->first_exception = task_exception;
             }
+
             --queued_task.group_state->remaining_tasks;
             queued_task.group_state->cv.notify_all();
         }
@@ -488,6 +551,7 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
             if (task_exception && state->first_exception == nullptr) {
                 state->first_exception = task_exception;
             }
+
             --state->active_tasks;
             ++state->completed_tasks;
             diagnostics::GlobalCounters().Increment(diagnostics::CounterId::TasksCompleted);
@@ -495,6 +559,7 @@ void SimpleTaskScheduler::WorkerLoop(std::shared_ptr<SharedState> state, std::st
 
         state->idle_cv.notify_all();
     }
+
 }
 
 void SimpleTaskScheduler::DetachCurrentWorkerAndJoinOthers() noexcept {
@@ -512,20 +577,25 @@ void SimpleTaskScheduler::DetachCurrentWorkerAndJoinOthers() noexcept {
             if (worker.joinable() && worker.get_id() == current_thread) {
                 worker.detach();
             }
+
         }
+
         workers_to_release.clear();
         state_->idle_cv.notify_all();
     } catch (...) {
         std::terminate();
     }
+
 }
+
 // Returns whether a thread id belongs to one of the scheduler-owned workers.
 bool SimpleTaskScheduler::IsWorkerThread(std::thread::id thread_id) const noexcept {
 #if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
     static_cast<void>(thread_id);
-    return web_executing_scheduler==this;
+    return web_executing_scheduler == this;
 #else
-    return std::find(worker_thread_ids_.begin(), worker_thread_ids_.end(), thread_id) != worker_thread_ids_.end();
+    return std::find(worker_thread_ids_.begin(), worker_thread_ids_.end(), thread_id) !=
+           worker_thread_ids_.end();
 #endif
 }
 
@@ -537,5 +607,6 @@ void testing::SetFaultPoint(testing::FaultPoint fault_point) noexcept {
 void testing::ClearFaultPoint() noexcept {
     g_fault_point = testing::FaultPoint::None;
 }
+
 #endif
 } // namespace epidemic::core::tasks

@@ -26,7 +26,8 @@ class IWindowSystem {
     virtual ~IWindowSystem() = default;
 
     // Creates a new platform window and returns either the window object or an Error.
-    [[nodiscard]] virtual epidemic::foundation::Result<WindowPtr> CreateWindow(const WindowCreateInfo &create_info) = 0;
+    [[nodiscard]] virtual epidemic::foundation::Result<WindowPtr>
+    CreateWindow(const WindowCreateInfo &create_info) = 0;
 
     // Drains and returns accumulated platform events since the previous drain.
     [[nodiscard]] virtual std::vector<PlatformEvent> DrainEvents() = 0;
@@ -37,4 +38,5 @@ class IWindowSystem {
     // Returns the number of currently tracked windows.
     [[nodiscard]] virtual std::size_t WindowCount() const noexcept = 0;
 };
+
 } // namespace epidemic::platform

@@ -9,29 +9,39 @@
 #include <vector>
 
 using Clock = std::chrono::steady_clock;
+
 static void busy(unsigned milliseconds) {
     const auto end = Clock::now() + std::chrono::milliseconds(milliseconds);
     volatile unsigned long long value = 17;
     while (Clock::now() < end)
         value = value * 1664525ULL + 1013904223ULL;
 }
+
 struct Handle {
     HANDLE value;
+
     explicit Handle(HANDLE handle) : value(handle) {
         if (!value)
             throw std::runtime_error("fixture handle creation failed");
     }
+
     ~Handle() {
         CloseHandle(value);
     }
+
     Handle(const Handle &) = delete;
     Handle &operator=(const Handle &) = delete;
 };
-static void emit(const std::string &mode, const std::string &variant, DWORD worker, DWORD owner = 0) {
-    std::cout << "{\"eventType\":\"fixture.control\",\"provenance\":\"fixture_control\",\"confidence\":\"declared\","
-              << "\"pid\":" << GetCurrentProcessId() << ",\"mode\":\"" << mode << "\",\"variant\":\"" << variant
-              << "\",\"worker_tid\":" << worker << ",\"owner_tid\":" << owner << "}" << std::endl;
+
+static void emit(const std::string &mode, const std::string &variant, DWORD worker,
+                 DWORD owner = 0) {
+    std::cout << "{\"eventType\":\"fixture.control\",\"provenance\":\"fixture_control\","
+                 "\"confidence\":\"declared\","
+              << "\"pid\":" << GetCurrentProcessId() << ",\"mode\":\"" << mode
+              << "\",\"variant\":\"" << variant << "\",\"worker_tid\":" << worker
+              << ",\"owner_tid\":" << owner << "}" << std::endl;
 }
+
 int wmain(int argc, wchar_t **argv) {
     try {
         if (argc != 4)
@@ -63,8 +73,10 @@ int wmain(int argc, wchar_t **argv) {
             const bool configured =
                 SetThreadAffinityMask(hog_handle, first) &&
                 SetThreadAffinityMask(worker_handle, bad ? first : second) &&
-                SetThreadPriority(hog_handle, bad ? THREAD_PRIORITY_HIGHEST : THREAD_PRIORITY_NORMAL) &&
-                SetThreadPriority(worker_handle, bad ? THREAD_PRIORITY_IDLE : THREAD_PRIORITY_NORMAL) &&
+                SetThreadPriority(hog_handle,
+                                  bad ? THREAD_PRIORITY_HIGHEST : THREAD_PRIORITY_NORMAL) &&
+                SetThreadPriority(worker_handle,
+                                  bad ? THREAD_PRIORITY_IDLE : THREAD_PRIORITY_NORMAL) &&
                 SetThreadPriorityBoost(worker_handle, TRUE);
             emit("starvation", label, GetThreadId(worker_handle), GetThreadId(hog_handle));
             SetEvent(gate.value);
@@ -86,9 +98,10 @@ int wmain(int argc, wchar_t **argv) {
                     } else
                         worker_failed = true;
                 });
-                emit(mode == L"mutex" ? "mutex" : "contention", label, GetThreadId(workers.back().native_handle()),
-                     GetCurrentThreadId());
+                emit(mode == L"mutex" ? "mutex" : "contention", label,
+                     GetThreadId(workers.back().native_handle()), GetCurrentThreadId());
             }
+
             if (bad) {
                 const std::wstring release_name = std::wstring(argv[3]) + L"_release";
                 Handle release(OpenEventW(SYNCHRONIZE, FALSE, release_name.c_str()));
@@ -101,6 +114,7 @@ int wmain(int argc, wchar_t **argv) {
                     throw std::runtime_error("bounded external release or waiter failed");
                 return 0;
             }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(20));
             if (!ReleaseMutex(mutex.value))
                 throw std::runtime_error("fixture owner release failed");
@@ -116,18 +130,22 @@ int wmain(int argc, wchar_t **argv) {
             busy(bad ? 1500 : 10);
         } else if (mode == L"orphan") {
             wchar_t image[32768]{};
+
             if (!GetModuleFileNameW(nullptr, image, 32768))
                 throw std::runtime_error("fixture image unavailable");
             std::wstring command = L"\"" + std::wstring(image) + L"\" orphan_child good unused";
             STARTUPINFOW start{};
+
             start.cb = sizeof(start);
             PROCESS_INFORMATION process{};
-            if (!CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr,
-                                &start, &process))
+
+            if (!CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW,
+                                nullptr, nullptr, &start, &process))
                 throw std::runtime_error("orphan fixture launch failed");
             Handle child(process.hProcess), child_thread(process.hThread);
             emit("orphan", label, process.dwThreadId, GetCurrentThreadId());
-            std::cout << "{\"child_pid\":" << process.dwProcessId << ",\"fixture_control\":true}" << std::endl;
+            std::cout << "{\"child_pid\":" << process.dwProcessId << ",\"fixture_control\":true}"
+                      << std::endl;
             if (!bad && WaitForSingleObject(child.value, 10000) != WAIT_OBJECT_0)
                 throw std::runtime_error("child fixture timeout");
         } else if (mode == L"orphan_child") {
@@ -139,4 +157,5 @@ int wmain(int argc, wchar_t **argv) {
         std::cerr << error.what() << '\n';
         return 2;
     }
+
 }

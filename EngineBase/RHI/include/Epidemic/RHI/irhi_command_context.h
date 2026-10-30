@@ -15,7 +15,8 @@ class IRhiCommandContext {
     [[nodiscard]] virtual epidemic::foundation::Result<void> BeginFrame() = 0;
 
     // Executes a clear operation described by clear_desc.
-    [[nodiscard]] virtual epidemic::foundation::Result<void> Clear(const RhiClearDesc &clear_desc) = 0;
+    [[nodiscard]] virtual epidemic::foundation::Result<void>
+    Clear(const RhiClearDesc &clear_desc) = 0;
 
     // Ends the active frame command scope.
     [[nodiscard]] virtual epidemic::foundation::Result<void> EndFrame() = 0;
@@ -23,4 +24,5 @@ class IRhiCommandContext {
     // Returns whether a frame is currently active on this context.
     [[nodiscard]] virtual bool IsFrameActive() const noexcept = 0;
 };
+
 } // namespace epidemic::rhi

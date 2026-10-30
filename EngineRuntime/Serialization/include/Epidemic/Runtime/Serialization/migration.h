@@ -11,7 +11,9 @@
 namespace epidemic::runtime {
 struct MigrationKey {
     foundation::StringId type_id{};
+
     SchemaVersion from{};
+
     SchemaVersion to{};
 
     [[nodiscard]] constexpr bool operator==(const MigrationKey &) const noexcept = default;
@@ -22,8 +24,10 @@ class IMigration {
     virtual ~IMigration() = default;
 
     [[nodiscard]] virtual MigrationKey GetKey() const = 0;
-    [[nodiscard]] virtual foundation::Result<void> Apply(IArchiveReader &input, IArchiveWriter &output) const = 0;
+    [[nodiscard]] virtual foundation::Result<void> Apply(IArchiveReader &input,
+                                                         IArchiveWriter &output) const = 0;
 };
+
 } // namespace epidemic::runtime
 
 namespace std {
@@ -38,5 +42,7 @@ template <> struct hash<epidemic::runtime::MigrationKey> {
         seed ^= hash<std::uint32_t>{}(key.to.patch) + 0x9e3779b9U + (seed << 6U) + (seed >> 2U);
         return seed;
     }
+
 };
+
 } // namespace std

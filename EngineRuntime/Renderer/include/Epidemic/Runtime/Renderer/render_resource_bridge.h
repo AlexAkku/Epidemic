@@ -10,13 +10,17 @@
 namespace epidemic::runtime::renderer {
 struct RenderTransformSnapshot {
     RenderTransformId node{};
+
     Transform world_transform{};
+
     std::uint64_t revision = 0;
 };
 
 struct RenderPoseBuffer {
     RuntimeObjectId owner{};
+
     std::vector<Transform> bone_transforms{};
+
     std::uint64_t revision = 0;
 };
 
@@ -35,11 +39,14 @@ class IRenderResourceBridge {
     virtual ~IRenderResourceBridge() = default;
 
     // Ownership boundary: Acquire failure/exception means no hold was acquired.
-    // Release failure/exception means the existing hold remains owned by the caller and is retryable.
-    [[nodiscard]] virtual foundation::Result<void> AcquirePayloads(ResourceId mesh, ResourceId material) = 0;
-    [[nodiscard]] virtual foundation::Result<void> ReleasePayloads(ResourceId mesh, ResourceId material) = 0;
-    [[nodiscard]] virtual foundation::Result<RenderResourcePayloads> GetPayloads(ResourceId mesh,
-                                                                                 ResourceId material) const = 0;
+    // Release failure/exception means the existing hold remains owned by the caller and is
+    // retryable.
+    [[nodiscard]] virtual foundation::Result<void> AcquirePayloads(ResourceId mesh,
+                                                                   ResourceId material) = 0;
+    [[nodiscard]] virtual foundation::Result<void> ReleasePayloads(ResourceId mesh,
+                                                                   ResourceId material) = 0;
+    [[nodiscard]] virtual foundation::Result<RenderResourcePayloads>
+    GetPayloads(ResourceId mesh, ResourceId material) const = 0;
 };
 
 class IRenderSceneSource {
@@ -52,17 +59,24 @@ class IRenderSceneSource {
 
 struct RenderProxySubmission {
     RenderProxyId proxy{};
+
     RenderTransformSnapshot transform{};
+
     RenderResourcePayloads payloads{};
+
     std::shared_ptr<const RenderPoseBuffer> pose{};
+
     RenderLayer layer = RenderLayer::Opaque;
     RenderProxyVisibility visibility = RenderProxyVisibility::Visible;
 };
 
 struct RenderFrameContext {
     ViewId view{};
+
     ViewDesc desc{};
+
     RenderTransformSnapshot transform{};
+
 };
 
 class IRenderCommandSink {
@@ -73,9 +87,12 @@ class IRenderCommandSink {
     // SubmitProxy/EndFrame failure or exception may leave that frame open. AbortFrame success
     // closes/discards it. AbortFrame failure/exception retains backend-frame ownership and must
     // be safely retryable before a later BeginFrame is accepted.
-    [[nodiscard]] virtual foundation::Result<void> BeginFrame(const RenderFrameContext &context) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SubmitProxy(const RenderProxySubmission &submission) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    BeginFrame(const RenderFrameContext &context) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    SubmitProxy(const RenderProxySubmission &submission) = 0;
     [[nodiscard]] virtual foundation::Result<void> EndFrame() = 0;
     [[nodiscard]] virtual foundation::Result<void> AbortFrame() = 0;
 };
+
 } // namespace epidemic::runtime::renderer

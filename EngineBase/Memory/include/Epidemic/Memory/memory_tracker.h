@@ -54,7 +54,11 @@ class MemoryTracker final : public IMemoryTracker {
 
     mutable std::mutex mutex_;
     bool tracking_enabled_{true};
+
     std::array<MemoryTagStatistics, AllocationTagCount()> statistics_{};
+
     std::array<std::optional<std::size_t>, AllocationTagCount()> budgets_{};
+
 };
+
 } // namespace epidemic::memory

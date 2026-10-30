@@ -10,4 +10,5 @@ enum class ModuleRegistryFaultPoint {
 void SetModuleRegistryFaultPoint(ModuleRegistryFaultPoint fault_point) noexcept;
 void ClearModuleRegistryFaultPoint() noexcept;
 } // namespace epidemic::core::testing
+
 #endif

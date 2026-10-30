@@ -17,10 +17,14 @@ void Check(bool value, const char *message) {
         std::cerr << message << '\n';
         std::exit(1);
     }
+
 }
+
 GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
+
 }
+
 } // namespace
 
 int main() {
@@ -35,7 +39,8 @@ int main() {
     coarse.id = LifeSimulationProfileId::FromString("life.sim.coarse");
     coarse.abstract_rate_multiplier_micro = 500'000;
     coarse.materialized_rate_multiplier_micro = 2'000'000;
-    Check(static_cast<bool>(service.RegisterSimulationProfile(coarse)), "register simulation profile");
+    Check(static_cast<bool>(service.RegisterSimulationProfile(coarse)),
+          "register simulation profile");
 
     NeedDefinition hunger;
     hunger.id = NeedTypeId::FromString("need.hunger");
@@ -66,36 +71,49 @@ int main() {
     Check(evaluated.value == 80, "decay rule applied to lazy evaluation");
     Check(evaluated.threshold == NeedThreshold::Satisfied, "data-driven threshold applied");
 
-    // Abstract simulation applies the profile's 0.5 multiplier, cancelling the rule's 2x multiplier.
+    // Abstract simulation applies the profile's 0.5 multiplier, cancelling the rule's 2x
+    // multiplier.
     LifeSimulationRequest first_interval;
     first_interval.subject = npc;
     first_interval.from = GameplayTimePoint{0};
+
     first_interval.to = GameplayTimePoint{10};
+
     first_interval.context.time = GameplayTimePoint{10};
+
     first_interval.materialized = false;
-    Check(static_cast<bool>(service.SimulateLifeInterval(first_interval)), "simulate first interval");
+    Check(static_cast<bool>(service.SimulateLifeInterval(first_interval)),
+          "simulate first interval");
     Check(service.GetCommittedNeedState(npc, hunger.id)->value == 90, "simulation profile applied");
 
     // Retry/overlap is rejected by the authoritative profile cursor.
     Check(!service.SimulateLifeInterval(first_interval), "duplicate interval rejected");
     auto overlap = first_interval;
     overlap.from = GameplayTimePoint{5};
+
     overlap.to = GameplayTimePoint{15};
+
     Check(!service.SimulateLifeInterval(overlap), "overlapping interval rejected");
 
     auto second_interval = first_interval;
     second_interval.from = GameplayTimePoint{10};
+
     second_interval.to = GameplayTimePoint{20};
+
     second_interval.context.time = GameplayTimePoint{20};
+
     second_interval.materialized = true;
-    Check(static_cast<bool>(service.SimulateLifeInterval(second_interval)), "materialized interval");
-    Check(service.GetCommittedNeedState(npc, hunger.id)->value == 50, "materialized fidelity multiplier applied");
+    Check(static_cast<bool>(service.SimulateLifeInterval(second_interval)),
+          "materialized interval");
+    Check(service.GetCommittedNeedState(npc, hunger.id)->value == 50,
+          "materialized fidelity multiplier applied");
 
     SatisfyNeedRequest satisfy;
     satisfy.subject = npc;
     satisfy.need = hunger.id;
     satisfy.amount = -1;
     satisfy.context.time = GameplayTimePoint{20};
+
     Check(!service.SatisfyNeed(satisfy), "negative satisfy rejected");
     satisfy.amount = 40;
     Check(static_cast<bool>(service.SatisfyNeed(satisfy)), "satisfy need");
@@ -106,8 +124,10 @@ int main() {
     pressure_delta.need = hunger.id;
     pressure_delta.amount = 30;
     pressure_delta.context.time = GameplayTimePoint{20};
+
     Check(static_cast<bool>(service.AddNeedPressure(pressure_delta)), "add need pressure");
-    Check(service.GetCommittedNeedState(npc, hunger.id)->value == 60, "pressure decreases need value");
+    Check(service.GetCommittedNeedState(npc, hunger.id)->value == 60,
+          "pressure decreases need value");
 
     LifePressure pressure;
     pressure.subject = npc;
@@ -115,10 +135,12 @@ int main() {
     pressure.source = TypeId::FromString("source.duty");
     pressure.urgency = 500;
     pressure.expires_at = GameplayTimePoint{30};
+
     auto pressure_id = service.CreateLifePressure(pressure, {.time = GameplayTimePoint{20}});
     Check(static_cast<bool>(pressure_id), "create pressure");
     Check(service.FindLifePressures(npc).size() == 1, "find pressure");
-    auto expired = service.SweepExpiredPressures(GameplayTimePoint{30}, {.time = GameplayTimePoint{30}});
+    auto expired =
+        service.SweepExpiredPressures(GameplayTimePoint{30}, {.time = GameplayTimePoint{30}});
     Check(static_cast<bool>(expired) && expired.Value() == 1, "expire pressure");
     Check(service.FindLifePressures(npc).empty(), "expired pressure not active");
     Check(service.PruneTerminalPressures(npc) == 1, "terminal pressure cleanup");
@@ -127,16 +149,20 @@ int main() {
     routine.subject = npc;
     RoutineEntry entry;
     entry.start = GameplayTimePoint{800};
+
     entry.duration = GameplayDuration{400};
+
     entry.routine_type = TypeId::FromString("routine.work");
     routine.entries.push_back(entry);
     auto routine_id = service.SetRoutine(routine);
     Check(static_cast<bool>(routine_id), "set routine");
     routine.entries[0].start = GameplayTimePoint{900};
+
     auto updated_routine = service.SetRoutine(routine);
     Check(static_cast<bool>(updated_routine) && updated_routine.Value() == routine_id.Value(),
           "routine upsert by subject");
-    auto occurrences = service.FindRoutineEntriesInInterval(npc, GameplayTimePoint{850}, GameplayTimePoint{950});
+    auto occurrences =
+        service.FindRoutineEntriesInInterval(npc, GameplayTimePoint{850}, GameplayTimePoint{950});
     Check(occurrences.size() == 1 && occurrences.front().routine == routine_id.Value() &&
               occurrences.front().entry_index == 0,
           "stable routine occurrence");
@@ -147,13 +173,17 @@ int main() {
     materialized_profile.subject = npc2;
     materialized_profile.active_needs.push_back(hunger.id);
     materialized_profile.materialization_policy = NeedMaterializationPolicy::MaterializedOnly;
-    Check(static_cast<bool>(service.CreateNeedProfile(materialized_profile, {.time = GameplayTimePoint{0}})),
+    Check(static_cast<bool>(
+              service.CreateNeedProfile(materialized_profile, {.time = GameplayTimePoint{0}})),
           "create materialized profile");
     LifeSimulationRequest materialized_request;
     materialized_request.subject = npc2;
     materialized_request.from = GameplayTimePoint{0};
+
     materialized_request.to = GameplayTimePoint{1};
-    Check(!service.SimulateLifeInterval(materialized_request), "materialized-only rejects abstract simulation");
+
+    Check(!service.SimulateLifeInterval(materialized_request),
+          "materialized-only rejects abstract simulation");
     materialized_request.materialized = true;
     Check(static_cast<bool>(service.SimulateLifeInterval(materialized_request)),
           "materialized-only accepts materialized");
@@ -163,13 +193,19 @@ int main() {
     SatisfyNeedRequest small = satisfy;
     small.amount = 1;
     small.context.time = GameplayTimePoint{21};
+
     Check(static_cast<bool>(service.SatisfyNeed(small)), "journal change 1");
     small.context.time = GameplayTimePoint{22};
+
     Check(static_cast<bool>(service.SatisfyNeed(small)), "journal change 2");
     small.context.time = GameplayTimePoint{23};
+
     Check(static_cast<bool>(service.SatisfyNeed(small)), "journal change 3");
-    Check(service.ReadChangesSince(ChangeCursor{}).snapshot_required, "journal gap requires snapshot");
-    Check(service.ReadChangesSince(service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    Check(service.ReadChangesSince(ChangeCursor{}).snapshot_required,
+          "journal gap requires snapshot");
+    Check(service
+              .ReadChangesSince(service.LatestChangeCursor().AtSequence(
+                  std::numeric_limits<std::uint64_t>::max()))
               .snapshot_required,
           "future needs cursor is incompatible");
     const auto pre_restore_cursor = service.ReadChangesSince(ChangeCursor{}).latest_cursor;
@@ -181,17 +217,22 @@ int main() {
     Check(restored.GetCommittedNeedState(npc, hunger.id) != nullptr, "restore need state");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "pre-restore needs cursor requires snapshot in new epoch");
-    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    Check(restored
+              .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                  std::numeric_limits<std::uint64_t>::max()))
               .snapshot_required,
           "future needs cursor remains incompatible after restore");
     small.context.time = GameplayTimePoint{24};
+
     Check(static_cast<bool>(restored.SatisfyNeed(small)), "post-restore needs change");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "old needs cursor remains incompatible after post-restore change");
     const auto needs_epoch = restored.ReadChangesSince(ChangeCursor{});
-    Check(!needs_epoch.snapshot_required && !needs_epoch.changes.empty(), "new needs epoch readable from zero");
+    Check(!needs_epoch.snapshot_required && !needs_epoch.changes.empty(),
+          "new needs epoch readable from zero");
     const auto needs_current = restored.ReadChangesSince(needs_epoch.latest_cursor);
-    Check(!needs_current.snapshot_required && needs_current.changes.empty(), "exact needs cursor is current");
+    Check(!needs_current.snapshot_required && needs_current.changes.empty(),
+          "exact needs cursor is current");
 
     // Restore is transactional. A broken snapshot must not erase the current service.
     const auto before_revision = restored.CurrentRevision();
@@ -206,17 +247,21 @@ int main() {
     broken = snapshot;
     broken.profile_ids.scope = 0xDEAD;
     Check(!restored.RestoreSnapshot(broken), "wrong generator scope rejected");
-    Check(restored.CurrentRevision() == before_revision, "generator failure leaves service unchanged");
+    Check(restored.CurrentRevision() == before_revision,
+          "generator failure leaves service unchanged");
 
     // A requested ID in the service's own scope advances the generator and cannot collide later.
     NeedsLifeService requested_id_service;
-    Check(static_cast<bool>(requested_id_service.RegisterDecayRule(fast)), "register requested-id decay");
-    Check(static_cast<bool>(requested_id_service.RegisterNeedDefinition(hunger)), "register requested-id hunger");
+    Check(static_cast<bool>(requested_id_service.RegisterDecayRule(fast)),
+          "register requested-id decay");
+    Check(static_cast<bool>(requested_id_service.RegisterNeedDefinition(hunger)),
+          "register requested-id hunger");
     NeedProfile requested;
     requested.id = NeedProfileId::FromRaw(0x2900, 100);
     requested.subject = Ref("population", "requested");
     requested.active_needs.push_back(hunger.id);
-    Check(static_cast<bool>(requested_id_service.CreateNeedProfile(requested)), "requested own-scope profile id");
+    Check(static_cast<bool>(requested_id_service.CreateNeedProfile(requested)),
+          "requested own-scope profile id");
     NeedProfile generated;
     generated.subject = Ref("population", "generated");
     generated.active_needs.push_back(hunger.id);
@@ -230,7 +275,8 @@ int main() {
     invalid_policy_profile.subject = Ref("population", "invalid-policy");
     invalid_policy_profile.active_needs.push_back(hunger.id);
     invalid_policy_profile.materialization_policy = static_cast<NeedMaterializationPolicy>(999);
-    Check(!requested_id_service.CreateNeedProfile(invalid_policy_profile), "invalid materialization policy rejected");
+    Check(!requested_id_service.CreateNeedProfile(invalid_policy_profile),
+          "invalid materialization policy rejected");
     const auto needs_invalid_after = requested_id_service.CaptureSnapshot();
     Check(needs_invalid_after.revision == needs_invalid_before.revision &&
               needs_invalid_after.profile_ids.next == needs_invalid_before.profile_ids.next &&
@@ -241,18 +287,25 @@ int main() {
     auto needs_revision_exhausted_snapshot = snapshot;
     needs_revision_exhausted_snapshot.revision.value = std::numeric_limits<std::uint64_t>::max();
     NeedsLifeService needs_revision_exhausted;
-    Check(static_cast<bool>(needs_revision_exhausted.RestoreSnapshot(needs_revision_exhausted_snapshot)),
+    Check(static_cast<bool>(
+              needs_revision_exhausted.RestoreSnapshot(needs_revision_exhausted_snapshot)),
           "restore max needs revision");
-    const auto *need_before_exhaustion = needs_revision_exhausted.GetCommittedNeedState(npc, hunger.id);
+    const auto *need_before_exhaustion =
+        needs_revision_exhausted.GetCommittedNeedState(npc, hunger.id);
     Check(need_before_exhaustion != nullptr, "need exists before revision exhaustion test");
     const auto exhausted_value_before = need_before_exhaustion->value;
     SatisfyNeedRequest exhausted_satisfy = satisfy;
     exhausted_satisfy.amount = 1;
     exhausted_satisfy.context.time = GameplayTimePoint{30};
-    Check(!needs_revision_exhausted.SatisfyNeed(exhausted_satisfy), "needs revision exhaustion rejected");
-    const auto *need_after_exhaustion = needs_revision_exhausted.GetCommittedNeedState(npc, hunger.id);
-    Check(need_after_exhaustion != nullptr && need_after_exhaustion->value == exhausted_value_before &&
-              needs_revision_exhausted.CurrentRevision().value == std::numeric_limits<std::uint64_t>::max(),
+
+    Check(!needs_revision_exhausted.SatisfyNeed(exhausted_satisfy),
+          "needs revision exhaustion rejected");
+    const auto *need_after_exhaustion =
+        needs_revision_exhausted.GetCommittedNeedState(npc, hunger.id);
+    Check(need_after_exhaustion != nullptr &&
+              need_after_exhaustion->value == exhausted_value_before &&
+              needs_revision_exhausted.CurrentRevision().value ==
+                  std::numeric_limits<std::uint64_t>::max(),
           "needs revision exhaustion leaves state unchanged");
 
     // Goal 4: module-local failure seam proves RestoreSnapshot pre-state atomicity.

@@ -8,8 +8,8 @@
 #include <span>
 
 namespace epidemic::runtime::navigation {
-// Public service contracts for the Navigation major. Implementations may be mock or backed by real nav data,
-// but callers only see path queries, tile states and projection interfaces.
+// Public service contracts for the Navigation major. Implementations may be mock or backed by real
+// nav data, but callers only see path queries, tile states and projection interfaces.
 
 class INavCostProvider {
   public:
@@ -24,11 +24,12 @@ class INavigationBackend {
   public:
     virtual ~INavigationBackend() = default;
 
-    // Query callback is observational/read-replay-safe. A successful result is accepted by Runtime once and may be
-    // held internally until byte budget permits publication; Runtime-local publication failure must not require a
-    // second BuildPath call. Result failure or exception means no path result was accepted.
-    [[nodiscard]] virtual foundation::Result<PathResult> BuildPath(const PathRequest &request,
-                                                                   NavigationRevision revision) const = 0;
+    // Query callback is observational/read-replay-safe. A successful result is accepted by Runtime
+    // once and may be held internally until byte budget permits publication; Runtime-local
+    // publication failure must not require a second BuildPath call. Result failure or exception
+    // means no path result was accepted.
+    [[nodiscard]] virtual foundation::Result<PathResult>
+    BuildPath(const PathRequest &request, NavigationRevision revision) const = 0;
 };
 
 class INavigationDataSource {
@@ -43,16 +44,18 @@ class INavigationObstacleSource {
   public:
     virtual ~INavigationObstacleSource() = default;
 
-    // Observational projection. The returned span must remain valid while the current Navigation call consumes it.
-    // Exceptions are contained and fail only the affected path query.
-    [[nodiscard]] virtual std::span<const DynamicObstacle> ObstaclesForRegion(RegionId region) const = 0;
+    // Observational projection. The returned span must remain valid while the current Navigation
+    // call consumes it. Exceptions are contained and fail only the affected path query.
+    [[nodiscard]] virtual std::span<const DynamicObstacle>
+    ObstaclesForRegion(RegionId region) const = 0;
 };
 
 class INavTileRegistry {
   public:
     virtual ~INavTileRegistry() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> RegisterTile(NavTileId tile, NavTileState state) = 0;
+    [[nodiscard]] virtual foundation::Result<void> RegisterTile(NavTileId tile,
+                                                                NavTileState state) = 0;
 
     [[nodiscard]] virtual NavTileState GetTileState(NavTileId tile) const = 0;
 
@@ -65,17 +68,21 @@ class INavigationRuntime {
   public:
     virtual ~INavigationRuntime() = default;
 
-    [[nodiscard]] virtual foundation::Result<PathQueryHandle> RequestPathHandle(const PathRequest &request) = 0;
+    [[nodiscard]] virtual foundation::Result<PathQueryHandle>
+    RequestPathHandle(const PathRequest &request) = 0;
 
     [[nodiscard]] virtual foundation::Result<void> CancelPath(PathQueryHandle handle) = 0;
 
-    // Advances queries in deterministic handle order. max_items limits state transitions; max_bytes gates final path
-    // publication by the actual prepared point count. Zero budget fields are unlimited.
+    // Advances queries in deterministic handle order. max_items limits state transitions; max_bytes
+    // gates final path publication by the actual prepared point count. Zero budget fields are
+    // unlimited.
     [[nodiscard]] virtual std::size_t Tick(RuntimeBudget budget) = 0;
 
-    [[nodiscard]] virtual foundation::Result<PathQueryState> GetPathState(PathQueryHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<PathQueryState>
+    GetPathState(PathQueryHandle handle) const = 0;
 
-    [[nodiscard]] virtual foundation::Result<PathResult> GetPathResult(PathQueryHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<PathResult>
+    GetPathResult(PathQueryHandle handle) const = 0;
     [[nodiscard]] virtual foundation::Result<void> ReleasePathResult(PathQueryHandle handle) = 0;
 };
 
@@ -91,7 +98,7 @@ struct NavigationDependencies {
     std::shared_ptr<INavigationObstacleSource> obstacle_source;
 };
 
-[[nodiscard]] foundation::Result<NavigationServices> CreateNavigationServices(NavigationOptions options = {},
-                                                                              NavigationDependencies dependencies = {});
+[[nodiscard]] foundation::Result<NavigationServices>
+CreateNavigationServices(NavigationOptions options = {}, NavigationDependencies dependencies = {});
 [[nodiscard]] NavigationServices CreateMockNavigationServices(NavigationOptions options = {});
 } // namespace epidemic::runtime::navigation

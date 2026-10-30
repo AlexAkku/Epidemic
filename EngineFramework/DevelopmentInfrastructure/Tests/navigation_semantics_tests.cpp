@@ -10,11 +10,14 @@ using namespace epidemic::gameplay::navigation_semantics;
 namespace {
 class TimedFactProvider final : public INavigationFactProvider {
   public:
-    [[nodiscard]] bool HasFact(GameplayObjectRef, TypeId fact, const GameplayContext &context) const noexcept override {
+    [[nodiscard]] bool HasFact(GameplayObjectRef, TypeId fact,
+                               const GameplayContext &context) const noexcept override {
         return fact == TypeId::FromString("game.fact.open") && context.time.ticks >= 50;
     }
+
 };
-}
+
+} // namespace
 
 int main() {
     NavigationSemanticsService n;
@@ -35,11 +38,21 @@ int main() {
         return 2;
     n.Freeze();
 
-    const GameplayObjectRef actor{GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString("actor")};
-    const GameplayObjectRef source{GameplayDomainId::FromString("test.effect"), GameplayObjectId::FromString("source")};
-    const GameplayObjectRef a{GameplayDomainId::FromString("test.area"), GameplayObjectId::FromString("a")};
-    const GameplayObjectRef b{GameplayDomainId::FromString("test.area"), GameplayObjectId::FromString("b")};
-    const GameplayObjectRef c{GameplayDomainId::FromString("test.area"), GameplayObjectId::FromString("c")};
+    const GameplayObjectRef actor{GameplayDomainId::FromString("test.entity"),
+                                  GameplayObjectId::FromString("actor")};
+
+    const GameplayObjectRef source{GameplayDomainId::FromString("test.effect"),
+                                   GameplayObjectId::FromString("source")};
+
+    const GameplayObjectRef a{GameplayDomainId::FromString("test.area"),
+                              GameplayObjectId::FromString("a")};
+
+    const GameplayObjectRef b{GameplayDomainId::FromString("test.area"),
+                              GameplayObjectId::FromString("b")};
+
+    const GameplayObjectRef c{GameplayDomainId::FromString("test.area"),
+                              GameplayObjectId::FromString("c")};
+
     if (!n.SetProfile({actor, domain, {}, {}}))
         return 3;
 
@@ -55,6 +68,7 @@ int main() {
 
     GameplayContext now;
     now.time = GameplayTimePoint{10};
+
     if (n.CanEnterArea(actor, b, {}, now).decision != NavigationDecisionKind::Deny)
         return 5;
 
@@ -65,6 +79,7 @@ int main() {
     moved.area = c;
     moved.priority = 20;
     moved.source = {};
+
     moved.lifetime = NavigationLayerLifetime::Transient;
     if (!n.UpdateLayer(lid.Value(), moved, stored_layer->revision))
         return 7;
@@ -99,13 +114,18 @@ int main() {
         return 15;
     GameplayContext before_fact;
     before_fact.time = GameplayTimePoint{49};
+
     GameplayContext after_fact;
     after_fact.time = GameplayTimePoint{50};
-    if (n.CanUseLink(actor, link.id, {}, before_fact).availability != NavigationAvailability::Forbidden)
+
+    if (n.CanUseLink(actor, link.id, {}, before_fact).availability !=
+        NavigationAvailability::Forbidden)
         return 16;
-    if (n.CanUseLink(actor, link.id, {}, after_fact).availability == NavigationAvailability::Forbidden)
+    if (n.CanUseLink(actor, link.id, {}, after_fact).availability ==
+        NavigationAvailability::Forbidden)
         return 17;
     NavigationPermissionQuery path_query{actor, a, b, {}, before_fact};
+
     if (n.EvaluatePath(path_query).availability != NavigationAvailability::Forbidden)
         return 18;
     path_query.context = after_fact;
@@ -118,13 +138,16 @@ int main() {
     timed.lifetime = NavigationLayerLifetime::Timed;
     timed.decision = NavigationDecisionKind::Deny;
     timed.expires_at = GameplayTimePoint{100};
+
     const auto timed_id = n.AddLayer(timed);
     if (!timed_id)
         return 20;
     GameplayContext at_99;
     at_99.time = GameplayTimePoint{99};
+
     GameplayContext at_100;
     at_100.time = GameplayTimePoint{100};
+
     if (n.CanEnterArea(actor, b, {}, at_99).decision != NavigationDecisionKind::Deny)
         return 21;
     if (n.CanEnterArea(actor, b, {}, at_100).decision == NavigationDecisionKind::Deny)
@@ -132,6 +155,7 @@ int main() {
     if (n.CanUseLink(actor, link.id, {}, at_100).decision == NavigationDecisionKind::Deny)
         return 23;
     NavigationPermissionQuery timed_path{actor, a, b, {}, at_100};
+
     if (n.EvaluatePath(timed_path).decision == NavigationDecisionKind::Deny)
         return 24;
 
@@ -148,7 +172,8 @@ int main() {
             return 26;
 
     const auto generator_before = n.CaptureSnapshot().layer_ids;
-    if (generator_before.next == 0 || generator_before.next > std::numeric_limits<std::uint64_t>::max() - 10)
+    if (generator_before.next == 0 ||
+        generator_before.next > std::numeric_limits<std::uint64_t>::max() - 10)
         return 27;
     NavigationSemanticLayer requested;
     requested.id = NavigationLayerId::FromRaw(generator_before.scope, generator_before.next + 10);
@@ -198,14 +223,18 @@ int main() {
     const auto previous_layers = restored.FindLayersInArea(c).size();
     if (restored.RestoreSnapshot(std::move(invalid_generator)))
         return 38;
-    if (restored.CurrentRevision() != previous_revision || restored.FindLayersInArea(c).size() != previous_layers)
+    if (restored.CurrentRevision() != previous_revision ||
+        restored.FindLayersInArea(c).size() != previous_layers)
         return 39;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 40;
     NavigationSemanticsService empty_journal;
     if (!empty_journal
-             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 47;
 
@@ -218,14 +247,18 @@ int main() {
         !restored.SetLinkState(destroyed.id, LinkState::Destroyed))
         return 42;
     const auto navigation_exhausted = restored.CaptureSnapshot();
-    if (navigation_exhausted.next_change_sequence != 0 || navigation_exhausted.journal.size() != 1 ||
+    if (navigation_exhausted.next_change_sequence != 0 ||
+        navigation_exhausted.journal.size() != 1 ||
         navigation_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 43;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 44;
     NavigationSemanticsService navigation_exhausted_restore;
-    if (!navigation_exhausted_restore.RegisterDomain(d) || !navigation_exhausted_restore.RegisterRule(r))
+    if (!navigation_exhausted_restore.RegisterDomain(d) ||
+        !navigation_exhausted_restore.RegisterRule(r))
         return 45;
     navigation_exhausted_restore.Freeze();
     if (!navigation_exhausted_restore.RestoreSnapshot(navigation_exhausted))
@@ -233,7 +266,8 @@ int main() {
 
     // Forged link state must fail without advancing the service revision.
     const auto navigation_invalid_revision = navigation_exhausted_restore.CurrentRevision();
-    const auto *navigation_invalid_link_before = navigation_exhausted_restore.FindLink(destroyed.id);
+    const auto *navigation_invalid_link_before =
+        navigation_exhausted_restore.FindLink(destroyed.id);
     if (navigation_invalid_link_before == nullptr)
         return 48;
     const auto navigation_invalid_state_before = navigation_invalid_link_before->state;
@@ -249,12 +283,14 @@ int main() {
     auto navigation_revision_exhausted = navigation_exhausted;
     navigation_revision_exhausted.revision.value = std::numeric_limits<std::uint64_t>::max();
     NavigationSemanticsService navigation_revision_service;
-    if (!navigation_revision_service.RegisterDomain(d) || !navigation_revision_service.RegisterRule(r))
+    if (!navigation_revision_service.RegisterDomain(d) ||
+        !navigation_revision_service.RegisterRule(r))
         return 51;
     navigation_revision_service.Freeze();
     if (!navigation_revision_service.RestoreSnapshot(navigation_revision_exhausted))
         return 52;
-    const auto *navigation_revision_link_before = navigation_revision_service.FindLink(destroyed.id);
+    const auto *navigation_revision_link_before =
+        navigation_revision_service.FindLink(destroyed.id);
     if (navigation_revision_link_before == nullptr)
         return 53;
     const auto navigation_revision_state_before = navigation_revision_link_before->state;
@@ -262,15 +298,19 @@ int main() {
         return 54;
     const auto *navigation_revision_link_after = navigation_revision_service.FindLink(destroyed.id);
     if (navigation_revision_link_after == nullptr ||
-        navigation_revision_service.CurrentRevision().value != std::numeric_limits<std::uint64_t>::max() ||
+        navigation_revision_service.CurrentRevision().value !=
+            std::numeric_limits<std::uint64_t>::max() ||
         navigation_revision_link_after->state != navigation_revision_state_before)
         return 55;
 
-    // Goal 4: deterministic module-local restore fault seams replace process-global allocation overrides.
+    // Goal 4: deterministic module-local restore fault seams replace process-global allocation
+    // overrides.
     const auto allocation_before = restored.CaptureSnapshot();
-    using FaultPoint = epidemic::gameplay::navigation_semantics::internal_test::AllocationFaultPoint;
-    for (const auto point : {FaultPoint::RestoreProfiles, FaultPoint::RestoreLayers, FaultPoint::RestoreLinks,
-                             FaultPoint::RestoreJournal, FaultPoint::RestoreIndexes}) {
+    using FaultPoint =
+        epidemic::gameplay::navigation_semantics::internal_test::AllocationFaultPoint;
+    for (const auto point :
+         {FaultPoint::RestoreProfiles, FaultPoint::RestoreLayers, FaultPoint::RestoreLinks,
+          FaultPoint::RestoreJournal, FaultPoint::RestoreIndexes}) {
         auto target = allocation_before;
         epidemic::gameplay::navigation_semantics::internal_test::ArmAllocationFault(point);
         const auto result = restored.RestoreSnapshot(std::move(target));
@@ -280,33 +320,41 @@ int main() {
         const auto after = restored.CaptureSnapshot();
         const auto diagnostics = restored.GetDiagnostics();
         const auto pre_state =
-            epidemic::tests::pre_state::StateComparator("NavigationSemantics.RestoreSnapshot.pre_state")
+            epidemic::tests::pre_state::StateComparator(
+                "NavigationSemantics.RestoreSnapshot.pre_state")
                 .RequireEqual(epidemic::tests::pre_state::StateFacet::PrimaryRecords,
                               allocation_before.profiles.size() + allocation_before.layers.size() +
                                   allocation_before.links.size(),
                               after.profiles.size() + after.layers.size() + after.links.size(),
                               "profile layer link record count")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::RecordPayloads, allocation_before.links.size(),
-                              after.links.size(), "link payload count")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes, diagnostics.links,
-                              static_cast<std::uint64_t>(allocation_before.links.size()), "link index diagnostics")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::IdGenerators, allocation_before.layer_ids.next,
-                              after.layer_ids.next, "layer id generator next")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions, allocation_before.revision,
-                              after.revision, "revision")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::Journal, allocation_before.journal.size(),
-                              after.journal.size(), "journal entry count")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch, allocation_before.change_epoch,
-                              after.change_epoch, "journal epoch")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::RecordPayloads,
+                              allocation_before.links.size(), after.links.size(),
+                              "link payload count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes,
+                              diagnostics.links,
+                              static_cast<std::uint64_t>(allocation_before.links.size()),
+                              "link index diagnostics")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::IdGenerators,
+                              allocation_before.layer_ids.next, after.layer_ids.next,
+                              "layer id generator next")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions,
+                              allocation_before.revision, after.revision, "revision")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::Journal,
+                              allocation_before.journal.size(), after.journal.size(),
+                              "journal entry count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch,
+                              allocation_before.change_epoch, after.change_epoch, "journal epoch")
                 .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalSequence,
                               allocation_before.next_change_sequence, after.next_change_sequence,
                               "next change sequence")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::PublicReadModels, diagnostics.layers,
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::PublicReadModels,
+                              diagnostics.layers,
                               static_cast<std::uint64_t>(allocation_before.layers.size()),
                               "public diagnostics read model")
                 .Finish();
         if (!pre_state.Passed())
             return 922;
     }
+
     return 0;
 }

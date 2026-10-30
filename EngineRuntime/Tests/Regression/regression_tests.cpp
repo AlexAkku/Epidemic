@@ -11,13 +11,17 @@ bool Expect(bool condition, std::string_view message) {
     if (!condition) {
         std::cerr << message << '\n';
     }
+
     return condition;
 }
+
 } // namespace
 
 int RunRegressionTests() {
     epidemic::core::Application app{};
+
     epidemic::runtime::EngineRuntimeOptions options{};
+
     options.enable_scene = false;
 
     const auto result = epidemic::runtime::RegisterDefaultEngineRuntime(app, options);
@@ -28,6 +32,11 @@ int RunRegressionTests() {
 }
 
 int main() {
-    try { return RunRegressionTests(); }
-    catch (...) { std::fputs("Regression tests threw\n", stderr); return 1; }
+    try {
+        return RunRegressionTests();
+    } catch (...) {
+        std::fputs("Regression tests threw\n", stderr);
+        return 1;
+    }
+
 }

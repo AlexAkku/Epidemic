@@ -37,6 +37,8 @@ class IAssetCatalog {
     // the logical OR of every incoming edge. Output is sorted by AssetId::Raw().
     // Invalid root and missing root are distinct controlled failures. Allocation
     // failure may propagate and leaves the catalog unchanged.
-    [[nodiscard]] virtual foundation::Result<AssetDependencyManifest> BuildDependencyManifest(AssetId root) const = 0;
+    [[nodiscard]] virtual foundation::Result<AssetDependencyManifest>
+    BuildDependencyManifest(AssetId root) const = 0;
 };
+
 } // namespace epidemic::runtime

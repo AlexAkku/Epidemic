@@ -2,10 +2,10 @@
 
 #include <cstdlib>
 
-#define CHECK(expr)                                                                                                    \
-    do {                                                                                                               \
-        if (!(expr))                                                                                                   \
-            std::abort();                                                                                              \
+#define CHECK(expr)                                                                                \
+    do {                                                                                           \
+        if (!(expr))                                                                               \
+            std::abort();                                                                          \
     } while (false)
 
 using namespace epidemic::gameplay;
@@ -14,13 +14,15 @@ using namespace epidemic::gameplay::world;
 namespace epidemic::gameplay::world::detail {
 void SetWorldFaultPointForTesting(std::string_view point) noexcept;
 void ClearWorldFaultPointForTesting() noexcept;
-}
+} // namespace epidemic::gameplay::world::detail
 
 namespace {
-void RegisterTypes(WorldService &world, WorldAlterationTypeId alteration, WorldFeatureTypeId feature) {
+void RegisterTypes(WorldService &world, WorldAlterationTypeId alteration,
+                   WorldFeatureTypeId feature) {
     CHECK(world.RegisterAlterationType(alteration, "game.test.terrain"));
     CHECK(world.RegisterFeatureType(feature, "game.test.road"));
 }
+
 } // namespace
 
 int main() {
@@ -38,23 +40,31 @@ int main() {
     area.id = WorldAreaId::FromString("area.a");
     area.canonical_name = "area.a";
     area.bounds = {{0, 0, 0}, {10000, 10000, 10000}};
+
     area.regions = {region.id};
+
     CHECK(world.RegisterArea(area));
 
     LocationDefinition parent;
     parent.id = LocationId::FromString("loc.parent");
     parent.canonical_name = "loc.parent";
     parent.position = {100, 100, 100};
+
     parent.regions = {region.id};
+
     parent.areas = {area.id};
+
     CHECK(world.RegisterLocation(parent));
 
     LocationDefinition child;
     child.id = LocationId::FromString("loc.child");
     child.canonical_name = "loc.child";
     child.position = {200, 100, 100};
+
     child.regions = {region.id};
+
     child.areas = {area.id};
+
     child.parent_location = parent.id;
     CHECK(world.RegisterLocation(child));
 
@@ -74,10 +84,12 @@ int main() {
     WorldAlterationRecord first;
     first.type = alteration_type;
     first.affected_area = {{0, 0, 0}, {1000, 1000, 1000}};
+
     first.persistence = WorldAlterationPersistence::Persistent;
     const auto first_id = transaction.Create(first);
     WorldAlterationRecord second = first;
     second.affected_area = {{2000, 0, 0}, {3000, 1000, 1000}};
+
     const auto second_id = transaction.Create(second);
     CHECK(first_id && second_id && transaction.Commit());
     const auto first_after_commit = world.FindAlteration(first_id.Value());
@@ -90,12 +102,14 @@ int main() {
     auto duplicate_mutation = world.BeginTransaction();
     WorldAlterationUpdate updated;
     updated.payload = std::vector<std::byte>{std::byte{1}};
+
     CHECK(duplicate_mutation.Update(first_id.Value(), updated));
     CHECK(!duplicate_mutation.Remove(first_id.Value()));
     duplicate_mutation.Cancel();
 
     const GameplayObjectRef placed{GameplayDomainId::FromString("test.world"),
                                    GameplayObjectId::FromString("object.placed")};
+
     ObjectPlacementRecord placement;
     placement.object = placed;
     placement.location = child.id;
@@ -109,11 +123,14 @@ int main() {
     auto patch_tx = world.BeginTransaction();
     WorldAlterationUpdate patch;
     patch.affected_area = WorldAabb{{5000, 0, 0}, {6000, 1000, 1000}};
+
     patch.payload = std::vector<std::byte>{std::byte{2}};
+
     CHECK(patch_tx.Update(first_id.Value(), patch));
     CHECK(patch_tx.Commit());
     const auto patched = world.FindAlteration(first_id.Value());
-    CHECK(patched && patched->type == alteration_type && patched->created_at == first_after_commit->created_at);
+    CHECK(patched && patched->type == alteration_type &&
+          patched->created_at == first_after_commit->created_at);
     CHECK(world.FindAlterations({{5000, 0, 0}, {6000, 1000, 1000}}).size() == 1);
     CHECK(world.FindAlterations({{0, 0, 0}, {1000, 1000, 1000}}).empty());
 
@@ -122,6 +139,7 @@ int main() {
     dynamic_feature.id = WorldFeatureId::FromString("feature.dynamic");
     dynamic_feature.type = feature_type;
     dynamic_feature.bounds = {{0, 0, 0}, {10, 10, 10}};
+
     CHECK(world.AddDynamicFeature(dynamic_feature));
     CHECK(world.UpdateDynamicFeature(dynamic_feature.id, {{20, 0, 0}, {30, 10, 10}}, {}));
     CHECK(world.FindFeature(dynamic_feature.id)->bounds.min.x_mm == 20);
@@ -166,8 +184,10 @@ int main() {
     CHECK(after_fault_restore.revision == before_fault_restore.revision &&
           after_fault_restore.alteration_ids.scope == before_fault_restore.alteration_ids.scope &&
           after_fault_restore.alteration_ids.next == before_fault_restore.alteration_ids.next &&
-          after_fault_restore.dynamic_features.size() == before_fault_restore.dynamic_features.size() &&
-          after_fault_restore.object_placements.size() == before_fault_restore.object_placements.size() &&
+          after_fault_restore.dynamic_features.size() ==
+              before_fault_restore.dynamic_features.size() &&
+          after_fault_restore.object_placements.size() ==
+              before_fault_restore.object_placements.size() &&
           after_fault_restore.alterations.size() == before_fault_restore.alterations.size());
 
     // Caller-supplied IDs in the service scope advance the generator and cannot
@@ -220,6 +240,7 @@ int main() {
     fault_feature.id = WorldFeatureId::FromString("feature.fault");
     fault_feature.type = feature_type;
     fault_feature.bounds = {{0, 0, 0}, {10, 10, 10}};
+
     const auto direct_revision_before = restored.CurrentRevision();
     const auto direct_cursor_before = restored.LatestChangeCursor();
     epidemic::gameplay::world::detail::SetWorldFaultPointForTesting("dynamic_feature.publish");
@@ -234,9 +255,11 @@ int main() {
     auto fault_tx = restored.BeginTransaction();
     WorldAlterationRecord fault_alteration = first;
     fault_alteration.affected_area = {{7000, 0, 0}, {8000, 1000, 1000}};
+
     const auto fault_id = fault_tx.Create(fault_alteration);
     CHECK(fault_id);
-    epidemic::gameplay::world::detail::SetWorldFaultPointForTesting("alteration_transaction.publish");
+    epidemic::gameplay::world::detail::SetWorldFaultPointForTesting(
+        "alteration_transaction.publish");
     CHECK(!fault_tx.Commit());
     epidemic::gameplay::world::detail::ClearWorldFaultPointForTesting();
     const auto transaction_after = restored.CaptureSnapshot();
@@ -248,12 +271,15 @@ int main() {
     // a snapshot.
     for (int i = 0; i < 4200; ++i) {
         const GameplayObjectRef object{GameplayDomainId::FromString("test.world.journal"),
-                                       GameplayObjectId::FromRaw(1, static_cast<std::uint64_t>(i + 1))};
+                                       GameplayObjectId::FromRaw(1, static_cast<std::uint64_t>(i +
+                                                                                               1))};
+
         ObjectPlacementRecord p;
         p.object = object;
         p.area = area.id;
         CHECK(restored.PlaceObject(p));
     }
+
     const auto stale_batch = restored.ReadChangesSince(ChangeCursor{});
     CHECK(stale_batch.snapshot_required);
     const auto latest_batch = restored.ReadChangesSince(restored.LatestChangeCursor());
@@ -266,7 +292,9 @@ int main() {
     invalid_area.id = WorldAreaId::FromString("area.invalid");
     invalid_area.canonical_name = "area.invalid";
     invalid_area.bounds = {{0, 0, 0}, {1, 1, 1}};
+
     invalid_area.regions = {WorldRegionId::FromString("region.missing")};
+
     CHECK(missing_reference.RegisterArea(invalid_area));
     CHECK(!missing_reference.Freeze());
 
@@ -293,11 +321,14 @@ int main() {
     left.id = WorldAreaId::FromString("area.left");
     left.canonical_name = "area.left";
     left.bounds = {{0, 0, 0}, {10, 10, 10}};
+
     left.adjacent = {WorldAreaId::FromString("area.right")};
+
     WorldAreaDefinition right;
     right.id = WorldAreaId::FromString("area.right");
     right.canonical_name = "area.right";
     right.bounds = {{11, 0, 0}, {20, 10, 10}};
+
     CHECK(adjacency.RegisterArea(left));
     CHECK(adjacency.RegisterArea(right));
     CHECK(!adjacency.Freeze());

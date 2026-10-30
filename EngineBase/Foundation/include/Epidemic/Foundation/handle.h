@@ -50,15 +50,21 @@ template <typename TTag> class Handle {
 
   private:
     std::uint32_t index_{kInvalidIndex};
+
     std::uint32_t generation_{0};
+
 };
+
 } // namespace epidemic::foundation
 
 namespace std {
 template <typename TTag> struct hash<epidemic::foundation::Handle<TTag>> {
     // Hashes the packed handle identity so Handle<TTag> can be used in unordered containers.
-    [[nodiscard]] size_t operator()(const epidemic::foundation::Handle<TTag> &value) const noexcept {
+    [[nodiscard]] size_t
+    operator()(const epidemic::foundation::Handle<TTag> &value) const noexcept {
         return hash<std::uint64_t>{}(value.Packed());
     }
+
 };
+
 } // namespace std

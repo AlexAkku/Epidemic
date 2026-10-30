@@ -15,10 +15,12 @@ void SetCurrentThreadName(std::string_view name) noexcept {
     } catch (...) {
         // Thread names are observational diagnostics and must never terminate worker entry.
     }
+
 }
 
 // Returns the current thread's stored display name.
 std::string GetCurrentThreadName() {
     return current_thread_name;
 }
-}
+
+} // namespace epidemic::diagnostics

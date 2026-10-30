@@ -11,6 +11,7 @@ namespace epidemic::runtime {
 // The view and its IDs must remain stable for the duration of resolution.
 struct AssetElementIdsView {
     AssetId asset_id{};
+
     std::span<const foundation::StringId> elements;
 };
 
@@ -18,7 +19,8 @@ struct AssetElementIdsView {
 // Rejects a mismatched inventory, zero/duplicate element IDs and dangling references.
 // Allocation/callback exceptions follow the existing Assets contract.
 [[nodiscard]] foundation::Result<AssetLocation>
-ResolveAssetElementReference(const AssetElementReference &reference, const AssetElementIdsView &inventory,
+ResolveAssetElementReference(const AssetElementReference &reference,
+                             const AssetElementIdsView &inventory,
                              const IAssetLocationResolver &assets);
 
 // Native typed adapter for existing Serialization helpers. Schema 1.0.0 contains
@@ -30,7 +32,10 @@ class AssetElementReferenceSerializer final : public ISerializer {
     [[nodiscard]] std::type_index GetCppType() const override;
 
   protected:
-    [[nodiscard]] foundation::Result<void> Serialize(const void *object, IArchiveWriter &writer) const override;
-    [[nodiscard]] foundation::Result<void> Deserialize(IArchiveReader &reader, void *object) const override;
+    [[nodiscard]] foundation::Result<void> Serialize(const void *object,
+                                                     IArchiveWriter &writer) const override;
+    [[nodiscard]] foundation::Result<void> Deserialize(IArchiveReader &reader,
+                                                       void *object) const override;
 };
+
 } // namespace epidemic::runtime

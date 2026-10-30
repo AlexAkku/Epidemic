@@ -26,6 +26,7 @@ class HealthValue {
     std::uint64_t EntityId() const;
     std::uint64_t LiveEntityCount() const;
 };
+
 class CoinValue {
     struct State;
     std::shared_ptr<State> state_;
@@ -41,6 +42,7 @@ class CoinValue {
     CoinValue &operator-=(int delta);
     operator int() const;
 };
+
 class ItemValue {
     struct State;
     std::shared_ptr<State> state_;
@@ -54,6 +56,7 @@ class ItemValue {
     ItemValue &operator=(int definition);
     operator int() const;
 };
+
 class ProgressValue {
     struct State;
     std::shared_ptr<State> state_;
@@ -69,27 +72,34 @@ class ProgressValue {
     ProgressValue &operator-=(double delta);
     operator double() const;
 };
+
 class RankValue {
     ProgressValue value_;
 
   public:
     RankValue(int initial = 0) : value_(initial) {
     }
+
     RankValue &operator=(int value) {
         value_ = value;
         return *this;
     }
+
     RankValue &operator++() {
         value_ += 1;
         return *this;
     }
+
     int operator++(int) {
         const int old = *this;
         ++*this;
         return old;
     }
+
     operator int() const {
         return static_cast<int>(static_cast<double>(value_));
     }
+
 };
-}
+
+} // namespace epidemic::gameplay::session

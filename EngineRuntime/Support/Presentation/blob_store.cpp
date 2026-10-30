@@ -2,6 +2,7 @@
 #include <Epidemic/Runtime/Support/runtime_support.h>
 #include <limits>
 #include <stdexcept>
+
 namespace epidemic::runtime::presentation {
 namespace {
 template <class T> T Require(foundation::Result<T> result) {
@@ -9,12 +10,15 @@ template <class T> T Require(foundation::Result<T> result) {
         throw std::runtime_error(result.GetError().message);
     return std::move(result).Value();
 }
+
 void Require(const foundation::Result<void> &result) {
     if (!result.HasValue())
         throw std::runtime_error(result.GetError().message);
 }
+
 constexpr auto Schema = foundation::StringId::FromString("presentation.save_package");
-}
+} // namespace
+
 std::vector<std::byte> LoadBlob(const std::filesystem::path &path) {
     auto backend = Require(CreateFilePersistenceBackend(foundation::Path{path}));
     const auto snapshot = Require(backend->Load());
@@ -23,6 +27,7 @@ std::vector<std::byte> LoadBlob(const std::filesystem::path &path) {
         throw std::runtime_error("Unknown save package storage schema");
     return snapshot.objects[0].payload.bytes;
 }
+
 void SaveBlob(const std::filesystem::path &path, std::span<const std::byte> bytes) {
     if (path.empty())
         throw std::invalid_argument("Save path is empty");
@@ -40,8 +45,12 @@ void SaveBlob(const std::filesystem::path &path, std::span<const std::byte> byte
                          .kind = PersistentObjectKind::AbstractFact,
                          .tier = PersistenceTier::Protected,
                          .state = PersistenceState::Saved,
-                         .payload = {.schema_id = Schema, .schema_version = 1, .bytes = {bytes.begin(), bytes.end()}},
+                         .payload = {.schema_id = Schema,
+                                     .schema_version = 1,
+                                     .bytes = {bytes.begin(), bytes.end()}},
                          .revision = snapshot.current_revision}};
+
     Require(backend->CommitSnapshot(snapshot, PersistenceDurability::SaveAndFlushRequired));
 }
-}
+
+} // namespace epidemic::runtime::presentation

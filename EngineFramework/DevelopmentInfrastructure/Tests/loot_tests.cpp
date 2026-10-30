@@ -12,11 +12,14 @@ using namespace epidemic::gameplay::loot;
 namespace {
 class Handler final : public IRewardHandler {
   public:
-    explicit Handler(std::string_view name = "test.reward", bool fail_prepare = false, bool throw_prepare = false)
-        : type(RewardTypeId::FromString(name)), fail_prepare(fail_prepare), throw_prepare(throw_prepare) {
+    explicit Handler(std::string_view name = "test.reward", bool fail_prepare = false,
+                     bool throw_prepare = false)
+        : type(RewardTypeId::FromString(name)), fail_prepare(fail_prepare),
+          throw_prepare(throw_prepare) {
     }
 
     RewardTypeId type{};
+
     bool fail_prepare = false;
     bool throw_prepare = false;
     std::int64_t delivered = 0;
@@ -27,21 +30,26 @@ class Handler final : public IRewardHandler {
         return type;
     }
 
-    [[nodiscard]] foundation::Result<RewardDeliveryStage> Prepare(const RewardOperation &operation) override {
+    [[nodiscard]] foundation::Result<RewardDeliveryStage>
+    Prepare(const RewardOperation &operation) override {
         if (throw_prepare)
             throw std::runtime_error("prepare threw");
         if (fail_prepare)
             return foundation::Result<RewardDeliveryStage>::Failure(
                 foundation::Error::Create("prepare", "prepare failed"));
         prepared += operation.quantity_micro;
-        return foundation::Result<RewardDeliveryStage>::Success({operation, RewardDeliveryDisposition::Delivered});
+        return foundation::Result<RewardDeliveryStage>::Success(
+            {operation, RewardDeliveryDisposition::Delivered});
     }
+
     void Commit(RewardDeliveryStage &stage) noexcept override {
         delivered += stage.operation.quantity_micro;
     }
+
     void Cancel(RewardDeliveryStage &stage) noexcept override {
         cancelled += stage.operation.quantity_micro;
     }
+
 };
 
 class ThrowingConditionProvider final : public ILootConditionProvider {
@@ -49,6 +57,7 @@ class ThrowingConditionProvider final : public ILootConditionProvider {
     [[nodiscard]] bool Evaluate(TypeId, const LootContext &) const override {
         throw std::runtime_error("condition threw");
     }
+
 };
 
 struct ConfiguredLoot {
@@ -56,11 +65,13 @@ struct ConfiguredLoot {
     LootService service;
     RewardDefinition reward;
     RewardDefinitionId reward_id{};
+
     LootTableId table_id{};
+
 };
 
-bool Configure(ConfiguredLoot &cfg, LootRollPolicy policy = LootRollPolicy::GuaranteedAll, std::uint64_t weight = 1,
-               TypeId condition = {}) {
+bool Configure(ConfiguredLoot &cfg, LootRollPolicy policy = LootRollPolicy::GuaranteedAll,
+               std::uint64_t weight = 1, TypeId condition = {}) {
     if (!cfg.service.RegisterRewardHandler("test.reward", &cfg.handler))
         return false;
     cfg.reward.canonical_name = "test.reward.gold";
@@ -74,13 +85,15 @@ bool Configure(ConfiguredLoot &cfg, LootRollPolicy policy = LootRollPolicy::Guar
     LootTableDefinition table;
     table.canonical_name = "test.table";
     table.policy = policy;
-    table.entries.push_back({LootEntryId::FromString("test.entry"), weight, 1'000'000, cfg.reward_id, {}, condition});
+    table.entries.push_back(
+        {LootEntryId::FromString("test.entry"), weight, 1'000'000, cfg.reward_id, {}, condition});
     auto tid = cfg.service.RegisterLootTable(table);
     if (!tid)
         return false;
     cfg.table_id = tid.Value();
     return true;
 }
+
 } // namespace
 
 int main() {
@@ -103,7 +116,9 @@ int main() {
     auto tid = s.RegisterLootTable(t);
     if (!tid || !s.Freeze())
         return 3;
-    GameplayObjectRef recipient{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("player")};
+    GameplayObjectRef recipient{GameplayDomainId::FromString("test"),
+                                GameplayObjectId::FromString("player")};
+
     LootContext c;
     c.recipient = recipient;
     c.seed = {42};
@@ -148,7 +163,8 @@ int main() {
     Handler good("test.reward.good");
     Handler bad("test.reward.bad", true);
     LootService tx;
-    if (!tx.RegisterRewardHandler("test.reward.good", &good) || !tx.RegisterRewardHandler("test.reward.bad", &bad))
+    if (!tx.RegisterRewardHandler("test.reward.good", &good) ||
+        !tx.RegisterRewardHandler("test.reward.bad", &bad))
         return 14;
     RewardDefinition good_reward;
     good_reward.canonical_name = "test.reward.good.gold";
@@ -165,8 +181,10 @@ int main() {
     LootTableDefinition tx_table;
     tx_table.canonical_name = "test.tx.table";
     tx_table.policy = LootRollPolicy::GuaranteedAll;
-    tx_table.entries.push_back({LootEntryId::FromString("good"), 1, 1'000'000, good_id.Value(), {}, {}});
-    tx_table.entries.push_back({LootEntryId::FromString("bad"), 1, 1'000'000, bad_id.Value(), {}, {}});
+    tx_table.entries.push_back(
+        {LootEntryId::FromString("good"), 1, 1'000'000, good_id.Value(), {}, {}});
+    tx_table.entries.push_back(
+        {LootEntryId::FromString("bad"), 1, 1'000'000, bad_id.Value(), {}, {}});
     auto tx_tid = tx.RegisterLootTable(tx_table);
     if (!tx_tid || !tx.Freeze())
         return 16;
@@ -175,14 +193,16 @@ int main() {
     if (!tx_pending)
         return 17;
     auto claim = tx.Claim(tx_pending.Value());
-    if (claim || good.delivered != 0 || good.cancelled != 100 || !tx.FindPending(tx_pending.Value()))
+    if (claim || good.delivered != 0 || good.cancelled != 100 ||
+        !tx.FindPending(tx_pending.Value()))
         return 18;
 
     // M38: exceptions at provider/Prepare boundaries are converted to controlled failures.
     ThrowingConditionProvider throwing_condition;
     ConfiguredLoot conditioned;
     conditioned.service.SetConditionProvider(&throwing_condition);
-    if (!Configure(conditioned, LootRollPolicy::GuaranteedAll, 1, TypeId::FromString("test.condition")) ||
+    if (!Configure(conditioned, LootRollPolicy::GuaranteedAll, 1,
+                   TypeId::FromString("test.condition")) ||
         !conditioned.service.Freeze())
         return 19;
     if (conditioned.service.Preview(conditioned.table_id, c))
@@ -202,7 +222,8 @@ int main() {
     LootTableDefinition throwing_table;
     throwing_table.canonical_name = "test.throw.table";
     throwing_table.policy = LootRollPolicy::GuaranteedAll;
-    throwing_table.entries.push_back({LootEntryId::FromString("throw"), 1, 1'000'000, throwing_rid.Value(), {}, {}});
+    throwing_table.entries.push_back(
+        {LootEntryId::FromString("throw"), 1, 1'000'000, throwing_rid.Value(), {}, {}});
     auto throwing_tid = throwing_service.RegisterLootTable(throwing_table);
     if (!throwing_tid || !throwing_service.Freeze())
         return 23;
@@ -228,6 +249,7 @@ int main() {
         return 29;
     LootContext c2 = c;
     c2.seed = {43};
+
     auto g1 = recovery.service.GenerateTracked(recovery.table_id, c);
     auto g2 = recovery.service.GenerateTracked(recovery.table_id, c2);
     if (!g1 || !g2)
@@ -251,7 +273,8 @@ int main() {
     if (recovery.service.RestoreSnapshot(std::move(bad_next)))
         return 34;
 
-    // M37: once retained claim history was truncated, old service-issued IDs report an expired horizon.
+    // M37: once retained claim history was truncated, old service-issued IDs report an expired
+    // horizon.
     auto history_snapshot = snapshot;
     history_snapshot.generated.clear();
     history_snapshot.pending.clear();
@@ -263,8 +286,8 @@ int main() {
     if (!recovery.service.RestoreSnapshot(std::move(history_snapshot)))
         return 35;
     if (!recovery.service
-             .ReadChangesSince(
-                 recovery.service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(recovery.service.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 38;
 
@@ -275,8 +298,10 @@ int main() {
         return 39;
     LootContext journal_context = c;
     journal_context.seed = {901};
+
     auto journal_bundle_a = recovery.service.GenerateTracked(recovery.table_id, journal_context);
     journal_context.seed = {902};
+
     auto journal_bundle_b = recovery.service.GenerateTracked(recovery.table_id, journal_context);
     if (!journal_bundle_a || !journal_bundle_b)
         return 40;
@@ -285,15 +310,17 @@ int main() {
         loot_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 41;
     if (!recovery.service
-             .ReadChangesSince(
-                 recovery.service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(recovery.service.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 42;
     if (!recovery.service.RestoreSnapshot(loot_exhausted))
         return 43;
     const auto scope = GameplayObjectId::FromString("framework.loot.executions").High();
     RewardExecutionId old_id{GameplayObjectId::FromRaw(scope, 5)};
+
     RewardExecutionId new_id{GameplayObjectId::FromRaw(scope, 12)};
+
     if (recovery.service.ClaimHistoryStatus(old_id) != RewardClaimHistoryStatus::HistoryExpired)
         return 36;
     if (recovery.service.ClaimHistoryStatus(new_id) != RewardClaimHistoryStatus::Unknown)
@@ -301,27 +328,34 @@ int main() {
 
     LootService empty_journal;
     if (!empty_journal
-             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 44;
 
     // Forged public enum values are rejected at registration rather than entering frozen content.
     Handler invalid_policy_handler("test.reward.invalid_policy");
     LootService invalid_policy_service;
-    if (!invalid_policy_service.RegisterRewardHandler("test.reward.invalid_policy", &invalid_policy_handler))
+    if (!invalid_policy_service.RegisterRewardHandler("test.reward.invalid_policy",
+                                                      &invalid_policy_handler))
         return 44;
     RewardDefinition invalid_policy_reward;
     invalid_policy_reward.canonical_name = "test.reward.invalid_policy.value";
     invalid_policy_reward.type = invalid_policy_handler.Type();
     invalid_policy_reward.min_quantity_micro = invalid_policy_reward.max_quantity_micro = 1;
-    auto invalid_policy_reward_id = invalid_policy_service.RegisterRewardDefinition(invalid_policy_reward);
+    auto invalid_policy_reward_id =
+        invalid_policy_service.RegisterRewardDefinition(invalid_policy_reward);
     if (!invalid_policy_reward_id)
         return 45;
     LootTableDefinition invalid_policy_table;
     invalid_policy_table.canonical_name = "test.invalid_policy.table";
     invalid_policy_table.policy = static_cast<LootRollPolicy>(999);
-    invalid_policy_table.entries.push_back(
-        {LootEntryId::FromString("invalid-policy-entry"), 1, 1'000'000, invalid_policy_reward_id.Value(), {}, {}});
+    invalid_policy_table.entries.push_back({LootEntryId::FromString("invalid-policy-entry"),
+                                            1,
+                                            1'000'000,
+                                            invalid_policy_reward_id.Value(),
+                                            {},
+                                            {}});
     if (invalid_policy_service.RegisterLootTable(invalid_policy_table))
         return 46;
 
@@ -331,37 +365,45 @@ int main() {
         return 47;
     LootContext pending_revision_context = c;
     pending_revision_context.seed = {777};
+
     auto pending_revision_bundle =
-        pending_revision.service.GenerateTracked(pending_revision.table_id, pending_revision_context);
+        pending_revision.service.GenerateTracked(pending_revision.table_id,
+                                                 pending_revision_context);
     if (!pending_revision_bundle)
         return 48;
-    auto pending_revision_id = pending_revision.service.MakePending(std::move(pending_revision_bundle).Value());
+    auto pending_revision_id =
+        pending_revision.service.MakePending(std::move(pending_revision_bundle).Value());
     if (!pending_revision_id)
         return 49;
     auto pending_revision_snapshot = pending_revision.service.CaptureSnapshot();
     if (pending_revision_snapshot.pending.size() != 1)
         return 50;
-    pending_revision_snapshot.pending.front().revision.value = std::numeric_limits<std::uint64_t>::max();
+    pending_revision_snapshot.pending.front().revision.value =
+        std::numeric_limits<std::uint64_t>::max();
     if (!pending_revision.service.RestoreSnapshot(pending_revision_snapshot))
         return 51;
-    const auto schedule_before = pending_revision.service.FindPending(pending_revision_id.Value())->schedule;
+    const auto schedule_before =
+        pending_revision.service.FindPending(pending_revision_id.Value())->schedule;
     if (pending_revision.service.BindSchedule(pending_revision_id.Value(),
                                               ScheduleId::FromString("test.schedule.exhausted")))
         return 52;
-    const auto *pending_after_exhaustion = pending_revision.service.FindPending(pending_revision_id.Value());
+    const auto *pending_after_exhaustion =
+        pending_revision.service.FindPending(pending_revision_id.Value());
     if (pending_after_exhaustion == nullptr ||
         pending_after_exhaustion->revision.value != std::numeric_limits<std::uint64_t>::max() ||
         pending_after_exhaustion->schedule != schedule_before)
         return 53;
 
-    // Goal 4: module-local deterministic restore fault seams replace process-global allocation hooks.
+    // Goal 4: module-local deterministic restore fault seams replace process-global allocation
+    // hooks.
     const auto allocation_before = recovery.service.CaptureSnapshot();
-    for (const auto point :
-         {internal_test::AllocationFaultPoint::RestoreGenerated, internal_test::AllocationFaultPoint::RestorePending,
-          internal_test::AllocationFaultPoint::RestoreJournal}) {
+    for (const auto point : {internal_test::AllocationFaultPoint::RestoreGenerated,
+                             internal_test::AllocationFaultPoint::RestorePending,
+                             internal_test::AllocationFaultPoint::RestoreJournal}) {
         auto allocation_target = allocation_before;
         internal_test::ArmAllocationFault(point);
-        const auto restored_under_fault = recovery.service.RestoreSnapshot(std::move(allocation_target));
+        const auto restored_under_fault =
+            recovery.service.RestoreSnapshot(std::move(allocation_target));
         internal_test::ResetAllocationFault();
         if (restored_under_fault)
             return 916;
@@ -375,5 +417,6 @@ int main() {
             allocation_after.change_epoch != allocation_before.change_epoch)
             return 917;
     }
+
     return 0;
 }

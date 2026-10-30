@@ -18,4 +18,5 @@ class ResourceLoaderRegistry final : public IResourceLoaderRegistry {
     std::unordered_map<foundation::StringId, IResourceLoader *> loaders_;
     bool frozen_ = false;
 };
+
 } // namespace epidemic::runtime

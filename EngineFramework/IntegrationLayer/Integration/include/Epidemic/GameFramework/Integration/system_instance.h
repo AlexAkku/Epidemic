@@ -6,19 +6,36 @@ namespace epidemic::gameplay::composition {
 // releasing domain services, or provide a borrowed owner-liveness predicate.
 class SystemInstance final {
   public:
-    [[nodiscard]] static foundation::Result<std::unique_ptr<SystemInstance>> Create(
-        GraphScopeKind kind, GameplayObjectId owner, foundation::StringId instance, std::function<bool()> owner_alive = {}) {
+    [[nodiscard]] static foundation::Result<std::unique_ptr<SystemInstance>>
+    Create(GraphScopeKind kind, GameplayObjectId owner, foundation::StringId instance,
+           std::function<bool()> owner_alive = {}) {
         const auto scope = GraphScope::ForSystem(kind, owner, instance, std::move(owner_alive));
-        if (!scope) return foundation::Result<std::unique_ptr<SystemInstance>>::Failure(scope.GetError());
-        return foundation::Result<std::unique_ptr<SystemInstance>>::Success(std::unique_ptr<SystemInstance>(new SystemInstance(scope.Value())));
+        if (!scope)
+            return foundation::Result<std::unique_ptr<SystemInstance>>::Failure(scope.GetError());
+        return foundation::Result<std::unique_ptr<SystemInstance>>::Success(
+            std::unique_ptr<SystemInstance>(new SystemInstance(scope.Value())));
     }
-    ~SystemInstance() { Stop(); }
+
+    ~SystemInstance() {
+        Stop();
+    }
+
     SystemInstance(const SystemInstance &) = delete;
     SystemInstance &operator=(const SystemInstance &) = delete;
-    void Stop() noexcept { scope_->Invalidate(); }
-    [[nodiscard]] const std::shared_ptr<GraphScope> &Scope() const noexcept { return scope_; }
+
+    void Stop() noexcept {
+        scope_->Invalidate();
+    }
+
+    [[nodiscard]] const std::shared_ptr<GraphScope> &Scope() const noexcept {
+        return scope_;
+    }
+
   private:
-    explicit SystemInstance(std::shared_ptr<GraphScope> scope) : scope_(std::move(scope)) {}
+    explicit SystemInstance(std::shared_ptr<GraphScope> scope) : scope_(std::move(scope)) {
+    }
+
     std::shared_ptr<GraphScope> scope_;
 };
+
 } // namespace epidemic::gameplay::composition

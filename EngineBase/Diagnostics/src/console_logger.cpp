@@ -17,7 +17,8 @@ namespace {
 [[nodiscard]] bool IsProjectRootCandidate(const std::filesystem::path &path) {
     const bool has_engine_base_directory = std::filesystem::exists(path / "EngineBase");
     const bool has_root_cmake = std::filesystem::exists(path / "CMakeLists.txt");
-    const bool has_api_stability = std::filesystem::exists(path / "EngineBase" / "API_STABILITY.md");
+    const bool has_api_stability =
+        std::filesystem::exists(path / "EngineBase" / "API_STABILITY.md");
     return has_engine_base_directory && (has_root_cmake || has_api_stability);
 }
 
@@ -40,6 +41,7 @@ std::filesystem::path FindProjectRoot() {
 
     return std::filesystem::current_path();
 }
+
 } // namespace
 
 // Opens the log file lazily so simple test runs do not pay setup cost until the first log write.
@@ -60,13 +62,16 @@ void ConsoleLogger::EnsureLogFileInitialized() {
     file_.open(logs_directory / "epidemic.log", std::ios::out | std::ios::app);
 }
 
-// Formats one log line, writes it to stdout, and mirrors it to the persistent log file when available.
+// Formats one log line, writes it to stdout, and mirrors it to the persistent log file when
+// available.
 void ConsoleLogger::Write(const LogMessage &message) {
     const auto time = std::chrono::system_clock::to_time_t(message.timestamp);
-    const auto milliseconds =
-        std::chrono::duration_cast<std::chrono::milliseconds>(message.timestamp.time_since_epoch()) % 1000;
+    const auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                  message.timestamp.time_since_epoch()) %
+                              1000;
 
     std::tm local_time{};
+
 #if defined(_WIN32)
     static_cast<void>(localtime_s(&local_time, &time));
 #else
@@ -77,8 +82,8 @@ void ConsoleLogger::Write(const LogMessage &message) {
     thread_stream << message.thread_id;
 
     std::ostringstream line;
-    line << '[' << std::put_time(&local_time, "%H:%M:%S") << '.' << std::setw(3) << std::setfill('0')
-         << milliseconds.count() << "]"
+    line << '[' << std::put_time(&local_time, "%H:%M:%S") << '.' << std::setw(3)
+         << std::setfill('0') << milliseconds.count() << "]"
          << " [" << ToString(message.level) << ']' << " [" << message.module_name << ']';
 
     if (!message.category.empty()) {
@@ -91,6 +96,7 @@ void ConsoleLogger::Write(const LogMessage &message) {
     } else {
         line << thread_stream.str();
     }
+
     line << "] " << message.message;
 
     std::scoped_lock lock(mutex_);
@@ -103,5 +109,7 @@ void ConsoleLogger::Write(const LogMessage &message) {
         file_ << formatted_line << '\n';
         file_.flush();
     }
+
 }
-}
+
+} // namespace epidemic::diagnostics

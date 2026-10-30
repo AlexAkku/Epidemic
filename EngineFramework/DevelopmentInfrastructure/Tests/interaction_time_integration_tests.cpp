@@ -2,10 +2,10 @@
 
 #include <cstdlib>
 
-#define CHECK(expr)                                                                                                    \
-    do {                                                                                                               \
-        if (!(expr))                                                                                                   \
-            std::abort();                                                                                              \
+#define CHECK(expr)                                                                                \
+    do {                                                                                           \
+        if (!(expr))                                                                               \
+            std::abort();                                                                          \
     } while (false)
 
 using namespace epidemic::gameplay;
@@ -17,15 +17,26 @@ using namespace epidemic::gameplay::time;
 namespace {
 struct TimedProvider final : IInteractionProvider {
     InteractionTypeId type{};
+
     InteractionProviderId id = InteractionProviderId::FromString("test.interaction_time.provider");
 
     [[nodiscard]] InteractionProviderId Id() const noexcept override {
         return id;
     }
 
-    [[nodiscard]] std::vector<InteractionCandidate> Collect(const InteractionContext &context) const override {
-        return {{type, context.actor, context.target, id, 10, InteractionAvailability::Available, {}, {}}};
+    [[nodiscard]] std::vector<InteractionCandidate>
+    Collect(const InteractionContext &context) const override {
+        return {{type,
+                 context.actor,
+                 context.target,
+                 id,
+                 10,
+                 InteractionAvailability::Available,
+                 {},
+                 {}}};
+
     }
+
 };
 
 struct Fixture {
@@ -35,6 +46,7 @@ struct Fixture {
     InteractionTimeAdapter adapter;
     TimedProvider provider;
     ClockId clock{};
+
     InteractionTypeId type = InteractionTypeId::FromString("game.repair");
 
     Fixture() : dispatcher(time), adapter(interactions, time) {
@@ -49,6 +61,7 @@ struct Fixture {
         definition.materialization = InteractionMaterializationPolicy::AbstractAllowed;
         definition.persistence = InteractionPersistence::PersistentSession;
         definition.duration = GameplayDuration{10};
+
         CHECK(interactions.RegisterDefinition(definition));
 
         provider.type = type;
@@ -66,9 +79,14 @@ struct Fixture {
 
     [[nodiscard]] InteractionContext Context(std::uint64_t suffix = 1) const {
         InteractionContext context;
-        context.actor = {GameplayDomainId::FromString("test.actor"), GameplayObjectId::FromRaw(1, suffix)};
-        context.target = {GameplayDomainId::FromString("test.target"), GameplayObjectId::FromRaw(2, suffix)};
+        context.actor = {GameplayDomainId::FromString("test.actor"),
+                         GameplayObjectId::FromRaw(1, suffix)};
+
+        context.target = {GameplayDomainId::FromString("test.target"),
+                          GameplayObjectId::FromRaw(2, suffix)};
+
         context.gameplay.time = GameplayTimePoint{0};
+
         return context;
     }
 
@@ -81,6 +99,7 @@ struct Fixture {
         CHECK(committed);
         return committed.Value().execution;
     }
+
 };
 
 void TestDispatcherCompletionAndObservedTime() {
@@ -98,12 +117,14 @@ void TestDispatcherCompletionAndObservedTime() {
     const auto completion_schedule = *session->completion_schedule;
     CHECK(fixture.time.HasSchedule(completion_schedule));
 
-    // Collect after the semantic due time. The interaction must record trigger.observed_at (15), not caller time (999)
-    // and not reinterpret the logical tick as gameplay time.
+    // Collect after the semantic due time. The interaction must record trigger.observed_at (15),
+    // not caller time (999) and not reinterpret the logical tick as gameplay time.
     CHECK(fixture.time.SynchronizeClock(fixture.clock, GameplayTimePoint{15}, Revision{2}));
     GameplayContext processing_context;
     processing_context.time = GameplayTimePoint{999};
+
     processing_context.tick = GameplayTickId{77};
+
     const auto pumped = fixture.dispatcher.Pump(fixture.clock, processing_context);
     CHECK(pumped);
     CHECK(pumped.Value().collected == 1);
@@ -120,7 +141,8 @@ void TestDispatcherCompletionAndObservedTime() {
     CHECK(completed.context.time == GameplayTimePoint{15});
     CHECK(completed.context.tick == GameplayTickId{77});
 
-    // Time already consumed the one-shot schedule; reconciliation must not recreate it for a terminal session.
+    // Time already consumed the one-shot schedule; reconciliation must not recreate it for a
+    // terminal session.
     CHECK(fixture.adapter.Synchronize(fixture.clock));
     CHECK(!fixture.time.HasSchedule(completion_schedule));
 }
@@ -143,8 +165,8 @@ void TestRestoreReusesPersistentSchedule() {
     CHECK(restored.interactions.RestoreSnapshot(interaction_snapshot));
     CHECK(restored.time.RestoreSnapshot(time_snapshot));
 
-    // Interaction snapshots intentionally clear scheduler handles. Reconciliation must bind the already-restored Time
-    // schedule instead of creating a duplicate.
+    // Interaction snapshots intentionally clear scheduler handles. Reconciliation must bind the
+    // already-restored Time schedule instead of creating a duplicate.
     CHECK(restored.interactions.SessionsRequiringSchedule().size() == 1);
     const auto synchronized = restored.adapter.Synchronize(restored.clock);
     CHECK(synchronized);
@@ -164,7 +186,8 @@ void TestOrphanScheduleCleanup() {
     CHECK(session != nullptr && session->completion_schedule.has_value());
     const auto schedule = *session->completion_schedule;
 
-    CHECK(fixture.interactions.Cancel(execution, TypeId::FromString("test.cancel"), GameplayContext{}));
+    CHECK(fixture.interactions.Cancel(execution, TypeId::FromString("test.cancel"),
+                                      GameplayContext{}));
     CHECK(fixture.time.HasSchedule(schedule));
     const auto synchronized = fixture.adapter.Synchronize(fixture.clock);
     CHECK(synchronized);
@@ -179,8 +202,10 @@ void TestJournalGapFallsBackToAuthoritativeReconciliation() {
     for (std::uint64_t i = 10; i < 2200; ++i) {
         const auto context = fixture.Context(i);
         const auto execution = fixture.Start(context);
-        CHECK(fixture.interactions.Cancel(execution, TypeId::FromString("test.cancel"), GameplayContext{}));
+        CHECK(fixture.interactions.Cancel(execution, TypeId::FromString("test.cancel"),
+                                          GameplayContext{}));
     }
+
     CHECK(fixture.interactions.ReadChangesSince(ChangeCursor{}).snapshot_required);
 
     const auto live_context = fixture.Context(9000);
@@ -201,7 +226,8 @@ void TestPendingDispatcherTriggerSurvivesRestore() {
     CHECK(original.adapter.Synchronize(original.clock));
     CHECK(original.time.SynchronizeClock(original.clock, GameplayTimePoint{10}, Revision{2}));
 
-    // Destructively collect into the shared dispatcher's durable pending state, but do not dispatch yet.
+    // Destructively collect into the shared dispatcher's durable pending state, but do not dispatch
+    // yet.
     const auto collected = original.dispatcher.CollectDue(original.clock, GameplayContext{});
     CHECK(collected && collected.Value() == 1);
     CHECK(original.dispatcher.PendingCount() == 1);
@@ -215,9 +241,9 @@ void TestPendingDispatcherTriggerSurvivesRestore() {
     CHECK(restored.time.RestoreSnapshot(time_snapshot));
     CHECK(restored.dispatcher.RestoreSnapshot(dispatcher_snapshot));
 
-    // There is intentionally no Time schedule now: the occurrence lives in the dispatcher inbox. Even though the
-    // restored Interaction session has no scheduler handle, reconciliation must recognize the pending occurrence and
-    // must not create a duplicate schedule.
+    // There is intentionally no Time schedule now: the occurrence lives in the dispatcher inbox.
+    // Even though the restored Interaction session has no scheduler handle, reconciliation must
+    // recognize the pending occurrence and must not create a duplicate schedule.
     CHECK(restored.adapter.Synchronize(restored.clock));
     CHECK(restored.time.CaptureSnapshot().schedules.empty());
     const auto report = restored.dispatcher.DispatchPending();
@@ -227,6 +253,7 @@ void TestPendingDispatcherTriggerSurvivesRestore() {
     CHECK(restored.adapter.Synchronize(restored.clock));
     CHECK(restored.time.CaptureSnapshot().schedules.empty());
 }
+
 } // namespace
 
 int main() {

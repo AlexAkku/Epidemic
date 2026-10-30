@@ -21,16 +21,19 @@ enum class AssetLocationKind {
     case AssetLocationKind::Generated:
         return true;
     }
+
     return false;
 }
 
 struct AssetLocation {
     AssetLocationKind kind = AssetLocationKind::FilePath;
     foundation::StringId mount_id{};
+
     std::string path;
     foundation::StringId generator_id{};
 
     AssetLocation() = default;
+
     AssetLocation(AssetLocationKind location_kind, std::string location_path)
         : kind(location_kind), path(std::move(location_path)) {
     }
@@ -38,6 +41,7 @@ struct AssetLocation {
     [[nodiscard]] bool Empty() const noexcept {
         return path.empty();
     }
+
     [[nodiscard]] bool operator==(const AssetLocation &) const = default;
 };
 

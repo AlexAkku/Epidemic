@@ -8,6 +8,7 @@ foundation::Result<SceneServices> CreateSceneServices(const SceneOptions &option
 
     auto runtime = std::make_shared<SceneRuntime>();
     SceneServices services{};
+
     services.nodes = runtime;
     services.transforms = runtime;
     services.spatial = runtime;
@@ -15,4 +16,5 @@ foundation::Result<SceneServices> CreateSceneServices(const SceneOptions &option
     services.snapshots = runtime;
     return foundation::Result<SceneServices>::Success(std::move(services));
 }
+
 } // namespace epidemic::runtime

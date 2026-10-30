@@ -10,7 +10,9 @@ namespace epidemic::core::events::detail {
     return next_token != 0;
 }
 
-[[nodiscard]] constexpr IEventBus::HandlerToken AdvanceHandlerToken(IEventBus::HandlerToken current) noexcept {
+[[nodiscard]] constexpr IEventBus::HandlerToken
+AdvanceHandlerToken(IEventBus::HandlerToken current) noexcept {
     return current == std::numeric_limits<IEventBus::HandlerToken>::max() ? 0 : current + 1;
 }
+
 } // namespace epidemic::core::events::detail

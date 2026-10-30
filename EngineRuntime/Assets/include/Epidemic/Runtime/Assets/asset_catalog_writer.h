@@ -22,4 +22,5 @@ class IAssetCatalogWriter {
     // is a semantic no-op that still returns success.
     [[nodiscard]] virtual foundation::Result<void> Seal() = 0;
 };
+
 } // namespace epidemic::runtime

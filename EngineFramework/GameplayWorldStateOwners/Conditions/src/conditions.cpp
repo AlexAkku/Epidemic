@@ -12,51 +12,64 @@ namespace {
 [[nodiscard]] foundation::Error Error(std::string code, std::string message) {
     return foundation::Error::Create(std::move(code), std::move(message));
 }
+
 } // namespace
 
-ConditionService::ConditionService() : ids_(GameplayObjectId::FromString("framework.conditions.instances").High()) {
+ConditionService::ConditionService()
+    : ids_(GameplayObjectId::FromString("framework.conditions.instances").High()) {
 }
 
-foundation::Result<ConditionTypeId> ConditionService::RegisterCondition(ConditionDefinition definition,
-                                                                        PayloadValidator validator) {
+foundation::Result<ConditionTypeId>
+ConditionService::RegisterCondition(ConditionDefinition definition, PayloadValidator validator) {
     if (frozen_) {
         return foundation::Result<ConditionTypeId>::Failure(
             Error("gameplay.registry_frozen", "condition registry is frozen"));
     }
+
     if (definition.canonical_name.empty()) {
         return foundation::Result<ConditionTypeId>::Failure(
             Error("gameplay.condition_invalid", "condition canonical name must not be empty"));
     }
+
     const auto expected = ConditionTypeId::FromString(definition.canonical_name);
     if (!definition.id.IsValid()) {
         definition.id = expected;
     }
+
     if (definition.id != expected) {
         return foundation::Result<ConditionTypeId>::Failure(
             Error("gameplay.condition_id_mismatch", "condition id does not match canonical name"));
     }
+
     if (definitions_.contains(definition.id)) {
         return foundation::Result<ConditionTypeId>::Failure(
             Error("gameplay.already_registered", "condition type is already registered"));
     }
+
     if (definition.stacking == ConditionStackingPolicy::AddStacks && definition.max_stacks == 0) {
         return foundation::Result<ConditionTypeId>::Failure(
-            Error("gameplay.condition_invalid_stacks", "stacking condition must allow at least one stack"));
+            Error("gameplay.condition_invalid_stacks",
+                  "stacking condition must allow at least one stack"));
     }
+
     if (definition.default_duration.ticks < 0 || definition.periodic_interval.ticks < 0) {
         return foundation::Result<ConditionTypeId>::Failure(
-            Error("gameplay.condition_invalid_duration", "condition durations must be non-negative"));
+            Error("gameplay.condition_invalid_duration",
+                  "condition durations must be non-negative"));
     }
+
     if ((definition.default_duration.ticks > 0 || definition.periodic_interval.ticks > 0) &&
         !definition.clock.IsValid()) {
         return foundation::Result<ConditionTypeId>::Failure(
-            Error("gameplay.condition_invalid_clock", "finite or periodic condition requires a valid clock"));
+            Error("gameplay.condition_invalid_clock",
+                  "finite or periodic condition requires a valid clock"));
     }
+
     if (definition.payload_type.IsValid() &&
         (definition.payload_schema_version == 0 || definition.max_payload_bytes == 0)) {
         return foundation::Result<ConditionTypeId>::Failure(
-            Error("gameplay.condition_invalid_payload",
-                  "typed condition payload requires non-zero schema version and max payload bytes"));
+            Error("gameplay.condition_invalid_payload", "typed condition payload requires non-zero "
+                                                        "schema version and max payload bytes"));
     }
 
     const auto id = definition.id;
@@ -64,11 +77,14 @@ foundation::Result<ConditionTypeId> ConditionService::RegisterCondition(Conditio
     return foundation::Result<ConditionTypeId>::Success(id);
 }
 
-foundation::Result<void> ConditionService::SetSubjectStateProvider(const IConditionSubjectStateProvider *provider) {
+foundation::Result<void>
+ConditionService::SetSubjectStateProvider(const IConditionSubjectStateProvider *provider) {
     if (frozen_) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_frozen", "condition subject state provider cannot be changed after freeze"));
+            Error("gameplay.registry_frozen",
+                  "condition subject state provider cannot be changed after freeze"));
     }
+
     subject_state_provider_ = provider;
     return foundation::Result<void>::Success();
 }
@@ -78,63 +94,83 @@ const ConditionDefinition *ConditionService::FindDefinition(ConditionTypeId id) 
     return found == definitions_.end() ? nullptr : &found->second.definition;
 }
 
-foundation::Result<void> ConditionService::ValidatePayload(const DefinitionEntry &definition,
-                                                           const RegisteredConditionPayload &payload) const {
+foundation::Result<void>
+ConditionService::ValidatePayload(const DefinitionEntry &definition,
+                                  const RegisteredConditionPayload &payload) const {
     const auto &def = definition.definition;
     if (!def.payload_type.IsValid()) {
         if (payload.type.IsValid() || !payload.bytes.empty()) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.condition_payload_unexpected", "condition type does not accept payload"));
+                Error("gameplay.condition_payload_unexpected",
+                      "condition type does not accept payload"));
         }
+
         return foundation::Result<void>::Success();
     }
+
     if (payload.type != def.payload_type || payload.schema_version != def.payload_schema_version ||
         payload.bytes.size() > def.max_payload_bytes) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.condition_payload_invalid", "condition payload type or size is invalid"));
+            Error("gameplay.condition_payload_invalid",
+                  "condition payload type or size is invalid"));
     }
+
     if (definition.validator) {
         try {
             if (!definition.validator(payload.bytes)) {
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.condition_payload_rejected", "condition payload validator rejected payload"));
+                    Error("gameplay.condition_payload_rejected",
+                          "condition payload validator rejected payload"));
             }
+
         } catch (const std::exception &) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.condition_payload_validator_failed", "condition payload validator threw an exception"));
+                Error("gameplay.condition_payload_validator_failed",
+                      "condition payload validator threw an exception"));
         } catch (...) {
-            return foundation::Result<void>::Failure(Error("gameplay.condition_payload_validator_failed",
-                                                           "condition payload validator threw an unknown exception"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.condition_payload_validator_failed",
+                      "condition payload validator threw an unknown exception"));
         }
+
     }
+
     return foundation::Result<void>::Success();
 }
 
-std::optional<GameplayTimePoint> ConditionService::ComputeExpiration(GameplayTimePoint now,
-                                                                     GameplayDuration duration) const noexcept {
+std::optional<GameplayTimePoint>
+ConditionService::ComputeExpiration(GameplayTimePoint now,
+                                    GameplayDuration duration) const noexcept {
     if (duration.ticks <= 0) {
         return std::nullopt;
     }
+
     return ::epidemic::gameplay::CheckedAdd(now, duration);
 }
 
-std::vector<ConditionInstanceId> ConditionService::MatchingInstances(const ApplyConditionRequest &request,
-                                                                     const ConditionDefinition &definition) const {
+std::vector<ConditionInstanceId>
+ConditionService::MatchingInstances(const ApplyConditionRequest &request,
+                                    const ConditionDefinition &definition) const {
     std::vector<ConditionInstanceId> result;
     const auto subject_found = subject_index_.find(request.subject);
     if (subject_found == subject_index_.end()) {
         return result;
     }
+
     for (const auto id : subject_found->second) {
         const auto *instance = Find(id);
         if (instance == nullptr || instance->type != definition.id) {
             continue;
         }
-        if (definition.stacking == ConditionStackingPolicy::UniquePerSource && instance->source != request.source) {
+
+        if (definition.stacking == ConditionStackingPolicy::UniquePerSource &&
+            instance->source != request.source) {
             continue;
         }
+
         result.push_back(id);
     }
+
     std::sort(result.begin(), result.end());
     return result;
 }
@@ -150,28 +186,33 @@ void ConditionService::UnindexInstance(const ConditionInstance &instance) {
     if (found == subject_index_.end()) {
         return;
     }
+
     auto &ids = found->second;
     const auto pos = std::lower_bound(ids.begin(), ids.end(), instance.id);
     if (pos != ids.end() && *pos == instance.id) {
         ids.erase(pos);
     }
+
     if (ids.empty()) {
         subject_index_.erase(found);
     }
+
 }
 
 std::optional<Revision> ConditionService::NextRevision() const noexcept {
     return CheckedNext(revision_);
 }
 
-foundation::Result<ConditionInstanceId> ConditionService::AddNew(const ApplyConditionRequest &request,
-                                                                 const ConditionDefinition &definition) {
+foundation::Result<ConditionInstanceId>
+ConditionService::AddNew(const ApplyConditionRequest &request,
+                         const ConditionDefinition &definition) {
     const auto duration = request.duration.value_or(definition.default_duration);
     const auto expiration = ComputeExpiration(request.context.time, duration);
     if (duration.ticks > 0 && !expiration.has_value()) {
         return foundation::Result<ConditionInstanceId>::Failure(
             Error("gameplay.time_overflow", "condition expiration overflows gameplay time"));
     }
+
     const auto next_revision = NextRevision();
     if (!next_revision) {
         return foundation::Result<ConditionInstanceId>::Failure(
@@ -182,8 +223,10 @@ foundation::Result<ConditionInstanceId> ConditionService::AddNew(const ApplyCond
     const auto raw = staged_ids.Next();
     if (!raw.IsValid()) {
         return foundation::Result<ConditionInstanceId>::Failure(
-            Error("gameplay.condition_id_exhausted", "condition instance id generator is exhausted"));
+            Error("gameplay.condition_id_exhausted",
+                  "condition instance id generator is exhausted"));
     }
+
     const auto id = ConditionInstanceId{raw};
 
     ConditionInstance instance;
@@ -208,7 +251,8 @@ foundation::Result<ConditionInstanceId> ConditionService::AddNew(const ApplyCond
         staged_subject_ids.insert(pos, id);
         instances_.reserve(instances_.size() + 1);
         id_to_index_.reserve(id_to_index_.size() + 1);
-        subject_index_.reserve(subject_index_.size() + (subject_found == subject_index_.end() ? 1u : 0u));
+        subject_index_.reserve(subject_index_.size() +
+                               (subject_found == subject_index_.end() ? 1u : 0u));
     } catch (...) {
         return foundation::Result<ConditionInstanceId>::Failure(
             Error("gameplay.condition_allocation_failed", "failed to prepare condition indexes"));
@@ -229,7 +273,9 @@ foundation::Result<ConditionInstanceId> ConditionService::AddNew(const ApplyCond
                 return foundation::Result<ConditionInstanceId>::Failure(
                     Error("gameplay.condition_index_conflict", "condition subject index conflict"));
             }
+
         }
+
     } catch (...) {
         if (id_inserted)
             id_to_index_.erase(id);
@@ -258,6 +304,7 @@ foundation::Result<ConditionInstanceId> ConditionService::AddNew(const ApplyCond
                                  current.periodic_schedule,
                                  current.revision,
                                  request.context};
+
     added_change.source = request.source;
     added_change.instigator = request.instigator;
     added_change.magnitude_micro = request.magnitude_micro;
@@ -269,27 +316,38 @@ foundation::Result<ConditionInstanceId> ConditionService::AddNew(const ApplyCond
 foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionRequest request) {
     if (!frozen_) {
         return foundation::Result<ApplyConditionResult>::Failure(
-            Error("gameplay.registry_not_frozen", "condition registry must be frozen before runtime mutation"));
+            Error("gameplay.registry_not_frozen",
+                  "condition registry must be frozen before runtime mutation"));
     }
+
     const auto definition_found = definitions_.find(request.type);
     if (definition_found == definitions_.end() || !request.subject.IsValid()) {
         return foundation::Result<ApplyConditionResult>::Failure(
-            Error("gameplay.condition_request_invalid", "condition type and subject must be valid"));
+            Error("gameplay.condition_request_invalid",
+                  "condition type and subject must be valid"));
     }
+
     if (request.duration.has_value() && request.duration->ticks < 0) {
         return foundation::Result<ApplyConditionResult>::Failure(
-            Error("gameplay.condition_invalid_duration", "condition duration override must be non-negative"));
+            Error("gameplay.condition_invalid_duration",
+                  "condition duration override must be non-negative"));
     }
+
     if (definition_found->second.definition.stacking == ConditionStackingPolicy::UniquePerSource &&
         !request.source.IsValid()) {
         return foundation::Result<ApplyConditionResult>::Failure(
-            Error("gameplay.condition_source_required", "UniquePerSource condition requires a valid source"));
+            Error("gameplay.condition_source_required",
+                  "UniquePerSource condition requires a valid source"));
     }
-    const auto effective_duration = request.duration.value_or(definition_found->second.definition.default_duration);
+
+    const auto effective_duration =
+        request.duration.value_or(definition_found->second.definition.default_duration);
     if (effective_duration.ticks > 0 && !definition_found->second.definition.clock.IsValid()) {
         return foundation::Result<ApplyConditionResult>::Failure(
-            Error("gameplay.condition_invalid_clock", "finite condition application requires a valid clock"));
+            Error("gameplay.condition_invalid_clock",
+                  "finite condition application requires a valid clock"));
     }
+
     const auto payload_result = ValidatePayload(definition_found->second, request.payload);
     if (!payload_result) {
         return foundation::Result<ApplyConditionResult>::Failure(payload_result.GetError());
@@ -303,9 +361,11 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
                       "materialized-only condition requires a subject state provider"));
         }
 
-        ConditionSubjectMaterializationState materialization_state = ConditionSubjectMaterializationState::Unavailable;
+        ConditionSubjectMaterializationState materialization_state =
+            ConditionSubjectMaterializationState::Unavailable;
         try {
-            materialization_state = subject_state_provider_->GetMaterializationState(request.subject);
+            materialization_state =
+                subject_state_provider_->GetMaterializationState(request.subject);
         } catch (const std::exception &) {
             return foundation::Result<ApplyConditionResult>::Failure(
                 Error("gameplay.condition_subject_state_provider_failed",
@@ -321,11 +381,13 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
                 Error("gameplay.condition_materialization_state_unavailable",
                       "subject materialization state is unavailable"));
         }
+
         if (materialization_state != ConditionSubjectMaterializationState::Materialized) {
             return foundation::Result<ApplyConditionResult>::Failure(
                 Error("gameplay.condition_requires_materialized_subject",
                       "materialized-only condition cannot be applied to an abstract subject"));
         }
+
     }
 
     auto matches = MatchingInstances(request, definition);
@@ -334,6 +396,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         if (!added) {
             return foundation::Result<ApplyConditionResult>::Failure(added.GetError());
         }
+
         return foundation::Result<ApplyConditionResult>::Success(
             ApplyConditionResult{ConditionApplyDisposition::Added, added.Value(), std::nullopt});
     }
@@ -344,6 +407,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         return foundation::Result<ApplyConditionResult>::Failure(
             Error("gameplay.condition_index_invalid", "condition index is inconsistent"));
     }
+
     auto &existing = instances_[existing_found->second];
 
     switch (definition.stacking) {
@@ -359,6 +423,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
             return foundation::Result<ApplyConditionResult>::Failure(
                 Error("gameplay.time_overflow", "condition expiration overflows gameplay time"));
         }
+
         auto updated = existing;
         updated.applied_at = request.context.time;
         updated.expires_at = expiration;
@@ -366,13 +431,16 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         updated.payload = std::move(request.payload);
         updated.source = request.source;
         updated.instigator = request.instigator;
-        if (updated.applied_at == existing.applied_at && updated.expires_at == existing.expires_at &&
-            updated.magnitude_micro == existing.magnitude_micro && updated.payload.type == existing.payload.type &&
+        if (updated.applied_at == existing.applied_at &&
+            updated.expires_at == existing.expires_at &&
+            updated.magnitude_micro == existing.magnitude_micro &&
+            updated.payload.type == existing.payload.type &&
             updated.payload.bytes == existing.payload.bytes && updated.source == existing.source &&
             updated.instigator == existing.instigator) {
             return foundation::Result<ApplyConditionResult>::Success(
                 ApplyConditionResult{ConditionApplyDisposition::NoOp, existing.id, std::nullopt});
         }
+
         const auto next_revision = NextRevision();
         if (!next_revision)
             return foundation::Result<ApplyConditionResult>::Failure(
@@ -380,9 +448,10 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         updated.revision = *next_revision;
         existing = std::move(updated);
         revision_ = *next_revision;
-        RecordChange(ConditionChange{0, ConditionChangeKind::Refreshed, existing.id, existing.type, existing.subject,
-                                     ConditionRemovalReason::SystemCleanup, 1, existing.expiration_schedule,
-                                     existing.periodic_schedule, existing.revision, request.context});
+        RecordChange(ConditionChange{0, ConditionChangeKind::Refreshed, existing.id, existing.type,
+                                     existing.subject, ConditionRemovalReason::SystemCleanup, 1,
+                                     existing.expiration_schedule, existing.periodic_schedule,
+                                     existing.revision, request.context});
         return foundation::Result<ApplyConditionResult>::Success(
             ApplyConditionResult{ConditionApplyDisposition::Refreshed, existing.id, std::nullopt});
     }
@@ -393,6 +462,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
             return foundation::Result<ApplyConditionResult>::Success(
                 ApplyConditionResult{ConditionApplyDisposition::NoOp, existing.id, std::nullopt});
         }
+
         auto updated_expiration = existing.expires_at;
         if (duration.ticks > 0) {
             const auto base = existing.expires_at.value_or(request.context.time);
@@ -401,8 +471,10 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
                 return foundation::Result<ApplyConditionResult>::Failure(
                     Error("gameplay.time_overflow", "condition extension overflows gameplay time"));
             }
+
             updated_expiration = *expiration;
         }
+
         const auto next_revision = NextRevision();
         if (!next_revision)
             return foundation::Result<ApplyConditionResult>::Failure(
@@ -410,10 +482,11 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         existing.expires_at = updated_expiration;
         existing.revision = *next_revision;
         revision_ = *next_revision;
-        RecordChange(ConditionChange{0, ConditionChangeKind::DurationExtended, existing.id, existing.type,
-                                     existing.subject, ConditionRemovalReason::SystemCleanup, 1,
-                                     existing.expiration_schedule, existing.periodic_schedule, existing.revision,
-                                     request.context});
+        RecordChange(ConditionChange{0, ConditionChangeKind::DurationExtended, existing.id,
+                                     existing.type, existing.subject,
+                                     ConditionRemovalReason::SystemCleanup, 1,
+                                     existing.expiration_schedule, existing.periodic_schedule,
+                                     existing.revision, request.context});
         return foundation::Result<ApplyConditionResult>::Success(
             ApplyConditionResult{ConditionApplyDisposition::Refreshed, existing.id, std::nullopt});
     }
@@ -423,6 +496,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
             return foundation::Result<ApplyConditionResult>::Success(
                 ApplyConditionResult{ConditionApplyDisposition::NoOp, existing.id, std::nullopt});
         }
+
         const auto next_revision = NextRevision();
         if (!next_revision)
             return foundation::Result<ApplyConditionResult>::Failure(
@@ -432,9 +506,11 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         existing.revision = *next_revision;
         revision_ = *next_revision;
         ++stack_merges_;
-        RecordChange(ConditionChange{0, ConditionChangeKind::StackChanged, existing.id, existing.type, existing.subject,
-                                     ConditionRemovalReason::SystemCleanup, 1, existing.expiration_schedule,
-                                     existing.periodic_schedule, existing.revision, request.context});
+        RecordChange(ConditionChange{0, ConditionChangeKind::StackChanged, existing.id,
+                                     existing.type, existing.subject,
+                                     ConditionRemovalReason::SystemCleanup, 1,
+                                     existing.expiration_schedule, existing.periodic_schedule,
+                                     existing.revision, request.context});
         return foundation::Result<ApplyConditionResult>::Success(
             ApplyConditionResult{ConditionApplyDisposition::Stacked, existing.id, std::nullopt});
     }
@@ -444,6 +520,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
             return foundation::Result<ApplyConditionResult>::Success(
                 ApplyConditionResult{ConditionApplyDisposition::NoOp, existing.id, std::nullopt});
         }
+
         [[fallthrough]];
 
     case ConditionStackingPolicy::ReplaceExisting: {
@@ -452,22 +529,27 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         const auto expiration = ComputeExpiration(request.context.time, duration);
         if (duration.ticks > 0 && !expiration.has_value()) {
             return foundation::Result<ApplyConditionResult>::Failure(
-                Error("gameplay.time_overflow", "condition replacement expiration overflows gameplay time"));
+                Error("gameplay.time_overflow",
+                      "condition replacement expiration overflows gameplay time"));
         }
+
         const auto next_revision = ::epidemic::gameplay::CheckedNext(revision_);
         if (!next_revision.has_value()) {
             return foundation::Result<ApplyConditionResult>::Failure(
                 Error("gameplay.revision_exhausted", "condition revision is exhausted"));
         }
+
         auto staged_ids = ids_;
         const auto raw = staged_ids.Next();
         if (!raw.IsValid()) {
             return foundation::Result<ApplyConditionResult>::Failure(
-                Error("gameplay.condition_id_exhausted", "condition instance id generator is exhausted"));
+                Error("gameplay.condition_id_exhausted",
+                      "condition instance id generator is exhausted"));
         }
 
         ConditionInstance replacement;
         replacement.id = ConditionInstanceId{raw};
+
         replacement.type = request.type;
         replacement.subject = request.subject;
         replacement.source = request.source;
@@ -485,29 +567,37 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         const auto subject_found = subject_index_.find(removed.subject);
         if (subject_found == subject_index_.end())
             return foundation::Result<ApplyConditionResult>::Failure(
-                Error("gameplay.condition_index_invalid", "condition subject index is inconsistent"));
+                Error("gameplay.condition_index_invalid",
+                      "condition subject index is inconsistent"));
         std::vector<ConditionInstanceId> staged_subject_ids;
         try {
             staged_subject_ids = subject_found->second;
         } catch (...) {
             return foundation::Result<ApplyConditionResult>::Failure(
-                Error("gameplay.condition_allocation_failed", "failed to prepare replacement index"));
+                Error("gameplay.condition_allocation_failed",
+                      "failed to prepare replacement index"));
         }
-        const auto old_pos = std::lower_bound(staged_subject_ids.begin(), staged_subject_ids.end(), replaced);
+
+        const auto old_pos =
+            std::lower_bound(staged_subject_ids.begin(), staged_subject_ids.end(), replaced);
         if (old_pos == staged_subject_ids.end() || *old_pos != replaced)
             return foundation::Result<ApplyConditionResult>::Failure(
-                Error("gameplay.condition_index_invalid", "condition subject index is inconsistent"));
+                Error("gameplay.condition_index_invalid",
+                      "condition subject index is inconsistent"));
         *old_pos = replacement.id;
         std::sort(staged_subject_ids.begin(), staged_subject_ids.end());
         try {
             const auto [_, inserted] = id_to_index_.emplace(replacement.id, old_index);
             if (!inserted)
                 return foundation::Result<ApplyConditionResult>::Failure(
-                    Error("gameplay.condition_id_conflict", "replacement condition id already exists"));
+                    Error("gameplay.condition_id_conflict",
+                          "replacement condition id already exists"));
         } catch (...) {
             return foundation::Result<ApplyConditionResult>::Failure(
-                Error("gameplay.condition_allocation_failed", "failed to publish replacement index"));
+                Error("gameplay.condition_allocation_failed",
+                      "failed to publish replacement index"));
         }
+
         instances_[old_index] = std::move(replacement);
         subject_index_.find(removed.subject)->second.swap(staged_subject_ids);
         id_to_index_.erase(removed.id);
@@ -527,6 +617,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
                                        removed.periodic_schedule,
                                        revision_,
                                        request.context};
+
         removed_change.source = removed.source;
         removed_change.instigator = removed.instigator;
         removed_change.magnitude_micro = removed.magnitude_micro;
@@ -545,6 +636,7 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
                                      current.periodic_schedule,
                                      revision_,
                                      request.context};
+
         added_change.source = current.source;
         added_change.instigator = current.instigator;
         added_change.magnitude_micro = current.magnitude_micro;
@@ -562,7 +654,8 @@ foundation::Result<ApplyConditionResult> ConditionService::Apply(ApplyConditionR
         Error("gameplay.condition_stacking_unknown", "unhandled condition stacking policy"));
 }
 
-foundation::Result<void> ConditionService::RemoveAtIndex(std::size_t index, ConditionRemovalReason reason,
+foundation::Result<void> ConditionService::RemoveAtIndex(std::size_t index,
+                                                         ConditionRemovalReason reason,
                                                          GameplayContext context) {
     if (index >= instances_.size()) {
         return foundation::Result<void>::Failure(
@@ -582,12 +675,14 @@ foundation::Result<void> ConditionService::RemoveAtIndex(std::size_t index, Cond
         instances_[index] = std::move(instances_[last]);
         id_to_index_[instances_[index].id] = index;
     }
+
     instances_.pop_back();
     revision_ = *next_revision;
     ++removed_;
     if (reason == ConditionRemovalReason::Expired) {
         ++expired_;
     }
+
     ConditionChange change{0,
                            reason == ConditionRemovalReason::Expired ? ConditionChangeKind::Expired
                                                                      : ConditionChangeKind::Removed,
@@ -600,6 +695,7 @@ foundation::Result<void> ConditionService::RemoveAtIndex(std::size_t index, Cond
                            removed.periodic_schedule,
                            revision_,
                            context};
+
     change.source = removed.source;
     change.instigator = removed.instigator;
     change.magnitude_micro = removed.magnitude_micro;
@@ -608,54 +704,68 @@ foundation::Result<void> ConditionService::RemoveAtIndex(std::size_t index, Cond
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ConditionService::Remove(ConditionInstanceId instance, ConditionRemovalReason reason,
+foundation::Result<void> ConditionService::Remove(ConditionInstanceId instance,
+                                                  ConditionRemovalReason reason,
                                                   GameplayContext context) {
     const auto found = id_to_index_.find(instance);
     if (found == id_to_index_.end()) {
         return foundation::Result<void>::Failure(
             Error("gameplay.condition_unknown", "condition instance does not exist"));
     }
+
     return RemoveAtIndex(found->second, reason, context);
 }
 
 std::uint64_t ConditionService::RemoveByType(GameplayObjectRef subject, ConditionTypeId type,
-                                             ConditionRemovalReason reason, GameplayContext context) {
+                                             ConditionRemovalReason reason,
+                                             GameplayContext context) {
     auto instances = GetConditions(subject);
     std::uint64_t count = 0;
     for (const auto &instance : instances) {
         if (instance.type == type && Remove(instance.id, reason, context)) {
             ++count;
         }
+
     }
+
     return count;
 }
 
 std::uint64_t ConditionService::RemoveBySource(GameplayObjectRef subject, GameplayObjectRef source,
-                                               ConditionRemovalReason reason, GameplayContext context) {
+                                               ConditionRemovalReason reason,
+                                               GameplayContext context) {
     auto instances = GetConditions(subject);
     std::uint64_t count = 0;
     for (const auto &instance : instances) {
         if (instance.source == source && Remove(instance.id, reason, context)) {
             ++count;
         }
+
     }
+
     return count;
 }
 
-std::uint64_t ConditionService::RemoveByTag(GameplayObjectRef subject, TagId tag, const GameplayTagRegistry &tags,
-                                            ConditionRemovalReason reason, GameplayContext context) {
+std::uint64_t ConditionService::RemoveByTag(GameplayObjectRef subject, TagId tag,
+                                            const GameplayTagRegistry &tags,
+                                            ConditionRemovalReason reason,
+                                            GameplayContext context) {
     auto instances = GetConditions(subject);
     std::uint64_t count = 0;
     for (const auto &instance : instances) {
         const auto *definition = FindDefinition(instance.type);
-        if (definition != nullptr && definition->tags.HasMatching(tag, tags) && Remove(instance.id, reason, context)) {
+        if (definition != nullptr && definition->tags.HasMatching(tag, tags) &&
+            Remove(instance.id, reason, context)) {
             ++count;
         }
+
     }
+
     return count;
 }
 
-std::uint64_t ConditionService::RemoveSubject(GameplayObjectRef subject, ConditionRemovalReason reason,
+std::uint64_t ConditionService::RemoveSubject(GameplayObjectRef subject,
+                                              ConditionRemovalReason reason,
                                               GameplayContext context) {
     const auto instances = GetConditions(subject);
     std::uint64_t count = 0;
@@ -663,7 +773,9 @@ std::uint64_t ConditionService::RemoveSubject(GameplayObjectRef subject, Conditi
         if (Remove(instance.id, reason, context)) {
             ++count;
         }
+
     }
+
     return count;
 }
 
@@ -676,13 +788,17 @@ foundation::Result<void> ConditionService::SetScheduleLinks(ConditionInstanceId 
         return foundation::Result<void>::Failure(
             Error("gameplay.condition_unknown", "condition instance does not exist"));
     }
-    if ((expiration.has_value() && !expiration->IsValid()) || (periodic.has_value() && !periodic->IsValid()))
+
+    if ((expiration.has_value() && !expiration->IsValid()) ||
+        (periodic.has_value() && !periodic->IsValid()))
         return foundation::Result<void>::Failure(
-            Error("gameplay.condition_schedule_invalid", "condition schedule link contains invalid id"));
+            Error("gameplay.condition_schedule_invalid",
+                  "condition schedule link contains invalid id"));
     auto &value = instances_[found->second];
     if (value.expiration_schedule == expiration && value.periodic_schedule == periodic) {
         return foundation::Result<void>::Success();
     }
+
     const auto next_revision = NextRevision();
     if (!next_revision)
         return foundation::Result<void>::Failure(
@@ -691,53 +807,66 @@ foundation::Result<void> ConditionService::SetScheduleLinks(ConditionInstanceId 
     value.periodic_schedule = periodic;
     value.revision = *next_revision;
     revision_ = *next_revision;
-    RecordChange(ConditionChange{0, ConditionChangeKind::ScheduleLinksChanged, value.id, value.type, value.subject,
-                                 ConditionRemovalReason::SystemCleanup, 1, value.expiration_schedule,
-                                 value.periodic_schedule, value.revision, context});
+    RecordChange(ConditionChange{0, ConditionChangeKind::ScheduleLinksChanged, value.id, value.type,
+                                 value.subject, ConditionRemovalReason::SystemCleanup, 1,
+                                 value.expiration_schedule, value.periodic_schedule, value.revision,
+                                 context});
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> ConditionService::HandleExpirationDue(ConditionInstanceId instance,
-                                                               GameplayTimePoint observed_at, GameplayContext context) {
+                                                               GameplayTimePoint observed_at,
+                                                               GameplayContext context) {
     const auto *value = Find(instance);
     if (value == nullptr) {
         return foundation::Result<void>::Failure(
             Error("gameplay.condition_unknown", "condition instance does not exist"));
     }
+
     if (value->paused_for_materialization) {
         return foundation::Result<void>::Success();
     }
+
     if (!value->expires_at.has_value() || *value->expires_at > observed_at) {
         return foundation::Result<void>::Failure(
             Error("gameplay.condition_not_due", "condition is not due for expiration"));
     }
+
     return Remove(instance, ConditionRemovalReason::Expired, context);
 }
 
 foundation::Result<void> ConditionService::HandlePeriodicDue(ConditionInstanceId instance,
-                                                             std::uint64_t occurrence_count, GameplayContext context) {
+                                                             std::uint64_t occurrence_count,
+                                                             GameplayContext context) {
     const auto *value = Find(instance);
     if (value == nullptr) {
         return foundation::Result<void>::Failure(
             Error("gameplay.condition_unknown", "condition instance does not exist"));
     }
+
     const auto *definition = FindDefinition(value->type);
-    if (definition == nullptr || definition->periodic_interval.ticks <= 0 || occurrence_count == 0) {
+    if (definition == nullptr || definition->periodic_interval.ticks <= 0 ||
+        occurrence_count == 0) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.condition_periodic_invalid", "condition is not due for periodic processing"));
+            Error("gameplay.condition_periodic_invalid",
+                  "condition is not due for periodic processing"));
     }
+
     if (value->paused_for_materialization) {
         return foundation::Result<void>::Success();
     }
+
     const auto available = std::numeric_limits<std::uint64_t>::max() - periodic_triggers_;
     periodic_triggers_ += std::min(available, occurrence_count);
-    RecordChange(ConditionChange{0, ConditionChangeKind::PeriodicDue, value->id, value->type, value->subject,
-                                 ConditionRemovalReason::SystemCleanup, occurrence_count, value->expiration_schedule,
+    RecordChange(ConditionChange{0, ConditionChangeKind::PeriodicDue, value->id, value->type,
+                                 value->subject, ConditionRemovalReason::SystemCleanup,
+                                 occurrence_count, value->expiration_schedule,
                                  value->periodic_schedule, value->revision, context});
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> ConditionService::NotifySubjectMaterialization(GameplayObjectRef subject, bool materialized,
+foundation::Result<void> ConditionService::NotifySubjectMaterialization(GameplayObjectRef subject,
+                                                                        bool materialized,
                                                                         GameplayContext context) {
     if (!subject.IsValid())
         return foundation::Result<void>::Failure(
@@ -756,13 +885,17 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
                     continue;
                 const auto *definition = FindDefinition(instance.type);
                 if (definition != nullptr &&
-                    definition->materialization == ConditionMaterializationPolicy::MaterializedOnly &&
-                    definition->dematerialization == ConditionDematerializationPolicy::RejectDematerialization) {
+                    definition->materialization ==
+                        ConditionMaterializationPolicy::MaterializedOnly &&
+                    definition->dematerialization ==
+                        ConditionDematerializationPolicy::RejectDematerialization) {
                     return foundation::Result<void>::Failure(
                         Error("gameplay.condition_dematerialization_rejected",
                               "active condition rejects subject dematerialization"));
                 }
+
             }
+
         }
 
         std::vector<ConditionInstance> kept;
@@ -772,6 +905,7 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
                 kept.push_back(std::move(current));
                 continue;
             }
+
             const auto *definition = FindDefinition(current.type);
             if (definition == nullptr ||
                 definition->materialization != ConditionMaterializationPolicy::MaterializedOnly) {
@@ -779,7 +913,8 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
                 continue;
             }
 
-            if (!materialized && definition->dematerialization == ConditionDematerializationPolicy::Remove) {
+            if (!materialized &&
+                definition->dematerialization == ConditionDematerializationPolicy::Remove) {
                 const auto next = CheckedNext(staged_revision);
                 if (!next)
                     return foundation::Result<void>::Failure(
@@ -797,6 +932,7 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
                                        current.periodic_schedule,
                                        staged_revision,
                                        context};
+
                 change.source = current.source;
                 change.instigator = current.instigator;
                 change.magnitude_micro = current.magnitude_micro;
@@ -805,8 +941,8 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
                 continue;
             }
 
-            const bool should_pause =
-                !materialized && definition->dematerialization == ConditionDematerializationPolicy::Pause;
+            const bool should_pause = !materialized && definition->dematerialization ==
+                                                           ConditionDematerializationPolicy::Pause;
             if (current.paused_for_materialization == should_pause) {
                 kept.push_back(std::move(current));
                 continue;
@@ -818,24 +954,30 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
             } else {
                 if (current.materialization_paused_at.has_value() &&
                     context.time >= *current.materialization_paused_at) {
-                    const auto paused_for = CheckedDifference(context.time, *current.materialization_paused_at);
+                    const auto paused_for =
+                        CheckedDifference(context.time, *current.materialization_paused_at);
                     if (!paused_for)
                         return foundation::Result<void>::Failure(
-                            Error("gameplay.time_overflow",
-                                  "condition materialization pause interval overflows gameplay time"));
+                            Error("gameplay.time_overflow", "condition materialization pause "
+                                                            "interval overflows gameplay time"));
                     if (current.expires_at.has_value()) {
-                        const auto shifted_expiration = CheckedAdd(*current.expires_at, *paused_for);
+                        const auto shifted_expiration =
+                            CheckedAdd(*current.expires_at, *paused_for);
                         if (!shifted_expiration)
                             return foundation::Result<void>::Failure(
-                                Error("gameplay.time_overflow", "condition resume expiration overflows gameplay time"));
+                                Error("gameplay.time_overflow",
+                                      "condition resume expiration overflows gameplay time"));
                         current.expires_at = *shifted_expiration;
                     }
+
                     const auto shifted_applied = CheckedAdd(current.applied_at, *paused_for);
                     if (!shifted_applied)
                         return foundation::Result<void>::Failure(
-                            Error("gameplay.time_overflow", "condition resume phase overflows gameplay time"));
+                            Error("gameplay.time_overflow",
+                                  "condition resume phase overflows gameplay time"));
                     current.applied_at = *shifted_applied;
                 }
+
                 current.paused_for_materialization = false;
                 current.materialization_paused_at.reset();
             }
@@ -857,6 +999,7 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
                                    current.periodic_schedule,
                                    current.revision,
                                    context};
+
             change.source = current.source;
             change.instigator = current.instigator;
             change.magnitude_micro = current.magnitude_micro;
@@ -865,16 +1008,20 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
             kept.push_back(std::move(current));
         }
 
-        std::unordered_map<ConditionInstanceId, std::size_t, ConditionInstanceIdHash> staged_id_to_index;
-        std::unordered_map<GameplayObjectRef, std::vector<ConditionInstanceId>> staged_subject_index;
+        std::unordered_map<ConditionInstanceId, std::size_t, ConditionInstanceIdHash>
+            staged_id_to_index;
+        std::unordered_map<GameplayObjectRef, std::vector<ConditionInstanceId>>
+            staged_subject_index;
         staged_id_to_index.reserve(kept.size());
         staged_subject_index.reserve(subject_index_.size());
         for (std::size_t index = 0; index < kept.size(); ++index) {
             if (!staged_id_to_index.emplace(kept[index].id, index).second)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.condition_index_invalid", "duplicate condition id while staging materialization"));
+                    Error("gameplay.condition_index_invalid",
+                          "duplicate condition id while staging materialization"));
             staged_subject_index[kept[index].subject].push_back(kept[index].id);
         }
+
         for (auto &[_, ids] : staged_subject_index)
             std::sort(ids.begin(), ids.end());
 
@@ -888,8 +1035,10 @@ foundation::Result<void> ConditionService::NotifySubjectMaterialization(Gameplay
         return foundation::Result<void>::Success();
     } catch (...) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.condition_allocation_failed", "failed to stage subject materialization transition"));
+            Error("gameplay.condition_allocation_failed",
+                  "failed to stage subject materialization transition"));
     }
+
 }
 
 const ConditionInstance *ConditionService::Find(ConditionInstanceId id) const noexcept {
@@ -900,6 +1049,7 @@ const ConditionInstance *ConditionService::Find(ConditionInstanceId id) const no
 std::optional<ConditionInstance> ConditionService::FindCopy(ConditionInstanceId id) const noexcept {
     const auto *value = Find(id);
     return value == nullptr ? std::nullopt : std::optional<ConditionInstance>{*value};
+
 }
 
 std::vector<ConditionInstance> ConditionService::GetConditions(GameplayObjectRef subject) const {
@@ -908,41 +1058,44 @@ std::vector<ConditionInstance> ConditionService::GetConditions(GameplayObjectRef
     if (found == subject_index_.end()) {
         return result;
     }
+
     result.reserve(found->second.size());
     for (const auto id : found->second) {
         if (const auto *instance = Find(id)) {
             result.push_back(*instance);
         }
+
     }
-    std::sort(result.begin(), result.end(), [](const auto &left, const auto &right) {
-        return left.id < right.id;
-    });
+
+    std::sort(result.begin(), result.end(),
+              [](const auto &left, const auto &right) { return left.id < right.id; });
     return result;
 }
 
 std::vector<ConditionInstance> ConditionService::AllConditions() const {
     auto result = instances_;
-    std::sort(result.begin(), result.end(), [](const auto &left, const auto &right) {
-        return left.id < right.id;
-    });
+    std::sort(result.begin(), result.end(),
+              [](const auto &left, const auto &right) { return left.id < right.id; });
     return result;
 }
 
 bool ConditionService::HasCondition(GameplayObjectRef subject, ConditionTypeId type) const {
     const auto conditions = GetConditions(subject);
-    return std::any_of(conditions.begin(), conditions.end(), [type](const auto &instance) {
-        return instance.type == type;
-    });
+    return std::any_of(conditions.begin(), conditions.end(),
+                       [type](const auto &instance) { return instance.type == type; });
 }
 
-bool ConditionService::HasConditionTag(GameplayObjectRef subject, TagId tag, const GameplayTagRegistry &tags) const {
+bool ConditionService::HasConditionTag(GameplayObjectRef subject, TagId tag,
+                                       const GameplayTagRegistry &tags) const {
     const auto conditions = GetConditions(subject);
     for (const auto &instance : conditions) {
         const auto *definition = FindDefinition(instance.type);
         if (definition != nullptr && definition->tags.HasMatching(tag, tags)) {
             return true;
         }
+
     }
+
     return false;
 }
 
@@ -952,10 +1105,11 @@ std::vector<ConditionInstance> ConditionService::FindByType(ConditionTypeId type
         if (instance.type == type) {
             result.push_back(instance);
         }
+
     }
-    std::sort(result.begin(), result.end(), [](const auto &left, const auto &right) {
-        return left.id < right.id;
-    });
+
+    std::sort(result.begin(), result.end(),
+              [](const auto &left, const auto &right) { return left.id < right.id; });
     return result;
 }
 
@@ -965,16 +1119,18 @@ std::vector<ConditionInstance> ConditionService::FindBySource(GameplayObjectRef 
         if (instance.source == source) {
             result.push_back(instance);
         }
+
     }
-    std::sort(result.begin(), result.end(), [](const auto &left, const auto &right) {
-        return left.id < right.id;
-    });
+
+    std::sort(result.begin(), result.end(),
+              [](const auto &left, const auto &right) { return left.id < right.id; });
     return result;
 }
 
 void ConditionService::RecordChange(ConditionChange change) noexcept {
     try {
-        if (next_change_sequence_ == 0 || next_change_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
+        if (next_change_sequence_ == 0 ||
+            next_change_sequence_ == std::numeric_limits<std::uint64_t>::max()) {
             if (const auto next_epoch = CheckedNextChangeEpoch(journal_epoch_)) {
                 journal_epoch_ = *next_epoch;
                 changes_.clear();
@@ -983,7 +1139,9 @@ void ConditionService::RecordChange(ConditionChange change) noexcept {
                 changes_.clear();
                 return;
             }
+
         }
+
         change.sequence = next_change_sequence_;
         changes_.push_back(std::move(change));
         ++next_change_sequence_;
@@ -995,6 +1153,7 @@ void ConditionService::RecordChange(ConditionChange change) noexcept {
             journal_epoch_ = *next_epoch;
         next_change_sequence_ = 1;
     }
+
 }
 
 std::vector<ConditionChange> ConditionService::ChangesSinceSequence(std::uint64_t sequence) const {
@@ -1003,11 +1162,13 @@ std::vector<ConditionChange> ConditionService::ChangesSinceSequence(std::uint64_
 
 ConditionChangeBatch ConditionService::ReadChangesSinceSequence(std::uint64_t sequence) const {
     ConditionChangeBatch batch;
-    batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
+    batch.oldest_available_sequence =
+        changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
     if (!changes_.empty() && sequence < changes_.front().sequence - 1) {
         batch.snapshot_required = true;
         return batch;
     }
+
     const auto found = std::upper_bound(changes_.begin(), changes_.end(), sequence,
                                         [](std::uint64_t value, const ConditionChange &change) {
                                             return value < change.sequence;
@@ -1032,45 +1193,55 @@ ConditionsSnapshot ConditionService::CaptureSnapshot() const {
     snapshot.next_change_sequence = next_change_sequence_;
     for (const auto &instance : instances_) {
         const auto *definition = FindDefinition(instance.type);
-        if (definition != nullptr && definition->persistence == ConditionPersistencePolicy::Persistent) {
+        if (definition != nullptr &&
+            definition->persistence == ConditionPersistencePolicy::Persistent) {
             auto persistent = instance;
             persistent.expiration_schedule.reset();
             persistent.periodic_schedule.reset();
             snapshot.instances.push_back(std::move(persistent));
         }
+
     }
-    std::sort(snapshot.instances.begin(), snapshot.instances.end(), [](const auto &left, const auto &right) {
-        return left.id < right.id;
-    });
+
+    std::sort(snapshot.instances.begin(), snapshot.instances.end(),
+              [](const auto &left, const auto &right) { return left.id < right.id; });
     snapshot.change_epoch = journal_epoch_;
     return snapshot;
 }
 
 foundation::Result<void> ConditionService::RestoreSnapshot(ConditionsSnapshot snapshot) {
-    const auto next_journal_epoch =
-        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    const auto next_journal_epoch = CheckedNextChangeEpoch(
+        snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
+
     if (!frozen_)
         return foundation::Result<void>::Failure(
-            Error("gameplay.registry_not_frozen", "condition registry must be frozen before restore"));
+            Error("gameplay.registry_not_frozen",
+                  "condition registry must be frozen before restore"));
 
     std::unordered_map<ConditionInstanceId, bool, ConditionInstanceIdHash> seen;
     for (auto &instance : snapshot.instances) {
         const auto definition_found = definitions_.find(instance.type);
-        if (!instance.id.IsValid() || !instance.subject.IsValid() || definition_found == definitions_.end() ||
-            seen.contains(instance.id) ||
-            definition_found->second.definition.persistence != ConditionPersistencePolicy::Persistent ||
+        if (!instance.id.IsValid() || !instance.subject.IsValid() ||
+            definition_found == definitions_.end() || seen.contains(instance.id) ||
+            definition_found->second.definition.persistence !=
+                ConditionPersistencePolicy::Persistent ||
             instance.stacks == 0 ||
-            instance.stacks > std::max<std::uint32_t>(1, definition_found->second.definition.max_stacks) ||
+            instance.stacks >
+                std::max<std::uint32_t>(1, definition_found->second.definition.max_stacks) ||
             instance.revision.value > snapshot.revision.value ||
             (instance.expires_at.has_value() && *instance.expires_at < instance.applied_at) ||
-            (instance.paused_for_materialization && !instance.materialization_paused_at.has_value())) {
+            (instance.paused_for_materialization &&
+             !instance.materialization_paused_at.has_value())) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.condition_snapshot_invalid", "condition snapshot contains invalid instance"));
+                Error("gameplay.condition_snapshot_invalid",
+                      "condition snapshot contains invalid instance"));
         }
+
         instance.expiration_schedule.reset();
         instance.periodic_schedule.reset();
         const auto payload = ValidatePayload(definition_found->second, instance.payload);
@@ -1078,20 +1249,24 @@ foundation::Result<void> ConditionService::RestoreSnapshot(ConditionsSnapshot sn
             return foundation::Result<void>::Failure(payload.GetError());
         seen.emplace(instance.id, true);
     }
+
     const auto expected_scope = ids_.Scope().Raw();
     std::uint64_t max_restored_id = 0;
     for (const auto &instance : snapshot.instances) {
         max_restored_id = std::max(max_restored_id, instance.id.Low());
     }
+
     const auto generator = snapshot.id_generator;
     const bool generator_scope_valid =
-        MonotonicIdGenerator<GameplayObjectId>::IsValidSnapshot(generator) && generator.scope == expected_scope;
+        MonotonicIdGenerator<GameplayObjectId>::IsValidSnapshot(generator) &&
+        generator.scope == expected_scope;
     const bool generator_next_valid =
-        generator.next == 0 ||
-        (max_restored_id != std::numeric_limits<std::uint64_t>::max() && generator.next > max_restored_id);
+        generator.next == 0 || (max_restored_id != std::numeric_limits<std::uint64_t>::max() &&
+                                generator.next > max_restored_id);
     if (!generator_scope_valid || !generator_next_valid) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.condition_snapshot_invalid", "condition snapshot id generator is invalid"));
+            Error("gameplay.condition_snapshot_invalid",
+                  "condition snapshot id generator is invalid"));
     }
 
     if (snapshot.journal.size() > kChangeJournalCapacity || snapshot.next_change_sequence == 0)
@@ -1099,7 +1274,8 @@ foundation::Result<void> ConditionService::RestoreSnapshot(ConditionsSnapshot sn
             Error("gameplay.condition_snapshot_invalid", "condition snapshot journal is invalid"));
     std::deque<ConditionChange> restored_changes;
     std::vector<ConditionInstance> restored_instances;
-    std::unordered_map<ConditionInstanceId, std::size_t, ConditionInstanceIdHash> restored_id_to_index;
+    std::unordered_map<ConditionInstanceId, std::size_t, ConditionInstanceIdHash>
+        restored_id_to_index;
     std::unordered_map<GameplayObjectRef, std::vector<ConditionInstanceId>> restored_subject_index;
     try {
         std::uint64_t previous_sequence = 0;
@@ -1107,23 +1283,28 @@ foundation::Result<void> ConditionService::RestoreSnapshot(ConditionsSnapshot sn
             if (change.sequence == 0 || change.sequence <= previous_sequence ||
                 change.sequence >= snapshot.next_change_sequence)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.condition_snapshot_invalid", "condition snapshot journal is invalid"));
+                    Error("gameplay.condition_snapshot_invalid",
+                          "condition snapshot journal is invalid"));
             restored_changes.push_back(change);
             previous_sequence = change.sequence;
         }
+
         restored_instances = std::move(snapshot.instances);
         restored_id_to_index.reserve(restored_instances.size());
         restored_subject_index.reserve(restored_instances.size());
         for (std::size_t index = 0; index < restored_instances.size(); ++index) {
             const auto &instance = restored_instances[index];
             if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
-                return foundation::Result<void>::Failure(Error(
-                    "gameplay.condition_allocation_failed", "failed while constructing condition snapshot candidates"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.condition_allocation_failed",
+                          "failed while constructing condition snapshot candidates"));
             if (!restored_id_to_index.emplace(instance.id, index).second)
                 return foundation::Result<void>::Failure(
-                    Error("gameplay.condition_snapshot_invalid", "duplicate condition id in snapshot"));
+                    Error("gameplay.condition_snapshot_invalid",
+                          "duplicate condition id in snapshot"));
             restored_subject_index[instance.subject].push_back(instance.id);
         }
+
         for (auto &[_, ids] : restored_subject_index)
             std::sort(ids.begin(), ids.end());
     } catch (...) {
@@ -1159,7 +1340,10 @@ ConditionsDiagnostics ConditionService::GetDiagnostics() const noexcept {
         if (instance.paused_for_materialization) {
             ++result.paused_for_materialization;
         }
+
     }
+
     return result;
 }
+
 } // namespace epidemic::gameplay::conditions

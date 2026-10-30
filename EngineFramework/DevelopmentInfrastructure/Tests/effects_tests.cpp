@@ -16,7 +16,9 @@ class TargetState final : public IEffectTargetStateProvider {
   public:
     [[nodiscard]] EffectTargetState Resolve(GameplayObjectRef target) const override {
         return {target.IsValid(), target.id.Low() % 2 == 0, target.id.Low() % 2 == 0};
+
     }
+
 };
 
 class ThrowingTargetState final : public IEffectTargetStateProvider {
@@ -24,28 +26,38 @@ class ThrowingTargetState final : public IEffectTargetStateProvider {
     [[nodiscard]] EffectTargetState Resolve(GameplayObjectRef) const override {
         throw std::runtime_error("target state failed");
     }
+
 };
 
 class CountingHandler final : public IEffectHandler {
   public:
-    CountingHandler(EffectTypeId type, std::unordered_map<GameplayObjectRef, int> &values, EffectTypeId derived = {},
-                    std::optional<GameplayContext> *observed_context = nullptr, std::size_t derived_count = 1)
+    CountingHandler(EffectTypeId type, std::unordered_map<GameplayObjectRef, int> &values,
+                    EffectTypeId derived = {},
+                    std::optional<GameplayContext> *observed_context = nullptr,
+                    std::size_t derived_count = 1)
         : type_(type), values_(values), derived_(derived), observed_context_(observed_context),
           derived_count_(derived_count) {
     }
+
     [[nodiscard]] EffectTypeId Type() const noexcept override {
         return type_;
     }
+
     [[nodiscard]] EffectHandlerCapabilities Capabilities() const noexcept override {
         return {true, false, false, true};
+
     }
-    [[nodiscard]] foundation::Result<EffectPrepareResult> Prepare(const EffectOperation &operation) const override {
+
+    [[nodiscard]] foundation::Result<EffectPrepareResult>
+    Prepare(const EffectOperation &operation) const override {
         return foundation::Result<EffectPrepareResult>::Success(
-            {operation.magnitude_micro < 0 ? EffectPrepareDisposition::Rejected : EffectPrepareDisposition::Accepted,
+            {operation.magnitude_micro < 0 ? EffectPrepareDisposition::Rejected
+                                           : EffectPrepareDisposition::Accepted,
              {}});
     }
-    [[nodiscard]] foundation::Result<EffectCommitResult> Commit(const EffectOperation &operation,
-                                                                const RegisteredEffectPayload &) noexcept override {
+
+    [[nodiscard]] foundation::Result<EffectCommitResult>
+    Commit(const EffectOperation &operation, const RegisteredEffectPayload &) noexcept override {
         values_[operation.target] += static_cast<int>(operation.magnitude_micro);
         if (observed_context_ != nullptr)
             *observed_context_ = operation.context;
@@ -60,14 +72,18 @@ class CountingHandler final : public IEffectHandler {
                 // the complete causal GameplayContext from the parent operation.
                 result.derived_effects.push_back(derived);
             }
+
         }
+
         return foundation::Result<EffectCommitResult>::Success(std::move(result));
     }
 
   private:
     EffectTypeId type_{};
+
     std::unordered_map<GameplayObjectRef, int> &values_;
     EffectTypeId derived_{};
+
     std::optional<GameplayContext> *observed_context_ = nullptr;
     std::size_t derived_count_ = 1;
 };
@@ -78,17 +94,24 @@ class DerivedPrepareFaultArmingHandler final : public IEffectHandler {
                                      std::unordered_map<GameplayObjectRef, int> &values)
         : type_(type), derived_(derived), values_(values) {
     }
+
     [[nodiscard]] EffectTypeId Type() const noexcept override {
         return type_;
     }
+
     [[nodiscard]] EffectHandlerCapabilities Capabilities() const noexcept override {
         return {true, false, false, true};
+
     }
-    [[nodiscard]] foundation::Result<EffectPrepareResult> Prepare(const EffectOperation &) const override {
-        return foundation::Result<EffectPrepareResult>::Success({EffectPrepareDisposition::Accepted, {}});
+
+    [[nodiscard]] foundation::Result<EffectPrepareResult>
+    Prepare(const EffectOperation &) const override {
+        return foundation::Result<EffectPrepareResult>::Success(
+            {EffectPrepareDisposition::Accepted, {}});
     }
-    [[nodiscard]] foundation::Result<EffectCommitResult> Commit(const EffectOperation &operation,
-                                                                const RegisteredEffectPayload &) noexcept override {
+
+    [[nodiscard]] foundation::Result<EffectCommitResult>
+    Commit(const EffectOperation &operation, const RegisteredEffectPayload &) noexcept override {
         values_[operation.target] += static_cast<int>(operation.magnitude_micro);
         EffectOperation derived;
         derived.type = derived_;
@@ -102,7 +125,9 @@ class DerivedPrepareFaultArmingHandler final : public IEffectHandler {
 
   private:
     EffectTypeId type_{};
+
     EffectTypeId derived_{};
+
     std::unordered_map<GameplayObjectRef, int> &values_;
 };
 
@@ -110,44 +135,60 @@ class MaterializedHandler final : public IEffectHandler {
   public:
     explicit MaterializedHandler(EffectTypeId type) : type_(type) {
     }
+
     [[nodiscard]] EffectTypeId Type() const noexcept override {
         return type_;
     }
+
     [[nodiscard]] EffectHandlerCapabilities Capabilities() const noexcept override {
         return {false, true, true, true};
+
     }
-    [[nodiscard]] foundation::Result<EffectPrepareResult> Prepare(const EffectOperation &) const override {
-        return foundation::Result<EffectPrepareResult>::Success({EffectPrepareDisposition::Accepted, {}});
+
+    [[nodiscard]] foundation::Result<EffectPrepareResult>
+    Prepare(const EffectOperation &) const override {
+        return foundation::Result<EffectPrepareResult>::Success(
+            {EffectPrepareDisposition::Accepted, {}});
     }
-    [[nodiscard]] foundation::Result<EffectCommitResult> Commit(const EffectOperation &,
-                                                                const RegisteredEffectPayload &) noexcept override {
-        return foundation::Result<EffectCommitResult>::Success({EffectCommitDisposition::Applied, {}});
+
+    [[nodiscard]] foundation::Result<EffectCommitResult>
+    Commit(const EffectOperation &, const RegisteredEffectPayload &) noexcept override {
+        return foundation::Result<EffectCommitResult>::Success(
+            {EffectCommitDisposition::Applied, {}});
     }
 
   private:
     EffectTypeId type_{};
+
 };
 
 class ThrowingPrepareHandler final : public IEffectHandler {
   public:
     explicit ThrowingPrepareHandler(EffectTypeId type) : type_(type) {
     }
+
     [[nodiscard]] EffectTypeId Type() const noexcept override {
         return type_;
     }
+
     [[nodiscard]] EffectHandlerCapabilities Capabilities() const noexcept override {
         return {};
+
     }
-    [[nodiscard]] foundation::Result<EffectPrepareResult> Prepare(const EffectOperation &) const override {
+
+    [[nodiscard]] foundation::Result<EffectPrepareResult>
+    Prepare(const EffectOperation &) const override {
         throw std::runtime_error("prepare failed");
     }
-    [[nodiscard]] foundation::Result<EffectCommitResult> Commit(const EffectOperation &,
-                                                                const RegisteredEffectPayload &) noexcept override {
+
+    [[nodiscard]] foundation::Result<EffectCommitResult>
+    Commit(const EffectOperation &, const RegisteredEffectPayload &) noexcept override {
         return foundation::Result<EffectCommitResult>::Success({});
     }
 
   private:
     EffectTypeId type_{};
+
 };
 
 struct EffectsFaultState {
@@ -166,8 +207,10 @@ struct EffectsFaultState {
     return left.definition == right.definition && left.targets == right.targets &&
            left.scale_micro == right.scale_micro && left.context.tick == right.context.tick &&
            left.context.time == right.context.time && left.context.actor == right.context.actor &&
-           left.context.instigator == right.context.instigator && left.context.source == right.context.source &&
-           left.context.operation == right.context.operation && left.context.correlation == right.context.correlation &&
+           left.context.instigator == right.context.instigator &&
+           left.context.source == right.context.source &&
+           left.context.operation == right.context.operation &&
+           left.context.correlation == right.context.correlation &&
            left.context.parent_operation == right.context.parent_operation &&
            left.context.cause_event == right.context.cause_event;
 }
@@ -181,19 +224,24 @@ struct EffectsFaultState {
     for (std::size_t index = 0; index < left.size(); ++index) {
         const auto &before = left[index];
         const auto &after = right[index];
-        if (before.id != after.id || !SameRequestShape(before.request, after.request) || before.clock != after.clock ||
-            before.due != after.due || before.schedule != after.schedule || before.persistence != after.persistence) {
+        if (before.id != after.id || !SameRequestShape(before.request, after.request) ||
+            before.clock != after.clock || before.due != after.due ||
+            before.schedule != after.schedule || before.persistence != after.persistence) {
             return false;
         }
+
     }
+
     return true;
 }
 
-[[nodiscard]] bool SameDiagnostics(const EffectsDiagnostics &left, const EffectsDiagnostics &right) {
+[[nodiscard]] bool SameDiagnostics(const EffectsDiagnostics &left,
+                                   const EffectsDiagnostics &right) {
     return left.executions == right.executions && left.operations == right.operations &&
            left.targets == right.targets && left.derived_effects == right.derived_effects &&
            left.waves == right.waves && left.rejections == right.rejections &&
-           left.budget_exhaustions == right.budget_exhaustions && left.deferred_effects == right.deferred_effects;
+           left.budget_exhaustions == right.budget_exhaustions &&
+           left.deferred_effects == right.deferred_effects;
 }
 
 [[nodiscard]] int SumValues(const std::unordered_map<GameplayObjectRef, int> &values) {
@@ -201,6 +249,7 @@ struct EffectsFaultState {
     for (const auto &[_, value] : values) {
         total += value;
     }
+
     return total;
 }
 
@@ -211,9 +260,12 @@ struct EffectsFaultFixture {
         std::make_shared<std::unordered_map<GameplayObjectRef, int>>();
     EffectTypeId root_type = EffectTypeId::FromString("test.effect.fault.root");
     EffectDefinitionId definition_id{};
+
     GameplayDomainId domain = GameplayDomainId::FromString("test.effect.fault.domain");
     GameplayObjectRef a{domain, GameplayObjectId::FromRaw(1, 2)};
+
     GameplayObjectRef b{domain, GameplayObjectId::FromRaw(1, 4)};
+
     ClockId clock = ClockId::FromString("test.effect.fault.clock");
     ScheduleId schedule = ScheduleId::FromString("test.effect.fault.schedule");
     DeferredEffectId deferred{};
@@ -223,15 +275,18 @@ struct EffectsFaultFixture {
         values->emplace(b, 0);
         service.SetTargetStateProvider(target_state.get());
         [[maybe_unused]] const auto handler =
-            service.RegisterHandler("test.effect.fault.root", std::make_shared<CountingHandler>(root_type, *values));
+            service.RegisterHandler("test.effect.fault.root",
+                                    std::make_shared<CountingHandler>(root_type, *values));
 
         EffectDefinition definition;
         definition.canonical_name = "test.effect.fault.bundle";
-        definition.steps.push_back(EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 2, {}});
+        definition.steps.push_back(
+            EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 2, {}});
         const auto registered = service.RegisterDefinition(std::move(definition));
         if (registered) {
             definition_id = registered.Value();
         }
+
         service.Freeze();
     }
 
@@ -239,9 +294,12 @@ struct EffectsFaultFixture {
         EffectRequest request;
         request.definition = definition_id;
         request.targets = {b, a, b};
+
         request.scale_micro = 1'000'000;
         request.context.tick = GameplayTickId{5};
+
         request.context.time = GameplayTimePoint{500};
+
         request.context.actor = a;
         request.context.instigator = b;
         request.context.source = a;
@@ -253,17 +311,20 @@ struct EffectsFaultFixture {
     }
 
     bool CreateDeferred(bool bind_schedule) {
-        const auto created =
-            service.Defer(MakeRequest(), clock, GameplayTimePoint{900}, DeferredEffectPersistence::Persistent);
+        const auto created = service.Defer(MakeRequest(), clock, GameplayTimePoint{900},
+                                           DeferredEffectPersistence::Persistent);
         if (!created) {
             return false;
         }
+
         deferred = created.Value();
         if (bind_schedule) {
             return static_cast<bool>(service.BindDeferredSchedule(deferred, schedule));
         }
+
         return true;
     }
+
 };
 
 [[nodiscard]] EffectsFaultState CaptureEffectsFaultState(const EffectsFaultFixture &fixture) {
@@ -281,42 +342,50 @@ struct EffectsFaultFixture {
             if (fixture.service.PeekDeferredBySchedule(*record.schedule)) {
                 ++state.scheduled_lookup_successes;
             }
+
         }
+
     }
+
     return state;
 }
 
 [[nodiscard]] epidemic::tests::pre_state::ComparisonReport
-CompareEffectsFaultState(std::string scope, const EffectsFaultState &before, const EffectsFaultState &after) {
+CompareEffectsFaultState(std::string scope, const EffectsFaultState &before,
+                         const EffectsFaultState &after) {
     return epidemic::tests::pre_state::StateComparator(std::move(scope))
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::PrimaryRecords, before.snapshot.deferred.size(),
-                      after.snapshot.deferred.size(), "deferred primary record count")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::PrimaryRecords,
+                      before.snapshot.deferred.size(), after.snapshot.deferred.size(),
+                      "deferred primary record count")
         .Require(epidemic::tests::pre_state::StateFacet::RecordPayloads,
-                 SameDeferredRecords(before.snapshot.deferred, after.snapshot.deferred), "deferred record payloads")
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes, before.scheduled_lookup_successes,
-                      after.scheduled_lookup_successes, "scheduled deferred lookup successes")
+                 SameDeferredRecords(before.snapshot.deferred, after.snapshot.deferred),
+                 "deferred record payloads")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes,
+                      before.scheduled_lookup_successes, after.scheduled_lookup_successes,
+                      "scheduled deferred lookup successes")
         .Require(epidemic::tests::pre_state::StateFacet::IdGenerators,
                  before.snapshot.execution_ids.scope == after.snapshot.execution_ids.scope &&
                      before.snapshot.execution_ids.next == after.snapshot.execution_ids.next &&
                      before.snapshot.deferred_ids.scope == after.snapshot.deferred_ids.scope &&
                      before.snapshot.deferred_ids.next == after.snapshot.deferred_ids.next,
                  "execution/deferred id generators")
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions, before.snapshot.change_epoch,
-                      after.snapshot.change_epoch, "change epoch")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions,
+                      before.snapshot.change_epoch, after.snapshot.change_epoch, "change epoch")
         .Require(epidemic::tests::pre_state::StateFacet::Journal,
                  before.latest_cursor == after.latest_cursor &&
                      before.oldest_change_sequence == after.oldest_change_sequence,
                  "journal cursor and retention window")
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch, before.snapshot.change_epoch,
-                      after.snapshot.change_epoch, "journal epoch")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch,
+                      before.snapshot.change_epoch, after.snapshot.change_epoch, "journal epoch")
         .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalSequence, before.latest_cursor,
                       after.latest_cursor, "latest change cursor")
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalRetainedRecords, before.oldest_change_sequence,
-                      after.oldest_change_sequence, "oldest retained sequence")
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalLatestCursor, before.latest_cursor,
-                      after.latest_cursor, "latest cursor")
-        .RequireEqual(epidemic::tests::pre_state::StateFacet::ExternalCallbacks, before.callback_total,
-                      after.callback_total, "handler callback state")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalRetainedRecords,
+                      before.oldest_change_sequence, after.oldest_change_sequence,
+                      "oldest retained sequence")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalLatestCursor,
+                      before.latest_cursor, after.latest_cursor, "latest cursor")
+        .RequireEqual(epidemic::tests::pre_state::StateFacet::ExternalCallbacks,
+                      before.callback_total, after.callback_total, "handler callback state")
         .Require(epidemic::tests::pre_state::StateFacet::PublicReadModels,
                  SameDeferredRecords(before.all_deferred, after.all_deferred) &&
                      SameDeferredRecords(before.unscheduled_deferred, after.unscheduled_deferred) &&
@@ -332,7 +401,8 @@ struct EffectsRegistrationFixture {
     std::shared_ptr<std::unordered_map<GameplayObjectRef, int>> values =
         std::make_shared<std::unordered_map<GameplayObjectRef, int>>();
     EffectTypeId root_type = EffectTypeId::FromString("test.effect.registration.root");
-    EffectDefinitionId definition_id = EffectDefinitionId::FromString("test.effect.registration.bundle");
+    EffectDefinitionId definition_id =
+        EffectDefinitionId::FromString("test.effect.registration.bundle");
     GameplayDomainId domain = GameplayDomainId::FromString("test.effect.registration.domain");
     GameplayObjectRef a{domain, GameplayObjectId::FromRaw(1, 2)};
 
@@ -343,9 +413,11 @@ struct EffectsRegistrationFixture {
     [[nodiscard]] EffectDefinition MakeDefinition() const {
         EffectDefinition definition;
         definition.canonical_name = "test.effect.registration.bundle";
-        definition.steps.push_back(EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 2, {}});
+        definition.steps.push_back(
+            EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 2, {}});
         return definition;
     }
+
 };
 
 struct EffectsRegistrationState {
@@ -356,10 +428,15 @@ struct EffectsRegistrationState {
     bool definition_visible = false;
 };
 
-[[nodiscard]] EffectsRegistrationState CaptureEffectsRegistrationState(const EffectsRegistrationFixture &fixture) {
-    return EffectsRegistrationState{fixture.service.CaptureSnapshot(), fixture.service.GetDiagnostics(),
-                                    fixture.service.LatestChangeCursor(), fixture.service.IsFrozen(),
-                                    fixture.service.FindDefinition(fixture.definition_id) != nullptr};
+[[nodiscard]] EffectsRegistrationState
+CaptureEffectsRegistrationState(const EffectsRegistrationFixture &fixture) {
+    return EffectsRegistrationState{fixture.service.CaptureSnapshot(),
+                                    fixture.service.GetDiagnostics(),
+                                    fixture.service.LatestChangeCursor(),
+                                    fixture.service.IsFrozen(),
+                                    fixture.service.FindDefinition(fixture.definition_id) !=
+                                        nullptr};
+
 }
 
 [[nodiscard]] bool SameRegistrationState(const EffectsRegistrationState &before,
@@ -370,8 +447,9 @@ struct EffectsRegistrationState {
            before.snapshot.deferred_ids.scope == after.snapshot.deferred_ids.scope &&
            before.snapshot.deferred_ids.next == after.snapshot.deferred_ids.next &&
            before.snapshot.change_epoch == after.snapshot.change_epoch &&
-           SameDiagnostics(before.diagnostics, after.diagnostics) && before.latest_cursor == after.latest_cursor &&
-           before.frozen == after.frozen && before.definition_visible == after.definition_visible;
+           SameDiagnostics(before.diagnostics, after.diagnostics) &&
+           before.latest_cursor == after.latest_cursor && before.frozen == after.frozen &&
+           before.definition_visible == after.definition_visible;
 }
 
 [[nodiscard]] bool SameFaultState(const EffectsFaultState &before, const EffectsFaultState &after) {
@@ -384,8 +462,10 @@ struct EffectsRegistrationState {
         EffectsRegistrationFixture fixture;
         const auto before = CaptureEffectsRegistrationState(fixture);
         test_seam::FailNext(test_seam::FaultPoint::RegisterHandlerBeforePublish);
-        const auto registered = fixture.service.RegisterHandler(
-            "test.effect.registration.root", std::make_shared<CountingHandler>(fixture.root_type, *fixture.values));
+        const auto registered =
+            fixture.service.RegisterHandler("test.effect.registration.root",
+                                            std::make_shared<CountingHandler>(fixture.root_type,
+                                                                              *fixture.values));
         if (registered || !SameRegistrationState(before, CaptureEffectsRegistrationState(fixture)))
             return false;
         if (fixture.service.RegisterDefinition(fixture.MakeDefinition()))
@@ -395,7 +475,8 @@ struct EffectsRegistrationState {
     {
         EffectsRegistrationFixture fixture;
         if (!fixture.service.RegisterHandler("test.effect.registration.root",
-                                             std::make_shared<CountingHandler>(fixture.root_type, *fixture.values)))
+                                             std::make_shared<CountingHandler>(fixture.root_type,
+                                                                               *fixture.values)))
             return false;
         const auto before = CaptureEffectsRegistrationState(fixture);
         test_seam::FailNext(test_seam::FaultPoint::RegisterDefinitionBeforePublish);
@@ -454,8 +535,8 @@ struct EffectsRegistrationState {
             return false;
     }
 
-    for (const auto fault :
-         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild,
+                             test_seam::FaultPoint::RestoreBeforeCommit}) {
         EffectsFaultFixture fixture;
         if (!fixture.CreateDeferred(true))
             return false;
@@ -489,30 +570,36 @@ struct EffectsRegistrationState {
         const auto derived_type = EffectTypeId::FromString("test.effect.post_commit_fault.derived");
         if (!service.RegisterHandler("test.effect.post_commit_fault.derived",
                                      std::make_shared<CountingHandler>(derived_type, values)) ||
-            !service.RegisterHandler(
-                "test.effect.post_commit_fault.root",
-                std::make_shared<DerivedPrepareFaultArmingHandler>(root_type, derived_type, values)))
+            !service
+                 .RegisterHandler("test.effect.post_commit_fault.root",
+                                  std::make_shared<DerivedPrepareFaultArmingHandler>(root_type,
+                                                                                     derived_type,
+                                                                                     values)))
             return false;
         EffectDefinition definition;
         definition.canonical_name = "test.effect.post_commit_fault.definition";
-        definition.steps.push_back(EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 1, {}});
+        definition.steps.push_back(
+            EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 1, {}});
         const auto definition_id = service.RegisterDefinition(std::move(definition));
         if (!definition_id)
             return false;
         service.Freeze();
-        const GameplayDomainId domain = GameplayDomainId::FromString("test.effect.post_commit_fault.domain");
+        const GameplayDomainId domain =
+            GameplayDomainId::FromString("test.effect.post_commit_fault.domain");
         const GameplayObjectRef target{domain, GameplayObjectId::FromRaw(17, 2)};
+
         EffectRequest request;
         request.definition = definition_id.Value();
         request.targets = {target};
+
         EffectExecutionBudget budget;
         budget.max_effects = 4;
         budget.max_waves = 4;
         budget.max_derived_per_parent = 2;
         const auto result = service.Execute(std::move(request), budget);
         if (!result || result.Value().disposition != EffectBatchDisposition::Failed ||
-            result.Value().operations.size() != 1 || values[target] != 1 || service.GetDiagnostics().executions != 1 ||
-            service.GetDiagnostics().operations != 1)
+            result.Value().operations.size() != 1 || values[target] != 1 ||
+            service.GetDiagnostics().executions != 1 || service.GetDiagnostics().operations != 1)
             return false;
     }
 
@@ -523,7 +610,7 @@ struct EffectsRegistrationState {
     return lifecycle.IsFrozen();
 }
 
-}
+} // namespace
 
 int main() {
     EffectService service;
@@ -537,16 +624,19 @@ int main() {
     const auto throwing_type = EffectTypeId::FromString("test.effect.throwing_prepare");
     const auto validated_type = EffectTypeId::FromString("test.effect.validator");
     std::optional<GameplayContext> observed_derived_context;
-    if (!service.RegisterHandler(
-            "test.effect.derived",
-            std::make_shared<CountingHandler>(derived_type, values, EffectTypeId{}, &observed_derived_context)) ||
+    if (!service.RegisterHandler("test.effect.derived",
+                                 std::make_shared<CountingHandler>(derived_type, values,
+                                                                   EffectTypeId{},
+                                                                   &observed_derived_context)) ||
         !service.RegisterHandler("test.effect.root",
-                                 std::make_shared<CountingHandler>(root_type, values, derived_type)) ||
+                                 std::make_shared<CountingHandler>(root_type, values,
+                                                                   derived_type)) ||
         !service.RegisterHandler("test.effect.materialized",
                                  std::make_shared<MaterializedHandler>(materialized_type)) ||
         !service.RegisterHandler("test.effect.throwing_prepare",
                                  std::make_shared<ThrowingPrepareHandler>(throwing_type)) ||
-        !service.RegisterHandler("test.effect.validator", std::make_shared<CountingHandler>(validated_type, values),
+        !service.RegisterHandler("test.effect.validator",
+                                 std::make_shared<CountingHandler>(validated_type, values),
                                  TypeId::FromString("test.payload"), sizeof(std::uint32_t),
                                  [](std::span<const std::byte>) -> bool {
                                      throw std::runtime_error("validator failed");
@@ -555,15 +645,18 @@ int main() {
 
     EffectDefinition definition;
     definition.canonical_name = "test.effect.bundle";
-    definition.steps.push_back(EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 2, {}});
+    definition.steps.push_back(
+        EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 2, {}});
     const auto definition_id = service.RegisterDefinition(definition);
     EffectDefinition mat_definition;
     mat_definition.canonical_name = "test.effect.mat_bundle";
-    mat_definition.steps.push_back(EffectStepDefinition{materialized_type, EffectTargetSelector::AllTargets, 1, {}});
+    mat_definition.steps.push_back(
+        EffectStepDefinition{materialized_type, EffectTargetSelector::AllTargets, 1, {}});
     const auto mat_id = service.RegisterDefinition(mat_definition);
     EffectDefinition throwing_definition;
     throwing_definition.canonical_name = "test.effect.throwing_bundle";
-    throwing_definition.steps.push_back(EffectStepDefinition{throwing_type, EffectTargetSelector::AllTargets, 1, {}});
+    throwing_definition.steps.push_back(
+        EffectStepDefinition{throwing_type, EffectTargetSelector::AllTargets, 1, {}});
     const auto throwing_id = service.RegisterDefinition(throwing_definition);
     if (!definition_id || !mat_id || !throwing_id)
         return 2;
@@ -571,9 +664,11 @@ int main() {
     // A throwing validator must be converted into a controlled registration failure.
     EffectDefinition validator_definition;
     validator_definition.canonical_name = "test.effect.validator_bundle";
-    validator_definition.steps.push_back(EffectStepDefinition{
-        validated_type, EffectTargetSelector::AllTargets, 1,
-        RegisteredEffectPayload::FromTrivial(TypeId::FromString("test.payload"), std::uint32_t{7})});
+    validator_definition.steps.push_back(
+        EffectStepDefinition{validated_type, EffectTargetSelector::AllTargets, 1,
+                             RegisteredEffectPayload::FromTrivial(TypeId::FromString(
+                                                                      "test.payload"),
+                                                                  std::uint32_t{7})});
     if (service.RegisterDefinition(std::move(validator_definition)))
         return 21;
     const auto pre_freeze_snapshot = service.CaptureSnapshot();
@@ -582,19 +677,25 @@ int main() {
     service.Freeze();
     EffectDefinition late_definition;
     late_definition.canonical_name = "test.effect.late";
-    late_definition.steps.push_back(EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 1, {}});
+    late_definition.steps.push_back(
+        EffectStepDefinition{root_type, EffectTargetSelector::AllTargets, 1, {}});
     if (service.RegisterDefinition(std::move(late_definition)))
         return 3;
 
     const GameplayDomainId domain = GameplayDomainId::FromString("test.domain");
     const GameplayObjectRef a{domain, GameplayObjectId::FromRaw(1, 2)};
+
     const GameplayObjectRef b{domain, GameplayObjectId::FromRaw(1, 4)};
+
     EffectRequest request;
     request.definition = definition_id.Value();
     request.targets = {b, a, b};
+
     request.scale_micro = 1'000'000;
     request.context.tick = GameplayTickId{1};
+
     request.context.time = GameplayTimePoint{123};
+
     request.context.actor = a;
     request.context.instigator = b;
     request.context.source = a;
@@ -604,7 +705,8 @@ int main() {
     request.context.cause_event = EventId::FromString("test.effect.event");
 
     const auto executed = service.Execute(request);
-    if (!executed || executed.Value().disposition != EffectBatchDisposition::Succeeded || executed.Value().waves != 2)
+    if (!executed || executed.Value().disposition != EffectBatchDisposition::Succeeded ||
+        executed.Value().waves != 2)
         return 4;
     if (values[a] != 3 || values[b] != 3 || service.GetDiagnostics().derived_effects != 2)
         return 5;
@@ -612,8 +714,10 @@ int main() {
         return 51;
     const auto &inherited = *observed_derived_context;
     if (inherited.tick != request.context.tick || inherited.time != request.context.time ||
-        inherited.actor != request.context.actor || inherited.instigator != request.context.instigator ||
-        inherited.source != request.context.source || inherited.operation != request.context.operation ||
+        inherited.actor != request.context.actor ||
+        inherited.instigator != request.context.instigator ||
+        inherited.source != request.context.source ||
+        inherited.operation != request.context.operation ||
         inherited.correlation != request.context.correlation ||
         inherited.parent_operation != request.context.parent_operation ||
         inherited.cause_event != request.context.cause_event)
@@ -621,11 +725,14 @@ int main() {
 
     // Materialized-only handler rejects an abstract target without triggering materialization.
     const GameplayObjectRef abstract_target{domain, GameplayObjectId::FromRaw(1, 3)};
+
     EffectRequest mat_request;
     mat_request.definition = mat_id.Value();
     mat_request.targets = {abstract_target};
+
     const auto unavailable = service.Execute(mat_request);
-    if (!unavailable || unavailable.Value().operations.front().disposition != EffectOperationDisposition::Unavailable)
+    if (!unavailable || unavailable.Value().operations.front().disposition !=
+                            EffectOperationDisposition::Unavailable)
         return 6;
 
     // Target-state provider exceptions are contained and become a failed operation.
@@ -633,7 +740,8 @@ int main() {
     service.SetTargetStateProvider(&throwing_target_state);
     const auto provider_failure = service.Execute(mat_request);
     if (!provider_failure || provider_failure.Value().operations.empty() ||
-        provider_failure.Value().operations.front().disposition != EffectOperationDisposition::Failed)
+        provider_failure.Value().operations.front().disposition !=
+            EffectOperationDisposition::Failed)
         return 61;
     service.SetTargetStateProvider(&target_state);
 
@@ -651,17 +759,21 @@ int main() {
     // an over-budget derived wave without allocating additional result storage post-commit.
     EffectService burst_service;
     std::unordered_map<GameplayObjectRef, int> burst_values{{a, 0}, {b, 0}};
+
     const auto burst_root = EffectTypeId::FromString("test.effect.burst.root");
     const auto burst_derived = EffectTypeId::FromString("test.effect.burst.derived");
     if (!burst_service.RegisterHandler("test.effect.burst.derived",
-                                       std::make_shared<CountingHandler>(burst_derived, burst_values)) ||
-        !burst_service.RegisterHandler(
-            "test.effect.burst.root",
-            std::make_shared<CountingHandler>(burst_root, burst_values, burst_derived, nullptr, 2)))
+                                       std::make_shared<CountingHandler>(burst_derived,
+                                                                         burst_values)) ||
+        !burst_service.RegisterHandler("test.effect.burst.root",
+                                       std::make_shared<CountingHandler>(burst_root, burst_values,
+                                                                         burst_derived, nullptr,
+                                                                         2)))
         return 71;
     EffectDefinition burst_definition;
     burst_definition.canonical_name = "test.effect.burst.bundle";
-    burst_definition.steps.push_back(EffectStepDefinition{burst_root, EffectTargetSelector::AllTargets, 1, {}});
+    burst_definition.steps.push_back(
+        EffectStepDefinition{burst_root, EffectTargetSelector::AllTargets, 1, {}});
     const auto burst_definition_id = burst_service.RegisterDefinition(std::move(burst_definition));
     if (!burst_definition_id)
         return 72;
@@ -669,6 +781,7 @@ int main() {
     EffectRequest burst_request;
     burst_request.definition = burst_definition_id.Value();
     burst_request.targets = {a, b};
+
     EffectExecutionBudget burst_budget;
     burst_budget.max_effects = 3;
     burst_budget.max_waves = 3;
@@ -676,11 +789,13 @@ int main() {
     const auto burst_result = burst_service.Execute(std::move(burst_request), burst_budget);
     if (!burst_result || burst_result.Value().disposition != EffectBatchDisposition::Failed ||
         burst_result.Value().operations.size() > burst_budget.max_effects ||
-        burst_service.GetDiagnostics().derived_effects != 0 || burst_service.GetDiagnostics().budget_exhaustions == 0)
+        burst_service.GetDiagnostics().derived_effects != 0 ||
+        burst_service.GetDiagnostics().budget_exhaustions == 0)
         return 73;
 
     const auto clock = ClockId::FromString("test.clock");
-    const auto deferred = service.Defer(request, clock, GameplayTimePoint{50}, DeferredEffectPersistence::Persistent);
+    const auto deferred =
+        service.Defer(request, clock, GameplayTimePoint{50}, DeferredEffectPersistence::Persistent);
     if (!deferred)
         return 8;
     const auto schedule = ScheduleId::FromString("test.schedule");
@@ -700,18 +815,24 @@ int main() {
     EffectRequest throwing_request;
     throwing_request.definition = throwing_id.Value();
     throwing_request.targets = {a};
+
     const auto throwing_result = service.Execute(throwing_request);
     if (!throwing_result || throwing_result.Value().operations.size() != 1 ||
-        throwing_result.Value().operations.front().disposition != EffectOperationDisposition::Failed)
+        throwing_result.Value().operations.front().disposition !=
+            EffectOperationDisposition::Failed)
         return 14;
 
-    // Restore must reject wrong generator scopes and a deferred generator behind restored IDs without mutating service state.
-    if (!service.ReadChangesSince(service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    // Restore must reject wrong generator scopes and a deferred generator behind restored IDs
+    // without mutating service state.
+    if (!service
+             .ReadChangesSince(
+                 service.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 19;
     EffectService empty_journal;
     if (!empty_journal
-             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 20;
 

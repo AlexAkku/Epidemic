@@ -9,6 +9,7 @@ using namespace epidemic::gameplay::encounters;
 namespace epidemic::gameplay::encounters::testing {
 void FailNextLocalAllocationForTest() noexcept;
 }
+
 using epidemic::gameplay::random::RandomSeed;
 
 namespace {
@@ -17,16 +18,21 @@ void Check(bool value, const char *message) {
         std::cerr << message << '\n';
         std::exit(1);
     }
+
 }
+
 GameplayObjectRef Ref(const char *domain, const char *id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
+
 }
+
 GameplayTagSet Tags(std::initializer_list<const char *> names) {
     GameplayTagSet set;
     for (auto *name : names)
         set.Add(TagId::FromString(name));
     return set;
 }
+
 SpawnTable BasicTable(SpawnTableId id) {
     SpawnTable table;
     table.id = id;
@@ -47,6 +53,7 @@ SpawnTable BasicTable(SpawnTableId id) {
     table.entries.push_back(bear);
     return table;
 }
+
 EncounterDefinition BasicDefinition(EncounterDefinitionId id, SpawnTableId table) {
     EncounterDefinition def;
     def.id = id;
@@ -55,7 +62,8 @@ EncounterDefinition BasicDefinition(EncounterDefinitionId id, SpawnTableId table
     def.required_area_tags = Tags({"biome.forest"});
     return def;
 }
-}
+
+} // namespace
 
 int main() {
     {
@@ -65,8 +73,10 @@ int main() {
         invalid_table.roll_policy = static_cast<SpawnRollPolicy>(999);
         const auto before_revision = invalid_service.CurrentRevision();
         Check(!invalid_service.RegisterSpawnTable(invalid_table), "invalid roll policy rejected");
-        Check(invalid_service.CurrentRevision() == before_revision, "invalid table leaves revision unchanged");
+        Check(invalid_service.CurrentRevision() == before_revision,
+              "invalid table leaves revision unchanged");
     }
+
     const auto forest = Ref("world.area", "forest");
     const auto clearing = Ref("world.position", "forest.clearing");
     EncountersService service;
@@ -90,8 +100,11 @@ int main() {
     request.spawn_point = point_id.Value();
     request.area_tags = Tags({"biome.forest"});
     request.seed = RandomSeed{123};
+
     request.context.tick = GameplayTickId{1};
+
     request.context.time = GameplayTimePoint{10};
+
     auto first = service.SpawnEncounter(request);
     Check(first.state == SpawnResultState::Succeeded, "spawn succeeded");
     Check(!first.spawned_records.empty(), "spawn records");
@@ -101,13 +114,16 @@ int main() {
     Check(repeated.encounter_instance == first.encounter_instance, "request idempotency");
     auto conflict = request;
     conflict.area = Ref("world.area", "other");
-    Check(service.SpawnEncounter(conflict).state == SpawnResultState::Rejected, "request id conflict");
+    Check(service.SpawnEncounter(conflict).state == SpawnResultState::Rejected,
+          "request id conflict");
 
     auto real_entity = Ref("entities", "wolf.1");
     Check(static_cast<bool>(service.BindSpawnedEntity(first.spawned_records.front(), real_entity)),
           "bind spawned entity");
-    Check(service.GetSpawnedEntityRecord(first.spawned_records.front())->entity == real_entity, "bound entity");
-    Check(static_cast<bool>(service.CompleteEncounter(first.encounter_instance)), "complete encounter");
+    Check(service.GetSpawnedEntityRecord(first.spawned_records.front())->entity == real_entity,
+          "bound entity");
+    Check(static_cast<bool>(service.CompleteEncounter(first.encounter_instance)),
+          "complete encounter");
     Check(service.FindActiveEncountersInArea(forest).empty(), "no active after complete");
 
     // Global and per-area encounter budgets are distinct and enforced.
@@ -124,16 +140,22 @@ int main() {
     b1.area = forest;
     b1.area_tags = Tags({"biome.forest"});
     b1.seed = {1};
+
     b1.context.tick = GameplayTickId{1};
-    Check(budget_service.SpawnEncounter(b1).state == SpawnResultState::Succeeded, "first global budget spawn");
+
+    Check(budget_service.SpawnEncounter(b1).state == SpawnResultState::Succeeded,
+          "first global budget spawn");
     SpawnRequest b2 = b1;
     b2.id = {};
+
     b2.area = Ref("world.area", "forest.2");
     b2.seed = {2};
+
     Check(budget_service.SpawnEncounter(b2).state == SpawnResultState::Rejected,
           "global active budget applies across areas");
 
-    // Spawn operation budget defers without mutating encounter state and can be retried on a later tick.
+    // Spawn operation budget defers without mutating encounter state and can be retried on a later
+    // tick.
     EncountersService op_service;
     Check(static_cast<bool>(op_service.RegisterSpawnTable(table)), "op table");
     Check(static_cast<bool>(op_service.RegisterEncounterDefinition(def)), "op def");
@@ -146,14 +168,18 @@ int main() {
     op.area = forest;
     op.area_tags = Tags({"biome.forest"});
     op.seed = {3};
+
     op.context.tick = GameplayTickId{1};
+
     auto deferred = op_service.SpawnEncounter(op);
     Check(deferred.state == SpawnResultState::Deferred && !deferred.encounter_instance.IsValid(),
           "spawn operation budget defers before mutation");
     op_budget.max_spawn_operations_per_tick = 8;
     op_service.SetBudgets(op_budget);
     op.context.tick = GameplayTickId{2};
-    Check(op_service.SpawnEncounter(op).state == SpawnResultState::Succeeded, "deferred request can retry");
+
+    Check(op_service.SpawnEncounter(op).state == SpawnResultState::Succeeded,
+          "deferred request can retry");
 
     // PickN count is data driven and respects area filters.
     EncountersService pick_service;
@@ -175,12 +201,16 @@ int main() {
     pr.area = forest;
     pr.area_tags = Tags({"biome.forest"});
     pr.seed = {10};
+
     pr.context.tick = GameplayTickId{1};
+
     auto picked = pick_service.SpawnEncounter(pr);
     Check(picked.state == SpawnResultState::Succeeded, "pick spawn");
-    Check(picked.spawned_records.size() <= 2, "pick uses one selected entry rather than hardcoded two entries");
+    Check(picked.spawned_records.size() <= 2,
+          "pick uses one selected entry rather than hardcoded two entries");
     for (auto id : picked.spawned_records)
-        Check(pick_service.GetSpawnedEntityRecord(id)->archetype != TypeId::FromString("entity.cave"),
+        Check(pick_service.GetSpawnedEntityRecord(id)->archetype !=
+                  TypeId::FromString("entity.cave"),
               "blocked filtered entry not selected");
 
     // Population backed encounters stay pending until every semantic slot is explicitly bound.
@@ -199,26 +229,29 @@ int main() {
     pop_def.id = EncounterDefinitionId::FromString("population.encounter");
     pop_def.spawn_table = pop_table.id;
     pop_def.persistence = SpawnPersistencePolicy::PopulationBacked;
-    Check(static_cast<bool>(population_service.RegisterEncounterDefinition(pop_def)), "population def");
+    Check(static_cast<bool>(population_service.RegisterEncounterDefinition(pop_def)),
+          "population def");
     SpawnRequest pop_req;
     pop_req.encounter = pop_def.id;
     pop_req.area = forest;
     pop_req.persistence = SpawnPersistencePolicy::PopulationBacked;
     pop_req.context.tick = GameplayTickId{1};
+
     auto pop_spawn = population_service.SpawnEncounter(pop_req);
     Check(pop_spawn.state == SpawnResultState::Deferred, "population spawn awaits binding");
     Check(population_service.GetEncounterInstance(pop_spawn.encounter_instance)->state ==
               EncounterState::AwaitingPopulationBinding,
           "awaiting population state");
-    Check(
-        static_cast<bool>(population_service.BindPopulationUnit(pop_spawn.spawned_records[0], Ref("population", "u1"))),
-        "bind pop 1");
+    Check(static_cast<bool>(population_service.BindPopulationUnit(pop_spawn.spawned_records[0],
+                                                                  Ref("population", "u1"))),
+          "bind pop 1");
     Check(!population_service.ActivatePopulationBackedEncounter(pop_spawn.encounter_instance),
           "cannot activate incomplete population binding");
-    Check(
-        static_cast<bool>(population_service.BindPopulationUnit(pop_spawn.spawned_records[1], Ref("population", "u2"))),
-        "bind pop 2");
-    Check(static_cast<bool>(population_service.ActivatePopulationBackedEncounter(pop_spawn.encounter_instance)),
+    Check(static_cast<bool>(population_service.BindPopulationUnit(pop_spawn.spawned_records[1],
+                                                                  Ref("population", "u2"))),
+          "bind pop 2");
+    Check(static_cast<bool>(
+              population_service.ActivatePopulationBackedEncounter(pop_spawn.encounter_instance)),
           "activate population backed encounter");
 
     // Respawn processor uses gameplay time and explicit area/origin contract.
@@ -226,17 +259,20 @@ int main() {
     rule.encounter = def.id;
     rule.area = forest;
     rule.delay = GameplayDuration{30};
+
     rule.remaining_limit = 1;
     rule.seed = {99};
+
     auto respawn = service.ScheduleRespawn(rule, {.time = GameplayTimePoint{100}});
     Check(static_cast<bool>(respawn), "schedule respawn");
-    Check(
-        service
-            .ProcessDueRespawns(GameplayTimePoint{129}, 10, {.tick = GameplayTickId{4}, .time = GameplayTimePoint{129}})
-            .empty(),
-        "respawn not due early");
-    auto due = service.ProcessDueRespawns(GameplayTimePoint{130}, 10,
-                                          {.tick = GameplayTickId{5}, .time = GameplayTimePoint{130}});
+    Check(service
+              .ProcessDueRespawns(GameplayTimePoint{129}, 10,
+                                  {.tick = GameplayTickId{4}, .time = GameplayTimePoint{129}})
+              .empty(),
+          "respawn not due early");
+    auto due =
+        service.ProcessDueRespawns(GameplayTimePoint{130}, 10,
+                                   {.tick = GameplayTickId{5}, .time = GameplayTimePoint{130}});
     Check(due.size() == 1, "respawn due");
 
     // Bounded journal reports a gap instead of pretending retained history is complete.
@@ -251,7 +287,9 @@ int main() {
     jr.area = forest;
     jr.area_tags = Tags({"biome.forest"});
     jr.seed = {11};
+
     jr.context.tick = GameplayTickId{1};
+
     auto jspawn = journal.SpawnEncounter(jr);
     Check(jspawn.state == SpawnResultState::Succeeded, "journal spawn");
     auto stale = journal.ReadChangesSince(ChangeCursor{});
@@ -266,23 +304,29 @@ int main() {
     Check(restored.GetEncounterInstance(first.encounter_instance) != nullptr, "restore encounter");
     Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
           "pre-restore encounter cursor requires snapshot");
-    Check(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    Check(restored
+              .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                  std::numeric_limits<std::uint64_t>::max()))
               .snapshot_required,
           "future encounter cursor incompatible");
     SpawnPoint epoch_point;
     epoch_point.area = forest;
     epoch_point.position = Ref("world.position", "forest.epoch");
     Check(static_cast<bool>(restored.AddSpawnPoint(epoch_point)), "post-restore encounter change");
-    Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required, "old encounter cursor remains incompatible");
+    Check(restored.ReadChangesSince(pre_restore_cursor).snapshot_required,
+          "old encounter cursor remains incompatible");
     auto epoch_batch = restored.ReadChangesSince(ChangeCursor{});
-    Check(!epoch_batch.snapshot_required && !epoch_batch.changes.empty(), "new encounter epoch readable");
+    Check(!epoch_batch.snapshot_required && !epoch_batch.changes.empty(),
+          "new encounter epoch readable");
     auto epoch_current = restored.ReadChangesSince(epoch_batch.latest_cursor);
-    Check(!epoch_current.snapshot_required && epoch_current.changes.empty(), "exact encounter cursor current");
+    Check(!epoch_current.snapshot_required && epoch_current.changes.empty(),
+          "exact encounter cursor current");
     auto corrupted = snapshot;
     corrupted.instance_ids.scope = 0xDEAD;
     const auto before = restored.CaptureSnapshot();
     Check(!restored.RestoreSnapshot(corrupted), "reject invalid generator scope");
-    Check(restored.CaptureSnapshot().instances.size() == before.instances.size(), "failed restore leaves state intact");
+    Check(restored.CaptureSnapshot().instances.size() == before.instances.size(),
+          "failed restore leaves state intact");
 
     // Caller supplied IDs from the service scope advance the matching generator.
     EncountersService id_service;
@@ -295,7 +339,8 @@ int main() {
     next_point.area = forest;
     next_point.position = Ref("world.position", "forest.next");
     auto next_id = id_service.AddSpawnPoint(next_point);
-    Check(static_cast<bool>(next_id) && next_id.Value().value.Low() > 50, "caller id advances generator");
+    Check(static_cast<bool>(next_id) && next_id.Value().value.Low() > 50,
+          "caller id advances generator");
 
     // Goal 4: module-local failure seam proves RestoreSnapshot pre-state atomicity.
     const auto allocation_before = restored.CaptureSnapshot();

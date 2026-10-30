@@ -12,14 +12,17 @@ using namespace epidemic::gameplay::perception;
 
 namespace {
 GameplayObjectRef Actor(std::string_view name) {
-    return {GameplayDomainId::FromString("truth.integration.actor"), GameplayObjectId::FromString(name)};
+    return {GameplayDomainId::FromString("truth.integration.actor"),
+            GameplayObjectId::FromString(name)};
+
 }
 
 struct Scenario {
     GameplayObjectRef observer = Actor("observer");
     GameplayObjectRef target = Actor("target");
     SenseTypeId hearing = SenseTypeId::FromString("truth.sense.hearing");
-    PerceiverProfileId perception_profile = PerceiverProfileId::FromString("truth.profile.guard_senses");
+    PerceiverProfileId perception_profile =
+        PerceiverProfileId::FromString("truth.profile.guard_senses");
     PerceptionService perception;
     KnowledgeService knowledge;
 
@@ -35,6 +38,7 @@ struct Scenario {
         profile.id = perception_profile;
         profile.canonical_name = "truth.profile.guard_senses";
         profile.senses = {hearing};
+
         TRUTH_REQUIRE(perception.RegisterProfileDefinition(profile));
         perception.Freeze();
         TRUTH_REQUIRE(perception.RegisterPerceiver(observer, perception_profile));
@@ -51,24 +55,33 @@ struct Scenario {
         stimulus.position = {2'000, 0, 0};
         stimulus.strength_micro = 1'000'000;
         stimulus.created_at = GameplayTimePoint{10};
+
         stimulus.lifetime = GameplayDuration{20};
+
         const auto id = perception.CreateStimulus(stimulus);
         TRUTH_REQUIRE(id);
 
         PerceiverEvaluationSample sample;
         sample.subject = observer;
         sample.position = {0, 0, 0};
+
         sample.materialized = true;
         sample.runtime_projection_available = true;
         GameplayContext causal_context;
         causal_context.tick = GameplayTickId{77};
+
         causal_context.time = GameplayTimePoint{10};
-        const auto observations = perception.ProcessStimulus(
-            id.Value(),
-            PerceptionProcessingContext{GameplayTickId{77}, GameplayTimePoint{10}, causal_context, {sample}});
+
+        const auto observations =
+            perception.ProcessStimulus(id.Value(),
+                                       PerceptionProcessingContext{GameplayTickId{77},
+                                                                   GameplayTimePoint{10},
+                                                                   causal_context,
+                                                                   {sample}});
         TRUTH_REQUIRE(observations && observations.Value().size() == 1);
         return observations.Value().front();
     }
+
 };
 
 void ObservationBecomesSubjectiveKnowledge() {
@@ -77,6 +90,7 @@ void ObservationBecomesSubjectiveKnowledge() {
     PerceptionKnowledgeMapping mapping;
     mapping.observed_topic = KnowledgeTopicId::FromString("truth.topic.detected_actor");
     PerceptionKnowledgeAdapter adapter{scenario.knowledge, mapping};
+
     const auto learned = adapter.LearnFromObservation(observation);
     TRUTH_REQUIRE(learned && learned.Value().knowledge.IsValid());
     const auto *record = scenario.knowledge.FindKnowledge(learned.Value().knowledge);
@@ -96,6 +110,7 @@ void KnowledgeDrivesARealTargetedIntent() {
     PerceptionKnowledgeMapping mapping;
     mapping.observed_topic = KnowledgeTopicId::FromString("truth.topic.hostile");
     PerceptionKnowledgeAdapter learning{scenario.knowledge, mapping};
+
     TRUTH_REQUIRE(learning.LearnFromObservation(observation));
 
     AIService ai;
@@ -111,38 +126,47 @@ void KnowledgeDrivesARealTargetedIntent() {
     profile.id = AIProfileId::FromString("truth.profile.guard_ai");
     profile.canonical_name = "truth.profile.guard_ai";
     profile.default_goals = {goal.id};
+
     profile.think_interval = GameplayDuration{1};
+
     TRUTH_REQUIRE(ai.RegisterProfile(profile));
     TRUTH_REQUIRE(ai.Freeze());
     TRUTH_REQUIRE(ai.RegisterAgent(scenario.observer, profile.id));
 
     KnowledgeAIAdapter context_builder{scenario.knowledge};
-    const auto context = context_builder.BuildContext(scenario.observer, AIExecutionAvailability{true, true},
-                                                      &scenario.perception, GameplayTimePoint{10});
-    TRUTH_REQUIRE(std::any_of(context.targets.begin(), context.targets.end(), [&](const auto &candidate) {
-        return candidate.target == scenario.target;
-    }));
+
+    const auto context =
+        context_builder.BuildContext(scenario.observer, AIExecutionAvailability{true, true},
+                                     &scenario.perception, GameplayTimePoint{10});
+    TRUTH_REQUIRE(
+        std::any_of(context.targets.begin(), context.targets.end(),
+                    [&](const auto &candidate) { return candidate.target == scenario.target; }));
 
     GameplayContext causality;
     causality.tick = GameplayTickId{78};
+
     causality.time = GameplayTimePoint{10};
+
     const auto decision = ai.Think(scenario.observer, context, causality);
     TRUTH_REQUIRE(decision && decision.Value().intent.has_value());
     TRUTH_REQUIRE(decision.Value().intent->target == scenario.target);
     TRUTH_REQUIRE(decision.Value().intent->context.tick == GameplayTickId{78});
 
     AIIntentExecutionRecorder execution_log{4};
+
     TRUTH_REQUIRE(execution_log.Accept(*decision.Value().intent, ai));
     TRUTH_REQUIRE(execution_log.Succeed(decision.Value().intent->id, ai));
     TRUTH_REQUIRE(ai.FindAgent(scenario.observer)->activity == AIAgentActivity::Idle);
 }
+
 } // namespace
 
 int main() {
-    return epidemic::truth_tests::Run(
-        "framework-integration",
-        {
-            {"observation becomes subjective knowledge", &ObservationBecomesSubjectiveKnowledge},
-            {"knowledge drives a real targeted intent", &KnowledgeDrivesARealTargetedIntent},
-        });
+    return epidemic::truth_tests::Run("framework-integration",
+                                      {
+                                          {"observation becomes subjective knowledge",
+                                           &ObservationBecomesSubjectiveKnowledge},
+                                          {"knowledge drives a real targeted intent",
+                                           &KnowledgeDrivesARealTargetedIntent},
+                                      });
 }

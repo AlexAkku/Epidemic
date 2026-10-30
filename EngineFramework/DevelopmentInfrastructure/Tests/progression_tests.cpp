@@ -4,44 +4,53 @@
 #include <limits>
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::progression;
+
 namespace {
-template <class T, class Pred> bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
+template <class T, class Pred>
+bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
     return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), pred);
 }
 
 bool SameTrack(const ProgressionTrackState &a, const ProgressionTrackState &b) {
-    return a.id == b.id && a.progress_micro == b.progress_micro && a.rank == b.rank && a.revision == b.revision;
+    return a.id == b.id && a.progress_micro == b.progress_micro && a.rank == b.rank &&
+           a.revision == b.revision;
 }
 
 bool SameModifier(const ProgressionModifier &a, const ProgressionModifier &b) {
-    return a.id == b.id && a.target == b.target && a.operation == b.operation && a.value_micro == b.value_micro &&
-           a.priority == b.priority && a.modifier_type == b.modifier_type && a.source == b.source &&
+    return a.id == b.id && a.target == b.target && a.operation == b.operation &&
+           a.value_micro == b.value_micro && a.priority == b.priority &&
+           a.modifier_type == b.modifier_type && a.source == b.source &&
            a.persistent == b.persistent;
 }
 
 bool SameProfile(const ProgressionProfileSnapshot &a, const ProgressionProfileSnapshot &b) {
     return a.subject == b.subject && a.base_attributes == b.base_attributes &&
-           SameVector(a.tracks, b.tracks, SameTrack) && SameVector(a.modifiers, b.modifiers, SameModifier) &&
-           a.perks == b.perks && a.unlocks == b.unlocks && a.achieved_milestones == b.achieved_milestones &&
+           SameVector(a.tracks, b.tracks, SameTrack) &&
+           SameVector(a.modifiers, b.modifiers, SameModifier) && a.perks == b.perks &&
+           a.unlocks == b.unlocks && a.achieved_milestones == b.achieved_milestones &&
            a.revision == b.revision;
 }
 
 bool SameChange(const ProgressionChange &a, const ProgressionChange &b) {
-    return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject && a.attribute == b.attribute &&
-           a.track == b.track && a.perk == b.perk && a.modifier == b.modifier && a.revision == b.revision &&
-           a.context == b.context && a.milestone == b.milestone && a.unlock_type == b.unlock_type &&
+    return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject &&
+           a.attribute == b.attribute && a.track == b.track && a.perk == b.perk &&
+           a.modifier == b.modifier && a.revision == b.revision && a.context == b.context &&
+           a.milestone == b.milestone && a.unlock_type == b.unlock_type &&
            a.unlock_value == b.unlock_value;
 }
 
 bool SameSnapshot(const ProgressionSnapshot &a, const ProgressionSnapshot &b) {
-    return SameVector(a.profiles, b.profiles, SameProfile) && a.modifier_ids.scope == b.modifier_ids.scope &&
+    return SameVector(a.profiles, b.profiles, SameProfile) &&
+           a.modifier_ids.scope == b.modifier_ids.scope &&
            a.modifier_ids.next == b.modifier_ids.next &&
            a.grant_reservation_ids.scope == b.grant_reservation_ids.scope &&
-           a.grant_reservation_ids.next == b.grant_reservation_ids.next && a.revision == b.revision &&
-           SameVector(a.journal, b.journal, SameChange) && a.next_change_sequence == b.next_change_sequence &&
-           a.change_epoch == b.change_epoch;
+           a.grant_reservation_ids.next == b.grant_reservation_ids.next &&
+           a.revision == b.revision && SameVector(a.journal, b.journal, SameChange) &&
+           a.next_change_sequence == b.next_change_sequence && a.change_epoch == b.change_epoch;
 }
-}
+
+} // namespace
+
 int main() {
     ProgressionService s;
     AttributeDefinition strength;
@@ -63,6 +72,7 @@ int main() {
     ProgressionTrackDefinition level;
     level.canonical_name = "game.level";
     level.rank_thresholds_micro = {100, 300};
+
     auto tid = s.RegisterTrack(level);
     if (!tid)
         return 3;
@@ -71,7 +81,9 @@ int main() {
     auto perkid = s.RegisterPerk(perk);
     if (!perkid || !s.Freeze())
         return 4;
-    GameplayObjectRef actor{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor")};
+    GameplayObjectRef actor{GameplayDomainId::FromString("test"),
+                            GameplayObjectId::FromString("actor")};
+
     if (!s.EnsureProfile(actor) || !s.SetBaseAttribute(actor, sid.Value(), 10'000'000))
         return 5;
     auto value = s.GetAttribute(actor, pid.Value());
@@ -99,7 +111,8 @@ int main() {
     auto rp = restored.RegisterAttribute(power);
     auto rt = restored.RegisterTrack(level);
     auto rk = restored.RegisterPerk(perk);
-    if (!rs || !rp || !rt || !rk || !restored.Freeze() || !restored.RestoreSnapshot(std::move(snap)))
+    if (!rs || !rp || !rt || !rk || !restored.Freeze() ||
+        !restored.RestoreSnapshot(std::move(snap)))
         return 11;
     auto rv = restored.GetAttribute(actor, pid.Value());
     if (!rv || rv.Value() != 25'000'000)
@@ -118,15 +131,13 @@ int main() {
         return 16;
     const auto pending_snapshot = s.CaptureSnapshot();
     const auto pending_profile =
-        std::find_if(pending_snapshot.profiles.begin(), pending_snapshot.profiles.end(), [&](const auto &profile) {
-            return profile.subject == actor;
-        });
+        std::find_if(pending_snapshot.profiles.begin(), pending_snapshot.profiles.end(),
+                     [&](const auto &profile) { return profile.subject == actor; });
     if (pending_profile == pending_snapshot.profiles.end())
         return 17;
     const auto pending_track =
-        std::find_if(pending_profile->tracks.begin(), pending_profile->tracks.end(), [&](const auto &state) {
-            return state.id == tid.Value();
-        });
+        std::find_if(pending_profile->tracks.begin(), pending_profile->tracks.end(),
+                     [&](const auto &state) { return state.id == tid.Value(); });
     if (pending_track == pending_profile->tracks.end() || pending_track->progress_micro != 150)
         return 18;
     s.ReleaseProgressGrant(reserved.Value());
@@ -144,7 +155,9 @@ int main() {
         return 21;
 
     // H32: profile cleanup is blocked while a reservation is active and succeeds after release.
-    GameplayObjectRef transient{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("transient")};
+    GameplayObjectRef transient{GameplayDomainId::FromString("test"),
+                                GameplayObjectId::FromString("transient")};
+
     if (!s.EnsureProfile(transient))
         return 22;
     auto transient_reservation = s.ReserveProgressGrant(transient, tid.Value(), 10);
@@ -155,12 +168,16 @@ int main() {
         return 24;
 
     // M35: modifier IDs are service-wide and caller-supplied IDs advance the own-scope generator.
-    GameplayObjectRef actor_b{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("actor-b")};
+    GameplayObjectRef actor_b{GameplayDomainId::FromString("test"),
+                              GameplayObjectId::FromString("actor-b")};
+
     if (!s.EnsureProfile(actor_b))
         return 25;
-    const auto modifier_scope = GameplayObjectId::FromString("framework.progression.modifiers").High();
+    const auto modifier_scope =
+        GameplayObjectId::FromString("framework.progression.modifiers").High();
     ProgressionModifier explicit_modifier;
     explicit_modifier.id = {GameplayObjectId::FromRaw(modifier_scope, 100)};
+
     explicit_modifier.target = sid.Value();
     explicit_modifier.operation = ModifierOperation::FinalAdd;
     explicit_modifier.modifier_type = TypeId::FromString("test.explicit.mod");
@@ -179,15 +196,19 @@ int main() {
     if (!generated_id || generated_id.Value().value.Low() <= 100)
         return 28;
 
-    // Restore rejects a generator that can collide with restored own-scope modifier IDs, transactionally.
+    // Restore rejects a generator that can collide with restored own-scope modifier IDs,
+    // transactionally.
     auto invalid_snapshot = s.CaptureSnapshot();
     invalid_snapshot.modifier_ids.next = 100;
     ProgressionService invalid_restore_target;
-    if (!invalid_restore_target.RegisterAttribute(strength) || !invalid_restore_target.RegisterAttribute(power) ||
-        !invalid_restore_target.RegisterTrack(level) || !invalid_restore_target.RegisterPerk(perk) ||
-        !invalid_restore_target.Freeze())
+    if (!invalid_restore_target.RegisterAttribute(strength) ||
+        !invalid_restore_target.RegisterAttribute(power) ||
+        !invalid_restore_target.RegisterTrack(level) ||
+        !invalid_restore_target.RegisterPerk(perk) || !invalid_restore_target.Freeze())
         return 29;
-    GameplayObjectRef sentinel{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("sentinel")};
+    GameplayObjectRef sentinel{GameplayDomainId::FromString("test"),
+                               GameplayObjectId::FromString("sentinel")};
+
     if (!invalid_restore_target.EnsureProfile(sentinel))
         return 30;
     if (invalid_restore_target.RestoreSnapshot(std::move(invalid_snapshot)))
@@ -209,7 +230,9 @@ int main() {
     if (invalid_definitions.Freeze())
         return 35;
 
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 36;
     auto progression_journal_seed = restored.CaptureSnapshot();
@@ -221,30 +244,39 @@ int main() {
         !restored.SetBaseAttribute(actor, sid.Value(), 12'000'000))
         return 38;
     const auto progression_exhausted = restored.CaptureSnapshot();
-    if (progression_exhausted.next_change_sequence != 0 || progression_exhausted.journal.size() != 1 ||
+    if (progression_exhausted.next_change_sequence != 0 ||
+        progression_exhausted.journal.size() != 1 ||
         progression_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 39;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 40;
     if (!restored.RestoreSnapshot(progression_exhausted))
         return 41;
     ProgressionService empty_journal;
     if (!empty_journal
-             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 42;
 
-    // Goal 4 G4-INFRA-001: every named fallible publication seam starts from a fresh fixture and is full-snapshot atomic.
+    // Goal 4 G4-INFRA-001: every named fallible publication seam starts from a fresh fixture and is
+    // full-snapshot atomic.
     const GameplayObjectRef fault_actor{GameplayDomainId::FromString("test"),
                                         GameplayObjectId::FromString("fault-actor")};
-    const UnlockRecord fault_unlock{
-        UnlockTypeId::FromString("game.unlock.fault"), TypeId::FromString("game.unlock.value"), {}};
+
+    const UnlockRecord fault_unlock{UnlockTypeId::FromString("game.unlock.fault"),
+                                    TypeId::FromString("game.unlock.value"),
+                                    {}};
+
     const auto make_fault_service = [&]() {
         ProgressionService service;
-        if (!service.RegisterAttribute(strength) || !service.RegisterTrack(level) || !service.RegisterPerk(perk) ||
-            !service.Freeze())
+        if (!service.RegisterAttribute(strength) || !service.RegisterTrack(level) ||
+            !service.RegisterPerk(perk) || !service.Freeze())
             return ProgressionService{};
+
         return service;
     };
 
@@ -255,10 +287,13 @@ int main() {
         if (service.EnsureProfile(fault_actor) || !SameSnapshot(before, service.CaptureSnapshot()))
             return 980;
     }
-    for (const auto point :
-         {test_seam::FaultPoint::SetBaseAttributeBeforePublish, test_seam::FaultPoint::GrantProgressBeforePublish,
-          test_seam::FaultPoint::ReserveProgressBeforePublish, test_seam::FaultPoint::GrantPerkBeforePublish,
-          test_seam::FaultPoint::GrantUnlockBeforePublish, test_seam::FaultPoint::AddModifierBeforePublish}) {
+
+    for (const auto point : {test_seam::FaultPoint::SetBaseAttributeBeforePublish,
+                             test_seam::FaultPoint::GrantProgressBeforePublish,
+                             test_seam::FaultPoint::ReserveProgressBeforePublish,
+                             test_seam::FaultPoint::GrantPerkBeforePublish,
+                             test_seam::FaultPoint::GrantUnlockBeforePublish,
+                             test_seam::FaultPoint::AddModifierBeforePublish}) {
         auto service = make_fault_service();
         if (!service.EnsureProfile(fault_actor))
             return 981;
@@ -289,31 +324,38 @@ int main() {
             failed_as_expected = !service.AddModifier(fault_actor, modifier);
             break;
         }
+
         default:
             break;
         }
+
         if (!failed_as_expected || !SameSnapshot(before, service.CaptureSnapshot()))
             return 982;
     }
+
     {
         auto seeded = make_fault_service();
-        if (!seeded.EnsureProfile(fault_actor) || !seeded.SetBaseAttribute(fault_actor, sid.Value(), 3'000'000))
+        if (!seeded.EnsureProfile(fault_actor) ||
+            !seeded.SetBaseAttribute(fault_actor, sid.Value(), 3'000'000))
             return 983;
         const auto restore_seed = seeded.CaptureSnapshot();
-        for (const auto point :
-             {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+        for (const auto point : {test_seam::FaultPoint::RestoreCandidateBuild,
+                                 test_seam::FaultPoint::RestoreBeforeCommit}) {
             auto service = make_fault_service();
             if (!service.EnsureProfile(fault_actor))
                 return 984;
             const auto before = service.CaptureSnapshot();
             auto target = restore_seed;
             test_seam::FailNext(point);
-            if (service.RestoreSnapshot(std::move(target)) || !SameSnapshot(before, service.CaptureSnapshot()))
+            if (service.RestoreSnapshot(std::move(target)) ||
+                !SameSnapshot(before, service.CaptureSnapshot()))
                 return 985;
         }
+
     }
 
-    // G4-PROG-001/002/003: revision exhaustion rejects before destructive mutation or ID consumption.
+    // G4-PROG-001/002/003: revision exhaustion rejects before destructive mutation or ID
+    // consumption.
     ProgressionService atomic;
     auto atomic_strength = atomic.RegisterAttribute(strength);
     auto atomic_track = atomic.RegisterTrack(level);
@@ -323,17 +365,19 @@ int main() {
     atomic_milestone.track = atomic_track.Value();
     atomic_milestone.threshold_micro = 50;
     auto atomic_milestone_id = atomic.RegisterMilestone(atomic_milestone);
-    if (!atomic_strength || !atomic_track || !atomic_perk || !atomic_milestone_id || !atomic.Freeze())
+    if (!atomic_strength || !atomic_track || !atomic_perk || !atomic_milestone_id ||
+        !atomic.Freeze())
         return 941;
-    GameplayObjectRef atomic_actor{GameplayDomainId::FromString("test"), GameplayObjectId::FromString("atomic-actor")};
+    GameplayObjectRef atomic_actor{GameplayDomainId::FromString("test"),
+                                   GameplayObjectId::FromString("atomic-actor")};
+
     if (!atomic.EnsureProfile(atomic_actor))
         return 942;
     auto atomic_seed = atomic.CaptureSnapshot();
     atomic_seed.revision.value = std::numeric_limits<std::uint64_t>::max();
     auto atomic_profile =
-        std::find_if(atomic_seed.profiles.begin(), atomic_seed.profiles.end(), [&](const auto &profile) {
-            return profile.subject == atomic_actor;
-        });
+        std::find_if(atomic_seed.profiles.begin(), atomic_seed.profiles.end(),
+                     [&](const auto &profile) { return profile.subject == atomic_actor; });
     if (atomic_profile == atomic_seed.profiles.end())
         return 943;
     atomic_profile->revision.value = std::numeric_limits<std::uint64_t>::max();
@@ -346,7 +390,10 @@ int main() {
         return 946;
     if (atomic.GrantPerk(atomic_actor, atomic_perk.Value()))
         return 947;
-    UnlockRecord unlock{UnlockTypeId::FromString("game.unlock.type"), TypeId::FromString("game.unlock.value"), {}};
+    UnlockRecord unlock{UnlockTypeId::FromString("game.unlock.type"),
+                        TypeId::FromString("game.unlock.value"),
+                        {}};
+
     if (atomic.GrantUnlock(atomic_actor, unlock))
         return 948;
     ProgressionModifier atomic_modifier;
@@ -373,7 +420,8 @@ int main() {
         return 953;
     atomic.ReleaseProgressGrant(atomic_reservation.Value());
 
-    // G4-B06-PROG-004: journal allocation failure after commit rotates the journal epoch without undoing accepted state.
+    // G4-B06-PROG-004: journal allocation failure after commit rotates the journal epoch without
+    // undoing accepted state.
     ProgressionService journal_fault;
     auto jf_strength = journal_fault.RegisterAttribute(strength);
     if (!jf_strength || !journal_fault.Freeze())
@@ -384,10 +432,12 @@ int main() {
         return 958;
     const auto journal_after = journal_fault.CaptureSnapshot();
     if (!journal_fault.HasProfile(atomic_actor) || !journal_after.journal.empty() ||
-        journal_after.change_epoch == journal_before.change_epoch || journal_after.next_change_sequence != 1)
+        journal_after.change_epoch == journal_before.change_epoch ||
+        journal_after.next_change_sequence != 1)
         return 959;
 
-    // AddModifier allocation publication is failure-atomic and does not consume the staged generator.
+    // AddModifier allocation publication is failure-atomic and does not consume the staged
+    // generator.
     ProgressionService modifier_fault;
     auto mf_strength = modifier_fault.RegisterAttribute(strength);
     if (!mf_strength || !modifier_fault.Freeze() || !modifier_fault.EnsureProfile(atomic_actor))
@@ -409,19 +459,21 @@ int main() {
     ProgressionService revoke_guard;
     auto rg_strength = revoke_guard.RegisterAttribute(strength);
     auto rg_perk = revoke_guard.RegisterPerk(perk);
-    if (!rg_strength || !rg_perk || !revoke_guard.Freeze() || !revoke_guard.EnsureProfile(atomic_actor) ||
+    if (!rg_strength || !rg_perk || !revoke_guard.Freeze() ||
+        !revoke_guard.EnsureProfile(atomic_actor) ||
         !revoke_guard.GrantPerk(atomic_actor, rg_perk.Value()))
         return 960;
-    UnlockRecord revoke_unlock{
-        UnlockTypeId::FromString("game.unlock.revoke"), TypeId::FromString("game.unlock.revoke.value"), {}};
+    UnlockRecord revoke_unlock{UnlockTypeId::FromString("game.unlock.revoke"),
+                               TypeId::FromString("game.unlock.revoke.value"),
+                               {}};
+
     if (!revoke_guard.GrantUnlock(atomic_actor, revoke_unlock))
         return 961;
     auto revoke_snapshot = revoke_guard.CaptureSnapshot();
     revoke_snapshot.revision.value = std::numeric_limits<std::uint64_t>::max();
     auto revoke_profile =
-        std::find_if(revoke_snapshot.profiles.begin(), revoke_snapshot.profiles.end(), [&](const auto &profile) {
-            return profile.subject == atomic_actor;
-        });
+        std::find_if(revoke_snapshot.profiles.begin(), revoke_snapshot.profiles.end(),
+                     [&](const auto &profile) { return profile.subject == atomic_actor; });
     if (revoke_profile == revoke_snapshot.profiles.end())
         return 962;
     revoke_profile->revision.value = std::numeric_limits<std::uint64_t>::max();
@@ -438,7 +490,8 @@ int main() {
         revoke_after.profiles.size() != revoke_before.profiles.size())
         return 965;
 
-    // Full milestone fan-out requires more than one revision. At max-1 it must remain pending and publish nothing.
+    // Full milestone fan-out requires more than one revision. At max-1 it must remain pending and
+    // publish nothing.
     ProgressionService fanout_guard;
     auto fg_strength = fanout_guard.RegisterAttribute(strength);
     auto fg_track = fanout_guard.RegisterTrack(level);
@@ -460,15 +513,15 @@ int main() {
     auto fanout_seed = fanout_guard.CaptureSnapshot();
     fanout_seed.revision.value = std::numeric_limits<std::uint64_t>::max() - 1;
     auto fanout_profile =
-        std::find_if(fanout_seed.profiles.begin(), fanout_seed.profiles.end(), [&](const auto &profile) {
-            return profile.subject == atomic_actor;
-        });
+        std::find_if(fanout_seed.profiles.begin(), fanout_seed.profiles.end(),
+                     [&](const auto &profile) { return profile.subject == atomic_actor; });
     if (fanout_profile == fanout_seed.profiles.end())
         return 967;
     fanout_profile->revision.value = std::numeric_limits<std::uint64_t>::max() - 1;
     if (!fanout_guard.RestoreSnapshot(fanout_seed))
         return 968;
-    auto fanout_reservation = fanout_guard.ReserveProgressGrant(atomic_actor, fg_track.Value(), 100);
+    auto fanout_reservation =
+        fanout_guard.ReserveProgressGrant(atomic_actor, fg_track.Value(), 100);
     if (!fanout_reservation)
         return 969;
     const auto fanout_before = fanout_guard.CaptureSnapshot();
@@ -501,7 +554,8 @@ int main() {
         return 1106;
     if (api_evidence.ReplaceModifiersBySource(GameplayObjectRef{}, GameplayObjectRef{}, {}))
         return 1107;
-    if (api_evidence.RevokeUnlockFromSource(GameplayObjectRef{}, UnlockTypeId{}, TypeId{}, GameplayObjectRef{}))
+    if (api_evidence.RevokeUnlockFromSource(GameplayObjectRef{}, UnlockTypeId{}, TypeId{},
+                                            GameplayObjectRef{}))
         return 1108;
     if (api_evidence.RemoveModifiersBySource(GameplayObjectRef{}, GameplayObjectRef{}) != 0)
         return 1109;

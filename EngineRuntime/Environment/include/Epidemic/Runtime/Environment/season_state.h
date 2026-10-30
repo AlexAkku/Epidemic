@@ -15,4 +15,5 @@ struct SeasonState {
 
     [[nodiscard]] constexpr bool operator==(const SeasonState &) const noexcept = default;
 };
+
 } // namespace epidemic::runtime

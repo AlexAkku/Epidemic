@@ -75,7 +75,8 @@ class IEventBus {
 
   private:
     // Registers a type-erased handler for the specified event type and dispatch mode.
-    virtual HandlerToken SubscribeImpl(std::type_index event_type, EventDispatchMode mode, AnyEventHandler handler) = 0;
+    virtual HandlerToken SubscribeImpl(std::type_index event_type, EventDispatchMode mode,
+                                       AnyEventHandler handler) = 0;
 
     // Immediately dispatches a type-erased event to synchronous subscribers.
     virtual void PublishSyncImpl(std::type_index event_type, std::any event) = 0;
@@ -95,20 +96,24 @@ class EventBus final : public IEventBus {
   private:
     struct Subscription {
         HandlerToken token{};
+
         AnyEventHandler handler;
     };
 
     struct QueuedEvent {
         std::type_index type{typeid(void)};
+
         std::any payload;
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
         std::uint64_t auditor_correlation{}; // Build-only queue delivery identity.
+
         auditor::shadow::Context auditor_context;
 #endif
     };
 
     // Registers a type-erased handler in the correct subscription map.
-    HandlerToken SubscribeImpl(std::type_index event_type, EventDispatchMode mode, AnyEventHandler handler) override;
+    HandlerToken SubscribeImpl(std::type_index event_type, EventDispatchMode mode,
+                               AnyEventHandler handler) override;
 
     // Immediately dispatches an event to synchronous subscribers.
     void PublishSyncImpl(std::type_index event_type, std::any event) override;
@@ -125,8 +130,10 @@ class EventBus final : public IEventBus {
     std::mutex drain_mutex_;
     std::mutex mutex_;
     HandlerToken next_token_{1};
+
     std::unordered_map<std::type_index, std::vector<Subscription>> sync_subscriptions_;
     std::unordered_map<std::type_index, std::vector<Subscription>> queued_subscriptions_;
     std::queue<QueuedEvent> queued_events_;
 };
+
 } // namespace epidemic::core::events

@@ -15,6 +15,7 @@ template <class T> bool EnumInRange(T value, T last) noexcept {
     const auto v = static_cast<int>(value);
     return v >= 0 && v <= static_cast<int>(last);
 }
+
 int EpistemicRank(KnowledgeEpistemicState s) noexcept {
     switch (s) {
     case KnowledgeEpistemicState::Known:
@@ -28,15 +29,18 @@ int EpistemicRank(KnowledgeEpistemicState s) noexcept {
     case KnowledgeEpistemicState::Contradicted:
         return 0;
     }
+
     return 0;
 }
+
 KnowledgeEpistemicState Stronger(KnowledgeEpistemicState a, KnowledgeEpistemicState b) noexcept {
     return EpistemicRank(b) > EpistemicRank(a) ? b : a;
 }
 
-bool ValidateGenerator(MonotonicIdGenerator<GameplayObjectId>::Snapshot snapshot, std::uint64_t expected_scope,
-                       std::uint64_t max_low) noexcept {
-    if (!MonotonicIdGenerator<GameplayObjectId>::IsValidSnapshot(snapshot) || snapshot.scope != expected_scope)
+bool ValidateGenerator(MonotonicIdGenerator<GameplayObjectId>::Snapshot snapshot,
+                       std::uint64_t expected_scope, std::uint64_t max_low) noexcept {
+    if (!MonotonicIdGenerator<GameplayObjectId>::IsValidSnapshot(snapshot) ||
+        snapshot.scope != expected_scope)
         return false;
     if (snapshot.next == 0)
         return true;
@@ -48,6 +52,7 @@ template <class T> void InsertSorted(std::vector<T> &values, T value) {
     if (it == values.end() || *it != value)
         values.insert(it, value);
 }
+
 template <class T> void EraseSorted(std::vector<T> &values, T value) {
     const auto it = std::lower_bound(values.begin(), values.end(), value);
     if (it != values.end() && *it == value)
@@ -67,8 +72,10 @@ KnowledgeSourceId ShareSource(KnowledgeShareMode mode) noexcept {
     case KnowledgeShareMode::GroupSync:
         return KnowledgeSourceId::FromString("framework.knowledge.group_sync");
     }
+
     return KnowledgeSourceId::FromString("framework.knowledge.report");
 }
+
 } // namespace
 
 KnowledgeService::KnowledgeService(std::size_t change_capacity)
@@ -91,19 +98,22 @@ foundation::Result<void> KnowledgeService::RegisterDecayRule(MemoryDecayRule rul
     if (definitions_frozen_)
         return foundation::Result<void>::Failure(
             Error("gameplay.knowledge.registry_frozen", "knowledge definitions are frozen"));
-    if (!rule.id.IsValid() || rule.canonical_name.empty() || rule.interval.ticks <= 0 || rule.confidence_steps == 0 ||
-        decay_rules_.contains(rule.id))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.knowledge.invalid_decay_rule", "invalid or duplicate memory decay rule"));
-    if (rule.outdated_at_or_below && !EnumInRange(*rule.outdated_at_or_below, KnowledgeConfidence::Certain))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.knowledge.invalid_decay_rule", "invalid outdated confidence threshold"));
-    if (rule.forget_at_or_below && !EnumInRange(*rule.forget_at_or_below, KnowledgeConfidence::Certain))
+    if (!rule.id.IsValid() || rule.canonical_name.empty() || rule.interval.ticks <= 0 ||
+        rule.confidence_steps == 0 || decay_rules_.contains(rule.id))
+        return foundation::Result<void>::Failure(Error("gameplay.knowledge.invalid_decay_rule",
+                                                       "invalid or duplicate memory decay rule"));
+    if (rule.outdated_at_or_below &&
+        !EnumInRange(*rule.outdated_at_or_below, KnowledgeConfidence::Certain))
+        return foundation::Result<void>::Failure(Error("gameplay.knowledge.invalid_decay_rule",
+                                                       "invalid outdated confidence threshold"));
+    if (rule.forget_at_or_below &&
+        !EnumInRange(*rule.forget_at_or_below, KnowledgeConfidence::Certain))
         return foundation::Result<void>::Failure(
             Error("gameplay.knowledge.invalid_decay_rule", "invalid forget confidence threshold"));
     decay_rules_.emplace(rule.id, std::move(rule));
     return foundation::Result<void>::Success();
 }
+
 foundation::Result<void> KnowledgeService::FreezeDefinitions() {
     definitions_frozen_ = true;
     return foundation::Result<void>::Success();
@@ -116,7 +126,8 @@ foundation::Result<void> KnowledgeService::CreateProfile(KnowledgeProfile p) {
             Error("gameplay.knowledge.invalid_profile", "invalid or duplicate knowledge profile"));
     if (p.default_decay_rule.IsValid() && !decay_rules_.contains(p.default_decay_rule))
         return foundation::Result<void>::Failure(
-            Error("gameplay.knowledge.invalid_profile", "knowledge profile references unknown decay rule"));
+            Error("gameplay.knowledge.invalid_profile",
+                  "knowledge profile references unknown decay rule"));
     auto next = PrepareRevision();
     if (!next)
         return foundation::Result<void>::Failure(next.GetError());
@@ -133,7 +144,8 @@ foundation::Result<void> KnowledgeService::CreateProfile(KnowledgeProfile p) {
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> KnowledgeService::RemoveProfile(GameplayObjectRef subject, GameplayContext context) {
+foundation::Result<void> KnowledgeService::RemoveProfile(GameplayObjectRef subject,
+                                                         GameplayContext context) {
     auto pit = profiles_.find(subject);
     if (pit == profiles_.end())
         return foundation::Result<void>::Failure(
@@ -153,17 +165,22 @@ foundation::Result<void> KnowledgeService::RemoveProfile(GameplayObjectRef subje
             UnindexKnowledge(it->second);
             knowledge_.erase(it);
         }
+
     }
+
     for (auto id : memory_ids) {
         auto it = memories_.find(id);
         if (it != memories_.end()) {
             UnindexMemory(it->second);
             memories_.erase(it);
         }
+
     }
+
     profiles_.erase(pit);
     revision_ = next.Value();
-    if (diagnostics_.forgotten_records <= std::numeric_limits<std::uint64_t>::max() - knowledge_ids.size())
+    if (diagnostics_.forgotten_records <=
+        std::numeric_limits<std::uint64_t>::max() - knowledge_ids.size())
         diagnostics_.forgotten_records += knowledge_ids.size();
     else
         diagnostics_.forgotten_records = std::numeric_limits<std::uint64_t>::max();
@@ -171,28 +188,32 @@ foundation::Result<void> KnowledgeService::RemoveProfile(GameplayObjectRef subje
     return foundation::Result<void>::Success();
 }
 
-KnowledgeConfidence KnowledgeService::Degrade(KnowledgeConfidence c, KnowledgeShareMode mode) const noexcept {
+KnowledgeConfidence KnowledgeService::Degrade(KnowledgeConfidence c,
+                                              KnowledgeShareMode mode) const noexcept {
     if (mode == KnowledgeShareMode::Rumor)
-        return c >= KnowledgeConfidence::High ? KnowledgeConfidence::Medium
-                                              : (c == KnowledgeConfidence::None ? c : KnowledgeConfidence::Low);
+        return c >= KnowledgeConfidence::High
+                   ? KnowledgeConfidence::Medium
+                   : (c == KnowledgeConfidence::None ? c : KnowledgeConfidence::Low);
     if (mode == KnowledgeShareMode::Broadcast)
         return c == KnowledgeConfidence::Certain ? KnowledgeConfidence::High : c;
     if (mode == KnowledgeShareMode::Tell)
         return c;
-    return c == KnowledgeConfidence::None ? c : static_cast<KnowledgeConfidence>(static_cast<int>(c) - 1);
+    return c == KnowledgeConfidence::None
+               ? c
+               : static_cast<KnowledgeConfidence>(static_cast<int>(c) - 1);
 }
 
 foundation::Result<KnowledgeRecordId> KnowledgeService::Learn(LearnKnowledgeRequest r) {
     return LearnInternal(std::move(r), {}, {}, {}, 0);
 }
-foundation::Result<KnowledgeRecordId> KnowledgeService::LearnInternal(LearnKnowledgeRequest r,
-                                                                      KnowledgeRecordId derived_from,
-                                                                      KnowledgeSourceId original_source_kind,
-                                                                      GameplayObjectRef original_source,
-                                                                      std::uint32_t transmission_depth) {
+
+foundation::Result<KnowledgeRecordId> KnowledgeService::LearnInternal(
+    LearnKnowledgeRequest r, KnowledgeRecordId derived_from, KnowledgeSourceId original_source_kind,
+    GameplayObjectRef original_source, std::uint32_t transmission_depth) {
     auto pit = profiles_.find(r.learner);
-    if (!r.learner.IsValid() || pit == profiles_.end() || !r.type.IsValid() || !r.topic.id.IsValid() ||
-        !r.source_kind.IsValid() || !EnumInRange(r.assertion, KnowledgeAssertionValue::Denied) ||
+    if (!r.learner.IsValid() || pit == profiles_.end() || !r.type.IsValid() ||
+        !r.topic.id.IsValid() || !r.source_kind.IsValid() ||
+        !EnumInRange(r.assertion, KnowledgeAssertionValue::Denied) ||
         !EnumInRange(r.epistemic_state, KnowledgeEpistemicState::Outdated) ||
         !EnumInRange(r.confidence, KnowledgeConfidence::Certain))
         return foundation::Result<KnowledgeRecordId>::Failure(
@@ -221,7 +242,9 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::LearnInternal(LearnKnowl
                 existing = k;
                 break;
             }
+
         }
+
     if (existing) {
         KnowledgeRecord staged = *existing;
         staged.confidence = std::max(staged.confidence, r.confidence);
@@ -230,7 +253,8 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::LearnInternal(LearnKnowl
         staged.source_kind = r.source_kind;
         staged.source = r.source_object;
         staged.derived_from = derived_from;
-        staged.original_source_kind = original_source_kind.IsValid() ? original_source_kind : r.source_kind;
+        staged.original_source_kind =
+            original_source_kind.IsValid() ? original_source_kind : r.source_kind;
         staged.original_source = original_source.IsValid() ? original_source : r.source_object;
         staged.transmission_depth = transmission_depth;
         staged.last_confirmed_at = r.context.time;
@@ -257,6 +281,7 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::LearnInternal(LearnKnowl
 
     auto staged_ids = knowledge_ids_;
     KnowledgeRecordId id{staged_ids.Next()};
+
     if (!id.IsValid())
         return foundation::Result<KnowledgeRecordId>::Failure(
             Error("gameplay.knowledge.id_exhausted", "knowledge id generator exhausted"));
@@ -302,7 +327,15 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::LearnInternal(LearnKnowl
     revision_ = next.Value();
     if (diagnostics_.learn_ops != std::numeric_limits<std::uint64_t>::max())
         ++diagnostics_.learn_ops;
-    Record({0, KnowledgeChangeKind::Learned, r.learner, r.source_object, id, {}, k.topic.id, r.context, revision_});
+    Record({0,
+            KnowledgeChangeKind::Learned,
+            r.learner,
+            r.source_object,
+            id,
+            {},
+            k.topic.id,
+            r.context,
+            revision_});
     return foundation::Result<KnowledgeRecordId>::Success(id);
 }
 
@@ -321,6 +354,7 @@ foundation::Result<MemoryRecordId> KnowledgeService::CreateMemory(CreateMemoryRe
         return foundation::Result<MemoryRecordId>::Failure(next.GetError());
     auto staged_ids = memory_ids_;
     MemoryRecordId id{staged_ids.Next()};
+
     if (!id.IsValid())
         return foundation::Result<MemoryRecordId>::Failure(
             Error("gameplay.knowledge.id_exhausted", "memory id generator exhausted"));
@@ -347,16 +381,24 @@ foundation::Result<MemoryRecordId> KnowledgeService::CreateMemory(CreateMemoryRe
     memories_by_owner_.swap(staged_index);
     memory_ids_ = staged_ids;
     revision_ = next.Value();
-    Record({0, KnowledgeChangeKind::MemoryCreated, r.owner, r.subject, {}, id, {}, r.context, revision_});
+    Record({0,
+            KnowledgeChangeKind::MemoryCreated,
+            r.owner,
+            r.subject,
+            {},
+            id,
+            {},
+            r.context,
+            revision_});
     return foundation::Result<MemoryRecordId>::Success(id);
 }
 
-foundation::Result<MemoryRecordId> KnowledgeService::CompactMemories(GameplayObjectRef owner,
-                                                                     std::span<const MemoryRecordId> source_ids,
-                                                                     CreateMemoryRequest summary,
-                                                                     GameplayContext context) {
-    if (!owner.IsValid() || source_ids.empty() || summary.owner != owner || !summary.type.IsValid() ||
-        !EnumInRange(summary.importance, MemoryImportance::Critical))
+foundation::Result<MemoryRecordId>
+KnowledgeService::CompactMemories(GameplayObjectRef owner,
+                                  std::span<const MemoryRecordId> source_ids,
+                                  CreateMemoryRequest summary, GameplayContext context) {
+    if (!owner.IsValid() || source_ids.empty() || summary.owner != owner ||
+        !summary.type.IsValid() || !EnumInRange(summary.importance, MemoryImportance::Critical))
         return foundation::Result<MemoryRecordId>::Failure(
             Error("gameplay.knowledge.invalid_compaction", "invalid memory compaction request"));
     std::vector<MemoryRecordId> ids(source_ids.begin(), source_ids.end());
@@ -368,8 +410,10 @@ foundation::Result<MemoryRecordId> KnowledgeService::CompactMemories(GameplayObj
         auto it = memories_.find(id);
         if (it == memories_.end() || it->second.owner != owner)
             return foundation::Result<MemoryRecordId>::Failure(
-                Error("gameplay.knowledge.invalid_compaction", "source memory missing or owned by another subject"));
+                Error("gameplay.knowledge.invalid_compaction",
+                      "source memory missing or owned by another subject"));
     }
+
     auto pit = profiles_.find(owner);
     if (pit == profiles_.end())
         return foundation::Result<MemoryRecordId>::Failure(
@@ -383,6 +427,7 @@ foundation::Result<MemoryRecordId> KnowledgeService::CompactMemories(GameplayObj
         return foundation::Result<MemoryRecordId>::Failure(next.GetError());
     auto staged_ids = memory_ids_;
     MemoryRecordId new_id{staged_ids.Next()};
+
     if (!new_id.IsValid())
         return foundation::Result<MemoryRecordId>::Failure(
             Error("gameplay.knowledge.id_exhausted", "memory id generator exhausted"));
@@ -406,6 +451,7 @@ foundation::Result<MemoryRecordId> KnowledgeService::CompactMemories(GameplayObj
         auto &vec = staged_index[owner];
         EraseSorted(vec, id);
     }
+
     InsertSorted(staged_index[owner], new_id);
     auto [new_it, inserted] = memories_.emplace(new_id, m);
     if (!inserted)
@@ -419,11 +465,20 @@ foundation::Result<MemoryRecordId> KnowledgeService::CompactMemories(GameplayObj
     revision_ = next.Value();
     if (diagnostics_.compacted_memories != std::numeric_limits<std::uint64_t>::max())
         ++diagnostics_.compacted_memories;
-    Record({0, KnowledgeChangeKind::MemoryCompacted, owner, summary.subject, {}, new_id, {}, context, revision_});
+    Record({0,
+            KnowledgeChangeKind::MemoryCompacted,
+            owner,
+            summary.subject,
+            {},
+            new_id,
+            {},
+            context,
+            revision_});
     return foundation::Result<MemoryRecordId>::Success(new_id);
 }
 
-bool KnowledgeService::CanShareTopic(const KnowledgeProfile &profile, const KnowledgeTopic &topic) const noexcept {
+bool KnowledgeService::CanShareTopic(const KnowledgeProfile &profile,
+                                     const KnowledgeTopic &topic) const noexcept {
     const auto &allowed = profile.sharing_tags.Values();
     if (allowed.empty())
         return true;
@@ -437,8 +492,10 @@ bool KnowledgeService::CanShareTopic(const KnowledgeProfile &profile, const Know
         else
             ++j;
     }
+
     return false;
 }
+
 foundation::Result<KnowledgeRecordId> KnowledgeService::Share(ShareKnowledgeRequest r) {
     if (!EnumInRange(r.mode, KnowledgeShareMode::GroupSync))
         return foundation::Result<KnowledgeRecordId>::Failure(
@@ -446,13 +503,16 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Share(ShareKnowledgeRequ
     const auto *src = FindKnowledge(r.record);
     auto speaker = profiles_.find(r.speaker);
     auto listener = profiles_.find(r.listener);
-    if (!src || src->owner != r.speaker || speaker == profiles_.end() || listener == profiles_.end() ||
-        !r.speaker.IsValid() || !r.listener.IsValid() || !CanShareTopic(speaker->second, src->topic))
+    if (!src || src->owner != r.speaker || speaker == profiles_.end() ||
+        listener == profiles_.end() || !r.speaker.IsValid() || !r.listener.IsValid() ||
+        !CanShareTopic(speaker->second, src->topic))
         return foundation::Result<KnowledgeRecordId>::Failure(
-            Error("gameplay.knowledge.invalid_share", "share is not authorized by source ownership or profile policy"));
+            Error("gameplay.knowledge.invalid_share",
+                  "share is not authorized by source ownership or profile policy"));
     if (src->transmission_depth == std::numeric_limits<std::uint32_t>::max())
         return foundation::Result<KnowledgeRecordId>::Failure(
-            Error("gameplay.knowledge.share_depth_exhausted", "knowledge transmission depth exhausted"));
+            Error("gameplay.knowledge.share_depth_exhausted",
+                  "knowledge transmission depth exhausted"));
     LearnKnowledgeRequest req;
     req.learner = r.listener;
     req.type = src->type;
@@ -460,13 +520,16 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Share(ShareKnowledgeRequ
     req.source_kind = ShareSource(r.mode);
     req.source_object = r.speaker;
     req.assertion = src->assertion;
-    req.epistemic_state = r.mode == KnowledgeShareMode::Rumor ? KnowledgeEpistemicState::Rumor : src->epistemic_state;
+    req.epistemic_state =
+        r.mode == KnowledgeShareMode::Rumor ? KnowledgeEpistemicState::Rumor : src->epistemic_state;
     req.confidence = Degrade(src->confidence, r.mode);
     req.payload = src->payload;
     req.context = r.context;
-    auto res = LearnInternal(
-        std::move(req), src->id, src->original_source_kind.IsValid() ? src->original_source_kind : src->source_kind,
-        src->original_source.IsValid() ? src->original_source : src->source, src->transmission_depth + 1);
+    auto res = LearnInternal(std::move(req), src->id,
+                             src->original_source_kind.IsValid() ? src->original_source_kind
+                                                                 : src->source_kind,
+                             src->original_source.IsValid() ? src->original_source : src->source,
+                             src->transmission_depth + 1);
     if (res) {
         ++diagnostics_.shared_records;
         Record({0,
@@ -479,6 +542,7 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Share(ShareKnowledgeRequ
                 r.context,
                 revision_});
     }
+
     return res;
 }
 
@@ -496,9 +560,18 @@ foundation::Result<void> KnowledgeService::Forget(KnowledgeRecordId id, Gameplay
     revision_ = next.Value();
     if (diagnostics_.forgotten_records != std::numeric_limits<std::uint64_t>::max())
         ++diagnostics_.forgotten_records;
-    Record({0, KnowledgeChangeKind::Forgotten, copy.owner, {}, id, {}, copy.topic.id, context, revision_});
+    Record({0,
+            KnowledgeChangeKind::Forgotten,
+            copy.owner,
+            {},
+            id,
+            {},
+            copy.topic.id,
+            context,
+            revision_});
     return foundation::Result<void>::Success();
 }
+
 KnowledgeRecord *KnowledgeService::FindMutableKnowledge(KnowledgeRecordId id) noexcept {
     auto it = knowledge_.find(id);
     return it == knowledge_.end() ? nullptr : &it->second;
@@ -507,14 +580,16 @@ KnowledgeRecord *KnowledgeService::FindMutableKnowledge(KnowledgeRecordId id) no
 foundation::Result<KnowledgeRecordId> KnowledgeService::Contradict(ContradictKnowledgeRequest r) {
     auto *old = FindMutableKnowledge(r.old_record);
     if (!old || r.new_assertion == KnowledgeAssertionValue::Unknown ||
-        !EnumInRange(r.new_assertion, KnowledgeAssertionValue::Denied) || r.new_assertion == old->assertion ||
-        !r.source_kind.IsValid() || !EnumInRange(r.epistemic_state, KnowledgeEpistemicState::Outdated) ||
+        !EnumInRange(r.new_assertion, KnowledgeAssertionValue::Denied) ||
+        r.new_assertion == old->assertion || !r.source_kind.IsValid() ||
+        !EnumInRange(r.epistemic_state, KnowledgeEpistemicState::Outdated) ||
         !EnumInRange(r.confidence, KnowledgeConfidence::Certain))
         return foundation::Result<KnowledgeRecordId>::Failure(
             Error("gameplay.knowledge.invalid_contradiction", "invalid contradiction request"));
     if (old->transmission_depth == std::numeric_limits<std::uint32_t>::max())
         return foundation::Result<KnowledgeRecordId>::Failure(
-            Error("gameplay.knowledge.provenance_depth_exhausted", "knowledge provenance depth exhausted"));
+            Error("gameplay.knowledge.provenance_depth_exhausted",
+                  "knowledge provenance depth exhausted"));
     KnowledgeRecord *existing = nullptr;
     auto oit = knowledge_by_owner_.find(old->owner);
     if (oit != knowledge_by_owner_.end())
@@ -525,7 +600,9 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Contradict(ContradictKno
                 existing = k;
                 break;
             }
+
         }
+
     auto next = PrepareRevision();
     if (!next)
         return foundation::Result<KnowledgeRecordId>::Failure(next.GetError());
@@ -534,6 +611,7 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Contradict(ContradictKno
     staged_old.epistemic_state = KnowledgeEpistemicState::Contradicted;
     staged_old.revision = next.Value();
     KnowledgeRecordId new_id{};
+
     if (existing) {
         KnowledgeRecord staged = *existing;
         staged.confidence = std::max(staged.confidence, r.confidence);
@@ -555,6 +633,7 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Contradict(ContradictKno
     } else {
         auto staged_ids = knowledge_ids_;
         new_id = KnowledgeRecordId{staged_ids.Next()};
+
         if (!new_id.IsValid())
             return foundation::Result<KnowledgeRecordId>::Failure(
                 Error("gameplay.knowledge.id_exhausted", "knowledge id generator exhausted"));
@@ -599,6 +678,7 @@ foundation::Result<KnowledgeRecordId> KnowledgeService::Contradict(ContradictKno
         knowledge_ids_ = staged_ids;
         revision_ = next.Value();
     }
+
     if (diagnostics_.contradictions != std::numeric_limits<std::uint64_t>::max())
         ++diagnostics_.contradictions;
     Record({0,
@@ -629,7 +709,8 @@ foundation::Result<void> KnowledgeService::Decay(GameplayTimePoint now) {
     std::vector<MemoryRecordId> forget_mem;
     for (const auto &[id, m] : memories_)
         if (m.persistence == MemoryPersistencePolicy::Timed && m.decay_after.ticks > 0 &&
-            m.importance != MemoryImportance::Critical && now >= SaturatingAdd(m.time, m.decay_after))
+            m.importance != MemoryImportance::Critical &&
+            now >= SaturatingAdd(m.time, m.decay_after))
             forget_mem.push_back(id);
     std::sort(forget_mem.begin(), forget_mem.end());
     for (auto id : forget_mem) {
@@ -657,6 +738,7 @@ foundation::Result<void> KnowledgeService::Decay(GameplayTimePoint now) {
         (void)k;
         ids.push_back(id);
     }
+
     std::sort(ids.begin(), ids.end());
     std::vector<KnowledgeRecordId> forget_knowledge;
     for (auto id : ids) {
@@ -674,11 +756,14 @@ foundation::Result<void> KnowledgeService::Decay(GameplayTimePoint now) {
             continue;
         const auto current = static_cast<int>(k->confidence);
         const auto max_dec = static_cast<std::uint64_t>(current);
-        const auto raw_dec = static_cast<std::uint64_t>(steps) > max_dec / rit->second.confidence_steps
-                                 ? max_dec
-                                 : static_cast<std::uint64_t>(steps) * rit->second.confidence_steps;
-        const auto next_conf = static_cast<KnowledgeConfidence>(std::max(0, current - static_cast<int>(raw_dec)));
+        const auto raw_dec =
+            static_cast<std::uint64_t>(steps) > max_dec / rit->second.confidence_steps
+                ? max_dec
+                : static_cast<std::uint64_t>(steps) * rit->second.confidence_steps;
+        const auto next_conf =
+            static_cast<KnowledgeConfidence>(std::max(0, current - static_cast<int>(raw_dec)));
         const auto advanced = GameplayDuration{rit->second.interval.ticks * steps};
+
         k->last_decay_at = SaturatingAdd(k->last_decay_at, advanced);
         k->confidence = next_conf;
         if (rit->second.outdated_at_or_below &&
@@ -689,6 +774,7 @@ foundation::Result<void> KnowledgeService::Decay(GameplayTimePoint now) {
             forget_knowledge.push_back(id);
             continue;
         }
+
         ++revision_.value;
         k->revision = revision_;
         Record({0,
@@ -701,6 +787,7 @@ foundation::Result<void> KnowledgeService::Decay(GameplayTimePoint now) {
                 GameplayContext{.time = now},
                 revision_});
     }
+
     for (auto id : forget_knowledge) {
         auto it = knowledge_.find(id);
         if (it == knowledge_.end())
@@ -721,6 +808,7 @@ foundation::Result<void> KnowledgeService::Decay(GameplayTimePoint now) {
                 GameplayContext{.time = now},
                 revision_});
     }
+
     return foundation::Result<void>::Success();
 }
 
@@ -728,14 +816,17 @@ const KnowledgeProfile *KnowledgeService::FindProfile(GameplayObjectRef s) const
     auto it = profiles_.find(s);
     return it == profiles_.end() ? nullptr : &it->second;
 }
+
 const KnowledgeRecord *KnowledgeService::FindKnowledge(KnowledgeRecordId id) const noexcept {
     auto it = knowledge_.find(id);
     return it == knowledge_.end() ? nullptr : &it->second;
 }
+
 const MemoryRecord *KnowledgeService::FindMemory(MemoryRecordId id) const noexcept {
     auto it = memories_.find(id);
     return it == memories_.end() ? nullptr : &it->second;
 }
+
 const MemoryDecayRule *KnowledgeService::FindDecayRule(MemoryDecayRuleId id) const noexcept {
     auto it = decay_rules_.find(id);
     return it == decay_rules_.end() ? nullptr : &it->second;
@@ -752,8 +843,10 @@ std::vector<KnowledgeRecord> KnowledgeService::FindKnowledgeByOwner(GameplayObje
         if (k != knowledge_.end())
             out.push_back(k->second);
     }
+
     return out;
 }
+
 std::vector<KnowledgeRecord> KnowledgeService::FindKnowledgeByTopic(GameplayObjectRef owner,
                                                                     KnowledgeTopicId topic) const {
     std::vector<KnowledgeRecord> out;
@@ -769,10 +862,13 @@ std::vector<KnowledgeRecord> KnowledgeService::FindKnowledgeByTopic(GameplayObje
         if (k != knowledge_.end())
             out.push_back(k->second);
     }
+
     return out;
 }
-std::vector<KnowledgeRecord> KnowledgeService::FindKnowledgeAboutSubject(GameplayObjectRef owner,
-                                                                         GameplayObjectRef subject) const {
+
+std::vector<KnowledgeRecord>
+KnowledgeService::FindKnowledgeAboutSubject(GameplayObjectRef owner,
+                                            GameplayObjectRef subject) const {
     std::vector<KnowledgeRecord> out;
     auto oit = knowledge_by_subject_.find(owner);
     if (oit == knowledge_by_subject_.end())
@@ -786,19 +882,23 @@ std::vector<KnowledgeRecord> KnowledgeService::FindKnowledgeAboutSubject(Gamepla
         if (k != knowledge_.end())
             out.push_back(k->second);
     }
+
     return out;
 }
-std::optional<KnowledgeRecord> KnowledgeService::GetLastKnownPosition(GameplayObjectRef owner,
-                                                                      GameplayObjectRef subject) const {
+
+std::optional<KnowledgeRecord>
+KnowledgeService::GetLastKnownPosition(GameplayObjectRef owner, GameplayObjectRef subject) const {
     const auto topic = KnowledgeTopicId::FromString("framework.knowledge.last_known_position");
     std::optional<KnowledgeRecord> best;
     auto records = FindKnowledgeAboutSubject(owner, subject);
     for (const auto &k : records)
-        if (k.topic.id == topic && (!best || k.last_confirmed_at > best->last_confirmed_at ||
-                                    (k.last_confirmed_at == best->last_confirmed_at && k.id < best->id)))
+        if (k.topic.id == topic &&
+            (!best || k.last_confirmed_at > best->last_confirmed_at ||
+             (k.last_confirmed_at == best->last_confirmed_at && k.id < best->id)))
             best = k;
     return best;
 }
+
 std::vector<MemoryRecord> KnowledgeService::FindMemoriesByOwner(GameplayObjectRef owner) const {
     std::vector<MemoryRecord> out;
     auto it = memories_by_owner_.find(owner);
@@ -810,9 +910,12 @@ std::vector<MemoryRecord> KnowledgeService::FindMemoriesByOwner(GameplayObjectRe
         if (m != memories_.end())
             out.push_back(m->second);
     }
+
     return out;
 }
-std::vector<MemoryRecord> KnowledgeService::FindImportantMemories(GameplayObjectRef owner, MemoryImportance min) const {
+
+std::vector<MemoryRecord> KnowledgeService::FindImportantMemories(GameplayObjectRef owner,
+                                                                  MemoryImportance min) const {
     auto all = FindMemoriesByOwner(owner);
     all.erase(std::remove_if(all.begin(), all.end(),
                              [min](const auto &m) {
@@ -824,28 +927,32 @@ std::vector<MemoryRecord> KnowledgeService::FindImportantMemories(GameplayObject
 
 KnowledgeChangeBatch KnowledgeService::ReadChangesSinceSequence(std::uint64_t seq) const {
     KnowledgeChangeBatch b;
-    b.latest_sequence =
-        next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1;
+    b.latest_sequence = next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
+                                                   : next_change_sequence_ - 1;
     b.oldest_available_sequence =
-        changes_.empty()
-            ? (next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_)
-            : changes_.front().sequence;
+        changes_.empty() ? (next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
+                                                       : next_change_sequence_)
+                         : changes_.front().sequence;
     if (seq > b.latest_sequence) {
         b.snapshot_required = true;
         return b;
     }
+
     if (changes_.empty()) {
         b.snapshot_required = seq < b.latest_sequence;
         return b;
     }
+
     if (seq < b.oldest_available_sequence && b.oldest_available_sequence - seq > 1) {
         b.snapshot_required = true;
         return b;
     }
+
     for (const auto &c : changes_) {
         if (c.sequence > seq)
             b.changes.push_back(c);
     }
+
     return b;
 }
 
@@ -855,25 +962,27 @@ KnowledgeSnapshot KnowledgeService::CaptureSnapshot() const {
         (void)o;
         s.profiles.push_back(p);
     }
+
     for (const auto &[id, k] : knowledge_) {
         (void)id;
-        if (k.persistence == MemoryPersistencePolicy::Persistent || k.persistence == MemoryPersistencePolicy::Timed)
+        if (k.persistence == MemoryPersistencePolicy::Persistent ||
+            k.persistence == MemoryPersistencePolicy::Timed)
             s.knowledge.push_back(k);
     }
+
     for (const auto &[id, m] : memories_) {
         (void)id;
-        if (m.persistence == MemoryPersistencePolicy::Persistent || m.persistence == MemoryPersistencePolicy::Timed)
+        if (m.persistence == MemoryPersistencePolicy::Persistent ||
+            m.persistence == MemoryPersistencePolicy::Timed)
             s.memories.push_back(m);
     }
-    std::sort(s.profiles.begin(), s.profiles.end(), [](const auto &a, const auto &b) {
-        return a.subject < b.subject;
-    });
-    std::sort(s.knowledge.begin(), s.knowledge.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(s.memories.begin(), s.memories.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(s.profiles.begin(), s.profiles.end(),
+              [](const auto &a, const auto &b) { return a.subject < b.subject; });
+    std::sort(s.knowledge.begin(), s.knowledge.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(s.memories.begin(), s.memories.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     s.knowledge_ids = knowledge_ids_.GetSnapshot();
     s.memory_ids = memory_ids_.GetSnapshot();
     s.next_change_sequence = next_change_sequence_;
@@ -887,8 +996,10 @@ foundation::Result<void> KnowledgeService::RestoreSnapshot(KnowledgeSnapshot s) 
         CheckedNextChangeEpoch(s.change_epoch > journal_epoch_ ? s.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
+
     std::unordered_map<GameplayObjectRef, KnowledgeProfile, RefHash> new_profiles;
     std::unordered_map<KnowledgeRecordId, KnowledgeRecord, IdHash> new_knowledge;
     std::unordered_map<MemoryRecordId, MemoryRecord, IdHash> new_memories;
@@ -903,6 +1014,7 @@ foundation::Result<void> KnowledgeService::RestoreSnapshot(KnowledgeSnapshot s) 
         return foundation::Result<void>::Failure(
             Error("gameplay.knowledge.allocation_failed", "restore staging failed"));
     }
+
     std::uint64_t max_k = 0, max_m = 0;
     for (const auto &p : s.profiles) {
         if (!p.subject.IsValid() || !EnumInRange(p.retention, MemoryPersistencePolicy::Timed) ||
@@ -912,43 +1024,53 @@ foundation::Result<void> KnowledgeService::RestoreSnapshot(KnowledgeSnapshot s) 
             return foundation::Result<void>::Failure(
                 Error("gameplay.knowledge.restore_invalid", "invalid or duplicate profile"));
     }
-    if (internal_test::ConsumeAllocationFault(internal_test::AllocationFaultPoint::RestoreKnowledge))
+
+    if (internal_test::ConsumeAllocationFault(
+            internal_test::AllocationFaultPoint::RestoreKnowledge))
         return foundation::Result<void>::Failure(
             Error("gameplay.knowledge.allocation_failed", "knowledge restore staging failed"));
     for (const auto &k : s.knowledge) {
-        if (!k.id.IsValid() || !new_profiles.contains(k.owner) || !k.type.IsValid() || !k.topic.id.IsValid() ||
-            !k.source_kind.IsValid() || !EnumInRange(k.assertion, KnowledgeAssertionValue::Denied) ||
+        if (!k.id.IsValid() || !new_profiles.contains(k.owner) || !k.type.IsValid() ||
+            !k.topic.id.IsValid() || !k.source_kind.IsValid() ||
+            !EnumInRange(k.assertion, KnowledgeAssertionValue::Denied) ||
             !EnumInRange(k.epistemic_state, KnowledgeEpistemicState::Outdated) ||
             !EnumInRange(k.confidence, KnowledgeConfidence::Certain) ||
-            !EnumInRange(k.persistence, MemoryPersistencePolicy::Timed) || k.revision.value > s.revision.value ||
-            k.last_confirmed_at < k.learned_at || k.last_decay_at < k.learned_at ||
+            !EnumInRange(k.persistence, MemoryPersistencePolicy::Timed) ||
+            k.revision.value > s.revision.value || k.last_confirmed_at < k.learned_at ||
+            k.last_decay_at < k.learned_at ||
             (k.decay_rule.IsValid() && !decay_rules_.contains(k.decay_rule)) ||
             (k.transmission_depth == 0 && k.derived_from.IsValid()) ||
-            (k.transmission_depth > 0 && (!k.derived_from.IsValid() || !k.original_source_kind.IsValid())) ||
+            (k.transmission_depth > 0 &&
+             (!k.derived_from.IsValid() || !k.original_source_kind.IsValid())) ||
             !new_knowledge.emplace(k.id, k).second)
             return foundation::Result<void>::Failure(
-                Error("gameplay.knowledge.restore_invalid", "invalid or duplicate knowledge record"));
+                Error("gameplay.knowledge.restore_invalid",
+                      "invalid or duplicate knowledge record"));
         max_k = std::max(max_k, k.id.value.Low());
     }
+
     if (internal_test::ConsumeAllocationFault(internal_test::AllocationFaultPoint::RestoreMemories))
         return foundation::Result<void>::Failure(
             Error("gameplay.knowledge.allocation_failed", "memory restore staging failed"));
     for (const auto &m : s.memories) {
         if (!m.id.IsValid() || !new_profiles.contains(m.owner) || !m.type.IsValid() ||
             !EnumInRange(m.importance, MemoryImportance::Critical) ||
-            !EnumInRange(m.persistence, MemoryPersistencePolicy::Timed) || m.decay_after.ticks < 0 ||
-            m.revision.value > s.revision.value || !new_memories.emplace(m.id, m).second)
+            !EnumInRange(m.persistence, MemoryPersistencePolicy::Timed) ||
+            m.decay_after.ticks < 0 || m.revision.value > s.revision.value ||
+            !new_memories.emplace(m.id, m).second)
             return foundation::Result<void>::Failure(
                 Error("gameplay.knowledge.restore_invalid", "invalid or duplicate memory record"));
         max_m = std::max(max_m, m.id.value.Low());
     }
+
     if (!ValidateGenerator(s.knowledge_ids, knowledge_ids_.GetSnapshot().scope, max_k) ||
         !ValidateGenerator(s.memory_ids, memory_ids_.GetSnapshot().scope, max_m))
         return foundation::Result<void>::Failure(
             Error("gameplay.knowledge.restore_invalid", "invalid id generator snapshot"));
     if (s.next_change_sequence == 0)
         return foundation::Result<void>::Failure(
-            Error("gameplay.knowledge.restore_invalid", "snapshot cannot restore an exhausted transient journal"));
+            Error("gameplay.knowledge.restore_invalid",
+                  "snapshot cannot restore an exhausted transient journal"));
 
     if (internal_test::ConsumeAllocationFault(internal_test::AllocationFaultPoint::RestoreIndexes))
         return foundation::Result<void>::Failure(
@@ -963,6 +1085,7 @@ foundation::Result<void> KnowledgeService::RestoreSnapshot(KnowledgeSnapshot s) 
         if (k.subject.IsValid())
             InsertSorted(new_subject_index[k.owner][k.subject], id);
     }
+
     for (const auto &[id, m] : new_memories)
         InsertSorted(new_memory_index[m.owner], id);
 
@@ -990,6 +1113,7 @@ KnowledgeDiagnostics KnowledgeService::GetDiagnostics() const noexcept {
     d.memory_records = memories_.size();
     return d;
 }
+
 void KnowledgeService::Record(KnowledgeChange c) noexcept {
     if (next_change_sequence_ == 0)
         return;
@@ -1007,14 +1131,18 @@ void KnowledgeService::Record(KnowledgeChange c) noexcept {
         next_change_sequence_ = 1;
         return;
     }
-    next_change_sequence_ = sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
+
+    next_change_sequence_ =
+        sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
 }
+
 void KnowledgeService::IndexKnowledge(const KnowledgeRecord &k) {
     InsertSorted(knowledge_by_owner_[k.owner], k.id);
     InsertSorted(knowledge_by_topic_[k.owner][k.topic.id], k.id);
     if (k.subject.IsValid())
         InsertSorted(knowledge_by_subject_[k.owner][k.subject], k.id);
 }
+
 void KnowledgeService::UnindexKnowledge(const KnowledgeRecord &k) {
     auto oi = knowledge_by_owner_.find(k.owner);
     if (oi != knowledge_by_owner_.end()) {
@@ -1022,6 +1150,7 @@ void KnowledgeService::UnindexKnowledge(const KnowledgeRecord &k) {
         if (oi->second.empty())
             knowledge_by_owner_.erase(oi);
     }
+
     auto ti = knowledge_by_topic_.find(k.owner);
     if (ti != knowledge_by_topic_.end()) {
         auto q = ti->second.find(k.topic.id);
@@ -1030,9 +1159,11 @@ void KnowledgeService::UnindexKnowledge(const KnowledgeRecord &k) {
             if (q->second.empty())
                 ti->second.erase(q);
         }
+
         if (ti->second.empty())
             knowledge_by_topic_.erase(ti);
     }
+
     if (k.subject.IsValid()) {
         auto si = knowledge_by_subject_.find(k.owner);
         if (si != knowledge_by_subject_.end()) {
@@ -1042,14 +1173,19 @@ void KnowledgeService::UnindexKnowledge(const KnowledgeRecord &k) {
                 if (q->second.empty())
                     si->second.erase(q);
             }
+
             if (si->second.empty())
                 knowledge_by_subject_.erase(si);
         }
+
     }
+
 }
+
 void KnowledgeService::IndexMemory(const MemoryRecord &m) {
     InsertSorted(memories_by_owner_[m.owner], m.id);
 }
+
 void KnowledgeService::UnindexMemory(const MemoryRecord &m) {
     auto it = memories_by_owner_.find(m.owner);
     if (it != memories_by_owner_.end()) {
@@ -1057,7 +1193,9 @@ void KnowledgeService::UnindexMemory(const MemoryRecord &m) {
         if (it->second.empty())
             memories_by_owner_.erase(it);
     }
+
 }
+
 void KnowledgeService::RebuildIndexes() {
     knowledge_by_owner_.clear();
     knowledge_by_topic_.clear();
@@ -1068,6 +1206,7 @@ void KnowledgeService::RebuildIndexes() {
         (void)r;
         k.push_back(id);
     }
+
     std::sort(k.begin(), k.end());
     for (auto id : k)
         IndexKnowledge(knowledge_.at(id));
@@ -1076,8 +1215,10 @@ void KnowledgeService::RebuildIndexes() {
         (void)r;
         m.push_back(id);
     }
+
     std::sort(m.begin(), m.end());
     for (auto id : m)
         IndexMemory(memories_.at(id));
 }
+
 } // namespace epidemic::gameplay::knowledge

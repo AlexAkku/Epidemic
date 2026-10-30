@@ -3,6 +3,7 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestAbilityServiceSaveParticipant() {
     std::cerr << "[participant] framework.abilities: bootstrap\n";
     epidemic::gameplay::abilities::AbilityService owner;
@@ -17,27 +18,21 @@ void TestAbilityServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.abilities", {});
     std::cerr << "[participant] framework.abilities: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.abilities: non-empty seed\n";
-    const GameplayObjectRef subject{GameplayDomainId::FromString("fixture"), GameplayObjectId::FromString("subject")};
-    participant_tests::Check(bool(owner.Grant(subject, definition_id.Value())), "seed actual ability instance");
+    const GameplayObjectRef subject{GameplayDomainId::FromString("fixture"),
+                                    GameplayObjectId::FromString("subject")};
+
+    participant_tests::Check(bool(owner.Grant(subject, definition_id.Value())),
+                             "seed actual ability instance");
     std::cerr << "[participant] framework.abilities: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.GetDiagnostics().instances;
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.GetDiagnostics().instances; },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestCombatServiceSaveParticipant() {
     std::cerr << "[participant] framework.combat: bootstrap\n";
     epidemic::gameplay::combat::CombatService owner;
@@ -53,48 +48,49 @@ void TestCombatServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.combat", {});
     std::cerr << "[participant] framework.combat: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.combat: non-empty seed\n";
-    const GameplayObjectRef subject{GameplayDomainId::FromString("fixture"), GameplayObjectId::FromString("subject")};
-    participant_tests::Check(bool(owner.RegisterCombatant(subject, {{resource_id.Value(), 50, 100}})),
+    const GameplayObjectRef subject{GameplayDomainId::FromString("fixture"),
+                                    GameplayObjectId::FromString("subject")};
+
+    participant_tests::Check(bool(owner.RegisterCombatant(subject,
+                                                          {{resource_id.Value(), 50, 100}})),
                              "seed actual combatant");
     std::cerr << "[participant] framework.combat: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.GetDiagnostics().combatants;
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.GetDiagnostics().combatants; },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestLootServiceSaveParticipant() {
     std::cerr << "[participant] framework.loot: bootstrap\n";
     epidemic::gameplay::loot::LootService owner;
+
     class RewardHandler final : public loot::IRewardHandler {
       public:
         loot::RewardTypeId Type() const noexcept override {
             return loot::RewardTypeId::FromString("participant.reward");
         }
+
         epidemic::foundation::Result<loot::RewardDeliveryStage>
         Prepare(const loot::RewardOperation &operation) override {
             return epidemic::foundation::Result<loot::RewardDeliveryStage>::Success(
                 {operation, loot::RewardDeliveryDisposition::Delivered});
         }
+
         void Commit(loot::RewardDeliveryStage &) noexcept override {
         }
+
         void Cancel(loot::RewardDeliveryStage &) noexcept override {
         }
+
     };
+
     RewardHandler handler;
-    participant_tests::Check(bool(owner.RegisterRewardHandler("participant.reward", &handler)), "loot fixture handler");
+    participant_tests::Check(bool(owner.RegisterRewardHandler("participant.reward", &handler)),
+                             "loot fixture handler");
     loot::RewardDefinition reward;
     reward.canonical_name = "participant.gold";
     reward.type = handler.Type();
@@ -104,8 +100,12 @@ void TestLootServiceSaveParticipant() {
     loot::LootTableDefinition table;
     table.canonical_name = "participant.table";
     table.policy = loot::LootRollPolicy::GuaranteedAll;
-    table.entries.push_back(
-        {loot::LootEntryId::FromString("participant.entry"), 1, 1'000'000, reward_id.Value(), {}, {}});
+    table.entries.push_back({loot::LootEntryId::FromString("participant.entry"),
+                             1,
+                             1'000'000,
+                             reward_id.Value(),
+                             {},
+                             {}});
     auto table_id = owner.RegisterLootTable(table);
     participant_tests::Check(bool(table_id), "loot fixture table");
     participant_tests::FreezeOwner(owner);
@@ -115,31 +115,26 @@ void TestLootServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.loot", {});
     std::cerr << "[participant] framework.loot: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.loot: non-empty seed\n";
     loot::LootContext context;
-    context.recipient = {GameplayDomainId::FromString("fixture"), GameplayObjectId::FromString("subject")};
+    context.recipient = {GameplayDomainId::FromString("fixture"),
+                         GameplayObjectId::FromString("subject")};
+
     context.seed = {42};
+
     auto generated = owner.GenerateTracked(table_id.Value(), context);
     participant_tests::Check(bool(generated), "seed actual generated loot");
-    participant_tests::Check(bool(owner.MakePending(std::move(generated).Value())), "seed actual pending reward");
+    participant_tests::Check(bool(owner.MakePending(std::move(generated).Value())),
+                             "seed actual pending reward");
     std::cerr << "[participant] framework.loot: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.GetDiagnostics().pending;
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.GetDiagnostics().pending; },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestProgressionServiceSaveParticipant() {
     std::cerr << "[participant] framework.progression: bootstrap\n";
     epidemic::gameplay::progression::ProgressionService owner;
@@ -147,7 +142,8 @@ void TestProgressionServiceSaveParticipant() {
     attribute.canonical_name = "participant.attribute";
     attribute.min_micro = 0;
     attribute.max_micro = 1'000'000;
-    participant_tests::Check(bool(owner.RegisterAttribute(attribute)), "progression fixture attribute");
+    participant_tests::Check(bool(owner.RegisterAttribute(attribute)),
+                             "progression fixture attribute");
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] framework.progression: contract\n";
@@ -155,28 +151,20 @@ void TestProgressionServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.progression", {});
     std::cerr << "[participant] framework.progression: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.progression: non-empty seed\n";
     const GameplayObjectRef subject{GameplayDomainId::FromString("participant.progression"),
                                     GameplayObjectId::FromString("subject")};
+
     participant_tests::Check(bool(owner.EnsureProfile(subject)), "seed actual progression profile");
     std::cerr << "[participant] framework.progression: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().profiles.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().profiles.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestAbilityEffectsDispatcherSaveParticipant() {
     std::cerr << "[participant] integration.ability_effects: bootstrap\n";
     effects::EffectService effects;
@@ -189,24 +177,30 @@ void TestAbilityEffectsDispatcherSaveParticipant() {
     CheckParticipantContract(*participant, "integration.ability_effects",
                              {savegame::SaveParticipantId::FromString("framework.abilities"),
                               savegame::SaveParticipantId::FromString("framework.effects")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureCheckpoint();
-        integration::AbilityEffectDeliveryRecord record;
-        record.key.execution = {GameplayObjectId::FromString("participant.ability.execution")};
-        record.key.output_index = 1;
-        record.result.execution = {GameplayObjectId::FromString("participant.effect.execution")};
-        record.result.disposition = effects::EffectBatchDisposition::Succeeded;
-        record.result.waves = 1;
-        checkpoint.delivered.push_back(std::move(record));
-        return owner.RestoreCheckpoint(std::move(checkpoint));
-    });
+    participant_tests::
+        CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
+            auto checkpoint = owner.CaptureCheckpoint();
+            integration::AbilityEffectDeliveryRecord record;
+            record.key.execution = {GameplayObjectId::FromString("participant.ability.execution")};
+
+            record.key.output_index = 1;
+            record.result.execution = {
+                GameplayObjectId::FromString("participant.effect.execution")};
+
+            record.result.disposition = effects::EffectBatchDisposition::Succeeded;
+            record.result.waves = 1;
+            checkpoint.delivered.push_back(std::move(record));
+            return owner.RestoreCheckpoint(std::move(checkpoint));
+        });
 }
+
 void TestAbilityTimeAdapterSaveParticipant() {
     std::cerr << "[participant] integration.ability_time: bootstrap\n";
     time::GameplayTimeService time;
     abilities::AbilityService abilities;
     const auto clock = time.RegisterClock("participant.clock");
-    const auto action = time.RegisterAction("participant.ability", abilities::AbilityService::Domain());
+    const auto action =
+        time.RegisterAction("participant.ability", abilities::AbilityService::Domain());
     participant_tests::FreezeOwner(time);
     participant_tests::FreezeOwner(abilities);
     integration::AbilityTimeAdapter owner(time, abilities, clock.Value(), action.Value());
@@ -216,16 +210,20 @@ void TestAbilityTimeAdapterSaveParticipant() {
     CheckParticipantContract(*participant, "integration.ability_time",
                              {savegame::SaveParticipantId::FromString("framework.abilities"),
                               savegame::SaveParticipantId::FromString("framework.time")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureCheckpoint();
-        integration::AbilityTimePendingTrigger pending;
-        pending.trigger = ScheduleId::FromString("participant.schedule");
-        pending.execution = {GameplayObjectId::FromString("participant.ability.execution")};
-        pending.observed_at = GameplayTimePoint{17};
-        checkpoint.pending.push_back(std::move(pending));
-        return owner.RestoreCheckpoint(std::move(checkpoint));
-    });
+    participant_tests::
+        CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
+            auto checkpoint = owner.CaptureCheckpoint();
+            integration::AbilityTimePendingTrigger pending;
+            pending.trigger = ScheduleId::FromString("participant.schedule");
+            pending.execution = {GameplayObjectId::FromString("participant.ability.execution")};
+
+            pending.observed_at = GameplayTimePoint{17};
+
+            checkpoint.pending.push_back(std::move(pending));
+            return owner.RestoreCheckpoint(std::move(checkpoint));
+        });
 }
+
 void TestConditionProgressionAdapterSaveParticipant() {
     std::cerr << "[participant] integration.condition_progression: bootstrap\n";
     conditions::ConditionService conditions;
@@ -240,12 +238,15 @@ void TestConditionProgressionAdapterSaveParticipant() {
     CheckParticipantContract(*participant, "integration.condition_progression",
                              {savegame::SaveParticipantId::FromString("framework.conditions"),
                               savegame::SaveParticipantId::FromString("framework.progression")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureCheckpoint();
-        checkpoint.cursor = ChangeCursor{77, 9};
-        return owner.RestoreCheckpoint(checkpoint);
-    });
+    participant_tests::CheckChangedStatePublication(*participant,
+                                                    [&]() -> ::epidemic::foundation::Result<void> {
+                                                        auto checkpoint = owner.CaptureCheckpoint();
+                                                        checkpoint.cursor = ChangeCursor{77, 9};
+
+                                                        return owner.RestoreCheckpoint(checkpoint);
+                                                    });
 }
+
 void TestDeathRewardAdapterSaveParticipant() {
     std::cerr << "[participant] integration.death_reward: bootstrap\n";
     combat::CombatService combat;
@@ -256,20 +257,27 @@ void TestDeathRewardAdapterSaveParticipant() {
     (void)owner.FreezeMappings();
     owner.RestoreCursor(combat.LatestChangeCursor());
     const GameplayObjectRef fixture_combatant{combat::CombatService::Domain(),
-                                              GameplayObjectId::FromString("participant.death.combatant")};
-    participant_tests::Check(bool(combat.RegisterCombatant(fixture_combatant, {})), "death reward fixture journal");
+                                              GameplayObjectId::FromString(
+                                                  "participant.death.combatant")};
+
+    participant_tests::Check(bool(combat.RegisterCombatant(fixture_combatant, {})),
+                             "death reward fixture journal");
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] integration.death_reward: contract\n";
     auto participant = savegame::CreateDeathRewardAdapterSaveParticipant(owner, workspace);
     CheckParticipantContract(*participant, "integration.death_reward",
                              {savegame::SaveParticipantId::FromString("framework.combat"),
                               savegame::SaveParticipantId::FromString("framework.loot")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureCheckpoint();
-        checkpoint.cursor = combat.LatestChangeCursor();
-        return owner.RestoreCheckpoint(std::move(checkpoint));
-    });
+    participant_tests::CheckChangedStatePublication(*participant,
+                                                    [&]() -> ::epidemic::foundation::Result<void> {
+                                                        auto checkpoint = owner.CaptureCheckpoint();
+                                                        checkpoint.cursor =
+                                                            combat.LatestChangeCursor();
+                                                        return owner.RestoreCheckpoint(
+                                                            std::move(checkpoint));
+                                                    });
 }
+
 int main() {
     TestAbilityServiceSaveParticipant();
     TestCombatServiceSaveParticipant();

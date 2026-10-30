@@ -8,27 +8,27 @@
 #include <string_view>
 #include <cstdint>
 #include <cstddef>
+
 namespace epidemic::runtime::presentation {
-enum class PlaybackState {
-    Unloaded,
-    Waiting,
-    Playing,
-    Paused,
-    Ended,
-    Failed
-};
+enum class PlaybackState { Unloaded, Waiting, Playing, Paused, Ended, Failed };
+
 struct AudioFailure {
     std::string operation;
     std::int32_t nativeCode{};
+
 };
+
 struct AudioEntry {
     std::string_view id;
     int resource;
     double gain, gap;
 };
+
 inline double MusicFade(double seconds, double duration) {
-    return std::min(std::clamp(seconds / 10., 0., 1.), std::clamp((duration - seconds) / 10., 0., 1.));
+    return std::min(std::clamp(seconds / 10., 0., 1.),
+                    std::clamp((duration - seconds) / 10., 0., 1.));
 }
+
 class Music {
     struct Impl;
     std::unique_ptr<Impl> impl_;
@@ -45,6 +45,7 @@ class Music {
     PlaybackState State() const;
     AudioFailure Failure() const;
 };
+
 class Sound {
     struct Impl;
     std::unique_ptr<Impl> impl_;
@@ -57,4 +58,5 @@ class Sound {
     void Tick(double dt, double volume);
     std::size_t Voices() const;
 };
-}
+
+} // namespace epidemic::runtime::presentation

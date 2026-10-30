@@ -21,11 +21,14 @@ enum class ResidencyState {
     case ResidencyState::Loading:
         return to == ResidencyState::Resident || to == ResidencyState::Unloaded;
     case ResidencyState::Resident:
-        return to == ResidencyState::Active || to == ResidencyState::Sleeping || to == ResidencyState::Unloading;
+        return to == ResidencyState::Active || to == ResidencyState::Sleeping ||
+               to == ResidencyState::Unloading;
     case ResidencyState::Active:
-        return to == ResidencyState::Resident || to == ResidencyState::Sleeping || to == ResidencyState::Unloading;
+        return to == ResidencyState::Resident || to == ResidencyState::Sleeping ||
+               to == ResidencyState::Unloading;
     case ResidencyState::Sleeping:
-        return to == ResidencyState::Resident || to == ResidencyState::Active || to == ResidencyState::Unloading;
+        return to == ResidencyState::Resident || to == ResidencyState::Active ||
+               to == ResidencyState::Unloading;
     case ResidencyState::Unloading:
         return to == ResidencyState::Unloaded;
     }
@@ -52,19 +55,23 @@ enum class ObjectRealityLevel {
     return 0;
 }
 
-[[nodiscard]] constexpr bool IsMoreConcreteRealityLevel(ObjectRealityLevel left, ObjectRealityLevel right) noexcept {
+[[nodiscard]] constexpr bool IsMoreConcreteRealityLevel(ObjectRealityLevel left,
+                                                        ObjectRealityLevel right) noexcept {
     return RealityRank(left) > RealityRank(right);
 }
 
-[[nodiscard]] constexpr bool IsLessConcreteRealityLevel(ObjectRealityLevel left, ObjectRealityLevel right) noexcept {
+[[nodiscard]] constexpr bool IsLessConcreteRealityLevel(ObjectRealityLevel left,
+                                                        ObjectRealityLevel right) noexcept {
     return RealityRank(left) < RealityRank(right);
 }
 
-[[nodiscard]] constexpr bool CanPromoteReality(ObjectRealityLevel from, ObjectRealityLevel to) noexcept {
+[[nodiscard]] constexpr bool CanPromoteReality(ObjectRealityLevel from,
+                                               ObjectRealityLevel to) noexcept {
     return RealityRank(to) >= RealityRank(from);
 }
 
-[[nodiscard]] constexpr bool CanDemoteReality(ObjectRealityLevel from, ObjectRealityLevel to) noexcept {
+[[nodiscard]] constexpr bool CanDemoteReality(ObjectRealityLevel from,
+                                              ObjectRealityLevel to) noexcept {
     return RealityRank(to) <= RealityRank(from);
 }
 
@@ -93,7 +100,8 @@ enum class PersistenceTier {
     return 0;
 }
 
-[[nodiscard]] constexpr bool CanPromotePersistenceTier(PersistenceTier from, PersistenceTier to) noexcept {
+[[nodiscard]] constexpr bool CanPromotePersistenceTier(PersistenceTier from,
+                                                       PersistenceTier to) noexcept {
     return PersistenceTierRank(to) >= PersistenceTierRank(from);
 }
 
@@ -124,4 +132,5 @@ enum class SimulationLod {
 
     return 0;
 }
+
 } // namespace epidemic::runtime

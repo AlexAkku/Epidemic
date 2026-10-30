@@ -17,5 +17,6 @@ struct ResourceServices {
     std::shared_ptr<IResourceManager> manager;
 };
 
-[[nodiscard]] foundation::Result<ResourceServices> CreateResourceServices(const ResourceOptions &options = {});
+[[nodiscard]] foundation::Result<ResourceServices>
+CreateResourceServices(const ResourceOptions &options = {});
 } // namespace epidemic::runtime

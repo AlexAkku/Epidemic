@@ -32,7 +32,7 @@ struct RendererServices {
     std::shared_ptr<IRendererRuntime> runtime;
 };
 
-[[nodiscard]] foundation::Result<RendererServices> CreateRendererServices(const RendererOptions &options,
-                                                                          RendererDependencies dependencies = {});
+[[nodiscard]] foundation::Result<RendererServices>
+CreateRendererServices(const RendererOptions &options, RendererDependencies dependencies = {});
 [[nodiscard]] foundation::Result<RendererServices> CreateMockRendererServices();
 } // namespace epidemic::runtime::renderer

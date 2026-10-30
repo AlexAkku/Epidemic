@@ -23,4 +23,5 @@ inline void FailNext(FaultPoint point) noexcept {
 inline void Reset() noexcept {
     next_fault = FaultPoint::None;
 }
+
 } // namespace epidemic::gameplay::materials::test_seam

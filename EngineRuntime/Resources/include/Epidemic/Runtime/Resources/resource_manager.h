@@ -37,7 +37,8 @@ class IResourceManager {
   public:
     virtual ~IResourceManager() = default;
 
-    [[nodiscard]] virtual foundation::Result<ResourceLease> RequestLease(ResourceRequest request) = 0;
+    [[nodiscard]] virtual foundation::Result<ResourceLease>
+    RequestLease(ResourceRequest request) = 0;
     [[nodiscard]] virtual foundation::Result<ResourceProcessingStats>
     ProcessPendingLoads(RuntimeBudget budget = {}) = 0;
     [[nodiscard]] virtual foundation::Result<void> Release(ResourceLease lease) = 0;
@@ -53,4 +54,5 @@ class IResourceManager {
     virtual void SetMemoryBudgetBytes(std::size_t bytes) = 0;
     [[nodiscard]] virtual ResourceMemoryStats GetMemoryStatistics() const = 0;
 };
+
 } // namespace epidemic::runtime

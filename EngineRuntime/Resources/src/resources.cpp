@@ -10,8 +10,10 @@ foundation::Result<ResourceServices> CreateResourceServices(const ResourceOption
     manager->SetMemoryBudgetBytes(options.memory_budget_bytes);
 
     ResourceServices services{};
+
     services.loaders = loaders;
     services.manager = manager;
     return foundation::Result<ResourceServices>::Success(std::move(services));
 }
+
 } // namespace epidemic::runtime

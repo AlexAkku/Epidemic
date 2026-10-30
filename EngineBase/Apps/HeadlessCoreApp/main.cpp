@@ -1,5 +1,6 @@
 // This file defines the smallest smoke app for the EngineBase application shell.
-// It verifies that baseline service wiring and one frame of execution succeed without platform or graphics dependencies.
+// It verifies that baseline service wiring and one frame of execution succeed without platform or
+// graphics dependencies.
 
 #include <Epidemic/EngineBase/engine_base_support.h>
 #include <Epidemic/Core/application.h>
@@ -11,8 +12,10 @@
 int main() {
     try {
         epidemic::core::Application application;
-        static_cast<void>(epidemic::enginebase::RegisterEngineBase(
-            application, {.runtime_name = "EpidemicHeadlessCoreApp", .log_module = "HeadlessCoreApp"}));
+        static_cast<void>(
+            epidemic::enginebase::RegisterEngineBase(application,
+                                                     {.runtime_name = "EpidemicHeadlessCoreApp",
+                                                      .log_module = "HeadlessCoreApp"}));
         application.SetFrameLimit(1);
         application.Bootstrap();
         application.Initialize();
@@ -23,4 +26,5 @@ int main() {
         std::cerr << "EpidemicHeadlessCoreApp failed: " << exception.what() << '\n';
         return 1;
     }
+
 }

@@ -32,8 +32,10 @@ namespace {
     case DayPhase::Night:
         return true;
     }
+
     return false;
 }
+
 } // namespace
 
 foundation::Result<void> ValidateTimeOptions(const TimeOptions &options) {
@@ -44,7 +46,8 @@ foundation::Result<void> ValidateTimeOptions(const TimeOptions &options) {
 
     if (!IsValidTimeScale(options.initial_time_scale)) {
         return foundation::Result<void>::Failure(
-            MakeTimeError("time.invalid_scale", "initial time scale numerator and denominator must be positive"));
+            MakeTimeError("time.invalid_scale",
+                          "initial time scale numerator and denominator must be positive"));
     }
 
     if (options.calendar.hours_per_day == 0 || options.calendar.days_per_month == 0 ||
@@ -55,8 +58,10 @@ foundation::Result<void> ValidateTimeOptions(const TimeOptions &options) {
 
     if (options.calendar.hours_per_day > (std::numeric_limits<std::uint32_t>::max() / 60)) {
         return foundation::Result<void>::Failure(
-            MakeTimeError("time.overflow", "calendar day length overflows phase boundary validation"));
+            MakeTimeError("time.overflow",
+                          "calendar day length overflows phase boundary validation"));
     }
+
     if (options.calendar.days_per_month >
         (std::numeric_limits<std::int64_t>::max() / options.calendar.months_per_year)) {
         return foundation::Result<void>::Failure(
@@ -64,25 +69,32 @@ foundation::Result<void> ValidateTimeOptions(const TimeOptions &options) {
     }
 
     const std::uint32_t minutes_per_day = options.calendar.hours_per_day * 60;
-    std::vector<PhaseBoundary> boundaries =
-        options.phase_boundaries.empty() ? detail::DefaultPhaseBoundaries() : options.phase_boundaries;
-    std::sort(boundaries.begin(), boundaries.end(), [](const PhaseBoundary &left, const PhaseBoundary &right) {
-        return left.start_minute < right.start_minute;
-    });
+    std::vector<PhaseBoundary> boundaries = options.phase_boundaries.empty()
+                                                ? detail::DefaultPhaseBoundaries()
+                                                : options.phase_boundaries;
+    std::sort(boundaries.begin(), boundaries.end(),
+              [](const PhaseBoundary &left, const PhaseBoundary &right) {
+                  return left.start_minute < right.start_minute;
+              });
     for (std::size_t index = 0; index < boundaries.size(); ++index) {
         if (!IsValidDayPhase(boundaries[index].phase)) {
             return foundation::Result<void>::Failure(
-                MakeTimeError("time.invalid_phase", "day phase boundary phase is outside the DayPhase enum domain"));
+                MakeTimeError("time.invalid_phase",
+                              "day phase boundary phase is outside the DayPhase enum domain"));
         }
+
         if (boundaries[index].start_minute >= minutes_per_day) {
             return foundation::Result<void>::Failure(
-                MakeTimeError("time.invalid_phase_boundary", "day phase boundary is outside the configured day"));
+                MakeTimeError("time.invalid_phase_boundary",
+                              "day phase boundary is outside the configured day"));
         }
 
         if (index > 0 && boundaries[index - 1].start_minute == boundaries[index].start_minute) {
             return foundation::Result<void>::Failure(
-                MakeTimeError("time.duplicate_phase_boundary", "day phase boundaries must have unique start minutes"));
+                MakeTimeError("time.duplicate_phase_boundary",
+                              "day phase boundaries must have unique start minutes"));
         }
+
     }
 
     return foundation::Result<void>::Success();
@@ -96,8 +108,10 @@ foundation::Result<TimeServices> CreateTimeServices(const TimeOptions &options) 
 
     auto runtime = std::make_shared<TimeRuntime>(options);
     TimeServices services{};
+
     services.clock = runtime;
     services.runtime = runtime;
     return foundation::Result<TimeServices>::Success(std::move(services));
 }
+
 } // namespace epidemic::runtime

@@ -9,14 +9,18 @@ namespace epidemic::game::editor {
 // generation changes. The UI can show exactly which document uses an asset.
 struct ContentReference {
     runtime::AssetId source{};
+
     runtime::AssetId dependent{};
+
     std::string origin;
-    bool required=true;
+    bool required = true;
 };
+
 struct ContentDependencyIndex {
     std::vector<ContentReference> references;
     [[nodiscard]] std::vector<ContentReference> Incoming(runtime::AssetId id) const;
     [[nodiscard]] std::vector<ContentReference> Outgoing(runtime::AssetId id) const;
 };
+
 [[nodiscard]] ContentDependencyIndex BuildContentDependencyIndex(const ProjectFolder &project);
 } // namespace epidemic::game::editor

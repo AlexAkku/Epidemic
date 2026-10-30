@@ -8,7 +8,9 @@
 namespace epidemic::runtime {
 struct ResourceDependency {
     ResourceId resource_id{};
+
     ResourceType type{};
+
     bool required = true;
 
     [[nodiscard]] constexpr bool operator==(const ResourceDependency &) const noexcept = default;
@@ -16,6 +18,8 @@ struct ResourceDependency {
 
 struct ResourceDependencySet {
     ResourceId root{};
+
     std::vector<ResourceDependency> dependencies;
 };
-}
+
+} // namespace epidemic::runtime

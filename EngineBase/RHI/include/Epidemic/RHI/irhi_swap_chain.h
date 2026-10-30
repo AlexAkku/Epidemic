@@ -15,7 +15,8 @@ class IRhiSwapChain {
     [[nodiscard]] virtual epidemic::foundation::Result<void> Present() = 0;
 
     // Resizes the swap-chain buffers.
-    [[nodiscard]] virtual epidemic::foundation::Result<void> Resize(std::uint32_t width, std::uint32_t height) = 0;
+    [[nodiscard]] virtual epidemic::foundation::Result<void> Resize(std::uint32_t width,
+                                                                    std::uint32_t height) = 0;
 
     // Returns the current swap-chain width.
     [[nodiscard]] virtual std::uint32_t Width() const noexcept = 0;
@@ -29,4 +30,5 @@ class IRhiSwapChain {
     // Returns the current color format of the swap chain.
     [[nodiscard]] virtual RhiPixelFormat ColorFormat() const noexcept = 0;
 };
+
 } // namespace epidemic::rhi

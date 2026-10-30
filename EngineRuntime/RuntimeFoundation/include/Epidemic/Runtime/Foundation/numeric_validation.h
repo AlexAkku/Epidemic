@@ -21,30 +21,36 @@ template <typename TValue> [[nodiscard]] bool IsFiniteNonNegative(TValue value) 
 }
 
 template <typename TUnsigned>
-[[nodiscard]] constexpr std::optional<TUnsigned> CheckedUnsignedIncrement(TUnsigned value) noexcept {
+[[nodiscard]] constexpr std::optional<TUnsigned>
+CheckedUnsignedIncrement(TUnsigned value) noexcept {
     static_assert(std::is_integral_v<TUnsigned> && std::is_unsigned_v<TUnsigned>);
     if (value == std::numeric_limits<TUnsigned>::max()) {
         return std::nullopt;
     }
+
     return static_cast<TUnsigned>(value + 1);
 }
 
 template <typename TUnsigned>
-[[nodiscard]] constexpr std::optional<TUnsigned> CheckedUnsignedAdd(TUnsigned left, TUnsigned right) noexcept {
+[[nodiscard]] constexpr std::optional<TUnsigned> CheckedUnsignedAdd(TUnsigned left,
+                                                                    TUnsigned right) noexcept {
     static_assert(std::is_integral_v<TUnsigned> && std::is_unsigned_v<TUnsigned>);
     if (right > std::numeric_limits<TUnsigned>::max() - left) {
         return std::nullopt;
     }
+
     return static_cast<TUnsigned>(left + right);
 }
 
 template <typename TUnsigned>
-[[nodiscard]] constexpr std::optional<TUnsigned> CheckedRevisionIncrement(TUnsigned revision) noexcept {
+[[nodiscard]] constexpr std::optional<TUnsigned>
+CheckedRevisionIncrement(TUnsigned revision) noexcept {
     return CheckedUnsignedIncrement(revision);
 }
 
 template <typename TUnsigned>
-[[nodiscard]] constexpr std::optional<TUnsigned> CheckedGenerationIncrement(TUnsigned generation) noexcept {
+[[nodiscard]] constexpr std::optional<TUnsigned>
+CheckedGenerationIncrement(TUnsigned generation) noexcept {
     return CheckedUnsignedIncrement(generation);
 }
 

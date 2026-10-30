@@ -46,4 +46,5 @@ class IWindow {
     // Requests final destruction of the native window.
     virtual void Close() = 0;
 };
+
 } // namespace epidemic::platform

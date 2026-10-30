@@ -16,13 +16,17 @@ using namespace epidemic::gameplay;
 namespace {
 GameplayObjectRef Object(std::string_view domain, std::string_view id) {
     return {GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
+
 }
 
 void RandomStreamsReplayExactly() {
-    random::RandomSequence first{{0xC0FFEEu}, random::RandomStream::FromString("truth.random.loot")};
+    random::RandomSequence first{{0xC0FFEEu},
+                                 random::RandomStream::FromString("truth.random.loot")};
+
     for (int index = 0; index < 37; ++index) {
         TRUTH_REQUIRE(first.TryNextU64().has_value());
     }
+
     const auto checkpoint = first.CaptureSnapshot();
     std::vector<std::uint64_t> expected;
     for (int index = 0; index < 128; ++index) {
@@ -35,6 +39,7 @@ void RandomStreamsReplayExactly() {
     for (const auto value : expected) {
         TRUTH_REQUIRE(restored.TryNextU64() == value);
     }
+
     TRUTH_REQUIRE(!restored.TryUniform(0).has_value());
     TRUTH_REQUIRE(!random::RandomSequence::TryFromSnapshot({{1}, {}, 0}).has_value());
 }
@@ -48,7 +53,9 @@ void GameplayTimeIsIndependentFromLogicalTicks() {
     service.Freeze();
 
     const GameplayObjectRef owner{domain, GameplayObjectId::FromString("deadline.owner")};
-    const auto schedule = service.Schedule(clock.Value(), GameplayTimePoint{10}, owner, action.Value());
+
+    const auto schedule =
+        service.Schedule(clock.Value(), GameplayTimePoint{10}, owner, action.Value());
     TRUTH_REQUIRE(schedule);
     TRUTH_REQUIRE(service.SetPaused(clock.Value(), true));
 
@@ -106,6 +113,7 @@ void ProgressReservationsNeverLeakTentativeState() {
     ProgressionTrackDefinition track_definition;
     track_definition.canonical_name = "truth.progression.experience";
     track_definition.rank_thresholds_micro = {100, 300};
+
     const auto track = service.RegisterTrack(track_definition);
     TRUTH_REQUIRE(track && service.Freeze());
 
@@ -118,13 +126,13 @@ void ProgressReservationsNeverLeakTentativeState() {
     TRUTH_REQUIRE(during_reservation && during_reservation.Value().progress_micro == 80);
 
     const auto snapshot = service.CaptureSnapshot();
-    const auto profile = std::find_if(snapshot.profiles.begin(), snapshot.profiles.end(), [&](const auto &current) {
-        return current.subject == actor;
-    });
+    const auto profile =
+        std::find_if(snapshot.profiles.begin(), snapshot.profiles.end(),
+                     [&](const auto &current) { return current.subject == actor; });
     TRUTH_REQUIRE(profile != snapshot.profiles.end());
-    const auto state = std::find_if(profile->tracks.begin(), profile->tracks.end(), [&](const auto &current) {
-        return current.id == track.Value();
-    });
+    const auto state =
+        std::find_if(profile->tracks.begin(), profile->tracks.end(),
+                     [&](const auto &current) { return current.id == track.Value(); });
     TRUTH_REQUIRE(state != profile->tracks.end());
     TRUTH_REQUIRE(state->progress_micro == 80);
     TRUTH_REQUIRE(!service.GrantProgress(actor, track.Value(), 1));
@@ -161,20 +169,22 @@ void WorldItemIdentitySurvivesPartialTransfer() {
     TRUTH_REQUIRE(transfer && service.CommitTransfer(transfer.Value()));
     TRUTH_REQUIRE(service.FindItem(source.Value())->quantity == 3);
     const auto world_items = service.FindItemsByDefinition(item_definition.Value());
-    TRUTH_REQUIRE(std::count_if(world_items.begin(), world_items.end(), [&](const ItemInstance &item) {
-                      return item.location.kind == ItemLocationKind::World &&
-                             (item.location.world_object == stack.location.world_object ||
-                              item.location.world_object == destination.world_object);
-                  }) == 2);
+    TRUTH_REQUIRE(
+        std::count_if(world_items.begin(), world_items.end(), [&](const ItemInstance &item) {
+            return item.location.kind == ItemLocationKind::World &&
+                   (item.location.world_object == stack.location.world_object ||
+                    item.location.world_object == destination.world_object);
+        }) == 2);
 
     ItemInstance duplicate = stack;
     duplicate.quantity = 1;
     TRUTH_REQUIRE(!service.CreateItem(duplicate));
 
     auto corrupt = service.CaptureSnapshot();
-    auto duplicate_record = *std::find_if(corrupt.items.begin(), corrupt.items.end(), [](const ItemInstance &item) {
-        return item.location.kind == ItemLocationKind::World;
-    });
+    auto duplicate_record =
+        *std::find_if(corrupt.items.begin(), corrupt.items.end(), [](const ItemInstance &item) {
+            return item.location.kind == ItemLocationKind::World;
+        });
     duplicate_record.id = ItemInstanceId::FromRaw(0xBEEF, 1);
     corrupt.items.push_back(duplicate_record);
     const auto before_revision = service.CurrentRevision();
@@ -221,6 +231,7 @@ void AcceptedOfferDefinesItsOwnSettlement() {
     OfferAcceptanceRequest acceptance;
     acceptance.offer = offer_id.Value();
     acceptance.expected_offer_revision = Revision{stored_offer.revision.value + 1};
+
     acceptance.buyer = buyer;
     acceptance.accepted_quantity = 2;
     acceptance.buyer_funding_account = buyer_id.Value();
@@ -237,18 +248,23 @@ void AcceptedOfferDefinesItsOwnSettlement() {
     TRUTH_REQUIRE(accepted->plan.monetary_transfers.size() == 1);
     TRUTH_REQUIRE(accepted->plan.monetary_transfers.front().amount == 50);
 }
+
 } // namespace
 
 int main() {
-    return epidemic::truth_tests::Run(
-        "framework-contracts",
-        {
-            {"random streams replay exactly", &RandomStreamsReplayExactly},
-            {"gameplay time is independent from logical ticks", &GameplayTimeIsIndependentFromLogicalTicks},
-            {"entity import and restore are collision-safe and atomic",
-             &EntityImportAndRestoreAreCollisionSafeAndAtomic},
-            {"progress reservations never leak tentative state", &ProgressReservationsNeverLeakTentativeState},
-            {"world item identity survives partial transfer", &WorldItemIdentitySurvivesPartialTransfer},
-            {"accepted offer defines its own settlement", &AcceptedOfferDefinesItsOwnSettlement},
-        });
+    return epidemic::truth_tests::
+        Run("framework-contracts",
+            {
+                {"random streams replay exactly", &RandomStreamsReplayExactly},
+                {"gameplay time is independent from logical ticks",
+                 &GameplayTimeIsIndependentFromLogicalTicks},
+                {"entity import and restore are collision-safe and atomic",
+                 &EntityImportAndRestoreAreCollisionSafeAndAtomic},
+                {"progress reservations never leak tentative state",
+                 &ProgressReservationsNeverLeakTentativeState},
+                {"world item identity survives partial transfer",
+                 &WorldItemIdentitySurvivesPartialTransfer},
+                {"accepted offer defines its own settlement",
+                 &AcceptedOfferDefinesItsOwnSettlement},
+            });
 }

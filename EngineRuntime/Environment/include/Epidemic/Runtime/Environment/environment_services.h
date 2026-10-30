@@ -16,5 +16,6 @@ struct EnvironmentServices {
     std::shared_ptr<IEnvironmentWriter> writer;
 };
 
-[[nodiscard]] foundation::Result<EnvironmentServices> CreateEnvironmentServices(const EnvironmentOptions &options = {});
+[[nodiscard]] foundation::Result<EnvironmentServices>
+CreateEnvironmentServices(const EnvironmentOptions &options = {});
 } // namespace epidemic::runtime

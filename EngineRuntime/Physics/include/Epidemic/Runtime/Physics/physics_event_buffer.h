@@ -13,4 +13,5 @@ class IPhysicsEventBuffer {
     [[nodiscard]] virtual std::span<const ContactEvent> Contacts() const = 0;
     virtual void Clear() = 0;
 };
+
 } // namespace epidemic::runtime::physics

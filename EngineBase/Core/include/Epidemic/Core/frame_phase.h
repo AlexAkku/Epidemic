@@ -76,4 +76,5 @@ inline constexpr std::array<FramePhase, FramePhaseCount()> kFramePhaseOrder{
 [[nodiscard]] inline constexpr std::span<const FramePhase> FramePhaseOrder() noexcept {
     return std::span<const FramePhase>(kFramePhaseOrder.data(), kFramePhaseOrder.size());
 }
+
 } // namespace epidemic::core

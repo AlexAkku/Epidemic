@@ -12,6 +12,7 @@ void FailNextLocalAllocationForTest() noexcept;
 
 static GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
+
 }
 
 static RelationshipTypeDefinition TrustDefinition(RelationshipTypeId id) {
@@ -29,8 +30,9 @@ static RelationshipTypeDefinition TrustDefinition(RelationshipTypeId id) {
 }
 
 static bool SameMembership(const MembershipRecord &a, const MembershipRecord &b) {
-    return a.id == b.id && a.member == b.member && a.group == b.group && a.role == b.role && a.rank == b.rank &&
-           a.state == b.state && a.joined_at == b.joined_at && a.revision == b.revision;
+    return a.id == b.id && a.member == b.member && a.group == b.group && a.role == b.role &&
+           a.rank == b.rank && a.state == b.state && a.joined_at == b.joined_at &&
+           a.revision == b.revision;
 }
 
 static bool SameRelationship(const RelationshipRecord &a, const RelationshipRecord &b) {
@@ -40,14 +42,15 @@ static bool SameRelationship(const RelationshipRecord &a, const RelationshipReco
 }
 
 static bool SameReputation(const ReputationRecord &a, const ReputationRecord &b) {
-    return a.subject == b.subject && a.scope == b.scope && a.track == b.track && a.value_micro == b.value_micro &&
-           a.revision == b.revision;
+    return a.subject == b.subject && a.scope == b.scope && a.track == b.track &&
+           a.value_micro == b.value_micro && a.revision == b.revision;
 }
 
 static bool SameChange(const SocietyChange &a, const SocietyChange &b) {
-    return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject && a.target == b.target &&
-           a.relationship_type == b.relationship_type && a.reputation_track == b.reputation_track &&
-           a.membership == b.membership && a.context == b.context && a.revision == b.revision;
+    return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject &&
+           a.target == b.target && a.relationship_type == b.relationship_type &&
+           a.reputation_track == b.reputation_track && a.membership == b.membership &&
+           a.context == b.context && a.revision == b.revision;
 }
 
 template <typename T, typename Equal>
@@ -58,6 +61,7 @@ static bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Equal e
         if (!equal(a[i], b[i]))
             return false;
     }
+
     return true;
 }
 
@@ -67,10 +71,11 @@ static bool SameMutableSnapshot(const SocietySnapshot &a, const SocietySnapshot 
            a.reputation_tracks.size() == b.reputation_tracks.size() &&
            SameVector(a.memberships, b.memberships, SameMembership) &&
            SameVector(a.relationships, b.relationships, SameRelationship) &&
-           SameVector(a.reputations, b.reputations, SameReputation) && a.membership_ids.next == b.membership_ids.next &&
+           SameVector(a.reputations, b.reputations, SameReputation) &&
+           a.membership_ids.next == b.membership_ids.next &&
            a.relationship_ids.next == b.relationship_ids.next && a.revision == b.revision &&
-           SameVector(a.journal, b.journal, SameChange) && a.next_change_sequence == b.next_change_sequence &&
-           a.change_epoch == b.change_epoch;
+           SameVector(a.journal, b.journal, SameChange) &&
+           a.next_change_sequence == b.next_change_sequence && a.change_epoch == b.change_epoch;
 }
 
 static ReputationTrackDefinition CrimeReputationDefinition(ReputationTrackId id) {
@@ -115,7 +120,8 @@ int main() {
 
     if (!society.FreezeDefinitions())
         return 5;
-    if (society.RegisterGroup({Ref("late_group"), {}, SocialGroupTypeId::FromString("group.faction"), {}, {}}))
+    if (society.RegisterGroup(
+            {Ref("late_group"), {}, SocialGroupTypeId::FromString("group.faction"), {}, {}}))
         return 6;
 
     MembershipRecord unknown_group;
@@ -157,11 +163,13 @@ int main() {
 
     GameplayContext time_context;
     time_context.time = GameplayTimePoint{100};
-    if (!society.ApplySocialChange({npc, player, trust, -500'000, TypeId::FromString("reason.insult"), time_context}))
+
+    if (!society.ApplySocialChange(
+            {npc, player, trust, -500'000, TypeId::FromString("reason.insult"), time_context}))
         return 17;
     auto relationship = society.GetRelationship(npc, player, trust);
-    if (!relationship || relationship->state != RelationshipState::Hostile || relationship->value_micro != -500'000 ||
-        relationship->updated_at.ticks != 100)
+    if (!relationship || relationship->state != RelationshipState::Hostile ||
+        relationship->value_micro != -500'000 || relationship->updated_at.ticks != 100)
         return 18;
 
     RelationshipRecord conflicting_id = *relationship;
@@ -170,7 +178,8 @@ int main() {
     if (society.SetRelationship(conflicting_id))
         return 19;
 
-    if (!society.ApplySocialChange({npc, player, trust, std::numeric_limits<std::int64_t>::min(), {}, time_context}))
+    if (!society.ApplySocialChange(
+            {npc, player, trust, std::numeric_limits<std::int64_t>::min(), {}, time_context}))
         return 20;
     relationship = society.GetRelationship(npc, player, trust);
     if (!relationship || relationship->value_micro != -1'000'000)
@@ -194,15 +203,20 @@ int main() {
     reputation.value_micro = -1'000'001;
     if (society.SetReputation(reputation, time_context))
         return 24;
-    if (!society.ApplyReputationChange(
-            {player, guards, crime_rep, std::numeric_limits<std::int64_t>::min(), {}, time_context}))
+    if (!society.ApplyReputationChange({player,
+                                        guards,
+                                        crime_rep,
+                                        std::numeric_limits<std::int64_t>::min(),
+                                        {},
+                                        time_context}))
         return 25;
     const auto bounded_reputation = society.GetReputation(player, guards, crime_rep);
     if (!bounded_reputation || bounded_reputation->value_micro != -1'000'000)
         return 26;
 
     const auto standing = society.GetSocialStanding(player, guards);
-    if (standing.reputations.size() != 1 || !standing.standing_tags.HasExact(TagId::FromString("standing.outlaw")))
+    if (standing.reputations.size() != 1 ||
+        !standing.standing_tags.HasExact(TagId::FromString("standing.outlaw")))
         return 27;
 
     const auto attitude = society.GetEffectiveAttitude({npc, player, time_context});
@@ -229,7 +243,8 @@ int main() {
     if (!restored.HasRole(npc, captain_role, guards))
         return 33;
     if (!restored.GetRelationship(npc, player, trust) ||
-        !restored.GetSocialStanding(player, guards).standing_tags.HasExact(TagId::FromString("standing.outlaw")))
+        !restored.GetSocialStanding(player, guards)
+             .standing_tags.HasExact(TagId::FromString("standing.outlaw")))
         return 34;
     if (restored.GetEffectiveAttitude({npc, player, time_context}) != -1'350'000)
         return 35;
@@ -247,8 +262,10 @@ int main() {
         const auto after = candidate.CaptureSnapshot();
         return SameMutableSnapshot(before, after);
     };
+
     if (!max_revision_atomic([&](SocietyService &candidate) {
-            return static_cast<bool>(candidate.SetMembershipRole(membership_id, guard_role, time_context));
+            return static_cast<bool>(
+                candidate.SetMembershipRole(membership_id, guard_role, time_context));
         }))
         return 39;
     if (!max_revision_atomic([&](SocietyService &candidate) {
@@ -271,11 +288,13 @@ int main() {
         }))
         return 42;
     if (!max_revision_atomic([&](SocietyService &candidate) {
-            return static_cast<bool>(candidate.ApplySocialChange({npc, player, trust, 1, {}, time_context}));
+            return static_cast<bool>(
+                candidate.ApplySocialChange({npc, player, trust, 1, {}, time_context}));
         }))
         return 43;
     if (!max_revision_atomic([&](SocietyService &candidate) {
-            return static_cast<bool>(candidate.SetReputation({player, guards, crime_rep, -999'999, {}}, time_context));
+            return static_cast<bool>(
+                candidate.SetReputation({player, guards, crime_rep, -999'999, {}}, time_context));
         }))
         return 44;
 
@@ -299,6 +318,7 @@ int main() {
             candidate.FindMembersOf(guards).size() != before_members.size())
             return 47;
     }
+
     {
         SocietyService candidate;
         if (!candidate.RestoreSnapshot(stable_snapshot))
@@ -316,6 +336,7 @@ int main() {
             candidate.GetRelationship(injected.subject, injected.target, injected.type).has_value())
             return 50;
     }
+
     {
         SocietyService candidate;
         if (!candidate.RestoreSnapshot(stable_snapshot))
@@ -340,6 +361,7 @@ int main() {
         if (!restored.SetReputation({player, guards, crime_rep, value, {}}, time_context))
             return 36;
     }
+
     const auto old_reader = restored.ReadChangesSince(ChangeCursor{});
     if (!old_reader.snapshot_required || old_reader.oldest_available_sequence <= 1)
         return 37;

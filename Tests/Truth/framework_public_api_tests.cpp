@@ -58,18 +58,24 @@ void OwnerDomainsRemainDistinct() {
         knowledge::KnowledgeService::Domain(),
         ai::AIService::Domain(),
     };
+
     const std::set<GameplayDomainId> unique{domains.begin(), domains.end()};
+
     TRUTH_REQUIRE(unique.size() == domains.size());
     for (const auto domain : domains) {
         TRUTH_REQUIRE(domain.IsValid());
     }
+
 }
+
 } // namespace
 
 int main() {
     return epidemic::truth_tests::Run("framework-public-api",
                                       {
-                                          {"public headers are self-contained", &PublicHeadersAreSelfContained},
-                                          {"state owners have distinct domains", &OwnerDomainsRemainDistinct},
+                                          {"public headers are self-contained",
+                                           &PublicHeadersAreSelfContained},
+                                          {"state owners have distinct domains",
+                                           &OwnerDomainsRemainDistinct},
                                       });
 }

@@ -30,7 +30,8 @@
 
 namespace epidemic::platform {
 // This file implements the Win32 platform runtime and window system.
-// Public contracts live in the Platform headers; the helpers and private classes below translate those contracts into Win32 behavior.
+// Public contracts live in the Platform headers; the helpers and private classes below translate
+// those contracts into Win32 behavior.
 
 namespace {
 thread_local std::optional<testing::FaultPoint> g_platform_fault_point;
@@ -57,34 +58,40 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
 
     while (true) {
         const auto executable_length =
-            GetModuleFileNameW(nullptr, executable_buffer.data(), static_cast<DWORD>(executable_buffer.size()));
+            GetModuleFileNameW(nullptr, executable_buffer.data(),
+                               static_cast<DWORD>(executable_buffer.size()));
         if (executable_length == 0) {
             return {};
+
         }
 
         if (executable_length < executable_buffer.size()) {
-            return std::filesystem::path(std::wstring(executable_buffer.data(), executable_length)).lexically_normal();
+            return std::filesystem::path(std::wstring(executable_buffer.data(), executable_length))
+                .lexically_normal();
         }
 
         executable_buffer.resize(executable_buffer.size() * 2, L'\0');
     }
+
 }
 
 // Converts UTF-8 text to UTF-16 for Win32 API calls.
 [[nodiscard]] std::wstring WidenUtf8String(std::string_view utf8_string) {
     if (utf8_string.empty()) {
         return {};
+
     }
 
-    const auto buffer_size =
-        MultiByteToWideChar(CP_UTF8, 0, utf8_string.data(), static_cast<int>(utf8_string.size()), nullptr, 0);
+    const auto buffer_size = MultiByteToWideChar(CP_UTF8, 0, utf8_string.data(),
+                                                 static_cast<int>(utf8_string.size()), nullptr, 0);
     if (buffer_size <= 0) {
         return {};
+
     }
 
     std::wstring wide_string(static_cast<std::size_t>(buffer_size), L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, utf8_string.data(), static_cast<int>(utf8_string.size()), wide_string.data(),
-                        buffer_size);
+    MultiByteToWideChar(CP_UTF8, 0, utf8_string.data(), static_cast<int>(utf8_string.size()),
+                        wide_string.data(), buffer_size);
     return wide_string;
 }
 
@@ -92,17 +99,20 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
 [[nodiscard]] std::string NarrowWideString(const std::wstring_view wide_string) {
     if (wide_string.empty()) {
         return {};
+
     }
 
-    const auto buffer_size = WideCharToMultiByte(CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()),
-                                                 nullptr, 0, nullptr, nullptr);
+    const auto buffer_size =
+        WideCharToMultiByte(CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()),
+                            nullptr, 0, nullptr, nullptr);
     if (buffer_size <= 0) {
         return {};
+
     }
 
     std::string utf8_string(static_cast<std::size_t>(buffer_size), '\0');
-    WideCharToMultiByte(CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()), utf8_string.data(),
-                        buffer_size, nullptr, nullptr);
+    WideCharToMultiByte(CP_UTF8, 0, wide_string.data(), static_cast<int>(wide_string.size()),
+                        utf8_string.data(), buffer_size, nullptr, nullptr);
     return utf8_string;
 }
 
@@ -114,15 +124,17 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
 
     std::wstring message_buffer(512, L'\0');
     const auto message_length =
-        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, error_code, 0,
-                       message_buffer.data(), static_cast<DWORD>(message_buffer.size()), nullptr);
+        FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr,
+                       error_code, 0, message_buffer.data(),
+                       static_cast<DWORD>(message_buffer.size()), nullptr);
 
     std::ostringstream stream;
     stream << "code=" << error_code;
     if (message_length > 0) {
         std::wstring_view windows_message(message_buffer.data(), message_length);
         while (!windows_message.empty() &&
-               (windows_message.back() == L'\r' || windows_message.back() == L'\n' || windows_message.back() == L' ')) {
+               (windows_message.back() == L'\r' || windows_message.back() == L'\n' ||
+                windows_message.back() == L' ')) {
             windows_message.remove_suffix(1);
         }
 
@@ -130,14 +142,17 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
         if (!utf8_message.empty()) {
             stream << ", message=" << utf8_message;
         }
+
     }
 
     return stream.str();
 }
 
 // Builds a PlatformEvent for window-lifecycle notifications.
-[[nodiscard]] PlatformEvent MakeWindowEvent(PlatformEventType type, WindowId window_id, std::uint32_t client_width = 0,
-                                            std::uint32_t client_height = 0, bool focused = false) noexcept {
+[[nodiscard]] PlatformEvent MakeWindowEvent(PlatformEventType type, WindowId window_id,
+                                            std::uint32_t client_width = 0,
+                                            std::uint32_t client_height = 0,
+                                            bool focused = false) noexcept {
     PlatformEvent event;
     event.type = type;
     event.window_id = window_id;
@@ -148,8 +163,9 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
 }
 
 // Builds a PlatformEvent for keyboard input notifications.
-[[nodiscard]] PlatformEvent MakeKeyEvent(PlatformEventType type, WindowId window_id, std::uint32_t key_code,
-                                         std::uint32_t scan_code, bool repeated) noexcept {
+[[nodiscard]] PlatformEvent MakeKeyEvent(PlatformEventType type, WindowId window_id,
+                                         std::uint32_t key_code, std::uint32_t scan_code,
+                                         bool repeated) noexcept {
     PlatformEvent event;
     event.type = type;
     event.window_id = window_id;
@@ -160,7 +176,8 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
 }
 
 // Builds a PlatformEvent for mouse-move notifications.
-[[nodiscard]] PlatformEvent MakeMouseMoveEvent(WindowId window_id, std::int32_t x, std::int32_t y) noexcept {
+[[nodiscard]] PlatformEvent MakeMouseMoveEvent(WindowId window_id, std::int32_t x,
+                                               std::int32_t y) noexcept {
     PlatformEvent event;
     event.type = PlatformEventType::MouseMoved;
     event.window_id = window_id;
@@ -170,8 +187,9 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
 }
 
 // Builds a PlatformEvent for mouse-button notifications.
-[[nodiscard]] PlatformEvent MakeMouseButtonEvent(PlatformEventType type, WindowId window_id, std::uint8_t button,
-                                                 std::int32_t x, std::int32_t y) noexcept {
+[[nodiscard]] PlatformEvent MakeMouseButtonEvent(PlatformEventType type, WindowId window_id,
+                                                 std::uint8_t button, std::int32_t x,
+                                                 std::int32_t y) noexcept {
     PlatformEvent event;
     event.type = type;
     event.window_id = window_id;
@@ -201,6 +219,7 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
     event.captured = captured;
     return event;
 }
+
 // Captures immutable process information exposed through IPlatformRuntime.
 [[nodiscard]] ProcessInfo BuildProcessInfo() {
     ProcessInfo process_info;
@@ -210,14 +229,17 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
         process_info.executable_path = epidemic::foundation::Path(executable_path);
     }
 
-    process_info.working_directory = epidemic::foundation::Path(std::filesystem::current_path().lexically_normal());
+    process_info.working_directory =
+        epidemic::foundation::Path(std::filesystem::current_path().lexically_normal());
 
     struct LocalArgvDeleter {
         void operator()(LPWSTR *argv) const noexcept {
             if (argv != nullptr) {
                 LocalFree(argv);
             }
+
         }
+
     };
 
     int argc = 0;
@@ -227,6 +249,7 @@ constexpr std::uint8_t kMouseButtonX2 = 4;
         for (int index = 0; index < argc; ++index) {
             process_info.arguments.push_back(NarrowWideString(argv.get()[index]));
         }
+
     }
 
     return process_info;
@@ -246,6 +269,7 @@ class WindowsDynamicLibrary final : public IDynamicLibrary {
             FreeLibrary(module_handle_);
             module_handle_ = nullptr;
         }
+
     }
 
     // Returns the diagnostic name associated with the loaded module.
@@ -254,20 +278,26 @@ class WindowsDynamicLibrary final : public IDynamicLibrary {
     }
 
     // Resolves one exported symbol from the loaded module.
-    [[nodiscard]] epidemic::foundation::Result<void *> FindSymbol(std::string_view symbol_name) const override {
+    [[nodiscard]] epidemic::foundation::Result<void *>
+    FindSymbol(std::string_view symbol_name) const override {
         if (symbol_name.empty()) {
-            return epidemic::foundation::Result<void *>::Failure(epidemic::foundation::Error::Create(
-                "platform.empty_symbol_name", "Dynamic library symbol name must not be empty"));
+            return epidemic::foundation::Result<void *>::Failure(
+                epidemic::foundation::Error::
+                    Create("platform.empty_symbol_name",
+                           "Dynamic library symbol name must not be empty"));
         }
 
         SetLastError(ERROR_SUCCESS);
         const auto symbol = GetProcAddress(module_handle_, std::string(symbol_name).c_str());
         if (symbol == nullptr) {
             const auto error_code = GetLastError();
-            return epidemic::foundation::Result<void *>::Failure(epidemic::foundation::Error::Create(
-                "platform.symbol_not_found", "Failed to resolve symbol '" + std::string(symbol_name) +
-                                                 "' in library '" + name_ + "' (" +
-                                                 FormatWindowsErrorMessage(error_code) + ")"));
+            return epidemic::foundation::Result<void *>::Failure(
+                epidemic::foundation::Error::Create("platform.symbol_not_found",
+                                                    "Failed to resolve symbol '" +
+                                                        std::string(symbol_name) +
+                                                        "' in library '" + name_ + "' (" +
+                                                        FormatWindowsErrorMessage(error_code) +
+                                                        ")"));
         }
 
         return epidemic::foundation::Result<void *>::Success(reinterpret_cast<void *>(symbol));
@@ -276,6 +306,7 @@ class WindowsDynamicLibrary final : public IDynamicLibrary {
   private:
     std::string name_;
     HMODULE module_handle_{nullptr};
+
 };
 
 // Owns a newly loaded HMODULE until it is successfully transferred into WindowsDynamicLibrary.
@@ -291,6 +322,7 @@ class ScopedModuleHandle final {
         if (module_handle_ != nullptr) {
             FreeLibrary(module_handle_);
         }
+
     }
 
     [[nodiscard]] HMODULE Get() const noexcept {
@@ -303,7 +335,9 @@ class ScopedModuleHandle final {
 
   private:
     HMODULE module_handle_{nullptr};
+
 };
+
 } // namespace
 
 void testing::FailNext(FaultPoint fault_point) noexcept {
@@ -318,6 +352,7 @@ bool testing::Consume(FaultPoint fault_point) noexcept {
     if (g_platform_fault_point != fault_point) {
         return false;
     }
+
     g_platform_fault_point.reset();
     return true;
 }
@@ -325,6 +360,7 @@ bool testing::Consume(FaultPoint fault_point) noexcept {
 struct WindowsPlatformRuntime::Impl {
     struct RuntimeToken {
         Impl *owner{nullptr};
+
     };
 
     Impl() {
@@ -344,6 +380,7 @@ struct WindowsPlatformRuntime::Impl {
             if (hwnd_ != nullptr && IsWindow(hwnd_)) {
                 DestroyWindow(hwnd_);
             }
+
         }
 
         [[nodiscard]] WindowId Id() const noexcept override {
@@ -424,8 +461,9 @@ struct WindowsPlatformRuntime::Impl {
                 return;
             }
 
-            // A newly created hidden window can report one transient pre-layout client rectangle. Re-read after
-            // each correction and converge instead of trusting that first value as the final non-client delta.
+            // A newly created hidden window can report one transient pre-layout client rectangle.
+            // Re-read after each correction and converge instead of trusting that first value as
+            // the final non-client delta.
             for (int attempt = 0; attempt < 3; ++attempt) {
                 UpdateClientMetrics();
                 if (client_width_ == target_width && client_height_ == target_height) {
@@ -433,23 +471,30 @@ struct WindowsPlatformRuntime::Impl {
                 }
 
                 RECT window_rect{};
+
                 if (!GetWindowRect(hwnd_, &window_rect)) {
                     return;
                 }
 
                 const auto current_window_width = window_rect.right - window_rect.left;
                 const auto current_window_height = window_rect.bottom - window_rect.top;
-                const auto width_delta = static_cast<int>(target_width) - static_cast<int>(client_width_);
-                const auto height_delta = static_cast<int>(target_height) - static_cast<int>(client_height_);
+                const auto width_delta =
+                    static_cast<int>(target_width) - static_cast<int>(client_width_);
+                const auto height_delta =
+                    static_cast<int>(target_height) - static_cast<int>(client_height_);
                 if (!SetWindowPos(hwnd_, nullptr, 0, 0, current_window_width + width_delta,
-                                  current_window_height + height_delta, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE)) {
+                                  current_window_height + height_delta,
+                                  SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE)) {
                     return;
                 }
+
             }
+
             UpdateClientMetrics();
         }
 
-        // Translates one Win32 window message into state updates and EngineBase PlatformEvent records.
+        // Translates one Win32 window message into state updates and EngineBase PlatformEvent
+        // records.
         [[nodiscard]] LRESULT HandleMessage(UINT message, WPARAM wparam, LPARAM lparam) noexcept {
             try {
                 const auto keep_alive = shared_from_this();
@@ -472,49 +517,67 @@ struct WindowsPlatformRuntime::Impl {
                     if (hwnd_ != nullptr) {
                         SetWindowLongPtrW(hwnd_, GWLP_USERDATA, 0);
                     }
+
                     hwnd_ = nullptr;
-                    // Preserve tracking until a failed close notification can be retried. This keeps
-                    // an unavoidable native WM_DESTROY from silently losing its EngineBase event.
+                    // Preserve tracking until a failed close notification can be retried. This
+                    // keeps an unavoidable native WM_DESTROY from silently losing its EngineBase
+                    // event.
                     if (publish_close) {
                         try {
-                            QueueEvent(*owner, MakeWindowEvent(PlatformEventType::WindowCloseRequested, id_));
+                            QueueEvent(*owner,
+                                       MakeWindowEvent(PlatformEventType::WindowCloseRequested,
+                                                       id_));
                         } catch (...) {
                             close_event_pending_ = true;
                         }
+
                     }
+
                     if (tracked_ && !close_event_pending_) {
                         tracked_ = false;
                         owner->OnWindowDestroyed(id_);
                     }
+
                     return 0;
                 }
+
                 case WM_SIZE: {
                     const auto was_minimized = minimized_;
                     const auto previous_width = client_width_;
                     const auto previous_height = client_height_;
                     const auto native_minimized = (wparam == SIZE_MINIMIZED);
-                    const auto next_width = static_cast<std::uint32_t>(LOWORD(static_cast<DWORD_PTR>(lparam)));
-                    const auto next_height = static_cast<std::uint32_t>(HIWORD(static_cast<DWORD_PTR>(lparam)));
+                    const auto next_width =
+                        static_cast<std::uint32_t>(LOWORD(static_cast<DWORD_PTR>(lparam)));
+                    const auto next_height =
+                        static_cast<std::uint32_t>(HIWORD(static_cast<DWORD_PTR>(lparam)));
 
                     PlatformEvent pending_events[2]{};
+
                     std::size_t pending_count = 0;
                     bool next_minimized = was_minimized;
                     if (native_minimized) {
                         next_minimized = true;
                         if (!was_minimized) {
                             pending_events[pending_count++] =
-                                MakeWindowEvent(PlatformEventType::WindowMinimized, id_, next_width, next_height);
+                                MakeWindowEvent(PlatformEventType::WindowMinimized, id_, next_width,
+                                                next_height);
                         }
+
                     } else if (next_width != 0 && next_height != 0) {
                         next_minimized = false;
                         if (was_minimized) {
                             pending_events[pending_count++] =
-                                MakeWindowEvent(PlatformEventType::WindowRestored, id_, next_width, next_height);
+                                MakeWindowEvent(PlatformEventType::WindowRestored, id_, next_width,
+                                                next_height);
                         }
-                        if (was_minimized || previous_width != next_width || previous_height != next_height) {
+
+                        if (was_minimized || previous_width != next_width ||
+                            previous_height != next_height) {
                             pending_events[pending_count++] =
-                                MakeWindowEvent(PlatformEventType::WindowResized, id_, next_width, next_height);
+                                MakeWindowEvent(PlatformEventType::WindowResized, id_, next_width,
+                                                next_height);
                         }
+
                     }
 
                     QueueEvents(*owner, pending_events, pending_count);
@@ -523,76 +586,102 @@ struct WindowsPlatformRuntime::Impl {
                     minimized_ = next_minimized;
                     return 0;
                 }
+
                 case WM_SETFOCUS:
                     if (!focused_) {
-                        QueueEvent(*owner, MakeWindowEvent(PlatformEventType::WindowFocusChanged, id_, client_width_,
-                                                           client_height_, true));
+                        QueueEvent(*owner,
+                                   MakeWindowEvent(PlatformEventType::WindowFocusChanged, id_,
+                                                   client_width_, client_height_, true));
                         focused_ = true;
                     }
+
                     return 0;
                 case WM_KILLFOCUS:
                     if (focused_) {
                         PlatformEvent pending_events[2]{};
+
                         std::size_t pending_count = 0;
                         if (mouse_captured_) {
                             pending_events[pending_count++] = MakeCaptureChangedEvent(id_, false);
                         }
-                        pending_events[pending_count++] = MakeWindowEvent(PlatformEventType::WindowFocusChanged, id_,
-                                                                          client_width_, client_height_, false);
+
+                        pending_events[pending_count++] =
+                            MakeWindowEvent(PlatformEventType::WindowFocusChanged, id_,
+                                            client_width_, client_height_, false);
                         QueueEvents(*owner, pending_events, pending_count);
 
                         focused_ = false;
                         mouse_button_mask_ = 0;
                         ApplyMouseCapture(false);
                     }
+
                     return 0;
                 case WM_KEYDOWN:
                 case WM_SYSKEYDOWN:
                     QueueEvent(*owner,
-                               MakeKeyEvent(PlatformEventType::KeyPressed, id_, static_cast<std::uint32_t>(wparam),
+                               MakeKeyEvent(PlatformEventType::KeyPressed, id_,
+                                            static_cast<std::uint32_t>(wparam),
                                             (static_cast<std::uint32_t>(lparam) >> 16u) & 0xFFu,
-                                            (static_cast<std::uint32_t>(lparam) & (1u << 30u)) != 0));
+                                            (static_cast<std::uint32_t>(lparam) & (1u << 30u)) !=
+                                                0));
                     return 0;
                 case WM_KEYUP:
                 case WM_SYSKEYUP:
                     QueueEvent(*owner,
-                               MakeKeyEvent(PlatformEventType::KeyReleased, id_, static_cast<std::uint32_t>(wparam),
-                                            (static_cast<std::uint32_t>(lparam) >> 16u) & 0xFFu, false));
+                               MakeKeyEvent(PlatformEventType::KeyReleased, id_,
+                                            static_cast<std::uint32_t>(wparam),
+                                            (static_cast<std::uint32_t>(lparam) >> 16u) & 0xFFu,
+                                            false));
                     return 0;
                 case WM_MOUSEMOVE:
-                    QueueEvent(*owner, MakeMouseMoveEvent(id_, ExtractMouseX(lparam), ExtractMouseY(lparam)));
+                    QueueEvent(*owner, MakeMouseMoveEvent(id_, ExtractMouseX(lparam),
+                                                          ExtractMouseY(lparam)));
                     return 0;
                 case WM_LBUTTONDOWN:
-                    return HandleMouseButton(true, kMouseButtonLeft, ExtractMouseX(lparam), ExtractMouseY(lparam));
+                    return HandleMouseButton(true, kMouseButtonLeft, ExtractMouseX(lparam),
+                                             ExtractMouseY(lparam));
                 case WM_LBUTTONUP:
-                    return HandleMouseButton(false, kMouseButtonLeft, ExtractMouseX(lparam), ExtractMouseY(lparam));
+                    return HandleMouseButton(false, kMouseButtonLeft, ExtractMouseX(lparam),
+                                             ExtractMouseY(lparam));
                 case WM_RBUTTONDOWN:
-                    return HandleMouseButton(true, kMouseButtonRight, ExtractMouseX(lparam), ExtractMouseY(lparam));
+                    return HandleMouseButton(true, kMouseButtonRight, ExtractMouseX(lparam),
+                                             ExtractMouseY(lparam));
                 case WM_RBUTTONUP:
-                    return HandleMouseButton(false, kMouseButtonRight, ExtractMouseX(lparam), ExtractMouseY(lparam));
+                    return HandleMouseButton(false, kMouseButtonRight, ExtractMouseX(lparam),
+                                             ExtractMouseY(lparam));
                 case WM_MBUTTONDOWN:
-                    return HandleMouseButton(true, kMouseButtonMiddle, ExtractMouseX(lparam), ExtractMouseY(lparam));
+                    return HandleMouseButton(true, kMouseButtonMiddle, ExtractMouseX(lparam),
+                                             ExtractMouseY(lparam));
                 case WM_MBUTTONUP:
-                    return HandleMouseButton(false, kMouseButtonMiddle, ExtractMouseX(lparam), ExtractMouseY(lparam));
+                    return HandleMouseButton(false, kMouseButtonMiddle, ExtractMouseX(lparam),
+                                             ExtractMouseY(lparam));
                 case WM_XBUTTONDOWN:
                     return HandleMouseButton(true,
-                                             GET_XBUTTON_WPARAM(wparam) == XBUTTON1 ? kMouseButtonX1 : kMouseButtonX2,
+                                             GET_XBUTTON_WPARAM(wparam) == XBUTTON1
+                                                 ? kMouseButtonX1
+                                                 : kMouseButtonX2,
                                              ExtractMouseX(lparam), ExtractMouseY(lparam), true);
                 case WM_XBUTTONUP:
                     return HandleMouseButton(false,
-                                             GET_XBUTTON_WPARAM(wparam) == XBUTTON1 ? kMouseButtonX1 : kMouseButtonX2,
+                                             GET_XBUTTON_WPARAM(wparam) == XBUTTON1
+                                                 ? kMouseButtonX1
+                                                 : kMouseButtonX2,
                                              ExtractMouseX(lparam), ExtractMouseY(lparam), true);
                 case WM_MOUSEWHEEL: {
                     POINT point{ExtractMouseX(lparam), ExtractMouseY(lparam)};
+
                     ScreenToClient(hwnd_, &point);
                     QueueEvent(*owner, MakeMouseWheelEvent(id_, point.x, point.y,
-                                                           static_cast<std::int16_t>(GET_WHEEL_DELTA_WPARAM(wparam))));
+                                                           static_cast<std::int16_t>(
+                                                               GET_WHEEL_DELTA_WPARAM(wparam))));
                     return 0;
                 }
+
                 case WM_CAPTURECHANGED:
                     if (mouse_captured_) {
                         QueueEvent(*owner, MakeCaptureChangedEvent(id_, false));
                     }
+
                     mouse_button_mask_ = 0;
                     mouse_captured_ = false;
                     return 0;
@@ -603,14 +692,18 @@ struct WindowsPlatformRuntime::Impl {
                 default:
                     return DefWindowProcW(hwnd_, message, wparam, lparam);
                 }
+
             } catch (...) {
                 // Win32 callbacks cannot propagate C++ exceptions. Preserve the failure and surface
-                // it at the next PumpEvents C++ boundary instead of silently losing the native message.
+                // it at the next PumpEvents C++ boundary instead of silently losing the native
+                // message.
                 if (auto *owner = TryOwner()) {
                     owner->RecordCallbackFailure(std::current_exception());
                 }
+
                 return 0;
             }
+
         }
 
         void CloseFromRuntimeTeardownNoThrow() noexcept {
@@ -634,6 +727,7 @@ struct WindowsPlatformRuntime::Impl {
                 throw std::runtime_error("WindowsPlatformRuntime has already been destroyed: " +
                                          std::string(operation));
             }
+
             return *owner;
         }
 
@@ -647,10 +741,12 @@ struct WindowsPlatformRuntime::Impl {
                     try {
                         PublishCloseRequestedOnce(*owner);
                     } catch (...) {
-                        // Keep the notification durable and retry it from the runtime reconciliation pass.
+                        // Keep the notification durable and retry it from the runtime
+                        // reconciliation pass.
                         close_requested_ = true;
                         close_event_pending_ = true;
                     }
+
                 } else {
                     close_requested_ = true;
                 }
@@ -661,12 +757,14 @@ struct WindowsPlatformRuntime::Impl {
                         tracked_ = false;
                         owner->OnWindowDestroyed(id_);
                     }
+
                     return;
                 }
 
                 if (DestroyWindow(hwnd_)) {
                     hwnd_ = nullptr;
                 }
+
             } catch (...) {
                 // Destruction/teardown must never terminate the process because diagnostics/event
                 // publication failed. Make the wrapper inert even if external Win32 cleanup failed.
@@ -677,11 +775,13 @@ struct WindowsPlatformRuntime::Impl {
                 mouse_button_mask_ = 0;
                 mouse_captured_ = false;
             }
+
         }
 
-        // Updates button-mask state, emits the matching mouse-button event, and refreshes capture ownership.
-        [[nodiscard]] LRESULT HandleMouseButton(bool pressed, std::uint8_t button, std::int32_t x, std::int32_t y,
-                                                bool return_true = false) {
+        // Updates button-mask state, emits the matching mouse-button event, and refreshes capture
+        // ownership.
+        [[nodiscard]] LRESULT HandleMouseButton(bool pressed, std::uint8_t button, std::int32_t x,
+                                                std::int32_t y, bool return_true = false) {
             auto *owner = TryOwner();
             if (owner == nullptr) {
                 return DefWindowProcW(hwnd_, pressed ? WM_LBUTTONDOWN : WM_LBUTTONUP, 0, 0);
@@ -694,16 +794,20 @@ struct WindowsPlatformRuntime::Impl {
             } else {
                 next_button_mask &= static_cast<std::uint8_t>(~mask);
             }
+
             const bool next_captured = next_button_mask != 0;
 
             PlatformEvent pending_events[2]{};
+
             std::size_t pending_count = 0;
-            pending_events[pending_count++] = MakeMouseButtonEvent(pressed ? PlatformEventType::MouseButtonPressed
-                                                                           : PlatformEventType::MouseButtonReleased,
-                                                                   id_, button, x, y);
+            pending_events[pending_count++] =
+                MakeMouseButtonEvent(pressed ? PlatformEventType::MouseButtonPressed
+                                             : PlatformEventType::MouseButtonReleased,
+                                     id_, button, x, y);
             if (mouse_captured_ != next_captured) {
                 pending_events[pending_count++] = MakeCaptureChangedEvent(id_, next_captured);
             }
+
             QueueEvents(*owner, pending_events, pending_count);
 
             mouse_button_mask_ = next_button_mask;
@@ -724,6 +828,7 @@ struct WindowsPlatformRuntime::Impl {
             } else if (GetCapture() == hwnd_) {
                 ReleaseCapture();
             }
+
         }
 
         void PublishCloseRequestedOnce(Impl &owner) {
@@ -744,6 +849,7 @@ struct WindowsPlatformRuntime::Impl {
             if (!close_event_pending_) {
                 return;
             }
+
             try {
                 QueueEvent(owner, MakeWindowEvent(PlatformEventType::WindowCloseRequested, id_));
                 close_event_pending_ = false;
@@ -751,8 +857,10 @@ struct WindowsPlatformRuntime::Impl {
                     tracked_ = false;
                     owner.OnWindowDestroyed(id_);
                 }
+
             } catch (...) {
             }
+
         }
 
       private:
@@ -764,6 +872,7 @@ struct WindowsPlatformRuntime::Impl {
             if (events_enabled_ && event_count != 0) {
                 owner.EnqueueEvents(events, event_count);
             }
+
         }
 
         // Refreshes cached client-area dimensions from the current HWND.
@@ -775,27 +884,42 @@ struct WindowsPlatformRuntime::Impl {
             }
 
             RECT client_rect{};
+
             if (GetClientRect(hwnd_, &client_rect)) {
                 client_width_ = static_cast<std::uint32_t>(client_rect.right - client_rect.left);
                 client_height_ = static_cast<std::uint32_t>(client_rect.bottom - client_rect.top);
             }
+
         }
 
         std::weak_ptr<RuntimeToken> owner_;
         WindowId id_{kInvalidWindowId};
+
         std::string title_;
         HWND hwnd_{nullptr};
+
         std::uint32_t client_width_{};
+
         std::uint32_t client_height_{};
+
         std::uint32_t dpi_{96};
+
         bool focused_{false};
+
         bool minimized_{false};
+
         bool close_requested_{false};
+
         bool close_event_pending_{false};
+
         bool mouse_captured_{false};
+
         std::uint8_t mouse_button_mask_{0};
+
         bool tracked_{false};
+
         bool events_enabled_{false};
+
     };
 
     // Each runtime owns its registration and may shut down independently.
@@ -803,17 +927,25 @@ struct WindowsPlatformRuntime::Impl {
                                          std::to_wstring(reinterpret_cast<std::uintptr_t>(this))};
 
     std::shared_ptr<RuntimeToken> runtime_token{std::make_shared<RuntimeToken>()};
+
     ProcessInfo process_info{BuildProcessInfo()};
+
     HINSTANCE instance_handle{GetModuleHandleW(nullptr)};
+
     std::vector<PlatformEvent> queued_events;
     std::unordered_map<WindowId, std::shared_ptr<WindowsWindow>> windows_by_id;
     std::unordered_map<HWND, WindowsWindow *> windows_by_handle;
     std::uint64_t next_window_id{1};
+
     bool class_registered{false};
+
     std::atomic_bool exit_requested{false};
+
     bool shutdown{false};
+
     std::exception_ptr pending_callback_failure;
     std::thread::id main_thread_id{std::this_thread::get_id()};
+
     mutable std::mutex mutex;
 
     // Releases all tracked windows and unregisters the window class during runtime teardown.
@@ -830,15 +962,19 @@ struct WindowsPlatformRuntime::Impl {
                     SetWindowLongPtrW(hwnd, GWLP_USERDATA, 0);
                     DestroyWindow(hwnd);
                 }
+
             }
+
             windows_by_handle.clear();
             windows_by_id.clear();
             if (class_registered) {
                 static_cast<void>(UnregisterClassW(window_class_name.c_str(), instance_handle));
             }
+
             class_registered = false;
             shutdown = true;
         }
+
     }
 
     void Shutdown() {
@@ -855,24 +991,29 @@ struct WindowsPlatformRuntime::Impl {
                 static_cast<void>(window_id);
                 windows_to_close.push_back(window);
             }
+
         }
 
         for (const auto &window : windows_to_close) {
             if (window) {
                 window->CloseFromRuntimeTeardownNoThrow();
             }
+
         }
 
         {
             std::scoped_lock lock(mutex);
             if (!windows_by_id.empty() || !windows_by_handle.empty()) {
-                throw std::runtime_error("WindowsPlatformRuntime failed to destroy all native windows");
+                throw std::runtime_error(
+                    "WindowsPlatformRuntime failed to destroy all native windows");
             }
+
         }
 
         PumpMessages();
         if (class_registered && !UnregisterClassW(window_class_name.c_str(), instance_handle)) {
-            throw std::runtime_error("WindowsPlatformRuntime failed to unregister its window class");
+            throw std::runtime_error(
+                "WindowsPlatformRuntime failed to unregister its window class");
         }
 
         class_registered = false;
@@ -883,31 +1024,40 @@ struct WindowsPlatformRuntime::Impl {
     // Throws when a runtime operation is invoked from a non-owner thread.
     void EnsureMainThread(std::string_view operation) const {
         if (std::this_thread::get_id() != main_thread_id) {
-            throw std::runtime_error("WindowsPlatformRuntime operation must run on the owner thread: " +
-                                     std::string(operation));
+            throw std::runtime_error(
+                "WindowsPlatformRuntime operation must run on the owner thread: " +
+                std::string(operation));
         }
+
     }
+
     // Creates a Win32 window, attaches it to a WindowsWindow wrapper, and starts tracking it.
-    [[nodiscard]] epidemic::foundation::Result<WindowPtr> CreateWindow(const WindowCreateInfo &create_info) {
+    [[nodiscard]] epidemic::foundation::Result<WindowPtr>
+    CreateWindow(const WindowCreateInfo &create_info) {
         EnsureMainThread("WindowsPlatformRuntime::CreateWindow");
         if (shutdown) {
             return epidemic::foundation::Result<WindowPtr>::Failure(
-                epidemic::foundation::Error::Create("platform.runtime_shutdown", "Platform runtime is shut down"));
+                epidemic::foundation::Error::Create("platform.runtime_shutdown",
+                                                    "Platform runtime is shut down"));
         }
 
         if (exit_requested.load(std::memory_order_acquire)) {
-            return epidemic::foundation::Result<WindowPtr>::Failure(epidemic::foundation::Error::Create(
-                "platform.exit_requested", "Platform runtime exit is already requested"));
+            return epidemic::foundation::Result<WindowPtr>::Failure(
+                epidemic::foundation::Error::Create("platform.exit_requested",
+                                                    "Platform runtime exit is already requested"));
         }
 
         if (create_info.client_width == 0 || create_info.client_height == 0) {
-            return epidemic::foundation::Result<WindowPtr>::Failure(epidemic::foundation::Error::Create(
-                "platform.invalid_window_size", "Window client size must be greater than zero"));
+            return epidemic::foundation::Result<WindowPtr>::Failure(
+                epidemic::foundation::Error::
+                    Create("platform.invalid_window_size",
+                           "Window client size must be greater than zero"));
         }
 
         if (!detail::CanAllocateWindowId(next_window_id)) {
-            return epidemic::foundation::Result<WindowPtr>::Failure(epidemic::foundation::Error::Create(
-                "platform.window_id_exhausted", "Platform window id space is exhausted"));
+            return epidemic::foundation::Result<WindowPtr>::Failure(
+                epidemic::foundation::Error::Create("platform.window_id_exhausted",
+                                                    "Platform window id space is exhausted"));
         }
 
         const auto registration_result = EnsureWindowClassRegistered();
@@ -915,7 +1065,8 @@ struct WindowsPlatformRuntime::Impl {
             return epidemic::foundation::Result<WindowPtr>::Failure(registration_result.GetError());
         }
 
-        const auto title = create_info.title.empty() ? std::string("Epidemic Engine v1.0") : create_info.title;
+        const auto title =
+            create_info.title.empty() ? std::string("Epidemic Engine v1.0") : create_info.title;
         const auto title_wide = WidenUtf8String(title);
         const auto window_id = next_window_id;
         auto window = std::make_shared<WindowsWindow>(runtime_token, window_id, title);
@@ -923,17 +1074,22 @@ struct WindowsPlatformRuntime::Impl {
         constexpr DWORD window_style = WS_OVERLAPPEDWINDOW;
         RECT desired_rect{0, 0, static_cast<LONG>(create_info.client_width),
                           static_cast<LONG>(create_info.client_height)};
+
         AdjustWindowRectEx(&desired_rect, window_style, FALSE, 0);
 
         const auto hwnd =
-            CreateWindowExW(0, window_class_name.c_str(), title_wide.c_str(), window_style, CW_USEDEFAULT,
-                            CW_USEDEFAULT, desired_rect.right - desired_rect.left,
-                            desired_rect.bottom - desired_rect.top, nullptr, nullptr, instance_handle, window.get());
+            CreateWindowExW(0, window_class_name.c_str(), title_wide.c_str(), window_style,
+                            CW_USEDEFAULT, CW_USEDEFAULT, desired_rect.right - desired_rect.left,
+                            desired_rect.bottom - desired_rect.top, nullptr, nullptr,
+                            instance_handle, window.get());
         if (hwnd == nullptr) {
             const auto error_code = GetLastError();
-            return epidemic::foundation::Result<WindowPtr>::Failure(epidemic::foundation::Error::Create(
-                "platform.create_window_failed",
-                "Failed to create Win32 window '" + title + "' (" + FormatWindowsErrorMessage(error_code) + ")"));
+            return epidemic::foundation::Result<WindowPtr>::Failure(
+                epidemic::foundation::Error::Create("platform.create_window_failed",
+                                                    "Failed to create Win32 window '" + title +
+                                                        "' (" +
+                                                        FormatWindowsErrorMessage(error_code) +
+                                                        ")"));
         }
 
         window->Attach(hwnd);
@@ -941,7 +1097,9 @@ struct WindowsPlatformRuntime::Impl {
         try {
             if (testing::Consume(testing::FaultPoint::WindowTrackingCommit)) {
                 throw std::bad_alloc{};
+
             }
+
             std::scoped_lock lock(mutex);
             const auto [id_it, id_inserted] = windows_by_id.emplace(window_id, window);
             static_cast<void>(id_it);
@@ -952,22 +1110,28 @@ struct WindowsPlatformRuntime::Impl {
             if (testing::Consume(testing::FaultPoint::AfterWindowIdInsert)) {
                 windows_by_id.erase(window_id);
                 throw std::bad_alloc{};
+
             }
 
             try {
-                const auto [handle_it, handle_inserted] = windows_by_handle.emplace(hwnd, window.get());
+                const auto [handle_it, handle_inserted] =
+                    windows_by_handle.emplace(hwnd, window.get());
                 static_cast<void>(handle_it);
                 if (!handle_inserted) {
-                    throw std::logic_error("WindowsPlatformRuntime received a duplicate native HWND");
+                    throw std::logic_error(
+                        "WindowsPlatformRuntime received a duplicate native HWND");
                 }
+
             } catch (...) {
                 windows_by_id.erase(window_id);
                 throw;
             }
+
         } catch (...) {
             DestroyWindow(hwnd);
             throw;
         }
+
         window->MarkTracked();
         next_window_id = detail::AdvanceWindowId(next_window_id);
 
@@ -975,7 +1139,8 @@ struct WindowsPlatformRuntime::Impl {
             window->Show();
         }
 
-        return epidemic::foundation::Result<WindowPtr>::Success(std::static_pointer_cast<IWindow>(window));
+        return epidemic::foundation::Result<WindowPtr>::Success(
+            std::static_pointer_cast<IWindow>(window));
     }
 
     // Lazily registers the Win32 window class used for all EngineBase windows.
@@ -985,6 +1150,7 @@ struct WindowsPlatformRuntime::Impl {
         }
 
         WNDCLASSEXW window_class{};
+
         window_class.cbSize = sizeof(window_class);
         window_class.hInstance = instance_handle;
         window_class.lpfnWndProc = &StaticWindowProc;
@@ -995,9 +1161,11 @@ struct WindowsPlatformRuntime::Impl {
 
         if (RegisterClassExW(&window_class) == 0) {
             const auto error_code = GetLastError();
-            return epidemic::foundation::Result<int>::Failure(epidemic::foundation::Error::Create(
-                "platform.register_window_class_failed",
-                "Failed to register Win32 window class (" + FormatWindowsErrorMessage(error_code) + ")"));
+            return epidemic::foundation::Result<int>::Failure(
+                epidemic::foundation::Error::Create("platform.register_window_class_failed",
+                                                    "Failed to register Win32 window class (" +
+                                                        FormatWindowsErrorMessage(error_code) +
+                                                        ")"));
         }
 
         class_registered = true;
@@ -1014,6 +1182,7 @@ struct WindowsPlatformRuntime::Impl {
         RethrowPendingCallbackFailure();
 
         MSG message{};
+
         while (PeekMessageW(&message, nullptr, 0, 0, PM_REMOVE)) {
             if (message.message == WM_QUIT) {
                 exit_requested.store(true, std::memory_order_release);
@@ -1024,6 +1193,7 @@ struct WindowsPlatformRuntime::Impl {
             DispatchMessageW(&message);
             RethrowPendingCallbackFailure();
         }
+
         ReconcilePendingCloseEvents();
     }
 
@@ -1031,12 +1201,14 @@ struct WindowsPlatformRuntime::Impl {
         if (!pending_callback_failure) {
             pending_callback_failure = std::move(failure);
         }
+
     }
 
     void RethrowPendingCallbackFailure() {
         if (!pending_callback_failure) {
             return;
         }
+
         auto failure = std::exchange(pending_callback_failure, {});
         std::rethrow_exception(failure);
     }
@@ -1053,7 +1225,9 @@ struct WindowsPlatformRuntime::Impl {
                         pending_window = window;
                         break;
                     }
+
                 }
+
             } catch (...) {
                 return;
             }
@@ -1061,11 +1235,14 @@ struct WindowsPlatformRuntime::Impl {
             if (!pending_window) {
                 return;
             }
+
             pending_window->FlushPendingCloseEventNoThrow(*this);
             if (pending_window->HasPendingCloseEvent()) {
                 return;
             }
+
         }
+
     }
 
     // Queues normalized PlatformEvent values as one strong-exception-guarantee publication.
@@ -1077,14 +1254,18 @@ struct WindowsPlatformRuntime::Impl {
         std::scoped_lock lock(mutex);
         if (testing::Consume(testing::FaultPoint::EventQueueCommit)) {
             throw std::bad_alloc{};
+
         }
+
         queued_events.reserve(queued_events.size() + event_count);
         for (std::size_t index = 0; index < event_count; ++index) {
             queued_events.push_back(events[index]);
         }
+
     }
 
-    // Removes destroyed-window bookkeeping and requests process exit when the final window disappears.
+    // Removes destroyed-window bookkeeping and requests process exit when the final window
+    // disappears.
     void OnWindowDestroyed(WindowId window_id) {
         std::scoped_lock lock(mutex);
         HWND handle_to_remove = nullptr;
@@ -1094,6 +1275,7 @@ struct WindowsPlatformRuntime::Impl {
                 windows_by_handle.erase(it);
                 break;
             }
+
         }
 
         static_cast<void>(handle_to_remove);
@@ -1101,6 +1283,7 @@ struct WindowsPlatformRuntime::Impl {
         if (windows_by_id.empty() && !exit_requested.exchange(true, std::memory_order_acq_rel)) {
             PostQuitMessage(0);
         }
+
     }
 
     // Drains all queued PlatformEvent values.
@@ -1124,8 +1307,10 @@ struct WindowsPlatformRuntime::Impl {
         return windows_by_id.size();
     }
 
-    // Win32 static window procedure that forwards messages to the associated WindowsWindow instance.
-    [[nodiscard]] static LRESULT CALLBACK StaticWindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+    // Win32 static window procedure that forwards messages to the associated WindowsWindow
+    // instance.
+    [[nodiscard]] static LRESULT CALLBACK StaticWindowProc(HWND hwnd, UINT message, WPARAM wparam,
+                                                           LPARAM lparam) {
         if (message == WM_NCCREATE) {
             const auto *create_struct = reinterpret_cast<CREATESTRUCTW *>(lparam);
             auto *window = static_cast<WindowsWindow *>(create_struct->lpCreateParams);
@@ -1133,16 +1318,19 @@ struct WindowsPlatformRuntime::Impl {
             return TRUE;
         }
 
-        if (auto *window = reinterpret_cast<WindowsWindow *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA))) {
+        if (auto *window =
+                reinterpret_cast<WindowsWindow *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA))) {
             try {
                 return window->HandleMessage(message, wparam, lparam);
             } catch (...) {
                 return 0;
             }
+
         }
 
         return DefWindowProcW(hwnd, message, wparam, lparam);
     }
+
 };
 
 // Creates the runtime implementation and captures the constructing thread as the owner.
@@ -1177,18 +1365,22 @@ WindowsPlatformRuntime::LoadDynamicLibrary(const epidemic::foundation::Path &pat
     impl_->EnsureMainThread("WindowsPlatformRuntime::LoadDynamicLibrary");
     if (impl_->shutdown) {
         return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(
-            epidemic::foundation::Error::Create("platform.runtime_shutdown", "Platform runtime is shut down"));
+            epidemic::foundation::Error::Create("platform.runtime_shutdown",
+                                                "Platform runtime is shut down"));
     }
 
     if (path.Empty()) {
-        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(epidemic::foundation::Error::Create(
-            "platform.empty_library_path", "Dynamic library path must not be empty"));
+        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(
+            epidemic::foundation::Error::Create("platform.empty_library_path",
+                                                "Dynamic library path must not be empty"));
     }
 
     const auto &requested_path = path.Native();
     if (!requested_path.is_absolute()) {
-        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(epidemic::foundation::Error::Create(
-            "platform.relative_library_path", "Dynamic library path must be canonical and absolute"));
+        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(
+            epidemic::foundation::Error::
+                Create("platform.relative_library_path",
+                       "Dynamic library path must be canonical and absolute"));
     }
 
     std::error_code canonical_error;
@@ -1196,27 +1388,37 @@ WindowsPlatformRuntime::LoadDynamicLibrary(const epidemic::foundation::Path &pat
     if (canonical_error) {
         canonical_path = requested_path.lexically_normal();
     }
+
     if (!canonical_path.is_absolute()) {
-        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(epidemic::foundation::Error::Create(
-            "platform.relative_library_path", "Dynamic library path must resolve to an absolute path"));
+        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(
+            epidemic::foundation::Error::
+                Create("platform.relative_library_path",
+                       "Dynamic library path must resolve to an absolute path"));
     }
 
-    constexpr DWORD load_flags = LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
+    constexpr DWORD load_flags =
+        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS;
     const auto module_handle = LoadLibraryExW(canonical_path.c_str(), nullptr, load_flags);
     if (module_handle == nullptr) {
         const auto error_code = GetLastError();
-        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(epidemic::foundation::Error::Create(
-            "platform.load_library_failed", "Failed to load dynamic library '" +
-                                                epidemic::foundation::Path(canonical_path).GenericString() + "' (" +
-                                                FormatWindowsErrorMessage(error_code) + ")"));
+        return epidemic::foundation::Result<DynamicLibraryPtr>::Failure(
+            epidemic::foundation::Error::Create("platform.load_library_failed",
+                                                "Failed to load dynamic library '" +
+                                                    epidemic::foundation::Path(canonical_path)
+                                                        .GenericString() +
+                                                    "' (" + FormatWindowsErrorMessage(error_code) +
+                                                    ")"));
     }
 
     ScopedModuleHandle scoped_module(module_handle);
     if (testing::Consume(testing::FaultPoint::AfterNativeLibraryLoad)) {
         throw std::bad_alloc{};
+
     }
+
     const auto library_name = epidemic::foundation::Path(canonical_path).GenericString();
-    auto dynamic_library = std::make_shared<WindowsDynamicLibrary>(library_name, scoped_module.Get());
+    auto dynamic_library =
+        std::make_shared<WindowsDynamicLibrary>(library_name, scoped_module.Get());
     static_cast<void>(scoped_module.Release());
     return epidemic::foundation::Result<DynamicLibraryPtr>::Success(std::move(dynamic_library));
 }
@@ -1232,7 +1434,8 @@ bool WindowsPlatformRuntime::IsExitRequested() const {
 }
 
 // Creates a window through the internal Win32 implementation.
-epidemic::foundation::Result<WindowPtr> WindowsPlatformRuntime::CreateWindow(const WindowCreateInfo &create_info) {
+epidemic::foundation::Result<WindowPtr>
+WindowsPlatformRuntime::CreateWindow(const WindowCreateInfo &create_info) {
     return impl_->CreateWindow(create_info);
 }
 
@@ -1250,4 +1453,5 @@ bool WindowsPlatformRuntime::HasPendingEvents() const noexcept {
 std::size_t WindowsPlatformRuntime::WindowCount() const noexcept {
     return impl_->WindowCount();
 }
+
 } // namespace epidemic::platform

@@ -8,7 +8,8 @@
 
 namespace epidemic::input {
 // This file defines the keyboard portion of the input snapshot.
-// KeyboardState tracks persistent key-down state plus transient pressed/released flags for the current frame.
+// KeyboardState tracks persistent key-down state plus transient pressed/released flags for the
+// current frame.
 
 class KeyboardState {
   public:
@@ -34,6 +35,7 @@ class KeyboardState {
         if (IsKnownKeyCode(key_code)) {
             keys_down_[ToIndex(key_code)] = down;
         }
+
     }
 
     // Marks a key as newly pressed for the current frame.
@@ -41,6 +43,7 @@ class KeyboardState {
         if (IsKnownKeyCode(key_code)) {
             keys_pressed_[ToIndex(key_code)] = true;
         }
+
     }
 
     // Marks a key as newly released for the current frame.
@@ -48,6 +51,7 @@ class KeyboardState {
         if (IsKnownKeyCode(key_code)) {
             keys_released_[ToIndex(key_code)] = true;
         }
+
     }
 
     // Clears only the per-frame pressed/released flags.
@@ -70,7 +74,11 @@ class KeyboardState {
     }
 
     std::array<bool, KeyCount> keys_down_{};
+
     std::array<bool, KeyCount> keys_pressed_{};
+
     std::array<bool, KeyCount> keys_released_{};
+
 };
-}
+
+} // namespace epidemic::input

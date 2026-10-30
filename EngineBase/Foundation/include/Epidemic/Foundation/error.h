@@ -24,7 +24,9 @@ struct Error {
     // Relationship: this is the main convenience constructor used by Result-producing code.
     [[nodiscard]] static Error Create(std::string_view error_code, std::string_view error_message,
                                       std::string_view error_context = {}) {
-        return Error{std::string(error_code), std::string(error_message), std::string(error_context)};
+        return Error{std::string(error_code), std::string(error_message),
+                     std::string(error_context)};
+
     }
 
     // Checks whether the stored code matches the requested code exactly.
@@ -43,5 +45,7 @@ struct Error {
     [[nodiscard]] bool HasContext() const noexcept {
         return !context.empty();
     }
+
 };
-}
+
+} // namespace epidemic::foundation

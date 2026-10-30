@@ -25,6 +25,7 @@ class FileSavePackageStore final : public savegame::ISavePackageStore {
     explicit FileSavePackageStore(std::filesystem::path path, savegame::SaveWireLimits limits = {})
         : path_(foundation::Path(std::move(path)).Native()), limits_(limits) {
     }
+
     [[nodiscard]] foundation::Result<std::vector<std::byte>> Load() override;
     [[nodiscard]] foundation::Result<void> Commit(std::span<const std::byte> package) override;
 
@@ -36,32 +37,40 @@ class FileSavePackageStore final : public savegame::ISavePackageStore {
 struct FindFactsQuery {
     using ResultType = std::vector<facts::FactRecord>;
     FactTypeId type{};
+
     GameplayObjectRef subject{};
+
     GameplayObjectRef scope{};
 
     [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
         return QueryTypeId::FromString("framework.query.facts.find");
     }
+
 };
 
 struct FindHistoryQuery {
     using ResultType = std::vector<facts::EventRecord>;
     EventTypeId type{};
+
     GameplayObjectRef subject{};
 
     [[nodiscard]] static constexpr QueryTypeId Type() noexcept {
         return QueryTypeId::FromString("framework.query.history.find");
     }
+
 };
 
 class FactsQueryAdapter {
   public:
-    FactsQueryAdapter(facts::GameplayFactsService &facts_service, queries::GameplayQueryService &query_service)
+    FactsQueryAdapter(facts::GameplayFactsService &facts_service,
+                      queries::GameplayQueryService &query_service)
         : facts_(facts_service), queries_(query_service) {
     }
 
-    // Composition contract: register once before Queries::Freeze(). Repeated calls on the same adapter are idempotent.
+    // Composition contract: register once before Queries::Freeze(). Repeated calls on the same
+    // adapter are idempotent.
     [[nodiscard]] foundation::Result<void> RegisterProviders();
+
     [[nodiscard]] bool IsRegistered() const noexcept {
         return registered_;
     }
@@ -74,7 +83,8 @@ class FactsQueryAdapter {
 
 class RuntimeTimeAdapter {
   public:
-    RuntimeTimeAdapter(runtime::IGameClock &runtime_clock, time::GameplayTimeService &gameplay_time, ClockId clock)
+    RuntimeTimeAdapter(runtime::IGameClock &runtime_clock, time::GameplayTimeService &gameplay_time,
+                       ClockId clock)
         : runtime_clock_(runtime_clock), gameplay_time_(gameplay_time), clock_(clock) {
     }
 
@@ -84,6 +94,7 @@ class RuntimeTimeAdapter {
     runtime::IGameClock &runtime_clock_;
     time::GameplayTimeService &gameplay_time_;
     ClockId clock_{};
+
 };
 
 using ScheduledTriggerHandlerId = TypeId;
@@ -106,10 +117,14 @@ struct ScheduledTriggerDispatcherPolicy {
 
 struct ScheduledTriggerDeliveryRecord {
     time::ScheduledTrigger trigger{};
+
     GameplayContext context{};
+
     bool action_declared = false;
-    ScheduledTriggerActionDeliveryMode action_mode = ScheduledTriggerActionDeliveryMode::RequiresActionHandler;
+    ScheduledTriggerActionDeliveryMode action_mode =
+        ScheduledTriggerActionDeliveryMode::RequiresActionHandler;
     ScheduledTriggerHandlerId required_action_handler{};
+
     std::vector<ScheduledTriggerHandlerId> completed_handlers;
 };
 
@@ -134,38 +149,42 @@ class ScheduledTriggerDispatcherSaveParticipant;
 
 class ScheduledTriggerDispatcher {
   public:
-    using Handler = std::function<foundation::Result<ScheduledTriggerDisposition>(const time::ScheduledTrigger &,
-                                                                                  const GameplayContext &)>;
+    using Handler = std::function<foundation::Result<
+        ScheduledTriggerDisposition>(const time::ScheduledTrigger &, const GameplayContext &)>;
 
-    ScheduledTriggerDispatcher(time::GameplayTimeService &time_service, ScheduledTriggerDispatcherPolicy policy = {})
+    ScheduledTriggerDispatcher(time::GameplayTimeService &time_service,
+                               ScheduledTriggerDispatcherPolicy policy = {})
         : time_(time_service), policy_(policy) {
     }
 
-    // Observers receive every collected trigger. Action handlers receive only their registered action.
-    // Handler registrations are immutable after Freeze(). IDs are stable delivery-leg identities used by snapshots/retries.
-    [[nodiscard]] foundation::Result<void> RegisterObserver(ScheduledTriggerHandlerId id, int priority,
-                                                            Handler handler);
+    // Observers receive every collected trigger. Action handlers receive only their registered
+    // action. Handler registrations are immutable after Freeze(). IDs are stable delivery-leg
+    // identities used by snapshots/retries.
+    [[nodiscard]] foundation::Result<void> RegisterObserver(ScheduledTriggerHandlerId id,
+                                                            int priority, Handler handler);
     [[nodiscard]] foundation::Result<void> DeclareRequiresActionHandler(ActionTypeId action);
     [[nodiscard]] foundation::Result<void> DeclareObserverOnlyAction(ActionTypeId action);
-    [[nodiscard]] foundation::Result<void> RegisterActionHandler(ActionTypeId action, ScheduledTriggerHandlerId id,
-                                                                 Handler handler);
+    [[nodiscard]] foundation::Result<void>
+    RegisterActionHandler(ActionTypeId action, ScheduledTriggerHandlerId id, Handler handler);
     foundation::Result<void> Freeze();
+
     [[nodiscard]] bool IsFrozen() const noexcept {
         return frozen_;
     }
 
     // This is the only Integration-level API that destructively collects from GameplayTimeService.
     // Collected triggers are first stored in pending delivery state before any handler is invoked.
-    [[nodiscard]] foundation::Result<std::uint64_t> CollectDue(ClockId clock, GameplayContext context,
-                                                               time::SchedulerBudget budget = {});
+    [[nodiscard]] foundation::Result<std::uint64_t>
+    CollectDue(ClockId clock, GameplayContext context, time::SchedulerBudget budget = {});
 
     [[nodiscard]] ScheduledTriggerPumpReport DispatchPending(std::uint64_t max_attempts = 0);
 
-    [[nodiscard]] foundation::Result<ScheduledTriggerPumpReport> Pump(ClockId clock, GameplayContext context,
-                                                                      time::SchedulerBudget budget = {});
+    [[nodiscard]] foundation::Result<ScheduledTriggerPumpReport>
+    Pump(ClockId clock, GameplayContext context, time::SchedulerBudget budget = {});
 
     [[nodiscard]] ScheduledTriggerDispatcherSnapshot CaptureSnapshot() const;
-    [[nodiscard]] foundation::Result<void> RestoreSnapshot(ScheduledTriggerDispatcherSnapshot snapshot);
+    [[nodiscard]] foundation::Result<void>
+    RestoreSnapshot(ScheduledTriggerDispatcherSnapshot snapshot);
 
     [[nodiscard]] std::size_t PendingCount() const noexcept {
         return pending_.size();
@@ -174,21 +193,24 @@ class ScheduledTriggerDispatcher {
   private:
     struct RegisteredHandler {
         ScheduledTriggerHandlerId id{};
+
         int priority = 0;
         Handler callback;
     };
 
     [[nodiscard]] bool HandlerExists(ScheduledTriggerHandlerId id) const noexcept;
     [[nodiscard]] const RegisteredHandler *FindHandler(ScheduledTriggerHandlerId id) const noexcept;
-    [[nodiscard]] foundation::Result<void> DeclareActionDelivery(ActionTypeId action,
-                                                                 ScheduledTriggerActionDeliveryMode mode);
+    [[nodiscard]] foundation::Result<void>
+    DeclareActionDelivery(ActionTypeId action, ScheduledTriggerActionDeliveryMode mode);
     [[nodiscard]] std::vector<ScheduledTriggerHandlerId>
     RequiredHandlersFor(const ScheduledTriggerDeliveryRecord &delivery) const;
-    [[nodiscard]] foundation::Result<void> ValidateSnapshot(const ScheduledTriggerDispatcherSnapshot &snapshot) const;
+    [[nodiscard]] foundation::Result<void>
+    ValidateSnapshot(const ScheduledTriggerDispatcherSnapshot &snapshot) const;
     void CommitRestoredSnapshot(ScheduledTriggerDispatcherSnapshot &&snapshot) noexcept;
 
     time::GameplayTimeService &time_;
     ScheduledTriggerDispatcherPolicy policy_{};
+
     std::vector<RegisteredHandler> observers_;
     std::unordered_map<ActionTypeId, ScheduledTriggerActionDeliveryMode> action_manifest_;
     std::unordered_map<ActionTypeId, RegisteredHandler> action_handlers_;
@@ -200,23 +222,30 @@ class ScheduledTriggerDispatcher {
 
 class ScheduledTriggerDispatcherSaveParticipant final : public savegame::ISaveParticipant {
   public:
-    explicit ScheduledTriggerDispatcherSaveParticipant(ScheduledTriggerDispatcher &dispatcher) noexcept
+    explicit ScheduledTriggerDispatcherSaveParticipant(
+        ScheduledTriggerDispatcher &dispatcher) noexcept
         : dispatcher_(dispatcher) {
     }
 
     [[nodiscard]] savegame::SaveParticipantId Id() const noexcept override;
+
     [[nodiscard]] savegame::SaveSchemaVersion SchemaVersion() const noexcept override {
         return 1;
     }
+
     [[nodiscard]] std::vector<savegame::SaveParticipantId> Dependencies() const override {
         return {};
+
     }
+
     [[nodiscard]] foundation::Result<savegame::SaveSection>
     CaptureSnapshot(const savegame::SaveContext &context) const override;
-    [[nodiscard]] foundation::Result<void> ValidateSnapshot(const savegame::SaveSection &section,
-                                                            const savegame::RestoreContext &context) const override;
+    [[nodiscard]] foundation::Result<void>
+    ValidateSnapshot(const savegame::SaveSection &section,
+                     const savegame::RestoreContext &context) const override;
     [[nodiscard]] foundation::Result<std::unique_ptr<savegame::IRestoreStage>>
-    StageRestore(const savegame::SaveSection &section, const savegame::RestoreContext &context) override;
+    StageRestore(const savegame::SaveSection &section,
+                 const savegame::RestoreContext &context) override;
     void CommitRestore(savegame::IRestoreStage &stage) noexcept override;
 
   private:
@@ -232,11 +261,11 @@ class TimeFactsAdapter {
     [[nodiscard]] foundation::Result<EventTypeId> RegisterContracts();
 
     // Registers as a dispatcher observer. It no longer calls Time::CollectDue directly.
-    [[nodiscard]] foundation::Result<void> RegisterWithDispatcher(ScheduledTriggerDispatcher &dispatcher,
-                                                                  int priority = 0);
+    [[nodiscard]] foundation::Result<void>
+    RegisterWithDispatcher(ScheduledTriggerDispatcher &dispatcher, int priority = 0);
 
-    [[nodiscard]] foundation::Result<ScheduledTriggerDisposition> PublishTrigger(const time::ScheduledTrigger &trigger,
-                                                                                 const GameplayContext &context);
+    [[nodiscard]] foundation::Result<ScheduledTriggerDisposition>
+    PublishTrigger(const time::ScheduledTrigger &trigger, const GameplayContext &context);
 
     [[nodiscard]] foundation::Result<std::uint64_t> ExpireTimedFacts(GameplayContext context);
 
@@ -247,14 +276,17 @@ class TimeFactsAdapter {
   private:
     facts::GameplayFactsService &facts_;
     EventTypeId scheduled_due_event_type_{};
+
     bool dispatcher_registered_ = false;
 };
+
 } // namespace epidemic::gameplay::integration
 
 // BEGIN GENERATED GOAL5 PARTICIPANTS
 #include "Epidemic/GameFramework/SaveGame/save_game.h"
 #include "Epidemic/GameFramework/Facts/gameplay_facts.h"
 #include "Epidemic/GameFramework/Time/gameplay_time.h"
+
 namespace epidemic::gameplay::savegame {
 [[nodiscard]] std::unique_ptr<ISaveParticipant>
 CreateGameplayFactsServiceSaveParticipant(epidemic::gameplay::facts::GameplayFactsService &owner,
@@ -262,7 +294,8 @@ CreateGameplayFactsServiceSaveParticipant(epidemic::gameplay::facts::GameplayFac
 [[nodiscard]] std::unique_ptr<ISaveParticipant>
 CreateGameplayTimeServiceSaveParticipant(epidemic::gameplay::time::GameplayTimeService &owner,
                                          SaveRestoreWorkspace &workspace);
-}
+} // namespace epidemic::gameplay::savegame
+
 // END GENERATED GOAL5 PARTICIPANTS
 
 // BEGIN GOAL5 SAVE GENERATION COORDINATION
@@ -273,13 +306,17 @@ struct SaveGenerationId {
 
     [[nodiscard]] static constexpr SaveGenerationId FromRaw(std::uint64_t raw) noexcept {
         return {raw};
+
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value;
     }
+
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value != 0;
     }
+
     [[nodiscard]] constexpr bool operator==(const SaveGenerationId &) const noexcept = default;
 };
 
@@ -300,7 +337,8 @@ struct RuntimeSaveGenerationCapture {
 class IRuntimeSaveGenerationPort {
   public:
     virtual ~IRuntimeSaveGenerationPort() = default;
-    [[nodiscard]] virtual foundation::Result<RuntimeSaveGenerationCapture> Capture(SaveGenerationId generation) = 0;
+    [[nodiscard]] virtual foundation::Result<RuntimeSaveGenerationCapture>
+    Capture(SaveGenerationId generation) = 0;
 };
 
 // Production composition adapter for Runtime capture without a Framework ->
@@ -308,13 +346,16 @@ class IRuntimeSaveGenerationPort {
 // Runtime v1 package bytes while the outer generation lease is held.
 class CallbackRuntimeSaveGenerationPort final : public IRuntimeSaveGenerationPort {
   public:
-    using PlaneCapture = std::function<foundation::Result<std::vector<std::byte>>(SaveGenerationId)>;
+    using PlaneCapture =
+        std::function<foundation::Result<std::vector<std::byte>>(SaveGenerationId)>;
 
     CallbackRuntimeSaveGenerationPort(PlaneCapture time_capture, PlaneCapture persistence_capture)
-        : time_capture_(std::move(time_capture)), persistence_capture_(std::move(persistence_capture)) {
+        : time_capture_(std::move(time_capture)),
+          persistence_capture_(std::move(persistence_capture)) {
     }
 
-    [[nodiscard]] foundation::Result<RuntimeSaveGenerationCapture> Capture(SaveGenerationId generation) override;
+    [[nodiscard]] foundation::Result<RuntimeSaveGenerationCapture>
+    Capture(SaveGenerationId generation) override;
 
   private:
     PlaneCapture time_capture_;
@@ -323,6 +364,7 @@ class CallbackRuntimeSaveGenerationPort final : public IRuntimeSaveGenerationPor
 
 struct SaveGenerationPackage {
     SaveGenerationId generation{};
+
     std::vector<std::byte> framework_savegame;
     std::vector<std::byte> runtime_time;
     std::vector<std::byte> runtime_persistence;
@@ -330,8 +372,8 @@ struct SaveGenerationPackage {
 
 [[nodiscard]] foundation::Result<std::vector<std::byte>>
 EncodeSaveGenerationPackage(const SaveGenerationPackage &package, SaveGenerationLimits limits = {});
-[[nodiscard]] foundation::Result<SaveGenerationPackage> DecodeSaveGenerationPackage(std::span<const std::byte> bytes,
-                                                                                    SaveGenerationLimits limits = {});
+[[nodiscard]] foundation::Result<SaveGenerationPackage>
+DecodeSaveGenerationPackage(std::span<const std::byte> bytes, SaveGenerationLimits limits = {});
 
 // Semantic current-generation store. Missing current data is a successful empty
 // optional and therefore allocates generation 1. A malformed existing package is
@@ -339,8 +381,10 @@ EncodeSaveGenerationPackage(const SaveGenerationPackage &package, SaveGeneration
 class ISaveGenerationStore {
   public:
     virtual ~ISaveGenerationStore() = default;
-    [[nodiscard]] virtual foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent() = 0;
-    [[nodiscard]] virtual foundation::Result<void> CommitCurrent(std::span<const std::byte> package) = 0;
+    [[nodiscard]] virtual foundation::Result<std::optional<std::vector<std::byte>>>
+    LoadCurrent() = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    CommitCurrent(std::span<const std::byte> package) = 0;
 };
 
 class FileSaveGenerationStore final : public ISaveGenerationStore {
@@ -348,8 +392,10 @@ class FileSaveGenerationStore final : public ISaveGenerationStore {
     explicit FileSaveGenerationStore(std::filesystem::path path, SaveGenerationLimits limits = {})
         : path_(foundation::Path(std::move(path)).Native()), limits_(limits) {
     }
+
     [[nodiscard]] foundation::Result<std::optional<std::vector<std::byte>>> LoadCurrent() override;
-    [[nodiscard]] foundation::Result<void> CommitCurrent(std::span<const std::byte> package) override;
+    [[nodiscard]] foundation::Result<void>
+    CommitCurrent(std::span<const std::byte> package) override;
 
   private:
     std::filesystem::path path_;
@@ -357,7 +403,8 @@ class FileSaveGenerationStore final : public ISaveGenerationStore {
 };
 
 struct SaveGenerationBarrierCallbacks {
-    using LeaseFactory = std::function<foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>()>;
+    using LeaseFactory =
+        std::function<foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>()>;
 
     // The factory establishes quiescence before preflight executes. Preflight
     // then checks Streaming/RuntimeBridge and other transient blockers while the
@@ -379,8 +426,10 @@ class SaveGenerationBarrier final : public savegame::ISaveBarrier {
 
     [[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>
     AcquireGenerationLease(SaveGenerationId generation);
-    [[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireCaptureLease() override;
-    [[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>> AcquireRestoreLease() override;
+    [[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>
+    AcquireCaptureLease() override;
+    [[nodiscard]] foundation::Result<std::unique_ptr<savegame::ISaveBarrierLease>>
+    AcquireRestoreLease() override;
     [[nodiscard]] SaveGenerationId ActiveGeneration() const noexcept;
     [[nodiscard]] bool IsCaptureActive() const noexcept;
 
@@ -391,12 +440,13 @@ class SaveGenerationBarrier final : public savegame::ISaveBarrier {
 
 class SaveGenerationCoordinator {
   public:
-    SaveGenerationCoordinator(savegame::SaveGameOrchestrator &framework, IRuntimeSaveGenerationPort &runtime,
-                              SaveGenerationBarrier &barrier, ISaveGenerationStore &store,
-                              SaveGenerationLimits limits = {},
+    SaveGenerationCoordinator(savegame::SaveGameOrchestrator &framework,
+                              IRuntimeSaveGenerationPort &runtime, SaveGenerationBarrier &barrier,
+                              ISaveGenerationStore &store, SaveGenerationLimits limits = {},
                               savegame::SaveWireLimits framework_limits = {}) noexcept;
 
-    [[nodiscard]] foundation::Result<SaveGenerationId> CaptureAndCommit(const savegame::SaveContext &context);
+    [[nodiscard]] foundation::Result<SaveGenerationId>
+    CaptureAndCommit(const savegame::SaveContext &context);
 
   private:
     savegame::SaveGameOrchestrator &framework_;
@@ -406,7 +456,9 @@ class SaveGenerationCoordinator {
     SaveGenerationLimits limits_;
     savegame::SaveWireLimits framework_limits_;
 };
+
 } // namespace epidemic::gameplay::integration
+
 // END GOAL5 SAVE GENERATION COORDINATION
 
 namespace epidemic::gameplay::integration {
@@ -449,7 +501,8 @@ struct WholeRestoreCallbacks {
 // Callers must gate simulation and Time advance on CanResume().
 class WholeEngineRestoreCoordinator {
   public:
-    WholeEngineRestoreCoordinator(savegame::SaveGameOrchestrator &framework, IRuntimeGenerationRestorePort &runtime,
+    WholeEngineRestoreCoordinator(savegame::SaveGameOrchestrator &framework,
+                                  IRuntimeGenerationRestorePort &runtime,
                                   SaveGenerationBarrier &barrier, ISaveGenerationStore &store,
                                   WholeRestoreCallbacks callbacks, SaveGenerationLimits limits = {},
                                   savegame::SaveWireLimits framework_limits = {});
@@ -457,14 +510,18 @@ class WholeEngineRestoreCoordinator {
     WholeEngineRestoreCoordinator(const WholeEngineRestoreCoordinator &) = delete;
     WholeEngineRestoreCoordinator &operator=(const WholeEngineRestoreCoordinator &) = delete;
 
-    [[nodiscard]] foundation::Result<SaveGenerationId> LoadAndRestore(const savegame::RestoreContext &context);
+    [[nodiscard]] foundation::Result<SaveGenerationId>
+    LoadAndRestore(const savegame::RestoreContext &context);
     [[nodiscard]] foundation::Result<void> RetryReconciliation();
+
     [[nodiscard]] bool CanResume() const noexcept {
         return phase_ == WholeRestorePhase::ReadyToResume && !lease_;
     }
+
     [[nodiscard]] WholeRestorePhase Phase() const noexcept {
         return phase_;
     }
+
     [[nodiscard]] SaveGenerationId RestoredGeneration() const noexcept {
         return restored_generation_;
     }
@@ -482,9 +539,11 @@ class WholeEngineRestoreCoordinator {
     std::unique_ptr<savegame::ISaveBarrierLease> lease_;
     WholeRestorePhase phase_ = WholeRestorePhase::AwaitLoad;
     SaveGenerationId restored_generation_{};
+
     std::size_t completed_steps_ = 0;
     bool operation_active_ = false;
     struct ThreadIdentity;
     std::unique_ptr<ThreadIdentity> owner_thread_;
 };
+
 } // namespace epidemic::gameplay::integration

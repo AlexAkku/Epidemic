@@ -18,7 +18,9 @@ struct InMemoryAssetCatalogTestAccess {
     static void FailNextCatalogPublication(InMemoryAssetCatalog &catalog) noexcept {
         catalog.fail_next_catalog_publication_for_testing_ = true;
     }
+
 };
+
 } // namespace epidemic::runtime
 
 namespace {
@@ -37,14 +39,19 @@ using epidemic::runtime::IAssetLocationResolver;
 using epidemic::runtime::InMemoryAssetCatalog;
 using epidemic::runtime::InMemoryAssetCatalogTestAccess;
 
-AssetMetadata MakeMetadata(const char *asset_path, const char *asset_type, const char *tag, AssetLocationKind kind) {
+AssetMetadata MakeMetadata(const char *asset_path, const char *asset_type, const char *tag,
+                           AssetLocationKind kind) {
     AssetMetadata metadata{};
+
     metadata.id = AssetId::FromString(asset_path);
     metadata.type = AssetType{StringId::FromString(asset_type)};
+
     metadata.location = AssetLocation{kind, asset_path};
+
     if (kind == AssetLocationKind::PackageEntry || kind == AssetLocationKind::VirtualPath) {
         metadata.location.mount_id = StringId::FromString("game");
     }
+
     metadata.state = AssetState::Indexed;
     metadata.tags.push_back(StringId::FromString(tag));
     metadata.content_hash = 1234;
@@ -54,16 +61,18 @@ AssetMetadata MakeMetadata(const char *asset_path, const char *asset_type, const
 
 bool MetadataEquals(const AssetMetadata &left, const AssetMetadata &right) {
     return left.id == right.id && left.type == right.type && left.location == right.location &&
-           left.state == right.state && left.dependencies == right.dependencies && left.tags == right.tags &&
-           left.content_hash == right.content_hash && left.version == right.version;
+           left.state == right.state && left.dependencies == right.dependencies &&
+           left.tags == right.tags && left.content_hash == right.content_hash &&
+           left.version == right.version;
 }
 
 bool TestDefaultMetadataState() {
     const AssetMetadata metadata{};
+
     return !metadata.id.IsValid() && !metadata.type.IsValid() &&
            metadata.location.kind == AssetLocationKind::FilePath && metadata.location.Empty() &&
-           metadata.state == AssetState::Unknown && metadata.dependencies.empty() && metadata.tags.empty() &&
-           metadata.content_hash == 0 && metadata.version == 0;
+           metadata.state == AssetState::Unknown && metadata.dependencies.empty() &&
+           metadata.tags.empty() && metadata.content_hash == 0 && metadata.version == 0;
 }
 
 bool TestRegisterAssetStoresMetadata() {
@@ -75,16 +84,20 @@ bool TestRegisterAssetStoresMetadata() {
     const auto result = writer.RegisterAsset(metadata);
     const auto stored = catalog.FindById(metadata.id);
 
-    return result && stored.has_value() && stored->id == metadata.id && stored->location == metadata.location;
+    return result && stored.has_value() && stored->id == metadata.id &&
+           stored->location == metadata.location;
 }
 
 bool TestValidationFailures() {
     InMemoryAssetCatalog catalog;
-    AssetMetadata invalid_id = MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
+    AssetMetadata invalid_id =
+        MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
     invalid_id.id = {};
+
     AssetMetadata invalid_type =
         MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
     invalid_type.type = {};
+
     AssetMetadata invalid_location =
         MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
     invalid_location.location.path.clear();
@@ -105,19 +118,19 @@ bool TestVersionGeneratedDependencyAndTagValidation() {
         MakeMetadata("version-zero.asset", "itemdef", "version", AssetLocationKind::VirtualPath);
     zero_version.version = 0;
 
-    AssetMetadata missing_generator =
-        MakeMetadata("generated/missing.asset", "itemdef", "generated", AssetLocationKind::Generated);
+    AssetMetadata missing_generator = MakeMetadata("generated/missing.asset", "itemdef",
+                                                   "generated", AssetLocationKind::Generated);
 
     AssetMetadata generated =
         MakeMetadata("generated/valid.asset", "itemdef", "generated", AssetLocationKind::Generated);
     generated.location.generator_id = StringId::FromString("procedural-test-generator");
 
-    AssetMetadata invalid_dependency =
-        MakeMetadata("invalid-dependency.asset", "itemdef", "dependency", AssetLocationKind::VirtualPath);
+    AssetMetadata invalid_dependency = MakeMetadata("invalid-dependency.asset", "itemdef",
+                                                    "dependency", AssetLocationKind::VirtualPath);
     invalid_dependency.dependencies.push_back(AssetDependency{});
 
-    AssetMetadata duplicate_tags =
-        MakeMetadata("duplicate-tags.asset", "itemdef", "duplicate", AssetLocationKind::VirtualPath);
+    AssetMetadata duplicate_tags = MakeMetadata("duplicate-tags.asset", "itemdef", "duplicate",
+                                                AssetLocationKind::VirtualPath);
     duplicate_tags.tags.push_back(duplicate_tags.tags.front());
 
     const auto version_result = catalog.RegisterAsset(zero_version);
@@ -126,9 +139,12 @@ bool TestVersionGeneratedDependencyAndTagValidation() {
     const auto duplicate_tags_result = catalog.RegisterAsset(duplicate_tags);
     const auto generated_result = catalog.RegisterAsset(generated);
 
-    return !version_result && version_result.GetError().HasCode("asset.invalid_version") && !missing_generator_result &&
-           missing_generator_result.GetError().HasCode("asset.invalid_location") && !invalid_dependency_result &&
-           invalid_dependency_result.GetError().HasCode("asset.invalid_dependency") && !duplicate_tags_result &&
+    return !version_result && version_result.GetError().HasCode("asset.invalid_version") &&
+           !missing_generator_result &&
+           missing_generator_result.GetError().HasCode("asset.invalid_location") &&
+           !invalid_dependency_result &&
+           invalid_dependency_result.GetError().HasCode("asset.invalid_dependency") &&
+           !duplicate_tags_result &&
            duplicate_tags_result.GetError().HasCode("asset.invalid_tag") && generated_result &&
            !catalog.Contains(zero_version.id) && !catalog.Contains(missing_generator.id) &&
            !catalog.Contains(invalid_dependency.id) && !catalog.Contains(duplicate_tags.id) &&
@@ -139,17 +155,20 @@ bool TestPathValidationRejectsTraversalAndRequiresMounts() {
     InMemoryAssetCatalog catalog;
     AssetMetadata windows_absolute =
         MakeMetadata("C:\\absolute\\path.asset", "itemdef", "path", AssetLocationKind::FilePath);
-    AssetMetadata posix_absolute = MakeMetadata("/absolute/path.asset", "itemdef", "path", AssetLocationKind::FilePath);
-    AssetMetadata outside = MakeMetadata("../outside.asset", "itemdef", "path", AssetLocationKind::VirtualPath);
-    AssetMetadata escaped_mount =
-        MakeMetadata("mount/../../outside.asset", "itemdef", "path", AssetLocationKind::PackageEntry);
+    AssetMetadata posix_absolute =
+        MakeMetadata("/absolute/path.asset", "itemdef", "path", AssetLocationKind::FilePath);
+    AssetMetadata outside =
+        MakeMetadata("../outside.asset", "itemdef", "path", AssetLocationKind::VirtualPath);
+    AssetMetadata escaped_mount = MakeMetadata("mount/../../outside.asset", "itemdef", "path",
+                                               AssetLocationKind::PackageEntry);
     AssetMetadata missing_virtual_mount =
         MakeMetadata("items/potato.itemdef", "itemdef", "path", AssetLocationKind::VirtualPath);
     AssetMetadata missing_package_mount =
         MakeMetadata("packages/potato.mesh", "mesh", "path", AssetLocationKind::PackageEntry);
-    AssetMetadata windows_device =
-        MakeMetadata(R"(\\?\C:\absolute\path.asset)", "itemdef", "path", AssetLocationKind::FilePath);
-    AssetMetadata windows_device_alias = MakeMetadata(R"(\\.\NUL)", "itemdef", "path", AssetLocationKind::FilePath);
+    AssetMetadata windows_device = MakeMetadata(R"(\\?\C:\absolute\path.asset)", "itemdef", "path",
+                                                AssetLocationKind::FilePath);
+    AssetMetadata windows_device_alias =
+        MakeMetadata(R"(\\.\NUL)", "itemdef", "path", AssetLocationKind::FilePath);
     AssetMetadata windows_rooted =
         MakeMetadata(R"(\rooted\path.asset)", "itemdef", "path", AssetLocationKind::FilePath);
     AssetMetadata embedded_nul =
@@ -157,6 +176,7 @@ bool TestPathValidationRejectsTraversalAndRequiresMounts() {
     constexpr char kEmbeddedNulPath[] = "safe.asset\0../../escape.asset";
     embedded_nul.location.path.assign(kEmbeddedNulPath, sizeof(kEmbeddedNulPath) - 1);
     missing_virtual_mount.location.mount_id = {};
+
     missing_package_mount.location.mount_id = {};
 
     const auto windows_result = catalog.RegisterAsset(windows_absolute);
@@ -170,16 +190,23 @@ bool TestPathValidationRejectsTraversalAndRequiresMounts() {
     const auto windows_rooted_result = catalog.RegisterAsset(windows_rooted);
     const auto embedded_nul_result = catalog.RegisterAsset(embedded_nul);
 
-    return !windows_result && windows_result.GetError().HasCode("asset.invalid_location") && !posix_result &&
-           posix_result.GetError().HasCode("asset.invalid_location") && !outside_result &&
-           outside_result.GetError().HasCode("asset.invalid_location") && !escaped_result &&
-           escaped_result.GetError().HasCode("asset.invalid_location") && !missing_virtual_result &&
-           missing_virtual_result.GetError().HasCode("asset.invalid_location") && !missing_package_result &&
-           missing_package_result.GetError().HasCode("asset.invalid_location") && !windows_device_result &&
-           windows_device_result.GetError().HasCode("asset.invalid_location") && !windows_device_alias_result &&
-           windows_device_alias_result.GetError().HasCode("asset.invalid_location") && !windows_rooted_result &&
-           windows_rooted_result.GetError().HasCode("asset.invalid_location") && !embedded_nul_result &&
-           embedded_nul_result.GetError().HasCode("asset.invalid_location") && !catalog.Contains(embedded_nul.id);
+    return !windows_result && windows_result.GetError().HasCode("asset.invalid_location") &&
+           !posix_result && posix_result.GetError().HasCode("asset.invalid_location") &&
+           !outside_result && outside_result.GetError().HasCode("asset.invalid_location") &&
+           !escaped_result && escaped_result.GetError().HasCode("asset.invalid_location") &&
+           !missing_virtual_result &&
+           missing_virtual_result.GetError().HasCode("asset.invalid_location") &&
+           !missing_package_result &&
+           missing_package_result.GetError().HasCode("asset.invalid_location") &&
+           !windows_device_result &&
+           windows_device_result.GetError().HasCode("asset.invalid_location") &&
+           !windows_device_alias_result &&
+           windows_device_alias_result.GetError().HasCode("asset.invalid_location") &&
+           !windows_rooted_result &&
+           windows_rooted_result.GetError().HasCode("asset.invalid_location") &&
+           !embedded_nul_result &&
+           embedded_nul_result.GetError().HasCode("asset.invalid_location") &&
+           !catalog.Contains(embedded_nul.id);
 }
 
 bool TestDuplicateAssetIdReturnsError() {
@@ -195,18 +222,20 @@ bool TestDuplicateAssetIdReturnsError() {
 
 bool TestSelfAndDuplicateDependenciesFail() {
     InMemoryAssetCatalog catalog;
-    AssetMetadata self = MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
+    AssetMetadata self =
+        MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
     self.dependencies.push_back(AssetDependency{self.id, true});
 
-    AssetMetadata duplicate = MakeMetadata("items/carrot.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
+    AssetMetadata duplicate =
+        MakeMetadata("items/carrot.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
     const AssetId dependency = AssetId::FromString("shared/root.mesh");
     duplicate.dependencies.push_back(AssetDependency{dependency, true});
     duplicate.dependencies.push_back(AssetDependency{dependency, false});
 
     const auto self_result = catalog.RegisterAsset(self);
     const auto duplicate_result = catalog.RegisterAsset(duplicate);
-    return !self_result && self_result.GetError().HasCode("asset.self_dependency") && !duplicate_result &&
-           duplicate_result.GetError().HasCode("asset.invalid_dependency");
+    return !self_result && self_result.GetError().HasCode("asset.self_dependency") &&
+           !duplicate_result && duplicate_result.GetError().HasCode("asset.invalid_dependency");
 }
 
 bool TestCatalogSeal() {
@@ -218,8 +247,8 @@ bool TestCatalogSeal() {
     }
 
     const auto after_seal = catalog.FindById(metadata.id);
-    const auto rejected =
-        catalog.RegisterAsset(MakeMetadata("items/carrot.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath));
+    const auto rejected = catalog.RegisterAsset(
+        MakeMetadata("items/carrot.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath));
     return catalog.IsSealed() && after_seal.has_value() && !rejected &&
            rejected.GetError().HasCode("asset.catalog_sealed");
 }
@@ -253,10 +282,11 @@ bool TestFindByTypeAndTagWork() {
         MakeMetadata("items/a_carrot.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
     const AssetMetadata mesh_asset =
         MakeMetadata("meshes/m_potato.mesh", "mesh", "food", AssetLocationKind::PackageEntry);
-    const AssetMetadata ui_asset = MakeMetadata("ui/potato_icon.tex", "texture", "ui", AssetLocationKind::PackageEntry);
+    const AssetMetadata ui_asset =
+        MakeMetadata("ui/potato_icon.tex", "texture", "ui", AssetLocationKind::PackageEntry);
 
-    if (!catalog.RegisterAsset(item_asset) || !catalog.RegisterAsset(mesh_asset) || !catalog.RegisterAsset(ui_asset) ||
-        !catalog.RegisterAsset(carrot_asset)) {
+    if (!catalog.RegisterAsset(item_asset) || !catalog.RegisterAsset(mesh_asset) ||
+        !catalog.RegisterAsset(ui_asset) || !catalog.RegisterAsset(carrot_asset)) {
         return false;
     }
 
@@ -265,13 +295,13 @@ bool TestFindByTypeAndTagWork() {
     const auto missing_matches = catalog.FindByTag(StringId::FromString("missing"));
 
     std::vector<AssetId> expected_item_type{item_asset.id, carrot_asset.id};
+
     std::vector<AssetId> expected_food{item_asset.id, carrot_asset.id, mesh_asset.id};
-    std::sort(expected_item_type.begin(), expected_item_type.end(), [](AssetId lhs, AssetId rhs) {
-        return lhs.Raw() < rhs.Raw();
-    });
-    std::sort(expected_food.begin(), expected_food.end(), [](AssetId lhs, AssetId rhs) {
-        return lhs.Raw() < rhs.Raw();
-    });
+
+    std::sort(expected_item_type.begin(), expected_item_type.end(),
+              [](AssetId lhs, AssetId rhs) { return lhs.Raw() < rhs.Raw(); });
+    std::sort(expected_food.begin(), expected_food.end(),
+              [](AssetId lhs, AssetId rhs) { return lhs.Raw() < rhs.Raw(); });
 
     return item_type_matches.size() == 2 && item_type_matches[0].id == expected_item_type[0] &&
            item_type_matches[1].id == expected_item_type[1] && food_matches.size() == 3 &&
@@ -286,7 +316,8 @@ bool TestMissingAssetReturnsNulloptAndResolveError() {
     const auto missing_snapshot = catalog.FindById(missing_id);
     const auto missing_location = catalog.Resolve(missing_id);
 
-    return !missing_snapshot.has_value() && !missing_location && missing_location.GetError().HasCode("asset.not_found");
+    return !missing_snapshot.has_value() && !missing_location &&
+           missing_location.GetError().HasCode("asset.not_found");
 }
 
 bool TestInvalidQueryInputsAreControlled() {
@@ -298,15 +329,19 @@ bool TestInvalidQueryInputsAreControlled() {
     }
 
     const AssetId invalid_id{};
+
     const AssetType invalid_type{};
+
     const StringId invalid_tag{};
+
     const auto invalid_resolve = catalog.Resolve(invalid_id);
     const auto invalid_manifest = catalog.BuildDependencyManifest(invalid_id);
 
     return !catalog.FindById(invalid_id).has_value() && catalog.FindByType(invalid_type).empty() &&
-           catalog.FindByTag(invalid_tag).empty() && !catalog.Contains(invalid_id) && !invalid_resolve &&
-           invalid_resolve.GetError().HasCode("asset.invalid_id") && !invalid_manifest &&
-           invalid_manifest.GetError().HasCode("asset.invalid_id") && catalog.Contains(metadata.id);
+           catalog.FindByTag(invalid_tag).empty() && !catalog.Contains(invalid_id) &&
+           !invalid_resolve && invalid_resolve.GetError().HasCode("asset.invalid_id") &&
+           !invalid_manifest && invalid_manifest.GetError().HasCode("asset.invalid_id") &&
+           catalog.Contains(metadata.id);
 }
 
 bool TestAssetLocationResolverReturnsRegisteredLocation() {
@@ -329,8 +364,8 @@ bool TestAssetLocationResolverReturnsRegisteredLocation() {
 
 bool TestCanonicalPaths() {
     InMemoryAssetCatalog catalog;
-    AssetMetadata metadata =
-        MakeMetadata("items/./props/../potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
+    AssetMetadata metadata = MakeMetadata("items/./props/../potato.itemdef", "itemdef", "food",
+                                          AssetLocationKind::VirtualPath);
     metadata.id = AssetId::FromString("items/potato.itemdef");
     if (!catalog.RegisterAsset(metadata)) {
         return false;
@@ -342,8 +377,10 @@ bool TestCanonicalPaths() {
 
 bool TestDependencyManifestAndCycle() {
     InMemoryAssetCatalog catalog;
-    AssetMetadata root = MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
-    AssetMetadata mesh = MakeMetadata("meshes/potato.mesh", "mesh", "food", AssetLocationKind::VirtualPath);
+    AssetMetadata root =
+        MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
+    AssetMetadata mesh =
+        MakeMetadata("meshes/potato.mesh", "mesh", "food", AssetLocationKind::VirtualPath);
     root.dependencies.push_back(AssetDependency{mesh.id, true});
     if (!catalog.RegisterAsset(root) || !catalog.RegisterAsset(mesh)) {
         return false;
@@ -359,23 +396,28 @@ bool TestDependencyManifestAndCycle() {
     const bool seeded_cycle = cyclic.RegisterAsset(a) && cyclic.RegisterAsset(b);
     const auto cycle_manifest = cyclic.BuildDependencyManifest(a.id);
 
-    return manifest && manifest.Value().root == root.id && manifest.Value().dependencies.size() == 1 && seeded_cycle &&
-           !cycle_manifest && cycle_manifest.GetError().HasCode("asset.dependency_cycle");
+    return manifest && manifest.Value().root == root.id &&
+           manifest.Value().dependencies.size() == 1 && seeded_cycle && !cycle_manifest &&
+           cycle_manifest.GetError().HasCode("asset.dependency_cycle");
 }
 
 bool TestDependencyManifestDeduplicatesDiamondAndMissingPolicy() {
     InMemoryAssetCatalog catalog;
-    AssetMetadata root = MakeMetadata("a/root.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
-    AssetMetadata left = MakeMetadata("b/left.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
-    AssetMetadata right = MakeMetadata("c/right.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
-    AssetMetadata shared = MakeMetadata("d/shared.asset", "mesh", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata root =
+        MakeMetadata("a/root.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata left =
+        MakeMetadata("b/left.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata right =
+        MakeMetadata("c/right.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata shared =
+        MakeMetadata("d/shared.asset", "mesh", "manifest", AssetLocationKind::VirtualPath);
     root.dependencies.push_back(AssetDependency{left.id, true});
     root.dependencies.push_back(AssetDependency{right.id, true});
     left.dependencies.push_back(AssetDependency{shared.id, true});
     right.dependencies.push_back(AssetDependency{shared.id, true});
 
-    if (!catalog.RegisterAsset(root) || !catalog.RegisterAsset(left) || !catalog.RegisterAsset(right) ||
-        !catalog.RegisterAsset(shared)) {
+    if (!catalog.RegisterAsset(root) || !catalog.RegisterAsset(left) ||
+        !catalog.RegisterAsset(right) || !catalog.RegisterAsset(shared)) {
         return false;
     }
 
@@ -384,7 +426,8 @@ bool TestDependencyManifestDeduplicatesDiamondAndMissingPolicy() {
     InMemoryAssetCatalog missing_required;
     AssetMetadata required_root =
         MakeMetadata("required/root.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
-    required_root.dependencies.push_back(AssetDependency{AssetId::FromString("missing/required.asset"), true});
+    required_root.dependencies.push_back(
+        AssetDependency{AssetId::FromString("missing/required.asset"), true});
     const bool required_seeded = missing_required.RegisterAsset(required_root).HasValue();
     const auto required_manifest = missing_required.BuildDependencyManifest(required_root.id);
 
@@ -397,14 +440,15 @@ bool TestDependencyManifestDeduplicatesDiamondAndMissingPolicy() {
     const auto optional_manifest = missing_optional.BuildDependencyManifest(optional_root.id);
 
     std::vector<AssetId> expected{left.id, right.id, shared.id};
-    std::sort(expected.begin(), expected.end(), [](AssetId lhs, AssetId rhs) {
-        return lhs.Raw() < rhs.Raw();
-    });
+
+    std::sort(expected.begin(), expected.end(),
+              [](AssetId lhs, AssetId rhs) { return lhs.Raw() < rhs.Raw(); });
     return manifest && manifest.Value().dependencies.size() == 3 &&
            manifest.Value().dependencies[0].asset_id == expected[0] &&
            manifest.Value().dependencies[1].asset_id == expected[1] &&
-           manifest.Value().dependencies[2].asset_id == expected[2] && required_seeded && !required_manifest &&
-           required_manifest.GetError().HasCode("asset.missing_dependency") && optional_seeded && optional_manifest &&
+           manifest.Value().dependencies[2].asset_id == expected[2] && required_seeded &&
+           !required_manifest && required_manifest.GetError().HasCode("asset.missing_dependency") &&
+           optional_seeded && optional_manifest &&
            optional_manifest.Value().dependencies.size() == 1 &&
            optional_manifest.Value().dependencies.front().asset_id == optional_id &&
            !optional_manifest.Value().dependencies.front().required;
@@ -414,24 +458,30 @@ bool TestDependencyManifestMergesRequirednessIndependentlyOfTraversalOrder() {
     AssetMetadata root_left_first =
         MakeMetadata("order/root.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
     AssetMetadata root_right_first = root_left_first;
-    AssetMetadata left = MakeMetadata("order/left.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
-    AssetMetadata right = MakeMetadata("order/right.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
-    AssetMetadata shared = MakeMetadata("order/shared.asset", "mesh", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata left =
+        MakeMetadata("order/left.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata right =
+        MakeMetadata("order/right.asset", "itemdef", "manifest", AssetLocationKind::VirtualPath);
+    AssetMetadata shared =
+        MakeMetadata("order/shared.asset", "mesh", "manifest", AssetLocationKind::VirtualPath);
 
     left.dependencies.push_back(AssetDependency{shared.id, false});
     right.dependencies.push_back(AssetDependency{shared.id, true});
-    root_left_first.dependencies = {AssetDependency{left.id, true}, AssetDependency{right.id, true}};
-    root_right_first.dependencies = {AssetDependency{right.id, true}, AssetDependency{left.id, true}};
+    root_left_first.dependencies = {AssetDependency{left.id, true},
+                                    AssetDependency{right.id, true}};
+
+    root_right_first.dependencies = {AssetDependency{right.id, true},
+                                     AssetDependency{left.id, true}};
 
     InMemoryAssetCatalog first;
-    if (!first.RegisterAsset(root_left_first) || !first.RegisterAsset(left) || !first.RegisterAsset(right) ||
-        !first.RegisterAsset(shared)) {
+    if (!first.RegisterAsset(root_left_first) || !first.RegisterAsset(left) ||
+        !first.RegisterAsset(right) || !first.RegisterAsset(shared)) {
         return false;
     }
 
     InMemoryAssetCatalog second;
-    if (!second.RegisterAsset(shared) || !second.RegisterAsset(right) || !second.RegisterAsset(left) ||
-        !second.RegisterAsset(root_right_first)) {
+    if (!second.RegisterAsset(shared) || !second.RegisterAsset(right) ||
+        !second.RegisterAsset(left) || !second.RegisterAsset(root_right_first)) {
         return false;
     }
 
@@ -442,27 +492,34 @@ bool TestDependencyManifestMergesRequirednessIndependentlyOfTraversalOrder() {
         return false;
     }
 
-    const auto shared_dependency =
-        std::find_if(first_manifest.Value().dependencies.begin(), first_manifest.Value().dependencies.end(),
-                     [shared](const AssetDependency &dependency) {
-                         return dependency.asset_id == shared.id;
-                     });
-    return shared_dependency != first_manifest.Value().dependencies.end() && shared_dependency->required;
+    const auto shared_dependency = std::find_if(first_manifest.Value().dependencies.begin(),
+                                                first_manifest.Value().dependencies.end(),
+                                                [shared](const AssetDependency &dependency) {
+                                                    return dependency.asset_id == shared.id;
+                                                });
+    return shared_dependency != first_manifest.Value().dependencies.end() &&
+           shared_dependency->required;
 }
 
 bool TestEnumTagAndFailureAtomicity() {
     InMemoryAssetCatalog catalog;
-    const auto baseline = MakeMetadata("baseline.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
+    const auto baseline =
+        MakeMetadata("baseline.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
     if (!catalog.RegisterAsset(baseline))
         return false;
 
-    auto invalid_kind = MakeMetadata("bad-kind.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
+    auto invalid_kind =
+        MakeMetadata("bad-kind.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
     invalid_kind.location.kind = static_cast<AssetLocationKind>(255);
-    auto invalid_state = MakeMetadata("bad-state.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
+    auto invalid_state =
+        MakeMetadata("bad-state.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
     invalid_state.state = static_cast<AssetState>(255);
-    auto invalid_tag = MakeMetadata("bad-tag.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
+    auto invalid_tag =
+        MakeMetadata("bad-tag.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
     invalid_tag.tags = {StringId{}};
-    auto mixed_tag = MakeMetadata("mixed-tag.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
+
+    auto mixed_tag =
+        MakeMetadata("mixed-tag.asset", "itemdef", "valid", AssetLocationKind::VirtualPath);
     mixed_tag.tags.push_back(StringId{});
 
     const auto k = catalog.RegisterAsset(invalid_kind);
@@ -470,24 +527,35 @@ bool TestEnumTagAndFailureAtomicity() {
     const auto t = catalog.RegisterAsset(invalid_tag);
     const auto mt = catalog.RegisterAsset(mixed_tag);
     return !k && k.GetError().HasCode("asset.invalid_location") && !st &&
-           st.GetError().HasCode("asset.invalid_state") && !t && t.GetError().HasCode("asset.invalid_tag") && !mt &&
-           mt.GetError().HasCode("asset.invalid_tag") && catalog.FindById(baseline.id).has_value() &&
-           !catalog.FindById(invalid_kind.id).has_value() && !catalog.FindById(invalid_state.id).has_value() &&
+           st.GetError().HasCode("asset.invalid_state") && !t &&
+           t.GetError().HasCode("asset.invalid_tag") && !mt &&
+           mt.GetError().HasCode("asset.invalid_tag") &&
+           catalog.FindById(baseline.id).has_value() &&
+           !catalog.FindById(invalid_kind.id).has_value() &&
+           !catalog.FindById(invalid_state.id).has_value() &&
            !catalog.FindById(invalid_tag.id).has_value();
 }
 
 bool TestWindowsDriveRelativeAndHostRootPaths() {
     InMemoryAssetCatalog catalog;
-    const char *rejected[] = {
-        "C:foo.asset",      "C:", "C:/foo.asset", "C:\\foo.asset", "\\\\server\\share.asset", "../foo.asset",
-        "a/../../foo.asset"};
+    const char *rejected[] = {"C:foo.asset",
+                              "C:",
+                              "C:/foo.asset",
+                              "C:\\foo.asset",
+                              "\\\\server\\share.asset",
+                              "../foo.asset",
+                              "a/../../foo.asset"};
+
     for (const char *path : rejected) {
         auto metadata = MakeMetadata(path, "itemdef", "path", AssetLocationKind::FilePath);
         const auto result = catalog.RegisterAsset(metadata);
-        if (result || !result.GetError().HasCode("asset.invalid_location") || catalog.FindById(metadata.id).has_value())
+        if (result || !result.GetError().HasCode("asset.invalid_location") ||
+            catalog.FindById(metadata.id).has_value())
             return false;
     }
-    const auto valid = MakeMetadata("content/items/foo.asset", "itemdef", "path", AssetLocationKind::FilePath);
+
+    const auto valid =
+        MakeMetadata("content/items/foo.asset", "itemdef", "path", AssetLocationKind::FilePath);
     return catalog.RegisterAsset(valid).HasValue() && catalog.FindById(valid.id).has_value();
 }
 
@@ -511,8 +579,10 @@ bool TestDeepDependencyManifestIsIterative() {
     chain.reserve(kDepth);
     for (int i = 0; i < kDepth; ++i) {
         const std::string path = "deep/" + std::to_string(i) + ".asset";
-        chain.push_back(MakeMetadata(path.c_str(), "itemdef", "deep", AssetLocationKind::VirtualPath));
+        chain.push_back(
+            MakeMetadata(path.c_str(), "itemdef", "deep", AssetLocationKind::VirtualPath));
     }
+
     for (int i = 0; i + 1 < kDepth; ++i)
         chain[i].dependencies.push_back(AssetDependency{chain[i + 1].id, true});
     for (const auto &metadata : chain)
@@ -528,7 +598,8 @@ bool TestMetadataBoundsRejectBeforeMutation() {
     too_long.location.path.assign(epidemic::runtime::kMaxAssetPathBytes + 1, 'a');
     const auto path_result = catalog.RegisterAsset(too_long);
 
-    auto too_many_tags = MakeMetadata("many-tags.asset", "itemdef", "tag", AssetLocationKind::VirtualPath);
+    auto too_many_tags =
+        MakeMetadata("many-tags.asset", "itemdef", "tag", AssetLocationKind::VirtualPath);
     too_many_tags.tags.clear();
     too_many_tags.tags.reserve(epidemic::runtime::kMaxAssetTags + 1);
     for (std::size_t i = 0; i <= epidemic::runtime::kMaxAssetTags; ++i)
@@ -543,18 +614,23 @@ bool TestMetadataBoundsRejectBeforeMutation() {
         too_many_dependencies.dependencies.push_back(
             AssetDependency{AssetId::FromString(dependency_name), (i % 2) == 0});
     }
+
     const auto dependencies_result = catalog.RegisterAsset(too_many_dependencies);
 
-    auto exact_path = MakeMetadata("exact-path-boundary.asset", "itemdef", "tag", AssetLocationKind::VirtualPath);
+    auto exact_path =
+        MakeMetadata("exact-path-boundary.asset", "itemdef", "tag", AssetLocationKind::VirtualPath);
     exact_path.location.path.assign(epidemic::runtime::kMaxAssetPathBytes, 'a');
     const auto exact_path_result = catalog.RegisterAsset(exact_path);
     const auto exact_path_stored = catalog.FindById(exact_path.id);
 
-    return !path_result && path_result.GetError().HasCode("asset.metadata_too_large") && !tags_result &&
-           tags_result.GetError().HasCode("asset.metadata_too_large") && !dependencies_result &&
+    return !path_result && path_result.GetError().HasCode("asset.metadata_too_large") &&
+           !tags_result && tags_result.GetError().HasCode("asset.metadata_too_large") &&
+           !dependencies_result &&
            dependencies_result.GetError().HasCode("asset.metadata_too_large") &&
-           !catalog.FindById(too_long.id).has_value() && !catalog.FindById(too_many_tags.id).has_value() &&
-           !catalog.FindById(too_many_dependencies.id).has_value() && exact_path_result && exact_path_stored &&
+           !catalog.FindById(too_long.id).has_value() &&
+           !catalog.FindById(too_many_tags.id).has_value() &&
+           !catalog.FindById(too_many_dependencies.id).has_value() && exact_path_result &&
+           exact_path_stored &&
            exact_path_stored->location.path.size() == epidemic::runtime::kMaxAssetPathBytes;
 }
 
@@ -566,8 +642,8 @@ bool TestRegistrationAllocationFailurePreservesCatalog() {
 
     const auto run_fault = [](FaultPoint fault_point) {
         InMemoryAssetCatalog catalog;
-        const AssetMetadata baseline =
-            MakeMetadata("allocation/base.asset", "itemdef", "baseline", AssetLocationKind::VirtualPath);
+        const AssetMetadata baseline = MakeMetadata("allocation/base.asset", "itemdef", "baseline",
+                                                    AssetLocationKind::VirtualPath);
         if (!catalog.RegisterAsset(baseline)) {
             return false;
         }
@@ -577,13 +653,15 @@ bool TestRegistrationAllocationFailurePreservesCatalog() {
             return false;
         }
 
-        AssetMetadata candidate = MakeMetadata("allocation/./nested/../candidate.asset", "itemdef", "candidate",
-                                               AssetLocationKind::VirtualPath);
+        AssetMetadata candidate = MakeMetadata("allocation/./nested/../candidate.asset", "itemdef",
+                                               "candidate", AssetLocationKind::VirtualPath);
         candidate.id = AssetId::FromString("allocation/candidate.asset");
         for (std::size_t i = 0; i < 16; ++i) {
-            const std::string dependency_name = "allocation/dependency-" + std::to_string(i) + ".asset";
+            const std::string dependency_name =
+                "allocation/dependency-" + std::to_string(i) + ".asset";
             const std::string tag_name = "allocation-tag-" + std::to_string(i);
-            candidate.dependencies.push_back(AssetDependency{AssetId::FromString(dependency_name), (i % 2) == 0});
+            candidate.dependencies.push_back(
+                AssetDependency{AssetId::FromString(dependency_name), (i % 2) == 0});
             candidate.tags.push_back(StringId::FromString(tag_name));
         }
 
@@ -603,18 +681,22 @@ bool TestRegistrationAllocationFailurePreservesCatalog() {
         const auto baseline_after = catalog.FindById(baseline.id);
         const auto candidate_after = catalog.FindById(candidate.id);
         const auto type_matches = catalog.FindByType(baseline.type);
-        if (!threw_bad_alloc || !baseline_after || !MetadataEquals(*baseline_before, *baseline_after) ||
-            candidate_after || type_matches.size() != 1 || !MetadataEquals(type_matches.front(), *baseline_before)) {
+        if (!threw_bad_alloc || !baseline_after ||
+            !MetadataEquals(*baseline_before, *baseline_after) || candidate_after ||
+            type_matches.size() != 1 || !MetadataEquals(type_matches.front(), *baseline_before)) {
             return false;
         }
 
         const auto retried = catalog.RegisterAsset(candidate);
         const auto stored_candidate = catalog.FindById(candidate.id);
-        return retried && stored_candidate && stored_candidate->location.path == "allocation/candidate.asset" &&
-               stored_candidate->dependencies == candidate.dependencies && stored_candidate->tags == candidate.tags;
+        return retried && stored_candidate &&
+               stored_candidate->location.path == "allocation/candidate.asset" &&
+               stored_candidate->dependencies == candidate.dependencies &&
+               stored_candidate->tags == candidate.tags;
     };
 
-    return run_fault(FaultPoint::MetadataCandidateBuild) && run_fault(FaultPoint::CatalogPublication);
+    return run_fault(FaultPoint::MetadataCandidateBuild) &&
+           run_fault(FaultPoint::CatalogPublication);
 }
 
 bool TestAssetServicesFactory() {
@@ -625,22 +707,27 @@ bool TestAssetServicesFactory() {
 
     const AssetMetadata metadata =
         MakeMetadata("items/potato.itemdef", "itemdef", "food", AssetLocationKind::VirtualPath);
-    return services.Value().catalog && services.Value().writer && services.Value().location_resolver &&
-           services.Value().writer->RegisterAsset(metadata) && services.Value().catalog->Contains(metadata.id);
+    return services.Value().catalog && services.Value().writer &&
+           services.Value().location_resolver && services.Value().writer->RegisterAsset(metadata) &&
+           services.Value().catalog->Contains(metadata.id);
 }
+
 bool TestPublicApiEvidenceCoverage() {
     static_assert(std::has_virtual_destructor_v<IAssetCatalog>);
     static_assert(std::has_virtual_destructor_v<IAssetCatalogWriter>);
     static_assert(std::has_virtual_destructor_v<IAssetLocationResolver>);
 
     AssetLocation empty{};
+
     if (!empty.Empty())
         return false;
 
     AssetLocation location{AssetLocationKind::VirtualPath, "items/./props/../potato.itemdef"};
+
     location.mount_id = StringId::FromString("assets");
     const auto canonical = epidemic::runtime::CanonicalizeAssetLocation(location);
-    if (canonical.path != "items/potato.itemdef" || !epidemic::runtime::IsValidAssetLocation(canonical) ||
+    if (canonical.path != "items/potato.itemdef" ||
+        !epidemic::runtime::IsValidAssetLocation(canonical) ||
         !epidemic::runtime::IsValidAssetLocationKind(canonical.kind) ||
         epidemic::runtime::IsValidAssetLocationKind(static_cast<AssetLocationKind>(999)) ||
         !epidemic::runtime::IsValidAssetState(AssetState::Validated) ||
@@ -650,8 +737,10 @@ bool TestPublicApiEvidenceCoverage() {
 
     const AssetLocation same = canonical;
     const AssetDependency dependency{AssetId::FromString("mesh/potato.mesh"), true};
+
     const AssetDependency same_dependency = dependency;
     const AssetType type{StringId::FromString("itemdef")};
+
     const AssetType same_type = type;
     return canonical == same && dependency == same_dependency && type == same_type;
 }

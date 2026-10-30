@@ -16,17 +16,20 @@ template <class T> void EraseId(std::vector<T> &ids, const T &id) {
 }
 
 template <class WrappedId>
-void AdvanceGeneratorPastExplicitId(MonotonicIdGenerator<GameplayObjectId> &generator, const WrappedId &id) noexcept {
+void AdvanceGeneratorPastExplicitId(MonotonicIdGenerator<GameplayObjectId> &generator,
+                                    const WrappedId &id) noexcept {
     if (!id.IsValid())
         return;
     auto snapshot = generator.GetSnapshot();
     if (id.value.High() != snapshot.scope || snapshot.next == 0 || id.value.Low() < snapshot.next)
         return;
-    snapshot.next = id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : id.value.Low() + 1;
+    snapshot.next =
+        id.value.Low() == std::numeric_limits<std::uint64_t>::max() ? 0 : id.value.Low() + 1;
     (void)generator.Restore(snapshot);
 }
 
-template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scope, std::uint64_t &max_low) noexcept {
+template <class WrappedId>
+void UpdateMaxLow(const WrappedId &id, IdScopeId scope, std::uint64_t &max_low) noexcept {
     if (id.IsValid() && id.value.High() == scope.Raw() && id.value.Low() > max_low)
         max_low = id.value.Low();
 }
@@ -45,6 +48,7 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
     case OwnershipStrength::Unowned:
         return true;
     }
+
     return false;
 }
 
@@ -56,6 +60,7 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
     case PermissionStrength::Absolute:
         return true;
     }
+
     return false;
 }
 
@@ -72,6 +77,7 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
     case AccessDecision::CrimeIfViolated:
         return true;
     }
+
     return false;
 }
 
@@ -89,6 +95,7 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
     case TransferReason::GameSpecific:
         return true;
     }
+
     return false;
 }
 
@@ -103,6 +110,7 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
     case PermissionStrength::Absolute:
         return 3;
     }
+
     return 0;
 }
 
@@ -125,6 +133,7 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
     case AccessDecision::Public:
         return 2;
     }
+
     return 0;
 }
 
@@ -134,12 +143,14 @@ template <class WrappedId> void UpdateMaxLow(const WrappedId &id, IdScopeId scop
 
 [[nodiscard]] bool IsRuleStructurallyValid(const AccessRule &rule) noexcept {
     if (!rule.id.IsValid() || !rule.property.IsValid() || !rule.right.IsValid() ||
-        !IsValidAccessDecision(rule.decision) || !IsValidPermissionStrength(rule.minimum_permission_strength))
+        !IsValidAccessDecision(rule.decision) ||
+        !IsValidPermissionStrength(rule.minimum_permission_strength))
         return false;
     if (rule.decision == AccessDecision::RequireRole && !rule.required_role.IsValid())
         return false;
     return true;
 }
+
 } // namespace
 
 foundation::Result<Revision> OwnershipService::PrepareRevision() const {
@@ -172,21 +183,27 @@ void OwnershipService::IndexOwnership(const OwnershipRecord &record) {
 }
 
 void OwnershipService::UnindexOwnership(const OwnershipRecord &record) {
-    if (auto it = ownership_by_property_.find(record.property); it != ownership_by_property_.end()) {
+    if (auto it = ownership_by_property_.find(record.property);
+        it != ownership_by_property_.end()) {
         EraseId(it->second, record.id);
         if (it->second.empty())
             ownership_by_property_.erase(it);
     }
+
     if (auto it = ownership_by_owner_.find(record.owner); it != ownership_by_owner_.end()) {
         EraseId(it->second, record.id);
         if (it->second.empty())
             ownership_by_owner_.erase(it);
     }
+
     if (record.strength == OwnershipStrength::Owned) {
         const OwnerKey key{record.property, record.domain};
-        if (auto it = canonical_owners_.find(key); it != canonical_owners_.end() && it->second == record.id)
+
+        if (auto it = canonical_owners_.find(key);
+            it != canonical_owners_.end() && it->second == record.id)
             canonical_owners_.erase(it);
     }
+
 }
 
 void OwnershipService::IndexGrant(const PermissionGrant &grant) {
@@ -199,6 +216,7 @@ void OwnershipService::UnindexGrant(const PermissionGrant &grant) {
         if (it->second.empty())
             grants_by_subject_.erase(it);
     }
+
 }
 
 void OwnershipService::IndexRule(const AccessRule &rule) {
@@ -211,6 +229,7 @@ void OwnershipService::UnindexRule(const AccessRule &rule) {
         if (it->second.empty())
             rules_by_property_.erase(it);
     }
+
 }
 
 void OwnershipService::IndexClaim(const PropertyClaim &claim) {
@@ -223,23 +242,29 @@ void OwnershipService::UnindexClaim(const PropertyClaim &claim) {
         if (it->second.empty())
             claims_by_property_.erase(it);
     }
+
 }
 
 foundation::Result<OwnershipRecordId> OwnershipService::AssignOwnership(OwnershipRecord r) {
     if (!r.property.IsValid() || !r.owner.IsValid() || !IsValidOwnershipStrength(r.strength))
         return foundation::Result<OwnershipRecordId>::Failure(
             Error("gameplay.ownership.invalid_record", "invalid ownership record"));
-    if (r.strength == OwnershipStrength::Owned && canonical_owners_.contains(OwnerKey{r.property, r.domain}))
+    if (r.strength == OwnershipStrength::Owned &&
+        canonical_owners_.contains(OwnerKey{r.property, r.domain}))
         return foundation::Result<OwnershipRecordId>::Failure(
-            Error("gameplay.ownership.owner_conflict", "canonical owner already exists for property/domain"));
+            Error("gameplay.ownership.owner_conflict",
+                  "canonical owner already exists for property/domain"));
 
     auto staged_ids = ownership_ids_;
     if (!r.id.IsValid()) {
         r.id = OwnershipRecordId{staged_ids.Next()};
+
         if (!r.id.IsValid())
             return foundation::Result<OwnershipRecordId>::Failure(
-                Error("gameplay.ownership.id_exhausted", "ownership record id generator exhausted"));
+                Error("gameplay.ownership.id_exhausted",
+                      "ownership record id generator exhausted"));
     }
+
     if (records_.contains(r.id))
         return foundation::Result<OwnershipRecordId>::Failure(
             Error("gameplay.ownership.duplicate_record", "duplicate ownership record"));
@@ -247,7 +272,8 @@ foundation::Result<OwnershipRecordId> OwnershipService::AssignOwnership(Ownershi
 
     if (!CanRecordChanges())
         return foundation::Result<OwnershipRecordId>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<OwnershipRecordId>::Failure(rev.GetError());
@@ -259,39 +285,59 @@ foundation::Result<OwnershipRecordId> OwnershipService::AssignOwnership(Ownershi
         records_.emplace(id, r);
         inserted = true;
         IndexOwnership(r);
-        Record({0, OwnershipChangeKind::OwnershipAssigned, r.property, {}, r.owner, {}, {}, r.revision, r.domain});
+        Record({0,
+                OwnershipChangeKind::OwnershipAssigned,
+                r.property,
+                {},
+                r.owner,
+                {},
+                {},
+                r.revision,
+                r.domain});
     } catch (...) {
         if (inserted) {
             UnindexOwnership(r);
             records_.erase(id);
         }
+
         return foundation::Result<OwnershipRecordId>::Failure(
             Error("gameplay.ownership.publication_failed", "ownership publication failed"));
     }
+
     (void)ownership_ids_.Restore(staged_ids.GetSnapshot());
     revision_ = r.revision;
     return foundation::Result<OwnershipRecordId>::Success(id);
 }
 
-foundation::Result<void> OwnershipService::RemoveOwnership(OwnershipRecordId id, GameplayContext c) {
+foundation::Result<void> OwnershipService::RemoveOwnership(OwnershipRecordId id,
+                                                           GameplayContext c) {
     auto it = records_.find(id);
     if (it == records_.end())
         return foundation::Result<void>::Failure(
             Error("gameplay.ownership.record_missing", "ownership record missing"));
     if (!CanRecordChanges())
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<void>::Failure(rev.GetError());
     const auto copy = it->second;
     try {
-        Record(
-            {0, OwnershipChangeKind::OwnershipRemoved, copy.property, {}, copy.owner, {}, c, rev.Value(), copy.domain});
+        Record({0,
+                OwnershipChangeKind::OwnershipRemoved,
+                copy.property,
+                {},
+                copy.owner,
+                {},
+                c,
+                rev.Value(),
+                copy.domain});
     } catch (...) {
         return foundation::Result<void>::Failure(
             Error("gameplay.ownership.publication_failed", "ownership journal publication failed"));
     }
+
     UnindexOwnership(copy);
     records_.erase(it);
     revision_ = rev.Value();
@@ -300,7 +346,8 @@ foundation::Result<void> OwnershipService::RemoveOwnership(OwnershipRecordId id,
 
 foundation::Result<void> OwnershipService::TransferOwnership(TransferOwnershipRequest q) {
     if (!q.property.IsValid() || !q.to_owner.IsValid() || !IsValidTransferReason(q.reason))
-        return foundation::Result<void>::Failure(Error("gameplay.ownership.invalid_transfer", "invalid transfer"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.ownership.invalid_transfer", "invalid transfer"));
 
     const auto *found = GetOwner(q.property, q.domain);
     if (!found) {
@@ -314,19 +361,22 @@ foundation::Result<void> OwnershipService::TransferOwnership(TransferOwnershipRe
         r.strength = OwnershipStrength::Owned;
         r.acquired_at = q.context.time;
         auto added = AssignOwnership(std::move(r));
-        return added ? foundation::Result<void>::Success() : foundation::Result<void>::Failure(added.GetError());
+        return added ? foundation::Result<void>::Success()
+                     : foundation::Result<void>::Failure(added.GetError());
     }
+
     if (q.from_owner.IsValid() && found->owner != q.from_owner)
         return foundation::Result<void>::Failure(
             Error("gameplay.ownership.transfer_owner_mismatch", "transfer owner mismatch"));
     if (q.expected_revision.value != 0 && found->revision != q.expected_revision)
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.transfer_stale_revision", "ownership record revision changed"));
+        return foundation::Result<void>::Failure(Error("gameplay.ownership.transfer_stale_revision",
+                                                       "ownership record revision changed"));
     if (found->owner == q.to_owner)
         return foundation::Result<void>::Success();
     if (!CanRecordChanges())
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<void>::Failure(rev.GetError());
@@ -360,15 +410,19 @@ foundation::Result<void> OwnershipService::TransferOwnership(TransferOwnershipRe
                 if (idx->second.empty())
                     ownership_by_owner_.erase(idx);
             }
+
         }
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.publication_failed", "ownership transfer publication failed"));
+
+        return foundation::Result<void>::Failure(Error("gameplay.ownership.publication_failed",
+                                                       "ownership transfer publication failed"));
     }
+
     if (auto old = ownership_by_owner_.find(previous); old != ownership_by_owner_.end()) {
         EraseId(old->second, current->id);
         if (old->second.empty())
             ownership_by_owner_.erase(old);
     }
+
     current->owner = q.to_owner;
     current->strength = OwnershipStrength::Owned;
     current->acquired_at = q.context.time;
@@ -379,24 +433,29 @@ foundation::Result<void> OwnershipService::TransferOwnership(TransferOwnershipRe
 }
 
 foundation::Result<PermissionGrantId> OwnershipService::GrantPermission(PermissionGrant g) {
-    if (!g.subject.IsValid() || !g.property.IsValid() || !g.right.IsValid() || !IsValidPermissionStrength(g.strength) ||
+    if (!g.subject.IsValid() || !g.property.IsValid() || !g.right.IsValid() ||
+        !IsValidPermissionStrength(g.strength) ||
         (g.expires_at.has_value() && *g.expires_at < g.granted_at))
         return foundation::Result<PermissionGrantId>::Failure(
             Error("gameplay.ownership.invalid_grant", "invalid permission grant"));
     auto staged_ids = grant_ids_;
     if (!g.id.IsValid()) {
         g.id = PermissionGrantId{staged_ids.Next()};
+
         if (!g.id.IsValid())
             return foundation::Result<PermissionGrantId>::Failure(
-                Error("gameplay.ownership.id_exhausted", "permission grant id generator exhausted"));
+                Error("gameplay.ownership.id_exhausted",
+                      "permission grant id generator exhausted"));
     }
+
     if (grants_.contains(g.id))
         return foundation::Result<PermissionGrantId>::Failure(
             Error("gameplay.ownership.duplicate_grant", "duplicate permission grant"));
     AdvanceGeneratorPastExplicitId(staged_ids, g.id);
     if (!CanRecordChanges())
         return foundation::Result<PermissionGrantId>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<PermissionGrantId>::Failure(rev.GetError());
@@ -407,45 +466,66 @@ foundation::Result<PermissionGrantId> OwnershipService::GrantPermission(Permissi
         grants_.emplace(id, g);
         inserted = true;
         IndexGrant(g);
-        Record({0, OwnershipChangeKind::PermissionGranted, g.property, g.subject, {}, g.right, {}, g.revision});
+        Record({0,
+                OwnershipChangeKind::PermissionGranted,
+                g.property,
+                g.subject,
+                {},
+                g.right,
+                {},
+                g.revision});
     } catch (...) {
         if (inserted) {
             UnindexGrant(g);
             grants_.erase(id);
         }
+
         return foundation::Result<PermissionGrantId>::Failure(
             Error("gameplay.ownership.publication_failed", "permission grant publication failed"));
     }
+
     (void)grant_ids_.Restore(staged_ids.GetSnapshot());
     revision_ = g.revision;
     return foundation::Result<PermissionGrantId>::Success(id);
 }
 
-foundation::Result<void> OwnershipService::RevokePermission(PermissionGrantId id, GameplayContext c) {
+foundation::Result<void> OwnershipService::RevokePermission(PermissionGrantId id,
+                                                            GameplayContext c) {
     auto it = grants_.find(id);
     if (it == grants_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.ownership.grant_missing", "permission grant missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.ownership.grant_missing", "permission grant missing"));
     if (!CanRecordChanges())
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<void>::Failure(rev.GetError());
     const auto copy = it->second;
     try {
-        Record(
-            {0, OwnershipChangeKind::PermissionRevoked, copy.property, copy.subject, {}, copy.right, c, rev.Value()});
+        Record({0,
+                OwnershipChangeKind::PermissionRevoked,
+                copy.property,
+                copy.subject,
+                {},
+                copy.right,
+                c,
+                rev.Value()});
     } catch (...) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.publication_failed", "permission revoke journal publication failed"));
+            Error("gameplay.ownership.publication_failed",
+                  "permission revoke journal publication failed"));
     }
+
     UnindexGrant(copy);
     grants_.erase(it);
     revision_ = rev.Value();
     return foundation::Result<void>::Success();
 }
 
-std::size_t OwnershipService::SweepExpiredPermissions(GameplayTimePoint now, GameplayContext context) {
+std::size_t OwnershipService::SweepExpiredPermissions(GameplayTimePoint now,
+                                                      GameplayContext context) {
     std::vector<PermissionGrantId> expired;
     expired.reserve(grants_.size());
     for (const auto &[id, grant] : grants_)
@@ -459,7 +539,9 @@ std::size_t OwnershipService::SweepExpiredPermissions(GameplayTimePoint now, Gam
             ++removed;
             ++diagnostics_.expired_permissions;
         }
+
     }
+
     return removed;
 }
 
@@ -472,17 +554,20 @@ foundation::Result<AccessRuleId> OwnershipService::AddAccessRule(AccessRule r) {
     auto staged_ids = rule_ids_;
     if (!r.id.IsValid()) {
         r.id = AccessRuleId{staged_ids.Next()};
+
         if (!r.id.IsValid())
             return foundation::Result<AccessRuleId>::Failure(
                 Error("gameplay.ownership.id_exhausted", "access rule id generator exhausted"));
     }
+
     if (rules_.contains(r.id))
         return foundation::Result<AccessRuleId>::Failure(
             Error("gameplay.ownership.duplicate_rule", "duplicate access rule"));
     AdvanceGeneratorPastExplicitId(staged_ids, r.id);
     if (!CanRecordChanges())
         return foundation::Result<AccessRuleId>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<AccessRuleId>::Failure(rev.GetError());
@@ -507,9 +592,11 @@ foundation::Result<AccessRuleId> OwnershipService::AddAccessRule(AccessRule r) {
             UnindexRule(r);
             rules_.erase(id);
         }
+
         return foundation::Result<AccessRuleId>::Failure(
             Error("gameplay.ownership.publication_failed", "access rule publication failed"));
     }
+
     (void)rule_ids_.Restore(staged_ids.GetSnapshot());
     revision_ = r.revision;
     return foundation::Result<AccessRuleId>::Success(id);
@@ -517,16 +604,19 @@ foundation::Result<AccessRuleId> OwnershipService::AddAccessRule(AccessRule r) {
 
 foundation::Result<void> OwnershipService::UpdateAccessRule(AccessRule r, GameplayContext context) {
     if (!IsRuleStructurallyValid(r))
-        return foundation::Result<void>::Failure(Error("gameplay.ownership.invalid_rule", "invalid access rule"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.ownership.invalid_rule", "invalid access rule"));
     auto it = rules_.find(r.id);
     if (it == rules_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.ownership.rule_missing", "access rule missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.ownership.rule_missing", "access rule missing"));
     if (r.revision.value != 0 && r.revision != it->second.revision)
         return foundation::Result<void>::Failure(
             Error("gameplay.ownership.rule_stale", "access rule revision changed"));
     if (!CanRecordChanges())
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<void>::Failure(rev.GetError());
@@ -538,6 +628,7 @@ foundation::Result<void> OwnershipService::UpdateAccessRule(AccessRule r, Gamepl
             rules_by_property_[r.property].push_back(r.id);
             staged_index = true;
         }
+
         Record({0,
                 OwnershipChangeKind::AccessRuleChanged,
                 r.property,
@@ -555,10 +646,13 @@ foundation::Result<void> OwnershipService::UpdateAccessRule(AccessRule r, Gamepl
                 if (idx->second.empty())
                     rules_by_property_.erase(idx);
             }
+
         }
-        return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.publication_failed", "access rule update publication failed"));
+
+        return foundation::Result<void>::Failure(Error("gameplay.ownership.publication_failed",
+                                                       "access rule update publication failed"));
     }
+
     if (r.property != old.property) {
         auto idx = rules_by_property_.find(old.property);
         if (idx != rules_by_property_.end()) {
@@ -566,19 +660,24 @@ foundation::Result<void> OwnershipService::UpdateAccessRule(AccessRule r, Gamepl
             if (idx->second.empty())
                 rules_by_property_.erase(idx);
         }
+
     }
+
     it->second = r;
     revision_ = r.revision;
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> OwnershipService::RemoveAccessRule(AccessRuleId id, GameplayContext context) {
+foundation::Result<void> OwnershipService::RemoveAccessRule(AccessRuleId id,
+                                                            GameplayContext context) {
     auto it = rules_.find(id);
     if (it == rules_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.ownership.rule_missing", "access rule missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.ownership.rule_missing", "access rule missing"));
     if (!CanRecordChanges())
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<void>::Failure(rev.GetError());
@@ -595,8 +694,10 @@ foundation::Result<void> OwnershipService::RemoveAccessRule(AccessRuleId id, Gam
                 copy.domain});
     } catch (...) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.publication_failed", "access rule removal journal publication failed"));
+            Error("gameplay.ownership.publication_failed",
+                  "access rule removal journal publication failed"));
     }
+
     UnindexRule(copy);
     rules_.erase(it);
     revision_ = rev.Value();
@@ -610,17 +711,20 @@ foundation::Result<PropertyClaimId> OwnershipService::CreateClaim(PropertyClaim 
     auto staged_ids = claim_ids_;
     if (!c.id.IsValid()) {
         c.id = PropertyClaimId{staged_ids.Next()};
+
         if (!c.id.IsValid())
             return foundation::Result<PropertyClaimId>::Failure(
                 Error("gameplay.ownership.id_exhausted", "property claim id generator exhausted"));
     }
+
     if (claims_.contains(c.id))
         return foundation::Result<PropertyClaimId>::Failure(
             Error("gameplay.ownership.duplicate_claim", "duplicate claim"));
     AdvanceGeneratorPastExplicitId(staged_ids, c.id);
     if (!CanRecordChanges())
         return foundation::Result<PropertyClaimId>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<PropertyClaimId>::Failure(rev.GetError());
@@ -631,15 +735,24 @@ foundation::Result<PropertyClaimId> OwnershipService::CreateClaim(PropertyClaim 
         claims_.emplace(id, c);
         inserted = true;
         IndexClaim(c);
-        Record({0, OwnershipChangeKind::PropertyClaimCreated, c.property, c.claimant, {}, {}, {}, c.revision});
+        Record({0,
+                OwnershipChangeKind::PropertyClaimCreated,
+                c.property,
+                c.claimant,
+                {},
+                {},
+                {},
+                c.revision});
     } catch (...) {
         if (inserted) {
             UnindexClaim(c);
             claims_.erase(id);
         }
+
         return foundation::Result<PropertyClaimId>::Failure(
             Error("gameplay.ownership.publication_failed", "claim publication failed"));
     }
+
     (void)claim_ids_.Restore(staged_ids.GetSnapshot());
     revision_ = c.revision;
     ++diagnostics_.claim_conflicts;
@@ -649,27 +762,39 @@ foundation::Result<PropertyClaimId> OwnershipService::CreateClaim(PropertyClaim 
 foundation::Result<void> OwnershipService::ResolveClaim(PropertyClaimId id, GameplayContext c) {
     auto it = claims_.find(id);
     if (it == claims_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.ownership.claim_missing", "claim missing"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.ownership.claim_missing", "claim missing"));
     if (!CanRecordChanges())
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.change_sequence_exhausted", "ownership change sequence is exhausted"));
+            Error("gameplay.ownership.change_sequence_exhausted",
+                  "ownership change sequence is exhausted"));
     auto rev = PrepareRevision();
     if (!rev)
         return foundation::Result<void>::Failure(rev.GetError());
     const auto copy = it->second;
     try {
-        Record({0, OwnershipChangeKind::PropertyClaimResolved, copy.property, copy.claimant, {}, {}, c, rev.Value()});
+        Record({0,
+                OwnershipChangeKind::PropertyClaimResolved,
+                copy.property,
+                copy.claimant,
+                {},
+                {},
+                c,
+                rev.Value()});
     } catch (...) {
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.publication_failed", "claim resolution journal publication failed"));
+            Error("gameplay.ownership.publication_failed",
+                  "claim resolution journal publication failed"));
     }
+
     UnindexClaim(copy);
     claims_.erase(it);
     revision_ = rev.Value();
     return foundation::Result<void>::Success();
 }
 
-const PermissionGrant *OwnershipService::FindBestActiveGrant(GameplayObjectRef subject, GameplayObjectRef property,
+const PermissionGrant *OwnershipService::FindBestActiveGrant(GameplayObjectRef subject,
+                                                             GameplayObjectRef property,
                                                              PropertyRightId right,
                                                              GameplayTimePoint now) const noexcept {
     const auto indexed = grants_by_subject_.find(subject);
@@ -683,22 +808,27 @@ const PermissionGrant *OwnershipService::FindBestActiveGrant(GameplayObjectRef s
         const auto &grant = it->second;
         if (grant.property != property || grant.right != right || IsGrantExpired(grant, now))
             continue;
-        if (!best || PermissionStrengthRank(grant.strength) > PermissionStrengthRank(best->strength) ||
+        if (!best ||
+            PermissionStrengthRank(grant.strength) > PermissionStrengthRank(best->strength) ||
             (grant.strength == best->strength && grant.id < best->id))
             best = &grant;
     }
+
     return best;
 }
 
-bool OwnershipService::IsPublicProperty(GameplayObjectRef property, PropertyDomainId domain) const noexcept {
+bool OwnershipService::IsPublicProperty(GameplayObjectRef property,
+                                        PropertyDomainId domain) const noexcept {
     const auto indexed = ownership_by_property_.find(property);
     if (indexed == ownership_by_property_.end())
         return false;
     for (const auto id : indexed->second) {
         const auto it = records_.find(id);
-        if (it != records_.end() && it->second.domain == domain && it->second.strength == OwnershipStrength::Public)
+        if (it != records_.end() && it->second.domain == domain &&
+            it->second.strength == OwnershipStrength::Public)
             return true;
     }
+
     return false;
 }
 
@@ -768,16 +898,19 @@ OwnershipPermissionResult OwnershipService::EvaluatePermission(OwnershipPermissi
             out.reasons.push_back(TypeId::FromString("framework.ownership.reason.crime"));
             return out;
         case AccessDecision::RequirePermission:
-            if (grant &&
-                PermissionStrengthRank(grant->strength) >= PermissionStrengthRank(r.minimum_permission_strength)) {
+            if (grant && PermissionStrengthRank(grant->strength) >=
+                             PermissionStrengthRank(r.minimum_permission_strength)) {
                 out.decision = PermissionDecision::Allowed;
                 out.matched_grant = grant->id;
-                out.reasons.push_back(TypeId::FromString("framework.ownership.reason.permission_grant"));
+                out.reasons.push_back(
+                    TypeId::FromString("framework.ownership.reason.permission_grant"));
             } else {
                 ++diagnostics_.denied_permissions;
                 out.decision = PermissionDecision::Denied;
-                out.reasons.push_back(TypeId::FromString("framework.ownership.reason.permission_required"));
+                out.reasons.push_back(
+                    TypeId::FromString("framework.ownership.reason.permission_required"));
             }
+
             return out;
         case AccessDecision::RequireOwner:
             ++diagnostics_.denied_permissions;
@@ -787,19 +920,24 @@ OwnershipPermissionResult OwnershipService::EvaluatePermission(OwnershipPermissi
         case AccessDecision::RequireRole:
             if (!role_provider_) {
                 out.decision = PermissionDecision::Unknown;
-                out.reasons.push_back(TypeId::FromString("framework.ownership.reason.role_provider_unavailable"));
+                out.reasons.push_back(
+                    TypeId::FromString("framework.ownership.reason.role_provider_unavailable"));
                 return out;
             }
+
             if (role_provider_->HasRole(q.actor, r.required_role, q.context)) {
                 out.decision = PermissionDecision::Allowed;
                 out.reasons.push_back(TypeId::FromString("framework.ownership.reason.role"));
             } else {
                 ++diagnostics_.denied_permissions;
                 out.decision = PermissionDecision::Denied;
-                out.reasons.push_back(TypeId::FromString("framework.ownership.reason.role_required"));
+                out.reasons.push_back(
+                    TypeId::FromString("framework.ownership.reason.role_required"));
             }
+
             return out;
         }
+
     }
 
     if (grant) {
@@ -808,6 +946,7 @@ OwnershipPermissionResult OwnershipService::EvaluatePermission(OwnershipPermissi
         out.reasons.push_back(TypeId::FromString("framework.ownership.reason.permission_grant"));
         return out;
     }
+
     if (IsPublicProperty(q.property, q.domain)) {
         out.decision = PermissionDecision::Allowed;
         out.reasons.push_back(TypeId::FromString("framework.ownership.reason.public_property"));
@@ -820,7 +959,8 @@ OwnershipPermissionResult OwnershipService::EvaluatePermission(OwnershipPermissi
     return out;
 }
 
-const OwnershipRecord *OwnershipService::GetOwner(GameplayObjectRef property, PropertyDomainId domain) const noexcept {
+const OwnershipRecord *OwnershipService::GetOwner(GameplayObjectRef property,
+                                                  PropertyDomainId domain) const noexcept {
     const auto indexed = canonical_owners_.find(OwnerKey{property, domain});
     if (indexed == canonical_owners_.end())
         return nullptr;
@@ -841,6 +981,7 @@ const OwnershipRecord *OwnershipService::GetOwner(GameplayObjectRef property) co
             return nullptr; // Multiple ownership domains require the explicit-domain overload.
         only = &it->second;
     }
+
     return only;
 }
 
@@ -853,9 +994,7 @@ std::vector<OwnershipRecord> OwnershipService::GetOwnershipRecords(GameplayObjec
     for (const auto id : indexed->second)
         if (const auto it = records_.find(id); it != records_.end())
             out.push_back(it->second);
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -887,9 +1026,7 @@ std::vector<PermissionGrant> OwnershipService::FindPermissions(GameplayObjectRef
     for (const auto id : indexed->second)
         if (const auto it = grants_.find(id); it != grants_.end())
             out.push_back(it->second);
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -902,9 +1039,7 @@ std::vector<PropertyClaim> OwnershipService::FindClaims(GameplayObjectRef p) con
     for (const auto id : indexed->second)
         if (const auto it = claims_.find(id); it != claims_.end())
             out.push_back(it->second);
-    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.id < b.id; });
     return out;
 }
 
@@ -935,15 +1070,18 @@ std::vector<OwnershipChange> OwnershipService::ChangesSinceSequence(std::uint64_
 
 OwnershipChangeBatch OwnershipService::ReadChangesSinceSequence(std::uint64_t seq) const {
     OwnershipChangeBatch batch;
-    batch.oldest_available_sequence = changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
-    batch.latest_sequence =
-        next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max() : next_change_sequence_ - 1;
-    const bool history_gap = !changes_.empty() ? seq < changes_.front().sequence - 1
-                                               : (batch.latest_sequence != 0 && seq < batch.latest_sequence);
+    batch.oldest_available_sequence =
+        changes_.empty() ? next_change_sequence_ : changes_.front().sequence;
+    batch.latest_sequence = next_change_sequence_ == 0 ? std::numeric_limits<std::uint64_t>::max()
+                                                       : next_change_sequence_ - 1;
+    const bool history_gap = !changes_.empty()
+                                 ? seq < changes_.front().sequence - 1
+                                 : (batch.latest_sequence != 0 && seq < batch.latest_sequence);
     if (history_gap || seq > batch.latest_sequence) {
         batch.snapshot_required = true;
         return batch;
     }
+
     for (const auto &change : changes_)
         if (change.sequence > seq)
             batch.changes.push_back(change);
@@ -965,30 +1103,30 @@ OwnershipSnapshot OwnershipService::CaptureSnapshot() const {
         (void)id;
         s.records.push_back(r);
     }
+
     for (const auto &[id, g] : grants_) {
         (void)id;
         s.grants.push_back(g);
     }
+
     for (const auto &[id, r] : rules_) {
         (void)id;
         s.rules.push_back(r);
     }
+
     for (const auto &[id, c] : claims_) {
         (void)id;
         s.claims.push_back(c);
     }
-    std::sort(s.records.begin(), s.records.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(s.grants.begin(), s.grants.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(s.rules.begin(), s.rules.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
-    std::sort(s.claims.begin(), s.claims.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(s.records.begin(), s.records.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(s.grants.begin(), s.grants.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(s.rules.begin(), s.rules.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
+    std::sort(s.claims.begin(), s.claims.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     s.ownership_ids = ownership_ids_.GetSnapshot();
     s.grant_ids = grant_ids_.GetSnapshot();
     s.rule_ids = rule_ids_.GetSnapshot();
@@ -1003,20 +1141,27 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
         CheckedNextChangeEpoch(s.change_epoch > journal_epoch_ ? s.change_epoch : journal_epoch_);
     if (!next_journal_epoch) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     }
-    if (s.revision.value == 0 && (!s.records.empty() || !s.grants.empty() || !s.rules.empty() || !s.claims.empty()))
+
+    if (s.revision.value == 0 &&
+        (!s.records.empty() || !s.grants.empty() || !s.rules.empty() || !s.claims.empty()))
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.restore_invalid", "non-empty snapshot requires non-zero revision"));
+            Error("gameplay.ownership.restore_invalid",
+                  "non-empty snapshot requires non-zero revision"));
 
     std::unordered_map<OwnershipRecordId, OwnershipRecord, IdHash> records;
     std::unordered_map<PermissionGrantId, PermissionGrant, IdHash> grants;
     std::unordered_map<AccessRuleId, AccessRule, IdHash> rules;
     std::unordered_map<PropertyClaimId, PropertyClaim, IdHash> claims;
     std::unordered_map<OwnerKey, OwnershipRecordId, OwnerKeyHash> canonical;
-    std::unordered_map<GameplayObjectRef, std::vector<OwnershipRecordId>, RefHash> ownership_by_property;
-    std::unordered_map<GameplayObjectRef, std::vector<OwnershipRecordId>, RefHash> ownership_by_owner;
-    std::unordered_map<GameplayObjectRef, std::vector<PermissionGrantId>, RefHash> grants_by_subject;
+    std::unordered_map<GameplayObjectRef, std::vector<OwnershipRecordId>, RefHash>
+        ownership_by_property;
+    std::unordered_map<GameplayObjectRef, std::vector<OwnershipRecordId>, RefHash>
+        ownership_by_owner;
+    std::unordered_map<GameplayObjectRef, std::vector<PermissionGrantId>, RefHash>
+        grants_by_subject;
     std::unordered_map<GameplayObjectRef, std::vector<AccessRuleId>, RefHash> rules_by_property;
     std::unordered_map<GameplayObjectRef, std::vector<PropertyClaimId>, RefHash> claims_by_property;
 
@@ -1031,20 +1176,25 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
     std::uint64_t max_claim_low = 0;
 
     for (const auto &r : s.records) {
-        if (!r.id.IsValid() || !r.property.IsValid() || !r.owner.IsValid() || !IsValidOwnershipStrength(r.strength) ||
-            r.revision.value > s.revision.value || records.contains(r.id))
+        if (!r.id.IsValid() || !r.property.IsValid() || !r.owner.IsValid() ||
+            !IsValidOwnershipStrength(r.strength) || r.revision.value > s.revision.value ||
+            records.contains(r.id))
             return foundation::Result<void>::Failure(
                 Error("gameplay.ownership.restore_invalid", "invalid ownership snapshot record"));
         if (r.strength == OwnershipStrength::Owned) {
             const OwnerKey key{r.property, r.domain};
+
             if (canonical.contains(key))
-                return foundation::Result<void>::Failure(Error("gameplay.ownership.restore_owner_conflict",
-                                                               "multiple canonical owners for property/domain"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.ownership.restore_owner_conflict",
+                          "multiple canonical owners for property/domain"));
             canonical.emplace(key, r.id);
         }
+
         if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
             return foundation::Result<void>::Failure(
-                Error("gameplay.ownership.storage_failed", "failed while constructing ownership snapshot candidates"));
+                Error("gameplay.ownership.storage_failed",
+                      "failed while constructing ownership snapshot candidates"));
         records.emplace(r.id, r);
         ownership_by_property[r.property].push_back(r.id);
         ownership_by_owner[r.owner].push_back(r.id);
@@ -1052,8 +1202,9 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
     }
 
     for (const auto &g : s.grants) {
-        if (!g.id.IsValid() || !g.subject.IsValid() || !g.property.IsValid() || !g.right.IsValid() ||
-            !IsValidPermissionStrength(g.strength) || g.revision.value > s.revision.value || grants.contains(g.id) ||
+        if (!g.id.IsValid() || !g.subject.IsValid() || !g.property.IsValid() ||
+            !g.right.IsValid() || !IsValidPermissionStrength(g.strength) ||
+            g.revision.value > s.revision.value || grants.contains(g.id) ||
             (g.expires_at.has_value() && *g.expires_at < g.granted_at))
             return foundation::Result<void>::Failure(
                 Error("gameplay.ownership.restore_invalid", "invalid permission grant snapshot"));
@@ -1063,7 +1214,8 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
     }
 
     for (const auto &r : s.rules) {
-        if (!IsRuleStructurallyValid(r) || r.revision.value > s.revision.value || rules.contains(r.id))
+        if (!IsRuleStructurallyValid(r) || r.revision.value > s.revision.value ||
+            rules.contains(r.id))
             return foundation::Result<void>::Failure(
                 Error("gameplay.ownership.restore_invalid", "invalid access rule snapshot"));
         rules.emplace(r.id, r);
@@ -1072,8 +1224,8 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
     }
 
     for (const auto &c : s.claims) {
-        if (!c.id.IsValid() || !c.property.IsValid() || !c.claimant.IsValid() || c.revision.value > s.revision.value ||
-            claims.contains(c.id))
+        if (!c.id.IsValid() || !c.property.IsValid() || !c.claimant.IsValid() ||
+            c.revision.value > s.revision.value || claims.contains(c.id))
             return foundation::Result<void>::Failure(
                 Error("gameplay.ownership.restore_invalid", "invalid property claim snapshot"));
         claims.emplace(c.id, c);
@@ -1081,17 +1233,23 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
         UpdateMaxLow(c.id, claim_ids_.Scope(), max_claim_low);
     }
 
-    const auto ownership_generator_ok = ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(
-        s.ownership_ids, ownership_ids_.Scope(), max_ownership_low);
+    const auto ownership_generator_ok =
+        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.ownership_ids,
+                                                               ownership_ids_.Scope(),
+                                                               max_ownership_low);
     const auto grant_generator_ok =
-        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.grant_ids, grant_ids_.Scope(), max_grant_low);
+        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.grant_ids, grant_ids_.Scope(),
+                                                               max_grant_low);
     const auto rule_generator_ok =
-        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.rule_ids, rule_ids_.Scope(), max_rule_low);
+        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.rule_ids, rule_ids_.Scope(),
+                                                               max_rule_low);
     const auto claim_generator_ok =
-        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.claim_ids, claim_ids_.Scope(), max_claim_low);
+        ValidateMonotonicIdGeneratorSnapshot<GameplayObjectId>(s.claim_ids, claim_ids_.Scope(),
+                                                               max_claim_low);
     if (!ownership_generator_ok || !grant_generator_ok || !rule_generator_ok || !claim_generator_ok)
         return foundation::Result<void>::Failure(
-            Error("gameplay.ownership.restore_invalid_generator", "invalid ownership id generator snapshot"));
+            Error("gameplay.ownership.restore_invalid_generator",
+                  "invalid ownership id generator snapshot"));
 
     if (test_seam::Consume(test_seam::FaultPoint::RestoreBeforeCommit))
         return foundation::Result<void>::Failure(
@@ -1115,6 +1273,7 @@ foundation::Result<void> OwnershipService::RestoreSnapshot(OwnershipSnapshot s) 
     changes_.clear();
     next_change_sequence_ = 1;
     diagnostics_ = {};
+
     journal_epoch_ = *next_journal_epoch;
     return foundation::Result<void>::Success();
 }
@@ -1133,6 +1292,7 @@ void OwnershipService::Record(OwnershipChange c) {
         ++diagnostics_.journal_dropped_changes;
         return;
     }
+
     c.sequence = next_change_sequence_;
     changes_.push_back(std::move(c));
     if (next_change_sequence_ == std::numeric_limits<std::uint64_t>::max())
@@ -1143,5 +1303,7 @@ void OwnershipService::Record(OwnershipChange c) {
         changes_.pop_front();
         ++diagnostics_.journal_dropped_changes;
     }
+
 }
+
 } // namespace epidemic::gameplay::ownership

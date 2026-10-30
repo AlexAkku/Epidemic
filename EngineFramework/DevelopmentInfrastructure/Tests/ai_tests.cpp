@@ -11,6 +11,7 @@ using namespace epidemic::gameplay::ai;
 namespace {
 GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
+
 }
 
 AIInputValue FixedInput(AIInputKeyId key, Fixed value, AIAccessFlag access) {
@@ -35,8 +36,10 @@ class FlakyEvaluator final : public IAIConsiderationEvaluator {
             return epidemic::foundation::Result<Fixed>::Failure(
                 epidemic::foundation::Error::Create("test.flaky", "forced evaluator failure"));
         }
+
         return epidemic::foundation::Result<Fixed>::Success(kFixedOne);
     }
+
 };
 
 class ThrowingEvaluator final : public IAIConsiderationEvaluator {
@@ -45,13 +48,14 @@ class ThrowingEvaluator final : public IAIConsiderationEvaluator {
                                                  const AITargetCandidate *) const override {
         throw std::runtime_error("boom");
     }
+
 };
 
-epidemic::foundation::Result<void>
-RegisterCoreDefinitions(AIService &service, AIProfileId profile_id, AIGoalId goal_id, AIIntentTypeId intent_type,
-                        AIInputKeyId score_key,
-                        AIMaterializationPolicy materialization = AIMaterializationPolicy::AbstractCapable,
-                        GameplayDuration repeat_cooldown = {}) {
+epidemic::foundation::Result<void> RegisterCoreDefinitions(
+    AIService &service, AIProfileId profile_id, AIGoalId goal_id, AIIntentTypeId intent_type,
+    AIInputKeyId score_key,
+    AIMaterializationPolicy materialization = AIMaterializationPolicy::AbstractCapable,
+    GameplayDuration repeat_cooldown = {}) {
     AIGoalDefinition goal;
     goal.id = goal_id;
     goal.canonical_name = "game.attack_target";
@@ -64,6 +68,7 @@ RegisterCoreDefinitions(AIService &service, AIProfileId profile_id, AIGoalId goa
     consideration.scope = AIConsiderationScope::Target;
     consideration.weight_micro = kFixedOne;
     goal.considerations = {consideration};
+
     if (auto result = service.RegisterGoal(goal); !result)
         return result;
 
@@ -71,13 +76,16 @@ RegisterCoreDefinitions(AIService &service, AIProfileId profile_id, AIGoalId goa
     profile.id = profile_id;
     profile.canonical_name = "game.guard";
     profile.default_goals = {goal_id};
+
     profile.materialization_policy = materialization;
     profile.think_interval = {1};
+
     profile.goal_repeat_cooldown = repeat_cooldown;
     if (auto result = service.RegisterProfile(profile); !result)
         return result;
     return epidemic::foundation::Result<void>::Success();
 }
+
 } // namespace
 
 int main() {
@@ -120,29 +128,40 @@ int main() {
 
     AIContextSnapshot context;
     context.now = {5};
+
     context.materialized = true;
     context.runtime_projection_available = true;
-    context.targets = {
-        {target_b, AITargetSource::Perceived, {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}},
-        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 400'000, AIAccessFlag::PerceivedState)}}};
+    context.targets = {{target_b,
+                        AITargetSource::Perceived,
+                        {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}},
+                       {target_a,
+                        AITargetSource::Perceived,
+                        {FixedInput(score_key, 400'000, AIAccessFlag::PerceivedState)}}};
     GameplayContext tick1;
     tick1.tick = {1};
+
     tick1.time = {5};
+
     auto early = ai.Think(guard, context, tick1);
-    if (!early || !early.Value().deferred || early.Value().defer_reason != AIThinkDeferReason::NotDue)
+    if (!early || !early.Value().deferred ||
+        early.Value().defer_reason != AIThinkDeferReason::NotDue)
         return 8;
     if (!ai.FindDueAgents({9}, 10).empty() || ai.FindDueAgents({10}, 10).size() != 1)
         return 9;
 
     context.now = {10};
+
     tick1.time = {10};
+
     auto thought = ai.Think(guard, context, tick1);
     if (!thought || !thought.Value().intent || thought.Value().intent->target != target_b)
         return 10;
     const auto intent_id = thought.Value().intent->id;
     GameplayContext t11;
     t11.tick = {2};
+
     t11.time = {11};
+
     if (ai.MarkIntentSucceeded(intent_id, t11))
         return 11;
     if (!ai.MarkIntentAccepted(intent_id, t11) || !ai.MarkIntentRunning(intent_id, t11))
@@ -151,23 +170,28 @@ int main() {
         return 13;
     GameplayContext t12;
     t12.tick = {3};
+
     t12.time = {12};
+
     if (!ai.MarkIntentSucceeded(intent_id, t12))
         return 14;
     const auto *after_success = ai.FindAgent(guard);
-    if (!after_success || after_success->activity != AIAgentActivity::Idle || after_success->current_intent ||
-        after_success->next_think_at.ticks != 12)
+    if (!after_success || after_success->activity != AIAgentActivity::Idle ||
+        after_success->current_intent || after_success->next_think_at.ticks != 12)
         return 15;
 
     context.now = {12};
+
     auto repeat_blocked = ai.Think(guard, context, t12);
-    if (!repeat_blocked || repeat_blocked.Value().intent || ai.FindAgent(guard)->next_think_at.ticks != 13)
+    if (!repeat_blocked || repeat_blocked.Value().intent ||
+        ai.FindAgent(guard)->next_think_at.ticks != 13)
         return 16;
 
-    if (!ai.SetBlackboard(guard, persistent_key.key, persistent_key.value_type, {std::byte{1}, std::byte{2}}, {12},
-                          t12))
+    if (!ai.SetBlackboard(guard, persistent_key.key, persistent_key.value_type,
+                          {std::byte{1}, std::byte{2}}, {12}, t12))
         return 17;
-    if (!ai.SetBlackboard(guard, session_key.key, session_key.value_type, {std::byte{3}}, {12}, t12))
+    if (!ai.SetBlackboard(guard, session_key.key, session_key.value_type, {std::byte{3}}, {12},
+                          t12))
         return 18;
     if (!ai.FindBlackboard(guard, persistent_key.key) || !ai.FindBlackboard(guard, session_key.key))
         return 19;
@@ -180,8 +204,8 @@ int main() {
     AIService restored;
     if (!RegisterCoreDefinitions(restored, profile_id, goal_id, intent_type, score_key,
                                  AIMaterializationPolicy::AbstractCapable, GameplayDuration{5}) ||
-        !restored.RegisterBlackboardKey(persistent_key) || !restored.RegisterBlackboardKey(session_key) ||
-        !restored.Freeze())
+        !restored.RegisterBlackboardKey(persistent_key) ||
+        !restored.RegisterBlackboardKey(session_key) || !restored.Freeze())
         return 21;
     if (!restored.RestoreSnapshot(snapshot))
         return 22;
@@ -203,21 +227,25 @@ int main() {
         return 25;
     AIContextSnapshot abstract_context = context;
     abstract_context.now = {0};
+
     abstract_context.runtime_projection_available = false;
     auto materialization_deferred = projection_required.Think(guard, abstract_context, {});
     if (!materialization_deferred || !materialization_deferred.Value().deferred ||
-        materialization_deferred.Value().defer_reason != AIThinkDeferReason::MaterializationUnavailable)
+        materialization_deferred.Value().defer_reason !=
+            AIThinkDeferReason::MaterializationUnavailable)
         return 26;
 
     AIService budgeted;
-    if (!RegisterCoreDefinitions(budgeted, profile_id, goal_id, intent_type, score_key) || !budgeted.Freeze() ||
-        !budgeted.RegisterAgent(guard, profile_id))
+    if (!RegisterCoreDefinitions(budgeted, profile_id, goal_id, intent_type, score_key) ||
+        !budgeted.Freeze() || !budgeted.RegisterAgent(guard, profile_id))
         return 27;
     budgeted.SetBudget({10, 10, 1, 10});
     AIContextSnapshot many_targets = context;
     many_targets.now = {0};
+
     GameplayContext budget_tick;
     budget_tick.tick = {100};
+
     auto budget_result = budgeted.Think(guard, many_targets, budget_tick);
     if (!budget_result || !budget_result.Value().deferred ||
         budget_result.Value().defer_reason != AIThinkDeferReason::BudgetExceeded ||
@@ -239,28 +267,31 @@ int main() {
     throwing_consideration.evaluator = throwing_evaluator;
     throwing_consideration.weight_micro = kFixedOne;
     throwing_goal.considerations = {throwing_consideration};
+
     if (!guarded.RegisterGoal(throwing_goal))
         return 30;
     AIProfile throwing_profile;
     throwing_profile.id = AIProfileId::FromString("game.throwing_profile");
     throwing_profile.canonical_name = "game.throwing_profile";
     throwing_profile.default_goals = {throwing_goal.id};
+
     if (!guarded.RegisterProfile(throwing_profile) || !guarded.Freeze() ||
         !guarded.RegisterAgent(guard, throwing_profile.id))
         return 31;
     AIContextSnapshot throwing_context;
     throwing_context.now = {0};
+
     auto throwing_result = guarded.Think(guard, throwing_context, {});
     if (throwing_result || guarded.FindAgent(guard)->activity != AIAgentActivity::Idle ||
         guarded.FindAgent(guard)->current_intent)
         return 32;
 
     AIService lifecycle;
-    if (!RegisterCoreDefinitions(lifecycle, profile_id, goal_id, intent_type, score_key) || !lifecycle.Freeze() ||
-        !lifecycle.RegisterAgent(guard, profile_id))
+    if (!RegisterCoreDefinitions(lifecycle, profile_id, goal_id, intent_type, score_key) ||
+        !lifecycle.Freeze() || !lifecycle.RegisterAgent(guard, profile_id))
         return 33;
-    if (!lifecycle.DisableAgent(guard, {}) || !lifecycle.EnableAgent(guard, {}) || !lifecycle.SuspendAgent(guard, {}) ||
-        !lifecycle.ResumeAgent(guard, {0}, {}))
+    if (!lifecycle.DisableAgent(guard, {}) || !lifecycle.EnableAgent(guard, {}) ||
+        !lifecycle.SuspendAgent(guard, {}) || !lifecycle.ResumeAgent(guard, {0}, {}))
         return 34;
     lifecycle.SetChangeJournalCapacity(3);
     if (!lifecycle.ScheduleThink(guard, {1}) || !lifecycle.ScheduleThink(guard, {2}) ||
@@ -275,8 +306,8 @@ int main() {
     AIAccessPolicy known_only;
     known_only.id = AIAccessPolicyId::FromString("game.known_only");
     known_only.canonical_name = "game.known_only";
-    known_only.flags =
-        static_cast<std::uint32_t>(AIAccessFlag::SelfState) | static_cast<std::uint32_t>(AIAccessFlag::KnownState);
+    known_only.flags = static_cast<std::uint32_t>(AIAccessFlag::SelfState) |
+                       static_cast<std::uint32_t>(AIAccessFlag::KnownState);
     if (!access_filtered.RegisterAccessPolicy(known_only))
         return 37;
     AIGoalDefinition access_goal;
@@ -290,20 +321,24 @@ int main() {
     access_consideration.input_key = score_key;
     access_consideration.scope = AIConsiderationScope::Target;
     access_goal.considerations = {access_consideration};
+
     if (!access_filtered.RegisterGoal(access_goal))
         return 38;
     AIProfile access_profile;
     access_profile.id = profile_id;
     access_profile.canonical_name = "game.guard";
     access_profile.default_goals = {goal_id};
+
     access_profile.access_policy = known_only.id;
     if (!access_filtered.RegisterProfile(access_profile) || !access_filtered.Freeze() ||
         !access_filtered.RegisterAgent(guard, profile_id))
         return 39;
     AIContextSnapshot perceived_only;
     perceived_only.now = {0};
-    perceived_only.targets = {
-        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}}};
+
+    perceived_only.targets = {{target_a,
+                               AITargetSource::Perceived,
+                               {FixedInput(score_key, 900'000, AIAccessFlag::PerceivedState)}}};
     auto filtered_out = access_filtered.Think(guard, perceived_only, {});
     if (!filtered_out || filtered_out.Value().intent)
         return 40;
@@ -311,26 +346,32 @@ int main() {
         return 41;
     AIContextSnapshot known_context;
     known_context.now = {1};
-    known_context.targets = {
-        {target_b, AITargetSource::Known, {FixedInput(score_key, 900'000, AIAccessFlag::KnownState)}}};
+
+    known_context.targets = {{target_b,
+                              AITargetSource::Known,
+                              {FixedInput(score_key, 900'000, AIAccessFlag::KnownState)}}};
     auto known_selected = access_filtered.Think(guard, known_context, {});
-    if (!known_selected || !known_selected.Value().intent || known_selected.Value().intent->target != target_b)
+    if (!known_selected || !known_selected.Value().intent ||
+        known_selected.Value().intent->target != target_b)
         return 42;
 
     AIService live_source;
-    if (!RegisterCoreDefinitions(live_source, profile_id, goal_id, intent_type, score_key) || !live_source.Freeze() ||
-        !live_source.RegisterAgent(guard, profile_id))
+    if (!RegisterCoreDefinitions(live_source, profile_id, goal_id, intent_type, score_key) ||
+        !live_source.Freeze() || !live_source.RegisterAgent(guard, profile_id))
         return 43;
     AIContextSnapshot live_context = context;
     live_context.now = {0};
+
     auto live_think = live_source.Think(guard, live_context, {});
     if (!live_think || !live_think.Value().intent)
         return 44;
     auto live_snapshot = live_source.CaptureSnapshot();
     live_snapshot.intent_ids.next = 1;
     AIService transactional_restore;
-    if (!RegisterCoreDefinitions(transactional_restore, profile_id, goal_id, intent_type, score_key) ||
-        !transactional_restore.Freeze() || !transactional_restore.RegisterAgent(Ref("existing"), profile_id))
+    if (!RegisterCoreDefinitions(transactional_restore, profile_id, goal_id, intent_type,
+                                 score_key) ||
+        !transactional_restore.Freeze() ||
+        !transactional_restore.RegisterAgent(Ref("existing"), profile_id))
         return 45;
     if (transactional_restore.RestoreSnapshot(std::move(live_snapshot)) ||
         !transactional_restore.FindAgent(Ref("existing")))
@@ -358,12 +399,16 @@ int main() {
         resumed_changes.changes.front().sequence <= restored_change_cursor.sequence)
         return 51;
     if (restored_change_cursor.sequence > 0 &&
-        !sequence_restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
+        !sequence_restored
+             .ReadChangesSince(
+                 restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
              .snapshot_required)
         return 52;
     const auto restored_latest = resumed_changes.latest_cursor;
     if (restored_latest.sequence != std::numeric_limits<std::uint64_t>::max() &&
-        !sequence_restored.ReadChangesSince(restored_latest.AtSequence(restored_latest.sequence + 1)).snapshot_required)
+        !sequence_restored
+             .ReadChangesSince(restored_latest.AtSequence(restored_latest.sequence + 1))
+             .snapshot_required)
         return 56;
 
     sequence_snapshot.next_change_sequence = std::numeric_limits<std::uint64_t>::max();
@@ -373,8 +418,9 @@ int main() {
         return 53;
     if (!exhausted_sequence.RegisterAgent(Ref("sequence.max"), profile_id))
         return 54;
-    auto max_batch = exhausted_sequence.ReadChangesSince(
-        exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
+    auto max_batch =
+        exhausted_sequence.ReadChangesSince(exhausted_sequence.LatestChangeCursor().AtSequence(
+            std::numeric_limits<std::uint64_t>::max() - 1));
     if (max_batch.snapshot_required || max_batch.changes.size() != 1 ||
         max_batch.changes.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 55;
@@ -387,18 +433,27 @@ int main() {
     invalid_budget.SetBudget({1, 10, 10, 10});
     AIContextSnapshot duplicate_context;
     duplicate_context.now = {0};
-    duplicate_context.targets = {
-        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 500'000, AIAccessFlag::PerceivedState)}},
-        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 600'000, AIAccessFlag::PerceivedState)}}};
+
+    duplicate_context.targets = {{target_a,
+                                  AITargetSource::Perceived,
+                                  {FixedInput(score_key, 500'000, AIAccessFlag::PerceivedState)}},
+                                 {target_a,
+                                  AITargetSource::Perceived,
+                                  {FixedInput(score_key, 600'000, AIAccessFlag::PerceivedState)}}};
     GameplayContext same_tick;
     same_tick.tick = {700};
+
     same_tick.time = {0};
+
     if (invalid_budget.Think(guard, duplicate_context, same_tick))
         return 58;
     AIContextSnapshot valid_after_invalid;
     valid_after_invalid.now = {0};
+
     valid_after_invalid.targets = {
-        {target_a, AITargetSource::Perceived, {FixedInput(score_key, 700'000, AIAccessFlag::PerceivedState)}}};
+        {target_a,
+         AITargetSource::Perceived,
+         {FixedInput(score_key, 700'000, AIAccessFlag::PerceivedState)}}};
     auto valid_same_tick = invalid_budget.Think(guard, valid_after_invalid, same_tick);
     if (!valid_same_tick || !valid_same_tick.Value().intent)
         return 59;
@@ -420,28 +475,34 @@ int main() {
     flaky_consideration.scope = AIConsiderationScope::Context;
     flaky_consideration.weight_micro = kFixedOne;
     flaky_goal.considerations = {flaky_consideration};
+
     if (!evaluator_budget.RegisterGoal(flaky_goal))
         return 61;
     AIProfile flaky_profile;
     flaky_profile.id = AIProfileId::FromString("game.flaky_profile");
     flaky_profile.canonical_name = "game.flaky_profile";
     flaky_profile.default_goals = {flaky_goal.id};
+
     if (!evaluator_budget.RegisterProfile(flaky_profile) || !evaluator_budget.Freeze() ||
         !evaluator_budget.RegisterAgent(guard, flaky_profile.id))
         return 62;
     evaluator_budget.SetBudget({1, 1, 1, 1});
     AIContextSnapshot flaky_context;
     flaky_context.now = {0};
+
     GameplayContext flaky_tick;
     flaky_tick.tick = {701};
+
     flaky_tick.time = {0};
+
     if (evaluator_budget.Think(guard, flaky_context, flaky_tick))
         return 63;
     auto flaky_retry = evaluator_budget.Think(guard, flaky_context, flaky_tick);
     if (!flaky_retry || !flaky_retry.Value().intent || flaky.calls != 2)
         return 64;
 
-    // AI-03/04/05/09: allocation failures in staged registry/index publication are controlled and atomic.
+    // AI-03/04/05/09: allocation failures in staged registry/index publication are controlled and
+    // atomic.
     AIService profile_atomic;
     AIGoalDefinition profile_goal;
     profile_goal.id = AIGoalId::FromString("game.profile_atomic_goal");
@@ -454,20 +515,25 @@ int main() {
     atomic_profile.id = AIProfileId::FromString("game.profile_atomic");
     atomic_profile.canonical_name = "game.profile_atomic";
     atomic_profile.default_goals = {profile_goal.id};
+
     const auto profile_revision_before = profile_atomic.CurrentRevision();
     {
         epidemic::gameplay::ai::internal_test::ArmAllocationFault(
-            epidemic::gameplay::ai::internal_test::AllocationFaultPoint::RegisterProfilePublication);
+            epidemic::gameplay::ai::internal_test::AllocationFaultPoint::
+                RegisterProfilePublication);
         auto registered = profile_atomic.RegisterProfile(atomic_profile);
         epidemic::gameplay::ai::internal_test::ResetAllocationFault();
         if (registered)
             return 66;
     }
-    if (profile_atomic.FindProfile(atomic_profile.id) || profile_atomic.CurrentRevision() != profile_revision_before)
+
+    if (profile_atomic.FindProfile(atomic_profile.id) ||
+        profile_atomic.CurrentRevision() != profile_revision_before)
         return 67;
 
     AIService agent_atomic;
-    if (!RegisterCoreDefinitions(agent_atomic, profile_id, goal_id, intent_type, score_key) || !agent_atomic.Freeze())
+    if (!RegisterCoreDefinitions(agent_atomic, profile_id, goal_id, intent_type, score_key) ||
+        !agent_atomic.Freeze())
         return 68;
     const auto agent_revision_before = agent_atomic.CurrentRevision();
     {
@@ -478,6 +544,7 @@ int main() {
         if (registered)
             return 69;
     }
+
     if (agent_atomic.FindAgent(guard) || agent_atomic.CurrentRevision() != agent_revision_before ||
         !agent_atomic.FindDueAgents({100}, 10).empty())
         return 70;
@@ -493,6 +560,7 @@ int main() {
         if (scheduled)
             return 72;
     }
+
     if (agent_atomic.CurrentRevision() != schedule_revision_before ||
         agent_atomic.FindAgent(guard)->next_think_at != schedule_time_before ||
         agent_atomic.FindDueAgents({10}, 10).size() != 1)
@@ -502,25 +570,32 @@ int main() {
     using AIFaultPoint = epidemic::gameplay::ai::internal_test::AllocationFaultPoint;
     for (const auto point : {AIFaultPoint::ThinkDecisionStaging, AIFaultPoint::ThinkIntentIndex}) {
         AIService decision_atomic;
-        if (!RegisterCoreDefinitions(decision_atomic, profile_id, goal_id, intent_type, score_key) ||
+        if (!RegisterCoreDefinitions(decision_atomic, profile_id, goal_id, intent_type,
+                                     score_key) ||
             !decision_atomic.Freeze() || !decision_atomic.RegisterAgent(guard, profile_id))
             return 74;
         const auto before = decision_atomic.CaptureSnapshot();
         AIContextSnapshot decision_context;
         decision_context.now = {0};
+
         decision_context.targets = {
-            {target_a, AITargetSource::Perceived, {FixedInput(score_key, 800'000, AIAccessFlag::PerceivedState)}}};
+            {target_a,
+             AITargetSource::Perceived,
+             {FixedInput(score_key, 800'000, AIAccessFlag::PerceivedState)}}};
         GameplayContext decision_tick;
         decision_tick.tick = {702};
+
         epidemic::gameplay::ai::internal_test::ArmAllocationFault(point);
         const auto result = decision_atomic.Think(guard, decision_context, decision_tick);
         epidemic::gameplay::ai::internal_test::ResetAllocationFault();
         if (result || !result.GetError().HasCode("gameplay.ai.allocation_failed"))
             return 75;
         const auto after = decision_atomic.CaptureSnapshot();
-        if (after.revision != before.revision || after.intent_ids.scope != before.intent_ids.scope ||
+        if (after.revision != before.revision ||
+            after.intent_ids.scope != before.intent_ids.scope ||
             after.intent_ids.next != before.intent_ids.next || after.agents.size() != 1 ||
-            after.agents.front().current_intent || after.agents.front().activity != AIAgentActivity::Idle)
+            after.agents.front().current_intent ||
+            after.agents.front().activity != AIAgentActivity::Idle)
             return 76;
     }
 
@@ -544,6 +619,7 @@ int main() {
 
     // Goal 4 exact public-API evidence: virtual evaluator destruction through the public interface.
     IAIConsiderationEvaluator *ai_destructor_probe = new FlakyEvaluator{};
+
     delete ai_destructor_probe;
 
     return 0;

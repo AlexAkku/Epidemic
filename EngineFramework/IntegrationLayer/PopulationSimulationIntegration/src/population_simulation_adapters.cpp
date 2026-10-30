@@ -22,7 +22,8 @@ foundation::Error Error(std::string_view code, std::string_view message) {
 }
 
 [[nodiscard]] bool IsAllocatableState(population::PopulationUnitState state) noexcept {
-    return state == population::PopulationUnitState::Latent || state == population::PopulationUnitState::Abstract;
+    return state == population::PopulationUnitState::Latent ||
+           state == population::PopulationUnitState::Abstract;
 }
 
 void AppendU64(std::vector<std::byte> &out, std::uint64_t value) {
@@ -33,7 +34,8 @@ void AppendU64(std::vector<std::byte> &out, std::uint64_t value) {
 [[nodiscard]] std::uint64_t ReadU64(const std::byte *data) noexcept {
     std::uint64_t value = 0;
     for (std::uint32_t shift = 0; shift < 64; shift += 8)
-        value |= static_cast<std::uint64_t>(std::to_integer<std::uint8_t>(data[shift / 8])) << shift;
+        value |= static_cast<std::uint64_t>(std::to_integer<std::uint8_t>(data[shift / 8]))
+                 << shift;
     return value;
 }
 
@@ -46,37 +48,38 @@ void AppendU64(std::vector<std::byte> &out, std::uint64_t value) {
     return payload;
 }
 
-[[nodiscard]] bool IsDutyPressureSource(const std::vector<std::byte> &payload, roles_jobs::DutyId duty) noexcept {
-    return payload.size() == 17 && payload[0] == std::byte{1} && ReadU64(payload.data() + 1) == duty.value.High() &&
+[[nodiscard]] bool IsDutyPressureSource(const std::vector<std::byte> &payload,
+                                        roles_jobs::DutyId duty) noexcept {
+    return payload.size() == 17 && payload[0] == std::byte{1} &&
+           ReadU64(payload.data() + 1) == duty.value.High() &&
            ReadU64(payload.data() + 9) == duty.value.Low();
 }
 
 [[nodiscard]] bool IsTerminalAssignment(roles_jobs::AssignmentState state) noexcept {
-    return state == roles_jobs::AssignmentState::Completed || state == roles_jobs::AssignmentState::Cancelled ||
+    return state == roles_jobs::AssignmentState::Completed ||
+           state == roles_jobs::AssignmentState::Cancelled ||
            state == roles_jobs::AssignmentState::Invalid;
 }
+
 } // namespace
 
 PopulationBackedEncounterPlan *
 PopulationEncounterAdapter::FindMutablePlan(encounters::SpawnRequestId request) noexcept {
-    auto it = std::find_if(plans_.begin(), plans_.end(), [request](const auto &plan) {
-        return plan.request == request;
-    });
+    auto it = std::find_if(plans_.begin(), plans_.end(),
+                           [request](const auto &plan) { return plan.request == request; });
     return it == plans_.end() ? nullptr : &*it;
 }
 
 const PopulationBackedEncounterPlan *
 PopulationEncounterAdapter::FindPlan(encounters::SpawnRequestId request) const noexcept {
-    auto it = std::find_if(plans_.begin(), plans_.end(), [request](const auto &plan) {
-        return plan.request == request;
-    });
+    auto it = std::find_if(plans_.begin(), plans_.end(),
+                           [request](const auto &plan) { return plan.request == request; });
     return it == plans_.end() ? nullptr : &*it;
 }
 
-foundation::Result<PopulationBackedSpawnResult>
-PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &pop, encounters::EncountersService &enc,
-                                                population::PopulationGroupId group, encounters::SpawnRequest request,
-                                                std::size_t max_units) {
+foundation::Result<PopulationBackedSpawnResult> PopulationEncounterAdapter::SpawnFromPopulation(
+    population::PopulationService &pop, encounters::EncountersService &enc,
+    population::PopulationGroupId group, encounters::SpawnRequest request, std::size_t max_units) {
     // Retain terminal Population-side idempotency records for as long as Encounters
     // retains the matching encounter/request. Encounters removes its SpawnRequestId
     // record when the terminal encounter itself is pruned, so only then may the
@@ -84,16 +87,20 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
     // idempotency horizon.
     plans_.erase(std::remove_if(plans_.begin(), plans_.end(),
                                 [&](const auto &plan) {
-                                    const bool terminal = plan.state == PopulationEncounterPlanState::Completed ||
-                                                          plan.state == PopulationEncounterPlanState::Failed;
+                                    const bool terminal =
+                                        plan.state == PopulationEncounterPlanState::Completed ||
+                                        plan.state == PopulationEncounterPlanState::Failed;
                                     return terminal && plan.encounter_instance.IsValid() &&
-                                           enc.GetEncounterInstance(plan.encounter_instance) == nullptr;
+                                           enc.GetEncounterInstance(plan.encounter_instance) ==
+                                               nullptr;
                                 }),
                  plans_.end());
 
-    if (!group.IsValid() || !pop.GetGroup(group) || !request.encounter.IsValid() || !request.area.IsValid())
+    if (!group.IsValid() || !pop.GetGroup(group) || !request.encounter.IsValid() ||
+        !request.area.IsValid())
         return foundation::Result<PopulationBackedSpawnResult>::Failure(
-            Error("gameplay.population_sim.invalid_population_spawn", "invalid population-backed encounter request"));
+            Error("gameplay.population_sim.invalid_population_spawn",
+                  "invalid population-backed encounter request"));
 
     if (request.id.IsValid()) {
         if (const auto *existing = FindPlan(request.id)) {
@@ -104,10 +111,12 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
                     Error("gameplay.population_sim.spawn_request_conflict",
                           "spawn request id already belongs to another plan"));
             if (existing->state == PopulationEncounterPlanState::RollbackPending)
-                return foundation::Result<PopulationBackedSpawnResult>::Failure(foundation::Error::Create(
-                    "gameplay.population_sim.reconciliation_required",
-                    "population-backed encounter rollback requires reconciliation",
-                    std::to_string(request.id.value.High()) + ":" + std::to_string(request.id.value.Low())));
+                return foundation::Result<PopulationBackedSpawnResult>::Failure(
+                    foundation::Error::
+                        Create("gameplay.population_sim.reconciliation_required",
+                               "population-backed encounter rollback requires reconciliation",
+                               std::to_string(request.id.value.High()) + ":" +
+                                   std::to_string(request.id.value.Low())));
             PopulationBackedSpawnResult result;
             result.spawn.request_id = existing->request;
             result.spawn.encounter_instance = existing->encounter_instance;
@@ -121,9 +130,12 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
                     result.spawn.linked_population_units.push_back(
                         population::PopulationService::ResidentRef(slot.unit));
                 }
+
             }
+
             return foundation::Result<PopulationBackedSpawnResult>::Success(std::move(result));
         }
+
     }
 
     auto preview = enc.PreviewSpawnArchetypes(request);
@@ -139,9 +151,8 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
                   "encounter requires more population units than allowed"));
 
     auto candidates = pop.FindUnitsByGroup(group);
-    std::sort(candidates.begin(), candidates.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(candidates.begin(), candidates.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     std::vector<population::PopulationUnitId> selected;
     std::vector<population::PopulationTemplateId> selected_templates;
     selected.reserve(preview.Value().size());
@@ -160,6 +171,7 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
             match = &unit;
             break;
         }
+
         if (!match)
             return foundation::Result<PopulationBackedSpawnResult>::Failure(
                 Error("gameplay.population_sim.population_slot_unavailable",
@@ -179,6 +191,7 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
         return foundation::Result<PopulationBackedSpawnResult>::Failure(reserved.GetError());
 
     request.id = encounters::SpawnRequestId{reserved.Value().correlation};
+
     request.persistence = encounters::SpawnPersistencePolicy::PopulationBacked;
 
     PopulationBackedEncounterPlan plan;
@@ -189,10 +202,11 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
     plan.seed = request.seed;
     plan.slots.reserve(reserved.Value().tokens.size());
     for (std::size_t index = 0; index < selected.size(); ++index) {
-        const auto token = std::find_if(reserved.Value().tokens.begin(), reserved.Value().tokens.end(),
-                                        [unit = selected[index]](const auto &candidate) {
-                                            return candidate.unit == unit;
-                                        });
+        const auto token =
+            std::find_if(reserved.Value().tokens.begin(), reserved.Value().tokens.end(),
+                         [unit = selected[index]](const auto &candidate) {
+                             return candidate.unit == unit;
+                         });
         if (token == reserved.Value().tokens.end())
             continue;
         PopulationBackedEncounterSlot slot;
@@ -203,7 +217,8 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
         plan.slots.push_back(slot);
     }
 
-    auto fail_with_recovery = [&](foundation::Error original) -> foundation::Result<PopulationBackedSpawnResult> {
+    auto fail_with_recovery =
+        [&](foundation::Error original) -> foundation::Result<PopulationBackedSpawnResult> {
         bool rollback_ok = true;
         if (plan.encounter_instance.IsValid()) {
             const auto *encounter = enc.GetEncounterInstance(plan.encounter_instance);
@@ -211,43 +226,50 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
                 !enc.FailEncounter(plan.encounter_instance, request.context))
                 rollback_ok = false;
         }
+
         for (const auto &token : reserved.Value().tokens) {
             const auto *allocation = pop.GetAllocation(token.allocation);
             if (allocation && allocation->state == population::PopulationAllocationState::Active &&
                 !pop.ReleaseAllocation(token.allocation, request.context))
                 rollback_ok = false;
         }
+
         if (rollback_ok)
             return foundation::Result<PopulationBackedSpawnResult>::Failure(std::move(original));
 
         plan.state = PopulationEncounterPlanState::RollbackPending;
         plans_.push_back(plan);
-        return foundation::Result<PopulationBackedSpawnResult>::Failure(foundation::Error::Create(
-            "gameplay.population_sim.reconciliation_required", "population-backed encounter rollback is incomplete",
-            std::to_string(plan.request.value.High()) + ":" + std::to_string(plan.request.value.Low())));
+        return foundation::Result<PopulationBackedSpawnResult>::Failure(
+            foundation::Error::Create("gameplay.population_sim.reconciliation_required",
+                                      "population-backed encounter rollback is incomplete",
+                                      std::to_string(plan.request.value.High()) + ":" +
+                                          std::to_string(plan.request.value.Low())));
     };
 
     auto spawn = enc.SpawnEncounter(request);
-    const bool population_spawn_created =
-        spawn.state == encounters::SpawnResultState::Succeeded ||
-        (spawn.state == encounters::SpawnResultState::Deferred && spawn.encounter_instance.IsValid());
+    const bool population_spawn_created = spawn.state == encounters::SpawnResultState::Succeeded ||
+                                          (spawn.state == encounters::SpawnResultState::Deferred &&
+                                           spawn.encounter_instance.IsValid());
     plan.encounter_instance = spawn.encounter_instance;
     if (!population_spawn_created)
-        return fail_with_recovery(
-            Error("gameplay.population_sim.encounter_spawn_failed", "population-backed encounter spawn failed"));
+        return fail_with_recovery(Error("gameplay.population_sim.encounter_spawn_failed",
+                                        "population-backed encounter spawn failed"));
     spawn.state = encounters::SpawnResultState::Succeeded;
 
     if (spawn.spawned_records.size() != preview.Value().size() ||
-        reserved.Value().tokens.size() != preview.Value().size() || plan.slots.size() != preview.Value().size())
-        return fail_with_recovery(Error("gameplay.population_sim.spawn_plan_mismatch",
-                                        "encounter result count does not match reserved population plan"));
+        reserved.Value().tokens.size() != preview.Value().size() ||
+        plan.slots.size() != preview.Value().size())
+        return fail_with_recovery(
+            Error("gameplay.population_sim.spawn_plan_mismatch",
+                  "encounter result count does not match reserved population plan"));
 
     for (std::size_t index = 0; index < plan.slots.size(); ++index) {
         const auto *record = enc.GetSpawnedEntityRecord(spawn.spawned_records[index]);
         if (!record || record->archetype != plan.slots[index].archetype ||
             record->encounter != spawn.encounter_instance)
-            return fail_with_recovery(Error("gameplay.population_sim.spawn_plan_mismatch",
-                                            "encounter spawned record does not match population plan"));
+            return fail_with_recovery(
+                Error("gameplay.population_sim.spawn_plan_mismatch",
+                      "encounter spawned record does not match population plan"));
         plan.slots[index].spawned_record = spawn.spawned_records[index];
     }
 
@@ -259,42 +281,51 @@ PopulationEncounterAdapter::SpawnFromPopulation(population::PopulationService &p
 }
 
 foundation::Result<void> PopulationEncounterAdapter::BindSpawnedEntity(
-    population::PopulationService &pop, encounters::EncountersService &enc, encounters::SpawnRequestId request,
-    encounters::SpawnedEntityRecordId spawned_record, GameplayObjectRef entity, GameplayContext context) {
+    population::PopulationService &pop, encounters::EncountersService &enc,
+    encounters::SpawnRequestId request, encounters::SpawnedEntityRecordId spawned_record,
+    GameplayObjectRef entity, GameplayContext context) {
     auto *plan = FindMutablePlan(request);
     if (!plan || plan->state == PopulationEncounterPlanState::Failed || !entity.IsValid())
-        return foundation::Result<void>::Failure(Error("gameplay.population_sim.population_plan_missing",
-                                                       "population-backed encounter plan is unavailable"));
-    auto slot = std::find_if(plan->slots.begin(), plan->slots.end(), [spawned_record](const auto &candidate) {
-        return candidate.spawned_record == spawned_record;
-    });
+        return foundation::Result<void>::Failure(
+            Error("gameplay.population_sim.population_plan_missing",
+                  "population-backed encounter plan is unavailable"));
+    auto slot = std::find_if(plan->slots.begin(), plan->slots.end(),
+                             [spawned_record](const auto &candidate) {
+                                 return candidate.spawned_record == spawned_record;
+                             });
     if (slot == plan->slots.end())
-        return foundation::Result<void>::Failure(Error("gameplay.population_sim.population_slot_missing",
-                                                       "spawned record is not part of the population plan"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.population_sim.population_slot_missing",
+                  "spawned record is not part of the population plan"));
     if (slot->entity.IsValid() && slot->entity != entity)
-        return foundation::Result<void>::Failure(Error("gameplay.population_sim.population_slot_conflict",
-                                                       "population slot is already bound to another entity"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.population_sim.population_slot_conflict",
+                  "population slot is already bound to another entity"));
     if (slot->entity == entity)
         return foundation::Result<void>::Success();
 
     const auto *spawned = enc.GetSpawnedEntityRecord(slot->spawned_record);
-    if (!spawned || spawned->encounter != plan->encounter_instance || spawned->archetype != slot->archetype)
-        return foundation::Result<void>::Failure(Error("gameplay.population_sim.spawn_record_mismatch",
-                                                       "encounter spawned record no longer matches population plan"));
+    if (!spawned || spawned->encounter != plan->encounter_instance ||
+        spawned->archetype != slot->archetype)
+        return foundation::Result<void>::Failure(
+            Error("gameplay.population_sim.spawn_record_mismatch",
+                  "encounter spawned record no longer matches population plan"));
     if (!spawned->entity.IsValid()) {
         auto bound = enc.BindSpawnedEntity(slot->spawned_record, entity, context);
         if (!bound)
             return bound;
     } else if (spawned->entity != entity) {
-        return foundation::Result<void>::Failure(Error("gameplay.population_sim.spawn_entity_conflict",
-                                                       "encounter spawned record is bound to another entity"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.population_sim.spawn_entity_conflict",
+                  "encounter spawned record is bound to another entity"));
     }
 
     const auto *allocation = pop.GetAllocation(slot->allocation);
     if (!allocation || allocation->unit != slot->unit || allocation->correlation != request.value ||
         allocation->purpose != EncounterAllocationPurpose())
-        return foundation::Result<void>::Failure(Error("gameplay.population_sim.allocation_mismatch",
-                                                       "population allocation no longer matches encounter plan"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.population_sim.allocation_mismatch",
+                  "population allocation no longer matches encounter plan"));
     if (allocation->state == population::PopulationAllocationState::Active) {
         auto committed = pop.CommitAllocation(slot->allocation, entity, context);
         if (!committed)
@@ -307,29 +338,27 @@ foundation::Result<void> PopulationEncounterAdapter::BindSpawnedEntity(
     }
 
     slot->entity = entity;
-    if (std::all_of(plan->slots.begin(), plan->slots.end(), [](const auto &item) {
-            return item.entity.IsValid();
-        })) {
+    if (std::all_of(plan->slots.begin(), plan->slots.end(),
+                    [](const auto &item) { return item.entity.IsValid(); })) {
         plan->state = PopulationEncounterPlanState::Completed;
         pop.PruneTerminalAllocations(request.value);
         // Do not evict this completed plan here. Encounters still owns the
         // matching SpawnRequestId idempotency record; independent eviction would
         // allow Population to reserve a different resident set for the same request.
     }
+
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> PopulationEncounterAdapter::CancelPendingSpawn(population::PopulationService &pop,
-                                                                        encounters::EncountersService &enc,
-                                                                        encounters::SpawnRequestId request,
-                                                                        GameplayContext context) {
+foundation::Result<void> PopulationEncounterAdapter::CancelPendingSpawn(
+    population::PopulationService &pop, encounters::EncountersService &enc,
+    encounters::SpawnRequestId request, GameplayContext context) {
     auto *plan = FindMutablePlan(request);
     if (!plan)
         return foundation::Result<void>::Success();
     if (plan->state == PopulationEncounterPlanState::Completed ||
-        std::any_of(plan->slots.begin(), plan->slots.end(), [](const auto &slot) {
-            return slot.entity.IsValid();
-        }))
+        std::any_of(plan->slots.begin(), plan->slots.end(),
+                    [](const auto &slot) { return slot.entity.IsValid(); }))
         return foundation::Result<void>::Failure(
             Error("gameplay.population_sim.population_plan_reconciliation_required",
                   "population-backed encounter already committed entity bindings"));
@@ -341,6 +370,7 @@ foundation::Result<void> PopulationEncounterAdapter::CancelPendingSpawn(populati
             !pop.ReleaseAllocation(slot.allocation, context))
             rollback_ok = false;
     }
+
     if (plan->encounter_instance.IsValid()) {
         const auto *encounter = enc.GetEncounterInstance(plan->encounter_instance);
         if (encounter && encounter->state == encounters::EncounterState::Active &&
@@ -348,72 +378,84 @@ foundation::Result<void> PopulationEncounterAdapter::CancelPendingSpawn(populati
             rollback_ok = false;
     }
 
-    plan->state = rollback_ok ? PopulationEncounterPlanState::Failed : PopulationEncounterPlanState::RollbackPending;
+    plan->state = rollback_ok ? PopulationEncounterPlanState::Failed
+                              : PopulationEncounterPlanState::RollbackPending;
     if (!rollback_ok)
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "gameplay.population_sim.reconciliation_required",
-            "population-backed encounter rollback is still incomplete",
-            std::to_string(request.value.High()) + ":" + std::to_string(request.value.Low())));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.population_sim.reconciliation_required",
+                                      "population-backed encounter rollback is still incomplete",
+                                      std::to_string(request.value.High()) + ":" +
+                                          std::to_string(request.value.Low())));
     return foundation::Result<void>::Success();
 }
 
 PopulationEncounterAdapterSnapshot PopulationEncounterAdapter::CaptureSnapshot() const {
     PopulationEncounterAdapterSnapshot snapshot;
     snapshot.plans = plans_;
-    std::sort(snapshot.plans.begin(), snapshot.plans.end(), [](const auto &a, const auto &b) {
-        return a.request < b.request;
-    });
+    std::sort(snapshot.plans.begin(), snapshot.plans.end(),
+              [](const auto &a, const auto &b) { return a.request < b.request; });
     return snapshot;
 }
 
-foundation::Result<void> PopulationEncounterAdapter::RestoreSnapshot(PopulationEncounterAdapterSnapshot snapshot,
-                                                                     const population::PopulationService &pop,
-                                                                     const encounters::EncountersService &enc) {
+foundation::Result<void>
+PopulationEncounterAdapter::RestoreSnapshot(PopulationEncounterAdapterSnapshot snapshot,
+                                            const population::PopulationService &pop,
+                                            const encounters::EncountersService &enc) {
     std::vector<PopulationBackedEncounterPlan> validated;
-    std::sort(snapshot.plans.begin(), snapshot.plans.end(), [](const auto &a, const auto &b) {
-        return a.request < b.request;
-    });
+    std::sort(snapshot.plans.begin(), snapshot.plans.end(),
+              [](const auto &a, const auto &b) { return a.request < b.request; });
     for (std::size_t index = 0; index < snapshot.plans.size(); ++index) {
         auto plan = snapshot.plans[index];
-        if (!plan.request.IsValid() || !plan.encounter.IsValid() || !plan.group.IsValid() || !plan.area.IsValid() ||
-            plan.slots.empty() || (index > 0 && snapshot.plans[index - 1].request == plan.request))
-            return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_plan",
-                                                           "invalid population-backed encounter plan snapshot"));
+        if (!plan.request.IsValid() || !plan.encounter.IsValid() || !plan.group.IsValid() ||
+            !plan.area.IsValid() || plan.slots.empty() ||
+            (index > 0 && snapshot.plans[index - 1].request == plan.request))
+            return foundation::Result<void>::Failure(
+                Error("gameplay.population_sim.restore_invalid_plan",
+                      "invalid population-backed encounter plan snapshot"));
 
-        const auto *encounter =
-            plan.encounter_instance.IsValid() ? enc.GetEncounterInstance(plan.encounter_instance) : nullptr;
+        const auto *encounter = plan.encounter_instance.IsValid()
+                                    ? enc.GetEncounterInstance(plan.encounter_instance)
+                                    : nullptr;
         if ((plan.state == PopulationEncounterPlanState::AwaitingEntityBindings ||
              plan.state == PopulationEncounterPlanState::Completed) &&
             (!encounter || encounter->definition != plan.encounter || encounter->area != plan.area))
-            return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_plan",
-                                                           "population plan references an incompatible encounter"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.population_sim.restore_invalid_plan",
+                      "population plan references an incompatible encounter"));
         if (encounter && (encounter->definition != plan.encounter || encounter->area != plan.area))
-            return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_plan",
-                                                           "rollback plan references an incompatible encounter"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.population_sim.restore_invalid_plan",
+                      "rollback plan references an incompatible encounter"));
 
         std::unordered_set<population::PopulationUnitId, population::IdHash> units;
         std::unordered_set<encounters::SpawnedEntityRecordId, encounters::IdHash> spawned_records;
         for (auto &slot : plan.slots) {
             const auto *unit = pop.GetUnit(slot.unit);
-            const auto *definition = unit && unit->template_id.IsValid() ? pop.GetTemplate(unit->template_id) : nullptr;
-            if (!slot.allocation.IsValid() || !slot.unit.IsValid() || !slot.population_template.IsValid() ||
-                !slot.archetype.IsValid() || !unit || !definition || unit->template_id != slot.population_template ||
+            const auto *definition =
+                unit && unit->template_id.IsValid() ? pop.GetTemplate(unit->template_id) : nullptr;
+            if (!slot.allocation.IsValid() || !slot.unit.IsValid() ||
+                !slot.population_template.IsValid() || !slot.archetype.IsValid() || !unit ||
+                !definition || unit->template_id != slot.population_template ||
                 definition->entity_archetype != slot.archetype || !units.insert(slot.unit).second)
-                return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_slot",
-                                                               "invalid population-backed encounter slot snapshot"));
+                return foundation::Result<void>::Failure(
+                    Error("gameplay.population_sim.restore_invalid_slot",
+                          "invalid population-backed encounter slot snapshot"));
 
             const auto *allocation = pop.GetAllocation(slot.allocation);
-            const auto *spawned =
-                slot.spawned_record.IsValid() ? enc.GetSpawnedEntityRecord(slot.spawned_record) : nullptr;
+            const auto *spawned = slot.spawned_record.IsValid()
+                                      ? enc.GetSpawnedEntityRecord(slot.spawned_record)
+                                      : nullptr;
             if (plan.state == PopulationEncounterPlanState::AwaitingEntityBindings) {
                 if (!allocation || !spawned || allocation->unit != slot.unit ||
                     allocation->correlation != plan.request.value ||
                     allocation->purpose != EncounterAllocationPurpose() ||
                     allocation->state == population::PopulationAllocationState::Released ||
-                    spawned->encounter != plan.encounter_instance || spawned->archetype != slot.archetype ||
+                    spawned->encounter != plan.encounter_instance ||
+                    spawned->archetype != slot.archetype ||
                     !spawned_records.insert(slot.spawned_record).second)
-                    return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_slot",
-                                                                   "invalid pending population encounter slot"));
+                    return foundation::Result<void>::Failure(
+                        Error("gameplay.population_sim.restore_invalid_slot",
+                              "invalid pending population encounter slot"));
                 if (spawned->entity.IsValid() &&
                     allocation->state == population::PopulationAllocationState::Committed) {
                     if (spawned->entity != allocation->bound_entity)
@@ -422,45 +464,60 @@ foundation::Result<void> PopulationEncounterAdapter::RestoreSnapshot(PopulationE
                                   "encounter and population bindings disagree"));
                     slot.entity = spawned->entity;
                 }
+
             } else if (plan.state == PopulationEncounterPlanState::Completed) {
                 if (!spawned || !slot.entity.IsValid() || spawned->entity != slot.entity ||
-                    spawned->encounter != plan.encounter_instance || spawned->archetype != slot.archetype ||
-                    unit->state != population::PopulationUnitState::Materialized || unit->entity != slot.entity ||
+                    spawned->encounter != plan.encounter_instance ||
+                    spawned->archetype != slot.archetype ||
+                    unit->state != population::PopulationUnitState::Materialized ||
+                    unit->entity != slot.entity ||
                     !spawned_records.insert(slot.spawned_record).second)
-                    return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_slot",
-                                                                   "invalid completed population encounter tombstone"));
-            } else {
-                if (allocation && (allocation->unit != slot.unit || allocation->correlation != plan.request.value ||
-                                   allocation->purpose != EncounterAllocationPurpose()))
-                    return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_slot",
-                                                                   "invalid rollback population allocation"));
-                if (spawned && (spawned->encounter != plan.encounter_instance || spawned->archetype != slot.archetype))
                     return foundation::Result<void>::Failure(
-                        Error("gameplay.population_sim.restore_invalid_slot", "invalid rollback encounter record"));
+                        Error("gameplay.population_sim.restore_invalid_slot",
+                              "invalid completed population encounter tombstone"));
+            } else {
+                if (allocation && (allocation->unit != slot.unit ||
+                                   allocation->correlation != plan.request.value ||
+                                   allocation->purpose != EncounterAllocationPurpose()))
+                    return foundation::Result<void>::Failure(
+                        Error("gameplay.population_sim.restore_invalid_slot",
+                              "invalid rollback population allocation"));
+                if (spawned && (spawned->encounter != plan.encounter_instance ||
+                                spawned->archetype != slot.archetype))
+                    return foundation::Result<void>::Failure(
+                        Error("gameplay.population_sim.restore_invalid_slot",
+                              "invalid rollback encounter record"));
             }
+
         }
+
         validated.push_back(std::move(plan));
     }
+
     plans_ = std::move(validated);
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> RolesNeedsAdapter::CreateWorkPressureForDuty(const roles_jobs::Duty &duty,
-                                                                      needs_life::NeedsLifeService &needs,
-                                                                      std::int64_t urgency,
-                                                                      GameplayContext context) const {
-    if (!duty.id.IsValid() || !duty.subject.IsValid() || duty.subject.domain != population::PopulationService::Domain())
+foundation::Result<void>
+RolesNeedsAdapter::CreateWorkPressureForDuty(const roles_jobs::Duty &duty,
+                                             needs_life::NeedsLifeService &needs,
+                                             std::int64_t urgency, GameplayContext context) const {
+    if (!duty.id.IsValid() || !duty.subject.IsValid() ||
+        duty.subject.domain != population::PopulationService::Domain())
         return foundation::Result<void>::Failure(
-            Error("gameplay.population_sim.invalid_duty", "population work duty requires a stable resident subject"));
+            Error("gameplay.population_sim.invalid_duty",
+                  "population work duty requires a stable resident subject"));
 
     for (const auto &pressure : needs.FindLifePressures(duty.subject)) {
-        if (pressure.type == WorkPressureType() && IsDutyPressureSource(pressure.payload, duty.id)) {
+        if (pressure.type == WorkPressureType() &&
+            IsDutyPressureSource(pressure.payload, duty.id)) {
             if (pressure.urgency != urgency)
                 return foundation::Result<void>::Failure(
                     Error("gameplay.population_sim.work_pressure_conflict",
                           "duty already owns a work pressure with different urgency"));
             return foundation::Result<void>::Success();
         }
+
     }
 
     needs_life::LifePressure pressure;
@@ -474,14 +531,14 @@ foundation::Result<void> RolesNeedsAdapter::CreateWorkPressureForDuty(const role
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> RolesNeedsAdapter::SatisfyWorkNeedFromDuty(const roles_jobs::Duty &duty,
-                                                                    needs_life::NeedsLifeService &needs,
-                                                                    needs_life::NeedTypeId work_need,
-                                                                    std::int64_t amount,
-                                                                    GameplayContext context) const {
-    if (!duty.id.IsValid() || !duty.subject.IsValid() || duty.subject.domain != population::PopulationService::Domain())
+foundation::Result<void> RolesNeedsAdapter::SatisfyWorkNeedFromDuty(
+    const roles_jobs::Duty &duty, needs_life::NeedsLifeService &needs,
+    needs_life::NeedTypeId work_need, std::int64_t amount, GameplayContext context) const {
+    if (!duty.id.IsValid() || !duty.subject.IsValid() ||
+        duty.subject.domain != population::PopulationService::Domain())
         return foundation::Result<void>::Failure(
-            Error("gameplay.population_sim.invalid_duty", "population work duty requires a stable resident subject"));
+            Error("gameplay.population_sim.invalid_duty",
+                  "population work duty requires a stable resident subject"));
     needs_life::SatisfyNeedRequest request;
     request.subject = duty.subject;
     request.need = work_need;
@@ -491,20 +548,21 @@ foundation::Result<void> RolesNeedsAdapter::SatisfyWorkNeedFromDuty(const roles_
     return needs.SatisfyNeed(request);
 }
 
-PopulationLifecycleReconciliation *PopulationLifecycleAdapter::FindReconciliation(population::PopulationUnitId unit,
-                                                                                  Revision death_revision) noexcept {
+PopulationLifecycleReconciliation *
+PopulationLifecycleAdapter::FindReconciliation(population::PopulationUnitId unit,
+                                               Revision death_revision) noexcept {
     auto it =
-        std::find_if(reconciliations_.begin(), reconciliations_.end(), [unit, death_revision](const auto &record) {
-            return record.unit == unit && record.death_revision == death_revision;
-        });
+        std::find_if(reconciliations_.begin(), reconciliations_.end(),
+                     [unit, death_revision](const auto &record) {
+                         return record.unit == unit && record.death_revision == death_revision;
+                     });
     return it == reconciliations_.end() ? nullptr : &*it;
 }
 
-foundation::Result<void> PopulationLifecycleAdapter::MarkResidentDead(population::PopulationService &pop,
-                                                                      roles_jobs::RolesJobsService &roles,
-                                                                      needs_life::NeedsLifeService &needs,
-                                                                      population::PopulationUnitId unit,
-                                                                      GameplayContext context) {
+foundation::Result<void> PopulationLifecycleAdapter::MarkResidentDead(
+    population::PopulationService &pop, roles_jobs::RolesJobsService &roles,
+    needs_life::NeedsLifeService &needs, population::PopulationUnitId unit,
+    GameplayContext context) {
     const auto *before = pop.GetUnit(unit);
     if (!before)
         return foundation::Result<void>::Failure(
@@ -520,7 +578,8 @@ foundation::Result<void> PopulationLifecycleAdapter::MarkResidentDead(population
     const auto *dead = pop.GetUnit(unit);
     if (!dead || dead->state != population::PopulationUnitState::Dead)
         return foundation::Result<void>::Failure(
-            Error("gameplay.population_sim.death_not_committed", "population death was not committed"));
+            Error("gameplay.population_sim.death_not_committed",
+                  "population death was not committed"));
 
     auto *reconciliation = FindReconciliation(unit, dead->revision);
     if (!reconciliation) {
@@ -531,6 +590,7 @@ foundation::Result<void> PopulationLifecycleAdapter::MarkResidentDead(population
     const auto resident = population::PopulationService::ResidentRef(unit);
     if (!reconciliation->roles_cleaned) {
         std::array<GameplayObjectRef, 2> subjects{resident, legacy_entity};
+
         for (const auto subject : subjects) {
             if (!subject.IsValid())
                 continue;
@@ -541,12 +601,15 @@ foundation::Result<void> PopulationLifecycleAdapter::MarkResidentDead(population
                 if (!cancelled)
                     return cancelled;
             }
+
         }
+
         reconciliation->roles_cleaned = true;
     }
 
     if (!reconciliation->needs_cleaned) {
         std::array<GameplayObjectRef, 2> subjects{resident, legacy_entity};
+
         for (const auto subject : subjects) {
             if (!subject.IsValid())
                 continue;
@@ -555,9 +618,12 @@ foundation::Result<void> PopulationLifecycleAdapter::MarkResidentDead(population
                 if (!resolved)
                     return resolved;
             }
+
         }
+
         reconciliation->needs_cleaned = true;
     }
+
     return foundation::Result<void>::Success();
 }
 
@@ -567,47 +633,53 @@ PopulationLifecycleAdapterSnapshot PopulationLifecycleAdapter::CaptureSnapshot()
         if (!record.Complete())
             snapshot.reconciliations.push_back(record);
     }
-    std::sort(snapshot.reconciliations.begin(), snapshot.reconciliations.end(), [](const auto &a, const auto &b) {
-        if (a.unit != b.unit)
-            return a.unit < b.unit;
-        return a.death_revision < b.death_revision;
-    });
+
+    std::sort(snapshot.reconciliations.begin(), snapshot.reconciliations.end(),
+              [](const auto &a, const auto &b) {
+                  if (a.unit != b.unit)
+                      return a.unit < b.unit;
+                  return a.death_revision < b.death_revision;
+              });
     return snapshot;
 }
 
-foundation::Result<void> PopulationLifecycleAdapter::RestoreSnapshot(PopulationLifecycleAdapterSnapshot snapshot) {
-    std::sort(snapshot.reconciliations.begin(), snapshot.reconciliations.end(), [](const auto &a, const auto &b) {
-        if (a.unit != b.unit)
-            return a.unit < b.unit;
-        return a.death_revision < b.death_revision;
-    });
+foundation::Result<void>
+PopulationLifecycleAdapter::RestoreSnapshot(PopulationLifecycleAdapterSnapshot snapshot) {
+    std::sort(snapshot.reconciliations.begin(), snapshot.reconciliations.end(),
+              [](const auto &a, const auto &b) {
+                  if (a.unit != b.unit)
+                      return a.unit < b.unit;
+                  return a.death_revision < b.death_revision;
+              });
     for (std::size_t i = 0; i < snapshot.reconciliations.size(); ++i) {
         const auto &record = snapshot.reconciliations[i];
         if (!record.unit.IsValid() || record.death_revision.value == 0 || record.Complete() ||
             (i > 0 && snapshot.reconciliations[i - 1].unit == record.unit &&
              snapshot.reconciliations[i - 1].death_revision == record.death_revision))
-            return foundation::Result<void>::Failure(Error("gameplay.population_sim.restore_invalid_reconciliation",
-                                                           "invalid population lifecycle reconciliation snapshot"));
+            return foundation::Result<void>::Failure(
+                Error("gameplay.population_sim.restore_invalid_reconciliation",
+                      "invalid population lifecycle reconciliation snapshot"));
     }
+
     reconciliations_ = std::move(snapshot.reconciliations);
     return foundation::Result<void>::Success();
 }
 
 void PopulationLifecycleAdapter::PruneCompleted() {
-    std::erase_if(reconciliations_, [](const auto &record) {
-        return record.Complete();
-    });
+    std::erase_if(reconciliations_, [](const auto &record) { return record.Complete(); });
 }
 
 CityMorningResult CityLifeAdapter::RunMorningStep(population::PopulationService &pop,
                                                   roles_jobs::RolesJobsService &roles,
-                                                  needs_life::NeedsLifeService &needs, GameplayObjectRef area,
-                                                  GameplayTimePoint now, std::size_t materialization_limit,
+                                                  needs_life::NeedsLifeService &needs,
+                                                  GameplayObjectRef area, GameplayTimePoint now,
+                                                  std::size_t materialization_limit,
                                                   GameplayContext context) const {
     CityMorningResult result;
     context.time = now;
     result.activated_duties = roles.ActivateDueShifts(now, context);
-    result.materialization_candidates = pop.FindMaterializationCandidates(area, materialization_limit);
+    result.materialization_candidates =
+        pop.FindMaterializationCandidates(area, materialization_limit);
 
     std::unordered_set<GameplayObjectRef> residents;
     for (const auto &unit : pop.FindUnitsInArea(area)) {
@@ -615,10 +687,13 @@ CityMorningResult CityLifeAdapter::RunMorningStep(population::PopulationService 
             unit.state != population::PopulationUnitState::Removed)
             residents.insert(population::PopulationService::ResidentRef(unit.id));
     }
+
     for (const auto &need : needs.FindCriticalNeeds(now)) {
         if (residents.contains(need.subject))
             result.critical_needs.push_back(need);
     }
+
     return result;
 }
+
 } // namespace epidemic::gameplay::population_simulation

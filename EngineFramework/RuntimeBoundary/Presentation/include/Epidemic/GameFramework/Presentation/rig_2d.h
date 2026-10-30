@@ -16,6 +16,7 @@ inline Matrix CutoutSpriteMatrix(const CutoutPose &pose, Point pivot, bool mirro
 inline Point TransformCutoutAnchor(const Matrix &matrix, Point source_pixel) {
     return {source_pixel.x * matrix._11 + source_pixel.y * matrix._21 + matrix._31,
             source_pixel.x * matrix._12 + source_pixel.y * matrix._22 + matrix._32};
+
 }
 
 // Reflect the already evaluated world pose once around the root's X axis.
@@ -26,18 +27,22 @@ inline std::vector<CutoutPose> MirrorCutoutPose(std::span<const CutoutPose> pose
         bone.x = 2 * root_x - bone.x;
         bone.angle = -bone.angle;
     }
+
     return result;
 }
 
 // Asset-independent authoring preview: joints and parent links in logical units.
 inline void DrawCutoutRigPreview(Canvas &canvas, std::span<const CutoutBone> bones,
-                                std::span<const CutoutPose> pose, Point origin = {}, float scale = 1) {
+                                 std::span<const CutoutPose> pose, Point origin = {},
+                                 float scale = 1) {
     if (bones.size() != pose.size() || !std::isfinite(scale) || scale <= 0)
         throw std::invalid_argument("Invalid rig preview pose or scale");
     const auto point = [&](std::size_t i) {
         return Point{origin.x + static_cast<float>(pose[i].x) * scale,
                      origin.y + static_cast<float>(pose[i].y) * scale};
+
     };
+
     for (std::size_t i = 0; i < bones.size(); ++i) {
         const auto p = point(i);
         if (bones[i].parent >= 0) {
@@ -47,7 +52,10 @@ inline void DrawCutoutRigPreview(Canvas &canvas, std::span<const CutoutBone> bon
             const auto q = point(parent);
             canvas.Line(q.x, q.y, p.x, p.y, 0x61cfff, 2);
         }
+
         canvas.Circle(p.x, p.y, 4, 0xffc56b);
     }
+
 }
+
 } // namespace epidemic::gameplay::presentation

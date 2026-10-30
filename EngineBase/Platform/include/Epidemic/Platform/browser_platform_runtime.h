@@ -4,12 +4,10 @@
 #include <functional>
 #include <memory>
 
-namespace epidemic::platform
-{
+namespace epidemic::platform {
 // One browser canvas, one owning runtime. Keep it alive until the last callback returns.
 // File packages on Web are local virtual-filesystem data, not remote or durable saves.
-class BrowserPlatformRuntime final : public IPlatformRuntime, public IWindowSystem
-{
+class BrowserPlatformRuntime final : public IPlatformRuntime, public IWindowSystem {
   public:
     BrowserPlatformRuntime();
     ~BrowserPlatformRuntime() override;
@@ -33,4 +31,5 @@ class BrowserPlatformRuntime final : public IPlatformRuntime, public IWindowSyst
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };
+
 } // namespace epidemic::platform

@@ -37,4 +37,5 @@ class BasicConfiguration final : public IConfiguration {
     std::unordered_map<std::string, std::int64_t> int_values_;
     std::unordered_map<std::string, bool> bool_values_;
 };
+
 } // namespace epidemic::core::config

@@ -16,15 +16,20 @@ using namespace epidemic::gameplay;
 namespace epidemic::gameplay::detail {
 void SetFoundationFaultPointForTesting(std::string_view point) noexcept;
 void ClearFoundationFaultPointForTesting() noexcept;
-}
+} // namespace epidemic::gameplay::detail
 
 namespace {
 struct PreStateFixture {
     int primary_record{0};
+
     int secondary_index{0};
+
     int generator_next{0};
+
     int revision{0};
+
     int journal_sequence{0};
+
     int callback_count{0};
 
     [[nodiscard]] bool operator==(const PreStateFixture &) const = default;
@@ -34,10 +39,13 @@ void Check(bool condition, int code) {
     if (!condition) {
         std::exit(code);
     }
+
 }
 
 GameplayObjectRef MakeRef(std::string_view domain, std::string_view id) {
-    return GameplayObjectRef{GameplayDomainId::FromString(domain), GameplayObjectId::FromString(id)};
+    return GameplayObjectRef{GameplayDomainId::FromString(domain),
+                             GameplayObjectId::FromString(id)};
+
 }
 
 std::filesystem::path FindRepositoryRootForDocumentationTest() {
@@ -46,27 +54,35 @@ std::filesystem::path FindRepositoryRootForDocumentationTest() {
         current = std::filesystem::absolute(std::move(current), ec);
         if (ec) {
             return {};
+
         }
+
         if (!std::filesystem::is_directory(current, ec)) {
             current = current.parent_path();
         }
+
         while (!current.empty()) {
             if (std::filesystem::is_regular_file(current / "EngineFramework" / "README.md", ec) &&
                 std::filesystem::is_directory(current / "Documentation", ec)) {
                 return current;
             }
+
             const auto parent = current.parent_path();
             if (parent == current) {
                 break;
             }
+
             current = parent;
         }
+
         return {};
+
     };
 
     if (const auto from_source = find_from(std::filesystem::path(__FILE__)); !from_source.empty()) {
         return from_source;
     }
+
     return find_from(std::filesystem::current_path());
 }
 
@@ -76,10 +92,10 @@ void TestFrameworkDocumentationRoot() {
 
     const auto framework_readme = root / "EngineFramework" / "README.md";
     // Keep the vault path independent of the compiler's source code page.
-    const auto docs_relative =
-        std::filesystem::path(u8"Documentation/Epidemic Engine Vault/90 "
-                              u8"\u041f\u0435\u0440\u0432\u043e\u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438"
-                              u8"/Documentation/EngineFramework/README.md");
+    const auto docs_relative = std::filesystem::path(
+        u8"Documentation/Epidemic Engine Vault/90 "
+        u8"\u041f\u0435\u0440\u0432\u043e\u0438\u0441\u0442\u043e\u0447\u043d\u0438\u043a\u0438"
+        u8"/Documentation/EngineFramework/README.md");
     const auto docs_root = root / docs_relative;
     Check(std::filesystem::is_regular_file(framework_readme), 936);
     Check(std::filesystem::is_regular_file(docs_root), 937);
@@ -94,11 +110,14 @@ void TestFrameworkDocumentationRoot() {
     Check(text.find("](<../" + reference + ">)") != std::string::npos, 939);
     Check(text.find("Documentation/GameFramework/README.md") == std::string::npos, 940);
 
-    for (const auto *module_doc :
-         {"foundation.md", "support_random.md", "queries.md", "facts.md", "time.md", "runtime_bridge.md"}) {
-        Check(std::filesystem::is_regular_file(docs_root.parent_path() / "modules" / module_doc), 941);
+    for (const auto *module_doc : {"foundation.md", "support_random.md", "queries.md", "facts.md",
+                                   "time.md", "runtime_bridge.md"}) {
+        Check(std::filesystem::is_regular_file(docs_root.parent_path() / "modules" / module_doc),
+              941);
     }
+
 }
+
 } // namespace
 
 int main() try {
@@ -130,45 +149,55 @@ int main() try {
     Check(named.Scope() == IdScopeId::FromString("framework.time.schedule_ids"), 8);
     Check(MonotonicIdGenerator<ScheduleId>::IsValidSnapshot(named.GetSnapshot()), 9);
 
-    const auto generator_restore_ok = ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(
-        MonotonicIdGenerator<ScheduleId>::Snapshot{42, second.Low() + 1}, IdScopeId::FromRaw(42), second.Low());
+    const auto generator_restore_ok = ValidateMonotonicIdGeneratorSnapshot<
+        ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, second.Low() + 1},
+                    IdScopeId::FromRaw(42), second.Low());
     Check(generator_restore_ok.IsValid(), 901);
     Check(generator_restore_ok.Code() == "gameplay.id_generator_snapshot_valid", 902);
-    Check(!ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{0, 1},
-                                                            IdScopeId::FromRaw(42), 0)
+    Check(!ValidateMonotonicIdGeneratorSnapshot<
+               ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{0, 1}, IdScopeId::FromRaw(42),
+                           0)
                .IsValid(),
           903);
-    Check(!ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, 1}, {}, 0)
+    Check(!ValidateMonotonicIdGeneratorSnapshot<
+               ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, 1}, {}, 0)
                .IsValid(),
           904);
-    Check(!ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{43, 1},
-                                                            IdScopeId::FromRaw(42), 0)
+    Check(!ValidateMonotonicIdGeneratorSnapshot<
+               ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{43, 1},
+                           IdScopeId::FromRaw(42), 0)
                .IsValid(),
           905);
-    Check(!ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(
-               MonotonicIdGenerator<ScheduleId>::Snapshot{42, second.Low()}, IdScopeId::FromRaw(42), second.Low())
+    Check(!ValidateMonotonicIdGeneratorSnapshot<
+               ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, second.Low()},
+                           IdScopeId::FromRaw(42), second.Low())
                .IsValid(),
           906);
-    Check(!ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(
-               MonotonicIdGenerator<ScheduleId>::Snapshot{42, second.Low() - 1}, IdScopeId::FromRaw(42), second.Low())
+    Check(!ValidateMonotonicIdGeneratorSnapshot<
+               ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, second.Low() - 1},
+                           IdScopeId::FromRaw(42), second.Low())
                .IsValid(),
           907);
-    Check(ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, 0},
-                                                           IdScopeId::FromRaw(42),
-                                                           std::numeric_limits<std::uint64_t>::max())
+    Check(ValidateMonotonicIdGeneratorSnapshot<
+              ScheduleId>(MonotonicIdGenerator<ScheduleId>::Snapshot{42, 0}, IdScopeId::FromRaw(42),
+                          std::numeric_limits<std::uint64_t>::max())
               .IsValid(),
           908);
-    Check(!ValidateMonotonicIdGeneratorSnapshot<ScheduleId>(
-               MonotonicIdGenerator<ScheduleId>::Snapshot{42, std::numeric_limits<std::uint64_t>::max()},
-               IdScopeId::FromRaw(42), std::numeric_limits<std::uint64_t>::max())
+    Check(!ValidateMonotonicIdGeneratorSnapshot<
+               ScheduleId>(MonotonicIdGenerator<
+                               ScheduleId>::Snapshot{42, std::numeric_limits<std::uint64_t>::max()},
+                           IdScopeId::FromRaw(42), std::numeric_limits<std::uint64_t>::max())
                .IsValid(),
           909);
 
     MonotonicIdGenerator<ScheduleId> exhausted(7);
-    Check(exhausted.Restore(MonotonicIdGenerator<ScheduleId>::Snapshot{7, std::numeric_limits<std::uint64_t>::max()}),
+    Check(exhausted.Restore(MonotonicIdGenerator<
+                            ScheduleId>::Snapshot{7, std::numeric_limits<std::uint64_t>::max()}),
           1001);
     const auto last = exhausted.Next();
-    Check(last.IsValid() && last.High() == 7 && last.Low() == std::numeric_limits<std::uint64_t>::max(), 10);
+    Check(last.IsValid() && last.High() == 7 &&
+              last.Low() == std::numeric_limits<std::uint64_t>::max(),
+          10);
     const auto exhausted_snapshot = exhausted.GetSnapshot();
     Check(exhausted.IsExhausted() && exhausted_snapshot.next == 0, 11);
     Check(exhausted.Restore(exhausted_snapshot), 1201);
@@ -182,10 +211,13 @@ int main() try {
               checked_restore.GetSnapshot().next == before_invalid_restore.next,
           911);
     const auto restore_result =
-        RestoreMonotonicIdGeneratorSnapshot<ScheduleId>(checked_restore, {77, 9}, IdScopeId::FromRaw(77), 8);
+        RestoreMonotonicIdGeneratorSnapshot<ScheduleId>(checked_restore, {77, 9},
+                                                        IdScopeId::FromRaw(77), 8);
     Check(restore_result && checked_restore.GetSnapshot().next == 9, 912);
     const auto before_stale_restore = checked_restore.GetSnapshot();
-    Check(!RestoreMonotonicIdGeneratorSnapshot<ScheduleId>(checked_restore, {77, 8}, IdScopeId::FromRaw(77), 8), 913);
+    Check(!RestoreMonotonicIdGeneratorSnapshot<ScheduleId>(checked_restore, {77, 8},
+                                                           IdScopeId::FromRaw(77), 8),
+          913);
     Check(checked_restore.GetSnapshot().next == before_stale_restore.next, 914);
 
     Check(checked_restore.GetSnapshot().scope == before_stale_restore.scope &&
@@ -198,34 +230,38 @@ int main() try {
         using epidemic::tests::pre_state::RequiredJournaledMutationFacets;
 
         const PreStateFixture before{1, 2, 3, 4, 5, 6};
+
         const PreStateFixture after = before;
         const auto report =
             StateComparator("foundation.test.full_pre_state")
-                .RequireEqual(StateFacet::PrimaryRecords, before.primary_record, after.primary_record,
-                              "primary records")
+                .RequireEqual(StateFacet::PrimaryRecords, before.primary_record,
+                              after.primary_record, "primary records")
                 .RequireEqual(StateFacet::RecordPayloads, before, after, "record payloads")
-                .RequireEqual(StateFacet::SecondaryIndexes, before.secondary_index, after.secondary_index,
-                              "secondary indexes")
-                .RequireEqual(StateFacet::IdGenerators, before.generator_next, after.generator_next, "id generators")
+                .RequireEqual(StateFacet::SecondaryIndexes, before.secondary_index,
+                              after.secondary_index, "secondary indexes")
+                .RequireEqual(StateFacet::IdGenerators, before.generator_next, after.generator_next,
+                              "id generators")
                 .RequireEqual(StateFacet::Revisions, before.revision, after.revision, "revisions")
-                .RequireEqual(StateFacet::Journal, before.journal_sequence, after.journal_sequence, "journal")
-                .RequireEqual(StateFacet::JournalEpoch, before.journal_sequence, after.journal_sequence,
-                              "journal epoch")
-                .RequireEqual(StateFacet::JournalSequence, before.journal_sequence, after.journal_sequence,
-                              "journal sequence")
-                .RequireEqual(StateFacet::JournalRetainedRecords, before.journal_sequence, after.journal_sequence,
-                              "journal retained records")
-                .RequireEqual(StateFacet::JournalLatestCursor, before.journal_sequence, after.journal_sequence,
-                              "journal latest cursor")
-                .RequireEqual(StateFacet::ExternalCallbacks, before.callback_count, after.callback_count,
-                              "external callbacks")
+                .RequireEqual(StateFacet::Journal, before.journal_sequence, after.journal_sequence,
+                              "journal")
+                .RequireEqual(StateFacet::JournalEpoch, before.journal_sequence,
+                              after.journal_sequence, "journal epoch")
+                .RequireEqual(StateFacet::JournalSequence, before.journal_sequence,
+                              after.journal_sequence, "journal sequence")
+                .RequireEqual(StateFacet::JournalRetainedRecords, before.journal_sequence,
+                              after.journal_sequence, "journal retained records")
+                .RequireEqual(StateFacet::JournalLatestCursor, before.journal_sequence,
+                              after.journal_sequence, "journal latest cursor")
+                .RequireEqual(StateFacet::ExternalCallbacks, before.callback_count,
+                              after.callback_count, "external callbacks")
                 .RequireEqual(StateFacet::PublicReadModels, before, after, "public read models")
                 .Finish();
-        Check(report.PassedAndCovers({StateFacet::PrimaryRecords, StateFacet::RecordPayloads,
-                                      StateFacet::SecondaryIndexes, StateFacet::IdGenerators, StateFacet::Revisions,
-                                      StateFacet::Journal, StateFacet::JournalEpoch, StateFacet::JournalSequence,
-                                      StateFacet::JournalRetainedRecords, StateFacet::JournalLatestCursor,
-                                      StateFacet::ExternalCallbacks, StateFacet::PublicReadModels}),
+        Check(report.PassedAndCovers(
+                  {StateFacet::PrimaryRecords, StateFacet::RecordPayloads,
+                   StateFacet::SecondaryIndexes, StateFacet::IdGenerators, StateFacet::Revisions,
+                   StateFacet::Journal, StateFacet::JournalEpoch, StateFacet::JournalSequence,
+                   StateFacet::JournalRetainedRecords, StateFacet::JournalLatestCursor,
+                   StateFacet::ExternalCallbacks, StateFacet::PublicReadModels}),
               928);
         Check(report.PassedAndCovers(RequiredJournaledMutationFacets), 934);
 
@@ -233,17 +269,19 @@ int main() try {
             StateComparator("foundation.test.revision_only")
                 .RequireEqual(StateFacet::Revisions, before.revision, after.revision, "revisions")
                 .Finish();
-        Check(!revision_only.PassedAndCovers({StateFacet::PrimaryRecords, StateFacet::RecordPayloads,
+        Check(!revision_only.PassedAndCovers({StateFacet::PrimaryRecords,
+                                              StateFacet::RecordPayloads,
                                               StateFacet::SecondaryIndexes, StateFacet::Revisions,
                                               StateFacet::JournalLatestCursor}),
               929);
 
         PreStateFixture changed = before;
         changed.secondary_index = 99;
-        const auto mismatch = StateComparator("foundation.test.index_mismatch")
-                                  .RequireEqual(StateFacet::SecondaryIndexes, before.secondary_index,
-                                                changed.secondary_index, "secondary indexes")
-                                  .Finish();
+        const auto mismatch =
+            StateComparator("foundation.test.index_mismatch")
+                .RequireEqual(StateFacet::SecondaryIndexes, before.secondary_index,
+                              changed.secondary_index, "secondary indexes")
+                .Finish();
         Check(!mismatch.Passed(), 930);
     }
 
@@ -258,9 +296,12 @@ int main() try {
         } catch (const std::bad_alloc &) {
             threw = true;
         }
+
         epidemic::gameplay::detail::ClearFoundationFaultPointForTesting();
         Check(threw, 917);
-        Check(fault_registry.Size() == size_before && fault_registry.Find("framework.fault.target") == nullptr, 916);
+        Check(fault_registry.Size() == size_before &&
+                  fault_registry.Find("framework.fault.target") == nullptr,
+              916);
     }
 
     {
@@ -274,9 +315,11 @@ int main() try {
         } catch (const std::bad_alloc &) {
             threw = true;
         }
+
         epidemic::gameplay::detail::ClearFoundationFaultPointForTesting();
         Check(threw, 920);
-        Check(fault_tags.Size() == size_before && fault_tags.Find(TagId::FromString("fault")) == nullptr &&
+        Check(fault_tags.Size() == size_before &&
+                  fault_tags.Find(TagId::FromString("fault")) == nullptr &&
                   fault_tags.Find(TagId::FromString("fault.deep.hierarchy.leaf")) == nullptr,
               919);
     }
@@ -325,13 +368,21 @@ int main() try {
     Check(set.Values().empty(), 33);
 
     const auto max_time = GameplayTimePoint{std::numeric_limits<std::int64_t>::max()};
+
     const auto min_time = GameplayTimePoint{std::numeric_limits<std::int64_t>::min()};
+
     Check(!CheckedAdd(max_time, GameplayDuration{1}).has_value(), 34);
     Check(!CheckedSubtract(min_time, GameplayDuration{1}).has_value(), 35);
     Check(!CheckedDifference(max_time, min_time).has_value(), 36);
-    Check(SaturatingAdd(max_time, GameplayDuration{1}).ticks == std::numeric_limits<std::int64_t>::max(), 37);
-    Check(SaturatingSubtract(min_time, GameplayDuration{1}).ticks == std::numeric_limits<std::int64_t>::min(), 38);
-    Check(SaturatingDifference(max_time, min_time).ticks == std::numeric_limits<std::int64_t>::max(), 39);
+    Check(SaturatingAdd(max_time, GameplayDuration{1}).ticks ==
+              std::numeric_limits<std::int64_t>::max(),
+          37);
+    Check(SaturatingSubtract(min_time, GameplayDuration{1}).ticks ==
+              std::numeric_limits<std::int64_t>::min(),
+          38);
+    Check(SaturatingDifference(max_time, min_time).ticks ==
+              std::numeric_limits<std::int64_t>::max(),
+          39);
     Check((GameplayTimePoint{10} + GameplayDuration{-3}).ticks == 7, 40);
     Check((GameplayTimePoint{10} - GameplayDuration{3}).ticks == 7, 41);
     Check((GameplayTimePoint{10} - GameplayTimePoint{3}).ticks == 7, 42);
@@ -351,11 +402,14 @@ int main() try {
 
     const auto actor = MakeRef("framework.entities", "actor");
     const GameplayObjectPartRef actor_part{actor, TypeId::FromString("entity.part.hand")};
+
     Check(actor_part.IsValid() && actor_part.object == actor, 453);
     const auto source = MakeRef("framework.effects", "source");
     GameplayContext context;
     context.tick = GameplayTickId{1};
+
     context.time = GameplayTimePoint{100};
+
     context.operation = OperationId::FromString("operation.child");
     context.parent_operation = OperationId::FromString("operation.parent");
     context.cause_event = EventId::FromString("event.parent_completed");
@@ -367,7 +421,9 @@ int main() try {
     Check(context.actor == actor && context.instigator == actor && context.source == source, 47);
 
     const GameplayObjectRef valid_ref{GameplayDomainId::FromString("framework.world"), object};
+
     const GameplayObjectRef invalid_ref{GameplayDomainId::FromString("framework.world"), {}};
+
     Check(valid_ref.IsValid() && !invalid_ref.IsValid(), 48);
 
     return 0;

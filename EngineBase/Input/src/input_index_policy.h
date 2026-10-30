@@ -10,14 +10,19 @@ namespace epidemic::input::detail {
 }
 
 // Computes one published mouse delta without overflowing the public 32-bit representation.
-[[nodiscard]] constexpr std::int32_t SaturatingDifference(std::int32_t current, std::int32_t previous) noexcept {
-    const auto difference = static_cast<std::int64_t>(current) - static_cast<std::int64_t>(previous);
+[[nodiscard]] constexpr std::int32_t SaturatingDifference(std::int32_t current,
+                                                          std::int32_t previous) noexcept {
+    const auto difference =
+        static_cast<std::int64_t>(current) - static_cast<std::int64_t>(previous);
     if (difference < std::numeric_limits<std::int32_t>::min()) {
         return std::numeric_limits<std::int32_t>::min();
     }
+
     if (difference > std::numeric_limits<std::int32_t>::max()) {
         return std::numeric_limits<std::int32_t>::max();
     }
+
     return static_cast<std::int32_t>(difference);
 }
+
 } // namespace epidemic::input::detail

@@ -3,47 +3,63 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
-#define CHECK(expr)                                                                                                    \
-    do {                                                                                                               \
-        if (!(expr)) {                                                                                                 \
-            std::cerr << "CHECK failed at line " << __LINE__ << ": " #expr << "\\n";                                   \
-            std::exit(1);                                                                                              \
-        }                                                                                                              \
+#define CHECK(expr)                                                                                \
+    do {                                                                                           \
+        if (!(expr)) {                                                                             \
+            std::cerr << "CHECK failed at line " << __LINE__ << ": " #expr << "\\n";               \
+            std::exit(1);                                                                          \
+        }                                                                                          \
     } while (false)
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::interaction;
+
 struct Provider final : IInteractionProvider {
     InteractionTypeId type;
     InteractionProviderId id = InteractionProviderId::FromString("test.provider");
     bool throw_on_collect = false;
+
     InteractionProviderId Id() const noexcept override {
         return id;
     }
+
     std::vector<InteractionCandidate> Collect(const InteractionContext &c) const override {
         if (throw_on_collect)
             throw std::runtime_error("provider failed");
         return {{type, c.actor, c.target, id, 10, InteractionAvailability::Available, {}, {}}};
+
     }
+
 };
+
 struct Exec final : IInteractionExecutor {
     int commits = 0;
+
     epidemic::foundation::Result<void> Validate(const InteractionPlan &) const override {
         return epidemic::foundation::Result<void>::Success();
     }
-    epidemic::foundation::Result<void> Commit(const InteractionPlan &, InteractionExecutionId) noexcept override {
+
+    epidemic::foundation::Result<void> Commit(const InteractionPlan &,
+                                              InteractionExecutionId) noexcept override {
         ++commits;
         return epidemic::foundation::Result<void>::Success();
     }
+
 };
+
 struct State final : IInteractionStateProvider {
     bool materialized = true;
+
     bool IsMaterialized(GameplayObjectRef) const override {
         return materialized;
     }
+
     Revision RevisionOf(GameplayObjectRef) const override {
         return Revision{2};
+
     }
+
 };
+
 int main() {
     InteractionService s;
     auto type = InteractionTypeId::FromString("game.use");
@@ -52,6 +68,7 @@ int main() {
     d.canonical_name = "game.use";
     d.mode = InteractionExecutionMode::Timed;
     d.duration = GameplayDuration{10};
+
     d.persistence = InteractionPersistence::PersistentSession;
     CHECK(s.RegisterDefinition(d));
     Provider p;
@@ -66,10 +83,15 @@ int main() {
     s.Freeze();
     InteractionContext c;
     c.actor = {GameplayDomainId::FromString("a"), GameplayObjectId::FromString("a.1")};
+
     c.target = {GameplayDomainId::FromString("b"), GameplayObjectId::FromString("b.1")};
+
     c.gameplay.time = GameplayTimePoint{5};
+
     c.actor_revision = {2};
+
     c.target_revision = {2};
+
     const auto before_provider_failure = s.CurrentRevision();
     p.throw_on_collect = true;
     CHECK(s.GetAvailableInteractions(c).empty());
@@ -101,12 +123,13 @@ int main() {
     CHECK(x.commits == 0);
     GameplayContext completion_context = c.gameplay;
     completion_context.time = GameplayTimePoint{15};
+
     CHECK(s.Complete(result.Value().execution, completion_context));
     CHECK(x.commits == 1);
     CHECK(s.FindActive(c.actor).empty());
     const auto restore_before = s.CaptureSnapshot();
-    for (const auto fault :
-         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild,
+                             test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         CHECK(!s.RestoreSnapshot(active_restore_target));
         const auto restore_after = s.CaptureSnapshot();
@@ -115,5 +138,6 @@ int main() {
         CHECK(restore_after.revision == restore_before.revision);
         CHECK(restore_after.change_epoch == restore_before.change_epoch);
     }
+
     return 0;
 }

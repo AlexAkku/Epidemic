@@ -15,8 +15,8 @@ class IStreamingRuntime {
   public:
     virtual ~IStreamingRuntime() = default;
 
-    [[nodiscard]] virtual foundation::Result<StreamingDemandHandle> Request(const StreamingTarget &target,
-                                                                            StreamingPriorityClass priority) = 0;
+    [[nodiscard]] virtual foundation::Result<StreamingDemandHandle>
+    Request(const StreamingTarget &target, StreamingPriorityClass priority) = 0;
     [[nodiscard]] virtual foundation::Result<void> ReleaseDemand(StreamingDemandHandle demand) = 0;
     [[nodiscard]] virtual StreamingState GetChunkState(ChunkId chunk) const = 0;
     virtual void SetBudget(const StreamingBudget &budget) = 0;
@@ -25,7 +25,8 @@ class IStreamingRuntime {
     // happen before request mutation; an already accepted external step is retained in
     // private retry state so retry cannot repeat that external side effect.
     [[nodiscard]] virtual StreamingTickResult Tick() = 0;
-    [[nodiscard]] virtual std::optional<StreamingProgress> GetProgress(StreamingRequestHandle request) const = 0;
+    [[nodiscard]] virtual std::optional<StreamingProgress>
+    GetProgress(StreamingRequestHandle request) const = 0;
     [[nodiscard]] virtual StreamingStatistics GetStatistics() const = 0;
 };
 
@@ -34,7 +35,8 @@ class IStreamingQuery {
     virtual ~IStreamingQuery() = default;
 
     [[nodiscard]] virtual StreamingState GetChunkState(ChunkId chunk) const = 0;
-    [[nodiscard]] virtual std::optional<StreamingProgress> GetProgress(StreamingRequestHandle request) const = 0;
+    [[nodiscard]] virtual std::optional<StreamingProgress>
+    GetProgress(StreamingRequestHandle request) const = 0;
     [[nodiscard]] virtual StreamingStatistics GetStatistics() const = 0;
 };
 
@@ -42,7 +44,8 @@ class IStreamingController {
   public:
     virtual ~IStreamingController() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> CancelRequest(StreamingRequestHandle request) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    CancelRequest(StreamingRequestHandle request) = 0;
     [[nodiscard]] virtual foundation::Result<void> Shutdown() = 0;
 };
 

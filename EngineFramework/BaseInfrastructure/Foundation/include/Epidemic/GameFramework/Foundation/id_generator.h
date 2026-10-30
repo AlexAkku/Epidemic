@@ -22,36 +22,47 @@ template <typename TId> class MonotonicIdGenerator {
     // IdScopeId or FromScopeName) and validate restored snapshots with
     // ValidateMonotonicIdGeneratorSnapshot before calling Restore().
     constexpr MonotonicIdGenerator() noexcept = default;
-    explicit constexpr MonotonicIdGenerator(std::uint64_t scope) noexcept : scope_(NormalizeScope(scope)) {
-    }
-    explicit constexpr MonotonicIdGenerator(IdScopeId scope) noexcept : scope_(NormalizeScope(scope.Raw())) {
+
+    explicit constexpr MonotonicIdGenerator(std::uint64_t scope) noexcept
+        : scope_(NormalizeScope(scope)) {
     }
 
-    [[nodiscard]] static constexpr MonotonicIdGenerator FromScopeName(std::string_view stable_scope_name) noexcept {
+    explicit constexpr MonotonicIdGenerator(IdScopeId scope) noexcept
+        : scope_(NormalizeScope(scope.Raw())) {
+    }
+
+    [[nodiscard]] static constexpr MonotonicIdGenerator
+    FromScopeName(std::string_view stable_scope_name) noexcept {
         return MonotonicIdGenerator(IdScopeId::FromString(stable_scope_name));
     }
 
     [[nodiscard]] TId Next() noexcept {
         if (next_ == 0) {
             return {};
+
         }
+
         const auto result = TId::FromRaw(scope_, next_);
         if (next_ == std::numeric_limits<std::uint64_t>::max()) {
             next_ = 0;
         } else {
             ++next_;
         }
+
         return result;
     }
 
     [[nodiscard]] constexpr bool IsExhausted() const noexcept {
         return next_ == 0;
     }
+
     [[nodiscard]] constexpr IdScopeId Scope() const noexcept {
         return IdScopeId::FromRaw(scope_);
     }
+
     [[nodiscard]] Snapshot GetSnapshot() const noexcept {
         return Snapshot{scope_, next_};
+
     }
 
     // Low-level structural check. State owners restoring persisted IDs should use
@@ -66,6 +77,7 @@ template <typename TId> class MonotonicIdGenerator {
         if (!IsValidSnapshot(snapshot)) {
             return false;
         }
+
         scope_ = snapshot.scope;
         next_ = snapshot.next;
         return true;
@@ -116,13 +128,16 @@ struct MonotonicIdGeneratorSnapshotValidation {
         case MonotonicIdGeneratorSnapshotStatus::SequenceNotAheadOfRestoredIds:
             return "gameplay.id_generator_snapshot_sequence_stale";
         }
+
         return "gameplay.id_generator_snapshot_unknown";
     }
+
 };
 
 template <typename TId>
 [[nodiscard]] constexpr MonotonicIdGeneratorSnapshotValidation
-ValidateMonotonicIdGeneratorSnapshot(typename MonotonicIdGenerator<TId>::Snapshot snapshot, IdScopeId expected_scope,
+ValidateMonotonicIdGeneratorSnapshot(typename MonotonicIdGenerator<TId>::Snapshot snapshot,
+                                     IdScopeId expected_scope,
                                      std::uint64_t max_restored_low_part) {
     MonotonicIdGeneratorSnapshotValidation result;
     result.expected_scope = expected_scope.Raw();
@@ -134,10 +149,12 @@ ValidateMonotonicIdGeneratorSnapshot(typename MonotonicIdGenerator<TId>::Snapsho
         result.status = MonotonicIdGeneratorSnapshotStatus::InvalidExpectedScope;
         return result;
     }
+
     if (snapshot.scope == 0) {
         result.status = MonotonicIdGeneratorSnapshotStatus::InvalidSnapshotScope;
         return result;
     }
+
     if (snapshot.scope != expected_scope.Raw()) {
         result.status = MonotonicIdGeneratorSnapshotStatus::UnexpectedScope;
         return result;
@@ -158,17 +175,22 @@ ValidateMonotonicIdGeneratorSnapshot(typename MonotonicIdGenerator<TId>::Snapsho
 template <typename TId>
 [[nodiscard]] foundation::Result<void>
 RestoreMonotonicIdGeneratorSnapshot(MonotonicIdGenerator<TId> &generator,
-                                    typename MonotonicIdGenerator<TId>::Snapshot snapshot, IdScopeId expected_scope,
-                                    std::uint64_t max_restored_low_part) {
-    const auto validation = ValidateMonotonicIdGeneratorSnapshot<TId>(snapshot, expected_scope, max_restored_low_part);
+                                    typename MonotonicIdGenerator<TId>::Snapshot snapshot,
+                                    IdScopeId expected_scope, std::uint64_t max_restored_low_part) {
+    const auto validation =
+        ValidateMonotonicIdGeneratorSnapshot<TId>(snapshot, expected_scope, max_restored_low_part);
     if (!validation) {
         return foundation::Result<void>::Failure(
-            foundation::Error::Create(std::string(validation.Code()), "invalid monotonic id generator snapshot"));
+            foundation::Error::Create(std::string(validation.Code()),
+                                      "invalid monotonic id generator snapshot"));
     }
+
     if (!generator.Restore(snapshot)) {
-        return foundation::Result<void>::Failure(foundation::Error::Create("gameplay.id_generator_snapshot_invalid",
-                                                                           "invalid monotonic id generator snapshot"));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("gameplay.id_generator_snapshot_invalid",
+                                      "invalid monotonic id generator snapshot"));
     }
+
     return foundation::Result<void>::Success();
 }
 

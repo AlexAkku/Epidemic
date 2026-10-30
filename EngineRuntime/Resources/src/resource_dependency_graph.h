@@ -13,6 +13,7 @@ class ResourceDependencyGraph {
     void RemoveDependencies(ResourceId root);
     [[nodiscard]] std::optional<ResourceDependencySet> FindDependencies(ResourceId root) const;
     [[nodiscard]] bool HasDependencies(ResourceId root) const;
+
     void FailNextReplaceForTesting() noexcept {
         fail_next_replace_for_testing_ = true;
     }
@@ -21,4 +22,5 @@ class ResourceDependencyGraph {
     std::unordered_map<ResourceId, ResourceDependencySet> dependencies_;
     bool fail_next_replace_for_testing_ = false;
 };
-}
+
+} // namespace epidemic::runtime

@@ -2,10 +2,10 @@
 #include <array>
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::savegame;
+
 namespace {
-enum class Kind : std::uint16_t {
-    Valid = 7
-};
+enum class Kind : std::uint16_t { Valid = 7 };
+
 struct ValueSnapshot {
     std::uint32_t revision = 1;
     std::int64_t signed_value = -19;
@@ -16,11 +16,14 @@ struct ValueSnapshot {
     GameplayTagSet tags;
     bool enabled = true;
 };
+
 struct ValueOwner {
     ValueSnapshot state;
+
     ValueSnapshot CaptureSnapshot() const {
         return state;
     }
+
     epidemic::foundation::Result<void> RestoreSnapshot(ValueSnapshot snapshot) {
         if (snapshot.revision == 0 || snapshot.kind != Kind::Valid)
             return epidemic::foundation::Result<void>::Failure(
@@ -28,9 +31,13 @@ struct ValueOwner {
         state = std::move(snapshot);
         return epidemic::foundation::Result<void>::Success();
     }
+
 };
+
 struct WrongStage final : IRestoreStage {};
-}
+
+} // namespace
+
 void TestSnapshotParticipantMechanics() {
     using participant_tests::Check;
     static_assert(savegame::detail::AggregateAccepts<ValueSnapshot>(std::make_index_sequence<8>{}));
@@ -49,6 +56,7 @@ void TestSnapshotParticipantMechanics() {
     } catch (const std::invalid_argument &) {
         duplicate_rejected = true;
     }
+
     Check(duplicate_rejected, "workspace rejects overlapping authoritative owners");
     SaveRestoreWorkspace missing;
     bool missing_rejected = false;
@@ -57,29 +65,38 @@ void TestSnapshotParticipantMechanics() {
     } catch (const std::runtime_error &) {
         missing_rejected = true;
     }
-    Check(missing_rejected && &savegame::detail::WorkspaceTestAccess::Resolve(missing, live) == &live,
+
+    Check(missing_rejected &&
+              &savegame::detail::WorkspaceTestAccess::Resolve(missing, live) == &live,
           "workspace missing requirement fails and resolve fallback is explicit");
     savegame::detail::SnapshotParticipant<ValueOwner> participant(live, workspace, "fixture.value");
     participant_tests::CheckParticipantContract(participant, "fixture.value", {});
     live.state.revision = 27;
     live.state.records = {"alpha", "beta"};
+
     live.state.choice = std::array<std::uint32_t, 2>{17, 91};
+
     live.state.tags.Add(TagId::FromString("fixture.tag"));
     auto captured = participant.CaptureSnapshot({});
-    Check(bool(captured), "field codec captures non-empty records, optional, tags, signed and floating values");
-    auto decoded = savegame::detail::DecodeParticipantSnapshot<ValueSnapshot>(captured.Value(), participant.Id());
-    Check(decoded.revision == 27 && decoded.records == live.state.records && decoded.choice == live.state.choice &&
-              decoded.tags == live.state.tags && decoded.signed_value == -19 && decoded.amount == 3.25 &&
-              decoded.enabled,
+    Check(bool(captured),
+          "field codec captures non-empty records, optional, tags, signed and floating values");
+    auto decoded = savegame::detail::DecodeParticipantSnapshot<ValueSnapshot>(captured.Value(),
+                                                                              participant.Id());
+    Check(decoded.revision == 27 && decoded.records == live.state.records &&
+              decoded.choice == live.state.choice && decoded.tags == live.state.tags &&
+              decoded.signed_value == -19 && decoded.amount == 3.25 && decoded.enabled,
           "field codec roundtrips actual values without object layout");
     live.state.revision = 99;
     live.state.records.clear();
     participant.BeginRestoreValidation();
     participant.BeginRestoreValidation();
-    Check(bool(participant.ValidateSnapshot(captured.Value(), {})), "restore validation prepares dependency view");
+    Check(bool(participant.ValidateSnapshot(captured.Value(), {})),
+          "restore validation prepares dependency view");
     Check(live.state.revision == 99 && live.state.records.empty() &&
-              savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace).state.revision == 27 &&
-              savegame::detail::WorkspaceTestAccess::Resolve(workspace, live).state.records.size() == 2,
+              savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace)
+                      .state.revision == 27 &&
+              savegame::detail::WorkspaceTestAccess::Resolve(workspace, live)
+                      .state.records.size() == 2,
           "validated dependencies remain private and retain durable values");
     participant.EndRestoreValidation();
     Check(&savegame::detail::WorkspaceTestAccess::Resolve(workspace, live) != &live,
@@ -91,15 +108,19 @@ void TestSnapshotParticipantMechanics() {
     participant.BeginRestoreValidation();
     auto invalid_validation = captured.Value();
     invalid_validation.payload_hash ^= 1;
-    Check(!participant.ValidateSnapshot(invalid_validation, {}), "invalid validation never seeds a dependency view");
+    Check(!participant.ValidateSnapshot(invalid_validation, {}),
+          "invalid validation never seeds a dependency view");
     participant.EndRestoreValidation();
-    Check(&savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace) == &live && live.state.revision == 99,
+    Check(&savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace) == &live &&
+              live.state.revision == 99,
           "validation failure preserves live state and leaves no retained candidate");
     auto stage = participant.StageRestore(captured.Value(), {});
     Check(bool(stage) && live.state.revision == 99 && live.state.records.empty(),
           "prepared state remains separate from live owner");
-    Check(savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace).state.revision == 27 &&
-              savegame::detail::WorkspaceTestAccess::Resolve(workspace, live).state.records.size() == 2,
+    Check(savegame::detail::WorkspaceTestAccess::Require<ValueOwner>(workspace).state.revision ==
+                  27 &&
+              savegame::detail::WorkspaceTestAccess::Resolve(workspace, live)
+                      .state.records.size() == 2,
           "dependent staging resolves prepared candidate rather than live owner");
     Check(!participant.StageRestore(captured.Value(), {}), "duplicate active stage is rejected");
     WrongStage wrong;
@@ -127,10 +148,12 @@ void TestSnapshotParticipantMechanics() {
           "semantic invalidity is rejected despite correct checksum with no live mutation");
     auto bad_bool = captured.Value();
     bad_bool.payload.back() = std::byte{2};
+
     bad_bool.payload_hash = SaveGameOrchestrator::HashBytes(bad_bool.payload);
     Check(!participant.ValidateSnapshot(bad_bool, {}), "noncanonical boolean rejected");
     auto bad_magic = captured.Value();
     bad_magic.payload[0] ^= std::byte{1};
+
     bad_magic.payload_hash = SaveGameOrchestrator::HashBytes(bad_magic.payload);
     Check(!participant.ValidateSnapshot(bad_magic, {}), "wrong payload magic rejected");
     savegame::detail::SnapshotWriter byte_writer;
@@ -147,6 +170,7 @@ void TestSnapshotParticipantMechanics() {
     } catch (const std::runtime_error &) {
         truncated = true;
     }
+
     Check(truncated, "reader refuses reads past payload boundary");
     std::uint64_t excessive = 1'048'577;
     savegame::detail::SnapshotWriter length_writer;
@@ -159,8 +183,11 @@ void TestSnapshotParticipantMechanics() {
     } catch (const std::runtime_error &) {
         bounded = true;
     }
+
     Check(bounded && values.empty(), "untrusted collection length is bounded before allocation");
     std::vector<int> prepared{1, 2}, published{3};
+
     savegame::detail::SwapPreparedMember(published, prepared);
-    Check(published.size() == 2 && prepared.size() == 1, "prepared member publication swaps without allocation");
+    Check(published.size() == 2 && prepared.size() == 1,
+          "prepared member publication swaps without allocation");
 }

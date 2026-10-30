@@ -10,9 +10,11 @@ using namespace epidemic::gameplay::social_legal_integration;
 
 static GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(name)};
+
 }
 
-template <typename TSociety> static bool ConfigureSociety(TSociety &society, RelationshipTypeId relationship_type) {
+template <typename TSociety>
+static bool ConfigureSociety(TSociety &society, RelationshipTypeId relationship_type) {
     if constexpr (requires(TSociety &service, RelationshipTypeDefinition definition) {
                       service.RegisterRelationshipType(definition);
                       service.FreezeDefinitions();
@@ -28,16 +30,18 @@ template <typename TSociety> static bool ConfigureSociety(TSociety &society, Rel
             {0, RelationshipState::Neutral},
             {300'000, RelationshipState::Friendly},
         };
+
         if (!society.RegisterRelationshipType(definition))
             return false;
         if (!society.FreezeDefinitions())
             return false;
     }
+
     return true;
 }
 
-static bool RegisterTheftLaw(CrimeService &crime, GameplayObjectRef city, GameplayObjectRef guards, LawDefinition &law,
-                             JurisdictionRecord &jurisdiction) {
+static bool RegisterTheftLaw(CrimeService &crime, GameplayObjectRef city, GameplayObjectRef guards,
+                             LawDefinition &law, JurisdictionRecord &jurisdiction) {
     law.id = LawId::FromString("law.theft");
     law.crime_type = CrimeTypeId::FromString("crime.theft");
     law.severity_micro = 200000;
@@ -111,7 +115,8 @@ int main() {
         return 10;
 
     const auto property_mapping_id = SocialLegalMappingId::FromString("mapping.property.theft");
-    const auto public_mapping_id = SocialLegalMappingId::FromString("mapping.property.public_offence");
+    const auto public_mapping_id =
+        SocialLegalMappingId::FromString("mapping.property.public_offence");
     const auto penalty_mapping_id = SocialLegalMappingId::FromString("mapping.crime.trust_penalty");
     const auto response_mapping_id = SocialLegalMappingId::FromString("mapping.crime.arrest");
 
@@ -156,7 +161,8 @@ int main() {
 
     if (!mappings.Freeze() || !mappings.IsFrozen())
         return 14;
-    if (mappings.RegisterAuthorityResponseMapping({SocialLegalMappingId::FromString("mapping.late"), law.crime_type,
+    if (mappings.RegisterAuthorityResponseMapping({SocialLegalMappingId::FromString("mapping.late"),
+                                                   law.crime_type,
                                                    LawResponseTypeId::FromString("response.warn")}))
         return 15;
 
@@ -167,31 +173,38 @@ int main() {
     context.tick = GameplayTickId{999'999};
 
     // H87: a plain Denied access decision blocks the action but is not automatically criminal.
-    auto denied = ownership_crime.TryCreateCrimeFromDeniedRight(player, locked_box, property_mapping_id, city, context);
-    if (!denied || denied.Value().permission.decision != PermissionDecision::Denied || denied.Value().crime ||
-        denied.Value().disposition != PropertyCrimeDisposition::NoViolation)
+    auto denied = ownership_crime.TryCreateCrimeFromDeniedRight(player, locked_box,
+                                                                property_mapping_id, city, context);
+    if (!denied || denied.Value().permission.decision != PermissionDecision::Denied ||
+        denied.Value().crime || denied.Value().disposition != PropertyCrimeDisposition::NoViolation)
         return 16;
 
     // H86: the legal timestamp is gameplay time, never the causal tick id.
-    auto made = ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city, context);
-    if (!made || !made.Value().crime || made.Value().disposition != PropertyCrimeDisposition::CrimeRecorded)
+    auto made = ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id,
+                                                              city, context);
+    if (!made || !made.Value().crime ||
+        made.Value().disposition != PropertyCrimeDisposition::CrimeRecorded)
         return 17;
     const auto *crime_record = crime.FindCrime(*made.Value().crime);
-    if (!crime_record || crime_record->committed_at != context.time || crime_record->committed_at.ticks == 999'999)
+    if (!crime_record || crime_record->committed_at != context.time ||
+        crime_record->committed_at.ticks == 999'999)
         return 18;
     if (crime_record->victim != npc)
         return 19;
 
     // H88: a property-owner-required law cannot silently become victimless.
     auto missing_owner =
-        ownership_crime.TryCreateCrimeFromDeniedRight(player, public_gate, property_mapping_id, city, context);
+        ownership_crime.TryCreateCrimeFromDeniedRight(player, public_gate, property_mapping_id,
+                                                      city, context);
     if (!missing_owner || missing_owner.Value().crime ||
         missing_owner.Value().disposition != PropertyCrimeDisposition::MissingRequiredVictim)
         return 20;
 
-    // Public/victimless legal semantics are explicit in the mapping, not inferred from missing ownership.
+    // Public/victimless legal semantics are explicit in the mapping, not inferred from missing
+    // ownership.
     auto public_offence =
-        ownership_crime.TryCreateCrimeFromDeniedRight(player, public_gate, public_mapping_id, city, context);
+        ownership_crime.TryCreateCrimeFromDeniedRight(player, public_gate, public_mapping_id, city,
+                                                      context);
     if (!public_offence || !public_offence.Value().crime)
         return 21;
     const auto *public_record = crime.FindCrime(*public_offence.Value().crime);
@@ -219,7 +232,8 @@ int main() {
     CrimeSocietyAdapter restored_adapter(crime, society, mappings);
     if (!restored_adapter.RestoreCheckpoint(checkpoint))
         return 28;
-    if (!restored_adapter.ApplyRelationshipPenalty(*made.Value().crime, penalty_mapping_id, context))
+    if (!restored_adapter.ApplyRelationshipPenalty(*made.Value().crime, penalty_mapping_id,
+                                                   context))
         return 29;
     const auto after_restore_retry = society.GetRelationship(npc, player, trust);
     if (!after_restore_retry || after_restore_retry->value_micro != -700000)
@@ -234,7 +248,8 @@ int main() {
 
     // M02: idempotency tombstones follow Crime lifecycle, never arbitrary FIFO retention.
     auto retention_crime =
-        ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city, context);
+        ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city,
+                                                      context);
     if (!retention_crime || !retention_crime.Value().crime)
         return 35;
     const auto retention_crime_id = *retention_crime.Value().crime;
@@ -256,9 +271,8 @@ int main() {
 
     const auto pruned_checkpoint = crime_society.CaptureCheckpoint();
     if (std::any_of(pruned_checkpoint.applied_relationship_penalties.begin(),
-                    pruned_checkpoint.applied_relationship_penalties.end(), [&](const auto &delivery) {
-                        return delivery.crime == retention_crime_id;
-                    }))
+                    pruned_checkpoint.applied_relationship_penalties.end(),
+                    [&](const auto &delivery) { return delivery.crime == retention_crime_id; }))
         return 40;
     CrimeSocietyAdapter pruned_restored(crime, society, mappings);
     if (!pruned_restored.RestoreCheckpoint(pruned_checkpoint) ||
@@ -266,10 +280,15 @@ int main() {
         !pruned_restored.WasRelationshipPenaltyApplied(*made.Value().crime, penalty_mapping_id))
         return 41;
 
-    // A journal gap falls back to current Crime state and must preserve deliveries for crimes that still exist.
+    // A journal gap falls back to current Crime state and must preserve deliveries for crimes that
+    // still exist.
     crime.SetChangeJournalCapacity(1);
-    auto gap_crime_a = ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city, context);
-    auto gap_crime_b = ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city, context);
+    auto gap_crime_a =
+        ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city,
+                                                      context);
+    auto gap_crime_b =
+        ownership_crime.TryCreateCrimeFromDeniedRight(player, apple, property_mapping_id, city,
+                                                      context);
     if (!gap_crime_a || !gap_crime_a.Value().crime || !gap_crime_b || !gap_crime_b.Value().crime)
         return 42;
     if (!crime_society.ProcessCrimeLifecycle() ||
@@ -277,8 +296,8 @@ int main() {
         return 43;
 
     // M33/M34: authority response is explicit and mapped; target defaults to the offender.
-    auto response =
-        crime_society.RequestAuthorityResponse(*made.Value().crime, response_mapping_id, guards, {}, context);
+    auto response = crime_society.RequestAuthorityResponse(*made.Value().crime, response_mapping_id,
+                                                           guards, {}, context);
     if (!response)
         return 32;
 

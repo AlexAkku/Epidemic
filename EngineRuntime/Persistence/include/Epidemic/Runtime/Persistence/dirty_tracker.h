@@ -12,4 +12,5 @@ class IDirtyTracker {
     [[nodiscard]] virtual bool IsDirty(PersistentObjectId id) const = 0;
     [[nodiscard]] virtual std::vector<PersistentObjectId> CollectDirty() const = 0;
 };
+
 } // namespace epidemic::runtime

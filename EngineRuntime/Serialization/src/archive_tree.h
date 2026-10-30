@@ -28,8 +28,8 @@ using ArchiveObjectPtr = std::shared_ptr<ArchiveObject>;
 using ArchiveArrayPtr = std::shared_ptr<ArchiveArray>;
 
 struct ArchiveValue {
-    using Storage = std::variant<std::monostate, std::string, std::uint64_t, std::int64_t, double, bool,
-                                 std::vector<std::byte>, ArchiveObjectPtr, ArchiveArrayPtr>;
+    using Storage = std::variant<std::monostate, std::string, std::uint64_t, std::int64_t, double,
+                                 bool, std::vector<std::byte>, ArchiveObjectPtr, ArchiveArrayPtr>;
 
     Storage storage{};
 
@@ -54,7 +54,9 @@ struct ArchiveValue {
         default:
             return ArchiveValueKind::Array;
         }
+
     }
+
 };
 
 struct ArchiveObject {
@@ -70,8 +72,12 @@ struct ArchiveArray {
 
 struct SerializedDocument::Impl {
     foundation::StringId type_id{};
+
     SchemaVersion schema_version{};
+
     std::uint32_t format_version = 1;
     ArchiveObjectPtr root{};
+
 };
+
 } // namespace epidemic::runtime

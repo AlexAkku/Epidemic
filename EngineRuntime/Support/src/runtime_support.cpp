@@ -31,27 +31,32 @@ template <typename TValue>
     return foundation::Result<TValue>::Failure(SupportError(code, message));
 }
 
-[[nodiscard]] foundation::Result<void> FailureVoid(std::string_view code, std::string_view message) {
+[[nodiscard]] foundation::Result<void> FailureVoid(std::string_view code,
+                                                   std::string_view message) {
     return foundation::Result<void>::Failure(SupportError(code, message));
 }
 
 struct RuntimeSupportTestFaults {
     bool fail_next_render_lease_publication = false;
     std::optional<std::size_t> fail_streaming_lease_publication_after{};
+
     bool fail_next_streaming_plan_construction = false;
     bool fail_next_persistence_exception = false;
     bool fail_next_streaming_cleanup_world_transition = false;
     bool fail_next_main_view_creation = false;
     bool fail_next_main_view_publication = false;
     std::optional<std::size_t> throw_scene_projection_after{};
+
     bool fail_next_animation_lease_slot_publication = false;
     bool fail_next_audio_lease_slot_publication = false;
     bool fail_next_audio_wrapper_publication = false;
     bool throw_next_audio_release = false;
     bool fail_next_audio_voice_publication = false;
     std::optional<std::size_t> fail_pose_publication_after{};
+
     bool fail_next_reference_event_publication = false;
     std::optional<RuntimeUpdateStep> fail_coordinator_after_step{};
+
 };
 
 RuntimeSupportTestFaults g_runtime_support_test_faults{};
@@ -60,6 +65,7 @@ RuntimeSupportTestFaults g_runtime_support_test_faults{};
     if (!fault) {
         return false;
     }
+
     fault = false;
     return true;
 }
@@ -68,10 +74,12 @@ RuntimeSupportTestFaults g_runtime_support_test_faults{};
     if (!countdown) {
         return false;
     }
+
     if (*countdown == 0) {
         countdown.reset();
         return true;
     }
+
     --*countdown;
     return false;
 }
@@ -81,10 +89,12 @@ RuntimeSupportTestFaults g_runtime_support_test_faults{};
     if (!countdown) {
         return false;
     }
+
     if (*countdown == 0) {
         countdown.reset();
         return true;
     }
+
     --*countdown;
     return false;
 }
@@ -93,44 +103,54 @@ template <typename TService>
 [[nodiscard]] foundation::Result<void> Require(core::Application &app, std::string_view name) {
     if (!app.Services().Contains<TService>()) {
         return FailureVoid("runtime_support.missing_dependency",
-                           std::string("required runtime service is not registered: ") + std::string(name));
+                           std::string("required runtime service is not registered: ") +
+                               std::string(name));
     }
+
     return foundation::Result<void>::Success();
 }
 
 template <typename TService>
-[[nodiscard]] foundation::Result<void> RegisterShared(core::Application &app, std::shared_ptr<TService> service,
-                                                      std::string_view name) {
+[[nodiscard]] foundation::Result<void>
+RegisterShared(core::Application &app, std::shared_ptr<TService> service, std::string_view name) {
     if (app.Services().Contains<TService>()) {
         return FailureVoid("runtime_support.duplicate_registration",
-                           std::string("runtime service is already registered: ") + std::string(name));
+                           std::string("runtime service is already registered: ") +
+                               std::string(name));
     }
+
     try {
         app.Services().RegisterInstance<TService>(std::move(service));
     } catch (const std::exception &exception) {
         return FailureVoid("runtime_support.registration_failed", exception.what());
     }
+
     return foundation::Result<void>::Success();
 }
 
 [[nodiscard]] ResourceType MeshType() {
     return ResourceType{foundation::StringId::FromString("mesh")};
+
 }
 
 [[nodiscard]] ResourceType MaterialType() {
     return ResourceType{foundation::StringId::FromString("material")};
+
 }
 
 [[nodiscard]] ResourceType SkeletonType() {
     return ResourceType{foundation::StringId::FromString("animation.skeleton")};
+
 }
 
 [[nodiscard]] ResourceType AnimationClipType() {
     return ResourceType{foundation::StringId::FromString("animation.clip")};
+
 }
 
 [[nodiscard]] ResourceType AudioClipType() {
     return ResourceType{foundation::StringId::FromString("audio.clip")};
+
 }
 
 class RuntimeRenderMeshResource final : public renderer::IRenderMeshResource {
@@ -144,18 +164,24 @@ class RuntimeRenderMeshResource final : public renderer::IRenderMeshResource {
 
 class RuntimeRenderMaterialResource final : public renderer::IRenderMaterialResource {
   public:
-    explicit RuntimeRenderMaterialResource(ResourcePayloadPtr payload) : payload_(std::move(payload)) {
+    explicit RuntimeRenderMaterialResource(ResourcePayloadPtr payload)
+        : payload_(std::move(payload)) {
     }
 
   private:
     ResourcePayloadPtr payload_;
 };
 
-class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge, public IRuntimeAdapterLifecycle {
-    struct PayloadIds { ResourceId mesh; ResourceId material; };
+class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge,
+                                          public IRuntimeAdapterLifecycle {
+    struct PayloadIds {
+        ResourceId mesh;
+        ResourceId material;
+    };
 
   public:
-    explicit RuntimeRenderResourceBridge(std::shared_ptr<IResourceManager> manager) : manager_(std::move(manager)) {
+    explicit RuntimeRenderResourceBridge(std::shared_ptr<IResourceManager> manager)
+        : manager_(std::move(manager)) {
     }
 
     ~RuntimeRenderResourceBridge() override {
@@ -166,26 +192,31 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
             if (!shutdown_complete_) {
                 (void)Shutdown();
             }
+
         } catch (...) {
             // A destructor cannot transfer retry ownership after destruction.
             // Keep unexpected cleanup exceptions fatal, as before, explicitly.
             std::terminate();
         }
+
 #ifndef NDEBUG
-        assert(leases_.empty() && "RuntimeRenderResourceBridge destroyed with unreleased resource leases");
+        assert(leases_.empty() &&
+               "RuntimeRenderResourceBridge destroyed with unreleased resource leases");
 #endif
     }
 
-    [[nodiscard]] foundation::Result<void> AcquirePayloads(ResourceId mesh, ResourceId material) override {
+    [[nodiscard]] foundation::Result<void> AcquirePayloads(ResourceId mesh,
+                                                           ResourceId material) override {
         return AcquirePayloads(PayloadIds{mesh, material});
     }
 
-    [[nodiscard]] foundation::Result<void> ReleasePayloads(ResourceId mesh, ResourceId material) override {
+    [[nodiscard]] foundation::Result<void> ReleasePayloads(ResourceId mesh,
+                                                           ResourceId material) override {
         return ReleasePayloads(PayloadIds{mesh, material});
     }
 
-    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads> GetPayloads(ResourceId mesh,
-                                                                               ResourceId material) const override {
+    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads>
+    GetPayloads(ResourceId mesh, ResourceId material) const override {
         return GetPayloads(PayloadIds{mesh, material});
     }
 
@@ -194,21 +225,27 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         const auto mesh = ids.mesh;
         const auto material = ids.material;
         if (shutdown_started_) {
-            return FailureVoid("runtime_support.adapter_shutdown", "render resource bridge is shutting down");
+            return FailureVoid("runtime_support.adapter_shutdown",
+                               "render resource bridge is shutting down");
         }
+
         const auto mesh_result = AcquireResource(mesh, MeshType());
         if (!mesh_result) {
             return mesh_result;
         }
+
         const auto material_result = AcquireResource(material, MaterialType());
         if (!material_result) {
             const auto rollback = ReleaseResource(mesh, MeshType());
             if (!rollback) {
                 return FailureVoid("runtime_support.render_payload_cleanup_pending",
-                                   "material acquisition failed and mesh rollback is still pending");
+                                   "material acquisition failed and mesh rollback is still "
+                                   "pending");
             }
+
             return material_result;
         }
+
         return foundation::Result<void>::Success();
     }
 
@@ -219,24 +256,33 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         if (const auto released = ReleaseResource(mesh, MeshType()); !released) {
             first = released.GetError();
         }
+
         if (const auto released = ReleaseResource(material, MaterialType()); !released && !first) {
             first = released.GetError();
         }
-        return first ? foundation::Result<void>::Failure(*first) : foundation::Result<void>::Success();
+
+        return first ? foundation::Result<void>::Failure(*first)
+                     : foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads> GetPayloads(const PayloadIds &ids) const {
+    [[nodiscard]] foundation::Result<renderer::RenderResourcePayloads>
+    GetPayloads(const PayloadIds &ids) const {
         const auto mesh = ids.mesh;
         const auto material = ids.material;
         const auto mesh_payload = GetPayload(mesh, MeshType());
         if (!mesh_payload) {
-            return foundation::Result<renderer::RenderResourcePayloads>::Failure(mesh_payload.GetError());
+            return foundation::Result<renderer::RenderResourcePayloads>::Failure(
+                mesh_payload.GetError());
         }
+
         const auto material_payload = GetPayload(material, MaterialType());
         if (!material_payload) {
-            return foundation::Result<renderer::RenderResourcePayloads>::Failure(material_payload.GetError());
+            return foundation::Result<renderer::RenderResourcePayloads>::Failure(
+                material_payload.GetError());
         }
+
         renderer::RenderResourcePayloads result{};
+
         result.mesh = std::make_shared<RuntimeRenderMeshResource>(mesh_payload.Value());
         result.material = std::make_shared<RuntimeRenderMaterialResource>(material_payload.Value());
         return foundation::Result<renderer::RenderResourcePayloads>::Success(std::move(result));
@@ -254,28 +300,37 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
                 if (!first) {
                     first = released.GetError();
                 }
+
                 ++iterator;
             }
+
         }
+
         shutdown_complete_ = leases_.empty();
-        return first ? foundation::Result<void>::Failure(*first) : foundation::Result<void>::Success();
+        return first ? foundation::Result<void>::Failure(*first)
+                     : foundation::Result<void>::Success();
     }
 
   private:
     struct Key {
         ResourceId id{};
+
         ResourceType type{};
+
         [[nodiscard]] bool operator==(const Key &) const noexcept = default;
     };
 
     struct KeyHash {
         [[nodiscard]] std::size_t operator()(const Key &key) const noexcept {
-            return std::hash<std::uint64_t>{}(key.id.Raw()) ^ (std::hash<std::uint64_t>{}(key.type.value.Raw()) << 1u);
+            return std::hash<std::uint64_t>{}(key.id.Raw()) ^
+                   (std::hash<std::uint64_t>{}(key.type.value.Raw()) << 1u);
         }
+
     };
 
     struct Entry {
         ResourceLease lease{};
+
         std::size_t references = 0;
     };
 
@@ -285,11 +340,14 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         } catch (const std::exception &exception) {
             return foundation::Result<ResourceLease>::Failure(
                 foundation::Error::Create("runtime_support.resource_manager_exception",
-                                          "resource manager threw while acquiring a render lease", exception.what()));
+                                          "resource manager threw while acquiring a render lease",
+                                          exception.what()));
         } catch (...) {
-            return foundation::Result<ResourceLease>::Failure(foundation::Error::Create(
-                "runtime_support.resource_manager_exception", "resource manager threw while acquiring a render lease"));
+            return foundation::Result<ResourceLease>::Failure(
+                foundation::Error::Create("runtime_support.resource_manager_exception",
+                                          "resource manager threw while acquiring a render lease"));
         }
+
     }
 
     [[nodiscard]] foundation::Result<void> ReleaseManagerLease(ResourceLease lease) {
@@ -298,22 +356,30 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         } catch (const std::exception &exception) {
             return foundation::Result<void>::Failure(
                 foundation::Error::Create("runtime_support.resource_manager_exception",
-                                          "resource manager threw while releasing a render lease", exception.what()));
+                                          "resource manager threw while releasing a render lease",
+                                          exception.what()));
         } catch (...) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "runtime_support.resource_manager_exception", "resource manager threw while releasing a render lease"));
+            return foundation::Result<void>::Failure(
+                foundation::Error::Create("runtime_support.resource_manager_exception",
+                                          "resource manager threw while releasing a render lease"));
         }
+
     }
 
     [[nodiscard]] foundation::Result<void> AcquireResource(ResourceId id, ResourceType type) {
         if (!id.IsValid() || !type.IsValid()) {
-            return FailureVoid("renderer.invalid_resource", "render resource id and type must be valid");
+            return FailureVoid("renderer.invalid_resource",
+                               "render resource id and type must be valid");
         }
+
         const Key key{id, type};
+
         if (auto iterator = leases_.find(key); iterator != leases_.end()) {
             if (iterator->second.references == std::numeric_limits<std::size_t>::max()) {
-                return FailureVoid("runtime_support.reference_overflow", "render resource reference count overflow");
+                return FailureVoid("runtime_support.reference_overflow",
+                                   "render resource reference count overflow");
             }
+
             ++iterator->second.references;
             return foundation::Result<void>::Success();
         }
@@ -321,6 +387,7 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         // Allocate the local ownership slot before touching the external manager. This
         // removes the map-node allocation from the post-acquisition failure window.
         decltype(leases_)::iterator slot{};
+
         try {
             const auto inserted = leases_.try_emplace(key, Entry{});
             slot = inserted.first;
@@ -328,6 +395,7 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
                 return FailureVoid("runtime_support.render_lease_publication_conflict",
                                    "render resource ownership slot already exists");
             }
+
         } catch (const std::bad_alloc &) {
             return FailureVoid("runtime_support.allocation_failure",
                                "could not allocate render resource ownership state");
@@ -343,9 +411,12 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
             const auto rollback = ReleaseManagerLease(lease.Value());
             if (rollback) {
                 leases_.erase(slot);
-                return FailureVoid("runtime_support.allocation_failure", "injected render lease publication failure");
+                return FailureVoid("runtime_support.allocation_failure",
+                                   "injected render lease publication failure");
             }
+
             slot->second = Entry{lease.Value(), 1};
+
             return FailureVoid("runtime_support.render_payload_cleanup_pending",
                                "injected render lease publication failure left cleanup pending");
         }
@@ -355,6 +426,7 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         // caller can explicitly ReleasePayloads()/Shutdown() instead of losing ownership.
         try {
             slot->second = Entry{lease.Value(), 1};
+
         } catch (...) {
             const auto rollback = ReleaseManagerLease(lease.Value());
             if (rollback) {
@@ -362,10 +434,13 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
                 return FailureVoid("runtime_support.render_lease_publication_failed",
                                    "render lease could not be published locally");
             }
+
             slot->second = Entry{lease.Value(), 1};
+
             return FailureVoid("runtime_support.render_payload_cleanup_pending",
                                "render lease publication failed and rollback is pending");
         }
+
         return foundation::Result<void>::Success();
     }
 
@@ -374,34 +449,46 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
         if (iterator == leases_.end()) {
             return foundation::Result<void>::Success();
         }
+
         if (iterator->second.references > 1) {
             --iterator->second.references;
             return foundation::Result<void>::Success();
         }
+
         const auto released = ReleaseManagerLease(iterator->second.lease);
         if (!released) {
             return foundation::Result<void>::Failure(released.GetError());
         }
+
         leases_.erase(iterator);
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<ResourcePayloadPtr> GetPayload(ResourceId id, ResourceType type) const {
+    [[nodiscard]] foundation::Result<ResourcePayloadPtr> GetPayload(ResourceId id,
+                                                                    ResourceType type) const {
         const auto iterator = leases_.find(Key{id, type});
         if (iterator == leases_.end()) {
-            return Failure<ResourcePayloadPtr>("renderer.resource_not_ready", "render resource was not acquired");
+            return Failure<ResourcePayloadPtr>("renderer.resource_not_ready",
+                                               "render resource was not acquired");
         }
+
         const ResourceState state = manager_->GetState(iterator->second.lease.resource);
         if (state != ResourceState::Ready) {
-            const bool permanent =
-                state == ResourceState::Failed || state == ResourceState::Evicted || state == ResourceState::Unknown;
-            return Failure<ResourcePayloadPtr>(permanent ? "renderer.resource_failed" : "renderer.resource_not_ready",
-                                               permanent ? "render resource failed" : "render resource is loading");
+            const bool permanent = state == ResourceState::Failed ||
+                                   state == ResourceState::Evicted ||
+                                   state == ResourceState::Unknown;
+            return Failure<ResourcePayloadPtr>(permanent ? "renderer.resource_failed"
+                                                         : "renderer.resource_not_ready",
+                                               permanent ? "render resource failed"
+                                                         : "render resource is loading");
         }
+
         ResourcePayloadPtr payload = manager_->GetPayload(iterator->second.lease.resource);
         if (!payload) {
-            return Failure<ResourcePayloadPtr>("renderer.resource_failed", "ready render resource has no payload");
+            return Failure<ResourcePayloadPtr>("renderer.resource_failed",
+                                               "ready render resource has no payload");
         }
+
         return foundation::Result<ResourcePayloadPtr>::Success(std::move(payload));
     }
 
@@ -413,22 +500,26 @@ class RuntimeRenderResourceBridge final : public renderer::IRenderResourceBridge
 
 class RuntimeRenderSceneSource final : public renderer::IRenderSceneSource {
   public:
-    RuntimeRenderSceneSource(std::shared_ptr<ISceneNodeRegistry> nodes, std::shared_ptr<ITransformRegistry> transforms)
+    RuntimeRenderSceneSource(std::shared_ptr<ISceneNodeRegistry> nodes,
+                             std::shared_ptr<ITransformRegistry> transforms)
         : nodes_(std::move(nodes)), transforms_(std::move(transforms)) {
     }
 
     [[nodiscard]] foundation::Result<renderer::RenderTransformSnapshot>
     GetTransformSnapshot(renderer::RenderTransformId node) const override {
         const SceneNodeId scene_node{node.Raw()};
+
         if (!nodes_->Exists(scene_node)) {
             return Failure<renderer::RenderTransformSnapshot>("renderer.transform_missing",
                                                               "scene node is not registered");
         }
+
         const auto transform = transforms_->GetWorldTransform(scene_node);
         if (!transform) {
             return Failure<renderer::RenderTransformSnapshot>("renderer.transform_missing",
                                                               "scene node has no world transform");
         }
+
         const auto record = nodes_->GetNode(scene_node);
         return foundation::Result<renderer::RenderTransformSnapshot>::Success(
             renderer::RenderTransformSnapshot{node, *transform, record ? record->revision : 0u});
@@ -452,19 +543,25 @@ class RuntimeSceneTransformAdapter final : public physics::IPhysicsTransformSour
     [[nodiscard]] foundation::Result<Transform> ReadTransform(RuntimeObjectId id) const override {
         const auto transform = transforms_->GetWorldTransform(SceneNodeId{id.Raw()});
         if (!transform) {
-            return Failure<Transform>("runtime_support.transform_missing", "scene transform is unavailable");
+            return Failure<Transform>("runtime_support.transform_missing",
+                                      "scene transform is unavailable");
         }
+
         return foundation::Result<Transform>::Success(*transform);
     }
 
     [[nodiscard]] foundation::Result<void> WriteTransform(physics::PhysicsTransformId id,
                                                           const Transform &transform) override {
         if (shutdown_started_) {
-            return FailureVoid("runtime_support.adapter_shutdown", "scene projection adapter is shutting down");
+            return FailureVoid("runtime_support.adapter_shutdown",
+                               "scene projection adapter is shutting down");
         }
+
         if (!id.IsValid()) {
-            return FailureVoid("runtime_support.invalid_transform", "physics transform id must be valid");
+            return FailureVoid("runtime_support.invalid_transform",
+                               "physics transform id must be valid");
         }
+
         pending_.push_back(PendingSceneProjection{SceneNodeId{id.Raw()}, transform});
         return foundation::Result<void>::Success();
     }
@@ -484,15 +581,20 @@ class RuntimeSceneTransformAdapter final : public physics::IPhysicsTransformSour
         for (const PendingSceneProjection &projection : pending_) {
             foundation::Result<void> result = foundation::Result<void>::Success();
             try {
-                if (ConsumeCountdownFault(g_runtime_support_test_faults.throw_scene_projection_after)) {
+                if (ConsumeCountdownFault(
+                        g_runtime_support_test_faults.throw_scene_projection_after)) {
                     throw std::runtime_error("injected scene projection exception");
                 }
-                result = transforms_->SetWorldTransform(projection.node, projection.world_transform);
+
+                result =
+                    transforms_->SetWorldTransform(projection.node, projection.world_transform);
             } catch (const std::exception &exception) {
-                result = foundation::Result<void>::Failure(foundation::Error::Create(
-                    "runtime_support.scene_projection_exception", "scene projection callback threw", exception.what()));
+                result = foundation::Result<void>::Failure(
+                    foundation::Error::Create("runtime_support.scene_projection_exception",
+                                              "scene projection callback threw", exception.what()));
             } catch (...) {
-                result = FailureVoid("runtime_support.scene_projection_exception", "scene projection callback threw");
+                result = FailureVoid("runtime_support.scene_projection_exception",
+                                     "scene projection callback threw");
             }
 
             if (result) {
@@ -503,12 +605,15 @@ class RuntimeSceneTransformAdapter final : public physics::IPhysicsTransformSour
             if (!first) {
                 first = result.GetError();
             }
+
             retry.push_back(projection);
         }
+
         pending_.swap(retry);
         if (first) {
             return foundation::Result<std::size_t>::Failure(*first);
         }
+
         return foundation::Result<std::size_t>::Success(applied);
     }
 
@@ -527,6 +632,7 @@ class RuntimeSceneTransformAdapter final : public physics::IPhysicsTransformSour
             return FailureVoid("runtime_support.pending_scene_projections",
                                "scene projection queue still contains unapplied writes");
         }
+
         return foundation::Result<void>::Success();
     }
 
@@ -538,8 +644,10 @@ class RuntimeSceneTransformAdapter final : public physics::IPhysicsTransformSour
 
 class RuntimeSimulationClockAdapter final : public simulation::ISimulationClock {
   public:
-    explicit RuntimeSimulationClockAdapter(std::shared_ptr<IGameClock> clock) : clock_(std::move(clock)) {
+    explicit RuntimeSimulationClockAdapter(std::shared_ptr<IGameClock> clock)
+        : clock_(std::move(clock)) {
     }
+
     [[nodiscard]] simulation::SimulationTime Now() const override {
         return clock_->Now();
     }
@@ -551,18 +659,23 @@ class RuntimeSimulationClockAdapter final : public simulation::ISimulationClock 
 class RuntimeSimulationCommitTarget final : public simulation::ISimulationCommitTarget,
                                             public IReferenceSimulationCommitLog {
   public:
-    [[nodiscard]] foundation::Result<void> Commit(const simulation::SimulationProposalBatch &batch) override {
+    [[nodiscard]] foundation::Result<void>
+    Commit(const simulation::SimulationProposalBatch &batch) override {
         for (const simulation::SimulationProposal &proposal : batch.proposals) {
             if (proposal.domain != foundation::StringId::FromString("simulation")) {
                 return FailureVoid("runtime_support.unsupported_simulation_domain",
-                                   "reference commit target accepts only neutral simulation proposals");
+                                   "reference commit target accepts only neutral simulation "
+                                   "proposals");
             }
+
         }
+
         committed_.push_back(batch);
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] std::span<const simulation::SimulationProposalBatch> CommittedBatches() const noexcept override {
+    [[nodiscard]] std::span<const simulation::SimulationProposalBatch>
+    CommittedBatches() const noexcept override {
         return committed_;
     }
 
@@ -575,12 +688,14 @@ class RuntimeAnimationEvaluator final : public animation::IAnimationEvaluatorBac
     [[nodiscard]] foundation::Result<animation::PoseBuffer>
     EvaluatePose(const animation::AnimationEvaluationRequest &request) const override {
         animation::PoseBuffer pose{};
+
         pose.animator = request.animator;
         pose.owner = request.owner;
         pose.bone_transforms.resize(request.skeleton.joint_count);
         pose.revision = request.revision;
         return foundation::Result<animation::PoseBuffer>::Success(std::move(pose));
     }
+
 };
 
 class RuntimeAnimationPoseBridge final : public animation::IAnimationPoseSink,
@@ -588,10 +703,13 @@ class RuntimeAnimationPoseBridge final : public animation::IAnimationPoseSink,
                                          public IRuntimePoseCache,
                                          public IRuntimeAdapterLifecycle {
   public:
-    [[nodiscard]] foundation::Result<void> Publish(std::shared_ptr<const animation::PoseBuffer> pose) override {
+    [[nodiscard]] foundation::Result<void>
+    Publish(std::shared_ptr<const animation::PoseBuffer> pose) override {
         if (shutdown_started_) {
-            return FailureVoid("runtime_support.adapter_shutdown", "animation pose bridge is shutting down");
+            return FailureVoid("runtime_support.adapter_shutdown",
+                               "animation pose bridge is shutting down");
         }
+
         if (!pose || !pose->animator.IsValid() || !pose->owner.IsValid()) {
             return FailureVoid("runtime_support.invalid_pose",
                                "published animation pose must have valid animator and owner");
@@ -609,14 +727,19 @@ class RuntimeAnimationPoseBridge final : public animation::IAnimationPoseSink,
                 const auto &previous = animator_iterator->second;
                 if (previous->animator.generation == pose->animator.generation) {
                     if (previous->revision > pose->revision) {
-                        return FailureVoid("runtime_support.stale_pose", "animation pose revision moved backwards");
+                        return FailureVoid("runtime_support.stale_pose",
+                                           "animation pose revision moved backwards");
                     }
+
                 } else {
                     const auto old_owner = owner_candidate.find(previous->owner.Raw());
-                    if (old_owner != owner_candidate.end() && old_owner->second->animator == previous->animator) {
+                    if (old_owner != owner_candidate.end() &&
+                        old_owner->second->animator == previous->animator) {
                         owner_candidate.erase(old_owner);
                     }
+
                 }
+
             }
 
             const auto owner_iterator = owner_candidate.find(pose->owner.Raw());
@@ -627,22 +750,28 @@ class RuntimeAnimationPoseBridge final : public animation::IAnimationPoseSink,
                         return FailureVoid("runtime_support.stale_pose",
                                            "animation pose owner revision moved backwards");
                     }
+
                 } else {
                     const auto old_animator = animator_candidate.find(previous->animator.id.value);
                     if (old_animator != animator_candidate.end() &&
                         old_animator->second->animator == previous->animator) {
                         animator_candidate.erase(old_animator);
                     }
+
                 }
+
             }
 
             animator_candidate[pose->animator.id.value] = pose;
             if (ConsumeCountdownFault(g_runtime_support_test_faults.fail_pose_publication_after)) {
                 throw std::bad_alloc{};
+
             }
+
             owner_candidate[pose->owner.Raw()] = pose;
             if (ConsumeCountdownFault(g_runtime_support_test_faults.fail_pose_publication_after)) {
                 throw std::bad_alloc{};
+
             }
 
             poses_by_animator_.swap(animator_candidate);
@@ -652,34 +781,44 @@ class RuntimeAnimationPoseBridge final : public animation::IAnimationPoseSink,
             return FailureVoid("runtime_support.allocation_failure",
                                "failed to prepare atomic animation pose publication");
         }
+
     }
 
     [[nodiscard]] foundation::Result<std::shared_ptr<const animation::PoseBuffer>>
     GetPose(animation::AnimatorHandle animator) const override {
         const auto iterator = poses_by_animator_.find(animator.id.value);
-        if (iterator == poses_by_animator_.end() || iterator->second->animator.generation != animator.generation) {
-            return Failure<std::shared_ptr<const animation::PoseBuffer>>(
-                "runtime_support.pose_not_found", "animation pose is not available for this handle");
+        if (iterator == poses_by_animator_.end() ||
+            iterator->second->animator.generation != animator.generation) {
+            return Failure<std::shared_ptr<
+                const animation::PoseBuffer>>("runtime_support.pose_not_found",
+                                              "animation pose is not available for this handle");
         }
-        return foundation::Result<std::shared_ptr<const animation::PoseBuffer>>::Success(iterator->second);
+
+        return foundation::Result<std::shared_ptr<const animation::PoseBuffer>>::Success(
+            iterator->second);
     }
 
     [[nodiscard]] foundation::Result<std::shared_ptr<const renderer::RenderPoseBuffer>>
     GetPose(RuntimeObjectId owner) const override {
         if (!owner.IsValid()) {
-            return Failure<std::shared_ptr<const renderer::RenderPoseBuffer>>("runtime_support.invalid_pose_owner",
-                                                                              "render pose owner must be valid");
+            return Failure<std::shared_ptr<
+                const renderer::RenderPoseBuffer>>("runtime_support.invalid_pose_owner",
+                                                   "render pose owner must be valid");
         }
+
         const auto iterator = poses_by_owner_.find(owner.Raw());
         if (iterator == poses_by_owner_.end()) {
-            return foundation::Result<std::shared_ptr<const renderer::RenderPoseBuffer>>::Success({});
+            return foundation::Result<std::shared_ptr<const renderer::RenderPoseBuffer>>::Success(
+                {});
         }
+
         const auto &pose = iterator->second;
         auto rendered = std::make_shared<renderer::RenderPoseBuffer>();
         rendered->owner = pose->owner;
         rendered->bone_transforms = pose->bone_transforms;
         rendered->revision = pose->revision;
-        return foundation::Result<std::shared_ptr<const renderer::RenderPoseBuffer>>::Success(std::move(rendered));
+        return foundation::Result<std::shared_ptr<const renderer::RenderPoseBuffer>>::Success(
+            std::move(rendered));
     }
 
     [[nodiscard]] std::size_t PoseCount() const noexcept override {
@@ -701,23 +840,30 @@ class RuntimeAnimationPoseBridge final : public animation::IAnimationPoseSink,
 
 class DefaultAnimationResourceMapper final : public IAnimationResourceMapper {
   public:
-    [[nodiscard]] foundation::Result<ResourceRequest> ResolveSkeleton(animation::SkeletonId id) const override {
+    [[nodiscard]] foundation::Result<ResourceRequest>
+    ResolveSkeleton(animation::SkeletonId id) const override {
         if (!id.IsValid()) {
-            return Failure<ResourceRequest>("animation.invalid_skeleton", "skeleton id must be valid");
+            return Failure<ResourceRequest>("animation.invalid_skeleton",
+                                            "skeleton id must be valid");
         }
+
         const std::string name = "animation.skeleton." + std::to_string(id.value);
         return foundation::Result<ResourceRequest>::Success(
             ResourceRequest{ResourceId::FromString(name), SkeletonType()});
     }
 
-    [[nodiscard]] foundation::Result<ResourceRequest> ResolveClip(animation::AnimationClipId id) const override {
+    [[nodiscard]] foundation::Result<ResourceRequest>
+    ResolveClip(animation::AnimationClipId id) const override {
         if (!id.IsValid()) {
-            return Failure<ResourceRequest>("animation.invalid_clip", "animation clip id must be valid");
+            return Failure<ResourceRequest>("animation.invalid_clip",
+                                            "animation clip id must be valid");
         }
+
         const std::string name = "animation.clip." + std::to_string(id.value);
         return foundation::Result<ResourceRequest>::Success(
             ResourceRequest{ResourceId::FromString(name), AnimationClipType()});
     }
+
 };
 
 class RuntimeAnimationResourceSource final : public animation::IAnimationResourceSource,
@@ -728,36 +874,46 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
         : manager_(std::move(manager)), mapper_(std::move(mapper)) {
     }
 
-    [[nodiscard]] foundation::Result<animation::SkeletonDesc> LoadSkeleton(animation::SkeletonId id) const override {
+    [[nodiscard]] foundation::Result<animation::SkeletonDesc>
+    LoadSkeleton(animation::SkeletonId id) const override {
         if (const auto cached = skeleton_cache_.find(id.value); cached != skeleton_cache_.end()) {
             return foundation::Result<animation::SkeletonDesc>::Success(cached->second);
         }
+
         const auto request = mapper_->ResolveSkeleton(id);
         if (!request) {
             return foundation::Result<animation::SkeletonDesc>::Failure(request.GetError());
         }
+
         const auto payload = ResolvePayload(request.Value(), skeleton_leases_);
         if (!payload) {
             return foundation::Result<animation::SkeletonDesc>::Failure(payload.GetError());
         }
-        const auto typed = std::dynamic_pointer_cast<const IAnimationSkeletonResourcePayload>(payload.Value());
+
+        const auto typed =
+            std::dynamic_pointer_cast<const IAnimationSkeletonResourcePayload>(payload.Value());
         if (!typed) {
             TryRelease(request.Value().resource_id, skeleton_leases_);
-            return Failure<animation::SkeletonDesc>("animation.resource_payload_unsupported",
-                                                    "resource payload does not expose a skeleton descriptor");
+            return Failure<
+                animation::SkeletonDesc>("animation.resource_payload_unsupported",
+                                         "resource payload does not expose a skeleton descriptor");
         }
+
         const animation::SkeletonDesc desc = typed->GetSkeleton();
         if (desc.id != id || desc.joint_count == 0) {
             TryRelease(request.Value().resource_id, skeleton_leases_);
             return Failure<animation::SkeletonDesc>("animation.invalid_skeleton",
-                                                    "resource payload returned an invalid skeleton descriptor");
+                                                    "resource payload returned an invalid skeleton "
+                                                    "descriptor");
         }
+
         try {
             skeleton_cache_[id.value] = desc;
         } catch (const std::bad_alloc &) {
             return Failure<animation::SkeletonDesc>("runtime_support.allocation_failure",
                                                     "failed to publish cached skeleton descriptor");
         }
+
         TryRelease(request.Value().resource_id, skeleton_leases_);
         return foundation::Result<animation::SkeletonDesc>::Success(desc);
     }
@@ -767,33 +923,42 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
         if (const auto cached = clip_cache_.find(id.value); cached != clip_cache_.end()) {
             return foundation::Result<animation::AnimationClipDesc>::Success(cached->second);
         }
+
         const auto request = mapper_->ResolveClip(id);
         if (!request) {
             return foundation::Result<animation::AnimationClipDesc>::Failure(request.GetError());
         }
+
         const auto payload = ResolvePayload(request.Value(), clip_leases_);
         if (!payload) {
             return foundation::Result<animation::AnimationClipDesc>::Failure(payload.GetError());
         }
-        const auto typed = std::dynamic_pointer_cast<const IAnimationClipResourcePayload>(payload.Value());
+
+        const auto typed =
+            std::dynamic_pointer_cast<const IAnimationClipResourcePayload>(payload.Value());
         if (!typed) {
             TryRelease(request.Value().resource_id, clip_leases_);
-            return Failure<animation::AnimationClipDesc>(
-                "animation.resource_payload_unsupported",
-                "resource payload does not expose an animation clip descriptor");
+            return Failure<animation::AnimationClipDesc>("animation.resource_payload_unsupported",
+                                                         "resource payload does not expose an "
+                                                         "animation clip descriptor");
         }
+
         const animation::AnimationClipDesc desc = typed->GetClip();
         if (desc.id != id || !desc.skeleton.IsValid() || desc.duration_seconds <= 0.0f) {
             TryRelease(request.Value().resource_id, clip_leases_);
-            return Failure<animation::AnimationClipDesc>(
-                "animation.invalid_clip", "resource payload returned an invalid animation clip descriptor");
+            return Failure<animation::AnimationClipDesc>("animation.invalid_clip",
+                                                         "resource payload returned an invalid "
+                                                         "animation clip descriptor");
         }
+
         try {
             clip_cache_[id.value] = desc;
         } catch (const std::bad_alloc &) {
-            return Failure<animation::AnimationClipDesc>("runtime_support.allocation_failure",
-                                                         "failed to publish cached animation clip descriptor");
+            return Failure<
+                animation::AnimationClipDesc>("runtime_support.allocation_failure",
+                                              "failed to publish cached animation clip descriptor");
         }
+
         TryRelease(request.Value().resource_id, clip_leases_);
         return foundation::Result<animation::AnimationClipDesc>::Success(desc);
     }
@@ -806,6 +971,7 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
         if (first) {
             return foundation::Result<void>::Failure(*first);
         }
+
         skeleton_cache_.clear();
         clip_cache_.clear();
         return foundation::Result<void>::Success();
@@ -814,75 +980,94 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
   private:
     struct HeldResource {
         ResourceLease lease{};
+
         ResourcePayloadPtr payload{};
+
     };
 
     using HeldMap = std::map<std::uint64_t, HeldResource>;
 
-    [[nodiscard]] foundation::Result<ResourcePayloadPtr> ResolvePayload(const ResourceRequest &request,
-                                                                        HeldMap &held) const {
+    [[nodiscard]] foundation::Result<ResourcePayloadPtr>
+    ResolvePayload(const ResourceRequest &request, HeldMap &held) const {
         if (shutdown_started_) {
             return Failure<ResourcePayloadPtr>("runtime_support.adapter_shutdown",
                                                "animation resource adapter is shutting down");
         }
+
         const std::uint64_t key = request.resource_id.Raw();
         auto iterator = held.find(key);
         if (iterator == held.end()) {
             try {
-                if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_animation_lease_slot_publication)) {
+                if (ConsumeTestFault(
+                        g_runtime_support_test_faults.fail_next_animation_lease_slot_publication)) {
                     throw std::bad_alloc{};
+
                 }
+
                 const auto [slot, inserted] = held.try_emplace(key, HeldResource{});
                 if (!inserted) {
-                    return Failure<ResourcePayloadPtr>("runtime_support.resource_slot_conflict",
-                                                       "animation resource ownership slot already exists");
+                    return Failure<
+                        ResourcePayloadPtr>("runtime_support.resource_slot_conflict",
+                                            "animation resource ownership slot already exists");
                 }
+
                 iterator = slot;
             } catch (const std::bad_alloc &) {
-                return Failure<ResourcePayloadPtr>("runtime_support.allocation_failure",
-                                                   "failed to prepare animation resource lease ownership");
+                return Failure<
+                    ResourcePayloadPtr>("runtime_support.allocation_failure",
+                                        "failed to prepare animation resource lease ownership");
             }
 
-            foundation::Result<ResourceLease> lease =
-                foundation::Result<ResourceLease>::Failure(foundation::Error::Create(
-                    "runtime_support.resource_request_failed", "animation resource request did not run"));
+            foundation::Result<ResourceLease> lease = foundation::Result<ResourceLease>::Failure(
+                foundation::Error::Create("runtime_support.resource_request_failed",
+                                          "animation resource request did not run"));
             try {
                 lease = manager_->RequestLease(request);
             } catch (const std::exception &exception) {
                 held.erase(iterator);
                 return foundation::Result<ResourcePayloadPtr>::Failure(
                     foundation::Error::Create("runtime_support.resource_request_exception",
-                                              "animation resource lease request threw", exception.what()));
+                                              "animation resource lease request threw",
+                                              exception.what()));
             } catch (...) {
                 held.erase(iterator);
                 return Failure<ResourcePayloadPtr>("runtime_support.resource_request_exception",
                                                    "animation resource lease request threw");
             }
+
             if (!lease) {
                 held.erase(iterator);
                 return foundation::Result<ResourcePayloadPtr>::Failure(lease.GetError());
             }
+
             iterator->second.lease = lease.Value();
         }
 
         const ResourceState state = manager_->GetState(iterator->second.lease.resource);
         if (state != ResourceState::Ready) {
-            const bool permanent =
-                state == ResourceState::Failed || state == ResourceState::Evicted || state == ResourceState::Unknown;
+            const bool permanent = state == ResourceState::Failed ||
+                                   state == ResourceState::Evicted ||
+                                   state == ResourceState::Unknown;
             if (permanent) {
                 TryRelease(request.resource_id, held);
             }
-            return Failure<ResourcePayloadPtr>(permanent ? "animation.resource_failed" : "animation.resource_not_ready",
+
+            return Failure<ResourcePayloadPtr>(permanent ? "animation.resource_failed"
+                                                         : "animation.resource_not_ready",
                                                permanent ? "animation resource failed"
                                                          : "animation resource is loading");
         }
+
         if (!iterator->second.payload) {
             iterator->second.payload = manager_->GetPayload(iterator->second.lease.resource);
         }
+
         if (!iterator->second.payload) {
             TryRelease(request.resource_id, held);
-            return Failure<ResourcePayloadPtr>("animation.resource_failed", "ready animation resource has no payload");
+            return Failure<ResourcePayloadPtr>("animation.resource_failed",
+                                               "ready animation resource has no payload");
         }
+
         return foundation::Result<ResourcePayloadPtr>::Success(iterator->second.payload);
     }
 
@@ -891,15 +1076,18 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
         if (iterator == held.end()) {
             return;
         }
+
         try {
             const auto released = manager_->Release(iterator->second.lease);
             if (released) {
                 held.erase(iterator);
             }
+
         } catch (...) {
             // The held map remains the durable retry owner.
             return;
         }
+
     }
 
     void ReleaseMap(HeldMap &held, std::optional<foundation::Error> &first) {
@@ -910,22 +1098,29 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
                     iterator = held.erase(iterator);
                     continue;
                 }
+
                 if (!first) {
                     first = released.GetError();
                 }
+
             } catch (const std::exception &exception) {
                 if (!first) {
                     first = foundation::Error::Create("runtime_support.resource_release_exception",
-                                                      "animation resource release threw", exception.what());
+                                                      "animation resource release threw",
+                                                      exception.what());
                 }
+
             } catch (...) {
                 if (!first) {
                     first = foundation::Error::Create("runtime_support.resource_release_exception",
                                                       "animation resource release threw");
                 }
+
             }
+
             ++iterator;
         }
+
     }
 
     std::shared_ptr<IResourceManager> manager_;
@@ -939,38 +1134,47 @@ class RuntimeAnimationResourceSource final : public animation::IAnimationResourc
 
 class DefaultAudioResourceMapper final : public IAudioResourceMapper {
   public:
-    [[nodiscard]] foundation::Result<ResourceRequest> ResolveSound(audio::SoundId id) const override {
+    [[nodiscard]] foundation::Result<ResourceRequest>
+    ResolveSound(audio::SoundId id) const override {
         if (!id.IsValid()) {
             return Failure<ResourceRequest>("audio.invalid_sound", "sound id must be valid");
         }
+
         const std::string name = "audio.clip." + std::to_string(id.value);
         return foundation::Result<ResourceRequest>::Success(
             ResourceRequest{ResourceId::FromString(name), AudioClipType()});
     }
+
 };
 
 class RuntimeAudioLeaseState {
   public:
     using LeaseToken = ResourceAcquisitionId;
 
-    explicit RuntimeAudioLeaseState(std::shared_ptr<IResourceManager> manager) : manager_(std::move(manager)) {
+    explicit RuntimeAudioLeaseState(std::shared_ptr<IResourceManager> manager)
+        : manager_(std::move(manager)) {
     }
 
     [[nodiscard]] foundation::Result<LeaseToken> PrepareWrapper(ResourceLease lease) {
         if (!lease.IsValid()) {
-            return Failure<LeaseToken>("runtime_support.invalid_audio_lease", "audio wrapper lease must be valid");
+            return Failure<LeaseToken>("runtime_support.invalid_audio_lease",
+                                       "audio wrapper lease must be valid");
         }
+
         try {
-            const auto [iterator, inserted] = entries_.emplace(lease.acquisition, LeaseEntry{lease, false, false});
+            const auto [iterator, inserted] =
+                entries_.emplace(lease.acquisition, LeaseEntry{lease, false, false});
             if (!inserted) {
                 return Failure<LeaseToken>("runtime_support.duplicate_audio_lease",
                                            "audio wrapper lease is already tracked");
             }
+
             (void)iterator;
         } catch (const std::bad_alloc &) {
             return Failure<LeaseToken>("runtime_support.allocation_failure",
                                        "failed to prepare durable audio wrapper lease ownership");
         }
+
         return foundation::Result<LeaseToken>::Success(lease.acquisition);
     }
 
@@ -979,6 +1183,7 @@ class RuntimeAudioLeaseState {
         if (iterator == entries_.end() || iterator->second.wrapper_active) {
             return;
         }
+
         iterator->second.wrapper_active = true;
         ++active_wrappers_;
     }
@@ -988,6 +1193,7 @@ class RuntimeAudioLeaseState {
         if (iterator != entries_.end() && !iterator->second.wrapper_active) {
             entries_.erase(iterator);
         }
+
     }
 
     void ReleaseWrapper(LeaseToken token) noexcept {
@@ -995,12 +1201,15 @@ class RuntimeAudioLeaseState {
         if (iterator == entries_.end()) {
             return;
         }
+
         if (iterator->second.wrapper_active) {
             iterator->second.wrapper_active = false;
             if (active_wrappers_ > 0) {
                 --active_wrappers_;
             }
+
         }
+
         iterator->second.release_requested = true;
         TryReleaseNoThrow(iterator);
     }
@@ -1017,36 +1226,46 @@ class RuntimeAudioLeaseState {
                 if (ConsumeTestFault(g_runtime_support_test_faults.throw_next_audio_release)) {
                     throw std::runtime_error("injected audio lease release exception");
                 }
+
                 const auto released = manager_->Release(iterator->second.lease);
                 if (released) {
                     iterator = entries_.erase(iterator);
                     continue;
                 }
+
                 if (!first) {
                     first = released.GetError();
                 }
+
             } catch (const std::exception &exception) {
                 if (!first) {
                     first = foundation::Error::Create("runtime_support.resource_release_exception",
-                                                      "audio wrapper lease release threw", exception.what());
+                                                      "audio wrapper lease release threw",
+                                                      exception.what());
                 }
+
             } catch (...) {
                 if (!first) {
                     first = foundation::Error::Create("runtime_support.resource_release_exception",
                                                       "audio wrapper lease release threw");
                 }
+
             }
+
             ++iterator;
         }
+
         if (first) {
             return foundation::Result<void>::Failure(*first);
         }
+
         return foundation::Result<void>::Success();
     }
 
     [[nodiscard]] std::size_t ActiveWrappers() const noexcept {
         return active_wrappers_;
     }
+
     [[nodiscard]] std::size_t PendingEntries() const noexcept {
         return entries_.size();
     }
@@ -1054,6 +1273,7 @@ class RuntimeAudioLeaseState {
   private:
     struct LeaseEntry {
         ResourceLease lease{};
+
         bool wrapper_active = false;
         bool release_requested = false;
     };
@@ -1065,15 +1285,18 @@ class RuntimeAudioLeaseState {
             if (ConsumeTestFault(g_runtime_support_test_faults.throw_next_audio_release)) {
                 throw std::runtime_error("injected audio lease release exception");
             }
+
             const auto released = manager_->Release(iterator->second.lease);
             if (released) {
                 entries_.erase(iterator);
             }
+
         } catch (...) {
             // The pre-existing entry is the durable retry owner. Destructor paths do
             // not allocate, do not throw and never forget the lease.
             return;
         }
+
     }
 
     std::shared_ptr<IResourceManager> manager_;
@@ -1096,12 +1319,15 @@ class LeasedAudioClipResource final : public audio::IAudioClipResource {
     [[nodiscard]] audio::AudioClipFormat GetFormat() const override {
         return resource_->GetFormat();
     }
+
     [[nodiscard]] audio::AudioClipStorage GetStorage() const override {
         return resource_->GetStorage();
     }
+
     [[nodiscard]] std::span<const std::byte> GetEncodedData() const override {
         return resource_->GetEncodedData();
     }
+
     [[nodiscard]] std::shared_ptr<audio::IAudioStreamSource> GetStreamSource() const override {
         return resource_->GetStreamSource();
     }
@@ -1112,9 +1338,11 @@ class LeasedAudioClipResource final : public audio::IAudioClipResource {
     std::shared_ptr<RuntimeAudioLeaseState> lease_state_;
 };
 
-class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, public IRuntimeAdapterLifecycle {
+class RuntimeAudioResourceSource final : public audio::IAudioResourceSource,
+                                         public IRuntimeAdapterLifecycle {
   public:
-    RuntimeAudioResourceSource(std::shared_ptr<IResourceManager> manager, std::shared_ptr<IAudioResourceMapper> mapper)
+    RuntimeAudioResourceSource(std::shared_ptr<IResourceManager> manager,
+                               std::shared_ptr<IAudioResourceMapper> mapper)
         : manager_(std::move(manager)), mapper_(std::move(mapper)),
           lease_state_(std::make_shared<RuntimeAudioLeaseState>(manager_)) {
     }
@@ -1123,14 +1351,17 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
         if (shutdown_started_) {
             return audio::SoundState::Failed;
         }
+
         const auto request = mapper_->ResolveSound(id);
         if (!request) {
             return audio::SoundState::Missing;
         }
+
         const auto iterator_result = FindOrRequest(id, request.Value());
         if (!iterator_result) {
             return audio::SoundState::Failed;
         }
+
         auto iterator = iterator_result.Value();
 
         switch (manager_->GetState(iterator->second.resource)) {
@@ -1145,44 +1376,56 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
         default:
             return audio::SoundState::Loading;
         }
+
     }
 
-    [[nodiscard]] foundation::Result<audio::AudioClipPayload> LoadClip(audio::SoundId id) const override {
+    [[nodiscard]] foundation::Result<audio::AudioClipPayload>
+    LoadClip(audio::SoundId id) const override {
         if (shutdown_started_) {
             return Failure<audio::AudioClipPayload>("runtime_support.adapter_shutdown",
                                                     "audio resource adapter is shutting down");
         }
+
         const auto request = mapper_->ResolveSound(id);
         if (!request) {
             return foundation::Result<audio::AudioClipPayload>::Failure(request.GetError());
         }
+
         const auto iterator_result = FindOrRequest(id, request.Value());
         if (!iterator_result) {
             return foundation::Result<audio::AudioClipPayload>::Failure(iterator_result.GetError());
         }
+
         auto iterator = iterator_result.Value();
 
         const ResourceState state = manager_->GetState(iterator->second.resource);
         if (state != ResourceState::Ready) {
-            const bool permanent =
-                state == ResourceState::Failed || state == ResourceState::Evicted || state == ResourceState::Unknown;
+            const bool permanent = state == ResourceState::Failed ||
+                                   state == ResourceState::Evicted ||
+                                   state == ResourceState::Unknown;
             if (permanent) {
                 TryReleaseHeld(iterator);
             }
-            return Failure<audio::AudioClipPayload>(permanent ? "audio.resource_failed" : "audio.resource_not_ready",
-                                                    permanent ? "audio resource failed" : "audio resource is loading");
+
+            return Failure<audio::AudioClipPayload>(permanent ? "audio.resource_failed"
+                                                              : "audio.resource_not_ready",
+                                                    permanent ? "audio resource failed"
+                                                              : "audio resource is loading");
         }
 
         const ResourcePayloadPtr payload = manager_->GetPayload(iterator->second.resource);
         if (!payload) {
             TryReleaseHeld(iterator);
-            return Failure<audio::AudioClipPayload>("audio.resource_failed", "ready audio resource has no payload");
+            return Failure<audio::AudioClipPayload>("audio.resource_failed",
+                                                    "ready audio resource has no payload");
         }
+
         const auto clip = std::dynamic_pointer_cast<const audio::IAudioClipResource>(payload);
         if (!clip) {
             TryReleaseHeld(iterator);
-            return Failure<audio::AudioClipPayload>("audio.resource_payload_unsupported",
-                                                    "resource payload does not implement IAudioClipResource");
+            return Failure<
+                audio::AudioClipPayload>("audio.resource_payload_unsupported",
+                                         "resource payload does not implement IAudioClipResource");
         }
 
         // The lease state entry is allocated while held_ is still the authoritative owner.
@@ -1191,13 +1434,17 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
         if (!prepared) {
             return foundation::Result<audio::AudioClipPayload>::Failure(prepared.GetError());
         }
+
         const auto token = prepared.Value();
 
         std::shared_ptr<LeasedAudioClipResource> leased_clip;
         try {
-            if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_audio_wrapper_publication)) {
+            if (ConsumeTestFault(
+                    g_runtime_support_test_faults.fail_next_audio_wrapper_publication)) {
                 throw std::bad_alloc{};
+
             }
+
             leased_clip = std::make_shared<LeasedAudioClipResource>(clip, token, lease_state_);
         } catch (const std::bad_alloc &) {
             lease_state_->CancelPrepared(token);
@@ -1221,20 +1468,26 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
                     iterator = held_.erase(iterator);
                     continue;
                 }
+
                 if (!first) {
                     first = released.GetError();
                 }
+
             } catch (const std::exception &exception) {
                 if (!first) {
                     first = foundation::Error::Create("runtime_support.resource_release_exception",
-                                                      "audio held lease release threw", exception.what());
+                                                      "audio held lease release threw",
+                                                      exception.what());
                 }
+
             } catch (...) {
                 if (!first) {
                     first = foundation::Error::Create("runtime_support.resource_release_exception",
                                                       "audio held lease release threw");
                 }
+
             }
+
             ++iterator;
         }
 
@@ -1242,16 +1495,20 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
         if (!drained && !first) {
             first = drained.GetError();
         }
+
         if (lease_state_->ActiveWrappers() != 0) {
             return first ? foundation::Result<void>::Failure(*first)
                          : FailureVoid("runtime_support.audio_resource_in_use",
-                                       "audio resource leases are still owned by active clip consumers");
+                                       "audio resource leases are still owned by active clip "
+                                       "consumers");
         }
+
         if (!held_.empty() || lease_state_->PendingEntries() != 0) {
             return first ? foundation::Result<void>::Failure(*first)
                          : FailureVoid("runtime_support.audio_resource_cleanup_pending",
                                        "audio resource lease cleanup remains pending");
         }
+
         return foundation::Result<void>::Success();
     }
 
@@ -1259,22 +1516,26 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
     using HeldMap = std::map<std::uint64_t, ResourceLease>;
     using HeldIterator = HeldMap::iterator;
 
-    [[nodiscard]] foundation::Result<HeldIterator> FindOrRequest(audio::SoundId id,
-                                                                 const ResourceRequest &request) const {
+    [[nodiscard]] foundation::Result<HeldIterator>
+    FindOrRequest(audio::SoundId id, const ResourceRequest &request) const {
         auto iterator = held_.find(id.value);
         if (iterator != held_.end()) {
             return foundation::Result<HeldIterator>::Success(iterator);
         }
 
         try {
-            if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_audio_lease_slot_publication)) {
+            if (ConsumeTestFault(
+                    g_runtime_support_test_faults.fail_next_audio_lease_slot_publication)) {
                 throw std::bad_alloc{};
+
             }
+
             const auto [slot, inserted] = held_.try_emplace(id.value, ResourceLease{});
             if (!inserted) {
                 return Failure<HeldIterator>("runtime_support.resource_slot_conflict",
                                              "audio resource ownership slot already exists");
             }
+
             iterator = slot;
         } catch (const std::bad_alloc &) {
             return Failure<HeldIterator>("runtime_support.allocation_failure",
@@ -1282,22 +1543,26 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
         }
 
         foundation::Result<ResourceLease> lease = foundation::Result<ResourceLease>::Failure(
-            foundation::Error::Create("runtime_support.resource_request_failed", "audio resource request did not run"));
+            foundation::Error::Create("runtime_support.resource_request_failed",
+                                      "audio resource request did not run"));
         try {
             lease = manager_->RequestLease(request);
         } catch (const std::exception &exception) {
             held_.erase(iterator);
-            return foundation::Result<HeldIterator>::Failure(foundation::Error::Create(
-                "runtime_support.resource_request_exception", "audio resource lease request threw", exception.what()));
+            return foundation::Result<HeldIterator>::Failure(
+                foundation::Error::Create("runtime_support.resource_request_exception",
+                                          "audio resource lease request threw", exception.what()));
         } catch (...) {
             held_.erase(iterator);
             return Failure<HeldIterator>("runtime_support.resource_request_exception",
                                          "audio resource lease request threw");
         }
+
         if (!lease) {
             held_.erase(iterator);
             return foundation::Result<HeldIterator>::Failure(lease.GetError());
         }
+
         iterator->second = lease.Value();
         return foundation::Result<HeldIterator>::Success(iterator);
     }
@@ -1307,14 +1572,17 @@ class RuntimeAudioResourceSource final : public audio::IAudioResourceSource, pub
             if (ConsumeTestFault(g_runtime_support_test_faults.throw_next_audio_release)) {
                 throw std::runtime_error("injected audio lease release exception");
             }
+
             const auto released = manager_->Release(iterator->second);
             if (released) {
                 held_.erase(iterator);
             }
+
         } catch (...) {
             // held_ remains the durable retry owner.
             return;
         }
+
     }
 
     std::shared_ptr<IResourceManager> manager_;
@@ -1330,7 +1598,8 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         return enabled_;
     }
 
-    [[nodiscard]] foundation::Result<void> Initialize(const audio::AudioBackendOptions &options) override {
+    [[nodiscard]] foundation::Result<void>
+    Initialize(const audio::AudioBackendOptions &options) override {
         enabled_ = options.enabled;
         initialized_ = true;
         return foundation::Result<void>::Success();
@@ -1339,32 +1608,42 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
     [[nodiscard]] foundation::Result<audio::BackendVoiceHandle>
     CreateVoice(const audio::AudioVoiceDesc &desc) override {
         if (!initialized_ || !enabled_) {
-            return Failure<audio::BackendVoiceHandle>("audio.backend_disabled", "reference audio backend is disabled");
+            return Failure<audio::BackendVoiceHandle>("audio.backend_disabled",
+                                                      "reference audio backend is disabled");
         }
+
         auto reservation = ReserveMonotonicId(next_voice_, "audio.voice_id_overflow",
                                               "reference audio voice id allocator is exhausted");
         if (!reservation) {
             return foundation::Result<audio::BackendVoiceHandle>::Failure(reservation.GetError());
         }
+
         const audio::BackendVoiceHandle handle{reservation.Value().Value()};
+
         Voice voice{};
+
         voice.desc = desc;
         voice.gain = desc.initial_gain;
         voice.spatial = desc.spatial;
         try {
             if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_audio_voice_publication)) {
                 throw std::bad_alloc{};
+
             }
+
             const auto [voice_iterator, inserted] = voices_.emplace(handle.value, std::move(voice));
             if (!inserted) {
-                return Failure<audio::BackendVoiceHandle>("audio.duplicate_voice_id",
-                                                          "reserved reference audio voice id already exists");
+                return Failure<
+                    audio::BackendVoiceHandle>("audio.duplicate_voice_id",
+                                               "reserved reference audio voice id already exists");
             }
+
             (void)voice_iterator;
         } catch (const std::bad_alloc &) {
             return Failure<audio::BackendVoiceHandle>("runtime_support.allocation_failure",
                                                       "failed to publish reference audio voice");
         }
+
         reservation.Value().Commit();
         return foundation::Result<audio::BackendVoiceHandle>::Success(handle);
     }
@@ -1373,6 +1652,7 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         if (voices_.erase(handle.value) == 0) {
             return FailureVoid("audio.voice_not_found", "reference audio voice does not exist");
         }
+
         return foundation::Result<void>::Success();
     }
 
@@ -1381,6 +1661,7 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         if (!voice) {
             return FailureVoid("audio.voice_not_found", "reference audio voice does not exist");
         }
+
         voice->playing = true;
         voice->paused = false;
         voice->updates = 0;
@@ -1392,6 +1673,7 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         if (!voice) {
             return FailureVoid("audio.voice_not_found", "reference audio voice does not exist");
         }
+
         voice->playing = false;
         voice->paused = true;
         return foundation::Result<void>::Success();
@@ -1402,6 +1684,7 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         if (!voice) {
             return FailureVoid("audio.voice_not_found", "reference audio voice does not exist");
         }
+
         voice->playing = false;
         voice->paused = false;
         voice->finished = true;
@@ -1413,55 +1696,68 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         return voice == nullptr || voice->finished || (!voice->desc.loop && voice->updates > 0);
     }
 
-    [[nodiscard]] foundation::Result<void> SetGain(audio::BackendVoiceHandle handle, float gain) override {
+    [[nodiscard]] foundation::Result<void> SetGain(audio::BackendVoiceHandle handle,
+                                                   float gain) override {
         Voice *voice = Find(handle);
         if (!voice) {
             return FailureVoid("audio.voice_not_found", "reference audio voice does not exist");
         }
+
         if (!std::isfinite(gain) || gain < 0.0f) {
             return FailureVoid("audio.invalid_gain", "reference audio voice gain is invalid");
         }
+
         voice->gain = gain;
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> SetSpatialState(audio::BackendVoiceHandle handle,
-                                                           const audio::AudioSpatialState &state) override {
+    [[nodiscard]] foundation::Result<void>
+    SetSpatialState(audio::BackendVoiceHandle handle,
+                    const audio::AudioSpatialState &state) override {
         Voice *voice = Find(handle);
         if (!voice) {
             return FailureVoid("audio.voice_not_found", "reference audio voice does not exist");
         }
+
         voice->spatial = state;
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> CreateBackendListener(audio::AudioListenerHandle handle,
-                                                                 const Transform &transform) override {
+    [[nodiscard]] foundation::Result<void>
+    CreateBackendListener(audio::AudioListenerHandle handle, const Transform &transform) override {
         if (!handle.IsValid()) {
             return FailureVoid("audio.invalid_listener", "reference listener handle is invalid");
         }
+
         if (listeners_.contains(handle.id.value)) {
             return FailureVoid("audio.listener_exists", "reference listener already exists");
         }
+
         listeners_.emplace(handle.id.value, Listener{handle, transform});
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> DestroyBackendListener(audio::AudioListenerHandle handle) override {
+    [[nodiscard]] foundation::Result<void>
+    DestroyBackendListener(audio::AudioListenerHandle handle) override {
         const auto iterator = listeners_.find(handle.id.value);
-        if (iterator == listeners_.end() || iterator->second.handle.generation != handle.generation) {
+        if (iterator == listeners_.end() ||
+            iterator->second.handle.generation != handle.generation) {
             return FailureVoid("audio.listener_not_found", "reference listener does not exist");
         }
+
         listeners_.erase(iterator);
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> SetBackendListenerTransform(audio::AudioListenerHandle handle,
-                                                                       const Transform &transform) override {
+    [[nodiscard]] foundation::Result<void>
+    SetBackendListenerTransform(audio::AudioListenerHandle handle,
+                                const Transform &transform) override {
         const auto iterator = listeners_.find(handle.id.value);
-        if (iterator == listeners_.end() || iterator->second.handle.generation != handle.generation) {
+        if (iterator == listeners_.end() ||
+            iterator->second.handle.generation != handle.generation) {
             return FailureVoid("audio.listener_not_found", "reference listener does not exist");
         }
+
         iterator->second.transform = transform;
         return foundation::Result<void>::Success();
     }
@@ -1470,6 +1766,7 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
         if (delta.IsNegative()) {
             return FailureVoid("audio.invalid_delta", "audio update delta must not be negative");
         }
+
         for (auto &[id, voice] : voices_) {
             (void)id;
             if (voice.playing) {
@@ -1478,15 +1775,20 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
                     voice.finished = true;
                     voice.playing = false;
                 }
+
             }
+
         }
+
         return foundation::Result<void>::Success();
     }
 
   private:
     struct Voice {
         audio::AudioVoiceDesc desc{};
+
         audio::AudioSpatialState spatial{};
+
         float gain = 1.0f;
         bool playing = false;
         bool paused = false;
@@ -1496,7 +1798,9 @@ class ReferenceAudioBackend final : public audio::IAudioBackend {
 
     struct Listener {
         audio::AudioListenerHandle handle{};
+
         Transform transform{};
+
     };
 
     [[nodiscard]] Voice *Find(audio::BackendVoiceHandle handle) {
@@ -1522,16 +1826,22 @@ class ReferenceChunkStreamingManifestSource final : public IChunkStreamingManife
         : chunks_(std::move(chunks)) {
     }
 
-    [[nodiscard]] foundation::Result<ChunkStreamingManifest> GetManifest(ChunkId chunk) const override {
+    [[nodiscard]] foundation::Result<ChunkStreamingManifest>
+    GetManifest(ChunkId chunk) const override {
         const auto descriptor = chunks_->FindChunk(chunk);
         if (!descriptor) {
-            return Failure<ChunkStreamingManifest>("runtime_support.chunk_not_found",
-                                                   "streaming manifest requested for an unknown chunk");
+            return Failure<
+                ChunkStreamingManifest>("runtime_support.chunk_not_found",
+                                        "streaming manifest requested for an unknown chunk");
         }
+
         ChunkStreamingManifest manifest{};
+
         manifest.chunk = chunk;
         manifest.persistence_location =
-            PersistenceLocation{descriptor->region_id, descriptor->id, foundation::StringId::FromString("chunk")};
+            PersistenceLocation{descriptor->region_id, descriptor->id,
+                                foundation::StringId::FromString("chunk")};
+
         return foundation::Result<ChunkStreamingManifest>::Success(std::move(manifest));
     }
 
@@ -1549,11 +1859,12 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                                       public IStreamingPreparedChunkDataQuery,
                                       public IRuntimeAdapterLifecycle {
   public:
-    RuntimeStreamingAdapter(std::shared_ptr<WorldServices> world, std::shared_ptr<ResourceServices> resources,
+    RuntimeStreamingAdapter(std::shared_ptr<WorldServices> world,
+                            std::shared_ptr<ResourceServices> resources,
                             std::shared_ptr<PersistenceServices> persistence,
                             std::shared_ptr<IChunkStreamingManifestSource> manifests)
-        : world_(std::move(world)), resources_(std::move(resources)), persistence_(std::move(persistence)),
-          manifests_(std::move(manifests)) {
+        : world_(std::move(world)), resources_(std::move(resources)),
+          persistence_(std::move(persistence)), manifests_(std::move(manifests)) {
     }
 
     // Test hook preserves request-ID/revision wire positions; it is not an SDK API.
@@ -1565,6 +1876,7 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
             return FailureVoid("runtime_support.streaming_record_missing",
                                "streaming request has no preparation record");
         }
+
         iterator->second.prepared_revision = revision;
         return foundation::Result<void>::Success();
     }
@@ -1575,43 +1887,57 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
             return Failure<streaming::ProgressiveLoadPlan>("runtime_support.adapter_shutdown",
                                                            "streaming adapter is shutting down");
         }
+
         const auto chunk = ChunkFrom(request);
         if (!chunk) {
             return Failure<streaming::ProgressiveLoadPlan>("streaming.unsupported_target",
-                                                           "runtime streaming adapter supports chunk targets only");
+                                                           "runtime streaming adapter supports "
+                                                           "chunk targets only");
         }
+
         if (!request.id.IsValid() || !request.handle.IsValid() || request.handle.id != request.id) {
-            return Failure<streaming::ProgressiveLoadPlan>("runtime_support.invalid_streaming_request",
-                                                           "streaming request identity must be valid and consistent");
+            return Failure<streaming::ProgressiveLoadPlan>(
+                "runtime_support.invalid_streaming_request",
+                "streaming request identity must be valid and consistent");
         }
+
         if (records_.contains(request.id.value)) {
-            return Failure<streaming::ProgressiveLoadPlan>("runtime_support.duplicate_streaming_request",
-                                                           "streaming request id already has a preparation record");
+            return Failure<streaming::ProgressiveLoadPlan>(
+                "runtime_support.duplicate_streaming_request",
+                "streaming request id already has a preparation record");
         }
+
         const auto snapshot = world_->chunks->GetChunkSnapshot(*chunk);
         if (!snapshot) {
             return foundation::Result<streaming::ProgressiveLoadPlan>::Failure(snapshot.GetError());
         }
+
         const auto manifest = manifests_->GetManifest(*chunk);
         if (!manifest) {
             return foundation::Result<streaming::ProgressiveLoadPlan>::Failure(manifest.GetError());
         }
+
         if (manifest.Value().chunk != *chunk) {
-            return Failure<streaming::ProgressiveLoadPlan>("runtime_support.invalid_streaming_manifest",
-                                                           "streaming manifest chunk does not match request");
+            return Failure<
+                streaming::ProgressiveLoadPlan>("runtime_support.invalid_streaming_manifest",
+                                                "streaming manifest chunk does not match request");
         }
 
         std::size_t resource_bytes = 0;
         for (const ChunkResourceRequirement &requirement : manifest.Value().resources) {
-            if (requirement.estimated_bytes > std::numeric_limits<std::size_t>::max() - resource_bytes) {
-                return Failure<streaming::ProgressiveLoadPlan>("streaming.byte_counter_overflow",
-                                                               "streaming manifest byte estimate overflow");
+            if (requirement.estimated_bytes >
+                std::numeric_limits<std::size_t>::max() - resource_bytes) {
+                return Failure<
+                    streaming::ProgressiveLoadPlan>("streaming.byte_counter_overflow",
+                                                    "streaming manifest byte estimate overflow");
             }
+
             resource_bytes += requirement.estimated_bytes;
         }
 
         try {
             PreparedRecord record{};
+
             record.request = request.handle;
             record.chunk = *chunk;
             record.original = snapshot.Value();
@@ -1620,30 +1946,42 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
             record.temporary_leases.reserve(record.manifest.resources.size());
 
             streaming::ProgressiveLoadPlan plan{};
-            plan.steps.reserve(4);
-            plan.steps.push_back(streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::ResolveTarget, 1});
-            plan.steps.push_back(streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::PrepareData, 1});
-            plan.steps.push_back(streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::PrepareResources,
-                                                                    std::max<std::size_t>(resource_bytes, 1)});
-            plan.steps.push_back(streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::Commit, 1});
 
-            if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_streaming_plan_construction)) {
+            plan.steps.reserve(4);
+            plan.steps.push_back(
+                streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::ResolveTarget, 1});
+            plan.steps.push_back(
+                streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::PrepareData, 1});
+            plan.steps.push_back(
+                streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::PrepareResources,
+                                                   std::max<std::size_t>(resource_bytes, 1)});
+            plan.steps.push_back(
+                streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::Commit, 1});
+
+            if (ConsumeTestFault(
+                    g_runtime_support_test_faults.fail_next_streaming_plan_construction)) {
                 throw std::bad_alloc{};
+
             }
 
             // Publish the fully constructed record only after the returned plan is also
             // complete. try_emplace preserves any pre-existing record on failure.
-            const auto [iterator, inserted] = records_.try_emplace(request.id.value, std::move(record));
+            const auto [iterator, inserted] =
+                records_.try_emplace(request.id.value, std::move(record));
             (void)iterator;
             if (!inserted) {
-                return Failure<streaming::ProgressiveLoadPlan>("runtime_support.duplicate_streaming_request",
-                                                               "streaming request id already has a preparation record");
+                return Failure<streaming::ProgressiveLoadPlan>(
+                    "runtime_support.duplicate_streaming_request",
+                    "streaming request id already has a preparation record");
             }
+
             return foundation::Result<streaming::ProgressiveLoadPlan>::Success(std::move(plan));
         } catch (const std::bad_alloc &) {
-            return Failure<streaming::ProgressiveLoadPlan>("runtime_support.allocation_failure",
-                                                           "could not allocate streaming preparation state");
+            return Failure<
+                streaming::ProgressiveLoadPlan>("runtime_support.allocation_failure",
+                                                "could not allocate streaming preparation state");
         }
+
     }
 
     [[nodiscard]] foundation::Result<streaming::StreamingStepResult>
@@ -1651,24 +1989,32 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                 const RuntimeBudget &available_budget) override {
         PreparedRecord *record = FindRecord(request);
         if (!record) {
-            return Failure<streaming::StreamingStepResult>("runtime_support.streaming_record_missing",
-                                                           "streaming request has no preparation record");
+            return Failure<
+                streaming::StreamingStepResult>("runtime_support.streaming_record_missing",
+                                                "streaming request has no preparation record");
         }
+
         switch (step.step) {
         case streaming::StreamingPlanStep::ResolveTarget: {
             const auto resolved = ResolveTarget(*record);
             if (!resolved) {
-                return foundation::Result<streaming::StreamingStepResult>::Failure(resolved.GetError());
+                return foundation::Result<streaming::StreamingStepResult>::Failure(
+                    resolved.GetError());
             }
+
             return CompletedStep(step, available_budget);
         }
+
         case streaming::StreamingPlanStep::PrepareData: {
             const auto prepared = PrepareData(*record);
             if (!prepared) {
-                return foundation::Result<streaming::StreamingStepResult>::Failure(prepared.GetError());
+                return foundation::Result<streaming::StreamingStepResult>::Failure(
+                    prepared.GetError());
             }
+
             return CompletedStep(step, available_budget);
         }
+
         case streaming::StreamingPlanStep::PrepareResources:
             return PrepareResources(*record, step, available_budget);
         case streaming::StreamingPlanStep::Commit:
@@ -1676,34 +2022,45 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         case streaming::StreamingPlanStep::Release:
             return CompletedStep(step, available_budget);
         }
-        return Failure<streaming::StreamingStepResult>("streaming.invalid_step", "unknown streaming plan step");
+
+        return Failure<streaming::StreamingStepResult>("streaming.invalid_step",
+                                                       "unknown streaming plan step");
     }
 
-    [[nodiscard]] foundation::Result<void> Commit(const streaming::StreamingRequest &request) override {
+    [[nodiscard]] foundation::Result<void>
+    Commit(const streaming::StreamingRequest &request) override {
         PreparedRecord *record = FindRecord(request);
         if (!record) {
-            return FailureVoid("runtime_support.streaming_record_missing", "streaming commit record is missing");
+            return FailureVoid("runtime_support.streaming_record_missing",
+                               "streaming commit record is missing");
         }
+
         if (record->committed) {
             return foundation::Result<void>::Success();
         }
+
         const auto snapshot = world_->chunks->GetChunkSnapshot(record->chunk);
         if (!snapshot) {
             return foundation::Result<void>::Failure(snapshot.GetError());
         }
+
         if (snapshot.Value().state != ChunkState::Loading) {
-            return FailureVoid("runtime_support.invalid_chunk_state", "streaming commit requires Loading chunk state");
+            return FailureVoid("runtime_support.invalid_chunk_state",
+                               "streaming commit requires Loading chunk state");
         }
+
         // Reserve the local active index before the World mutation.  Publication into
         // std::map is the last fallible local operation; if it cannot be prepared,
         // the external chunk state remains Loading.
         bool active_index_inserted = false;
         try {
-            const auto [iterator, inserted] = active_by_chunk_.try_emplace(record->chunk.Raw(), request.id.value);
+            const auto [iterator, inserted] =
+                active_by_chunk_.try_emplace(record->chunk.Raw(), request.id.value);
             if (!inserted && iterator->second != request.id.value) {
                 return FailureVoid("runtime_support.chunk_already_active",
                                    "streaming chunk is already owned by another active request");
             }
+
             active_index_inserted = inserted;
         } catch (const std::bad_alloc &) {
             return FailureVoid("runtime_support.allocation_failure",
@@ -1713,25 +2070,31 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         foundation::Result<void> changed = foundation::Result<void>::Success();
         try {
             changed = world_->chunks->SetChunkState(
-                ChangeChunkStateCommand{record->chunk, snapshot.Value().revision, ChunkState::Resident});
+                ChangeChunkStateCommand{record->chunk, snapshot.Value().revision,
+                                        ChunkState::Resident});
         } catch (const std::exception &) {
-            changed = FailureVoid("runtime_support.world_exception", "World chunk transition threw an exception");
+            changed = FailureVoid("runtime_support.world_exception",
+                                  "World chunk transition threw an exception");
         } catch (...) {
-            changed =
-                FailureVoid("runtime_support.world_exception", "World chunk transition threw a non-standard exception");
+            changed = FailureVoid("runtime_support.world_exception",
+                                  "World chunk transition threw a non-standard exception");
         }
+
         if (!changed) {
             if (active_index_inserted) {
                 active_by_chunk_.erase(record->chunk.Raw());
             }
+
             return changed;
         }
+
         record->active_leases = std::move(record->temporary_leases);
         record->committed = true;
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> Rollback(const streaming::StreamingRequest &request) override {
+    [[nodiscard]] foundation::Result<void>
+    Rollback(const streaming::StreamingRequest &request) override {
         PreparedRecord *record = FindRecord(request);
         if (!record) {
             return foundation::Result<void>::Success();
@@ -1753,21 +2116,25 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         if (!chunk || !chunk->chunk.IsValid()) {
             return streaming::StreamingPriorityClass::Background;
         }
+
         const auto snapshot = world_->chunks->GetChunkSnapshot(chunk->chunk);
         if (!snapshot) {
             return streaming::StreamingPriorityClass::Background;
         }
-        return snapshot.Value().state == ChunkState::Active ? streaming::StreamingPriorityClass::High
-                                                            : streaming::StreamingPriorityClass::Normal;
+
+        return snapshot.Value().state == ChunkState::Active
+                   ? streaming::StreamingPriorityClass::High
+                   : streaming::StreamingPriorityClass::Normal;
     }
 
     [[nodiscard]] foundation::Result<void> ActivateChunk(ChunkId chunk) override {
-        return TransitionChunk(chunk, {ChunkState::Resident, ChunkState::Sleeping}, ChunkState::Active,
-                               "runtime_support.chunk_not_resident");
+        return TransitionChunk(chunk, {ChunkState::Resident, ChunkState::Sleeping},
+                               ChunkState::Active, "runtime_support.chunk_not_resident");
     }
 
     [[nodiscard]] foundation::Result<void> DeactivateChunk(ChunkId chunk) override {
-        return TransitionChunk(chunk, {ChunkState::Active, ChunkState::Resident, ChunkState::Sleeping},
+        return TransitionChunk(chunk,
+                               {ChunkState::Active, ChunkState::Resident, ChunkState::Sleeping},
                                ChunkState::Unloading, "runtime_support.chunk_not_loaded");
     }
 
@@ -1780,20 +2147,25 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                 if (!cleaned) {
                     return cleaned;
                 }
+
                 records_.erase(record);
                 active_by_chunk_.erase(active);
                 return foundation::Result<void>::Success();
             }
+
         }
+
         const auto result = TransitionChunk(chunk, {ChunkState::Unloading}, ChunkState::Unloaded,
                                             "runtime_support.chunk_not_unloading");
         if (!result) {
             return result;
         }
+
         if (active != active_by_chunk_.end()) {
             records_.erase(active->second);
             active_by_chunk_.erase(active);
         }
+
         return foundation::Result<void>::Success();
     }
 
@@ -1802,23 +2174,31 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         return descriptor ? std::optional<RegionId>{descriptor->region_id} : std::nullopt;
     }
 
-    [[nodiscard]] foundation::Result<void> PrepareChunkData(const streaming::StreamingRequest &request) override {
+    [[nodiscard]] foundation::Result<void>
+    PrepareChunkData(const streaming::StreamingRequest &request) override {
         PreparedRecord *record = FindRecord(request);
         return record ? PrepareData(*record)
-                      : FailureVoid("runtime_support.streaming_record_missing", "streaming record is missing");
+                      : FailureVoid("runtime_support.streaming_record_missing",
+                                    "streaming record is missing");
     }
 
-    [[nodiscard]] foundation::Result<void> PrepareChunkResources(const streaming::StreamingRequest &request) override {
+    [[nodiscard]] foundation::Result<void>
+    PrepareChunkResources(const streaming::StreamingRequest &request) override {
         PreparedRecord *record = FindRecord(request);
         if (!record) {
-            return FailureVoid("runtime_support.streaming_record_missing", "streaming record is missing");
+            return FailureVoid("runtime_support.streaming_record_missing",
+                               "streaming record is missing");
         }
+
         const auto result =
             PrepareResources(*record,
-                             streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::PrepareResources,
-                                                                std::numeric_limits<std::size_t>::max()},
+                             streaming::StreamingPlanStepRecord{streaming::StreamingPlanStep::
+                                                                    PrepareResources,
+                                                                std::numeric_limits<
+                                                                    std::size_t>::max()},
                              RuntimeBudget{});
-        return result ? foundation::Result<void>::Success() : foundation::Result<void>::Failure(result.GetError());
+        return result ? foundation::Result<void>::Success()
+                      : foundation::Result<void>::Failure(result.GetError());
     }
 
     [[nodiscard]] foundation::Result<void> ReleaseChunkResources(ChunkId chunk) override {
@@ -1826,33 +2206,42 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         if (active == active_by_chunk_.end()) {
             return foundation::Result<void>::Success();
         }
+
         const auto record = records_.find(active->second);
         if (record == records_.end()) {
             active_by_chunk_.erase(active);
             return foundation::Result<void>::Success();
         }
+
         if (record->second.cleanup_resources_released) {
             return foundation::Result<void>::Success();
         }
+
         std::optional<foundation::Error> first;
         ReleaseLeases(record->second.active_leases, first);
         if (first) {
             return foundation::Result<void>::Failure(*first);
         }
+
         record->second.cleanup_resources_released = true;
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<PreparedChunkDataSnapshot> GetPreparedData(ChunkId chunk) const override {
+    [[nodiscard]] foundation::Result<PreparedChunkDataSnapshot>
+    GetPreparedData(ChunkId chunk) const override {
         for (const auto &[id, record] : records_) {
             (void)id;
             if (record.chunk == chunk) {
-                return foundation::Result<PreparedChunkDataSnapshot>::Success(PreparedChunkDataSnapshot{
-                    record.chunk, record.manifest.persistence_location, record.persisted, record.prepared_revision});
+                return foundation::Result<PreparedChunkDataSnapshot>::Success(
+                    PreparedChunkDataSnapshot{record.chunk, record.manifest.persistence_location,
+                                              record.persisted, record.prepared_revision});
             }
+
         }
-        return Failure<PreparedChunkDataSnapshot>("runtime_support.prepared_chunk_missing",
-                                                  "prepared streaming data is not available for this chunk");
+
+        return Failure<
+            PreparedChunkDataSnapshot>("runtime_support.prepared_chunk_missing",
+                                       "prepared streaming data is not available for this chunk");
     }
 
     [[nodiscard]] foundation::Result<void> Shutdown() override {
@@ -1868,13 +2257,16 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                 if (!first) {
                     first = cleaned.GetError();
                 }
+
                 ++iterator;
             }
+
         }
 
         if (first) {
             return foundation::Result<void>::Failure(*first);
         }
+
         active_by_chunk_.clear();
         return foundation::Result<void>::Success();
     }
@@ -1882,10 +2274,15 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
   private:
     struct PreparedRecord {
         streaming::StreamingRequestHandle request{};
+
         ChunkId chunk{};
+
         ChunkSnapshot original{};
+
         ChunkStreamingManifest manifest{};
+
         std::optional<ZoneOverrideSnapshot> persisted{};
+
         std::vector<ResourceLease> temporary_leases;
         std::vector<ResourceLease> active_leases;
         std::size_t acquired_resource_count = 0;
@@ -1895,13 +2292,16 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         bool cleanup_resources_released = false;
         bool cleanup_world_unloaded = false;
         std::optional<ResourceLease> pending_acquisition_rollback{};
+
         std::uint64_t prepared_revision = 0;
     };
 
-    [[nodiscard]] static std::optional<ChunkId> ChunkFrom(const streaming::StreamingRequest &request) {
+    [[nodiscard]] static std::optional<ChunkId>
+    ChunkFrom(const streaming::StreamingRequest &request) {
         if (const auto *target = std::get_if<streaming::ChunkStreamingTarget>(&request.target)) {
             return target->chunk;
         }
+
         return std::nullopt;
     }
 
@@ -1914,18 +2314,23 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         if (record.world_loading) {
             return foundation::Result<void>::Success();
         }
+
         const auto snapshot = world_->chunks->GetChunkSnapshot(record.chunk);
         if (!snapshot) {
             return foundation::Result<void>::Failure(snapshot.GetError());
         }
+
         if (snapshot.Value().state != ChunkState::Unloaded) {
-            return FailureVoid("runtime_support.invalid_chunk_state", "new streaming load requires an Unloaded chunk");
+            return FailureVoid("runtime_support.invalid_chunk_state",
+                               "new streaming load requires an Unloaded chunk");
         }
+
         const auto changed = world_->chunks->SetChunkState(
             ChangeChunkStateCommand{record.chunk, snapshot.Value().revision, ChunkState::Loading});
         if (!changed) {
             return changed;
         }
+
         record.world_loading = true;
         return foundation::Result<void>::Success();
     }
@@ -1941,11 +2346,13 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
             if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_persistence_exception)) {
                 throw std::runtime_error("injected persistence callback failure");
             }
+
             candidate = persistence_->query->FindZoneOverride(record.manifest.persistence_location);
         } catch (const std::exception &exception) {
             return foundation::Result<void>::Failure(
                 foundation::Error::Create("runtime_support.persistence_exception",
-                                          "persistence query threw while preparing chunk data", exception.what()));
+                                          "persistence query threw while preparing chunk data",
+                                          exception.what()));
         } catch (...) {
             return FailureVoid("runtime_support.persistence_exception",
                                "persistence query threw while preparing chunk data");
@@ -1962,8 +2369,10 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         if (record.pending_acquisition_rollback) {
             const auto rolled_back = ReleaseLease(*record.pending_acquisition_rollback);
             if (!rolled_back) {
-                return foundation::Result<streaming::StreamingStepResult>::Failure(rolled_back.GetError());
+                return foundation::Result<streaming::StreamingStepResult>::Failure(
+                    rolled_back.GetError());
             }
+
             record.pending_acquisition_rollback.reset();
         }
 
@@ -1972,15 +2381,20 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                 record.temporary_leases.reserve(record.manifest.resources.size());
             } catch (const std::bad_alloc &) {
                 return Failure<streaming::StreamingStepResult>("runtime_support.allocation_failure",
-                                                               "could not reserve streaming lease bookkeeping");
+                                                               "could not reserve streaming lease "
+                                                               "bookkeeping");
             }
+
         }
 
         while (record.acquired_resource_count < record.manifest.resources.size()) {
-            const ChunkResourceRequirement &requirement = record.manifest.resources[record.acquired_resource_count];
-            const auto lease = RequestLease(ResourceRequest{requirement.resource, requirement.type});
+            const ChunkResourceRequirement &requirement =
+                record.manifest.resources[record.acquired_resource_count];
+            const auto lease =
+                RequestLease(ResourceRequest{requirement.resource, requirement.type});
             if (!lease) {
-                return foundation::Result<streaming::StreamingStepResult>::Failure(lease.GetError());
+                return foundation::Result<streaming::StreamingStepResult>::Failure(
+                    lease.GetError());
             }
 
             if (ConsumeStreamingLeasePublicationFault()) {
@@ -1991,8 +2405,10 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                         "runtime_support.streaming_cleanup_pending",
                         "injected streaming lease publication failure left cleanup pending");
                 }
-                return Failure<streaming::StreamingStepResult>("runtime_support.allocation_failure",
-                                                               "injected streaming lease publication failure");
+
+                return Failure<
+                    streaming::StreamingStepResult>("runtime_support.allocation_failure",
+                                                    "injected streaming lease publication failure");
             }
 
             try {
@@ -2005,9 +2421,12 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                         "runtime_support.streaming_cleanup_pending",
                         "streaming lease publication failed and rollback is pending");
                 }
-                return Failure<streaming::StreamingStepResult>("runtime_support.allocation_failure",
-                                                               "could not publish acquired streaming lease");
+
+                return Failure<
+                    streaming::StreamingStepResult>("runtime_support.allocation_failure",
+                                                    "could not publish acquired streaming lease");
             }
+
             ++record.acquired_resource_count;
         }
 
@@ -2016,22 +2435,29 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
             try {
                 state = resources_->manager->GetState(lease.resource);
             } catch (const std::exception &exception) {
-                return foundation::Result<streaming::StreamingStepResult>::Failure(foundation::Error::Create(
-                    "runtime_support.resource_manager_exception",
-                    "resource manager threw while reading streaming resource state", exception.what()));
+                return foundation::Result<streaming::StreamingStepResult>::Failure(
+                    foundation::Error::
+                        Create("runtime_support.resource_manager_exception",
+                               "resource manager threw while reading streaming resource state",
+                               exception.what()));
             } catch (...) {
                 return Failure<streaming::StreamingStepResult>(
                     "runtime_support.resource_manager_exception",
                     "resource manager threw while reading streaming resource state");
             }
-            if (state == ResourceState::Failed || state == ResourceState::Evicted || state == ResourceState::Unknown) {
-                return Failure<streaming::StreamingStepResult>("runtime_support.streaming_resource_failed",
-                                                               "chunk resource failed to load");
+
+            if (state == ResourceState::Failed || state == ResourceState::Evicted ||
+                state == ResourceState::Unknown) {
+                return Failure<
+                    streaming::StreamingStepResult>("runtime_support.streaming_resource_failed",
+                                                    "chunk resource failed to load");
             }
+
             if (state != ResourceState::Ready) {
                 return foundation::Result<streaming::StreamingStepResult>::Success(
                     streaming::StreamingStepResult{0, false});
             }
+
         }
 
         const std::size_t total = std::max<std::size_t>(step.estimated_bytes, 1);
@@ -2039,7 +2465,8 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         const std::size_t remaining = total - already;
         const std::size_t allowed =
             available_budget.HasByteLimit()
-                ? static_cast<std::size_t>(std::min<std::uint64_t>(remaining, available_budget.max_bytes))
+                ? static_cast<std::size_t>(
+                      std::min<std::uint64_t>(remaining, available_budget.max_bytes))
                 : remaining;
         record.accounted_resource_bytes += allowed;
         return foundation::Result<streaming::StreamingStepResult>::Success(
@@ -2049,10 +2476,12 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
     [[nodiscard]] static foundation::Result<streaming::StreamingStepResult>
     CompletedStep(streaming::StreamingPlanStepRecord step, const RuntimeBudget &available_budget) {
         const std::size_t total = std::max<std::size_t>(step.estimated_bytes, 1);
-        const std::size_t remaining = total > step.processed_bytes ? total - step.processed_bytes : 0;
+        const std::size_t remaining =
+            total > step.processed_bytes ? total - step.processed_bytes : 0;
         const std::size_t allowed =
             available_budget.HasByteLimit()
-                ? static_cast<std::size_t>(std::min<std::uint64_t>(remaining, available_budget.max_bytes))
+                ? static_cast<std::size_t>(
+                      std::min<std::uint64_t>(remaining, available_budget.max_bytes))
                 : remaining;
         return foundation::Result<streaming::StreamingStepResult>::Success(
             streaming::StreamingStepResult{allowed, allowed >= remaining});
@@ -2072,10 +2501,12 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
             if (!unloading) {
                 return unloading;
             }
+
             snapshot = world_->chunks->GetChunkSnapshot(record.chunk);
             if (!snapshot) {
                 return foundation::Result<void>::Failure(snapshot.GetError());
             }
+
             current = snapshot.Value();
         }
 
@@ -2083,27 +2514,35 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         if (current.state == ChunkState::Loading) {
             if (!record.world_loading) {
                 return FailureVoid("runtime_support.streaming_ownership_mismatch",
-                                   "streaming adapter does not own the existing Loading transition");
+                                   "streaming adapter does not own the existing Loading "
+                                   "transition");
             }
+
             if (!record.cleanup_resources_released) {
                 ReleaseLeases(record.temporary_leases, first);
                 if (first) {
                     return foundation::Result<void>::Failure(*first);
                 }
+
                 record.cleanup_resources_released = true;
             }
+
             if (!record.cleanup_world_unloaded) {
-                if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_streaming_cleanup_world_transition)) {
+                if (ConsumeTestFault(g_runtime_support_test_faults
+                                         .fail_next_streaming_cleanup_world_transition)) {
                     return FailureVoid("runtime_support.injected_world_transition_failure",
                                        "injected streaming cleanup World transition failure");
                 }
+
                 const auto unloaded = world_->chunks->SetChunkState(
                     ChangeChunkStateCommand{record.chunk, current.revision, ChunkState::Unloaded});
                 if (!unloaded) {
                     return unloaded;
                 }
+
                 record.cleanup_world_unloaded = true;
             }
+
             record.persisted.reset();
             return foundation::Result<void>::Success();
         }
@@ -2115,20 +2554,26 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                 if (first) {
                     return foundation::Result<void>::Failure(*first);
                 }
+
                 record.cleanup_resources_released = true;
             }
+
             if (!record.cleanup_world_unloaded) {
-                if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_streaming_cleanup_world_transition)) {
+                if (ConsumeTestFault(g_runtime_support_test_faults
+                                         .fail_next_streaming_cleanup_world_transition)) {
                     return FailureVoid("runtime_support.injected_world_transition_failure",
                                        "injected streaming cleanup World transition failure");
                 }
+
                 const auto unloaded = world_->chunks->SetChunkState(
                     ChangeChunkStateCommand{record.chunk, current.revision, ChunkState::Unloaded});
                 if (!unloaded) {
                     return unloaded;
                 }
+
                 record.cleanup_world_unloaded = true;
             }
+
             record.persisted.reset();
             return foundation::Result<void>::Success();
         }
@@ -2140,8 +2585,10 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                 if (first) {
                     return foundation::Result<void>::Failure(*first);
                 }
+
                 record.cleanup_resources_released = true;
             }
+
             record.cleanup_world_unloaded = true;
             record.persisted.reset();
             return foundation::Result<void>::Success();
@@ -2151,41 +2598,54 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
                            "streaming adapter cannot clean a chunk from its current World state");
     }
 
-    [[nodiscard]] foundation::Result<void> TransitionChunk(ChunkId chunk, std::initializer_list<ChunkState> allowed,
-                                                           ChunkState target, std::string_view error_code) {
+    [[nodiscard]] foundation::Result<void>
+    TransitionChunk(ChunkId chunk, std::initializer_list<ChunkState> allowed, ChunkState target,
+                    std::string_view error_code) {
         const auto snapshot = world_->chunks->GetChunkSnapshot(chunk);
         if (!snapshot) {
             return foundation::Result<void>::Failure(snapshot.GetError());
         }
+
         if (snapshot.Value().state == target) {
             return foundation::Result<void>::Success();
         }
+
         if (std::find(allowed.begin(), allowed.end(), snapshot.Value().state) == allowed.end()) {
-            return FailureVoid(error_code, "chunk is not in a state accepted by the residency transition");
+            return FailureVoid(error_code,
+                               "chunk is not in a state accepted by the residency transition");
         }
-        return world_->chunks->SetChunkState(ChangeChunkStateCommand{chunk, snapshot.Value().revision, target});
+
+        return world_->chunks->SetChunkState(
+            ChangeChunkStateCommand{chunk, snapshot.Value().revision, target});
     }
 
-    void ReleaseLeases(std::vector<ResourceLease> &leases, std::optional<foundation::Error> &first) {
+    void ReleaseLeases(std::vector<ResourceLease> &leases,
+                       std::optional<foundation::Error> &first) {
         std::vector<ResourceLease> retry;
         try {
             retry.reserve(leases.size());
         } catch (const std::bad_alloc &) {
             if (!first) {
-                first = foundation::Error::Create("runtime_support.allocation_failure",
-                                                  "could not allocate streaming cleanup bookkeeping");
+                first =
+                    foundation::Error::Create("runtime_support.allocation_failure",
+                                              "could not allocate streaming cleanup bookkeeping");
             }
+
             return;
         }
+
         for (const ResourceLease &lease : leases) {
             const auto released = ReleaseLease(lease);
             if (!released) {
                 if (!first) {
                     first = released.GetError();
                 }
+
                 retry.push_back(lease);
             }
+
         }
+
         leases.swap(retry);
     }
 
@@ -2193,28 +2653,36 @@ class RuntimeStreamingAdapter final : public streaming::IStreamingDataSource,
         try {
             return resources_->manager->RequestLease(request);
         } catch (const std::exception &exception) {
-            return foundation::Result<ResourceLease>::Failure(foundation::Error::Create(
-                "runtime_support.resource_manager_exception",
-                "resource manager threw while acquiring a streaming lease", exception.what()));
+            return foundation::Result<ResourceLease>::Failure(
+                foundation::Error::
+                    Create("runtime_support.resource_manager_exception",
+                           "resource manager threw while acquiring a streaming lease",
+                           exception.what()));
         } catch (...) {
             return foundation::Result<ResourceLease>::Failure(
-                foundation::Error::Create("runtime_support.resource_manager_exception",
-                                          "resource manager threw while acquiring a streaming lease"));
+                foundation::Error::
+                    Create("runtime_support.resource_manager_exception",
+                           "resource manager threw while acquiring a streaming lease"));
         }
+
     }
 
     [[nodiscard]] foundation::Result<void> ReleaseLease(ResourceLease lease) {
         try {
             return resources_->manager->Release(lease);
         } catch (const std::exception &exception) {
-            return foundation::Result<void>::Failure(foundation::Error::Create(
-                "runtime_support.resource_manager_exception",
-                "resource manager threw while releasing a streaming lease", exception.what()));
+            return foundation::Result<void>::Failure(
+                foundation::Error::
+                    Create("runtime_support.resource_manager_exception",
+                           "resource manager threw while releasing a streaming lease",
+                           exception.what()));
         } catch (...) {
             return foundation::Result<void>::Failure(
-                foundation::Error::Create("runtime_support.resource_manager_exception",
-                                          "resource manager threw while releasing a streaming lease"));
+                foundation::Error::
+                    Create("runtime_support.resource_manager_exception",
+                           "resource manager threw while releasing a streaming lease"));
         }
+
     }
 
     std::shared_ptr<WorldServices> world_;
@@ -2237,6 +2705,7 @@ class RuntimeNavigationEnvironmentAdapter final : public navigation::INavigation
     [[nodiscard]] navigation::NavigationRevision CurrentRevision(RegionId region) const override {
         const auto revision = environment_->query->GetRegionRevision(region);
         return navigation::NavigationRevision{revision ? revision.Value() : 0};
+
     }
 
     [[nodiscard]] float GetTraversalCost(const navigation::NavCostQuery &query) const override {
@@ -2270,18 +2739,23 @@ class RuntimeNavigationEnvironmentAdapter final : public navigation::INavigation
                     cost = 1.15f;
                     break;
                 }
+
                 return cost;
             }
+
         }
+
         const auto projection = environment_->query->BuildProjection(query.region);
         if (projection) {
             cost += std::clamp(projection.Value().weather.precipitation, 0.0f, 1.0f) * 0.25f;
             cost += std::clamp(projection.Value().weather.wind_speed / 100.0f, 0.0f, 0.5f);
         }
+
         return cost;
     }
 
-    [[nodiscard]] std::span<const navigation::DynamicObstacle> ObstaclesForRegion(RegionId) const override {
+    [[nodiscard]] std::span<const navigation::DynamicObstacle>
+    ObstaclesForRegion(RegionId) const override {
         return obstacles_;
     }
 
@@ -2295,9 +2769,12 @@ class InMemoryRuntimeEventSink final : public IRuntimeEventSink {
     [[nodiscard]] foundation::Result<void> Publish(const RuntimeFrameEvents &events) override {
         try {
             RuntimeFrameEvents candidate = events;
-            if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_reference_event_publication)) {
+            if (ConsumeTestFault(
+                    g_runtime_support_test_faults.fail_next_reference_event_publication)) {
                 throw std::bad_alloc{};
+
             }
+
             last_.physics_contacts.swap(candidate.physics_contacts);
             last_.animation_events.swap(candidate.animation_events);
             last_.audio_events.swap(candidate.audio_events);
@@ -2307,6 +2784,7 @@ class InMemoryRuntimeEventSink final : public IRuntimeEventSink {
             return FailureVoid("runtime_support.allocation_failure",
                                "failed to prepare atomic runtime event publication");
         }
+
     }
 
     [[nodiscard]] const RuntimeFrameEvents &Last() const noexcept {
@@ -2315,32 +2793,41 @@ class InMemoryRuntimeEventSink final : public IRuntimeEventSink {
 
   private:
     RuntimeFrameEvents last_{};
+
 };
 
 class ReferenceRenderCommandSink final : public renderer::IRenderCommandSink {
   public:
-    [[nodiscard]] foundation::Result<void> BeginFrame(const renderer::RenderFrameContext &context) override {
+    [[nodiscard]] foundation::Result<void>
+    BeginFrame(const renderer::RenderFrameContext &context) override {
         if (in_frame_) {
-            return FailureVoid("runtime_support.renderer_frame_active", "reference render frame is already active");
+            return FailureVoid("runtime_support.renderer_frame_active",
+                               "reference render frame is already active");
         }
+
         current_context_ = context;
         current_submissions_.clear();
         in_frame_ = true;
         return foundation::Result<void>::Success();
     }
 
-    [[nodiscard]] foundation::Result<void> SubmitProxy(const renderer::RenderProxySubmission &submission) override {
+    [[nodiscard]] foundation::Result<void>
+    SubmitProxy(const renderer::RenderProxySubmission &submission) override {
         if (!in_frame_) {
-            return FailureVoid("runtime_support.renderer_frame_not_started", "BeginFrame must be called first");
+            return FailureVoid("runtime_support.renderer_frame_not_started",
+                               "BeginFrame must be called first");
         }
+
         current_submissions_.push_back(submission);
         return foundation::Result<void>::Success();
     }
 
     [[nodiscard]] foundation::Result<void> EndFrame() override {
         if (!in_frame_) {
-            return FailureVoid("runtime_support.renderer_frame_not_started", "no reference render frame is active");
+            return FailureVoid("runtime_support.renderer_frame_not_started",
+                               "no reference render frame is active");
         }
+
         last_context_ = current_context_;
         last_submissions_ = current_submissions_;
         in_frame_ = false;
@@ -2356,13 +2843,17 @@ class ReferenceRenderCommandSink final : public renderer::IRenderCommandSink {
   private:
     bool in_frame_ = false;
     renderer::RenderFrameContext current_context_{};
+
     renderer::RenderFrameContext last_context_{};
+
     std::vector<renderer::RenderProxySubmission> current_submissions_;
     std::vector<renderer::RenderProxySubmission> last_submissions_;
 };
 
-[[nodiscard]] bool SameFrameInput(const RuntimeFrameInput &left, const RuntimeFrameInput &right) noexcept {
-    return left.real_delta == right.real_delta && left.resource_budget.max_time == right.resource_budget.max_time &&
+[[nodiscard]] bool SameFrameInput(const RuntimeFrameInput &left,
+                                  const RuntimeFrameInput &right) noexcept {
+    return left.real_delta == right.real_delta &&
+           left.resource_budget.max_time == right.resource_budget.max_time &&
            left.resource_budget.max_items == right.resource_budget.max_items &&
            left.resource_budget.max_bytes == right.resource_budget.max_bytes &&
            left.streaming_budget.cpu_budget == right.streaming_budget.cpu_budget &&
@@ -2371,18 +2862,24 @@ class ReferenceRenderCommandSink final : public renderer::IRenderCommandSink {
            left.navigation_budget.max_time == right.navigation_budget.max_time &&
            left.navigation_budget.max_items == right.navigation_budget.max_items &&
            left.navigation_budget.max_bytes == right.navigation_budget.max_bytes &&
-           left.max_animators == right.max_animators && left.max_simulation_commits == right.max_simulation_commits;
+           left.max_animators == right.max_animators &&
+           left.max_simulation_commits == right.max_simulation_commits;
 }
 
 struct PendingCoordinatorFrame {
     RuntimeFrameInput input{};
+
     RuntimeTickResult result{};
+
     std::vector<RuntimeUpdateStep> order;
     std::size_t next_step = 0;
     std::optional<foundation::Result<TimeAdvanceResult>> time_advance{};
+
     std::optional<streaming::StreamingTickResult> streaming_tick{};
+
     std::size_t streaming_failure_index = 0;
     std::optional<foundation::Result<simulation::SimulationTickResult>> simulation_tick{};
+
     std::size_t simulation_failure_index = 0;
 };
 
@@ -2404,26 +2901,33 @@ struct RuntimeServiceSnapshot {
 
 class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
   public:
-    EngineRuntimeCoordinator(RuntimeServiceSnapshot services, std::shared_ptr<RuntimeIntegrationServices> integrations,
+    EngineRuntimeCoordinator(RuntimeServiceSnapshot services,
+                             std::shared_ptr<RuntimeIntegrationServices> integrations,
                              EngineRuntimeOptions options)
-        : services_(std::move(services)), integrations_(std::move(integrations)), options_(std::move(options)) {
+        : services_(std::move(services)), integrations_(std::move(integrations)),
+          options_(std::move(options)) {
     }
 
-    [[nodiscard]] foundation::Result<RuntimeTickResult> Tick(const RuntimeFrameInput &input) override {
+    [[nodiscard]] foundation::Result<RuntimeTickResult>
+    Tick(const RuntimeFrameInput &input) override {
         if (shutdown_started_) {
             return Failure<RuntimeTickResult>("runtime_support.coordinator_shutdown",
                                               "runtime coordinator no longer accepts frames");
         }
+
         if (input.real_delta.IsNegative()) {
             return Failure<RuntimeTickResult>("runtime_support.invalid_frame_delta",
                                               "runtime frame delta must not be negative");
         }
+
         if (const auto budget = ValidateRuntimeBudget(input.resource_budget); !budget) {
             return foundation::Result<RuntimeTickResult>::Failure(budget.GetError());
         }
+
         if (const auto budget = ValidateRuntimeBudget(input.navigation_budget); !budget) {
             return foundation::Result<RuntimeTickResult>::Failure(budget.GetError());
         }
+
         if (input.streaming_budget.cpu_budget.count() < 0) {
             return Failure<RuntimeTickResult>("runtime_support.invalid_streaming_budget",
                                               "streaming CPU budget must not be negative");
@@ -2431,6 +2935,7 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
 
         if (!pending_frame_) {
             PendingCoordinatorFrame candidate{};
+
             candidate.input = input;
             // All fixed coordinator bookkeeping is allocated before the first major is touched.
             candidate.result.executed_steps.reserve(12);
@@ -2439,27 +2944,34 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
             pending_frame_.emplace(std::move(candidate));
         } else if (!SameFrameInput(pending_frame_->input, input)) {
             return Failure<RuntimeTickResult>("runtime_support.frame_retry_required",
-                                              "an interrupted runtime frame must be retried with the same input");
+                                              "an interrupted runtime frame must be retried with "
+                                              "the same input");
         }
 
         PendingCoordinatorFrame &frame = *pending_frame_;
         auto record_step = [&](RuntimeUpdateStep step) {
-            if (!frame.result.executed_steps.empty() && frame.result.executed_steps.back() == step) {
+            if (!frame.result.executed_steps.empty() &&
+                frame.result.executed_steps.back() == step) {
                 return;
             }
+
             frame.result.executed_steps.push_back(step);
             frame.order.push_back(step);
         };
+
         auto record_failure = [&](RuntimeUpdateStep step, const foundation::Error &error) {
             frame.result.failures.push_back(RuntimePhaseFailure{step, error});
         };
+
         auto finish_step = [&](RuntimeUpdateStep step) {
             ++frame.next_step;
             if (g_runtime_support_test_faults.fail_coordinator_after_step &&
                 *g_runtime_support_test_faults.fail_coordinator_after_step == step) {
                 g_runtime_support_test_faults.fail_coordinator_after_step.reset();
                 throw std::bad_alloc{};
+
             }
+
         };
 
         while (frame.next_step < 12) {
@@ -2471,6 +2983,7 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                         auto advanced = services_.time->runtime->Advance(input.real_delta.value);
                         frame.time_advance.emplace(std::move(advanced));
                     }
+
                     auto &advanced = *frame.time_advance;
                     if (advanced) {
                         static_assert(std::is_nothrow_move_assignable_v<TimeAdvanceResult>);
@@ -2478,22 +2991,27 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     } else {
                         record_failure(RuntimeUpdateStep::Time, advanced.GetError());
                     }
+
                     frame.time_advance.reset();
                 }
+
                 finish_step(RuntimeUpdateStep::Time);
                 break;
 
             case 1: // MainThreadCommits
                 if (services_.simulation) {
                     record_step(RuntimeUpdateStep::MainThreadCommits);
-                    const auto main_thread = services_.simulation->runtime->ProcessMainThreadCommits();
+                    const auto main_thread =
+                        services_.simulation->runtime->ProcessMainThreadCommits();
                     if (!main_thread) {
-                        record_failure(RuntimeUpdateStep::MainThreadCommits, main_thread.GetError());
+                        record_failure(RuntimeUpdateStep::MainThreadCommits,
+                                       main_thread.GetError());
                     }
 
-                    const std::uint32_t commit_limit = input.max_simulation_commits != 0
-                                                           ? input.max_simulation_commits
-                                                           : options_.max_simulation_commits_per_frame;
+                    const std::uint32_t commit_limit =
+                        input.max_simulation_commits != 0
+                            ? input.max_simulation_commits
+                            : options_.max_simulation_commits_per_frame;
                     std::uint32_t committed = 0;
                     while (!services_.simulation->proposals->PendingBatches().empty() &&
                            (commit_limit == 0 || committed < commit_limit)) {
@@ -2502,20 +3020,26 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                             record_failure(RuntimeUpdateStep::MainThreadCommits, commit.GetError());
                             break;
                         }
+
                         ++committed;
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::MainThreadCommits);
                 break;
 
             case 2: // Resources
                 if (services_.resources) {
                     record_step(RuntimeUpdateStep::Resources);
-                    const auto processed = services_.resources->manager->ProcessPendingLoads(input.resource_budget);
+                    const auto processed =
+                        services_.resources->manager->ProcessPendingLoads(input.resource_budget);
                     if (!processed) {
                         record_failure(RuntimeUpdateStep::Resources, processed.GetError());
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::Resources);
                 break;
 
@@ -2524,21 +3048,26 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     record_step(RuntimeUpdateStep::Streaming);
                     if (!frame.streaming_tick) {
                         const streaming::StreamingBudget budget =
-                            input.streaming_budget.IsUnlimited() ? options_.streaming : input.streaming_budget;
+                            input.streaming_budget.IsUnlimited() ? options_.streaming
+                                                                 : input.streaming_budget;
                         services_.streaming->runtime->SetBudget(budget);
                         auto tick = services_.streaming->runtime->Tick();
-                        static_assert(std::is_nothrow_move_constructible_v<streaming::StreamingTickResult>);
+                        static_assert(
+                            std::is_nothrow_move_constructible_v<streaming::StreamingTickResult>);
                         frame.streaming_tick.emplace(std::move(tick));
                     }
+
                     const auto &failures = frame.streaming_tick->failures;
                     while (frame.streaming_failure_index < failures.size()) {
                         const auto &failure = failures[frame.streaming_failure_index];
                         record_failure(RuntimeUpdateStep::Streaming, failure.error);
                         ++frame.streaming_failure_index;
                     }
+
                     frame.streaming_tick.reset();
                     frame.streaming_failure_index = 0;
                 }
+
                 finish_step(RuntimeUpdateStep::Streaming);
                 break;
 
@@ -2549,6 +3078,7 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                         auto tick = services_.simulation->runtime->Tick();
                         frame.simulation_tick.emplace(std::move(tick));
                     }
+
                     auto &tick = *frame.simulation_tick;
                     if (!tick) {
                         record_failure(RuntimeUpdateStep::Simulation, tick.GetError());
@@ -2559,10 +3089,13 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                                            failures[frame.simulation_failure_index].error);
                             ++frame.simulation_failure_index;
                         }
+
                     }
+
                     frame.simulation_tick.reset();
                     frame.simulation_failure_index = 0;
                 }
+
                 finish_step(RuntimeUpdateStep::Simulation);
                 break;
 
@@ -2571,17 +3104,21 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     record_step(RuntimeUpdateStep::Navigation);
                     (void)services_.navigation->runtime->Tick(input.navigation_budget);
                 }
+
                 finish_step(RuntimeUpdateStep::Navigation);
                 break;
 
             case 6: // Animation
                 if (services_.animation) {
                     record_step(RuntimeUpdateStep::Animation);
-                    const auto tick = services_.animation->runtime->Tick(input.real_delta, input.max_animators);
+                    const auto tick =
+                        services_.animation->runtime->Tick(input.real_delta, input.max_animators);
                     if (!tick) {
                         record_failure(RuntimeUpdateStep::Animation, tick.GetError());
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::Animation);
                 break;
 
@@ -2592,7 +3129,9 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     if (!tick) {
                         record_failure(RuntimeUpdateStep::Physics, tick.GetError());
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::Physics);
                 break;
 
@@ -2601,9 +3140,12 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     record_step(RuntimeUpdateStep::SceneProjectionCommit);
                     const auto flushed = integrations_->scene_projections->Flush();
                     if (!flushed) {
-                        record_failure(RuntimeUpdateStep::SceneProjectionCommit, flushed.GetError());
+                        record_failure(RuntimeUpdateStep::SceneProjectionCommit,
+                                       flushed.GetError());
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::SceneProjectionCommit);
                 break;
 
@@ -2614,7 +3156,9 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     if (!tick) {
                         record_failure(RuntimeUpdateStep::Audio, tick.GetError());
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::Audio);
                 break;
 
@@ -2629,8 +3173,11 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                         if (!rendered) {
                             record_failure(RuntimeUpdateStep::Renderer, rendered.GetError());
                         }
+
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::Renderer);
                 break;
 
@@ -2638,18 +3185,23 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                 if (integrations_->event_sink) {
                     record_step(RuntimeUpdateStep::DiagnosticsEvents);
                     RuntimeFrameEvents events{};
+
                     if (services_.physics && services_.physics->events) {
                         const auto contacts = services_.physics->events->Contacts();
                         events.physics_contacts.assign(contacts.begin(), contacts.end());
                     }
+
                     if (services_.animation && services_.animation->events) {
                         const auto animation_events = services_.animation->events->Events();
-                        events.animation_events.assign(animation_events.begin(), animation_events.end());
+                        events.animation_events.assign(animation_events.begin(),
+                                                       animation_events.end());
                     }
+
                     if (services_.audio && services_.audio->events) {
                         const auto audio_events = services_.audio->events->Events();
                         events.audio_events.assign(audio_events.begin(), audio_events.end());
                     }
+
                     events.phase_failures = frame.result.failures;
 
                     foundation::Result<void> published = foundation::Result<void>::Success();
@@ -2658,18 +3210,24 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                         if (services_.physics && services_.physics->events) {
                             for (const auto &contact : services_.physics->events->Contacts()) {
                                 if (contact.auditor_correlation[0]) {
-                                    const auditor::shadow::ContextScope scope(contact.auditor_context);
-                                    auditor::shadow::flow("physics.callback", contact.auditor_correlation.data());
+                                    const auditor::shadow::ContextScope scope(
+                                        contact.auditor_context);
+                                    auditor::shadow::flow("physics.callback",
+                                                          contact.auditor_correlation.data());
                                     // Entered the batch event-sink handoff, not successful commit.
                                 }
+
                             }
+
                         }
+
 #endif
                         published = integrations_->event_sink->Publish(events);
                     } catch (const std::exception &exception) {
                         published = foundation::Result<void>::Failure(
                             foundation::Error::Create("runtime_support.event_sink_exception",
-                                                      "runtime event sink threw before commit", exception.what()));
+                                                      "runtime event sink threw before commit",
+                                                      exception.what()));
                     } catch (...) {
                         published = FailureVoid("runtime_support.event_sink_exception",
                                                 "runtime event sink threw before commit");
@@ -2681,14 +3239,19 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                         if (services_.physics && services_.physics->events) {
                             services_.physics->events->Clear();
                         }
+
                         if (services_.animation && services_.animation->events) {
                             services_.animation->events->Clear();
                         }
+
                         if (services_.audio && services_.audio->events) {
                             services_.audio->events->Clear();
                         }
+
                     }
+
                 }
+
                 finish_step(RuntimeUpdateStep::DiagnosticsEvents);
                 break;
 
@@ -2696,6 +3259,7 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                 return Failure<RuntimeTickResult>("runtime_support.invalid_coordinator_cursor",
                                                   "runtime coordinator phase cursor is invalid");
             }
+
         }
 
         RuntimeTickResult completed = std::move(frame.result);
@@ -2716,13 +3280,13 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
         pending_frame_.reset();
 
         std::optional<foundation::Error> first;
-        auto record_step = [&](RuntimeShutdownStep step) {
-            attempt_order.push_back(step);
-        };
+        auto record_step = [&](RuntimeShutdownStep step) { attempt_order.push_back(step); };
+
         auto capture = [&](const foundation::Result<void> &result) -> bool {
             if (!result && !first) {
                 first = result.GetError();
             }
+
             return result.HasValue();
         };
 
@@ -2737,21 +3301,26 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
             if (services_.simulation) {
                 switch (options_.shutdown_proposal_policy) {
                 case ShutdownProposalPolicy::CommitValid: {
-                    const auto main_thread = services_.simulation->runtime->ProcessMainThreadCommits();
+                    const auto main_thread =
+                        services_.simulation->runtime->ProcessMainThreadCommits();
                     if (!main_thread) {
                         ok = false;
                         capture(foundation::Result<void>::Failure(main_thread.GetError()));
                     }
+
                     while (ok && !services_.simulation->proposals->PendingBatches().empty()) {
                         if (!capture(services_.simulation->proposals->CommitNext())) {
                             ok = false;
                         }
+
                     }
+
                     break;
                 }
+
                 case ShutdownProposalPolicy::DiscardWithReason:
-                    ok = capture(
-                        services_.simulation->proposals->DiscardAll(simulation::ProposalDiscardReason::Shutdown));
+                    ok = capture(services_.simulation->proposals->DiscardAll(
+                        simulation::ProposalDiscardReason::Shutdown));
                     break;
                 case ShutdownProposalPolicy::FailIfPending:
                     if (!services_.simulation->proposals->PendingBatches().empty()) {
@@ -2759,23 +3328,28 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                         capture(FailureVoid("runtime_support.pending_simulation_proposals",
                                             "simulation proposals remain during shutdown"));
                     }
+
                     break;
                 }
+
                 const bool stopped = capture(services_.simulation->runtime->Shutdown());
                 ok = ok && stopped;
             }
+
             shutdown_simulation_complete_ = ok;
         }
 
         if (!shutdown_streaming_complete_) {
             record_step(RuntimeShutdownStep::ShutdownStreaming);
-            shutdown_streaming_complete_ = !services_.streaming || !services_.streaming->controller ||
+            shutdown_streaming_complete_ = !services_.streaming ||
+                                           !services_.streaming->controller ||
                                            capture(services_.streaming->controller->Shutdown());
         }
 
         if (!shutdown_audio_complete_) {
             record_step(RuntimeShutdownStep::ShutdownAudio);
-            shutdown_audio_complete_ = !services_.audio || capture(services_.audio->runtime->Shutdown());
+            shutdown_audio_complete_ =
+                !services_.audio || capture(services_.audio->runtime->Shutdown());
         }
 
         if (!shutdown_physics_complete_) {
@@ -2793,44 +3367,59 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                     ok = false;
                     capture(foundation::Result<void>::Failure(flushed.GetError()));
                 }
+
                 if (ok) {
-                    const auto lifecycle =
-                        std::dynamic_pointer_cast<IRuntimeAdapterLifecycle>(integrations_->scene_projections);
+                    const auto lifecycle = std::dynamic_pointer_cast<IRuntimeAdapterLifecycle>(
+                        integrations_->scene_projections);
                     if (lifecycle) {
                         ok = capture(lifecycle->Shutdown());
                     }
+
                 }
+
             }
+
             shutdown_scene_projection_complete_ = ok;
         }
 
         if (!shutdown_animation_resources_complete_ || !shutdown_animation_poses_complete_) {
             record_step(RuntimeShutdownStep::ReleaseAnimationResources);
             if (!shutdown_animation_resources_complete_) {
-                shutdown_animation_resources_complete_ = ShutdownAdapter(integrations_->animation_resources, capture);
+                shutdown_animation_resources_complete_ =
+                    ShutdownAdapter(integrations_->animation_resources, capture);
             }
+
             if (!shutdown_animation_poses_complete_) {
-                shutdown_animation_poses_complete_ = ShutdownAdapter(integrations_->animation_pose_sink, capture);
+                shutdown_animation_poses_complete_ =
+                    ShutdownAdapter(integrations_->animation_pose_sink, capture);
             }
+
         }
 
         if (!shutdown_renderer_complete_) {
             record_step(RuntimeShutdownStep::ShutdownRenderer);
-            shutdown_renderer_complete_ = !services_.renderer || capture(services_.renderer->runtime->Shutdown());
+            shutdown_renderer_complete_ =
+                !services_.renderer || capture(services_.renderer->runtime->Shutdown());
         }
 
         if (!shutdown_render_resources_complete_ || !shutdown_audio_resources_complete_ ||
             !shutdown_streaming_adapter_complete_) {
             record_step(RuntimeShutdownStep::ReleaseResourceAdapters);
             if (!shutdown_render_resources_complete_ && shutdown_renderer_complete_) {
-                shutdown_render_resources_complete_ = ShutdownAdapter(integrations_->render_resources, capture);
+                shutdown_render_resources_complete_ =
+                    ShutdownAdapter(integrations_->render_resources, capture);
             }
+
             if (!shutdown_audio_resources_complete_ && shutdown_audio_complete_) {
-                shutdown_audio_resources_complete_ = ShutdownAdapter(integrations_->audio_resources, capture);
+                shutdown_audio_resources_complete_ =
+                    ShutdownAdapter(integrations_->audio_resources, capture);
             }
+
             if (!shutdown_streaming_adapter_complete_ && shutdown_streaming_complete_) {
-                shutdown_streaming_adapter_complete_ = ShutdownAdapter(integrations_->streaming_data_source, capture);
+                shutdown_streaming_adapter_complete_ =
+                    ShutdownAdapter(integrations_->streaming_data_source, capture);
             }
+
         }
 
         if (!shutdown_events_complete_) {
@@ -2838,28 +3427,33 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
             if (shutdown_physics_complete_ && services_.physics && services_.physics->events) {
                 services_.physics->events->Clear();
             }
-            if (shutdown_animation_resources_complete_ && shutdown_animation_poses_complete_ && services_.animation &&
-                services_.animation->events) {
+
+            if (shutdown_animation_resources_complete_ && shutdown_animation_poses_complete_ &&
+                services_.animation && services_.animation->events) {
                 services_.animation->events->Clear();
             }
+
             if (shutdown_audio_complete_ && services_.audio && services_.audio->events) {
                 services_.audio->events->Clear();
             }
-            shutdown_events_complete_ = shutdown_physics_complete_ && shutdown_animation_resources_complete_ &&
-                                        shutdown_animation_poses_complete_ && shutdown_audio_complete_;
+
+            shutdown_events_complete_ =
+                shutdown_physics_complete_ && shutdown_animation_resources_complete_ &&
+                shutdown_animation_poses_complete_ && shutdown_audio_complete_;
         }
 
         const bool all_cleanup_complete =
-            shutdown_simulation_complete_ && shutdown_streaming_complete_ && shutdown_audio_complete_ &&
-            shutdown_physics_complete_ && shutdown_scene_projection_complete_ &&
-            shutdown_animation_resources_complete_ && shutdown_animation_poses_complete_ &&
-            shutdown_renderer_complete_ && shutdown_render_resources_complete_ && shutdown_audio_resources_complete_ &&
+            shutdown_simulation_complete_ && shutdown_streaming_complete_ &&
+            shutdown_audio_complete_ && shutdown_physics_complete_ &&
+            shutdown_scene_projection_complete_ && shutdown_animation_resources_complete_ &&
+            shutdown_animation_poses_complete_ && shutdown_renderer_complete_ &&
+            shutdown_render_resources_complete_ && shutdown_audio_resources_complete_ &&
             shutdown_streaming_adapter_complete_ && shutdown_events_complete_;
         if (!all_cleanup_complete) {
             integrations_->last_shutdown_order.swap(attempt_order);
-            return first
-                       ? foundation::Result<void>::Failure(*first)
-                       : FailureVoid("runtime_support.shutdown_incomplete", "runtime shutdown has unfinished cleanup");
+            return first ? foundation::Result<void>::Failure(*first)
+                         : FailureVoid("runtime_support.shutdown_incomplete",
+                                       "runtime shutdown has unfinished cleanup");
         }
 
         if (!shutdown_adapters_destroyed_) {
@@ -2906,16 +3500,19 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
     [[nodiscard]] bool IsShutdownStarted() const noexcept override {
         return shutdown_started_;
     }
+
     [[nodiscard]] bool IsShutdownComplete() const noexcept override {
         return shutdown_complete_;
     }
 
   private:
     template <typename TInterface, typename TCapture>
-    static bool ShutdownAdapter(const std::shared_ptr<TInterface> &interface_ptr, TCapture &&capture) {
+    static bool ShutdownAdapter(const std::shared_ptr<TInterface> &interface_ptr,
+                                TCapture &&capture) {
         if (!interface_ptr) {
             return true;
         }
+
         const auto lifecycle = std::dynamic_pointer_cast<IRuntimeAdapterLifecycle>(interface_ptr);
         return lifecycle ? capture(lifecycle->Shutdown()) : true;
     }
@@ -2924,6 +3521,7 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
     std::shared_ptr<RuntimeIntegrationServices> integrations_;
     EngineRuntimeOptions options_;
     std::optional<PendingCoordinatorFrame> pending_frame_{};
+
     bool shutdown_started_ = false;
     bool shutdown_complete_ = false;
     bool shutdown_stop_new_work_complete_ = false;
@@ -2942,44 +3540,60 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
     bool shutdown_adapters_destroyed_ = false;
 };
 
-[[nodiscard]] foundation::Result<void> ValidateOptionDependencies(const EngineRuntimeOptions &options) {
+[[nodiscard]] foundation::Result<void>
+ValidateOptionDependencies(const EngineRuntimeOptions &options) {
     if (options.enable_streaming &&
         (!options.enable_world || !options.enable_resources || !options.enable_persistence)) {
-        return FailureVoid("runtime_support.missing_dependency", "Streaming requires World, Resources and Persistence");
+        return FailureVoid("runtime_support.missing_dependency",
+                           "Streaming requires World, Resources and Persistence");
     }
+
     if (options.enable_simulation && !options.enable_time) {
         return FailureVoid("runtime_support.missing_dependency", "Simulation requires Time");
     }
+
     if (options.enable_navigation && !options.enable_environment) {
         return FailureVoid("runtime_support.missing_dependency", "Navigation requires Environment");
     }
+
     if (options.enable_animation && !options.enable_resources) {
         return FailureVoid("runtime_support.missing_dependency", "Animation requires Resources");
     }
+
     if (options.enable_physics && !options.enable_scene) {
         return FailureVoid("runtime_support.missing_dependency", "Physics requires Scene");
     }
+
     if (options.enable_audio && (!options.enable_resources || !options.enable_scene)) {
-        return FailureVoid("runtime_support.missing_dependency", "Audio requires Resources and Scene");
+        return FailureVoid("runtime_support.missing_dependency",
+                           "Audio requires Resources and Scene");
     }
+
     if (options.enable_renderer && (!options.enable_resources || !options.enable_scene)) {
-        return FailureVoid("runtime_support.missing_dependency", "Renderer requires Resources and Scene");
+        return FailureVoid("runtime_support.missing_dependency",
+                           "Renderer requires Resources and Scene");
     }
+
     return foundation::Result<void>::Success();
 }
 
-[[nodiscard]] bool HasAnyStreamingCoreDependency(const streaming::StreamingDependencies &dependencies) {
-    return dependencies.data_source || dependencies.commit_target || dependencies.residency_controller ||
-           dependencies.world_source || dependencies.persistence_source || dependencies.resource_source;
+[[nodiscard]] bool
+HasAnyStreamingCoreDependency(const streaming::StreamingDependencies &dependencies) {
+    return dependencies.data_source || dependencies.commit_target ||
+           dependencies.residency_controller || dependencies.world_source ||
+           dependencies.persistence_source || dependencies.resource_source;
 }
 
-[[nodiscard]] bool HasAllStreamingCoreDependencies(const streaming::StreamingDependencies &dependencies) {
-    return dependencies.data_source && dependencies.commit_target && dependencies.residency_controller &&
-           dependencies.world_source && dependencies.persistence_source && dependencies.resource_source;
+[[nodiscard]] bool
+HasAllStreamingCoreDependencies(const streaming::StreamingDependencies &dependencies) {
+    return dependencies.data_source && dependencies.commit_target &&
+           dependencies.residency_controller && dependencies.world_source &&
+           dependencies.persistence_source && dependencies.resource_source;
 }
 
-[[nodiscard]] foundation::Result<void> ValidateProfileDependencies(const EngineRuntimeOptions &options,
-                                                                   const EngineRuntimeDependencies &dependencies) {
+[[nodiscard]] foundation::Result<void>
+ValidateProfileDependencies(const EngineRuntimeOptions &options,
+                            const EngineRuntimeDependencies &dependencies) {
     if (HasAnyStreamingCoreDependency(dependencies.streaming) &&
         !HasAllStreamingCoreDependencies(dependencies.streaming)) {
         return FailureVoid("runtime_support.incomplete_streaming_dependencies",
@@ -2997,8 +3611,10 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
                            "Navigation projection roles must be supplied together");
     }
 
-    const bool any_physics_transform = dependencies.physics.transform_source || dependencies.physics.transform_sink;
-    const bool all_physics_transform = dependencies.physics.transform_source && dependencies.physics.transform_sink;
+    const bool any_physics_transform =
+        dependencies.physics.transform_source || dependencies.physics.transform_sink;
+    const bool all_physics_transform =
+        dependencies.physics.transform_source && dependencies.physics.transform_sink;
     if (any_physics_transform && !all_physics_transform) {
         return FailureVoid("runtime_support.incomplete_physics_transform_dependencies",
                            "Physics transform source/sink roles must be supplied together");
@@ -3012,38 +3628,47 @@ class EngineRuntimeCoordinator final : public IEngineRuntimeCoordinator {
         return FailureVoid("runtime_support.production_dependency_missing",
                            "Production Renderer requires an external command sink");
     }
+
     if (options.enable_physics && !dependencies.physics.backend) {
         return FailureVoid("runtime_support.production_dependency_missing",
                            "Production Physics requires an external backend");
     }
+
     if (options.enable_navigation && !dependencies.navigation.backend) {
         return FailureVoid("runtime_support.production_dependency_missing",
                            "Production Navigation requires an external backend");
     }
+
     if (options.enable_animation && !dependencies.animation.evaluator) {
         return FailureVoid("runtime_support.production_dependency_missing",
                            "Production Animation requires an evaluator backend");
     }
+
     if (options.enable_audio && !dependencies.audio.backend) {
         return FailureVoid("runtime_support.production_dependency_missing",
                            "Production Audio requires an external backend");
     }
+
     if (options.enable_streaming && !HasAllStreamingCoreDependencies(dependencies.streaming) &&
         !dependencies.chunk_manifests) {
         return FailureVoid("runtime_support.production_dependency_missing",
-                           "Production Streaming standard composition requires a chunk manifest source");
+                           "Production Streaming standard composition requires a chunk manifest "
+                           "source");
     }
+
     if (options.enable_simulation && !dependencies.simulation.commit_target) {
         return FailureVoid("runtime_support.production_dependency_missing",
                            "Production Simulation requires a commit target");
     }
+
     return foundation::Result<void>::Success();
 }
 
 [[nodiscard]] foundation::Result<void> ValidateApplicationIsClean(core::Application &app) {
-#define EPIDEMIC_CHECK_ABSENT(type, name)                                                                              \
-    if (app.Services().Contains<type>()) {                                                                             \
-        return FailureVoid("runtime_support.duplicate_registration", name " is already registered");                   \
+#define EPIDEMIC_CHECK_ABSENT(type, name)                                                          \
+    if (app.Services().Contains<type>()) {                                                         \
+        return FailureVoid("runtime_support.duplicate_registration",                               \
+                           name " is already registered");                                         \
     }
 
     EPIDEMIC_CHECK_ABSENT(EngineRuntimeServices, "EngineRuntime");
@@ -3072,10 +3697,12 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
         integrations.owned_adapters.end()) {
         integrations.owned_adapters.push_back(kind);
     }
+
 }
 
 [[nodiscard]] RuntimeServiceSnapshot MakeSnapshot(const EngineRuntimeServices &services) {
     RuntimeServiceSnapshot snapshot{};
+
     snapshot.time = services.time;
     snapshot.resources = services.resources;
     snapshot.persistence = services.persistence;
@@ -3097,16 +3724,22 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
     if (renderer_services.views->GetMainView().IsValid()) {
         return foundation::Result<void>::Success();
     }
+
     foundation::Result<SceneNodeId> node = foundation::Result<SceneNodeId>::Failure(
-        foundation::Error::Create("runtime_support.main_view_creation_failed", "main-view node creation did not run"));
+        foundation::Error::Create("runtime_support.main_view_creation_failed",
+                                  "main-view node creation did not run"));
     try {
         node = scene->nodes->CreateNode();
     } catch (const std::exception &exception) {
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "runtime_support.scene_exception", "scene threw while creating the main-view node", exception.what()));
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("runtime_support.scene_exception",
+                                      "scene threw while creating the main-view node",
+                                      exception.what()));
     } catch (...) {
-        return FailureVoid("runtime_support.scene_exception", "scene threw while creating the main-view node");
+        return FailureVoid("runtime_support.scene_exception",
+                           "scene threw while creating the main-view node");
     }
+
     if (!node) {
         return foundation::Result<void>::Failure(node.GetError());
     }
@@ -3117,39 +3750,52 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
         } catch (const std::exception &exception) {
             return foundation::Result<void>::Failure(
                 foundation::Error::Create("runtime_support.scene_exception",
-                                          "scene threw while rolling back the main-view node", exception.what()));
+                                          "scene threw while rolling back the main-view node",
+                                          exception.what()));
         } catch (...) {
-            return FailureVoid("runtime_support.scene_exception", "scene threw while rolling back the main-view node");
+            return FailureVoid("runtime_support.scene_exception",
+                               "scene threw while rolling back the main-view node");
         }
+
     };
 
     foundation::Result<renderer::ViewId> view = foundation::Result<renderer::ViewId>::Failure(
-        foundation::Error::Create("runtime_support.main_view_creation_failed", "main view creation did not run"));
+        foundation::Error::Create("runtime_support.main_view_creation_failed",
+                                  "main view creation did not run"));
     if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_main_view_creation)) {
         const auto cleanup = rollback_node();
-        return cleanup ? FailureVoid("runtime_support.injected_view_creation_failure",
-                                     "injected main-view creation failure")
-                       : FailureVoid("runtime_support.main_view_cleanup_pending",
-                                     "injected view creation failure and scene-node rollback failed");
+        return cleanup
+                   ? FailureVoid("runtime_support.injected_view_creation_failure",
+                                 "injected main-view creation failure")
+                   : FailureVoid("runtime_support.main_view_cleanup_pending",
+                                 "injected view creation failure and scene-node rollback failed");
     }
+
     try {
-        view = renderer_services.views->CreateView(renderer::ViewDesc{RuntimeObjectId{node.Value().Raw()}});
+        view = renderer_services.views->CreateView(
+            renderer::ViewDesc{RuntimeObjectId{node.Value().Raw()}});
     } catch (const std::exception &exception) {
         const auto cleanup = rollback_node();
         if (!cleanup) {
             return FailureVoid("runtime_support.main_view_cleanup_pending",
                                "view creation threw and scene-node rollback failed");
         }
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "runtime_support.renderer_exception", "renderer threw while creating the main view", exception.what()));
+
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("runtime_support.renderer_exception",
+                                      "renderer threw while creating the main view",
+                                      exception.what()));
     } catch (...) {
         const auto cleanup = rollback_node();
         if (!cleanup) {
             return FailureVoid("runtime_support.main_view_cleanup_pending",
                                "view creation threw and scene-node rollback failed");
         }
-        return FailureVoid("runtime_support.renderer_exception", "renderer threw while creating the main view");
+
+        return FailureVoid("runtime_support.renderer_exception",
+                           "renderer threw while creating the main view");
     }
+
     if (!view) {
         const auto cleanup = rollback_node();
         return cleanup ? foundation::Result<void>::Failure(view.GetError())
@@ -3164,9 +3810,11 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
             if (!destroyed) {
                 first = destroyed.GetError();
             }
+
         } catch (const std::exception &exception) {
             first = foundation::Error::Create("runtime_support.renderer_exception",
-                                              "renderer threw while rolling back the main view", exception.what());
+                                              "renderer threw while rolling back the main view",
+                                              exception.what());
         } catch (...) {
             first = foundation::Error::Create("runtime_support.renderer_exception",
                                               "renderer threw while rolling back the main view");
@@ -3176,11 +3824,14 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
         if (!node_cleanup && !first) {
             first = node_cleanup.GetError();
         }
-        return first ? foundation::Result<void>::Failure(*first) : foundation::Result<void>::Success();
+
+        return first ? foundation::Result<void>::Failure(*first)
+                     : foundation::Result<void>::Success();
     };
 
     foundation::Result<void> published = foundation::Result<void>::Failure(
-        foundation::Error::Create("runtime_support.main_view_creation_failed", "main-view publication did not run"));
+        foundation::Error::Create("runtime_support.main_view_creation_failed",
+                                  "main-view publication did not run"));
     if (ConsumeTestFault(g_runtime_support_test_faults.fail_next_main_view_publication)) {
         const auto cleanup = rollback_view_and_node();
         return cleanup ? FailureVoid("runtime_support.injected_main_view_publication_failure",
@@ -3188,6 +3839,7 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
                        : FailureVoid("runtime_support.main_view_cleanup_pending",
                                      "injected main-view publication failure and rollback failed");
     }
+
     try {
         published = renderer_services.views->SetMainView(view.Value());
     } catch (const std::exception &exception) {
@@ -3196,15 +3848,20 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
             return FailureVoid("runtime_support.main_view_cleanup_pending",
                                "main-view publication threw and rollback failed");
         }
-        return foundation::Result<void>::Failure(foundation::Error::Create(
-            "runtime_support.renderer_exception", "renderer threw while publishing the main view", exception.what()));
+
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("runtime_support.renderer_exception",
+                                      "renderer threw while publishing the main view",
+                                      exception.what()));
     } catch (...) {
         const auto cleanup = rollback_view_and_node();
         if (!cleanup) {
             return FailureVoid("runtime_support.main_view_cleanup_pending",
                                "main-view publication threw and rollback failed");
         }
-        return FailureVoid("runtime_support.renderer_exception", "renderer threw while publishing the main view");
+
+        return FailureVoid("runtime_support.renderer_exception",
+                           "renderer threw while publishing the main view");
     }
 
     if (!published) {
@@ -3213,33 +3870,39 @@ void AddAdapter(RuntimeIntegrationServices &integrations, RuntimeAdapterKind kin
                        : FailureVoid("runtime_support.main_view_cleanup_pending",
                                      "main-view publication failed and rollback did not complete");
     }
+
     return foundation::Result<void>::Success();
 }
 
 } // namespace
 
 namespace support_testing {
-std::shared_ptr<renderer::IRenderResourceBridge> CreateRenderResourceBridge(std::shared_ptr<IResourceManager> manager) {
+std::shared_ptr<renderer::IRenderResourceBridge>
+CreateRenderResourceBridge(std::shared_ptr<IResourceManager> manager) {
     return std::make_shared<RuntimeRenderResourceBridge>(std::move(manager));
 }
 
 std::shared_ptr<streaming::IStreamingDataSource>
-CreateStreamingAdapter(std::shared_ptr<WorldServices> world, std::shared_ptr<ResourceServices> resources,
+CreateStreamingAdapter(std::shared_ptr<WorldServices> world,
+                       std::shared_ptr<ResourceServices> resources,
                        std::shared_ptr<PersistenceServices> persistence,
                        std::shared_ptr<IChunkStreamingManifestSource> manifests) {
-    return std::make_shared<RuntimeStreamingAdapter>(std::move(world), std::move(resources), std::move(persistence),
-                                                     std::move(manifests));
+    return std::make_shared<RuntimeStreamingAdapter>(std::move(world), std::move(resources),
+                                                     std::move(persistence), std::move(manifests));
 }
 
 std::shared_ptr<animation::IAnimationResourceSource>
 CreateAnimationResourceSource(std::shared_ptr<IResourceManager> manager) {
-    return std::make_shared<RuntimeAnimationResourceSource>(std::move(manager),
-                                                            std::make_shared<DefaultAnimationResourceMapper>());
+    return std::make_shared<
+        RuntimeAnimationResourceSource>(std::move(manager),
+                                        std::make_shared<DefaultAnimationResourceMapper>());
 }
 
-std::shared_ptr<audio::IAudioResourceSource> CreateAudioResourceSource(std::shared_ptr<IResourceManager> manager) {
-    return std::make_shared<RuntimeAudioResourceSource>(std::move(manager),
-                                                        std::make_shared<DefaultAudioResourceMapper>());
+std::shared_ptr<audio::IAudioResourceSource>
+CreateAudioResourceSource(std::shared_ptr<IResourceManager> manager) {
+    return std::make_shared<
+        RuntimeAudioResourceSource>(std::move(manager),
+                                    std::make_shared<DefaultAudioResourceMapper>());
 }
 
 std::shared_ptr<audio::IAudioBackend> CreateReferenceAudioBackend() {
@@ -3254,7 +3917,8 @@ std::shared_ptr<IRuntimeEventSink> CreateReferenceEventSink() {
     return std::make_shared<InMemoryRuntimeEventSink>();
 }
 
-std::optional<RuntimeFrameEvents> GetReferenceEventBatch(const std::shared_ptr<IRuntimeEventSink> &sink) {
+std::optional<RuntimeFrameEvents>
+GetReferenceEventBatch(const std::shared_ptr<IRuntimeEventSink> &sink) {
     const auto reference = std::dynamic_pointer_cast<InMemoryRuntimeEventSink>(sink);
     return reference ? std::optional<RuntimeFrameEvents>{reference->Last()} : std::nullopt;
 }
@@ -3332,66 +3996,75 @@ foundation::Result<void> EnsureMainView(renderer::RendererServices &renderer_ser
     return ::epidemic::runtime::EnsureMainView(renderer_services, scene);
 }
 
-foundation::Result<void> SetPreparedRevision(streaming::IStreamingDataSource &source, std::uint64_t request_id,
-                                             std::uint64_t revision) {
+foundation::Result<void> SetPreparedRevision(streaming::IStreamingDataSource &source,
+                                             std::uint64_t request_id, std::uint64_t revision) {
     auto *adapter = dynamic_cast<RuntimeStreamingAdapter *>(&source);
     if (!adapter) {
-        return FailureVoid("runtime_support.test_invalid_adapter", "streaming test adapter type mismatch");
+        return FailureVoid("runtime_support.test_invalid_adapter",
+                           "streaming test adapter type mismatch");
     }
+
     return adapter->SetPreparedRevisionForTesting(request_id, revision);
 }
+
 } // namespace support_testing
 
-foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRuntimeOptions &options,
-    // Public SDK contract: capture a value snapshot; keep the existing signature.
-    // cppcheck-suppress passedByValue
-                                                               EngineRuntimeDependencies dependencies) {
+foundation::Result<PreparedEngineRuntime>
+PrepareEngineRuntime(const EngineRuntimeOptions &options,
+                     // Public SDK contract: capture a value snapshot; keep the existing signature.
+                     // cppcheck-suppress passedByValue
+                     EngineRuntimeDependencies dependencies) {
     if (const auto valid = ValidateOptionDependencies(options); !valid) {
         return foundation::Result<PreparedEngineRuntime>::Failure(valid.GetError());
     }
+
     if (const auto valid = ValidateProfileDependencies(options, dependencies); !valid) {
         return foundation::Result<PreparedEngineRuntime>::Failure(valid.GetError());
     }
 
     EngineRuntimeServices services{};
+
     services.profile = options.profile;
     services.foundation = std::make_shared<RuntimeFoundationRegistration>();
     services.registered_majors.push_back("RuntimeFoundation");
     auto integrations = std::make_shared<RuntimeIntegrationServices>();
 
-    auto add_major = [&](std::string_view name) {
-        services.registered_majors.emplace_back(name);
-    };
+    auto add_major = [&](std::string_view name) { services.registered_majors.emplace_back(name); };
 
-#define EPIDEMIC_CREATE_MAJOR(enabled, member, type, name, expression)                                                 \
-    if (enabled) {                                                                                                     \
-        const auto created = (expression);                                                                             \
-        if (!created) {                                                                                                \
-            return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());                             \
-        }                                                                                                              \
-        services.member = std::make_shared<type>(created.Value());                                                     \
-        add_major(name);                                                                                               \
+#define EPIDEMIC_CREATE_MAJOR(enabled, member, type, name, expression)                             \
+    if (enabled) {                                                                                 \
+        const auto created = (expression);                                                         \
+        if (!created) {                                                                            \
+            return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());         \
+        }                                                                                          \
+        services.member = std::make_shared<type>(created.Value());                                 \
+        add_major(name);                                                                           \
     }
 
-    EPIDEMIC_CREATE_MAJOR(options.enable_assets, assets, AssetServices, "Assets", CreateAssetServices(options.assets));
-    EPIDEMIC_CREATE_MAJOR(options.enable_serialization, serialization, SerializationServices, "Serialization",
-                          CreateSerializationServices(options.serialization));
+    EPIDEMIC_CREATE_MAJOR(options.enable_assets, assets, AssetServices, "Assets",
+                          CreateAssetServices(options.assets));
+    EPIDEMIC_CREATE_MAJOR(options.enable_serialization, serialization, SerializationServices,
+                          "Serialization", CreateSerializationServices(options.serialization));
     EPIDEMIC_CREATE_MAJOR(options.enable_resources, resources, ResourceServices, "Resources",
                           CreateResourceServices(options.resources));
-    EPIDEMIC_CREATE_MAJOR(options.enable_persistence, persistence, PersistenceServices, "Persistence",
-                          CreatePersistenceServices(options.persistence));
-    EPIDEMIC_CREATE_MAJOR(options.enable_time, time, TimeServices, "Time", CreateTimeServices(options.time));
-    EPIDEMIC_CREATE_MAJOR(options.enable_environment, environment, EnvironmentServices, "Environment",
-                          CreateEnvironmentServices(options.environment));
-    EPIDEMIC_CREATE_MAJOR(options.enable_scene, scene, SceneServices, "Scene", CreateSceneServices(options.scene));
-    EPIDEMIC_CREATE_MAJOR(options.enable_world, world, WorldServices, "World", CreateWorldServices(options.world));
+    EPIDEMIC_CREATE_MAJOR(options.enable_persistence, persistence, PersistenceServices,
+                          "Persistence", CreatePersistenceServices(options.persistence));
+    EPIDEMIC_CREATE_MAJOR(options.enable_time, time, TimeServices, "Time",
+                          CreateTimeServices(options.time));
+    EPIDEMIC_CREATE_MAJOR(options.enable_environment, environment, EnvironmentServices,
+                          "Environment", CreateEnvironmentServices(options.environment));
+    EPIDEMIC_CREATE_MAJOR(options.enable_scene, scene, SceneServices, "Scene",
+                          CreateSceneServices(options.scene));
+    EPIDEMIC_CREATE_MAJOR(options.enable_world, world, WorldServices, "World",
+                          CreateWorldServices(options.world));
 
 #undef EPIDEMIC_CREATE_MAJOR
 
     std::shared_ptr<RuntimeSceneTransformAdapter> scene_transform_adapter;
     std::shared_ptr<RuntimeAnimationPoseBridge> animation_pose_bridge;
     if (services.scene && (options.enable_physics || options.enable_audio)) {
-        scene_transform_adapter = std::make_shared<RuntimeSceneTransformAdapter>(services.scene->transforms);
+        scene_transform_adapter =
+            std::make_shared<RuntimeSceneTransformAdapter>(services.scene->transforms);
         integrations->scene_projections = scene_transform_adapter;
     }
 
@@ -3404,12 +4077,18 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
                 if (options.profile == RuntimeProfile::Production) {
                     return foundation::Result<PreparedEngineRuntime>::Failure(
                         SupportError("runtime_support.production_dependency_missing",
-                                     "Production Streaming standard composition requires a chunk manifest source"));
+                                     "Production Streaming standard composition requires a chunk "
+                                     "manifest source"));
                 }
-                manifests = std::make_shared<ReferenceChunkStreamingManifestSource>(services.world->chunks);
+
+                manifests =
+                    std::make_shared<ReferenceChunkStreamingManifestSource>(services.world->chunks);
             }
-            support_streaming = std::make_shared<RuntimeStreamingAdapter>(services.world, services.resources,
-                                                                          services.persistence, std::move(manifests));
+
+            support_streaming =
+                std::make_shared<RuntimeStreamingAdapter>(services.world, services.resources,
+                                                          services.persistence,
+                                                          std::move(manifests));
             streaming_dependencies.data_source = support_streaming;
             streaming_dependencies.commit_target = support_streaming;
             streaming_dependencies.residency_controller = support_streaming;
@@ -3417,6 +4096,7 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
             streaming_dependencies.persistence_source = support_streaming;
             streaming_dependencies.resource_source = support_streaming;
         }
+
         if (!streaming_dependencies.priority_provider) {
             if (support_streaming) {
                 streaming_dependencies.priority_provider = support_streaming;
@@ -3425,11 +4105,14 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
                     SupportError("runtime_support.streaming_priority_missing",
                                  "external Streaming composition requires a priority provider"));
             }
+
         }
+
         const auto created = streaming::CreateStreamingServices(streaming_dependencies);
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         services.streaming = std::make_shared<streaming::StreamingServices>(created.Value());
         services.streaming->runtime->SetBudget(options.streaming);
         integrations->streaming_data_source = streaming_dependencies.data_source;
@@ -3443,6 +4126,7 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
             integrations->streaming_prepared_data = support_streaming;
             AddAdapter(*integrations, RuntimeAdapterKind::WorldResourcesPersistenceToStreaming);
         }
+
         add_major("Streaming");
     }
 
@@ -3467,10 +4151,12 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
             integrations->simulation_commit_target = simulation_dependencies.commit_target;
         }
 
-        const auto created = simulation::CreateSimulationServices(options.simulation, simulation_dependencies);
+        const auto created =
+            simulation::CreateSimulationServices(options.simulation, simulation_dependencies);
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         services.simulation = std::make_shared<simulation::SimulationServices>(created.Value());
         add_major("Simulation");
     }
@@ -3480,14 +4166,18 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         std::shared_ptr<RuntimeNavigationEnvironmentAdapter> environment_adapter;
         if (!navigation_dependencies.data_source || !navigation_dependencies.cost_provider ||
             !navigation_dependencies.obstacle_source) {
-            environment_adapter = std::make_shared<RuntimeNavigationEnvironmentAdapter>(services.environment);
+            environment_adapter =
+                std::make_shared<RuntimeNavigationEnvironmentAdapter>(services.environment);
         }
+
         if (!navigation_dependencies.data_source) {
             navigation_dependencies.data_source = environment_adapter;
         }
+
         if (!navigation_dependencies.cost_provider) {
             navigation_dependencies.cost_provider = environment_adapter;
         }
+
         if (!navigation_dependencies.obstacle_source) {
             navigation_dependencies.obstacle_source = environment_adapter;
         }
@@ -3496,10 +4186,13 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         if (options.profile != RuntimeProfile::Production && !navigation_dependencies.backend) {
             navigation_options.enable_mock_queries = true;
         }
-        const auto created = navigation::CreateNavigationServices(navigation_options, navigation_dependencies);
+
+        const auto created =
+            navigation::CreateNavigationServices(navigation_options, navigation_dependencies);
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         services.navigation = std::make_shared<navigation::NavigationServices>(created.Value());
         integrations->navigation_data_source = navigation_dependencies.data_source;
         integrations->navigation_costs = navigation_dependencies.cost_provider;
@@ -3507,18 +4200,22 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         if (environment_adapter) {
             AddAdapter(*integrations, RuntimeAdapterKind::EnvironmentToNavigation);
         }
+
         add_major("Navigation");
     }
 
     if (options.enable_animation) {
         animation::AnimationDependencies animation_dependencies = dependencies.animation;
         if (!animation_dependencies.resources) {
-            std::shared_ptr<IAnimationResourceMapper> mapper = dependencies.animation_resource_mapper;
+            std::shared_ptr<IAnimationResourceMapper> mapper =
+                dependencies.animation_resource_mapper;
             if (!mapper) {
                 mapper = std::make_shared<DefaultAnimationResourceMapper>();
             }
+
             auto source =
-                std::make_shared<RuntimeAnimationResourceSource>(services.resources->manager, std::move(mapper));
+                std::make_shared<RuntimeAnimationResourceSource>(services.resources->manager,
+                                                                 std::move(mapper));
             animation_dependencies.resources = source;
             integrations->animation_resources = source;
             AddAdapter(*integrations, RuntimeAdapterKind::ResourcesToAnimation);
@@ -3547,10 +4244,12 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
 
         animation::AnimationOptions animation_options = options.animation;
         animation_options.enable_mock_pose_evaluation = false;
-        const auto created = animation::CreateAnimationServices(animation_options, animation_dependencies);
+        const auto created =
+            animation::CreateAnimationServices(animation_options, animation_dependencies);
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         services.animation = std::make_shared<animation::AnimationServices>(created.Value());
         add_major("Animation");
     }
@@ -3561,19 +4260,23 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         if (!physics_dependencies.transform_source) {
             physics_dependencies.transform_source = scene_transform_adapter;
         }
+
         if (!physics_dependencies.transform_sink) {
             physics_dependencies.transform_sink = scene_transform_adapter;
         }
+
         const auto created = physics::CreatePhysicsServices(physics_dependencies);
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         services.physics = std::make_shared<physics::PhysicsServices>(created.Value());
         integrations->physics_transform_source = physics_dependencies.transform_source;
         integrations->physics_transform_sink = physics_dependencies.transform_sink;
         if (scene_transform_adapter) {
             AddAdapter(*integrations, RuntimeAdapterKind::SceneToPhysics);
         }
+
         add_major("Physics");
     }
 
@@ -3592,7 +4295,9 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
             if (!mapper) {
                 mapper = std::make_shared<DefaultAudioResourceMapper>();
             }
-            auto source = std::make_shared<RuntimeAudioResourceSource>(services.resources->manager, std::move(mapper));
+
+            auto source = std::make_shared<RuntimeAudioResourceSource>(services.resources->manager,
+                                                                       std::move(mapper));
             audio_dependencies.resources = source;
             integrations->audio_resources = source;
             AddAdapter(*integrations, RuntimeAdapterKind::ResourcesToAudio);
@@ -3603,6 +4308,7 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         if (!audio_dependencies.transforms) {
             audio_dependencies.transforms = scene_transform_adapter;
         }
+
         integrations->audio_transforms = audio_dependencies.transforms;
         if (scene_transform_adapter) {
             AddAdapter(*integrations, RuntimeAdapterKind::SceneToAudio);
@@ -3612,6 +4318,7 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         services.audio = std::make_shared<audio::AudioServices>(created.Value());
         add_major("Audio");
     }
@@ -3619,7 +4326,8 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
     if (options.enable_renderer) {
         renderer::RendererDependencies renderer_dependencies = dependencies.renderer;
         if (!renderer_dependencies.resource_bridge) {
-            auto bridge = std::make_shared<RuntimeRenderResourceBridge>(services.resources->manager);
+            auto bridge =
+                std::make_shared<RuntimeRenderResourceBridge>(services.resources->manager);
             renderer_dependencies.resource_bridge = bridge;
             integrations->render_resources = bridge;
             AddAdapter(*integrations, RuntimeAdapterKind::ResourcesToRenderer);
@@ -3628,7 +4336,8 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         }
 
         if (!renderer_dependencies.scene_source) {
-            auto source = std::make_shared<RuntimeRenderSceneSource>(services.scene->nodes, services.scene->transforms);
+            auto source = std::make_shared<RuntimeRenderSceneSource>(services.scene->nodes,
+                                                                     services.scene->transforms);
             renderer_dependencies.scene_source = source;
             integrations->render_scene = source;
             AddAdapter(*integrations, RuntimeAdapterKind::SceneToRenderer);
@@ -3647,17 +4356,22 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
         if (!renderer_dependencies.command_sink) {
             renderer_dependencies.command_sink = std::make_shared<ReferenceRenderCommandSink>();
         }
+
         integrations->render_commands = renderer_dependencies.command_sink;
 
-        const auto created = renderer::CreateRendererServices(options.renderer, renderer_dependencies);
+        const auto created =
+            renderer::CreateRendererServices(options.renderer, renderer_dependencies);
         if (!created) {
             return foundation::Result<PreparedEngineRuntime>::Failure(created.GetError());
         }
+
         renderer::RendererServices renderer_services = created.Value();
         if (const auto main_view = EnsureMainView(renderer_services, services.scene); !main_view) {
             return foundation::Result<PreparedEngineRuntime>::Failure(main_view.GetError());
         }
-        services.renderer = std::make_shared<renderer::RendererServices>(std::move(renderer_services));
+
+        services.renderer =
+            std::make_shared<renderer::RendererServices>(std::move(renderer_services));
         add_major("Renderer");
     }
 
@@ -3667,9 +4381,11 @@ foundation::Result<PreparedEngineRuntime> PrepareEngineRuntime(const EngineRunti
     }
 
     services.integrations = integrations;
-    services.coordinator = std::make_shared<EngineRuntimeCoordinator>(MakeSnapshot(services), integrations, options);
+    services.coordinator =
+        std::make_shared<EngineRuntimeCoordinator>(MakeSnapshot(services), integrations, options);
 
-    return foundation::Result<PreparedEngineRuntime>::Success(PreparedEngineRuntime{std::move(services)});
+    return foundation::Result<PreparedEngineRuntime>::Success(
+        PreparedEngineRuntime{std::move(services)});
 }
 
 foundation::Result<EngineRuntimeServices> CommitPreparedRuntime(core::Application &app,
@@ -3677,98 +4393,126 @@ foundation::Result<EngineRuntimeServices> CommitPreparedRuntime(core::Applicatio
     if (const auto clean = ValidateApplicationIsClean(app); !clean) {
         return foundation::Result<EngineRuntimeServices>::Failure(clean.GetError());
     }
+
     auto aggregate = std::make_shared<EngineRuntimeServices>(prepared.services);
     const auto registered = RegisterShared(app, aggregate, "EngineRuntime");
     if (!registered) {
         return foundation::Result<EngineRuntimeServices>::Failure(registered.GetError());
     }
+
     return foundation::Result<EngineRuntimeServices>::Success(std::move(prepared.services));
 }
 
-foundation::Result<EngineRuntimeServices> RegisterDefaultEngineRuntime(core::Application &app,
-                                                                       const EngineRuntimeOptions &options,
-                                                                       EngineRuntimeDependencies dependencies) {
+foundation::Result<EngineRuntimeServices>
+RegisterDefaultEngineRuntime(core::Application &app, const EngineRuntimeOptions &options,
+                             EngineRuntimeDependencies dependencies) {
     if (const auto clean = ValidateApplicationIsClean(app); !clean) {
         return foundation::Result<EngineRuntimeServices>::Failure(clean.GetError());
     }
+
     const auto prepared = PrepareEngineRuntime(options, std::move(dependencies));
     if (!prepared) {
         return foundation::Result<EngineRuntimeServices>::Failure(prepared.GetError());
     }
+
     return CommitPreparedRuntime(app, prepared.Value());
 }
 
 foundation::Result<void> RegisterRuntimeFoundation(core::Application &app) {
-    return RegisterShared(app, std::make_shared<RuntimeFoundationRegistration>(), "RuntimeFoundation");
+    return RegisterShared(app, std::make_shared<RuntimeFoundationRegistration>(),
+                          "RuntimeFoundation");
 }
 
 foundation::Result<void> RegisterAssets(core::Application &app, const AssetsOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateAssetServices(options);
     return created ? RegisterShared(app, std::make_shared<AssetServices>(created.Value()), "Assets")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterSerialization(core::Application &app, const SerializationOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+foundation::Result<void> RegisterSerialization(core::Application &app,
+                                               const SerializationOptions &options) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateSerializationServices(options);
-    return created ? RegisterShared(app, std::make_shared<SerializationServices>(created.Value()), "Serialization")
+    return created ? RegisterShared(app, std::make_shared<SerializationServices>(created.Value()),
+                                    "Serialization")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
 foundation::Result<void> RegisterResources(core::Application &app, const ResourceOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateResourceServices(options);
-    return created ? RegisterShared(app, std::make_shared<ResourceServices>(created.Value()), "Resources")
+    return created ? RegisterShared(app, std::make_shared<ResourceServices>(created.Value()),
+                                    "Resources")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterPersistence(core::Application &app, const PersistenceOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+foundation::Result<void> RegisterPersistence(core::Application &app,
+                                             const PersistenceOptions &options) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreatePersistenceServices(options);
-    return created ? RegisterShared(app, std::make_shared<PersistenceServices>(created.Value()), "Persistence")
+    return created ? RegisterShared(app, std::make_shared<PersistenceServices>(created.Value()),
+                                    "Persistence")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
 foundation::Result<void> RegisterTime(core::Application &app, const TimeOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateTimeServices(options);
     return created ? RegisterShared(app, std::make_shared<TimeServices>(created.Value()), "Time")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterEnvironment(core::Application &app, const EnvironmentOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+foundation::Result<void> RegisterEnvironment(core::Application &app,
+                                             const EnvironmentOptions &options) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateEnvironmentServices(options);
-    return created ? RegisterShared(app, std::make_shared<EnvironmentServices>(created.Value()), "Environment")
+    return created ? RegisterShared(app, std::make_shared<EnvironmentServices>(created.Value()),
+                                    "Environment")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
 foundation::Result<void> RegisterScene(core::Application &app, const SceneOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateSceneServices(options);
     return created ? RegisterShared(app, std::make_shared<SceneServices>(created.Value()), "Scene")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
 foundation::Result<void> RegisterWorld(core::Application &app, const WorldOptions &options) {
-    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation"); !required) {
+    if (const auto required = Require<RuntimeFoundationRegistration>(app, "RuntimeFoundation");
+        !required) {
         return required;
     }
+
     const auto created = CreateWorldServices(options);
     return created ? RegisterShared(app, std::make_shared<WorldServices>(created.Value()), "World")
                    : foundation::Result<void>::Failure(created.GetError());
@@ -3778,18 +4522,23 @@ foundation::Result<void> RegisterStreaming(core::Application &app) {
     if (const auto required = Require<WorldServices>(app, "World"); !required) {
         return required;
     }
+
     if (const auto required = Require<ResourceServices>(app, "Resources"); !required) {
         return required;
     }
+
     if (const auto required = Require<PersistenceServices>(app, "Persistence"); !required) {
         return required;
     }
+
     auto world = app.Services().Get<WorldServices>();
     auto resources = app.Services().Get<ResourceServices>();
     auto persistence = app.Services().Get<PersistenceServices>();
     auto manifests = std::make_shared<ReferenceChunkStreamingManifestSource>(world->chunks);
-    auto adapter = std::make_shared<RuntimeStreamingAdapter>(world, resources, persistence, manifests);
+    auto adapter =
+        std::make_shared<RuntimeStreamingAdapter>(world, resources, persistence, manifests);
     streaming::StreamingDependencies dependencies{};
+
     dependencies.data_source = adapter;
     dependencies.commit_target = adapter;
     dependencies.priority_provider = adapter;
@@ -3798,57 +4547,78 @@ foundation::Result<void> RegisterStreaming(core::Application &app) {
     dependencies.persistence_source = adapter;
     dependencies.resource_source = adapter;
     const auto created = streaming::CreateStreamingServices(dependencies);
-    return created ? RegisterShared(app, std::make_shared<streaming::StreamingServices>(created.Value()), "Streaming")
+    return created ? RegisterShared(app,
+                                    std::make_shared<streaming::StreamingServices>(created.Value()),
+                                    "Streaming")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterSimulation(core::Application &app, const simulation::SimulationOptions &options) {
+foundation::Result<void> RegisterSimulation(core::Application &app,
+                                            const simulation::SimulationOptions &options) {
     if (const auto required = Require<TimeServices>(app, "Time"); !required) {
         return required;
     }
-    auto clock = std::make_shared<RuntimeSimulationClockAdapter>(app.Services().Get<TimeServices>()->clock);
+
+    auto clock =
+        std::make_shared<RuntimeSimulationClockAdapter>(app.Services().Get<TimeServices>()->clock);
     auto commit = std::make_shared<RuntimeSimulationCommitTarget>();
     simulation::SimulationDependencies dependencies{};
+
     dependencies.clock = clock;
     dependencies.commit_target = commit;
     const auto created = simulation::CreateSimulationServices(options, dependencies);
     return created
-               ? RegisterShared(app, std::make_shared<simulation::SimulationServices>(created.Value()), "Simulation")
+               ? RegisterShared(app,
+                                std::make_shared<simulation::SimulationServices>(created.Value()),
+                                "Simulation")
                : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterNavigation(core::Application &app, navigation::NavigationOptions options) {
+foundation::Result<void> RegisterNavigation(core::Application &app,
+                                            navigation::NavigationOptions options) {
     if (const auto required = Require<EnvironmentServices>(app, "Environment"); !required) {
         return required;
     }
-    auto adapter = std::make_shared<RuntimeNavigationEnvironmentAdapter>(app.Services().Get<EnvironmentServices>());
+
+    auto adapter = std::make_shared<RuntimeNavigationEnvironmentAdapter>(
+        app.Services().Get<EnvironmentServices>());
     navigation::NavigationDependencies dependencies{};
+
     dependencies.data_source = adapter;
     dependencies.cost_provider = adapter;
     dependencies.obstacle_source = adapter;
     options.enable_mock_queries = true;
     const auto created = navigation::CreateNavigationServices(options, dependencies);
     return created
-               ? RegisterShared(app, std::make_shared<navigation::NavigationServices>(created.Value()), "Navigation")
+               ? RegisterShared(app,
+                                std::make_shared<navigation::NavigationServices>(created.Value()),
+                                "Navigation")
                : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterAnimation(core::Application &app, animation::AnimationOptions options) {
+foundation::Result<void> RegisterAnimation(core::Application &app,
+                                           animation::AnimationOptions options) {
     if (const auto required = Require<ResourceServices>(app, "Resources"); !required) {
         return required;
     }
+
     auto mapper = std::make_shared<DefaultAnimationResourceMapper>();
-    auto resources =
-        std::make_shared<RuntimeAnimationResourceSource>(app.Services().Get<ResourceServices>()->manager, mapper);
+    auto resources = std::make_shared<RuntimeAnimationResourceSource>(app.Services()
+                                                                          .Get<ResourceServices>()
+                                                                          ->manager,
+                                                                      mapper);
     auto poses = std::make_shared<RuntimeAnimationPoseBridge>();
     auto evaluator = std::make_shared<RuntimeAnimationEvaluator>();
     animation::AnimationDependencies dependencies{};
+
     dependencies.resources = resources;
     dependencies.pose_sink = poses;
     dependencies.evaluator = evaluator;
     options.enable_mock_pose_evaluation = false;
     const auto created = animation::CreateAnimationServices(options, dependencies);
-    return created ? RegisterShared(app, std::make_shared<animation::AnimationServices>(created.Value()), "Animation")
+    return created ? RegisterShared(app,
+                                    std::make_shared<animation::AnimationServices>(created.Value()),
+                                    "Animation")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
@@ -3856,54 +4626,72 @@ foundation::Result<void> RegisterPhysics(core::Application &app) {
     if (const auto required = Require<SceneServices>(app, "Scene"); !required) {
         return required;
     }
-    auto transforms = std::make_shared<RuntimeSceneTransformAdapter>(app.Services().Get<SceneServices>()->transforms);
+
+    auto transforms = std::make_shared<RuntimeSceneTransformAdapter>(
+        app.Services().Get<SceneServices>()->transforms);
     physics::PhysicsDependencies dependencies{};
+
     dependencies.transform_source = transforms;
     dependencies.transform_sink = transforms;
     const auto created = physics::CreatePhysicsServices(dependencies);
-    return created ? RegisterShared(app, std::make_shared<physics::PhysicsServices>(created.Value()), "Physics")
-                   : foundation::Result<void>::Failure(created.GetError());
+    return created
+               ? RegisterShared(app, std::make_shared<physics::PhysicsServices>(created.Value()),
+                                "Physics")
+               : foundation::Result<void>::Failure(created.GetError());
 }
 
 foundation::Result<void> RegisterAudio(core::Application &app, audio::AudioOptions options) {
     if (const auto required = Require<ResourceServices>(app, "Resources"); !required) {
         return required;
     }
+
     if (const auto required = Require<SceneServices>(app, "Scene"); !required) {
         return required;
     }
+
     auto backend = std::make_shared<ReferenceAudioBackend>();
     auto mapper = std::make_shared<DefaultAudioResourceMapper>();
-    auto resources =
-        std::make_shared<RuntimeAudioResourceSource>(app.Services().Get<ResourceServices>()->manager, mapper);
-    auto transforms = std::make_shared<RuntimeSceneTransformAdapter>(app.Services().Get<SceneServices>()->transforms);
+    auto resources = std::make_shared<RuntimeAudioResourceSource>(app.Services()
+                                                                      .Get<ResourceServices>()
+                                                                      ->manager,
+                                                                  mapper);
+    auto transforms = std::make_shared<RuntimeSceneTransformAdapter>(
+        app.Services().Get<SceneServices>()->transforms);
     audio::AudioDependencies dependencies{};
+
     dependencies.backend = backend;
     dependencies.resources = resources;
     dependencies.transforms = transforms;
     const auto created = audio::CreateAudioServices(options, dependencies);
-    return created ? RegisterShared(app, std::make_shared<audio::AudioServices>(created.Value()), "Audio")
+    return created ? RegisterShared(app, std::make_shared<audio::AudioServices>(created.Value()),
+                                    "Audio")
                    : foundation::Result<void>::Failure(created.GetError());
 }
 
-foundation::Result<void> RegisterRenderer(core::Application &app, const renderer::RendererOptions &options) {
+foundation::Result<void> RegisterRenderer(core::Application &app,
+                                          const renderer::RendererOptions &options) {
     // Renderer registration creates the main Scene view before publishing the service bundle.
     // Reject duplicates before that external Scene mutation so a failed registration is atomic.
     if (app.Services().Contains<renderer::RendererServices>()) {
-        return FailureVoid("runtime_support.duplicate_registration", "runtime service is already registered: Renderer");
+        return FailureVoid("runtime_support.duplicate_registration",
+                           "runtime service is already registered: Renderer");
     }
+
     if (const auto required = Require<ResourceServices>(app, "Resources"); !required) {
         return required;
     }
+
     if (const auto required = Require<SceneServices>(app, "Scene"); !required) {
         return required;
     }
+
     auto scene = app.Services().Get<SceneServices>();
-    auto resource_bridge =
-        std::make_shared<RuntimeRenderResourceBridge>(app.Services().Get<ResourceServices>()->manager);
+    auto resource_bridge = std::make_shared<RuntimeRenderResourceBridge>(
+        app.Services().Get<ResourceServices>()->manager);
     auto scene_source = std::make_shared<RuntimeRenderSceneSource>(scene->nodes, scene->transforms);
     auto command_sink = std::make_shared<ReferenceRenderCommandSink>();
     renderer::RendererDependencies dependencies{};
+
     dependencies.resource_bridge = resource_bridge;
     dependencies.scene_source = scene_source;
     dependencies.command_sink = command_sink;
@@ -3911,31 +4699,49 @@ foundation::Result<void> RegisterRenderer(core::Application &app, const renderer
     if (!created) {
         return foundation::Result<void>::Failure(created.GetError());
     }
+
     renderer::RendererServices services = created.Value();
     if (const auto main = EnsureMainView(services, scene); !main) {
         return main;
     }
-    return RegisterShared(app, std::make_shared<renderer::RendererServices>(std::move(services)), "Renderer");
+
+    return RegisterShared(app, std::make_shared<renderer::RendererServices>(std::move(services)),
+                          "Renderer");
 }
 
 std::vector<RuntimeAdapterKind> GetAllowedRuntimeAdapters() {
     return {
-        RuntimeAdapterKind::SceneToRenderer,         RuntimeAdapterKind::ResourcesToRenderer,
-        RuntimeAdapterKind::SceneToPhysics,          RuntimeAdapterKind::SceneToAudio,
-        RuntimeAdapterKind::ResourcesToAnimation,    RuntimeAdapterKind::AnimationToRenderer,
-        RuntimeAdapterKind::ResourcesToAudio,        RuntimeAdapterKind::WorldResourcesPersistenceToStreaming,
-        RuntimeAdapterKind::TimeToSimulation,        RuntimeAdapterKind::SimulationToDomain,
+        RuntimeAdapterKind::SceneToRenderer,
+        RuntimeAdapterKind::ResourcesToRenderer,
+        RuntimeAdapterKind::SceneToPhysics,
+        RuntimeAdapterKind::SceneToAudio,
+        RuntimeAdapterKind::ResourcesToAnimation,
+        RuntimeAdapterKind::AnimationToRenderer,
+        RuntimeAdapterKind::ResourcesToAudio,
+        RuntimeAdapterKind::WorldResourcesPersistenceToStreaming,
+        RuntimeAdapterKind::TimeToSimulation,
+        RuntimeAdapterKind::SimulationToDomain,
         RuntimeAdapterKind::EnvironmentToNavigation,
     };
+
 }
 
 std::vector<RuntimeUpdateStep> GetRuntimeUpdateOrder() {
     return {
-        RuntimeUpdateStep::Time,      RuntimeUpdateStep::MainThreadCommits, RuntimeUpdateStep::Resources,
-        RuntimeUpdateStep::Streaming, RuntimeUpdateStep::Simulation,        RuntimeUpdateStep::Navigation,
-        RuntimeUpdateStep::Animation, RuntimeUpdateStep::Physics,           RuntimeUpdateStep::SceneProjectionCommit,
-        RuntimeUpdateStep::Audio,     RuntimeUpdateStep::Renderer,          RuntimeUpdateStep::DiagnosticsEvents,
+        RuntimeUpdateStep::Time,
+        RuntimeUpdateStep::MainThreadCommits,
+        RuntimeUpdateStep::Resources,
+        RuntimeUpdateStep::Streaming,
+        RuntimeUpdateStep::Simulation,
+        RuntimeUpdateStep::Navigation,
+        RuntimeUpdateStep::Animation,
+        RuntimeUpdateStep::Physics,
+        RuntimeUpdateStep::SceneProjectionCommit,
+        RuntimeUpdateStep::Audio,
+        RuntimeUpdateStep::Renderer,
+        RuntimeUpdateStep::DiagnosticsEvents,
     };
+
 }
 
 std::vector<RuntimeShutdownStep> GetRuntimeShutdownOrder() {
@@ -3953,5 +4759,7 @@ std::vector<RuntimeShutdownStep> GetRuntimeShutdownOrder() {
         RuntimeShutdownStep::DestroyAdapters,
         RuntimeShutdownStep::Complete,
     };
+
 }
+
 } // namespace epidemic::runtime

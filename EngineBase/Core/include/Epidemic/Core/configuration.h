@@ -136,5 +136,7 @@ class IConfiguration {
     void SetDefaultWindowHeight(std::int32_t height) {
         SetInt(std::string(DefaultWindowHeightKey()), height);
     }
+
 };
+
 } // namespace epidemic::core::config

@@ -19,9 +19,13 @@ namespace epidemic::core::tasks {
 
 struct TaskDiagnostics {
     std::size_t pending_tasks{};
+
     std::size_t active_tasks{};
+
     std::size_t completed_tasks{};
+
     std::size_t worker_count{};
+
 };
 
 class TaskHandle {
@@ -76,16 +80,19 @@ class ITaskScheduler {
     [[nodiscard]] virtual TaskHandle Schedule(Task task, std::string debug_name = {}) = 0;
 
     // Queues a task into a group and returns a handle for optional direct waiting.
-    [[nodiscard]] virtual TaskHandle Schedule(Task task, TaskGroup &group, std::string debug_name = {}) = 0;
+    [[nodiscard]] virtual TaskHandle Schedule(Task task, TaskGroup &group,
+                                              std::string debug_name = {}) = 0;
 
-    // Attempts to cancel a task that is still queued. Returns false for invalid, foreign, running, or completed handles.
+    // Attempts to cancel a task that is still queued. Returns false for invalid, foreign, running,
+    // or completed handles.
     [[nodiscard]] virtual bool Cancel(const TaskHandle &handle) = 0;
 
     // Blocks until the specified task finishes or is cancelled and rethrows its exception, if any.
     // A handle created by a different scheduler is rejected.
     virtual void Wait(const TaskHandle &handle) = 0;
 
-    // Blocks until every task in the group finishes and rethrows the first captured exception, if any.
+    // Blocks until every task in the group finishes and rethrows the first captured exception, if
+    // any.
     virtual void Wait(const TaskGroup &group) = 0;
 
     // Blocks until the scheduler has no queued or active tasks.
@@ -122,7 +129,8 @@ class SimpleTaskScheduler final : public ITaskScheduler {
     [[nodiscard]] TaskHandle Schedule(Task task, std::string debug_name = {}) override;
 
     // Queues one task into a group.
-    [[nodiscard]] TaskHandle Schedule(Task task, TaskGroup &group, std::string debug_name = {}) override;
+    [[nodiscard]] TaskHandle Schedule(Task task, TaskGroup &group,
+                                      std::string debug_name = {}) override;
 
     // Cancels one queued task if it still belongs to this scheduler and has not started.
     [[nodiscard]] bool Cancel(const TaskHandle &handle) override;
@@ -133,7 +141,8 @@ class SimpleTaskScheduler final : public ITaskScheduler {
     // Waits for a task group and propagates the first task failure.
     void Wait(const TaskGroup &group) override;
 
-    // Waits for all currently queued and active tasks and then rethrows the first scheduler-level failure.
+    // Waits for all currently queued and active tasks and then rethrows the first scheduler-level
+    // failure.
     void WaitIdle() override;
 
     // Requests worker stop without joining.
@@ -180,4 +189,5 @@ class SimpleTaskScheduler final : public ITaskScheduler {
 
     [[nodiscard]] bool IsWorkerThread(std::thread::id thread_id) const noexcept;
 };
+
 } // namespace epidemic::core::tasks

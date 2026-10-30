@@ -3,6 +3,7 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestAIServiceSaveParticipant() {
     std::cerr << "[participant] framework.ai: bootstrap\n";
     epidemic::gameplay::ai::AIService owner;
@@ -18,13 +19,16 @@ void TestAIServiceSaveParticipant() {
     consideration.scope = ai::AIConsiderationScope::Target;
     consideration.weight_micro = ai::kFixedOne;
     goal.considerations = {consideration};
+
     participant_tests::Check(bool(owner.RegisterGoal(goal)), "ai fixture goal");
     ai::AIProfile profile;
     profile.id = ai::AIProfileId::FromString("participant.profile");
     profile.canonical_name = "participant.profile";
     profile.default_goals = {goal.id};
+
     profile.materialization_policy = ai::AIMaterializationPolicy::AbstractCapable;
     profile.think_interval = GameplayDuration{1};
+
     participant_tests::Check(bool(owner.RegisterProfile(profile)), "ai fixture profile");
     const auto profile_id = profile.id;
     participant_tests::FreezeOwner(owner);
@@ -34,29 +38,21 @@ void TestAIServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.ai", {});
     std::cerr << "[participant] framework.ai: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.ai: non-empty seed\n";
     const GameplayObjectRef subject{GameplayDomainId::FromString("participant.ai"),
                                     GameplayObjectId::FromString("subject")};
+
     participant_tests::Check(bool(owner.RegisterAgent(subject, profile_id, GameplayTimePoint{5})),
                              "seed actual ai agent");
     std::cerr << "[participant] framework.ai: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().agents.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().agents.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestKnowledgeServiceSaveParticipant() {
     std::cerr << "[participant] framework.knowledge: bootstrap\n";
     epidemic::gameplay::knowledge::KnowledgeService owner;
@@ -67,28 +63,22 @@ void TestKnowledgeServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.knowledge", {});
     std::cerr << "[participant] framework.knowledge: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.knowledge: non-empty seed\n";
     knowledge::KnowledgeProfile profile;
-    profile.subject = {GameplayDomainId::FromString("participant.knowledge"), GameplayObjectId::FromString("subject")};
-    participant_tests::Check(bool(owner.CreateProfile(std::move(profile))), "seed actual knowledge profile");
+    profile.subject = {GameplayDomainId::FromString("participant.knowledge"),
+                       GameplayObjectId::FromString("subject")};
+
+    participant_tests::Check(bool(owner.CreateProfile(std::move(profile))),
+                             "seed actual knowledge profile");
     std::cerr << "[participant] framework.knowledge: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().profiles.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().profiles.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestPerceptionServiceSaveParticipant() {
     std::cerr << "[participant] framework.perception: bootstrap\n";
     epidemic::gameplay::perception::PerceptionService owner;
@@ -103,7 +93,9 @@ void TestPerceptionServiceSaveParticipant() {
     profile.id = perception::PerceiverProfileId::FromString("participant.perceiver.profile");
     profile.canonical_name = "participant.perceiver.profile";
     profile.senses = {sense.id};
-    participant_tests::Check(bool(owner.RegisterProfileDefinition(profile)), "perception fixture profile");
+
+    participant_tests::Check(bool(owner.RegisterProfileDefinition(profile)),
+                             "perception fixture profile");
     const auto profile_id = profile.id;
     participant_tests::FreezeOwner(owner);
     savegame::SaveRestoreWorkspace workspace;
@@ -112,28 +104,21 @@ void TestPerceptionServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.perception", {});
     std::cerr << "[participant] framework.perception: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.perception: non-empty seed\n";
     const GameplayObjectRef subject{GameplayDomainId::FromString("participant.perception"),
                                     GameplayObjectId::FromString("subject")};
-    participant_tests::Check(bool(owner.RegisterPerceiver(subject, profile_id)), "seed actual perceiver");
+
+    participant_tests::Check(bool(owner.RegisterPerceiver(subject, profile_id)),
+                             "seed actual perceiver");
     std::cerr << "[participant] framework.perception: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().perceivers.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().perceivers.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 int main() {
     TestAIServiceSaveParticipant();
     TestKnowledgeServiceSaveParticipant();

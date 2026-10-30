@@ -8,4 +8,5 @@ using GameTime = GameTimePoint;
 [[nodiscard]] constexpr bool IsZero(GameDuration duration) noexcept {
     return duration.ticks == 0;
 }
+
 } // namespace epidemic::runtime

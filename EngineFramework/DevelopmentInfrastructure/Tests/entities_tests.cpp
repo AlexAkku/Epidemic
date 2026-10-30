@@ -24,12 +24,14 @@ int main(int argc, char **argv) {
         CreateEntityRequest request;
         request.archetype = registered.Value();
         const auto created = owner.Create(request);
-        if (!created || !owner.Deactivate(created.Value().id) || !owner.Activate(created.Value().id))
+        if (!created || !owner.Deactivate(created.Value().id) ||
+            !owner.Activate(created.Value().id))
             return 3;
         scenario("scenario.end", "entity-scenario");
         action("action.end", "entity-action");
         return owner.Find(created.Value().id)->lifecycle == EntityLifecycleState::Alive ? 0 : 4;
     }
+
 #else
     (void)argc;
     (void)argv;
@@ -47,6 +49,7 @@ int main(int argc, char **argv) {
     hand_part.canonical_name = "test.entity.actor.hand";
     hand_part.parent = body_part.id;
     actor.parts = {body_part, hand_part};
+
     const auto actor_id = service.RegisterArchetype(actor);
     EntityArchetypeDefinition object;
     object.canonical_name = "test.entity.object";
@@ -70,6 +73,7 @@ int main(int argc, char **argv) {
     create.archetype = actor_id.Value();
     create.additional_tags.Add(living.Value());
     create.context.tick = GameplayTickId{1};
+
     const auto created = service.Create(create);
     if (!created || !created.Value().id.IsValid() || !created.Value().handle.IsValid())
         return 4;
@@ -87,15 +91,19 @@ int main(int argc, char **argv) {
             replacement.Resolve(first_handle))
             return 175;
         const auto replaced_handle = replacement_entity.Value().handle;
-        if (!replacement.RestoreSnapshot(service.CaptureSnapshot()) || replacement.Resolve(first_handle) ||
-            replacement.Resolve(replaced_handle) || !replacement.Resolve(replacement.HandleOf(first_id)))
+        if (!replacement.RestoreSnapshot(service.CaptureSnapshot()) ||
+            replacement.Resolve(first_handle) || replacement.Resolve(replaced_handle) ||
+            !replacement.Resolve(replacement.HandleOf(first_id)))
             return 176;
     }
+
     if (!service.RequiresMaterialization(first_id) ||
-        service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::RequireMaterialized)
+        service.MaterializationPolicyOf(first_id) !=
+            EntityMaterializationPolicy::RequireMaterialized)
         return 53;
     const auto hand = service.GetPart(first_id, hand_part.id);
     const auto ancestors = hand ? service.GetPartAncestors(*hand) : std::vector<EntityPartRef>{};
+
     if (!hand || ancestors.size() != 1 || ancestors.front().part != body_part.id)
         return 51;
     const auto generic_hand = EntityService::ToGameplayObjectPartRef(*hand);
@@ -110,7 +118,8 @@ int main(int argc, char **argv) {
     if (!service.Convert(first_id, object_id.Value()))
         return 7;
     const auto converted = service.Find(first_id);
-    if (!converted || converted->archetype != object_id.Value() || !converted->instance_tags.HasExact(living.Value()))
+    if (!converted || converted->archetype != object_id.Value() ||
+        !converted->instance_tags.HasExact(living.Value()))
         return 8;
     if (service.RequiresMaterialization(first_id) ||
         service.MaterializationPolicyOf(first_id) != EntityMaterializationPolicy::AbstractAllowed)
@@ -137,7 +146,8 @@ int main(int argc, char **argv) {
     const auto destroyed = service.CommitPendingDestruction();
     const auto destroyed_record = service.Find(first_id);
     if (!destroyed || destroyed.Value().size() != 1 || !destroyed_record ||
-        destroyed_record->lifecycle != EntityLifecycleState::Destroyed || !service.Resolve(first_handle).has_value())
+        destroyed_record->lifecycle != EntityLifecycleState::Destroyed ||
+        !service.Resolve(first_handle).has_value())
         return 13;
     if (service.RequestDestroy(first_id, EntityDestroyReason::Destroyed))
         return 131;
@@ -170,6 +180,7 @@ int main(int argc, char **argv) {
 
     auto invalid_snapshot = snapshot;
     invalid_snapshot.records.front().revision = Revision{snapshot.revision.value + 1};
+
     if (service.RestoreSnapshot(invalid_snapshot))
         return 170;
 
@@ -195,10 +206,12 @@ int main(int argc, char **argv) {
     if (!removable || !service.RequestDestroy(removable.Value().id, EntityDestroyReason::Removed))
         return 181;
     auto removable_destroyed = service.CommitPendingDestruction();
-    if (!removable_destroyed || !service.Remove(removable.Value().id) || service.Exists(removable.Value().id))
+    if (!removable_destroyed || !service.Remove(removable.Value().id) ||
+        service.Exists(removable.Value().id))
         return 182;
 
-    // Pending destruction provenance survives save/restore and still drives the terminal transition.
+    // Pending destruction provenance survives save/restore and still drives the terminal
+    // transition.
     if (!service.RestoreSnapshot(pending_snapshot))
         return 183;
     auto restored_destroy = service.CommitPendingDestruction();
@@ -245,7 +258,8 @@ int main(int argc, char **argv) {
         CreateEntityRequest transient_request;
         transient_request.archetype = actor_id.Value();
         const auto transient = service.Create(transient_request);
-        if (!transient || !service.RequestDestroy(transient.Value().id, EntityDestroyReason::Removed))
+        if (!transient ||
+            !service.RequestDestroy(transient.Value().id, EntityDestroyReason::Removed))
             return 191;
         const auto transient_destroyed = service.CommitPendingDestruction();
         if (!transient_destroyed || !service.Remove(transient.Value().id))
@@ -258,8 +272,8 @@ int main(int argc, char **argv) {
 
     // Goal 4: module-local restore fault seam replaces process-global allocation override.
     const auto restore_before = service.CaptureSnapshot();
-    for (const auto fault :
-         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild,
+                             test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         if (service.RestoreSnapshot(restore_before))
             return 906;
@@ -280,8 +294,10 @@ int main(int argc, char **argv) {
         if (!service.Create(stress))
             return 19;
     }
+
     const auto diagnostics = service.GetDiagnostics();
-    if (diagnostics.entity_count < 100001 || service.AllEntities().size() != diagnostics.entity_count)
+    if (diagnostics.entity_count < 100001 ||
+        service.AllEntities().size() != diagnostics.entity_count)
         return 20;
 
     const auto changes = service.ReadChangesSince(ChangeCursor{}).changes;

@@ -22,14 +22,19 @@ namespace fd = epidemic::foundation;
 // already decoded package; it is not a second authoritative save backend.
 class PreparedSnapshotBackend final : public rt::IPersistenceBackend {
   public:
-    explicit PreparedSnapshotBackend(rt::PersistenceSnapshot snapshot) : snapshot_(std::move(snapshot)) {
+    explicit PreparedSnapshotBackend(rt::PersistenceSnapshot snapshot)
+        : snapshot_(std::move(snapshot)) {
     }
+
     fd::Result<rt::PersistenceSnapshot> Load() override {
         return fd::Result<rt::PersistenceSnapshot>::Success(snapshot_);
     }
-    fd::Result<void> CommitSnapshot(const rt::PersistenceSnapshot &, rt::PersistenceDurability) override {
+
+    fd::Result<void> CommitSnapshot(const rt::PersistenceSnapshot &,
+                                    rt::PersistenceDurability) override {
         return fd::Result<void>::Failure(
-            fd::Error::Create("whole.unexpected_commit", "outer generation owns durable publication"));
+            fd::Error::Create("whole.unexpected_commit",
+                              "outer generation owns durable publication"));
     }
 
   private:
@@ -38,11 +43,15 @@ class PreparedSnapshotBackend final : public rt::IPersistenceBackend {
 
 struct RuntimeHost {
     epidemic::core::Application application{{"Goal5WholeEngine", std::nullopt}};
+
     rt::EngineRuntimeServices services;
+
     explicit RuntimeHost(const rt::TimeCheckpoint *clock = nullptr,
                          const rt::PersistenceSnapshot *persistence = nullptr) {
-        auto logger = epidemic::enginebase::RegisterEngineBase(
-            application, {.runtime_name = "Goal5WholeEngine", .log_module = "Goal5WholeEngine", .worker_count = 1});
+        auto logger = epidemic::enginebase::RegisterEngineBase(application,
+                                                               {.runtime_name = "Goal5WholeEngine",
+                                                                .log_module = "Goal5WholeEngine",
+                                                                .worker_count = 1});
         TRUTH_REQUIRE(logger);
         rt::EngineRuntimeOptions options;
         options.time.game_ticks_per_real_second = 60;
@@ -52,6 +61,7 @@ struct RuntimeHost {
             options.time.phase_boundaries = clock->phase_boundaries;
             options.time.initial_time_scale = clock->time_scale;
         }
+
         if (persistence)
             options.persistence.backend = std::make_shared<PreparedSnapshotBackend>(*persistence);
         auto runtime = rt::RegisterDefaultEngineRuntime(application, options);
@@ -61,24 +71,27 @@ struct RuntimeHost {
             TRUTH_REQUIRE(services.time->runtime->RestoreCheckpoint(*clock));
         TRUTH_REQUIRE(application.Bootstrap() == 0);
         TRUTH_REQUIRE(application.Initialize() == 0);
+        TRUTH_REQUIRE(services.world->regions->RegisterRegion(
+            {rt::RegionId{1}, fd::StringId::FromString("whole.region")}));
         TRUTH_REQUIRE(
-            services.world->regions->RegisterRegion({rt::RegionId{1}, fd::StringId::FromString("whole.region")}));
-        TRUTH_REQUIRE(services.world->chunks->RegisterChunk({rt::ChunkId{1}, rt::RegionId{1}, 0, 0, 0}));
+            services.world->chunks->RegisterChunk({rt::ChunkId{1}, rt::RegionId{1}, 0, 0, 0}));
         auto chunk = services.world->chunks->GetChunkSnapshot(rt::ChunkId{1});
         TRUTH_REQUIRE(chunk);
-        TRUTH_REQUIRE(
-            services.world->chunks->SetChunkState({rt::ChunkId{1}, chunk.Value().revision, rt::ChunkState::Loading}));
+        TRUTH_REQUIRE(services.world->chunks->SetChunkState(
+            {rt::ChunkId{1}, chunk.Value().revision, rt::ChunkState::Loading}));
         chunk = services.world->chunks->GetChunkSnapshot(rt::ChunkId{1});
-        TRUTH_REQUIRE(
-            services.world->chunks->SetChunkState({rt::ChunkId{1}, chunk.Value().revision, rt::ChunkState::Resident}));
+        TRUTH_REQUIRE(services.world->chunks->SetChunkState(
+            {rt::ChunkId{1}, chunk.Value().revision, rt::ChunkState::Resident}));
         services.world->regions->Freeze();
         services.world->chunks->Freeze();
     }
+
     ~RuntimeHost() {
         if (services.coordinator)
             (void)services.coordinator->Shutdown();
         (void)application.Shutdown();
     }
+
 };
 
 class PreparedRuntimeHost final : public ig::IRuntimeGenerationRestoreStage {
@@ -86,6 +99,7 @@ class PreparedRuntimeHost final : public ig::IRuntimeGenerationRestoreStage {
     PreparedRuntimeHost(std::unique_ptr<RuntimeHost> &live, std::unique_ptr<RuntimeHost> prepared)
         : live_(live), prepared_(std::move(prepared)) {
     }
+
     void Commit() noexcept override {
         live_.swap(prepared_);
     }
@@ -100,18 +114,22 @@ class RuntimeRestorePort final : public ig::IRuntimeGenerationRestorePort {
     bool fail_prepare = false;
     std::weak_ptr<rt::IGameClock> prepared_clock;
     std::uint32_t prepared_count = 0;
+
     explicit RuntimeRestorePort(std::unique_ptr<RuntimeHost> &live) : live_(live) {
     }
+
     fd::Result<std::unique_ptr<ig::IRuntimeGenerationRestoreStage>>
     Prepare(const ig::SaveGenerationPackage &package) override {
         if (fail_prepare)
             throw std::bad_alloc();
         auto clock = rt::DecodeRuntimeTimeCheckpointPackage(package.runtime_time);
         if (!clock)
-            return fd::Result<std::unique_ptr<ig::IRuntimeGenerationRestoreStage>>::Failure(clock.GetError());
+            return fd::Result<std::unique_ptr<ig::IRuntimeGenerationRestoreStage>>::Failure(
+                clock.GetError());
         auto persistence = rt::DecodeRuntimePersistencePackage(package.runtime_persistence);
         if (!persistence)
-            return fd::Result<std::unique_ptr<ig::IRuntimeGenerationRestoreStage>>::Failure(persistence.GetError());
+            return fd::Result<std::unique_ptr<ig::IRuntimeGenerationRestoreStage>>::Failure(
+                persistence.GetError());
         auto prepared = std::make_unique<RuntimeHost>(&clock.Value(), &persistence.Value());
         prepared_clock = prepared->services.time->clock;
         ++prepared_count;
@@ -129,6 +147,7 @@ class WholeQuiescence final : public fw::savegame::ISaveBarrierLease {
         TRUTH_REQUIRE(!paused_);
         paused_ = true;
     }
+
     ~WholeQuiescence() override {
         paused_ = false;
     }
@@ -144,14 +163,18 @@ inline std::vector<std::byte> EncodeEntityIdentity(fw::entities::EntityId id) {
             result.push_back(std::byte((word >> shift) & 255));
     return result;
 }
+
 inline fw::entities::EntityId DecodeEntityIdentity(const rt::PersistentObjectRecord &record) {
     TRUTH_REQUIRE(record.payload.schema_id == fd::StringId::FromString("whole.entity.identity"));
     TRUTH_REQUIRE(record.payload.schema_version == 1 && record.payload.bytes.size() == 16);
     std::uint64_t high = 0, low = 0;
     for (unsigned index = 0; index != 8; ++index) {
-        high |= std::uint64_t(std::to_integer<unsigned char>(record.payload.bytes[index])) << (8 * index);
-        low |= std::uint64_t(std::to_integer<unsigned char>(record.payload.bytes[8 + index])) << (8 * index);
+        high |= std::uint64_t(std::to_integer<unsigned char>(record.payload.bytes[index]))
+                << (8 * index);
+        low |= std::uint64_t(std::to_integer<unsigned char>(record.payload.bytes[8 + index]))
+               << (8 * index);
     }
+
     return fw::entities::EntityId::FromRaw(high, low);
 }
 
@@ -178,10 +201,12 @@ struct WholeComposition {
         : framework(view), runtime(host), barrier(BarrierCallbacks()), store(path),
           capture_port(
               [&](auto) {
-                  return rt::EncodeRuntimeTimeCheckpointPackage(runtime->services.time->runtime->CaptureCheckpoint());
+                  return rt::EncodeRuntimeTimeCheckpointPackage(
+                      runtime->services.time->runtime->CaptureCheckpoint());
               },
               [&](auto) {
-                  auto state = rt::CaptureRuntimePersistenceSnapshot(*runtime->services.persistence->query);
+                  auto state =
+                      rt::CaptureRuntimePersistenceSnapshot(*runtime->services.persistence->query);
                   if (!state)
                       return fd::Result<std::vector<std::byte>>::Failure(state.GetError());
                   return rt::EncodeRuntimePersistencePackage(state.Value());
@@ -197,16 +222,20 @@ struct WholeComposition {
             return fd::Result<std::unique_ptr<fw::savegame::ISaveBarrierLease>>::Success(
                 std::make_unique<WholeQuiescence>(quiesced));
         };
+
         callbacks.acquire_restore_quiescence = callbacks.acquire_capture_quiescence;
         callbacks.capture_preflight = [&]() {
             if (bridge && (bridge->GetDiagnostics().projection_backlog != 0 ||
                            bridge->GetDiagnostics().reconciliation_requests != 0))
                 return fd::Result<void>::Failure(
-                    fd::Error::Create("whole.pending_projection", "complete materialization/recovery before capture"));
+                    fd::Error::Create("whole.pending_projection",
+                                      "complete materialization/recovery before capture"));
             return fd::Result<void>::Success();
         };
+
         return callbacks;
     }
+
     ig::WholeRestoreCallbacks RestoreCallbacks() {
         return {[&]() {
                     Fault("rebuild");
@@ -222,23 +251,31 @@ struct WholeComposition {
                     MaterializePersistentObjects();
                     return fd::Result<void>::Success();
                 }};
+
     }
+
     void Fault(std::string_view point) {
         if (fault_once == point) {
             fault_once = {};
+
             throw std::runtime_error(std::string(point));
         }
+
     }
+
     fd::Result<ig::SaveGenerationId> Restore() {
         restore_mode = true;
         auto result = restorer.LoadAndRestore({});
         if (!result)
-            std::cerr << "whole restore: " << result.GetError().code << ": " << result.GetError().message << '\n';
+            std::cerr << "whole restore: " << result.GetError().code << ": "
+                      << result.GetError().message << '\n';
         return result;
     }
+
     bool CanTick() const noexcept {
         return !quiesced && (!restore_mode || restorer.CanResume());
     }
+
     fd::Result<void> Advance(std::chrono::microseconds delta) {
         if (!CanTick())
             return fd::Result<void>::Failure(
@@ -248,16 +285,21 @@ struct WholeComposition {
             return fd::Result<void>::Failure(advanced.GetError());
         return fd::Result<void>::Success();
     }
+
     void RebuildRuntimeBridge() {
         bridge.reset();
         backend.reset();
-        backend = std::make_unique<rb::EngineRuntimeBridgeBackend>(*runtime->services.world, *runtime->services.physics,
-                                                                   runtime->services.environment->runtime,
-                                                                   *runtime->services.navigation);
+        backend =
+            std::make_unique<rb::EngineRuntimeBridgeBackend>(*runtime->services.world,
+                                                             *runtime->services.physics,
+                                                             runtime->services.environment->runtime,
+                                                             *runtime->services.navigation);
         bridge = std::make_unique<rb::RuntimeBridgeService>(*backend);
     }
+
     void SynchronizeAndReconcile() {
-        ig::RuntimeTimeAdapter clock(*runtime->services.time->clock, framework.time, framework.clock);
+        ig::RuntimeTimeAdapter clock(*runtime->services.time->clock, framework.time,
+                                     framework.clock);
         const auto source = runtime->services.time->clock->GetSnapshot();
         if (framework.time.NeedsSynchronizationRebind(framework.clock) ||
             synchronized_runtime_revision != source.revision) {
@@ -267,6 +309,7 @@ struct WholeComposition {
             const auto current = framework.time.GetClock(framework.clock);
             TRUTH_REQUIRE(current && current->now == fw::GameplayTimePoint{source.now.ticks});
         }
+
         TRUTH_REQUIRE(framework.state_facts.PublishPendingChanges());
         TRUTH_REQUIRE(framework.facts.Dispatch());
         TRUTH_REQUIRE(framework.state_lifecycle.ProcessEntityChanges());
@@ -279,24 +322,31 @@ struct WholeComposition {
         framework.world_facts.ResetCursorsToLatest();
         VerifyObservationBindings();
     }
+
     void VerifyObservationBindings() {
         const auto state = framework.state.CaptureCheckpoint();
         const auto bound = [](fw::ChangeCursor cursor, fw::ChangeCursor latest) {
-            return cursor.IsValid() ? cursor.epoch == latest.epoch && cursor.sequence <= latest.sequence
-                                    : cursor.sequence == 0;
+            return cursor.IsValid()
+                       ? cursor.epoch == latest.epoch && cursor.sequence <= latest.sequence
+                       : cursor.sequence == 0;
         };
-        const std::pair<fw::ChangeCursor, fw::ChangeCursor> cursors[] = {
-            {state.facts.entity_cursor, framework.entities.LatestChangeCursor()},
-            {state.facts.material_cursor, framework.materials.LatestChangeCursor()},
-            {state.facts.condition_cursor, framework.conditions.LatestChangeCursor()},
-            {state.facts.effect_cursor, framework.effects.LatestChangeCursor()},
-            {state.lifecycle.cursor, framework.entities.LatestChangeCursor()},
-            {state.condition_effects.cursor, framework.conditions.LatestChangeCursor()},
-            {state.time.condition_cursor, framework.conditions.LatestChangeCursor()},
-            {state.time.effect_cursor, framework.effects.LatestChangeCursor()},
-            {framework.death_reward.CaptureCheckpoint().cursor, framework.combat.LatestChangeCursor()},
-            {framework.social_legal.CaptureCheckpoint().crime_cursor, framework.crime.LatestChangeCursor()},
-            {framework.condition_progression.CaptureCheckpoint().cursor, framework.conditions.LatestChangeCursor()}};
+
+        const std::pair<fw::ChangeCursor, fw::ChangeCursor> cursors[] =
+            {{state.facts.entity_cursor, framework.entities.LatestChangeCursor()},
+             {state.facts.material_cursor, framework.materials.LatestChangeCursor()},
+             {state.facts.condition_cursor, framework.conditions.LatestChangeCursor()},
+             {state.facts.effect_cursor, framework.effects.LatestChangeCursor()},
+             {state.lifecycle.cursor, framework.entities.LatestChangeCursor()},
+             {state.condition_effects.cursor, framework.conditions.LatestChangeCursor()},
+             {state.time.condition_cursor, framework.conditions.LatestChangeCursor()},
+             {state.time.effect_cursor, framework.effects.LatestChangeCursor()},
+             {framework.death_reward.CaptureCheckpoint().cursor,
+              framework.combat.LatestChangeCursor()},
+             {framework.social_legal.CaptureCheckpoint().crime_cursor,
+              framework.crime.LatestChangeCursor()},
+             {framework.condition_progression.CaptureCheckpoint().cursor,
+              framework.conditions.LatestChangeCursor()}};
+
         for (const auto &[cursor, latest] : cursors)
             TRUTH_REQUIRE(bound(cursor, latest));
         const auto world = framework.world_facts.CaptureCheckpoint();
@@ -304,9 +354,11 @@ struct WholeComposition {
         TRUTH_REQUIRE(world.environment_epoch == framework.environment.LatestChangeCursor().epoch);
         TRUTH_REQUIRE(world.interaction_epoch == framework.interaction.LatestChangeCursor().epoch);
     }
+
     void MaterializePersistentObjects() {
         TRUTH_REQUIRE(backend && bridge);
-        auto snapshot = rt::CaptureRuntimePersistenceSnapshot(*runtime->services.persistence->query);
+        auto snapshot =
+            rt::CaptureRuntimePersistenceSnapshot(*runtime->services.persistence->query);
         TRUTH_REQUIRE(snapshot);
         for (const auto &record : snapshot.Value().objects) {
             const auto entity = DecodeEntityIdentity(record);
@@ -322,6 +374,7 @@ struct WholeComposition {
                 if (bridge->GetBinding(object))
                     continue;
             }
+
             for (const auto &pending : bridge->ReconciliationRequests())
                 TRUTH_REQUIRE(bridge->RetryReconciliation(pending.sequence));
             if (bridge->GetDiagnostics().projection_backlog != 0) {
@@ -329,19 +382,25 @@ struct WholeComposition {
                 if (bridge->GetBinding(object))
                     continue;
             }
+
             rt::WorldObjectRecord projection;
             projection.runtime_id = rt::RuntimeObjectId{record.persistent_id.value};
+
             projection.persistent_id = record.persistent_id;
             projection.asset_id = record.asset_id;
             projection.persistence_tier = record.tier;
             projection.residency = rt::ResidencyState::Resident;
-            projection.placement = rt::WorldSurfacePlacement{record.location.region_id, record.location.chunk_id, {}};
+            projection.placement =
+                rt::WorldSurfacePlacement{record.location.region_id, record.location.chunk_id, {}};
+
             if (!runtime->services.world->query->FindObject(projection.runtime_id))
-                TRUTH_REQUIRE(runtime->services.world->writer->Apply(rt::CreateObjectCommand{projection}));
+                TRUTH_REQUIRE(
+                    runtime->services.world->writer->Apply(rt::CreateObjectCommand{projection}));
             Fault("materialize.world_accepted");
             const auto persistent = backend->ImportPersistentObjectId(record.persistent_id);
             TRUTH_REQUIRE(persistent.IsValid());
-            TRUTH_REQUIRE(bridge->Enqueue(rb::MaterializeRequest{object, persistent, fw::Revision{record.revision}}));
+            TRUTH_REQUIRE(bridge->Enqueue(
+                rb::MaterializeRequest{object, persistent, fw::Revision{record.revision}}));
             Fault("materialize.queued");
             const auto processed = bridge->Process();
             TRUTH_REQUIRE(processed.failed == 0 && processed.materialized == 1);
@@ -351,7 +410,9 @@ struct WholeComposition {
             TRUTH_REQUIRE(reverse_binding && reverse_binding->gameplay_object == object);
             Fault("materialize.accepted");
         }
+
     }
+
     void Seed() {
         TRUTH_REQUIRE(!quiesced);
         for (int index = 0; index != 3; ++index) {
@@ -360,25 +421,33 @@ struct WholeComposition {
             auto entity = framework.entities.Create(std::move(create));
             TRUTH_REQUIRE(entity);
             if (index == 0) {
-                const auto subject = fw::entities::EntityService::ToGameplayObjectRef(entity.Value().id);
+                const auto subject =
+                    fw::entities::EntityService::ToGameplayObjectRef(entity.Value().id);
                 rt::PersistentObjectRecord record;
                 record.persistent_id = rt::PersistentObjectId{entity.Value().id.Low()};
+
                 record.asset_id = rt::AssetId::FromString("whole.actor.asset");
                 record.kind = rt::PersistentObjectKind::Object;
                 record.tier = rt::PersistenceTier::Protected;
                 record.location.region_id = rt::RegionId{1};
+
                 record.location.chunk_id = rt::ChunkId{1};
+
                 record.payload = {fd::StringId::FromString("whole.entity.identity"), 1,
                                   EncodeEntityIdentity(entity.Value().id)};
+
                 auto transaction = runtime->services.persistence->store->OpenTransaction();
-                TRUTH_REQUIRE(transaction && transaction->UpsertObject(record) && transaction->Commit());
-                TRUTH_REQUIRE(
-                    framework.time.Schedule(framework.clock, fw::GameplayTimePoint{1}, subject, framework.action));
+                TRUTH_REQUIRE(transaction && transaction->UpsertObject(record) &&
+                              transaction->Commit());
+                TRUTH_REQUIRE(framework.time.Schedule(framework.clock, fw::GameplayTimePoint{1},
+                                                      subject, framework.action));
             }
+
             if (index == 1)
                 TRUTH_REQUIRE(framework.progression.EnsureProfile(
                     fw::entities::EntityService::ToGameplayObjectRef(entity.Value().id)));
         }
+
         TRUTH_REQUIRE(Advance(std::chrono::microseconds{1'333'333}));
         RebuildRuntimeBridge();
         SynchronizeAndReconcile();
@@ -388,18 +457,22 @@ struct WholeComposition {
         TRUTH_REQUIRE(framework.entities.CaptureSnapshot().records.size() == 3);
         TRUTH_REQUIRE(framework.entities.CurrentRevision().value > 0);
     }
+
     void SeedCrossOwnerReward() {
         const fw::GameplayObjectRef enemy{fw::combat::CombatService::Domain(),
                                           fw::GameplayObjectId::FromString("whole.reward.enemy")};
+
         TRUTH_REQUIRE(framework.combat.RegisterCombatant(enemy, {}));
         fw::GameplayContext context;
         context.instigator = enemy;
-        TRUTH_REQUIRE(framework.combat.TransitionLifeState(enemy, fw::combat::CombatLifeState::Dead, context));
+        TRUTH_REQUIRE(framework.combat.TransitionLifeState(enemy, fw::combat::CombatLifeState::Dead,
+                                                           context));
         auto generated = framework.death_reward.ProcessChanges();
         TRUTH_REQUIRE(generated && generated.Value().size() == 1);
         TRUTH_REQUIRE(framework.loot.FindGenerated(generated.Value().front()) ||
                       framework.loot.FindPending(generated.Value().front()));
     }
+
     std::vector<std::byte> DurablePackage() {
         auto lease = barrier.AcquireGenerationLease(ig::SaveGenerationId::FromRaw(1));
         TRUTH_REQUIRE(lease);
@@ -410,19 +483,23 @@ struct WholeComposition {
         TRUTH_REQUIRE(wire);
         auto runtime_state = capture_port.Capture(ig::SaveGenerationId::FromRaw(1));
         TRUTH_REQUIRE(runtime_state);
-        auto package = ig::EncodeSaveGenerationPackage({ig::SaveGenerationId::FromRaw(1), std::move(wire.Value()),
-                                                        std::move(runtime_state.Value().time_package),
-                                                        std::move(runtime_state.Value().persistence_package)});
+        auto package = ig::EncodeSaveGenerationPackage(
+            {ig::SaveGenerationId::FromRaw(1), std::move(wire.Value()),
+             std::move(runtime_state.Value().time_package),
+             std::move(runtime_state.Value().persistence_package)});
         TRUTH_REQUIRE(package);
         return std::move(package).Value();
     }
+
     SemanticContributions SemanticState() {
         auto lease = barrier.AcquireGenerationLease(ig::SaveGenerationId::FromRaw(1));
         TRUTH_REQUIRE(lease);
         SemanticContributions digest;
         AddFrameworkSemanticContributions(framework, digest);
-        auto clock = rt::EncodeRuntimeTimeCheckpointPackage(runtime->services.time->runtime->CaptureCheckpoint());
-        auto snapshot = rt::CaptureRuntimePersistenceSnapshot(*runtime->services.persistence->query);
+        auto clock = rt::EncodeRuntimeTimeCheckpointPackage(
+            runtime->services.time->runtime->CaptureCheckpoint());
+        auto snapshot =
+            rt::CaptureRuntimePersistenceSnapshot(*runtime->services.persistence->query);
         TRUTH_REQUIRE(clock && snapshot);
         auto persistence = rt::EncodeRuntimePersistencePackage(snapshot.Value());
         TRUTH_REQUIRE(persistence);
@@ -431,9 +508,11 @@ struct WholeComposition {
         TRUTH_REQUIRE(digest.Count() == kFrameworkSemanticOwnerCount + 2);
         return digest;
     }
+
     std::vector<std::byte> SemanticPackage() {
         return SemanticState().CanonicalBytes();
     }
+
     void Continue() {
         TRUTH_REQUIRE(CanTick());
         action_ready = true;
@@ -447,26 +526,35 @@ struct WholeComposition {
         MaterializePersistentObjects();
         TRUTH_REQUIRE(bridge->GetDiagnostics().materializations == before);
     }
+
 };
 
 template <typename Bootstrap, typename Use>
-decltype(auto) WithWholeComposition(const std::filesystem::path &path, Bootstrap &&bootstrap, Use &&use) {
+decltype(auto) WithWholeComposition(const std::filesystem::path &path, Bootstrap &&bootstrap,
+                                    Use &&use) {
     auto runtime = std::make_unique<RuntimeHost>();
     WholeComposition *live = nullptr;
+
     class RewardHandler final : public fw::loot::IRewardHandler {
       public:
         fw::loot::RewardTypeId Type() const noexcept override {
             return fw::loot::RewardTypeId::FromString("whole.reward");
         }
-        fd::Result<fw::loot::RewardDeliveryStage> Prepare(const fw::loot::RewardOperation &operation) override {
+
+        fd::Result<fw::loot::RewardDeliveryStage>
+        Prepare(const fw::loot::RewardOperation &operation) override {
             return fd::Result<fw::loot::RewardDeliveryStage>::Success(
                 {operation, fw::loot::RewardDeliveryDisposition::Delivered});
         }
+
         void Commit(fw::loot::RewardDeliveryStage &) noexcept override {
         }
+
         void Cancel(fw::loot::RewardDeliveryStage &) noexcept override {
         }
+
     } reward_handler;
+
     return WithFrameworkComposition(
         [&](FrameworkCompositionView &view) {
             TRUTH_REQUIRE(view.loot.RegisterRewardHandler("whole.reward", &reward_handler));
@@ -479,17 +567,23 @@ decltype(auto) WithWholeComposition(const std::filesystem::path &path, Bootstrap
             fw::loot::LootTableDefinition table;
             table.canonical_name = "whole.reward.table";
             table.policy = fw::loot::LootRollPolicy::GuaranteedAll;
-            table.entries.push_back(
-                {fw::loot::LootEntryId::FromString("whole.reward.entry"), 1, 1'000'000, reward_id.Value(), {}, {}});
+            table.entries.push_back({fw::loot::LootEntryId::FromString("whole.reward.entry"),
+                                     1,
+                                     1'000'000,
+                                     reward_id.Value(),
+                                     {},
+                                     {}});
             const auto table_id = view.loot.RegisterLootTable(table);
             TRUTH_REQUIRE(table_id);
-            TRUTH_REQUIRE(view.death_reward.SetTable(
-                {fw::combat::CombatService::Domain(), fw::GameplayObjectId::FromString("whole.reward.enemy")},
-                table_id.Value()));
+            TRUTH_REQUIRE(
+                view.death_reward.SetTable({fw::combat::CombatService::Domain(),
+                                            fw::GameplayObjectId::FromString("whole.reward.enemy")},
+                                           table_id.Value()));
             fw::entities::EntityArchetypeDefinition definition;
             definition.canonical_name = "whole.actor";
             TRUTH_REQUIRE(view.entities.RegisterArchetype(std::move(definition)));
-            const auto action = view.time.RegisterAction("whole.progression", fw::entities::EntityService::Domain());
+            const auto action = view.time.RegisterAction("whole.progression",
+                                                         fw::entities::EntityService::Domain());
             TRUTH_REQUIRE(action);
             view.action = action.Value();
             TRUTH_REQUIRE(view.scheduled.RegisterActionHandler(
@@ -501,7 +595,8 @@ decltype(auto) WithWholeComposition(const std::filesystem::path &path, Bootstrap
                             ig::ScheduledTriggerDisposition::Retry);
                     TRUTH_REQUIRE(live->framework.progression.EnsureProfile(trigger.owner));
                     ++live->action_commits;
-                    return fd::Result<ig::ScheduledTriggerDisposition>::Success(ig::ScheduledTriggerDisposition::Ack);
+                    return fd::Result<ig::ScheduledTriggerDisposition>::Success(
+                        ig::ScheduledTriggerDisposition::Ack);
                 }));
             bootstrap(view);
         },
@@ -513,15 +608,16 @@ decltype(auto) WithWholeComposition(const std::filesystem::path &path, Bootstrap
                 ~ClearLive() {
                     slot = nullptr;
                 }
+
             } clear{live};
+
             return use(composition);
         });
 }
-template <typename Use> decltype(auto) WithWholeComposition(const std::filesystem::path &path, Use &&use) {
-    return WithWholeComposition(
-        path,
-        [](FrameworkCompositionView &) {
-        },
-        std::forward<Use>(use));
+
+template <typename Use>
+decltype(auto) WithWholeComposition(const std::filesystem::path &path, Use &&use) {
+    return WithWholeComposition(path, [](FrameworkCompositionView &) {}, std::forward<Use>(use));
 }
+
 } // namespace goal5_test_utility

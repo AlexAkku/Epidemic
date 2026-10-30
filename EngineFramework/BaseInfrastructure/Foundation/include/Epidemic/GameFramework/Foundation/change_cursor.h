@@ -13,17 +13,23 @@ struct ChangeCursor {
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return epoch != 0;
     }
+
     [[nodiscard]] constexpr ChangeCursor AtSequence(std::uint64_t value) const noexcept {
         return {epoch, value};
+
     }
+
     [[nodiscard]] constexpr bool operator==(const ChangeCursor &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const ChangeCursor &) const noexcept = default;
 };
 
-[[nodiscard]] constexpr std::optional<std::uint64_t> CheckedNextChangeEpoch(std::uint64_t epoch) noexcept {
+[[nodiscard]] constexpr std::optional<std::uint64_t>
+CheckedNextChangeEpoch(std::uint64_t epoch) noexcept {
     if (epoch == std::numeric_limits<std::uint64_t>::max()) {
         return std::nullopt;
     }
+
     return epoch + 1;
 }
+
 } // namespace epidemic::gameplay

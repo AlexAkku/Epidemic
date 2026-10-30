@@ -28,7 +28,8 @@ class ModuleRegistry {
     void InitializeAll(ServiceContainer &services, diagnostics::ILogger &logger);
 
     // Calls Tick on all initialized modules in dependency order.
-    void TickAll(ServiceContainer &services, diagnostics::ILogger &logger, const FrameContext &frame_context);
+    void TickAll(ServiceContainer &services, diagnostics::ILogger &logger,
+                 const FrameContext &frame_context);
 
     // Calls Shutdown on bootstrapped modules in reverse dependency order.
     void ShutdownAll(ServiceContainer &services, diagnostics::ILogger &logger);
@@ -55,6 +56,9 @@ class ModuleRegistry {
     std::vector<std::size_t> execution_plan_;
     std::vector<std::uint8_t> shutdown_completed_;
     std::size_t bootstrapped_count_{0};
+
     LifecycleState state_{LifecycleState::Empty};
+
 };
+
 } // namespace epidemic::core

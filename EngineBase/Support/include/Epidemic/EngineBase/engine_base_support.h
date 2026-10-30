@@ -30,18 +30,28 @@ namespace epidemic::enginebase {
 
 struct EngineBaseOptions {
     std::string runtime_name{"EpidemicApp"};
+
     std::string log_module{"App"};
+
     std::size_t worker_count{1};
+
     bool memory_tracking_enabled{true};
+
     bool rhi_debug_enabled{false};
+
     std::uint32_t default_window_width{1280};
+
     std::uint32_t default_window_height{720};
+
 };
 
 struct GraphicsRuntimeOptions {
     GraphicsBackend backend{GraphicsBackend::Null};
+
     bool enable_debug_validation{false};
+
     std::string debug_name{"EngineBaseGraphicsDevice"};
+
 };
 
 struct GraphicsRuntimeServices {
@@ -55,37 +65,45 @@ struct FramePlatformEvents {
 };
 
 // Returns the shared per-frame platform-event buffer, creating and registering it if needed.
-[[nodiscard]] std::shared_ptr<FramePlatformEvents> EnsureFramePlatformEvents(core::Application &application);
+[[nodiscard]] std::shared_ptr<FramePlatformEvents>
+EnsureFramePlatformEvents(core::Application &application);
 
-// Registers the baseline diagnostics, configuration, scheduler, dispatcher, event bus, and memory services.
-// Contract: composition is externally serialized; duplicate/sealed registration is rejected before bundle publication.
-[[nodiscard]] std::shared_ptr<diagnostics::ILogger> RegisterEngineBase(core::Application &application,
-                                                                       EngineBaseOptions options);
+// Registers the baseline diagnostics, configuration, scheduler, dispatcher, event bus, and memory
+// services. Contract: composition is externally serialized; duplicate/sealed registration is
+// rejected before bundle publication.
+[[nodiscard]] std::shared_ptr<diagnostics::ILogger>
+RegisterEngineBase(core::Application &application, EngineBaseOptions options);
 
 // Registers the Windows platform runtime as both IPlatformRuntime and IWindowSystem.
 // Contract: the two service roles are preflighted as one composition bundle.
-[[nodiscard]] std::shared_ptr<platform::IPlatformRuntime> RegisterWindowsRuntime(core::Application &application);
+[[nodiscard]] std::shared_ptr<platform::IPlatformRuntime>
+RegisterWindowsRuntime(core::Application &application);
 
 // Registers the browser canvas runtime as both platform service roles.
-[[nodiscard]] std::shared_ptr<platform::IPlatformRuntime> RegisterBrowserRuntime(core::Application &application);
+[[nodiscard]] std::shared_ptr<platform::IPlatformRuntime>
+RegisterBrowserRuntime(core::Application &application);
 
 // Registers the baseline normalized input system.
 // Contract: duplicate/sealed registration is rejected without replacing the existing service.
-[[nodiscard]] std::shared_ptr<input::IInputSystem> RegisterInputRuntime(core::Application &application);
+[[nodiscard]] std::shared_ptr<input::IInputSystem>
+RegisterInputRuntime(core::Application &application);
 
 // Creates and registers the requested graphics runtime services.
-// Contract: unknown backends and service conflicts return a controlled Result failure before publication.
-[[nodiscard]] foundation::Result<GraphicsRuntimeServices> RegisterGraphicsRuntime(core::Application &application,
-                                                                                  GraphicsRuntimeOptions options);
+// Contract: unknown backends and service conflicts return a controlled Result failure before
+// publication.
+[[nodiscard]] foundation::Result<GraphicsRuntimeServices>
+RegisterGraphicsRuntime(core::Application &application, GraphicsRuntimeOptions options);
 
 // Creates the main window through the registered window system.
 [[nodiscard]] foundation::Result<std::shared_ptr<platform::IWindow>>
 CreateMainWindow(core::Application &application, const platform::WindowCreateInfo &create_info);
 
 // Creates and registers the main swap chain for a window using the registered RHI device.
-// Contract: null/invalid windows and duplicate/sealed swap-chain ownership return controlled Result failures.
+// Contract: null/invalid windows and duplicate/sealed swap-chain ownership return controlled Result
+// failures.
 [[nodiscard]] foundation::Result<std::shared_ptr<rhi::IRhiSwapChain>>
-RegisterMainSwapChain(core::Application &application, const std::shared_ptr<platform::IWindow> &window,
+RegisterMainSwapChain(core::Application &application,
+                      const std::shared_ptr<platform::IWindow> &window,
                       const rhi::RhiSwapChainDesc &desc);
 
 // Adds the frame-phase handler that pumps the platform runtime and drains window-system events.
@@ -94,7 +112,8 @@ void RegisterPlatformFrameLoop(core::Application &application);
 // Adds the frame-phase handler that converts drained platform events into input snapshots.
 void RegisterInputFrameLoop(core::Application &application);
 
-// Adds the frame-phase handlers that run BeginFrame/Clear/EndFrame/Present around the supplied render services.
+// Adds the frame-phase handlers that run BeginFrame/Clear/EndFrame/Present around the supplied
+// render services.
 void RegisterRhiFrameLoop(core::Application &application,
                           const std::shared_ptr<rhi::IRhiCommandContext> &command_context,
                           const std::shared_ptr<rhi::IRhiSwapChain> &swap_chain,

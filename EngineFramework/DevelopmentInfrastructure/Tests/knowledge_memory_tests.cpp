@@ -10,17 +10,22 @@ using namespace epidemic::gameplay::knowledge;
 namespace {
 GameplayObjectRef Ref(std::string_view name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
+
 }
+
 MemoryDecayRule Rule() {
     MemoryDecayRule r;
     r.id = MemoryDecayRuleId::FromString("test.decay.standard");
     r.canonical_name = "test.decay.standard";
     r.interval = GameplayDuration{10};
+
     r.confidence_steps = 1;
     r.outdated_at_or_below = KnowledgeConfidence::Low;
     return r;
 }
-KnowledgeTopic Topic(std::string_view id, GameplayObjectRef subject, std::optional<TagId> tag = std::nullopt) {
+
+KnowledgeTopic Topic(std::string_view id, GameplayObjectRef subject,
+                     std::optional<TagId> tag = std::nullopt) {
     KnowledgeTopic t;
     t.id = KnowledgeTopicId::FromString(id);
     t.primary_subject = subject;
@@ -28,9 +33,11 @@ KnowledgeTopic Topic(std::string_view id, GameplayObjectRef subject, std::option
         t.tags.Add(*tag);
     return t;
 }
+
 LearnKnowledgeRequest LearnReq(GameplayObjectRef owner, BeliefTypeId type, KnowledgeTopic topic,
                                GameplayObjectRef source, KnowledgeAssertionValue assertion,
-                               KnowledgeEpistemicState state, KnowledgeConfidence confidence, GameplayTimePoint time) {
+                               KnowledgeEpistemicState state, KnowledgeConfidence confidence,
+                               GameplayTimePoint time) {
     LearnKnowledgeRequest r;
     r.learner = owner;
     r.type = type;
@@ -43,7 +50,8 @@ LearnKnowledgeRequest LearnReq(GameplayObjectRef owner, BeliefTypeId type, Knowl
     r.context.time = time;
     return r;
 }
-}
+
+} // namespace
 
 int main() {
     const auto npc = Ref("npc");
@@ -72,19 +80,22 @@ int main() {
         return 2;
 
     const auto belief = BeliefTypeId::FromString("game.witnessed");
-    auto denied = k.Learn(LearnReq(npc, belief, Topic("game.door_open", player, allowed_tag), player,
-                                   KnowledgeAssertionValue::Denied, KnowledgeEpistemicState::Known,
-                                   KnowledgeConfidence::Certain, GameplayTimePoint{5}));
+    auto denied =
+        k.Learn(LearnReq(npc, belief, Topic("game.door_open", player, allowed_tag), player,
+                         KnowledgeAssertionValue::Denied, KnowledgeEpistemicState::Known,
+                         KnowledgeConfidence::Certain, GameplayTimePoint{5}));
     if (!denied)
         return 3;
     const auto *first = k.FindKnowledge(denied.Value());
     if (!first || first->assertion != KnowledgeAssertionValue::Denied ||
-        first->epistemic_state != KnowledgeEpistemicState::Known || first->confidence != KnowledgeConfidence::Certain)
+        first->epistemic_state != KnowledgeEpistemicState::Known ||
+        first->confidence != KnowledgeConfidence::Certain)
         return 4;
 
-    auto weak_confirmation = k.Learn(LearnReq(npc, belief, Topic("game.door_open", player, allowed_tag), player,
-                                              KnowledgeAssertionValue::Denied, KnowledgeEpistemicState::Rumor,
-                                              KnowledgeConfidence::Low, GameplayTimePoint{6}));
+    auto weak_confirmation =
+        k.Learn(LearnReq(npc, belief, Topic("game.door_open", player, allowed_tag), player,
+                         KnowledgeAssertionValue::Denied, KnowledgeEpistemicState::Rumor,
+                         KnowledgeConfidence::Low, GameplayTimePoint{6}));
     if (!weak_confirmation || weak_confirmation.Value() != denied.Value())
         return 5;
     first = k.FindKnowledge(denied.Value());
@@ -92,17 +103,18 @@ int main() {
         first->confidence != KnowledgeConfidence::Certain)
         return 6;
 
-    auto opposite = k.Learn(LearnReq(npc, belief, Topic("game.door_open", player, allowed_tag), player,
-                                     KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Suspected,
-                                     KnowledgeConfidence::Medium, GameplayTimePoint{7}));
+    auto opposite =
+        k.Learn(LearnReq(npc, belief, Topic("game.door_open", player, allowed_tag), player,
+                         KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Suspected,
+                         KnowledgeConfidence::Medium, GameplayTimePoint{7}));
     if (!opposite || opposite.Value() == denied.Value() ||
         k.FindKnowledgeByTopic(npc, KnowledgeTopicId::FromString("game.door_open")).size() != 2)
         return 7;
 
     if (k.Share({stranger, guard, denied.Value(), KnowledgeShareMode::Report, {}}))
         return 8;
-    auto shared = k.Share(
-        {npc, guard, denied.Value(), KnowledgeShareMode::Report, GameplayContext{.time = GameplayTimePoint{8}}});
+    auto shared = k.Share({npc, guard, denied.Value(), KnowledgeShareMode::Report,
+                           GameplayContext{.time = GameplayTimePoint{8}}});
     if (!shared)
         return 9;
     const auto *guard_record = k.FindKnowledge(shared.Value());
@@ -110,19 +122,20 @@ int main() {
         guard_record->derived_from != denied.Value() || guard_record->transmission_depth != 1 ||
         guard_record->original_source != player)
         return 10;
-    auto reshared = k.Share(
-        {guard, clerk, shared.Value(), KnowledgeShareMode::Rumor, GameplayContext{.time = GameplayTimePoint{9}}});
+    auto reshared = k.Share({guard, clerk, shared.Value(), KnowledgeShareMode::Rumor,
+                             GameplayContext{.time = GameplayTimePoint{9}}});
     if (!reshared)
         return 11;
     const auto *clerk_record = k.FindKnowledge(reshared.Value());
     if (!clerk_record || clerk_record->assertion != KnowledgeAssertionValue::Denied ||
-        clerk_record->epistemic_state != KnowledgeEpistemicState::Rumor || clerk_record->transmission_depth != 2 ||
-        clerk_record->original_source != player)
+        clerk_record->epistemic_state != KnowledgeEpistemicState::Rumor ||
+        clerk_record->transmission_depth != 2 || clerk_record->original_source != player)
         return 12;
 
-    auto blocked = k.Learn(LearnReq(npc, belief, Topic("game.secret", player, TagId::FromString("knowledge.private")),
-                                    player, KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
-                                    KnowledgeConfidence::High, GameplayTimePoint{10}));
+    auto blocked = k.Learn(
+        LearnReq(npc, belief, Topic("game.secret", player, TagId::FromString("knowledge.private")),
+                 player, KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
+                 KnowledgeConfidence::High, GameplayTimePoint{10}));
     if (!blocked || k.Share({npc, guard, blocked.Value(), KnowledgeShareMode::Tell, {}}))
         return 13;
 
@@ -134,10 +147,12 @@ int main() {
     contradiction.source_kind = KnowledgeSourceId::FromString("test.source.correction");
     contradiction.source_object = guard;
     contradiction.context.time = GameplayTimePoint{11};
+
     auto corrected = k.Contradict(contradiction);
     if (!corrected)
         return 14;
-    if (k.FindKnowledge(opposite.Value())->epistemic_state != KnowledgeEpistemicState::Contradicted ||
+    if (k.FindKnowledge(opposite.Value())->epistemic_state !=
+            KnowledgeEpistemicState::Contradicted ||
         k.FindKnowledge(corrected.Value())->assertion != KnowledgeAssertionValue::Denied)
         return 15;
 
@@ -148,11 +163,13 @@ int main() {
     m1.persistence = MemoryPersistencePolicy::Persistent;
     m1.emotion = TagId::FromString("memory.emotion.alert");
     m1.context.time = GameplayTimePoint{12};
+
     auto mem1 = k.CreateMemory(m1);
     auto m2 = m1;
     m2.type = MemoryTypeId::FromString("game.memory.two");
     auto mem2 = k.CreateMemory(m2);
-    if (!mem1 || !mem2 || !k.FindMemory(mem1.Value()) || k.FindMemory(mem1.Value())->emotion != m1.emotion)
+    if (!mem1 || !mem2 || !k.FindMemory(mem1.Value()) ||
+        k.FindMemory(mem1.Value())->emotion != m1.emotion)
         return 16;
     CreateMemoryRequest summary;
     summary.owner = npc;
@@ -161,10 +178,13 @@ int main() {
     summary.persistence = MemoryPersistencePolicy::Persistent;
     summary.emotion = TagId::FromString("memory.emotion.reflective");
     summary.context.time = GameplayTimePoint{13};
+
     const MemoryRecordId compact_ids[] = {mem1.Value(), mem2.Value()};
-    auto compact = k.CompactMemories(npc, compact_ids, summary, GameplayContext{.time = GameplayTimePoint{13}});
-    if (!compact || k.FindMemory(mem1.Value()) || k.FindMemory(mem2.Value()) || !k.FindMemory(compact.Value()) ||
-        k.FindMemory(compact.Value())->emotion != summary.emotion)
+
+    auto compact = k.CompactMemories(npc, compact_ids, summary,
+                                     GameplayContext{.time = GameplayTimePoint{13}});
+    if (!compact || k.FindMemory(mem1.Value()) || k.FindMemory(mem2.Value()) ||
+        !k.FindMemory(compact.Value()) || k.FindMemory(compact.Value())->emotion != summary.emotion)
         return 17;
 
     KnowledgeService frequent;
@@ -180,11 +200,13 @@ int main() {
     if (!frequent.CreateProfile(fp) || !sparse.CreateProfile(fp))
         return 19;
     auto fr =
-        frequent.Learn(LearnReq(npc, belief, Topic("game.decay", player), player, KnowledgeAssertionValue::Affirmed,
-                                KnowledgeEpistemicState::Known, KnowledgeConfidence::Certain, GameplayTimePoint{0}));
+        frequent.Learn(LearnReq(npc, belief, Topic("game.decay", player), player,
+                                KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
+                                KnowledgeConfidence::Certain, GameplayTimePoint{0}));
     auto sr =
-        sparse.Learn(LearnReq(npc, belief, Topic("game.decay", player), player, KnowledgeAssertionValue::Affirmed,
-                              KnowledgeEpistemicState::Known, KnowledgeConfidence::Certain, GameplayTimePoint{0}));
+        sparse.Learn(LearnReq(npc, belief, Topic("game.decay", player), player,
+                              KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
+                              KnowledgeConfidence::Certain, GameplayTimePoint{0}));
     if (!fr || !sr)
         return 20;
     if (!frequent.Decay(GameplayTimePoint{10}) || !frequent.Decay(GameplayTimePoint{20}) ||
@@ -205,18 +227,22 @@ int main() {
     if (!retention.CreateProfile(session_profile))
         return 22;
     auto transient_by_profile =
-        retention.Learn(LearnReq(npc, belief, Topic("game.session", player), player, KnowledgeAssertionValue::Affirmed,
-                                 KnowledgeEpistemicState::Known, KnowledgeConfidence::High, GameplayTimePoint{1}));
+        retention.Learn(LearnReq(npc, belief, Topic("game.session", player), player,
+                                 KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
+                                 KnowledgeConfidence::High, GameplayTimePoint{1}));
     if (!transient_by_profile || !retention.CaptureSnapshot().knowledge.empty())
         return 23;
 
     const auto saved_change_cursor = k.ReadChangesSince(ChangeCursor{}).latest_cursor;
     auto snap = k.CaptureSnapshot();
     KnowledgeService restored;
-    if (!restored.RegisterDecayRule(decay) || !restored.FreezeDefinitions() || !restored.RestoreSnapshot(snap))
+    if (!restored.RegisterDecayRule(decay) || !restored.FreezeDefinitions() ||
+        !restored.RestoreSnapshot(snap))
         return 24;
-    if (restored.FindKnowledgeByOwner(npc).empty() || restored.FindKnowledgeAboutSubject(npc, player).empty() ||
-        !restored.FindMemory(compact.Value()) || restored.FindMemory(compact.Value())->emotion != summary.emotion)
+    if (restored.FindKnowledgeByOwner(npc).empty() ||
+        restored.FindKnowledgeAboutSubject(npc, player).empty() ||
+        !restored.FindMemory(compact.Value()) ||
+        restored.FindMemory(compact.Value())->emotion != summary.emotion)
         return 25;
     if (!restored.ReadChangesSince(saved_change_cursor).snapshot_required)
         return 37;
@@ -228,6 +254,7 @@ int main() {
     after_restore_memory.persistence = MemoryPersistencePolicy::Persistent;
     after_restore_memory.emotion = TagId::FromString("memory.emotion.continuity");
     after_restore_memory.context.time = GameplayTimePoint{14};
+
     if (!restored.CreateMemory(after_restore_memory))
         return 36;
     auto resumed_changes = restored.ReadChangesSince(restored_change_cursor);
@@ -235,12 +262,15 @@ int main() {
         resumed_changes.changes.front().sequence <= restored_change_cursor.sequence)
         return 38;
     if (restored_change_cursor.sequence > 0 &&
-        !restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
+        !restored
+             .ReadChangesSince(
+                 restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
              .snapshot_required)
         return 39;
     const auto restored_latest = resumed_changes.latest_cursor;
     if (restored_latest.sequence != std::numeric_limits<std::uint64_t>::max() &&
-        !restored.ReadChangesSince(restored_latest.AtSequence(restored_latest.sequence + 1)).snapshot_required)
+        !restored.ReadChangesSince(restored_latest.AtSequence(restored_latest.sequence + 1))
+             .snapshot_required)
         return 43;
 
     auto exhausted_sequence_snapshot = snap;
@@ -253,8 +283,9 @@ int main() {
     max_sequence_memory.type = MemoryTypeId::FromString("game.memory.max_sequence");
     if (!exhausted_sequence.CreateMemory(max_sequence_memory))
         return 41;
-    auto max_batch = exhausted_sequence.ReadChangesSince(
-        exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
+    auto max_batch =
+        exhausted_sequence.ReadChangesSince(exhausted_sequence.LatestChangeCursor().AtSequence(
+            std::numeric_limits<std::uint64_t>::max() - 1));
     if (max_batch.snapshot_required || max_batch.changes.size() != 1 ||
         max_batch.changes.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 42;
@@ -298,6 +329,7 @@ int main() {
         if (!bounded.Learn(std::move(q)))
             return 31;
     }
+
     auto batch = bounded.ReadChangesSince(ChangeCursor{});
     if (!batch.snapshot_required || !batch.changes.empty())
         return 32;
@@ -307,11 +339,13 @@ int main() {
     exhausted.memories.clear();
     exhausted.knowledge_ids.next = 0;
     KnowledgeService no_ids;
-    if (!no_ids.RegisterDecayRule(decay) || !no_ids.FreezeDefinitions() || !no_ids.RestoreSnapshot(exhausted))
+    if (!no_ids.RegisterDecayRule(decay) || !no_ids.FreezeDefinitions() ||
+        !no_ids.RestoreSnapshot(exhausted))
         return 33;
     auto fail_id =
-        no_ids.Learn(LearnReq(npc, belief, Topic("game.exhausted", player), player, KnowledgeAssertionValue::Affirmed,
-                              KnowledgeEpistemicState::Known, KnowledgeConfidence::High, GameplayTimePoint{20}));
+        no_ids.Learn(LearnReq(npc, belief, Topic("game.exhausted", player), player,
+                              KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
+                              KnowledgeConfidence::High, GameplayTimePoint{20}));
     if (fail_id)
         return 34;
 
@@ -331,9 +365,9 @@ int main() {
         knowledge_after_invalid.profiles.size() != knowledge_before_invalid.profiles.size())
         return 45;
 
-    auto invalid_learn =
-        LearnReq(npc, belief, Topic("game.invalid.enum", player), player, KnowledgeAssertionValue::Affirmed,
-                 KnowledgeEpistemicState::Known, static_cast<KnowledgeConfidence>(999), GameplayTimePoint{30});
+    auto invalid_learn = LearnReq(npc, belief, Topic("game.invalid.enum", player), player,
+                                  KnowledgeAssertionValue::Affirmed, KnowledgeEpistemicState::Known,
+                                  static_cast<KnowledgeConfidence>(999), GameplayTimePoint{30});
     const auto invalid_learn_revision = k.CurrentRevision();
     if (k.Learn(std::move(invalid_learn)) || k.CurrentRevision() != invalid_learn_revision)
         return 46;
@@ -350,6 +384,7 @@ int main() {
     exhausted_memory.type = MemoryTypeId::FromString("game.memory.revision_exhausted");
     exhausted_memory.persistence = MemoryPersistencePolicy::Persistent;
     exhausted_memory.context.time = GameplayTimePoint{31};
+
     const auto knowledge_exhausted_before = revision_exhausted.CaptureSnapshot();
     if (revision_exhausted.CreateMemory(exhausted_memory))
         return 48;
@@ -359,11 +394,12 @@ int main() {
         knowledge_exhausted_after.memory_ids.next != knowledge_exhausted_before.memory_ids.next)
         return 49;
 
-    // Goal 4: deterministic module-local restore fault seams replace process-global allocation overrides.
+    // Goal 4: deterministic module-local restore fault seams replace process-global allocation
+    // overrides.
     const auto allocation_before = k.CaptureSnapshot();
     using FaultPoint = epidemic::gameplay::knowledge::internal_test::AllocationFaultPoint;
-    for (const auto point : {FaultPoint::RestoreProfiles, FaultPoint::RestoreKnowledge, FaultPoint::RestoreMemories,
-                             FaultPoint::RestoreIndexes}) {
+    for (const auto point : {FaultPoint::RestoreProfiles, FaultPoint::RestoreKnowledge,
+                             FaultPoint::RestoreMemories, FaultPoint::RestoreIndexes}) {
         auto target = allocation_before;
         epidemic::gameplay::knowledge::internal_test::ArmAllocationFault(point);
         const auto result = k.RestoreSnapshot(std::move(target));
@@ -375,29 +411,35 @@ int main() {
         const auto pre_state =
             epidemic::tests::pre_state::StateComparator("Knowledge.RestoreSnapshot.pre_state")
                 .RequireEqual(epidemic::tests::pre_state::StateFacet::PrimaryRecords,
-                              allocation_before.knowledge.size() + allocation_before.memories.size(),
-                              after.knowledge.size() + after.memories.size(), "knowledge and memory record count")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::RecordPayloads, allocation_before.profiles.size(),
-                              after.profiles.size(), "profile payload count")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes, diagnostics.knowledge_records,
+                              allocation_before.knowledge.size() +
+                                  allocation_before.memories.size(),
+                              after.knowledge.size() + after.memories.size(),
+                              "knowledge and memory record count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::RecordPayloads,
+                              allocation_before.profiles.size(), after.profiles.size(),
+                              "profile payload count")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::SecondaryIndexes,
+                              diagnostics.knowledge_records,
                               static_cast<std::uint64_t>(allocation_before.knowledge.size()),
                               "knowledge index diagnostics")
                 .RequireEqual(epidemic::tests::pre_state::StateFacet::IdGenerators,
                               allocation_before.knowledge_ids.next, after.knowledge_ids.next,
                               "knowledge id generator next")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions, allocation_before.revision,
-                              after.revision, "revision")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch, allocation_before.change_epoch,
-                              after.change_epoch, "journal epoch")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::Revisions,
+                              allocation_before.revision, after.revision, "revision")
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalEpoch,
+                              allocation_before.change_epoch, after.change_epoch, "journal epoch")
                 .RequireEqual(epidemic::tests::pre_state::StateFacet::JournalSequence,
                               allocation_before.next_change_sequence, after.next_change_sequence,
                               "next change sequence")
-                .RequireEqual(epidemic::tests::pre_state::StateFacet::PublicReadModels, diagnostics.profiles,
+                .RequireEqual(epidemic::tests::pre_state::StateFacet::PublicReadModels,
+                              diagnostics.profiles,
                               static_cast<std::uint64_t>(allocation_before.profiles.size()),
                               "public diagnostics read model")
                 .Finish();
         if (!pre_state.Passed())
             return 914;
     }
+
     return 0;
 }

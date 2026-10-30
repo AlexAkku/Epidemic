@@ -39,6 +39,7 @@ class Application {
 
     struct FramePhaseHandlerRegistration {
         FramePhase phase{FramePhase::BeginFrame};
+
         FramePhaseCallback callback;
         std::string debug_name;
     };
@@ -52,15 +53,18 @@ class Application {
     ~Application();
 
     // Returns mutable access to the module registry used during composition and lifecycle.
-    // Возвращает изменяемый доступ к реестру модулей, используемому при компоновке и в жизненном цикле.
+    // Возвращает изменяемый доступ к реестру модулей, используемому при компоновке и в жизненном
+    // цикле.
     [[nodiscard]] ModuleRegistry &Modules() noexcept;
 
     // Returns mutable access to the service container used during composition and bootstrap.
-    // Возвращает изменяемый доступ к контейнеру сервисов, используемому при компоновке и начальной настройке.
+    // Возвращает изменяемый доступ к контейнеру сервисов, используемому при компоновке и начальной
+    // настройке.
     [[nodiscard]] ServiceContainer &Services() noexcept;
 
     // Validates required core services, fills default configuration, and bootstraps all modules.
-    // Проверяет требуемые сервисы ядра, заполняет конфигурацию по умолчанию и подготавливает все модули.
+    // Проверяет требуемые сервисы ядра, заполняет конфигурацию по умолчанию и подготавливает все
+    // модули.
     int Bootstrap();
 
     // Initializes all modules and seals the service container against further registrations.
@@ -100,13 +104,15 @@ class Application {
     [[nodiscard]] std::optional<std::uint64_t> FrameLimit() const noexcept;
 
     // Registers a callback for one frame phase.
-    // Relationship: support wiring uses this to plug platform, input, and RHI hooks into the frame loop.
-    // Регистрирует колбэк для одной фазы кадра.
-    // Связь: вспомогательная обвязка использует это для подключения хуков платформы, ввода и RHI к циклу кадра.
-    void AddFramePhaseHandler(FramePhase phase, FramePhaseCallback callback, std::string debug_name = {});
+    // Relationship: support wiring uses this to plug platform, input, and RHI hooks into the frame
+    // loop. Регистрирует колбэк для одной фазы кадра. Связь: вспомогательная обвязка использует это
+    // для подключения хуков платформы, ввода и RHI к циклу кадра.
+    void AddFramePhaseHandler(FramePhase phase, FramePhaseCallback callback,
+                              std::string debug_name = {});
 
-    // Registers a batch of frame handlers atomically. All allocation/copy work happens on a candidate
-    // handler table, and the live table is updated only after the complete batch is valid and built.
+    // Registers a batch of frame handlers atomically. All allocation/copy work happens on a
+    // candidate handler table, and the live table is updated only after the complete batch is valid
+    // and built.
     void AddFramePhaseHandlersAtomic(std::vector<FramePhaseHandlerRegistration> registrations);
 
     // Queues a task onto the main-thread dispatcher service.
@@ -146,7 +152,8 @@ class Application {
 
     // Executes one specific frame phase and updates related diagnostics counters.
     // Выполняет одну конкретную фазу кадра и обновляет относящиеся к ней диагностические счетчики.
-    void ExecutePhase(FramePhase phase, const FrameContext &frame_context, diagnostics::ILogger &logger);
+    void ExecutePhase(FramePhase phase, const FrameContext &frame_context,
+                      diagnostics::ILogger &logger);
 
     // Invokes handlers registered through AddFramePhaseHandler for the specified phase.
     // Выполняет обработчики, зарегистрированные через AddFramePhaseHandler для конкретной фазы.
@@ -168,12 +175,21 @@ class Application {
     ServiceContainer services_;
     ModuleRegistry modules_;
     State state_{State::Constructed};
+
     std::array<std::vector<PhaseHandler>, FramePhaseCount()> phase_handlers_{};
+
     FrameContext current_frame_context_{};
+
     foundation::TimePoint run_start_time_{};
+
     foundation::TimePoint previous_frame_time_{};
+
     std::uint64_t executed_frame_count_{0};
+
     bool frame_clock_initialized_{false};
+
     std::atomic<bool> stop_requested_{false};
+
 };
+
 } // namespace epidemic::core

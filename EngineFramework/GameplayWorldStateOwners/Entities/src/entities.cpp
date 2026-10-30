@@ -16,22 +16,26 @@ namespace {
 // an already observed slot/generation pair, even when its slot table is empty.
 std::atomic<std::uint64_t> next_handle_generation{1};
 
-[[nodiscard]] std::optional<std::uint32_t> ReserveHandleGeneration(std::uint32_t floor = 0) noexcept {
+[[nodiscard]] std::optional<std::uint32_t>
+ReserveHandleGeneration(std::uint32_t floor = 0) noexcept {
     auto next = next_handle_generation.load(std::memory_order_relaxed);
     for (;;) {
         const auto candidate = std::max(next, static_cast<std::uint64_t>(floor) + 1);
         if (candidate > std::numeric_limits<std::uint32_t>::max())
             return std::nullopt;
-        if (next_handle_generation.compare_exchange_weak(next, candidate + 1, std::memory_order_relaxed))
+        if (next_handle_generation.compare_exchange_weak(next, candidate + 1,
+                                                         std::memory_order_relaxed))
             return static_cast<std::uint32_t>(candidate);
     }
+
 }
 
 [[nodiscard]] constexpr std::uint64_t EntityInstanceIdScope() noexcept {
     return GameplayObjectId::FromString("framework.entities.instances").High();
 }
 
-void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &generator, EntityId id) noexcept {
+void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &generator,
+                                    EntityId id) noexcept {
     if (!id.IsValid())
         return;
 
@@ -50,54 +54,71 @@ void AdvanceGeneratorPastAcceptedId(MonotonicIdGenerator<GameplayObjectId> &gene
 [[nodiscard]] bool IsMutableLifecycle(EntityLifecycleState state) noexcept {
     return state == EntityLifecycleState::Alive || state == EntityLifecycleState::Dormant;
 }
+
 [[nodiscard]] bool IsValid(EntityPersistencePolicy value) noexcept {
-    return value >= EntityPersistencePolicy::Transient && value <= EntityPersistencePolicy::Persistent;
+    return value >= EntityPersistencePolicy::Transient &&
+           value <= EntityPersistencePolicy::Persistent;
 }
+
 [[nodiscard]] bool IsValid(EntityMaterializationPolicy value) noexcept {
     return value >= EntityMaterializationPolicy::AbstractAllowed &&
            value <= EntityMaterializationPolicy::RequireMaterialized;
 }
+
 [[nodiscard]] bool IsValid(EntityLifecycleState value) noexcept {
     return value >= EntityLifecycleState::Creating && value <= EntityLifecycleState::Removed;
 }
+
 [[nodiscard]] bool IsValid(EntityMaterializationState value) noexcept {
-    return value >= EntityMaterializationState::Abstract && value <= EntityMaterializationState::Dematerializing;
+    return value >= EntityMaterializationState::Abstract &&
+           value <= EntityMaterializationState::Dematerializing;
 }
+
 [[nodiscard]] bool IsValid(EntityDestroyReason value) noexcept {
     return value >= EntityDestroyReason::Destroyed && value <= EntityDestroyReason::OwnerRequest;
 }
+
 } // namespace
 
 EntityService::EntityService() : ids_(EntityInstanceIdScope()) {
 }
 
-foundation::Result<void> EntityService::ValidateArchetypeParts(EntityArchetypeDefinition &definition) const {
+foundation::Result<void>
+EntityService::ValidateArchetypeParts(EntityArchetypeDefinition &definition) const {
     std::unordered_map<EntityPartId, std::size_t, EntityPartIdHash> by_id;
     by_id.reserve(definition.parts.size());
     for (std::size_t index = 0; index < definition.parts.size(); ++index) {
         auto &part = definition.parts[index];
         if (part.canonical_name.empty()) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_part_invalid", "entity part canonical name must not be empty"));
+                Error("gameplay.entity_part_invalid",
+                      "entity part canonical name must not be empty"));
         }
+
         const auto expected = EntityPartId::FromString(part.canonical_name);
         if (!part.id.IsValid())
             part.id = expected;
         if (part.id != expected) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_part_id_mismatch", "entity part id does not match canonical name"));
+                Error("gameplay.entity_part_id_mismatch",
+                      "entity part id does not match canonical name"));
         }
+
         if (!by_id.emplace(part.id, index).second) {
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_part_duplicate", "entity archetype contains duplicate part ids"));
+                Error("gameplay.entity_part_duplicate",
+                      "entity archetype contains duplicate part ids"));
         }
+
     }
+
     for (const auto &part : definition.parts) {
         if (part.parent.IsValid() && (part.parent == part.id || !by_id.contains(part.parent))) {
             return foundation::Result<void>::Failure(
                 Error("gameplay.entity_part_parent_invalid",
                       "entity part parent must reference another part in the same archetype"));
         }
+
         std::unordered_set<EntityPartId, EntityPartIdHash> seen;
         auto current = part.parent;
         while (current.IsValid()) {
@@ -105,28 +126,34 @@ foundation::Result<void> EntityService::ValidateArchetypeParts(EntityArchetypeDe
                 return foundation::Result<void>::Failure(
                     Error("gameplay.entity_part_cycle", "entity part hierarchy contains a cycle"));
             }
+
             current = definition.parts[by_id.at(current)].parent;
         }
+
     }
-    std::sort(definition.parts.begin(), definition.parts.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(definition.parts.begin(), definition.parts.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<EntityArchetypeId> EntityService::RegisterArchetype(EntityArchetypeDefinition definition) {
+foundation::Result<EntityArchetypeId>
+EntityService::RegisterArchetype(EntityArchetypeDefinition definition) {
     if (frozen_)
         return foundation::Result<EntityArchetypeId>::Failure(
             Error("gameplay.registry_frozen", "entity archetype registry is frozen"));
-    if (definition.canonical_name.empty() || !IsValid(definition.persistence) || !IsValid(definition.materialization))
+    if (definition.canonical_name.empty() || !IsValid(definition.persistence) ||
+        !IsValid(definition.materialization))
         return foundation::Result<EntityArchetypeId>::Failure(
-            Error("gameplay.entity_archetype_invalid", "entity archetype definition contains invalid fields"));
+            Error("gameplay.entity_archetype_invalid",
+                  "entity archetype definition contains invalid fields"));
     const auto expected = EntityArchetypeId::FromString(definition.canonical_name);
     if (!definition.id.IsValid())
         definition.id = expected;
     if (definition.id != expected)
         return foundation::Result<EntityArchetypeId>::Failure(
-            Error("gameplay.entity_archetype_id_mismatch", "entity archetype id does not match canonical name"));
+            Error("gameplay.entity_archetype_id_mismatch",
+                  "entity archetype id does not match canonical name"));
     if (archetypes_.contains(definition.id))
         return foundation::Result<EntityArchetypeId>::Failure(
             Error("gameplay.already_registered", "entity archetype is already registered"));
@@ -147,19 +174,22 @@ const EntityPartDefinition *EntityService::FindPartDefinition(EntityArchetypeId 
     const auto *definition = FindArchetype(archetype);
     if (definition == nullptr)
         return nullptr;
-    const auto found = std::lower_bound(definition->parts.begin(), definition->parts.end(), part,
-                                        [](const auto &value, EntityPartId id) {
-                                            return value.id < id;
-                                        });
+    const auto found =
+        std::lower_bound(definition->parts.begin(), definition->parts.end(), part,
+                         [](const auto &value, EntityPartId id) { return value.id < id; });
     return found != definition->parts.end() && found->id == part ? &*found : nullptr;
 }
 
-std::optional<EntityMaterializationPolicy> EntityService::MaterializationPolicyOf(EntityId id) const noexcept {
+std::optional<EntityMaterializationPolicy>
+EntityService::MaterializationPolicyOf(EntityId id) const noexcept {
     const auto *record = FindInternal(id);
     if (record == nullptr)
         return std::nullopt;
     const auto *archetype = FindArchetype(record->archetype);
-    return archetype == nullptr ? std::nullopt : std::optional<EntityMaterializationPolicy>{archetype->materialization};
+    return archetype == nullptr
+               ? std::nullopt
+               : std::optional<EntityMaterializationPolicy>{archetype->materialization};
+
 }
 
 bool EntityService::RequiresMaterialization(EntityId id) const noexcept {
@@ -172,6 +202,7 @@ std::optional<EntityPartRef> EntityService::GetPart(EntityId entity, EntityPartI
     if (record == nullptr || FindPartDefinition(record->archetype, part) == nullptr)
         return std::nullopt;
     return EntityPartRef{entity, part};
+
 }
 
 std::vector<EntityPartRef> EntityService::GetParts(EntityId entity) const {
@@ -198,6 +229,7 @@ std::vector<EntityPartRef> EntityService::GetPartAncestors(EntityPartRef ref) co
         result.push_back(EntityPartRef{ref.entity, part->parent});
         part = FindPartDefinition(record->archetype, part->parent);
     }
+
     return result;
 }
 
@@ -219,7 +251,8 @@ bool EntityService::CanRecordChanges(std::size_t count) const noexcept {
 
 void EntityService::RecordChange(EntityChange change) noexcept {
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
-    auditor::shadow::entity_change(change.entity.High(), change.entity.Low(), static_cast<unsigned>(change.kind),
+    auditor::shadow::entity_change(change.entity.High(), change.entity.Low(),
+                                   static_cast<unsigned>(change.kind),
                                    static_cast<unsigned>(change.previous_lifecycle),
                                    static_cast<unsigned>(change.lifecycle));
 #endif
@@ -240,10 +273,13 @@ void EntityService::RecordChange(EntityChange change) noexcept {
             ++journal_epoch_;
             next_change_sequence_ = 1;
         }
+
         return;
     }
+
     last_change_sequence_ = sequence;
-    next_change_sequence_ = sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
+    next_change_sequence_ =
+        sequence == std::numeric_limits<std::uint64_t>::max() ? 0 : sequence + 1;
 }
 
 foundation::Result<std::uint32_t> EntityService::AllocateSlot() {
@@ -252,17 +288,20 @@ foundation::Result<std::uint32_t> EntityService::AllocateSlot() {
         free_slots_.pop_back();
         return foundation::Result<std::uint32_t>::Success(slot);
     }
+
     if (slots_.size() >= static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()))
         return foundation::Result<std::uint32_t>::Failure(
             Error("gameplay.entity_capacity_exhausted", "entity slot capacity exhausted"));
     slots_.push_back(Slot{});
-    return foundation::Result<std::uint32_t>::Success(static_cast<std::uint32_t>(slots_.size() - 1));
+    return foundation::Result<std::uint32_t>::Success(
+        static_cast<std::uint32_t>(slots_.size() - 1));
 }
 
 foundation::Result<CreateEntityResult> EntityService::Create(CreateEntityRequest request) {
     if (!frozen_)
         return foundation::Result<CreateEntityResult>::Failure(
-            Error("gameplay.registry_not_frozen", "entity service must be frozen before runtime operations"));
+            Error("gameplay.registry_not_frozen",
+                  "entity service must be frozen before runtime operations"));
     const auto *archetype = FindArchetype(request.archetype);
     if (request.persistence && !IsValid(*request.persistence))
         return foundation::Result<CreateEntityResult>::Failure(
@@ -281,9 +320,11 @@ foundation::Result<CreateEntityResult> EntityService::Create(CreateEntityRequest
     EntityId id = request.requested_id.value_or(EntityId{});
     if (!id.IsValid()) {
         id = EntityId{staged_ids.Next()};
+
     } else {
         AdvanceGeneratorPastAcceptedId(staged_ids, id);
     }
+
     if (!id.IsValid())
         return foundation::Result<CreateEntityResult>::Failure(
             Error("gameplay.entity_id_exhausted", "entity id is invalid or exhausted"));
@@ -301,16 +342,19 @@ foundation::Result<CreateEntityResult> EntityService::Create(CreateEntityRequest
     record.revision = next_revision.Value();
 
     const bool reusing_slot = !free_slots_.empty();
-    const auto generation = ReserveHandleGeneration(reusing_slot ? slots_[free_slots_.back()].generation : 0);
+    const auto generation =
+        ReserveHandleGeneration(reusing_slot ? slots_[free_slots_.back()].generation : 0);
     if (!generation)
         return foundation::Result<CreateEntityResult>::Failure(
-            Error("gameplay.entity_handle_generation_exhausted", "entity handle generation space is exhausted"));
+            Error("gameplay.entity_handle_generation_exhausted",
+                  "entity handle generation space is exhausted"));
     try {
         id_to_slot_.reserve(id_to_slot_.size() + 1);
     } catch (...) {
         return foundation::Result<CreateEntityResult>::Failure(
             Error("gameplay.entity_storage_failed", "unable to reserve entity index storage"));
     }
+
     auto slot_result = AllocateSlot();
     if (!slot_result)
         return foundation::Result<CreateEntityResult>::Failure(slot_result.GetError());
@@ -323,6 +367,7 @@ foundation::Result<CreateEntityResult> EntityService::Create(CreateEntityRequest
         id_to_slot_.emplace(id, slot_index);
     } catch (...) {
         slot.record = {};
+
         slot.occupied = false;
         if (reusing_slot)
             free_slots_.push_back(slot_index);
@@ -331,6 +376,7 @@ foundation::Result<CreateEntityResult> EntityService::Create(CreateEntityRequest
         return foundation::Result<CreateEntityResult>::Failure(
             Error("gameplay.entity_storage_failed", "unable to publish entity index"));
     }
+
     revision_ = next_revision.Value();
     ids_ = staged_ids;
     if (creates_ != std::numeric_limits<std::uint64_t>::max())
@@ -372,6 +418,7 @@ const EntityRecord *EntityService::FindInternal(EntityId id) const noexcept {
 std::optional<EntityRecord> EntityService::Find(EntityId id) const {
     const auto *value = FindInternal(id);
     return value == nullptr ? std::nullopt : std::optional<EntityRecord>{*value};
+
 }
 
 EntityService::Slot *EntityService::ResolveSlot(EntityHandle handle) noexcept {
@@ -395,6 +442,7 @@ std::optional<EntityRecord> EntityService::Resolve(EntityHandle handle) const {
             ++invalid_handle_lookups_;
         return std::nullopt;
     }
+
     return slot->record;
 }
 
@@ -402,14 +450,17 @@ EntityHandle EntityService::HandleOf(EntityId id) const noexcept {
     const auto found = id_to_slot_.find(id);
     if (found == id_to_slot_.end())
         return {};
+
     const auto &slot = slots_[found->second];
     return slot.occupied ? EntityHandle{found->second, slot.generation} : EntityHandle{};
+
 }
 
 foundation::Result<void> EntityService::Activate(EntityId id, GameplayContext context) {
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (record->lifecycle == EntityLifecycleState::Alive)
         return foundation::Result<void>::Success();
     if (record->lifecycle != EntityLifecycleState::Dormant)
@@ -444,7 +495,8 @@ foundation::Result<void> EntityService::Activate(EntityId id, GameplayContext co
 foundation::Result<void> EntityService::Deactivate(EntityId id, GameplayContext context) {
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (record->lifecycle == EntityLifecycleState::Dormant)
         return foundation::Result<void>::Success();
     if (record->lifecycle != EntityLifecycleState::Alive)
@@ -482,13 +534,15 @@ foundation::Result<void> EntityService::RequestDestroy(EntityId id, EntityDestro
                                                        GameplayContext context) {
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (record->lifecycle == EntityLifecycleState::PendingDestroy)
         return foundation::Result<void>::Failure(
             Error("gameplay.entity_destroy_pending", "entity is already pending destruction"));
     if (!IsMutableLifecycle(record->lifecycle))
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_invalid_state", "only alive or dormant entities can be requested for destruction"));
+            Error("gameplay.entity_invalid_state",
+                  "only alive or dormant entities can be requested for destruction"));
     if (!CanRecordChanges(1))
         return foundation::Result<void>::Failure(
             Error("gameplay.change_sequence_exhausted", "entity change sequence is exhausted"));
@@ -515,6 +569,7 @@ foundation::Result<void> EntityService::RequestDestroy(EntityId id, EntityDestro
         return foundation::Result<void>::Failure(
             Error("gameplay.entity_storage_failed", "unable to stage entity destruction metadata"));
     }
+
     record->lifecycle = EntityLifecycleState::PendingDestroy;
     record->revision = rev.Value();
     revision_ = rev.Value();
@@ -544,10 +599,12 @@ foundation::Result<std::vector<EntityRecord>> EntityService::CommitPendingDestru
         if (record != nullptr && record->lifecycle == EntityLifecycleState::PendingDestroy)
             valid.push_back(id);
     }
+
     if (valid.empty()) {
         pending_destroy_.clear();
         return foundation::Result<std::vector<EntityRecord>>::Success({});
     }
+
     if (!CanRecordChanges(valid.size()))
         return foundation::Result<std::vector<EntityRecord>>::Failure(
             Error("gameplay.change_sequence_exhausted", "entity change sequence is exhausted"));
@@ -561,6 +618,7 @@ foundation::Result<std::vector<EntityRecord>> EntityService::CommitPendingDestru
         return foundation::Result<std::vector<EntityRecord>>::Failure(
             Error("gameplay.entity_storage_failed", "unable to stage destruction result"));
     }
+
     revision_ = rev.Value();
     for (const auto id : valid) {
         auto *record = FindMutable(id);
@@ -572,9 +630,11 @@ foundation::Result<std::vector<EntityRecord>> EntityService::CommitPendingDestru
         destroyed.push_back(*record);
         const auto reason_it = pending_destroy_reasons_.find(id);
         const auto context_it = pending_destroy_contexts_.find(id);
-        const auto reason =
-            reason_it == pending_destroy_reasons_.end() ? EntityDestroyReason::Destroyed : reason_it->second;
-        const auto context = context_it == pending_destroy_contexts_.end() ? GameplayContext{} : context_it->second;
+        const auto reason = reason_it == pending_destroy_reasons_.end()
+                                ? EntityDestroyReason::Destroyed
+                                : reason_it->second;
+        const auto context =
+            context_it == pending_destroy_contexts_.end() ? GameplayContext{} : context_it->second;
         RecordChange(EntityChange{0,
                                   EntityChangeKind::Destroyed,
                                   id,
@@ -593,6 +653,7 @@ foundation::Result<std::vector<EntityRecord>> EntityService::CommitPendingDestru
         if (destroys_ != std::numeric_limits<std::uint64_t>::max())
             ++destroys_;
     }
+
     pending_destroy_.clear();
     return foundation::Result<std::vector<EntityRecord>>::Success(std::move(destroyed));
 }
@@ -600,12 +661,14 @@ foundation::Result<std::vector<EntityRecord>> EntityService::CommitPendingDestru
 foundation::Result<void> EntityService::Remove(EntityId id, GameplayContext context) {
     const auto found = id_to_slot_.find(id);
     if (found == id_to_slot_.end())
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     const auto slot_index = found->second;
     auto &slot = slots_[slot_index];
     if (!slot.occupied || slot.record.lifecycle != EntityLifecycleState::Destroyed)
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_invalid_state", "only destroyed entities can be permanently removed"));
+            Error("gameplay.entity_invalid_state",
+                  "only destroyed entities can be permanently removed"));
     if (!CanRecordChanges(1))
         return foundation::Result<void>::Failure(
             Error("gameplay.change_sequence_exhausted", "entity change sequence is exhausted"));
@@ -619,7 +682,9 @@ foundation::Result<void> EntityService::Remove(EntityId id, GameplayContext cont
             return foundation::Result<void>::Failure(
                 Error("gameplay.entity_storage_failed", "unable to reserve free-slot storage"));
         }
+
     }
+
     auto final = slot.record;
     final.lifecycle = EntityLifecycleState::Removed;
     final.revision = rev.Value();
@@ -641,6 +706,7 @@ foundation::Result<void> EntityService::Remove(EntityId id, GameplayContext cont
     pending_destroy_reasons_.erase(id);
     pending_destroy_contexts_.erase(id);
     slot.record = {};
+
     slot.occupied = false;
     if (slot.generation != std::numeric_limits<std::uint32_t>::max()) {
         ++slot.generation;
@@ -648,14 +714,17 @@ foundation::Result<void> EntityService::Remove(EntityId id, GameplayContext cont
             ++slot.generation;
         free_slots_.push_back(slot_index);
     }
+
     return foundation::Result<void>::Success();
 }
 
 foundation::Result<void> EntityService::Convert(EntityId id, EntityArchetypeId new_archetype,
-                                                EntityConversionPolicy policy, GameplayContext context) {
+                                                EntityConversionPolicy policy,
+                                                GameplayContext context) {
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (record->lifecycle != EntityLifecycleState::Alive)
         return foundation::Result<void>::Failure(
             Error("gameplay.entity_invalid_state", "only alive entities can be converted"));
@@ -663,7 +732,8 @@ foundation::Result<void> EntityService::Convert(EntityId id, EntityArchetypeId n
     if (definition == nullptr)
         return foundation::Result<void>::Failure(
             Error("gameplay.entity_archetype_unknown", "target archetype is not registered"));
-    if (record->archetype == new_archetype && policy.preserve_instance_tags && policy.preserve_persistence)
+    if (record->archetype == new_archetype && policy.preserve_instance_tags &&
+        policy.preserve_persistence)
         return foundation::Result<void>::Success();
     if (!CanRecordChanges(1))
         return foundation::Result<void>::Failure(
@@ -675,6 +745,7 @@ foundation::Result<void> EntityService::Convert(EntityId id, EntityArchetypeId n
     record->archetype = new_archetype;
     if (!policy.preserve_instance_tags)
         record->instance_tags = {};
+
     if (!policy.preserve_persistence)
         record->persistence = definition->persistence;
     record->revision = rev.Value();
@@ -695,17 +766,20 @@ foundation::Result<void> EntityService::Convert(EntityId id, EntityArchetypeId n
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> EntityService::SetMaterializationState(EntityId id, EntityMaterializationState state,
+foundation::Result<void> EntityService::SetMaterializationState(EntityId id,
+                                                                EntityMaterializationState state,
                                                                 GameplayContext context) {
     if (!IsValid(state))
-        return foundation::Result<void>::Failure(
-            Error("gameplay.entity_materialization_invalid", "entity materialization state is invalid"));
+        return foundation::Result<void>::Failure(Error("gameplay.entity_materialization_invalid",
+                                                       "entity materialization state is invalid"));
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (record->lifecycle != EntityLifecycleState::Alive)
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_invalid_state", "only alive entities can change materialization state"));
+            Error("gameplay.entity_invalid_state",
+                  "only alive entities can change materialization state"));
     if (record->materialization == state)
         return foundation::Result<void>::Success();
     if (!CanRecordChanges(1))
@@ -736,13 +810,16 @@ foundation::Result<void> EntityService::SetMaterializationState(EntityId id, Ent
 
 foundation::Result<void> EntityService::AddTag(EntityId id, TagId tag, GameplayContext context) {
     if (!tag.IsValid())
-        return foundation::Result<void>::Failure(Error("gameplay.tag_invalid", "tag must be valid"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.tag_invalid", "tag must be valid"));
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (!IsMutableLifecycle(record->lifecycle))
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_invalid_state", "only alive or dormant entities may change instance tags"));
+            Error("gameplay.entity_invalid_state",
+                  "only alive or dormant entities may change instance tags"));
     if (record->instance_tags.HasExact(tag))
         return foundation::Result<void>::Success();
     if (!CanRecordChanges(1))
@@ -773,10 +850,12 @@ foundation::Result<void> EntityService::AddTag(EntityId id, TagId tag, GameplayC
 foundation::Result<void> EntityService::RemoveTag(EntityId id, TagId tag, GameplayContext context) {
     auto *record = FindMutable(id);
     if (record == nullptr)
-        return foundation::Result<void>::Failure(Error("gameplay.entity_unknown", "entity does not exist"));
+        return foundation::Result<void>::Failure(
+            Error("gameplay.entity_unknown", "entity does not exist"));
     if (!IsMutableLifecycle(record->lifecycle))
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_invalid_state", "only alive or dormant entities may change instance tags"));
+            Error("gameplay.entity_invalid_state",
+                  "only alive or dormant entities may change instance tags"));
     if (!record->instance_tags.HasExact(tag))
         return foundation::Result<void>::Success();
     if (!CanRecordChanges(1))
@@ -810,23 +889,24 @@ std::vector<EntityRecord> EntityService::AllEntities() const {
     for (const auto &slot : slots_)
         if (slot.occupied)
             result.push_back(slot.record);
-    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(result.begin(), result.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     return result;
 }
+
 std::vector<EntityRecord> EntityService::FindByArchetype(EntityArchetypeId archetype) const {
     std::vector<EntityRecord> result;
     result.reserve(id_to_slot_.size());
     for (const auto &slot : slots_)
         if (slot.occupied && slot.record.archetype == archetype)
             result.push_back(slot.record);
-    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(result.begin(), result.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     return result;
 }
-std::vector<EntityRecord> EntityService::FindByTag(TagId tag, const GameplayTagRegistry &registry) const {
+
+std::vector<EntityRecord> EntityService::FindByTag(TagId tag,
+                                                   const GameplayTagRegistry &registry) const {
     std::vector<EntityRecord> result;
     result.reserve(id_to_slot_.size());
     for (const auto &slot : slots_) {
@@ -837,31 +917,32 @@ std::vector<EntityRecord> EntityService::FindByTag(TagId tag, const GameplayTagR
             slot.record.instance_tags.HasMatching(tag, registry))
             result.push_back(slot.record);
     }
-    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(result.begin(), result.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     return result;
 }
+
 std::vector<EntityRecord> EntityService::FindByLifecycle(EntityLifecycleState lifecycle) const {
     std::vector<EntityRecord> result;
     result.reserve(id_to_slot_.size());
     for (const auto &slot : slots_)
         if (slot.occupied && slot.record.lifecycle == lifecycle)
             result.push_back(slot.record);
-    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(result.begin(), result.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     return result;
 }
-std::vector<EntityRecord> EntityService::FindByMaterialization(EntityMaterializationState state) const {
+
+std::vector<EntityRecord>
+EntityService::FindByMaterialization(EntityMaterializationState state) const {
     std::vector<EntityRecord> result;
     result.reserve(id_to_slot_.size());
     for (const auto &slot : slots_)
         if (slot.occupied && slot.record.materialization == state)
             result.push_back(slot.record);
-    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(result.begin(), result.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     return result;
 }
 
@@ -871,25 +952,35 @@ std::vector<EntityChange> EntityService::ChangesSinceSequence(std::uint64_t sequ
                                             return value < change.sequence;
                                         });
     return {found, changes_.end()};
+
 }
+
 EntityChangeBatch EntityService::ReadChangesSince(ChangeCursor cursor) const {
     EntityChangeBatch batch;
-    batch.oldest_available_cursor = {journal_epoch_,
-                                     changes_.empty() ? next_change_sequence_ : changes_.front().sequence};
+    batch.oldest_available_cursor = {journal_epoch_, changes_.empty() ? next_change_sequence_
+                                                                      : changes_.front().sequence};
+
     batch.latest_cursor = {journal_epoch_, last_change_sequence_};
-    if ((!cursor.IsValid() && cursor.sequence != 0) || (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
+
+    if ((!cursor.IsValid() && cursor.sequence != 0) ||
+        (cursor.IsValid() && cursor.epoch != journal_epoch_)) {
         batch.snapshot_required = true;
         return batch;
     }
+
     batch.changes = ChangesSinceSequence(cursor.sequence);
-    if (!batch.snapshot_required && batch.changes.empty() && cursor.sequence < batch.latest_cursor.sequence)
+    if (!batch.snapshot_required && batch.changes.empty() &&
+        cursor.sequence < batch.latest_cursor.sequence)
         batch.snapshot_required = true;
-    if (!changes_.empty() && changes_.front().sequence > 1 && cursor.sequence < changes_.front().sequence - 1) {
+    if (!changes_.empty() && changes_.front().sequence > 1 &&
+        cursor.sequence < changes_.front().sequence - 1) {
         batch.changes.clear();
         batch.snapshot_required = true;
     }
+
     return batch;
 }
+
 void EntityService::PruneChangesBefore(std::uint64_t sequence) {
     const auto found = std::lower_bound(changes_.begin(), changes_.end(), sequence,
                                         [](const EntityChange &change, std::uint64_t value) {
@@ -910,6 +1001,7 @@ EntitySnapshot EntityService::CaptureSnapshot() const {
         record.materialization = EntityMaterializationState::Abstract;
         snapshot.records.push_back(std::move(record));
     }
+
     for (const auto id : pending_destroy_) {
         const auto *record = FindInternal(id);
         if (record == nullptr || record->persistence != EntityPersistencePolicy::Persistent ||
@@ -919,26 +1011,26 @@ EntitySnapshot EntityService::CaptureSnapshot() const {
         pending.entity = id;
         if (const auto it = pending_destroy_reasons_.find(id); it != pending_destroy_reasons_.end())
             pending.reason = it->second;
-        if (const auto it = pending_destroy_contexts_.find(id); it != pending_destroy_contexts_.end())
+        if (const auto it = pending_destroy_contexts_.find(id);
+            it != pending_destroy_contexts_.end())
             pending.context = it->second;
         snapshot.pending_destruction.push_back(std::move(pending));
     }
-    std::sort(snapshot.records.begin(), snapshot.records.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+
+    std::sort(snapshot.records.begin(), snapshot.records.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     std::sort(snapshot.pending_destruction.begin(), snapshot.pending_destruction.end(),
-              [](const auto &a, const auto &b) {
-                  return a.entity < b.entity;
-              });
+              [](const auto &a, const auto &b) { return a.entity < b.entity; });
     return snapshot;
 }
 
 foundation::Result<void> EntityService::RestoreSnapshot(EntitySnapshot snapshot) {
-    const auto next_journal_epoch =
-        CheckedNextChangeEpoch(snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
+    const auto next_journal_epoch = CheckedNextChangeEpoch(
+        snapshot.change_epoch > journal_epoch_ ? snapshot.change_epoch : journal_epoch_);
     if (!next_journal_epoch)
         return foundation::Result<void>::Failure(
-            foundation::Error::Create("gameplay.change_journal.epoch_exhausted", "change journal epoch is exhausted"));
+            foundation::Error::Create("gameplay.change_journal.epoch_exhausted",
+                                      "change journal epoch is exhausted"));
     if (!frozen_)
         return foundation::Result<void>::Failure(
             Error("gameplay.registry_not_frozen", "entity service must be frozen before restore"));
@@ -956,40 +1048,50 @@ foundation::Result<void> EntityService::RestoreSnapshot(EntitySnapshot snapshot)
     const auto restored_generation = ReserveHandleGeneration(max_old_generation);
     if (!restored_generation)
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_handle_generation_exhausted", "cannot invalidate all pre-restore entity handles"));
+            Error("gameplay.entity_handle_generation_exhausted",
+                  "cannot invalidate all pre-restore entity handles"));
 
     for (const auto &record : snapshot.records) {
-        if (!record.id.IsValid() || FindArchetype(record.archetype) == nullptr || !seen.insert(record.id).second ||
-            record.revision > snapshot.revision || record.persistence != EntityPersistencePolicy::Persistent ||
+        if (!record.id.IsValid() || FindArchetype(record.archetype) == nullptr ||
+            !seen.insert(record.id).second || record.revision > snapshot.revision ||
+            record.persistence != EntityPersistencePolicy::Persistent ||
             !IsValid(record.lifecycle) || !IsValid(record.materialization) ||
-            record.lifecycle == EntityLifecycleState::Creating || record.lifecycle == EntityLifecycleState::Removed)
+            record.lifecycle == EntityLifecycleState::Creating ||
+            record.lifecycle == EntityLifecycleState::Removed)
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_snapshot_invalid", "entity snapshot contains invalid or duplicate records"));
+                Error("gameplay.entity_snapshot_invalid",
+                      "entity snapshot contains invalid or duplicate records"));
         if (record.id.High() == snapshot.id_generator.scope && record.id.Low() > max_generated_low)
             max_generated_low = record.id.Low();
     }
+
     if (snapshot.id_generator.next != 0 && snapshot.id_generator.next <= max_generated_low)
         return foundation::Result<void>::Failure(
-            Error("gameplay.entity_snapshot_invalid", "entity id generator can reproduce a restored entity id"));
+            Error("gameplay.entity_snapshot_invalid",
+                  "entity id generator can reproduce a restored entity id"));
 
     std::unordered_map<EntityId, PendingEntityDestruction, EntityIdHash> pending_by_id;
     for (const auto &pending : snapshot.pending_destruction) {
         if (!pending.entity.IsValid() || !IsValid(pending.reason) ||
             !pending_by_id.emplace(pending.entity, pending).second)
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_snapshot_invalid", "pending destruction records are invalid or duplicated"));
-        const auto record = std::find_if(snapshot.records.begin(), snapshot.records.end(), [&](const auto &r) {
-            return r.id == pending.entity;
-        });
-        if (record == snapshot.records.end() || record->lifecycle != EntityLifecycleState::PendingDestroy)
+                Error("gameplay.entity_snapshot_invalid",
+                      "pending destruction records are invalid or duplicated"));
+        const auto record = std::find_if(snapshot.records.begin(), snapshot.records.end(),
+                                         [&](const auto &r) { return r.id == pending.entity; });
+        if (record == snapshot.records.end() ||
+            record->lifecycle != EntityLifecycleState::PendingDestroy)
             return foundation::Result<void>::Failure(
                 Error("gameplay.entity_snapshot_invalid",
                       "pending destruction metadata does not reference a pending entity"));
     }
+
     for (const auto &record : snapshot.records)
-        if (record.lifecycle == EntityLifecycleState::PendingDestroy && !pending_by_id.contains(record.id))
+        if (record.lifecycle == EntityLifecycleState::PendingDestroy &&
+            !pending_by_id.contains(record.id))
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_snapshot_invalid", "pending entity is missing destruction provenance"));
+                Error("gameplay.entity_snapshot_invalid",
+                      "pending entity is missing destruction provenance"));
 
     std::vector<Slot> rebuilt_slots;
     std::unordered_map<EntityId, std::uint32_t, EntityIdHash> rebuilt_index;
@@ -1006,7 +1108,8 @@ foundation::Result<void> EntityService::RestoreSnapshot(EntitySnapshot snapshot)
         slot.occupied = true;
         if (test_seam::Consume(test_seam::FaultPoint::RestoreCandidateBuild))
             return foundation::Result<void>::Failure(
-                Error("gameplay.entity_storage_failed", "failed while constructing entity snapshot candidates"));
+                Error("gameplay.entity_storage_failed",
+                      "failed while constructing entity snapshot candidates"));
         rebuilt_index.emplace(slot.record.id, slot_index);
         if (slot.record.lifecycle == EntityLifecycleState::PendingDestroy) {
             rebuilt_pending.push_back(slot.record.id);
@@ -1014,6 +1117,7 @@ foundation::Result<void> EntityService::RestoreSnapshot(EntitySnapshot snapshot)
             rebuilt_reasons.emplace(slot.record.id, metadata.reason);
             rebuilt_contexts.emplace(slot.record.id, metadata.context);
         }
+
         rebuilt_slots.push_back(std::move(slot));
     }
 
@@ -1057,6 +1161,8 @@ EntitiesDiagnostics EntityService::GetDiagnostics() const noexcept {
         if (slot.record.lifecycle == EntityLifecycleState::PendingDestroy)
             ++result.pending_destruction;
     }
+
     return result;
 }
+
 } // namespace epidemic::gameplay::entities

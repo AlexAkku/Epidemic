@@ -22,6 +22,7 @@ inline constexpr std::size_t kMaxAssetTags = 1024;
 
 struct AssetDependency {
     AssetId asset_id{};
+
     bool required = true;
 
     [[nodiscard]] constexpr bool operator==(const AssetDependency &) const noexcept = default;
@@ -29,8 +30,11 @@ struct AssetDependency {
 
 struct AssetMetadata {
     AssetId id{};
+
     AssetType type{};
+
     AssetLocation location{};
+
     AssetState state = AssetState::Unknown;
     std::vector<AssetDependency> dependencies;
     std::vector<foundation::StringId> tags;
@@ -40,4 +44,5 @@ struct AssetMetadata {
     // Version zero is reserved as invalid for registered metadata.
     std::uint32_t version = 0;
 };
-}
+
+} // namespace epidemic::runtime

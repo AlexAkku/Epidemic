@@ -15,4 +15,5 @@ struct AssetType {
 
     [[nodiscard]] constexpr bool operator==(const AssetType &) const noexcept = default;
 };
-}
+
+} // namespace epidemic::runtime

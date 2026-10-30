@@ -16,8 +16,10 @@ using namespace epidemic::gameplay;
 namespace {
 void HeadlessApplicationBootsRunsAndStops() {
     epidemic::core::Application application({"TruthSmokeBase"});
-    const auto logger = epidemic::enginebase::RegisterEngineBase(
-        application, {.runtime_name = "TruthSmokeBase", .log_module = "TruthSmoke", .worker_count = 2});
+    const auto logger =
+        epidemic::enginebase::RegisterEngineBase(application, {.runtime_name = "TruthSmokeBase",
+                                                               .log_module = "TruthSmoke",
+                                                               .worker_count = 2});
     TRUTH_REQUIRE(logger != nullptr);
     application.SetFrameLimit(3);
     TRUTH_REQUIRE(application.Bootstrap() == 0);
@@ -40,11 +42,15 @@ void RuntimeClockProjectsIntoGameplayClock() {
     gameplay_time.Freeze();
 
     const GameplayObjectRef owner{domain, GameplayObjectId::FromString("world")};
-    TRUTH_REQUIRE(gameplay_time.Schedule(clock.Value(), GameplayTimePoint{120}, owner, action.Value()));
+
+    TRUTH_REQUIRE(
+        gameplay_time.Schedule(clock.Value(), GameplayTimePoint{120}, owner, action.Value()));
     TRUTH_REQUIRE(runtime_time.Value().runtime->Advance(std::chrono::seconds{2}));
     const auto runtime_now = runtime_time.Value().clock->Now();
     TRUTH_REQUIRE(runtime_now.ticks == 120);
-    TRUTH_REQUIRE(gameplay_time.SynchronizeClock(clock.Value(), GameplayTimePoint{runtime_now.ticks}, Revision{1}));
+    TRUTH_REQUIRE(gameplay_time.SynchronizeClock(clock.Value(),
+                                                 GameplayTimePoint{runtime_now.ticks},
+                                                 Revision{1}));
     const auto triggers = gameplay_time.CollectDue(clock.Value());
     TRUTH_REQUIRE(triggers && triggers.Value().size() == 1);
 }
@@ -68,6 +74,7 @@ void SavedGameplaySessionContinuesAfterRestore() {
     ProgressionTrackDefinition experience;
     experience.canonical_name = "truth.smoke.experience";
     experience.rank_thresholds_micro = {100, 250};
+
     const auto track = progression.RegisterTrack(experience);
     TRUTH_REQUIRE(track && progression.Freeze());
     const auto actor_ref = EntityService::ToGameplayObjectRef(actor.Value().id);
@@ -105,17 +112,22 @@ void CompleteRuntimeCompositionTicksAndShutsDown() {
         TRUTH_REQUIRE(result);
         TRUTH_REQUIRE(!result.Value().executed_steps.empty());
     }
+
     TRUTH_REQUIRE(runtime.Value().coordinator->Shutdown());
 }
+
 } // namespace
 
 int main() {
-    return epidemic::truth_tests::Run(
-        "engine-smoke",
-        {
-            {"headless application boots runs and stops", &HeadlessApplicationBootsRunsAndStops},
-            {"runtime clock projects into gameplay clock", &RuntimeClockProjectsIntoGameplayClock},
-            {"saved gameplay session continues after restore", &SavedGameplaySessionContinuesAfterRestore},
-            {"complete runtime composition ticks and shuts down", &CompleteRuntimeCompositionTicksAndShutsDown},
-        });
+    return epidemic::truth_tests::Run("engine-smoke",
+                                      {
+                                          {"headless application boots runs and stops",
+                                           &HeadlessApplicationBootsRunsAndStops},
+                                          {"runtime clock projects into gameplay clock",
+                                           &RuntimeClockProjectsIntoGameplayClock},
+                                          {"saved gameplay session continues after restore",
+                                           &SavedGameplaySessionContinuesAfterRestore},
+                                          {"complete runtime composition ticks and shuts down",
+                                           &CompleteRuntimeCompositionTicksAndShutsDown},
+                                      });
 }

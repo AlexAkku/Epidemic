@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Epidemic/Foundation/string_id.h"
+
 namespace epidemic::runtime {
 struct ResourceType {
     foundation::StringId value{};
@@ -11,4 +12,5 @@ struct ResourceType {
 
     [[nodiscard]] constexpr bool operator==(const ResourceType &) const noexcept = default;
 };
-}
+
+} // namespace epidemic::runtime

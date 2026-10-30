@@ -17,36 +17,42 @@ class InMemoryArchiveWriter final : public IArchiveWriter {
 
     [[nodiscard]] foundation::Result<void> BeginObject(std::string_view name) override;
     [[nodiscard]] foundation::Result<void> EndObject() override;
-    [[nodiscard]] foundation::Result<void> BeginArray(std::string_view name, std::size_t size) override;
+    [[nodiscard]] foundation::Result<void> BeginArray(std::string_view name,
+                                                      std::size_t size) override;
     [[nodiscard]] foundation::Result<void> BeginArrayElement(std::size_t index) override;
     [[nodiscard]] foundation::Result<void> EndArrayElement() override;
     [[nodiscard]] foundation::Result<void> EndArray() override;
 
-    [[nodiscard]] foundation::Result<void> WriteString(std::string_view name, std::string_view value) override;
-    [[nodiscard]] foundation::Result<void> WriteUInt64(std::string_view name, std::uint64_t value) override;
-    [[nodiscard]] foundation::Result<void> WriteInt64(std::string_view name, std::int64_t value) override;
-    [[nodiscard]] foundation::Result<void> WriteDouble(std::string_view name, double value) override;
+    [[nodiscard]] foundation::Result<void> WriteString(std::string_view name,
+                                                       std::string_view value) override;
+    [[nodiscard]] foundation::Result<void> WriteUInt64(std::string_view name,
+                                                       std::uint64_t value) override;
+    [[nodiscard]] foundation::Result<void> WriteInt64(std::string_view name,
+                                                      std::int64_t value) override;
+    [[nodiscard]] foundation::Result<void> WriteDouble(std::string_view name,
+                                                       double value) override;
     [[nodiscard]] foundation::Result<void> WriteBool(std::string_view name, bool value) override;
-    [[nodiscard]] foundation::Result<void> WriteBytes(std::string_view name, std::span<const std::byte> value) override;
+    [[nodiscard]] foundation::Result<void> WriteBytes(std::string_view name,
+                                                      std::span<const std::byte> value) override;
     [[nodiscard]] foundation::Result<void> WriteNull(std::string_view name) override;
-    [[nodiscard]] foundation::Result<SerializedDocument> Finalize(foundation::StringId type_id,
-                                                                  SchemaVersion schema_version) override;
+    [[nodiscard]] foundation::Result<SerializedDocument>
+    Finalize(foundation::StringId type_id, SchemaVersion schema_version) override;
 
     [[nodiscard]] ArchiveObjectPtr Snapshot() const;
-    [[nodiscard]] foundation::Result<void> MergeRootFieldsTransactional(const ArchiveObject &source);
+    [[nodiscard]] foundation::Result<void>
+    MergeRootFieldsTransactional(const ArchiveObject &source);
 
   private:
     friend struct SerializationRuntimeTestAccess;
 
-    enum class ContextKind {
-        Object,
-        Array,
-        ArrayElement
-    };
+    enum class ContextKind { Object, Array, ArrayElement };
+
     struct Context {
         ContextKind kind = ContextKind::Object;
         ArchiveObjectPtr object{};
+
         ArchiveArrayPtr array{};
+
     };
 
     [[nodiscard]] foundation::Result<void> EnsureWritable() const;
@@ -83,19 +89,18 @@ class InMemoryArchiveReader final : public IArchiveReader {
     [[nodiscard]] foundation::Result<void> EndArray() override;
 
     [[nodiscard]] foundation::Result<std::string> ReadString(std::string_view name) const override;
-    [[nodiscard]] foundation::Result<std::uint64_t> ReadUInt64(std::string_view name) const override;
+    [[nodiscard]] foundation::Result<std::uint64_t>
+    ReadUInt64(std::string_view name) const override;
     [[nodiscard]] foundation::Result<std::int64_t> ReadInt64(std::string_view name) const override;
     [[nodiscard]] foundation::Result<double> ReadDouble(std::string_view name) const override;
     [[nodiscard]] foundation::Result<bool> ReadBool(std::string_view name) const override;
-    [[nodiscard]] foundation::Result<std::vector<std::byte>> ReadBytes(std::string_view name) const override;
+    [[nodiscard]] foundation::Result<std::vector<std::byte>>
+    ReadBytes(std::string_view name) const override;
     [[nodiscard]] foundation::Result<bool> IsNull(std::string_view name) const override;
 
   private:
-    enum class ContextKind {
-        Object,
-        Array,
-        ArrayElement
-    };
+    enum class ContextKind { Object, Array, ArrayElement };
+
     struct Context {
         ContextKind kind = ContextKind::Object;
         const ArchiveObject *object = nullptr;
@@ -106,6 +111,7 @@ class InMemoryArchiveReader final : public IArchiveReader {
     [[nodiscard]] foundation::Result<const ArchiveValue *> FindValue(std::string_view name) const;
 
     SerializedDocument document_{};
+
     std::vector<Context> stack_;
 };
 
@@ -115,4 +121,5 @@ class InMemoryArchiveFactory final : public IArchiveFactory {
     [[nodiscard]] foundation::Result<std::unique_ptr<IArchiveReader>>
     CreateReader(const SerializedDocument &document) const override;
 };
+
 } // namespace epidemic::runtime

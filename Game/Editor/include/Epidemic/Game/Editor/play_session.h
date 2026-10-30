@@ -4,53 +4,87 @@
 namespace epidemic::game::editor {
 class PlayActivation final {
   public:
-    [[nodiscard]] std::uint64_t Id() const noexcept { return id_; }
-    [[nodiscard]] bool IsFinished() const noexcept { return finished_; }
-    [[nodiscard]] std::optional<runtime::graph::ExecutionReport> Report() const { return report_; }
+    [[nodiscard]] std::uint64_t Id() const noexcept {
+        return id_;
+    }
+
+    [[nodiscard]] bool IsFinished() const noexcept {
+        return finished_;
+    }
+
+    [[nodiscard]] std::optional<runtime::graph::ExecutionReport> Report() const {
+        return report_;
+    }
+
   private:
-    explicit PlayActivation(std::uint64_t id) : id_(id) {}
+    explicit PlayActivation(std::uint64_t id) : id_(id) {
+    }
+
     std::uint64_t id_;
     bool finished_ = false;
     std::optional<runtime::graph::ExecutionReport> report_;
     friend class PlaySession;
 };
+
 struct PlayContext {
-    PlayContext(gameplay::entities::EntityService &entity_service, comp::ComponentStore &component_store,
-        comp::GraphBehaviorService &behavior_service, comp::PrefabComposer &composer,
-        gameplay::runtime_bridge::RuntimeBridgeService &runtime_bridge)
-        : entities(entity_service), components(component_store), behaviors(behavior_service), prefabs(composer), bridge(runtime_bridge) {}
+    PlayContext(gameplay::entities::EntityService &entity_service,
+                comp::ComponentStore &component_store, comp::GraphBehaviorService &behavior_service,
+                comp::PrefabComposer &composer,
+                gameplay::runtime_bridge::RuntimeBridgeService &runtime_bridge)
+        : entities(entity_service), components(component_store), behaviors(behavior_service),
+          prefabs(composer), bridge(runtime_bridge) {
+    }
+
     gameplay::entities::EntityService &entities;
     comp::ComponentStore &components;
     comp::GraphBehaviorService &behaviors;
     comp::PrefabComposer &prefabs;
     gameplay::runtime_bridge::RuntimeBridgeService &bridge;
-    composition::SceneCompositionInstance *scene=nullptr;
-    [[nodiscard]] foundation::Result<runtime::Transform> WorldTransform(gameplay::entities::EntityHandle entity) const {
-        if(scene)return composition::GetEntityWorldTransform(*scene,entities,entity);
-        return foundation::Result<runtime::Transform>::Failure(foundation::Error::Create("editor.play_scene_unavailable","Play Scene is not initialized"));
+    composition::SceneCompositionInstance *scene = nullptr;
+
+    [[nodiscard]] foundation::Result<runtime::Transform>
+    WorldTransform(gameplay::entities::EntityHandle entity) const {
+        if (scene)
+            return composition::GetEntityWorldTransform(*scene, entities, entity);
+        return foundation::Result<runtime::Transform>::Failure(
+            foundation::Error::Create("editor.play_scene_unavailable",
+                                      "Play Scene is not initialized"));
     }
-    [[nodiscard]] foundation::Result<void> SetWorldTransform(gameplay::entities::EntityHandle entity,const runtime::Transform &transform){
-        if(scene)return composition::SetEntityWorldTransform(*scene,entities,entity,transform);
-        return foundation::Result<void>::Failure(foundation::Error::Create("editor.play_scene_unavailable","Play Scene is not initialized"));
+
+    [[nodiscard]] foundation::Result<void>
+    SetWorldTransform(gameplay::entities::EntityHandle entity,
+                      const runtime::Transform &transform) {
+        if (scene)
+            return composition::SetEntityWorldTransform(*scene, entities, entity, transform);
+        return foundation::Result<void>::Failure(
+            foundation::Error::Create("editor.play_scene_unavailable",
+                                      "Play Scene is not initialized"));
     }
+
 };
+
 struct PlayOptions {
     std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend;
     // Called once per Graph with this session's services. Native callables must
     // capture this runtime context, never an authoring Entity/ComponentStore.
     std::function<std::vector<composition::NodeBinding>(PlayContext &, runtime::AssetId)> bindings;
 };
+
 // Detached visual metadata. Pixels remain owned by the session's Resources;
 // source edits cannot mutate this generation while Play is active.
 struct PlaySprite {
     runtime::SceneNodeId placement{};
+
     runtime::AssetId texture{};
-    std::uint64_t generation=0,region_id=0;
+
+    std::uint64_t generation = 0, region_id = 0;
     std::string cooked_key;
-    std::uint32_t x=0,y=0,width=0,height=0;
-    float pivot_x=0.5f,pivot_y=0.5f,pixels_per_unit=64;
+    std::uint32_t x = 0, y = 0, width = 0, height = 0;
+    float pivot_x = 0.5f, pivot_y = 0.5f, pixels_per_unit = 64;
     runtime::Transform world{};
+
 };
+
 class PlaySession final {
   public:
     ~PlaySession();
@@ -63,24 +97,32 @@ class PlaySession final {
     // and update after Send/Tick/Stop. IDs are monotonic within this session.
     [[nodiscard]] std::vector<std::shared_ptr<const PlayActivation>> Activations() const;
     [[nodiscard]] foundation::Result<void> Tick(runtime::GameDuration advance = {});
-    [[nodiscard]] foundation::Result<std::size_t> Send(runtime::SceneNodeId placement, const comp::GameEvent &event);
+    [[nodiscard]] foundation::Result<std::size_t> Send(runtime::SceneNodeId placement,
+                                                       const comp::GameEvent &event);
     [[nodiscard]] foundation::Result<void> Stop();
     [[nodiscard]] PlayContext *Context() noexcept;
-    [[nodiscard]] const comp::PrefabInstance *Instance(runtime::SceneNodeId placement) const noexcept;
+    [[nodiscard]] const comp::PrefabInstance *
+    Instance(runtime::SceneNodeId placement) const noexcept;
     // Detached Inspector value; no runtime handle or mutable service escapes.
-    [[nodiscard]] foundation::Result<comp::PropertyValue> ReadComponentProperty(runtime::SceneNodeId placement,
-        comp::PrefabNodeId node,gameplay::TypeId type,gameplay::entities::EntityPartId part,comp::PropertyId property) const;
+    [[nodiscard]] foundation::Result<comp::PropertyValue>
+    ReadComponentProperty(runtime::SceneNodeId placement, comp::PrefabNodeId node,
+                          gameplay::TypeId type, gameplay::entities::EntityPartId part,
+                          comp::PropertyId property) const;
     [[nodiscard]] const composition::SceneCompositionInstance *Scene() const noexcept;
     [[nodiscard]] foundation::Result<PlaySprite> ReadSprite(runtime::SceneNodeId placement) const;
+
   private:
     struct Impl;
     explicit PlaySession(std::unique_ptr<Impl> impl);
-    [[nodiscard]] static foundation::Result<std::unique_ptr<PlaySession>> Start(
-        std::shared_ptr<const ProjectSnapshot> snapshot, const ProjectSchema &schema, PlayOptions options);
+    [[nodiscard]] static foundation::Result<std::unique_ptr<PlaySession>>
+    Start(std::shared_ptr<const ProjectSnapshot> snapshot, const ProjectSchema &schema,
+          PlayOptions options);
     std::unique_ptr<Impl> impl_;
     bool ticking_ = false;
     friend class EditorProject;
     friend class ProjectFolder;
-    [[nodiscard]] foundation::Result<void> InstallSprites(const std::filesystem::path &root,std::vector<PlaySprite> sprites);
+    [[nodiscard]] foundation::Result<void> InstallSprites(const std::filesystem::path &root,
+                                                          std::vector<PlaySprite> sprites);
 };
+
 } // namespace epidemic::game::editor

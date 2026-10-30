@@ -28,4 +28,5 @@ class IModule {
     // Releases runtime state in reverse dependency order.
     virtual void Shutdown(ServiceContainer &services) = 0;
 };
+
 } // namespace epidemic::core

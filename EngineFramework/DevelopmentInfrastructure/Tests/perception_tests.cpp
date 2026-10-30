@@ -15,8 +15,11 @@ using namespace epidemic::gameplay::perception;
 namespace {
 GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
+
 }
-PerceiverEvaluationSample Sample(GameplayObjectRef subject, WorldPosition position = {}, WorldDirection forward = {}) {
+
+PerceiverEvaluationSample Sample(GameplayObjectRef subject, WorldPosition position = {},
+                                 WorldDirection forward = {}) {
     PerceiverEvaluationSample sample;
     sample.subject = subject;
     sample.position = position;
@@ -25,16 +28,20 @@ PerceiverEvaluationSample Sample(GameplayObjectRef subject, WorldPosition positi
     sample.runtime_projection_available = true;
     return sample;
 }
+
 class ThrowingEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override {
+    epidemic::foundation::Result<SenseEvaluationResult>
+    Evaluate(const SenseEvaluationInput &) const override {
         throw std::runtime_error("test");
     }
+
 };
 
 class AbstractNoSampleEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const override {
+    epidemic::foundation::Result<SenseEvaluationResult>
+    Evaluate(const SenseEvaluationInput &input) const override {
         SenseEvaluationResult result;
         result.score_micro = 1'000'000;
         result.identified_subject = true;
@@ -42,32 +49,41 @@ class AbstractNoSampleEvaluator final : public ISenseEvaluator {
         result.perceived_position = input.stimulus.position;
         return epidemic::foundation::Result<SenseEvaluationResult>::Success(result);
     }
+
 };
 
 class ZeroEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override {
+    epidemic::foundation::Result<SenseEvaluationResult>
+    Evaluate(const SenseEvaluationInput &) const override {
         SenseEvaluationResult result;
         return epidemic::foundation::Result<SenseEvaluationResult>::Success(result);
     }
+
 };
 
 class FailingEvaluator final : public ISenseEvaluator {
   public:
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &) const override {
+    epidemic::foundation::Result<SenseEvaluationResult>
+    Evaluate(const SenseEvaluationInput &) const override {
         return epidemic::foundation::Result<SenseEvaluationResult>::Failure(
-            epidemic::foundation::Error::Create("test.perception.evaluator_failure", "expected evaluator failure"));
+            epidemic::foundation::Error::Create("test.perception.evaluator_failure",
+                                                "expected evaluator failure"));
     }
+
 };
 
 class CountingEvaluator final : public ISenseEvaluator {
   public:
     mutable std::vector<GameplayObjectRef> subjects;
-    epidemic::foundation::Result<SenseEvaluationResult> Evaluate(const SenseEvaluationInput &input) const override {
+
+    epidemic::foundation::Result<SenseEvaluationResult>
+    Evaluate(const SenseEvaluationInput &input) const override {
         subjects.push_back(input.perceiver.subject);
         SenseEvaluationResult result;
         return epidemic::foundation::Result<SenseEvaluationResult>::Success(result);
     }
+
 };
 
 bool TestSpatialBoundaryMath() {
@@ -100,6 +116,7 @@ bool TestSpatialBoundaryMath() {
     profile.id = profile_id;
     profile.canonical_name = "test.boundary.profile";
     profile.senses = {hearing, vision};
+
     if (!service.RegisterProfileDefinition(profile))
         return false;
     service.Freeze();
@@ -113,9 +130,12 @@ bool TestSpatialBoundaryMath() {
         stimulus.position = position;
         stimulus.strength_micro = 1'000'000;
         stimulus.created_at = {0};
+
         stimulus.lifetime = {100};
+
         auto id = service.CreateStimulus(stimulus);
         return id ? id.Value() : PerceptionStimulusId{};
+
     };
 
     const auto below = create_stimulus({3'000'000'000LL, 0, 0});
@@ -129,7 +149,8 @@ bool TestSpatialBoundaryMath() {
     const auto at_result = service.EvaluateAudibility(observer, at, origin_sample);
     const auto above_result = service.EvaluateAudibility(observer, above, origin_sample);
     const auto outside_result = service.EvaluateAudibility(observer, outside, origin_sample);
-    if (!(below_result.score_micro > at_result.score_micro && at_result.score_micro > above_result.score_micro) ||
+    if (!(below_result.score_micro > at_result.score_micro &&
+          at_result.score_micro > above_result.score_micro) ||
         above_result.score_micro <= 0 || outside_result.score_micro != 0 ||
         outside_result.state != PerceptionAudibilityState::NotHeard)
         return false;
@@ -145,6 +166,7 @@ bool TestSpatialBoundaryMath() {
     four_billion_profile.id = PerceiverProfileId::FromString("test.boundary.four_billion.profile");
     four_billion_profile.canonical_name = "test.boundary.four_billion.profile";
     four_billion_profile.senses = {four_billion_hear.id};
+
     if (!four_billion.RegisterProfileDefinition(four_billion_profile))
         return false;
     four_billion.Freeze();
@@ -156,10 +178,13 @@ bool TestSpatialBoundaryMath() {
     four_billion_stimulus.position = {4'000'000'000LL, 0, 0};
     four_billion_stimulus.strength_micro = 1'000'000;
     four_billion_stimulus.created_at = {0};
+
     four_billion_stimulus.lifetime = {100};
+
     auto four_billion_id = four_billion.CreateStimulus(four_billion_stimulus);
     if (!four_billion_id ||
-        four_billion.EvaluateAudibility(observer, four_billion_id.Value(), origin_sample).score_micro != 0)
+        four_billion.EvaluateAudibility(observer, four_billion_id.Value(), origin_sample)
+                .score_micro != 0)
         return false;
 
     // A 4e9 x 4e9 diagonal is farther than a 5e9 range. The old squared-distance saturation
@@ -175,6 +200,7 @@ bool TestSpatialBoundaryMath() {
     diagonal_profile.id = PerceiverProfileId::FromString("test.boundary.diagonal.profile");
     diagonal_profile.canonical_name = "test.boundary.diagonal.profile";
     diagonal_profile.senses = {diagonal_hear.id};
+
     if (!diagonal.RegisterProfileDefinition(diagonal_profile))
         return false;
     diagonal.Freeze();
@@ -184,11 +210,15 @@ bool TestSpatialBoundaryMath() {
     diagonal_stimulus.sense = diagonal_hear.id;
     diagonal_stimulus.source = source;
     diagonal_stimulus.position = {4'000'000'000LL, 4'000'000'000LL, 0};
+
     diagonal_stimulus.strength_micro = 1'000'000;
     diagonal_stimulus.created_at = {0};
+
     diagonal_stimulus.lifetime = {100};
+
     auto diagonal_id = diagonal.CreateStimulus(diagonal_stimulus);
-    if (!diagonal_id || diagonal.EvaluateAudibility(observer, diagonal_id.Value(), origin_sample).score_micro != 0)
+    if (!diagonal_id ||
+        diagonal.EvaluateAudibility(observer, diagonal_id.Value(), origin_sample).score_micro != 0)
         return false;
 
     // Exact difference is formed before floating conversion. This remains one millimetre even
@@ -199,16 +229,19 @@ bool TestSpatialBoundaryMath() {
         service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53 + 1, kTwoTo53, 0});
     if (exact_forward.state == PerceptionVisibilityState::Hidden || exact_forward.score_micro <= 0)
         return false;
-    const auto diagonal_fov =
-        service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53 + 1, kTwoTo53 + 1, 0});
+    const auto diagonal_fov = service.EvaluateVisibility(observer, source, shifted_sample,
+                                                         {kTwoTo53 + 1, kTwoTo53 + 1, 0});
     if (diagonal_fov.state != PerceptionVisibilityState::Hidden)
         return false;
-    const auto zero_vector = service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53, kTwoTo53, 0});
+    const auto zero_vector =
+        service.EvaluateVisibility(observer, source, shifted_sample, {kTwoTo53, kTwoTo53, 0});
     if (zero_vector.state != PerceptionVisibilityState::Hidden)
         return false;
-    const auto extreme = service.EvaluateVisibility(
-        observer, source, Sample(observer, {std::numeric_limits<Fixed>::min(), 0, 0}, {1'000'000, 0, 0}),
-        {std::numeric_limits<Fixed>::max(), 0, 0});
+    const auto extreme =
+        service.EvaluateVisibility(observer, source,
+                                   Sample(observer, {std::numeric_limits<Fixed>::min(), 0, 0},
+                                          {1'000'000, 0, 0}),
+                                   {std::numeric_limits<Fixed>::max(), 0, 0});
     return extreme.state == PerceptionVisibilityState::Hidden && extreme.score_micro == 0;
 }
 
@@ -233,6 +266,7 @@ bool TestDecayBoundaryArithmetic() {
         profile.id = profile_id;
         profile.canonical_name = "test.decay.profile";
         profile.senses = {hearing};
+
         if (!service.RegisterProfileDefinition(profile))
             return service;
         service.SetTemporalPolicy({GameplayDuration{0}, interval, decay});
@@ -243,19 +277,25 @@ bool TestDecayBoundaryArithmetic() {
         stimulus.sense = hearing;
         stimulus.source = source;
         stimulus.position = {0, 0, 0};
+
         stimulus.strength_micro = 1'000'000;
         stimulus.created_at = {0};
+
         stimulus.lifetime = {std::numeric_limits<Fixed>::max()};
+
         auto id = service.CreateStimulus(stimulus);
         if (id)
-            (void)service.ProcessStimulus(
-                id.Value(),
-                PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{0}, {}, {Sample(observer)}});
+            (void)service.ProcessStimulus(id.Value(),
+                                          PerceptionProcessingContext{GameplayTickId{1},
+                                                                      GameplayTimePoint{0},
+                                                                      {},
+                                                                      {Sample(observer)}});
         return service;
     };
 
     auto boundary = make_service(1, GameplayDuration{1});
     const auto boundary_now = GameplayTimePoint{std::numeric_limits<Fixed>::max() - 1};
+
     if (!boundary.AdvanceTime(boundary_now))
         return false;
     const auto *boundary_awareness = boundary.GetAwareness(observer, source);
@@ -265,11 +305,13 @@ bool TestDecayBoundaryArithmetic() {
 
     auto combined = make_service(1'000, GameplayDuration{3});
     auto partitioned = make_service(1'000, GameplayDuration{3});
-    if (!combined.AdvanceTime({10}) || !partitioned.AdvanceTime({4}) || !partitioned.AdvanceTime({10}))
+    if (!combined.AdvanceTime({10}) || !partitioned.AdvanceTime({4}) ||
+        !partitioned.AdvanceTime({10}))
         return false;
     const auto *combined_awareness = combined.GetAwareness(observer, source);
     const auto *partitioned_awareness = partitioned.GetAwareness(observer, source);
-    return combined_awareness && partitioned_awareness && combined_awareness->last_decay_at.ticks == 9 &&
+    return combined_awareness && partitioned_awareness &&
+           combined_awareness->last_decay_at.ticks == 9 &&
            partitioned_awareness->last_decay_at.ticks == 9 &&
            combined_awareness->suspicion_micro == partitioned_awareness->suspicion_micro &&
            combined_awareness->level == partitioned_awareness->level;
@@ -307,6 +349,7 @@ int main() {
     profile.id = profile_id;
     profile.canonical_name = "test.npc.perception";
     profile.senses = {hearing, vision};
+
     if (!service.RegisterProfileDefinition(profile))
         return 2;
 
@@ -320,16 +363,21 @@ int main() {
     audible.position = {1'000, 0, 0};
     audible.strength_micro = 900'000;
     audible.created_at = {0};
+
     audible.lifetime = {100};
 
     auto sid = service.CreateStimulus(audible);
     if (!sid)
         return 4;
-    auto observations = service.ProcessStimulus(
-        sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(npc)}});
+    auto observations =
+        service.ProcessStimulus(sid.Value(), PerceptionProcessingContext{GameplayTickId{1},
+                                                                         GameplayTimePoint{1},
+                                                                         {},
+                                                                         {Sample(npc)}});
     if (!observations || observations.Value().size() != 1)
         return 5;
-    if (observations.Value()[0].perceiver != npc || observations.Value()[0].perceived_subject != player)
+    if (observations.Value()[0].perceiver != npc ||
+        observations.Value()[0].perceived_subject != player)
         return 6;
     if (!service.GetAwareness(npc, player))
         return 7;
@@ -344,43 +392,58 @@ int main() {
     // Hearing obeys range and never falls back to origin if a sample is missing.
     PerceptionStimulus far = audible;
     far.id = {};
+
     far.position = {20'000, 0, 0};
     auto far_id = service.CreateStimulus(far);
     if (!far_id)
         return 10;
-    auto far_result = service.ProcessStimulus(
-        far_id.Value(), PerceptionProcessingContext{GameplayTickId{2}, GameplayTimePoint{2}, {}, {Sample(npc)}});
+    auto far_result =
+        service.ProcessStimulus(far_id.Value(), PerceptionProcessingContext{GameplayTickId{2},
+                                                                            GameplayTimePoint{2},
+                                                                            {},
+                                                                            {Sample(npc)}});
     if (!far_result || !far_result.Value().empty())
         return 11;
-    auto missing_sample = service.ProcessStimulus(
-        far_id.Value(), PerceptionProcessingContext{GameplayTickId{3}, GameplayTimePoint{3}, {}, {}});
+    auto missing_sample =
+        service.ProcessStimulus(far_id.Value(), PerceptionProcessingContext{GameplayTickId{3},
+                                                                            GameplayTimePoint{3},
+                                                                            {},
+                                                                            {}});
     if (!missing_sample || !missing_sample.Value().empty())
         return 12;
 
     // Vision uses the declared Vision model and FOV. A target behind the perceiver is hidden.
     PerceptionStimulus visual = audible;
     visual.id = {};
+
     visual.sense = vision;
     visual.position = {1'000, 0, 0};
     visual.strength_micro = 1'000'000;
     auto visual_id = service.CreateStimulus(visual);
     if (!visual_id)
         return 13;
-    auto front = service.ProcessStimulus(
-        visual_id.Value(),
-        PerceptionProcessingContext{GameplayTickId{4}, GameplayTimePoint{4}, {}, {Sample(npc, {}, {1'000'000, 0, 0})}});
+    auto front =
+        service.ProcessStimulus(visual_id.Value(),
+                                PerceptionProcessingContext{GameplayTickId{4},
+                                                            GameplayTimePoint{4},
+                                                            {},
+                                                            {Sample(npc, {}, {1'000'000, 0, 0})}});
     if (!front || front.Value().size() != 1)
         return 14;
 
     PerceptionStimulus behind = visual;
     behind.id = {};
+
     behind.position = {-1'000, 0, 0};
     auto behind_id = service.CreateStimulus(behind);
     if (!behind_id)
         return 15;
-    auto rear = service.ProcessStimulus(
-        behind_id.Value(),
-        PerceptionProcessingContext{GameplayTickId{5}, GameplayTimePoint{5}, {}, {Sample(npc, {}, {1'000'000, 0, 0})}});
+    auto rear =
+        service.ProcessStimulus(behind_id.Value(),
+                                PerceptionProcessingContext{GameplayTickId{5},
+                                                            GameplayTimePoint{5},
+                                                            {},
+                                                            {Sample(npc, {}, {1'000'000, 0, 0})}});
     if (!rear || !rear.Value().empty())
         return 16;
 
@@ -393,6 +456,7 @@ int main() {
     blind_profile.id = PerceiverProfileId::FromString("test.blind");
     blind_profile.canonical_name = "test.blind";
     blind_profile.senses = {vision};
+
     if (!blind.RegisterProfileDefinition(blind_profile))
         return 62;
     blind.Freeze();
@@ -401,9 +465,12 @@ int main() {
     auto blind_sid = blind.CreateStimulus(visual);
     if (!blind_sid)
         return 64;
-    auto blind_out = blind.ProcessStimulus(
-        blind_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(npc, {}, {1'000'000, 0, 0})}});
+    auto blind_out =
+        blind.ProcessStimulus(blind_sid.Value(),
+                              PerceptionProcessingContext{GameplayTickId{1},
+                                                          GameplayTimePoint{1},
+                                                          {},
+                                                          {Sample(npc, {}, {1'000'000, 0, 0})}});
     if (!blind_out || !blind_out.Value().empty())
         return 65;
 
@@ -419,6 +486,7 @@ int main() {
     weak_profile.id = PerceiverProfileId::FromString("test.weak");
     weak_profile.canonical_name = "test.weak";
     weak_profile.senses = {hearing};
+
     if (!anonymous_service.RegisterProfileDefinition(weak_profile))
         return 18;
     anonymous_service.Freeze();
@@ -426,14 +494,20 @@ int main() {
         return 19;
     PerceptionStimulus weak = audible;
     weak.id = {};
+
     weak.strength_micro = 500'000;
     weak.position = {2'000, 0, 0};
     auto weak_id = anonymous_service.CreateStimulus(weak);
     if (!weak_id)
         return 20;
-    auto weak_out = anonymous_service.ProcessStimulus(
-        weak_id.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(npc)}});
-    if (!weak_out || weak_out.Value().size() != 1 || weak_out.Value()[0].perceived_subject.IsValid() ||
+    auto weak_out =
+        anonymous_service.ProcessStimulus(weak_id.Value(),
+                                          PerceptionProcessingContext{GameplayTickId{1},
+                                                                      GameplayTimePoint{1},
+                                                                      {},
+                                                                      {Sample(npc)}});
+    if (!weak_out || weak_out.Value().size() != 1 ||
+        weak_out.Value()[0].perceived_subject.IsValid() ||
         weak_out.Value()[0].position_uncertainty_mm <= 0)
         return 21;
     if (anonymous_service.GetAwareness(npc, player))
@@ -443,12 +517,14 @@ int main() {
     PerceptionService delayed;
     SenseDefinition delayed_hearing = hear;
     delayed_hearing.reaction_delay = GameplayDuration{5};
+
     if (!delayed.RegisterSense(delayed_hearing))
         return 23;
     PerceiverProfileDefinition delayed_profile;
     delayed_profile.id = PerceiverProfileId::FromString("test.delayed");
     delayed_profile.canonical_name = "test.delayed";
     delayed_profile.senses = {hearing};
+
     if (!delayed.RegisterProfileDefinition(delayed_profile))
         return 24;
     delayed.Freeze();
@@ -457,15 +533,20 @@ int main() {
     auto delayed_sid = delayed.CreateStimulus(audible);
     if (!delayed_sid)
         return 26;
-    auto delayed_now = delayed.ProcessStimulus(
-        delayed_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{10}, {}, {Sample(npc)}});
-    if (!delayed_now || !delayed_now.Value().empty() || delayed.GetDiagnostics().pending_observations != 1)
+    auto delayed_now = delayed.ProcessStimulus(delayed_sid.Value(),
+                                               PerceptionProcessingContext{GameplayTickId{1},
+                                                                           GameplayTimePoint{10},
+                                                                           {},
+                                                                           {Sample(npc)}});
+    if (!delayed_now || !delayed_now.Value().empty() ||
+        delayed.GetDiagnostics().pending_observations != 1)
         return 27;
     auto before_ready = delayed.AdvanceTime({14});
     if (!before_ready || !before_ready.Value().empty())
         return 28;
     auto at_ready = delayed.AdvanceTime({15});
-    if (!at_ready || at_ready.Value().size() != 1 || delayed.GetDiagnostics().pending_observations != 0)
+    if (!at_ready || at_ready.Value().size() != 1 ||
+        delayed.GetDiagnostics().pending_observations != 0)
         return 29;
 
     // Materialization policy is enforced by current processing samples.
@@ -476,7 +557,9 @@ int main() {
     projected_profile.id = PerceiverProfileId::FromString("test.projected");
     projected_profile.canonical_name = "test.projected";
     projected_profile.senses = {hearing};
-    projected_profile.materialization_policy = PerceptionMaterializationPolicy::RequiresRuntimeProjection;
+
+    projected_profile.materialization_policy =
+        PerceptionMaterializationPolicy::RequiresRuntimeProjection;
     if (!projected.RegisterProfileDefinition(projected_profile))
         return 31;
     projected.Freeze();
@@ -487,9 +570,12 @@ int main() {
         return 33;
     auto unavailable_sample = Sample(npc);
     unavailable_sample.runtime_projection_available = false;
-    auto projected_out = projected.ProcessStimulus(
-        projected_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {unavailable_sample}});
+    auto projected_out =
+        projected.ProcessStimulus(projected_sid.Value(),
+                                  PerceptionProcessingContext{GameplayTickId{1},
+                                                              GameplayTimePoint{1},
+                                                              {},
+                                                              {unavailable_sample}});
     if (!projected_out || !projected_out.Value().empty())
         return 34;
 
@@ -501,18 +587,23 @@ int main() {
     budget_profile.id = PerceiverProfileId::FromString("test.budget");
     budget_profile.canonical_name = "test.budget";
     budget_profile.senses = {hearing};
+
     if (!budgeted.RegisterProfileDefinition(budget_profile))
         return 36;
     budgeted.Freeze();
-    if (!budgeted.RegisterPerceiver(npc, budget_profile.id) || !budgeted.RegisterPerceiver(npc2, budget_profile.id))
+    if (!budgeted.RegisterPerceiver(npc, budget_profile.id) ||
+        !budgeted.RegisterPerceiver(npc2, budget_profile.id))
         return 37;
     budgeted.SetBudget({10, 10, 1});
     auto budget_sid = budgeted.CreateStimulus(audible);
     if (!budget_sid)
         return 38;
-    auto budget_out = budgeted.ProcessStimulus(
-        budget_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(npc), Sample(npc2)}});
+    auto budget_out =
+        budgeted.ProcessStimulus(budget_sid.Value(),
+                                 PerceptionProcessingContext{GameplayTickId{1},
+                                                             GameplayTimePoint{1},
+                                                             {},
+                                                             {Sample(npc), Sample(npc2)}});
     if (!budget_out || budgeted.GetDiagnostics().detection_tests != 1 ||
         budgeted.GetDiagnostics().budget_exhaustions == 0)
         return 39;
@@ -525,6 +616,7 @@ int main() {
     prefilter_profile.id = PerceiverProfileId::FromString("test.prefilter");
     prefilter_profile.canonical_name = "test.prefilter";
     prefilter_profile.senses = {hearing};
+
     if (!prefiltered.RegisterProfileDefinition(prefilter_profile))
         return 85;
     prefiltered.Freeze();
@@ -539,22 +631,30 @@ int main() {
     auto prefilter_sid = prefiltered.CreateStimulus(audible);
     if (!prefilter_sid)
         return 87;
-    auto prefilter_out = prefiltered.ProcessStimulus(
-        prefilter_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(higher)}});
-    if (!prefilter_out || prefilter_out.Value().size() != 1 || prefilter_out.Value().front().perceiver != higher ||
+    auto prefilter_out =
+        prefiltered.ProcessStimulus(prefilter_sid.Value(),
+                                    PerceptionProcessingContext{GameplayTickId{1},
+                                                                GameplayTimePoint{1},
+                                                                {},
+                                                                {Sample(higher)}});
+    if (!prefilter_out || prefilter_out.Value().size() != 1 ||
+        prefilter_out.Value().front().perceiver != higher ||
         prefiltered.GetDiagnostics().detection_tests != 1)
         return 88;
 
-    // RequiresMaterialized candidates with a non-materialized sample also do not consume the candidate slot.
+    // RequiresMaterialized candidates with a non-materialized sample also do not consume the
+    // candidate slot.
     PerceptionService materialized_prefilter;
     if (!materialized_prefilter.RegisterSense(hear))
         return 89;
     PerceiverProfileDefinition materialized_prefilter_profile;
-    materialized_prefilter_profile.id = PerceiverProfileId::FromString("test.prefilter.materialized");
+    materialized_prefilter_profile.id =
+        PerceiverProfileId::FromString("test.prefilter.materialized");
     materialized_prefilter_profile.canonical_name = "test.prefilter.materialized";
     materialized_prefilter_profile.senses = {hearing};
-    materialized_prefilter_profile.materialization_policy = PerceptionMaterializationPolicy::RequiresMaterialized;
+
+    materialized_prefilter_profile.materialization_policy =
+        PerceptionMaterializationPolicy::RequiresMaterialized;
     if (!materialized_prefilter.RegisterProfileDefinition(materialized_prefilter_profile))
         return 90;
     materialized_prefilter.Freeze();
@@ -562,8 +662,10 @@ int main() {
     auto materialized_higher = Ref("prefilter.materialized.b");
     if (materialized_higher < materialized_lower)
         std::swap(materialized_lower, materialized_higher);
-    if (!materialized_prefilter.RegisterPerceiver(materialized_lower, materialized_prefilter_profile.id) ||
-        !materialized_prefilter.RegisterPerceiver(materialized_higher, materialized_prefilter_profile.id))
+    if (!materialized_prefilter.RegisterPerceiver(materialized_lower,
+                                                  materialized_prefilter_profile.id) ||
+        !materialized_prefilter.RegisterPerceiver(materialized_higher,
+                                                  materialized_prefilter_profile.id))
         return 91;
     materialized_prefilter.SetBudget({10, 1, 10});
     auto unavailable_materialized_sample = Sample(materialized_lower);
@@ -571,21 +673,25 @@ int main() {
     auto materialized_prefilter_sid = materialized_prefilter.CreateStimulus(audible);
     if (!materialized_prefilter_sid)
         return 92;
-    auto materialized_prefilter_out = materialized_prefilter.ProcessStimulus(
-        materialized_prefilter_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{1},
-                                    GameplayTimePoint{1},
-                                    {},
-                                    {unavailable_materialized_sample, Sample(materialized_higher)}});
+    auto materialized_prefilter_out =
+        materialized_prefilter
+            .ProcessStimulus(materialized_prefilter_sid.Value(),
+                             PerceptionProcessingContext{GameplayTickId{1},
+                                                         GameplayTimePoint{1},
+                                                         {},
+                                                         {unavailable_materialized_sample,
+                                                          Sample(materialized_higher)}});
     if (!materialized_prefilter_out || materialized_prefilter_out.Value().size() != 1 ||
         materialized_prefilter_out.Value().front().perceiver != materialized_higher ||
         materialized_prefilter.GetDiagnostics().detection_tests != 1)
         return 93;
 
-    // Custom AbstractCapable evaluators that do not require a sample remain eligible for prefiltering.
+    // Custom AbstractCapable evaluators that do not require a sample remain eligible for
+    // prefiltering.
     PerceptionService abstract_custom;
     const auto abstract_custom_sense = SenseTypeId::FromString("test.sense.abstract_custom");
-    const auto abstract_custom_evaluator_id = SenseEvaluatorId::FromString("test.evaluator.abstract_custom");
+    const auto abstract_custom_evaluator_id =
+        SenseEvaluatorId::FromString("test.evaluator.abstract_custom");
     SenseDefinition abstract_custom_definition;
     abstract_custom_definition.id = abstract_custom_sense;
     abstract_custom_definition.canonical_name = "test.sense.abstract_custom";
@@ -600,7 +706,9 @@ int main() {
     abstract_custom_profile.id = PerceiverProfileId::FromString("test.abstract_custom.profile");
     abstract_custom_profile.canonical_name = "test.abstract_custom.profile";
     abstract_custom_profile.senses = {abstract_custom_sense};
-    abstract_custom_profile.materialization_policy = PerceptionMaterializationPolicy::AbstractCapable;
+
+    abstract_custom_profile.materialization_policy =
+        PerceptionMaterializationPolicy::AbstractCapable;
     if (!abstract_custom.RegisterProfileDefinition(abstract_custom_profile))
         return 95;
     abstract_custom.Freeze();
@@ -609,14 +717,20 @@ int main() {
     abstract_custom.SetBudget({10, 1, 10});
     PerceptionStimulus abstract_custom_stimulus = audible;
     abstract_custom_stimulus.id = {};
+
     abstract_custom_stimulus.sense = abstract_custom_sense;
     auto abstract_custom_sid = abstract_custom.CreateStimulus(abstract_custom_stimulus);
     if (!abstract_custom_sid)
         return 97;
-    auto abstract_custom_out = abstract_custom.ProcessStimulus(
-        abstract_custom_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {}});
+    auto abstract_custom_out =
+        abstract_custom.ProcessStimulus(abstract_custom_sid.Value(),
+                                        PerceptionProcessingContext{GameplayTickId{1},
+                                                                    GameplayTimePoint{1},
+                                                                    {},
+                                                                    {}});
     if (!abstract_custom_out || abstract_custom_out.Value().size() != 1 ||
-        abstract_custom_out.Value().front().perceiver != npc || abstract_custom.GetDiagnostics().custom_tests != 1)
+        abstract_custom_out.Value().front().perceiver != npc ||
+        abstract_custom.GetDiagnostics().custom_tests != 1)
         return 98;
 
     // Custom evaluator exceptions are contained at the Framework boundary.
@@ -634,6 +748,7 @@ int main() {
     custom_profile.id = PerceiverProfileId::FromString("test.custom.profile");
     custom_profile.canonical_name = "test.custom.profile";
     custom_profile.senses = {custom};
+
     if (!custom_service.RegisterProfileDefinition(custom_profile))
         return 41;
     custom_service.Freeze();
@@ -641,16 +756,22 @@ int main() {
         return 42;
     PerceptionStimulus custom_stim = audible;
     custom_stim.id = {};
+
     custom_stim.sense = custom;
     auto custom_sid = custom_service.CreateStimulus(custom_stim);
     if (!custom_sid)
         return 43;
-    auto custom_out = custom_service.ProcessStimulus(
-        custom_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {}});
+    auto custom_out =
+        custom_service.ProcessStimulus(custom_sid.Value(),
+                                       PerceptionProcessingContext{GameplayTickId{1},
+                                                                   GameplayTimePoint{1},
+                                                                   {},
+                                                                   {}});
     if (custom_out || custom_service.GetDiagnostics().evaluator_failures != 1)
         return 44;
 
-    // A normal zero-score custom evaluation is successful non-detection, while evaluator failures propagate.
+    // A normal zero-score custom evaluation is successful non-detection, while evaluator failures
+    // propagate.
     const auto zero_sense = SenseTypeId::FromString("test.sense.zero");
     const auto zero_evaluator_id = SenseEvaluatorId::FromString("test.evaluator.zero");
     PerceptionService zero_service;
@@ -667,6 +788,7 @@ int main() {
     zero_profile.id = PerceiverProfileId::FromString("test.zero.profile");
     zero_profile.canonical_name = "test.zero.profile";
     zero_profile.senses = {zero_sense};
+
     if (!zero_service.RegisterProfileDefinition(zero_profile))
         return 101;
     zero_service.Freeze();
@@ -674,13 +796,18 @@ int main() {
         return 102;
     PerceptionStimulus zero_stimulus = audible;
     zero_stimulus.id = {};
+
     zero_stimulus.sense = zero_sense;
     auto zero_sid = zero_service.CreateStimulus(zero_stimulus);
     if (!zero_sid)
         return 103;
-    auto zero_out = zero_service.ProcessStimulus(
-        zero_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {}});
-    if (!zero_out || !zero_out.Value().empty() || zero_service.GetDiagnostics().evaluator_failures != 0)
+    auto zero_out = zero_service.ProcessStimulus(zero_sid.Value(),
+                                                 PerceptionProcessingContext{GameplayTickId{1},
+                                                                             GameplayTimePoint{1},
+                                                                             {},
+                                                                             {}});
+    if (!zero_out || !zero_out.Value().empty() ||
+        zero_service.GetDiagnostics().evaluator_failures != 0)
         return 104;
 
     const auto failing_sense = SenseTypeId::FromString("test.sense.failure");
@@ -690,13 +817,15 @@ int main() {
     failing_definition.id = failing_sense;
     failing_definition.canonical_name = "test.sense.failure";
     failing_definition.evaluator = failing_evaluator_id;
-    if (!failing_service.RegisterEvaluator(failing_evaluator_id, std::make_shared<FailingEvaluator>()) ||
+    if (!failing_service.RegisterEvaluator(failing_evaluator_id,
+                                           std::make_shared<FailingEvaluator>()) ||
         !failing_service.RegisterSense(failing_definition))
         return 105;
     PerceiverProfileDefinition failing_profile = zero_profile;
     failing_profile.id = PerceiverProfileId::FromString("test.failure.profile");
     failing_profile.canonical_name = "test.failure.profile";
     failing_profile.senses = {failing_sense};
+
     if (!failing_service.RegisterProfileDefinition(failing_profile))
         return 106;
     failing_service.Freeze();
@@ -704,16 +833,22 @@ int main() {
         return 107;
     PerceptionStimulus failing_stimulus = audible;
     failing_stimulus.id = {};
+
     failing_stimulus.sense = failing_sense;
     auto failing_sid = failing_service.CreateStimulus(failing_stimulus);
     if (!failing_sid)
         return 108;
-    auto failing_out = failing_service.ProcessStimulus(
-        failing_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{1}, {}, {}});
+    auto failing_out =
+        failing_service.ProcessStimulus(failing_sid.Value(),
+                                        PerceptionProcessingContext{GameplayTickId{1},
+                                                                    GameplayTimePoint{1},
+                                                                    {},
+                                                                    {}});
     if (failing_out || failing_service.GetDiagnostics().evaluator_failures != 1)
         return 109;
 
-    // Missing custom evaluator is rejected structurally rather than becoming a successful non-detection path.
+    // Missing custom evaluator is rejected structurally rather than becoming a successful
+    // non-detection path.
     PerceptionService missing_evaluator_service;
     SenseDefinition missing_definition = zero_definition;
     missing_definition.id = SenseTypeId::FromString("test.sense.missing_evaluator");
@@ -730,6 +865,7 @@ int main() {
     duplicate_profile.id = PerceiverProfileId::FromString("test.duplicate.profile");
     duplicate_profile.canonical_name = "test.duplicate.profile";
     duplicate_profile.senses = {hearing};
+
     if (!duplicate_samples.RegisterProfileDefinition(duplicate_profile))
         return 112;
     duplicate_samples.Freeze();
@@ -739,12 +875,17 @@ int main() {
     if (!duplicate_sid)
         return 114;
     const auto duplicate_revision = duplicate_samples.CurrentRevision();
-    auto duplicate_out = duplicate_samples.ProcessStimulus(
-        duplicate_sid.Value(),
-        PerceptionProcessingContext{
-            GameplayTickId{1}, GameplayTimePoint{50}, {}, {Sample(npc, {0, 0, 0}), Sample(npc, {9'000, 0, 0})}});
+    auto duplicate_out =
+        duplicate_samples.ProcessStimulus(duplicate_sid.Value(),
+                                          PerceptionProcessingContext{GameplayTickId{1},
+                                                                      GameplayTimePoint{50},
+                                                                      {},
+                                                                      {Sample(npc, {0, 0, 0}),
+                                                                       Sample(npc,
+                                                                              {9'000, 0, 0})}});
     if (duplicate_out || duplicate_samples.CurrentRevision() != duplicate_revision ||
-        duplicate_samples.GetAwareness(npc, player) || !duplicate_samples.FindObservationsByPerceiver(npc).empty())
+        duplicate_samples.GetAwareness(npc, player) ||
+        !duplicate_samples.FindObservationsByPerceiver(npc).empty())
         return 115;
 
     // Candidate discovery indexes supplied samples once and preserves canonical evaluation order.
@@ -765,6 +906,7 @@ int main() {
     counted_profile.id = PerceiverProfileId::FromString("test.counted.profile");
     counted_profile.canonical_name = "test.counted.profile";
     counted_profile.senses = {counted_sense};
+
     if (!indexed_candidates.RegisterProfileDefinition(counted_profile))
         return 117;
     indexed_candidates.Freeze();
@@ -775,38 +917,53 @@ int main() {
         if (!indexed_candidates.RegisterPerceiver(many_perceivers.back(), counted_profile.id))
             return 118;
     }
+
     PerceptionStimulus counted_stimulus = audible;
     counted_stimulus.id = {};
+
     counted_stimulus.sense = counted_sense;
     auto counted_sid = indexed_candidates.CreateStimulus(counted_stimulus);
     if (!counted_sid)
         return 119;
-    const auto indexed_lower = many_perceivers[17] < many_perceivers[201] ? many_perceivers[17] : many_perceivers[201];
-    const auto indexed_higher = many_perceivers[17] < many_perceivers[201] ? many_perceivers[201] : many_perceivers[17];
-    auto counted_out = indexed_candidates.ProcessStimulus(
-        counted_sid.Value(),
-        PerceptionProcessingContext{
-            GameplayTickId{1}, GameplayTimePoint{1}, {}, {Sample(indexed_higher), Sample(indexed_lower)}});
-    if (!counted_out || counted_evaluator->subjects.size() != 2 || counted_evaluator->subjects[0] != indexed_lower ||
-        counted_evaluator->subjects[1] != indexed_higher || indexed_candidates.GetDiagnostics().detection_tests != 2)
+    const auto indexed_lower =
+        many_perceivers[17] < many_perceivers[201] ? many_perceivers[17] : many_perceivers[201];
+    const auto indexed_higher =
+        many_perceivers[17] < many_perceivers[201] ? many_perceivers[201] : many_perceivers[17];
+    auto counted_out =
+        indexed_candidates.ProcessStimulus(counted_sid.Value(),
+                                           PerceptionProcessingContext{GameplayTickId{1},
+                                                                       GameplayTimePoint{1},
+                                                                       {},
+                                                                       {Sample(indexed_higher),
+                                                                        Sample(indexed_lower)}});
+    if (!counted_out || counted_evaluator->subjects.size() != 2 ||
+        counted_evaluator->subjects[0] != indexed_lower ||
+        counted_evaluator->subjects[1] != indexed_higher ||
+        indexed_candidates.GetDiagnostics().detection_tests != 2)
         return 120;
 
-    // Snapshot contains runtime perceivers and pending state, not definitions, and restore is transactional.
+    // Snapshot contains runtime perceivers and pending state, not definitions, and restore is
+    // transactional.
     PerceptionStimulus delayed_again = audible;
     delayed_again.id = {};
+
     auto delayed_again_sid = delayed.CreateStimulus(delayed_again);
     if (!delayed_again_sid)
         return 66;
-    auto pending_before_save = delayed.ProcessStimulus(
-        delayed_again_sid.Value(),
-        PerceptionProcessingContext{GameplayTickId{2}, GameplayTimePoint{20}, {}, {Sample(npc)}});
+    auto pending_before_save =
+        delayed.ProcessStimulus(delayed_again_sid.Value(),
+                                PerceptionProcessingContext{GameplayTickId{2},
+                                                            GameplayTimePoint{20},
+                                                            {},
+                                                            {Sample(npc)}});
     if (!pending_before_save || !pending_before_save.Value().empty() ||
         delayed.GetDiagnostics().pending_observations != 1)
         return 67;
     const auto saved_change_cursor = delayed.ReadChangesSince(ChangeCursor{}).latest_cursor;
     auto snapshot = delayed.CaptureSnapshot();
     PerceptionService restored;
-    if (!restored.RegisterSense(delayed_hearing) || !restored.RegisterProfileDefinition(delayed_profile))
+    if (!restored.RegisterSense(delayed_hearing) ||
+        !restored.RegisterProfileDefinition(delayed_profile))
         return 45;
     restored.Freeze();
     if (!restored.RestoreSnapshot(snapshot))
@@ -825,12 +982,15 @@ int main() {
         resumed_changes.changes.front().sequence <= restored_change_cursor.sequence)
         return 122;
     if (restored_change_cursor.sequence > 0 &&
-        !restored.ReadChangesSince(restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
+        !restored
+             .ReadChangesSince(
+                 restored_change_cursor.AtSequence(restored_change_cursor.sequence - 1))
              .snapshot_required)
         return 123;
     const auto restored_latest = resumed_changes.latest_cursor;
     if (restored_latest.sequence != std::numeric_limits<std::uint64_t>::max() &&
-        !restored.ReadChangesSince(restored_latest.AtSequence(restored_latest.sequence + 1)).snapshot_required)
+        !restored.ReadChangesSince(restored_latest.AtSequence(restored_latest.sequence + 1))
+             .snapshot_required)
         return 128;
 
     auto exhausted_sequence_snapshot = snapshot;
@@ -845,8 +1005,9 @@ int main() {
     const auto exhausted_subject = Ref("sequence.max");
     if (!exhausted_sequence.RegisterPerceiver(exhausted_subject, delayed_profile.id))
         return 126;
-    auto max_batch = exhausted_sequence.ReadChangesSince(
-        exhausted_sequence.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max() - 1));
+    auto max_batch =
+        exhausted_sequence.ReadChangesSince(exhausted_sequence.LatestChangeCursor().AtSequence(
+            std::numeric_limits<std::uint64_t>::max() - 1));
     if (max_batch.snapshot_required || max_batch.changes.size() != 1 ||
         max_batch.changes.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 127;
@@ -862,8 +1023,10 @@ int main() {
     // Bounded journal reports when the caller is behind retained history.
     restored.SetChangeJournalCapacity(2);
     const auto another = Ref("another");
-    if (!restored.RegisterPerceiver(another, delayed_profile.id) || !restored.UnregisterPerceiver(another) ||
-        !restored.RegisterPerceiver(another, delayed_profile.id) || !restored.UnregisterPerceiver(another))
+    if (!restored.RegisterPerceiver(another, delayed_profile.id) ||
+        !restored.UnregisterPerceiver(another) ||
+        !restored.RegisterPerceiver(another, delayed_profile.id) ||
+        !restored.UnregisterPerceiver(another))
         return 50;
     auto batch = restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(1));
     if (!batch.snapshot_required)
@@ -877,6 +1040,7 @@ int main() {
     temporal_profile.id = PerceiverProfileId::FromString("test.temporal");
     temporal_profile.canonical_name = "test.temporal";
     temporal_profile.senses = {hearing};
+
     if (!temporal.RegisterProfileDefinition(temporal_profile))
         return 53;
     temporal.SetTemporalPolicy({GameplayDuration{5}, GameplayDuration{10}, 250'000});
@@ -885,13 +1049,18 @@ int main() {
         return 54;
     PerceptionStimulus temporal_stim = audible;
     temporal_stim.id = {};
+
     temporal_stim.strength_micro = 1'000'000;
     temporal_stim.position = {0, 0, 0};
+
     auto temporal_sid = temporal.CreateStimulus(temporal_stim);
     if (!temporal_sid)
         return 55;
-    auto temporal_out = temporal.ProcessStimulus(
-        temporal_sid.Value(), PerceptionProcessingContext{GameplayTickId{1}, GameplayTimePoint{10}, {}, {Sample(npc)}});
+    auto temporal_out = temporal.ProcessStimulus(temporal_sid.Value(),
+                                                 PerceptionProcessingContext{GameplayTickId{1},
+                                                                             GameplayTimePoint{10},
+                                                                             {},
+                                                                             {Sample(npc)}});
     if (!temporal_out || temporal_out.Value().size() != 1)
         return 56;
     if (!temporal.AdvanceTime({30}))
@@ -905,7 +1074,8 @@ int main() {
         return 60;
 
     PerceptionService requested_ids;
-    if (!requested_ids.RegisterSense(hear) || !requested_ids.RegisterProfileDefinition(temporal_profile))
+    if (!requested_ids.RegisterSense(hear) ||
+        !requested_ids.RegisterProfileDefinition(temporal_profile))
         return 69;
     requested_ids.Freeze();
     if (!requested_ids.RegisterPerceiver(npc, temporal_profile.id))
@@ -917,16 +1087,18 @@ int main() {
         return 71;
     PerceptionStimulus generated = audible;
     generated.id = {};
+
     auto generated_id = requested_ids.CreateStimulus(generated);
     if (!generated_id || generated_id.Value().value.Low() <= 100)
         return 72;
 
-    // Goal 4: deterministic module-local restore fault seams replace process-global allocator overrides.
+    // Goal 4: deterministic module-local restore fault seams replace process-global allocator
+    // overrides.
     const auto allocation_before = restored.CaptureSnapshot();
     using FaultPoint = epidemic::gameplay::perception::internal_test::AllocationFaultPoint;
-    for (const auto point :
-         {FaultPoint::RestorePerceivers, FaultPoint::RestoreStimuli, FaultPoint::RestorePendingObservations,
-          FaultPoint::RestoreObservations, FaultPoint::RestoreAwareness}) {
+    for (const auto point : {FaultPoint::RestorePerceivers, FaultPoint::RestoreStimuli,
+                             FaultPoint::RestorePendingObservations,
+                             FaultPoint::RestoreObservations, FaultPoint::RestoreAwareness}) {
         auto allocation_target = allocation_before;
         epidemic::gameplay::perception::internal_test::ArmAllocationFault(point);
         const auto restored_under_fault = restored.RestoreSnapshot(std::move(allocation_target));
@@ -940,7 +1112,8 @@ int main() {
             after_fault.next_change_sequence != allocation_before.next_change_sequence ||
             after_fault.perceivers.size() != allocation_before.perceivers.size() ||
             after_fault.stimuli.size() != allocation_before.stimuli.size() ||
-            after_fault.pending_observations.size() != allocation_before.pending_observations.size() ||
+            after_fault.pending_observations.size() !=
+                allocation_before.pending_observations.size() ||
             after_fault.observations.size() != allocation_before.observations.size() ||
             after_fault.awareness.size() != allocation_before.awareness.size())
             return 934;
@@ -953,8 +1126,10 @@ int main() {
 
     // Goal 4 exact public-API evidence: default/empty surface and virtual interface destruction.
     PerceptionService api_evidence;
-    const auto wrong_lifecycle = api_evidence.RegisterPerceiver(GameplayObjectRef{}, PerceiverProfileId{});
-    if (wrong_lifecycle || !wrong_lifecycle.GetError().HasCode("gameplay.perception.registry_not_frozen"))
+    const auto wrong_lifecycle =
+        api_evidence.RegisterPerceiver(GameplayObjectRef{}, PerceiverProfileId{});
+    if (wrong_lifecycle ||
+        !wrong_lifecycle.GetError().HasCode("gameplay.perception.registry_not_frozen"))
         return 1099;
     if (api_evidence.IsFrozen())
         return 1100;
@@ -973,6 +1148,7 @@ int main() {
     if (!api_evidence.ExpireStimuli(GameplayTimePoint{}))
         return 1107;
     ISenseEvaluator *perception_destructor_probe = new ThrowingEvaluator{};
+
     delete perception_destructor_probe;
 
     return 0;

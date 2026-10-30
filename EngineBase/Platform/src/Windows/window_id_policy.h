@@ -10,8 +10,10 @@ namespace epidemic::platform::detail {
     return next_id != kInvalidWindowId && next_id != std::numeric_limits<WindowId>::max();
 }
 
-// Advances only an allocatable id. The last allocatable value advances to the exhausted max sentinel.
+// Advances only an allocatable id. The last allocatable value advances to the exhausted max
+// sentinel.
 [[nodiscard]] constexpr WindowId AdvanceWindowId(WindowId current_id) noexcept {
     return current_id + 1;
 }
+
 } // namespace epidemic::platform::detail

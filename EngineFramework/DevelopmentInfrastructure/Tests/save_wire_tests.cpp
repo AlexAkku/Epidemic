@@ -14,13 +14,16 @@
 
 using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::savegame;
+
 namespace {
 void WireCheck(bool value, const char *message) {
     if (!value) {
         std::cerr << message << '\n';
         std::exit(1);
     }
+
 }
+
 SaveGameImage WireImage() {
     SaveGameImage image;
     image.manifest.content_version = 4;
@@ -32,6 +35,7 @@ SaveGameImage WireImage() {
     const auto b = SaveParticipantId::FromString("fixture.b");
     for (auto id : {b, a}) {
         SaveSection section{id, 1, {std::byte{42}, std::byte{17}}, 0};
+
         section.payload_hash = SaveGameOrchestrator::HashBytes(section.payload);
         image.sections.push_back(section);
         image.manifest.participants.push_back(
@@ -39,15 +43,21 @@ SaveGameImage WireImage() {
              id == b ? SaveParticipantRequirement::Optional : SaveParticipantRequirement::Required,
              id == b ? std::vector<SaveParticipantId>{a} : std::vector<SaveParticipantId>{}});
     }
+
     return image;
 }
-void PatchInteger(std::vector<std::byte> &bytes, std::size_t offset, std::uint64_t value, std::size_t width) {
+
+void PatchInteger(std::vector<std::byte> &bytes, std::size_t offset, std::uint64_t value,
+                  std::size_t width) {
     for (std::size_t i = 0; i < width; ++i)
         bytes.at(offset + i) = std::byte((value >> (8 * i)) & 255);
 }
+
 void RepairChecksum(std::vector<std::byte> &bytes) {
-    PatchInteger(bytes, bytes.size() - 8, SaveGameOrchestrator::HashBytes(std::span(bytes).first(bytes.size() - 8)), 8);
+    PatchInteger(bytes, bytes.size() - 8,
+                 SaveGameOrchestrator::HashBytes(std::span(bytes).first(bytes.size() - 8)), 8);
 }
+
 std::vector<std::byte> ReadFixture(const std::filesystem::path &path) {
     std::ifstream file(path, std::ios::binary);
     WireCheck(bool(file), "wire historical fixture exists");
@@ -57,14 +67,18 @@ std::vector<std::byte> ReadFixture(const std::filesystem::path &path) {
         bytes.push_back(std::byte(static_cast<unsigned char>(c)));
     return bytes;
 }
+
 void WriteFixture(const std::filesystem::path &path, const std::vector<std::byte> &bytes) {
     WireCheck(!std::filesystem::exists(path), "historical fixture must never be overwritten");
     std::filesystem::create_directories(path.parent_path());
     std::ofstream file(path, std::ios::binary);
-    file.write(reinterpret_cast<const char *>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+    file.write(reinterpret_cast<const char *>(bytes.data()),
+               static_cast<std::streamsize>(bytes.size()));
     WireCheck(bool(file), "record wire fixture");
 }
-}
+
+} // namespace
+
 void RecordSaveWireFixtures(const std::filesystem::path &root) {
     auto empty = EncodeSaveGameImage({});
     auto multi = EncodeSaveGameImage(WireImage());
@@ -72,6 +86,7 @@ void RecordSaveWireFixtures(const std::filesystem::path &root) {
     WriteFixture(root / "whole/1/empty.bin", empty.Value());
     WriteFixture(root / "whole/1/multi.bin", multi.Value());
 }
+
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 int RunAuditorSaveLoadScenario() {
     using namespace epidemic::auditor::shadow;
@@ -88,7 +103,8 @@ int RunAuditorSaveLoadScenario() {
     if (const auto *value = std::getenv("EP_AUDITOR_CAUSAL_DIRECTORY"))
         directory = value;
 #endif
-    if (directory.empty() || !std::filesystem::is_directory(directory) || std::filesystem::is_symlink(directory))
+    if (directory.empty() || !std::filesystem::is_directory(directory) ||
+        std::filesystem::is_symlink(directory))
         return 2;
     const auto path = std::filesystem::path(directory) / "scenario-save.bin";
     if (std::filesystem::exists(path))
@@ -102,42 +118,49 @@ int RunAuditorSaveLoadScenario() {
     const auto write_start = std::chrono::steady_clock::now();
     WriteFixture(path, encoded.Value());
     io("io.write", "scenario-save", encoded.Value().size(),
-       static_cast<std::uint64_t>(
-           std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - write_start)
-               .count()));
+       static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                      std::chrono::steady_clock::now() - write_start)
+                                      .count()));
     const auto read_start = std::chrono::steady_clock::now();
     const auto bytes = ReadFixture(path);
     io("io.read", "scenario-load", bytes.size(),
-       static_cast<std::uint64_t>(
-           std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - read_start)
-               .count()));
+       static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                      std::chrono::steady_clock::now() - read_start)
+                                      .count()));
     const auto decoded = DecodeSaveGameImage(bytes);
-    if (!decoded || decoded.Value().sections.size() != image.sections.size() || bytes != encoded.Value())
+    if (!decoded || decoded.Value().sections.size() != image.sections.size() ||
+        bytes != encoded.Value())
         return 5;
     scenario("scenario.end", "save-load-scenario");
     action("action.end", "save-load-action");
     return 0;
 }
+
 #endif
 void TestSaveWireCodec() {
     auto empty = EncodeSaveGameImage({});
-    WireCheck(bool(empty) && bool(DecodeSaveGameImage(empty.Value())), "empty image wire roundtrip");
+    WireCheck(bool(empty) && bool(DecodeSaveGameImage(empty.Value())),
+              "empty image wire roundtrip");
     auto image = WireImage();
     auto encoded = EncodeSaveGameImage(image);
     WireCheck(bool(encoded), "multi-participant wire encode");
     auto decoded = DecodeSaveGameImage(encoded.Value());
-    WireCheck(bool(decoded) && decoded.Value().sections.size() == 2 && decoded.Value().manifest.saved_at.ticks == -17,
+    WireCheck(bool(decoded) && decoded.Value().sections.size() == 2 &&
+                  decoded.Value().manifest.saved_at.ticks == -17,
               "multi-participant manifest and signed time roundtrip");
     auto canonical = EncodeSaveGameImage(decoded.Value());
-    WireCheck(bool(canonical) && canonical.Value() == encoded.Value(), "canonical re-encoding is byte-stable");
+    WireCheck(bool(canonical) && canonical.Value() == encoded.Value(),
+              "canonical re-encoding is byte-stable");
     std::reverse(image.sections.begin(), image.sections.end());
     std::reverse(image.manifest.participants.begin(), image.manifest.participants.end());
-    WireCheck(EncodeSaveGameImage(image).Value() == encoded.Value(), "participant and section ordering canonicalized");
+    WireCheck(EncodeSaveGameImage(image).Value() == encoded.Value(),
+              "participant and section ordering canonicalized");
     for (std::size_t size = 0; size < encoded.Value().size(); ++size)
         WireCheck(!DecodeSaveGameImage(std::span(encoded.Value()).first(size)),
                   "every truncated header/table/payload rejected");
     auto bad = encoded.Value();
     bad[0] ^= std::byte{1};
+
     RepairChecksum(bad);
     WireCheck(!DecodeSaveGameImage(bad), "corrupted magic rejected");
     bad = encoded.Value();
@@ -158,6 +181,7 @@ void TestSaveWireCodec() {
     WireCheck(!DecodeSaveGameImage(bad), "resource count overflow rejected before allocation");
     bad = encoded.Value();
     bad[84] = std::byte{255};
+
     RepairChecksum(bad);
     WireCheck(!DecodeSaveGameImage(bad), "invalid requirement enum rejected");
     bad = encoded.Value();
@@ -166,14 +190,17 @@ void TestSaveWireCodec() {
     WireCheck(!DecodeSaveGameImage(bad), "malformed dependency count rejected");
     bad = encoded.Value();
     bad.back() ^= std::byte{1};
+
     WireCheck(!DecodeSaveGameImage(bad), "package checksum mismatch rejected");
     std::size_t sectionOffset = 72;
     for (const auto &entry : decoded.Value().manifest.participants)
         sectionOffset += 25 + 8 * entry.dependencies.size();
     bad = encoded.Value();
     bad.at(sectionOffset + 28) ^= std::byte{1};
+
     RepairChecksum(bad);
-    WireCheck(!DecodeSaveGameImage(bad), "section payload corruption rejected even with repaired whole checksum");
+    WireCheck(!DecodeSaveGameImage(bad),
+              "section payload corruption rejected even with repaired whole checksum");
     bad = encoded.Value();
     PatchInteger(bad, sectionOffset + 12, UINT64_MAX, 8);
     RepairChecksum(bad);
@@ -198,46 +225,59 @@ void TestSaveWireCodec() {
     WireCheck(!EncodeSaveGameImage(image), "unknown dependency rejected");
     image = WireImage();
     image.manifest.participants[1].dependencies = {image.manifest.participants[0].id};
+
     WireCheck(!EncodeSaveGameImage(image), "wire dependency cycle rejected");
     SaveWireLimits limits;
     limits.resources.max_participants = 1;
-    WireCheck(!EncodeSaveGameImage(WireImage(), limits) && !DecodeSaveGameImage(encoded.Value(), limits),
+    WireCheck(!EncodeSaveGameImage(WireImage(), limits) &&
+                  !DecodeSaveGameImage(encoded.Value(), limits),
               "participant limit enforced both ways");
     limits = {};
+
     limits.resources.max_section_bytes = 1;
-    WireCheck(!EncodeSaveGameImage(WireImage(), limits) && !DecodeSaveGameImage(encoded.Value(), limits),
+    WireCheck(!EncodeSaveGameImage(WireImage(), limits) &&
+                  !DecodeSaveGameImage(encoded.Value(), limits),
               "payload size limit enforced both ways");
     limits = {};
+
     limits.resources.max_section_bytes = 2;
     limits.resources.max_total_payload_bytes = 3;
-    WireCheck(!EncodeSaveGameImage(WireImage(), limits) && !DecodeSaveGameImage(encoded.Value(), limits),
+    WireCheck(!EncodeSaveGameImage(WireImage(), limits) &&
+                  !DecodeSaveGameImage(encoded.Value(), limits),
               "total payload size limit enforced both ways");
     limits = {};
+
     limits.max_wire_bytes = 80;
-    WireCheck(!EncodeSaveGameImage(WireImage(), limits) && !DecodeSaveGameImage(encoded.Value(), limits),
+    WireCheck(!EncodeSaveGameImage(WireImage(), limits) &&
+                  !DecodeSaveGameImage(encoded.Value(), limits),
               "whole-package byte limit enforced");
     limits = {};
+
     limits.resources.max_participants = 100000;
-    WireCheck(!DecodeSaveGameImage(encoded.Value(), limits), "caller cannot bypass format hard caps");
+    WireCheck(!DecodeSaveGameImage(encoded.Value(), limits),
+              "caller cannot bypass format hard caps");
     image = WireImage();
     auto extra = image.sections.front();
     extra.participant = SaveParticipantId::FromString("fixture.c");
     image.sections.push_back(extra);
-    image.manifest.participants.push_back({extra.participant,
-                                           1,
-                                           extra.payload_hash,
-                                           SaveParticipantRequirement::Optional,
-                                           {image.sections[0].participant, image.sections[1].participant}});
+    image.manifest.participants.push_back(
+        {extra.participant,
+         1,
+         extra.payload_hash,
+         SaveParticipantRequirement::Optional,
+         {image.sections[0].participant, image.sections[1].participant}});
     auto ordered = EncodeSaveGameImage(image);
     WireCheck(bool(ordered), "multiple semantic dependencies encode");
     std::reverse(image.manifest.participants.back().dependencies.begin(),
                  image.manifest.participants.back().dependencies.end());
-    WireCheck(EncodeSaveGameImage(image).Value() == ordered.Value(), "dependency list ordering canonicalized");
+    WireCheck(EncodeSaveGameImage(image).Value() == ordered.Value(),
+              "dependency list ordering canonicalized");
     for (auto name : {"empty", "multi"}) {
-        const auto bytes =
-            ReadFixture(std::filesystem::path(EPIDEMIC_SAVE_FIXTURES) / "whole/1" / (std::string(name) + ".bin"));
+        const auto bytes = ReadFixture(std::filesystem::path(EPIDEMIC_SAVE_FIXTURES) / "whole/1" /
+                                       (std::string(name) + ".bin"));
         auto historical = DecodeSaveGameImage(bytes);
         WireCheck(bool(historical) && EncodeSaveGameImage(historical.Value()).Value() == bytes,
                   "historical wire golden decodes and canonically re-encodes");
     }
+
 }

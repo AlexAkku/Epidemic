@@ -21,10 +21,12 @@ std::vector<std::byte> Wave() {
         data[p] = static_cast<std::byte>(value & 255);
         data[p + 1] = static_cast<std::byte>((value >> 8) & 255);
     };
+
     auto put32 = [&](std::size_t p, unsigned value) {
         put16(p, value);
         put16(p + 2, value >> 16);
     };
+
     std::memcpy(data.data(), "RIFF", 4);
     put32(4, 8036);
     std::memcpy(data.data() + 8, "WAVEfmt ", 8);
@@ -49,24 +51,32 @@ int main() {
         Check(!detail::ParsePcmWave(missing), "fmt chunk is mandatory even after a valid parse");
         auto malformed = valid;
         malformed[32] = std::byte{4};
+
         Check(!detail::ParsePcmWave(malformed), "block alignment must match channel/sample size");
         malformed = valid;
         malformed[28] = std::byte{0};
+
         Check(!detail::ParsePcmWave(malformed), "byte rate must match sample rate and alignment");
-        Check(!detail::ParsePcmWave(std::span<const std::byte>(valid).first(valid.size() - 1)), "truncated RIFF");
+        Check(!detail::ParsePcmWave(std::span<const std::byte>(valid).first(valid.size() - 1)),
+              "truncated RIFF");
         const auto com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
         struct Com {
             bool owned;
+
             ~Com() {
                 if (owned)
                     CoUninitialize();
             }
+
         } apartment{SUCCEEDED(com)};
+
         Music music;
         Check(music.State() == PlaybackState::Unloaded, "new music is unloaded");
         Check(!music.LoadPcm(missing) && music.State() == PlaybackState::Failed && !music.Playing(),
               "malformed load fails cleanly");
-        Check(music.Failure().operation == "ParsePcmWave" && music.Position() == 0, "parse error is observable");
+        Check(music.Failure().operation == "ParsePcmWave" && music.Position() == 0,
+              "parse error is observable");
         if (music.LoadPcm(valid, true)) {
             music.Tick(0, true, 0);
             Check(music.Playing(), "one-shot starts immediately");
@@ -83,7 +93,8 @@ int main() {
             Check(music.Playing(), "cinematic resumes");
             std::this_thread::sleep_for(std::chrono::milliseconds(550));
             music.Tick(.55, true, 0);
-            Check(music.State() == PlaybackState::Ended, "one-shot reaches an observable end state");
+            Check(music.State() == PlaybackState::Ended,
+                  "one-shot reaches an observable end state");
             Check(music.LoadPcm(valid), "menu loads after cinematic");
             music.Tick(5, true, 0);
             Check(music.Playing(), "menu starts after initial delay");
@@ -96,9 +107,11 @@ int main() {
         } else {
             std::cout << "SKIP: playback device unavailable; parser/failure contracts checked\n";
         }
-        const auto profile =
-            std::filesystem::path("presentation-roundtrip-" + std::to_string(GetCurrentProcessId()) + ".bin");
+
+        const auto profile = std::filesystem::path("presentation-roundtrip-" +
+                                                   std::to_string(GetCurrentProcessId()) + ".bin");
         const std::vector<std::byte> first{std::byte{1}, std::byte{2}}, second{std::byte{3}};
+
         SaveBlob(profile, first);
         Check(LoadBlob(profile) == first, "relative filename without parent directory round trips");
         SaveBlob(profile, second);
@@ -110,4 +123,5 @@ int main() {
         std::cerr << error.what() << '\n';
         return 1;
     }
+
 }

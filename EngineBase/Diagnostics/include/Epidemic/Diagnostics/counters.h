@@ -7,8 +7,8 @@
 #include <string_view>
 
 namespace epidemic::diagnostics {
-// Process-wide numeric diagnostics counters. Arithmetic saturates instead of wrapping so observability
-// cannot publish nonsensical values after an integer boundary is reached.
+// Process-wide numeric diagnostics counters. Arithmetic saturates instead of wrapping so
+// observability cannot publish nonsensical values after an integer boundary is reached.
 enum class CounterId : std::uint8_t {
     Frames,
     TasksScheduled,
@@ -98,7 +98,8 @@ class DiagnosticsCounters {
     // Subtracts delta with signed saturation. Invalid CounterId values are rejected as a no-op.
     void Decrement(CounterId counter_id, std::int64_t delta = 1) noexcept;
 
-    // Replaces one valid counter with an exact value. Invalid CounterId values are rejected as a no-op.
+    // Replaces one valid counter with an exact value. Invalid CounterId values are rejected as a
+    // no-op.
     void Set(CounterId counter_id, std::int64_t value) noexcept;
 
     // Returns a valid counter value, or zero for an invalid CounterId.
@@ -113,6 +114,7 @@ class DiagnosticsCounters {
     }
 
     std::array<std::atomic<std::int64_t>, CounterCount()> values_{};
+
 };
 
 [[nodiscard]] DiagnosticsCounters &GlobalCounters() noexcept;

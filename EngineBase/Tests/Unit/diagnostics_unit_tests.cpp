@@ -1,5 +1,6 @@
-// Diagnostics local-freeze tests. These tests deliberately exercise failure containment because diagnostics
-// is observational and must never become a control-flow dependency of authoritative engine state.
+// Diagnostics local-freeze tests. These tests deliberately exercise failure containment because
+// diagnostics is observational and must never become a control-flow dependency of authoritative
+// engine state.
 
 #include "../test_assert.h"
 
@@ -27,15 +28,18 @@
 #if !defined(_MSC_VER)
 namespace diagnostics_allocation_fault {
 std::atomic_bool fail_next{false};
+
 }
 
 void *operator new(std::size_t size) {
     if (diagnostics_allocation_fault::fail_next.exchange(false, std::memory_order_relaxed)) {
         throw std::bad_alloc();
     }
+
     if (void *memory = std::malloc(size == 0 ? 1 : size)) {
         return memory;
     }
+
     throw std::bad_alloc();
 }
 
@@ -58,6 +62,7 @@ void operator delete(void *memory, std::size_t) noexcept {
 void operator delete[](void *memory, std::size_t) noexcept {
     std::free(memory);
 }
+
 #endif
 
 namespace {
@@ -68,6 +73,7 @@ class RecordingLogger final : public diagnostics::ILogger {
   public:
     struct Record {
         diagnostics::LogLevel level{};
+
         std::string module;
         std::string category;
         std::string message;
@@ -78,9 +84,11 @@ class RecordingLogger final : public diagnostics::ILogger {
 
   private:
     void Write(const diagnostics::LogMessage &message) override {
-        records.push_back(Record{message.level, std::string(message.module_name), std::string(message.category),
-                                 std::string(message.message), message.thread_name});
+        records.push_back(Record{message.level, std::string(message.module_name),
+                                 std::string(message.category), std::string(message.message),
+                                 message.thread_name});
     }
+
 };
 
 class ThrowingLogger final : public diagnostics::ILogger {
@@ -92,6 +100,7 @@ class ThrowingLogger final : public diagnostics::ILogger {
         ++write_attempts;
         throw std::runtime_error("diagnostic sink failure");
     }
+
 };
 
 class ThrowingProfileCollector final : public diagnostics::IProfileCollector {
@@ -102,6 +111,7 @@ class ThrowingProfileCollector final : public diagnostics::IProfileCollector {
     }
 
     int record_attempts{0};
+
 };
 
 void ResetGlobalDiagnostics() {
@@ -138,9 +148,11 @@ void TestDiagnosticValueHelpers() {
     Assert(diagnostics::GetProfileCollector() == collector,
            "GetProfileCollector must return the installed shared collector");
     diagnostics::SetProfilingEnabled(false);
-    Assert(!diagnostics::IsProfilingEnabled(), "Profiling enable state must roundtrip through its query");
+    Assert(!diagnostics::IsProfilingEnabled(),
+           "Profiling enable state must roundtrip through its query");
     diagnostics::SetProfilingEnabled(true);
-    Assert(diagnostics::IsProfilingEnabled(), "Profiling must be re-enabled without replacing the collector");
+    Assert(diagnostics::IsProfilingEnabled(),
+           "Profiling must be re-enabled without replacing the collector");
     ResetGlobalDiagnostics();
 }
 
@@ -149,7 +161,13 @@ void TestLoggerOverloadsAndDisableContract() {
     diagnostics::SetCurrentThreadName("DiagnosticsMain");
 
     RecordingLogger logger;
-    logger.Log(diagnostics::LogMessage{diagnostics::LogLevel::Info, "Diagnostics", "Raw", "raw", {}, {}, "OwnedName"});
+    logger.Log(diagnostics::LogMessage{diagnostics::LogLevel::Info,
+                                       "Diagnostics",
+                                       "Raw",
+                                       "raw",
+                                       {},
+                                       {},
+                                       "OwnedName"});
     logger.Log(diagnostics::LogLevel::Debug, "Diagnostics", "Explicit", "four args");
     logger.Log(diagnostics::LogLevel::Info, "Diagnostics", "three args");
     logger.Trace("Diagnostics", "Trace", "category");
@@ -165,8 +183,10 @@ void TestLoggerOverloadsAndDisableContract() {
     logger.Fatal("Diagnostics", "Fatal", "category");
     logger.Fatal("Diagnostics", "plain");
 
-    Assert(logger.records.size() == 15, "Every public logger overload must dispatch exactly one record when enabled");
-    Assert(logger.records.front().thread_name == "OwnedName", "LogMessage must own its thread diagnostic name");
+    Assert(logger.records.size() == 15,
+           "Every public logger overload must dispatch exactly one record when enabled");
+    Assert(logger.records.front().thread_name == "OwnedName",
+           "LogMessage must own its thread diagnostic name");
     Assert(logger.records[1].thread_name == "DiagnosticsMain",
            "Convenience logging must capture the current thread diagnostic name");
     Assert(logger.records[3].level == diagnostics::LogLevel::Trace &&
@@ -189,14 +209,16 @@ void TestLoggerOverloadsAndDisableContract() {
         !diagnostics_allocation_fault::fail_next.exchange(false, std::memory_order_relaxed);
 #endif
     ++authoritative_probe;
-    Assert(!diagnostics::IsLoggingEnabled(), "Logging disable state must be observable without consulting a sink");
+    Assert(!diagnostics::IsLoggingEnabled(),
+           "Logging disable state must be observable without consulting a sink");
 #if !defined(_MSC_VER)
     Assert(!disabled_logger_attempted_allocation,
            "Disabled logging must return before thread-name capture or diagnostic allocation");
 #endif
     Assert(logger.records.size() == records_before_disabled_write,
            "Disabled logging must not invoke the sink or publish a diagnostic record");
-    Assert(authoritative_probe == 18, "Disabled logging must not alter surrounding engine control flow or state");
+    Assert(authoritative_probe == 18,
+           "Disabled logging must not alter surrounding engine control flow or state");
 
     diagnostics::SetLoggingEnabled(true);
     logger.Info("Diagnostics", "Reenabled", "dispatch resumes");
@@ -212,22 +234,27 @@ void TestLoggerSinkFailureIsContained() {
     int authoritative_probe = 10;
     logger.Info("Diagnostics", "Failure", "sink throws");
     authoritative_probe += 5;
-    Assert(logger.write_attempts == 1, "Enabled logging must attempt the configured sink exactly once");
-    Assert(authoritative_probe == 15, "A throwing logging sink must not interrupt authoritative engine mutation");
+    Assert(logger.write_attempts == 1,
+           "Enabled logging must attempt the configured sink exactly once");
+    Assert(authoritative_probe == 15,
+           "A throwing logging sink must not interrupt authoritative engine mutation");
 
     bool original_error_observed = false;
     try {
         try {
             throw std::runtime_error("original engine failure");
         } catch (...) {
-            logger.Error("Diagnostics", "FailurePath", "logging must not replace the active failure");
+            logger.Error("Diagnostics", "FailurePath",
+                         "logging must not replace the active failure");
             throw;
         }
+
     } catch (const std::runtime_error &exception) {
         original_error_observed = std::string(exception.what()) == "original engine failure";
     }
 
-    Assert(original_error_observed, "Logging from a failure path must preserve the original exception");
+    Assert(original_error_observed,
+           "Logging from a failure path must preserve the original exception");
     Assert(logger.write_attempts == 2, "Failure-path logging must still attempt the sink once");
 
     diagnostics::SetLoggingEnabled(false);
@@ -249,14 +276,16 @@ void TestCounterArithmeticAndInvalidIds() {
 
     counters.Set(diagnostics::CounterId::Frames, maximum - 1);
     counters.Increment(diagnostics::CounterId::Frames, 10);
-    Assert(counters.Get(diagnostics::CounterId::Frames) == maximum, "Counter increment must saturate at INT64_MAX");
+    Assert(counters.Get(diagnostics::CounterId::Frames) == maximum,
+           "Counter increment must saturate at INT64_MAX");
     counters.Increment(diagnostics::CounterId::Frames, 1);
     Assert(counters.Get(diagnostics::CounterId::Frames) == maximum,
            "Counter increment at INT64_MAX must remain saturated");
 
     counters.Set(diagnostics::CounterId::Frames, minimum + 1);
     counters.Decrement(diagnostics::CounterId::Frames, 10);
-    Assert(counters.Get(diagnostics::CounterId::Frames) == minimum, "Counter decrement must saturate at INT64_MIN");
+    Assert(counters.Get(diagnostics::CounterId::Frames) == minimum,
+           "Counter decrement must saturate at INT64_MIN");
     counters.Decrement(diagnostics::CounterId::Frames, 1);
     Assert(counters.Get(diagnostics::CounterId::Frames) == minimum,
            "Counter decrement at INT64_MIN must remain saturated");
@@ -271,14 +300,17 @@ void TestCounterArithmeticAndInvalidIds() {
            "Adding INT64_MIN must saturate without undefined signed arithmetic");
 
     counters.Set(diagnostics::CounterId::TasksCompleted, 91);
-    const auto invalid = static_cast<diagnostics::CounterId>(std::numeric_limits<std::uint8_t>::max());
+    const auto invalid =
+        static_cast<diagnostics::CounterId>(std::numeric_limits<std::uint8_t>::max());
     counters.Set(diagnostics::CounterId::Count, 1);
     counters.Increment(invalid, 100);
     counters.Decrement(invalid, 100);
-    Assert(!diagnostics::IsValidCounterId(diagnostics::CounterId::Count) && !diagnostics::IsValidCounterId(invalid),
+    Assert(!diagnostics::IsValidCounterId(diagnostics::CounterId::Count) &&
+               !diagnostics::IsValidCounterId(invalid),
            "CounterId::Count and out-of-range enum values must be rejected as invalid IDs");
     Assert(counters.Get(diagnostics::CounterId::Count) == 0 && counters.Get(invalid) == 0,
-           "Invalid counter queries must return the documented neutral value without out-of-bounds access");
+           "Invalid counter queries must return the documented neutral value without out-of-bounds "
+           "access");
     Assert(counters.Get(diagnostics::CounterId::TasksCompleted) == 91,
            "Invalid counter mutations must not corrupt neighboring valid counter slots");
 
@@ -302,9 +334,11 @@ void TestInMemoryCollectorAllocationFailureIsAtomic() {
     } catch (const std::bad_alloc &) {
         bad_alloc_observed = true;
     }
+
     diagnostics_allocation_fault::fail_next.store(false, std::memory_order_relaxed);
 
-    Assert(bad_alloc_observed, "The targeted collector allocation fault must be observed by a direct caller");
+    Assert(bad_alloc_observed,
+           "The targeted collector allocation fault must be observed by a direct caller");
     Assert(collector.Snapshot().empty(),
            "Failed InMemoryProfileCollector append must preserve the exact empty pre-state");
 #endif
@@ -313,7 +347,8 @@ void TestInMemoryCollectorAllocationFailureIsAtomic() {
     Assert(collector.Snapshot().size() == 1 && collector.Snapshot()[0].name == "after-fault",
            "Collector must record and expose an appended event");
     collector.Reset();
-    Assert(collector.Snapshot().empty(), "Collector reset must clear every previously recorded event");
+    Assert(collector.Snapshot().empty(),
+           "Collector reset must clear every previously recorded event");
 }
 
 void TestProfileScopeRaiiAndFailureContainment() {
@@ -326,6 +361,7 @@ void TestProfileScopeRaiiAndFailureContainment() {
         EPIDEMIC_PROFILE_SCOPE("NormalScope");
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
+
     auto events = collector->Snapshot();
     Assert(events.size() == 1 && events[0].name == "NormalScope",
            "ProfileScope must close and publish on normal return");
@@ -339,8 +375,10 @@ void TestProfileScopeRaiiAndFailureContainment() {
     } catch (const std::runtime_error &exception) {
         original_error_observed = std::string(exception.what()) == "profiled operation failed";
     }
+
     events = collector->Snapshot();
-    Assert(original_error_observed, "ProfileScope destruction during unwinding must preserve the original exception");
+    Assert(original_error_observed,
+           "ProfileScope destruction during unwinding must preserve the original exception");
     Assert(events.size() == 2 && events[1].name == "ExceptionScope",
            "ProfileScope must close and publish while unwinding an exception");
 
@@ -353,13 +391,16 @@ void TestProfileScopeRaiiAndFailureContainment() {
     {
         diagnostics::ProfileScope disabled_scope(disabled_scope_name);
     }
+
 #if !defined(_MSC_VER)
     const bool disabled_scope_attempted_allocation =
         !diagnostics_allocation_fault::fail_next.exchange(false, std::memory_order_relaxed);
     Assert(!disabled_scope_attempted_allocation,
-           "Disabled profiling must return before copying the scope name or performing diagnostic allocation");
+           "Disabled profiling must return before copying the scope name or performing diagnostic "
+           "allocation");
 #endif
-    Assert(collector->Snapshot().empty(), "Disabled profiling must not invoke or mutate the collector");
+    Assert(collector->Snapshot().empty(),
+           "Disabled profiling must not invoke or mutate the collector");
     diagnostics::SetProfilingEnabled(true);
 
     auto throwing_collector = std::make_shared<ThrowingProfileCollector>();
@@ -367,7 +408,9 @@ void TestProfileScopeRaiiAndFailureContainment() {
     {
         EPIDEMIC_PROFILE_SCOPE("ThrowingCollectorScope");
     }
-    Assert(throwing_collector->record_attempts == 1, "ProfileScope must attempt an enabled collector exactly once");
+
+    Assert(throwing_collector->record_attempts == 1,
+           "ProfileScope must attempt an enabled collector exactly once");
 
     original_error_observed = false;
     try {
@@ -376,8 +419,11 @@ void TestProfileScopeRaiiAndFailureContainment() {
     } catch (const std::runtime_error &exception) {
         original_error_observed = std::string(exception.what()) == "original profiled failure";
     }
-    Assert(original_error_observed, "A throwing profile collector must not replace an exception already being unwound");
-    Assert(throwing_collector->record_attempts == 2, "Collector failures must be contained for every completed scope");
+
+    Assert(original_error_observed,
+           "A throwing profile collector must not replace an exception already being unwound");
+    Assert(throwing_collector->record_attempts == 2,
+           "Collector failures must be contained for every completed scope");
     ResetGlobalDiagnostics();
 }
 
@@ -400,7 +446,9 @@ void TestProfileScopeCapturesOriginalCollector() {
     {
         diagnostics::ProfileScope scope("ReplacementScope");
     }
-    Assert(replacement->Snapshot().size() == 1, "New ProfileScope objects must use the replacement collector");
+
+    Assert(replacement->Snapshot().size() == 1,
+           "New ProfileScope objects must use the replacement collector");
     ResetGlobalDiagnostics();
 }
 
@@ -409,8 +457,8 @@ void TestThreadDiagnosticNamesOwnTheirLifetime() {
     diagnostics::SetCurrentThreadName("short-name");
     const std::string retained_name = diagnostics::GetCurrentThreadName();
     diagnostics::SetCurrentThreadName(std::string(4096, 'x'));
-    Assert(retained_name == "short-name",
-           "A previously returned thread name must remain valid after thread-local storage changes");
+    Assert(retained_name == "short-name", "A previously returned thread name must remain valid "
+                                          "after thread-local storage changes");
 
     std::string worker_name;
     std::thread worker([&worker_name] {

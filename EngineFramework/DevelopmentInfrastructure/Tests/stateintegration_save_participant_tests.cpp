@@ -3,6 +3,7 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestConditionServiceSaveParticipant() {
     std::cerr << "[participant] framework.conditions: bootstrap\n";
     epidemic::gameplay::conditions::ConditionService owner;
@@ -19,53 +20,57 @@ void TestConditionServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.conditions", {});
     std::cerr << "[participant] framework.conditions: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.conditions: non-empty seed\n";
     conditions::ApplyConditionRequest request;
     request.type = condition_id.Value();
-    request.subject = {GameplayDomainId::FromString("participant.condition"), GameplayObjectId::FromString("subject")};
+    request.subject = {GameplayDomainId::FromString("participant.condition"),
+                       GameplayObjectId::FromString("subject")};
+
     request.context.time = GameplayTimePoint{1};
-    participant_tests::Check(bool(owner.Apply(std::move(request))), "seed actual condition instance");
+
+    participant_tests::Check(bool(owner.Apply(std::move(request))),
+                             "seed actual condition instance");
     std::cerr << "[participant] framework.conditions: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().instances.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().instances.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestEffectServiceSaveParticipant() {
     std::cerr << "[participant] framework.effects: bootstrap\n";
     epidemic::gameplay::effects::EffectService owner;
+
     class ParticipantEffectHandler final : public effects::IEffectHandler {
       public:
         effects::EffectTypeId Type() const noexcept override {
             return effects::EffectTypeId::FromString("participant.effect.type");
         }
+
         effects::EffectHandlerCapabilities Capabilities() const noexcept override {
             return {true, false, false, true};
+
         }
+
         epidemic::foundation::Result<effects::EffectPrepareResult>
         Prepare(const effects::EffectOperation &) const override {
             return epidemic::foundation::Result<effects::EffectPrepareResult>::Success(
                 {effects::EffectPrepareDisposition::Accepted, {}});
         }
+
         epidemic::foundation::Result<effects::EffectCommitResult>
-        Commit(const effects::EffectOperation &, const effects::RegisteredEffectPayload &) noexcept override {
+        Commit(const effects::EffectOperation &,
+               const effects::RegisteredEffectPayload &) noexcept override {
             return epidemic::foundation::Result<effects::EffectCommitResult>::Success({});
         }
+
     };
+
     auto handler = std::make_shared<ParticipantEffectHandler>();
-    participant_tests::Check(bool(owner.RegisterHandler("participant.effect.type", handler)), "effect fixture handler");
+    participant_tests::Check(bool(owner.RegisterHandler("participant.effect.type", handler)),
+                             "effect fixture handler");
     effects::EffectDefinition definition;
     definition.canonical_name = "participant.effect";
     definition.steps.push_back({handler->Type(), effects::EffectTargetSelector::AllTargets, 1, {}});
@@ -78,32 +83,26 @@ void TestEffectServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.effects", {});
     std::cerr << "[participant] framework.effects: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.effects: non-empty seed\n";
     effects::EffectRequest request;
     request.definition = definition_id.Value();
-    request.targets = {{GameplayDomainId::FromString("participant.effect"), GameplayObjectId::FromString("target")}};
+    request.targets = {{GameplayDomainId::FromString("participant.effect"),
+                        GameplayObjectId::FromString("target")}};
+
     request.scale_micro = 1'000'000;
-    auto deferred = owner.Defer(std::move(request), ClockId::FromString("participant.clock"), GameplayTimePoint{10},
-                                effects::DeferredEffectPersistence::Persistent);
+    auto deferred =
+        owner.Defer(std::move(request), ClockId::FromString("participant.clock"),
+                    GameplayTimePoint{10}, effects::DeferredEffectPersistence::Persistent);
     participant_tests::Check(bool(deferred), "seed actual deferred effect");
     std::cerr << "[participant] framework.effects: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().deferred.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().deferred.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestEntityServiceSaveParticipant() {
     std::cerr << "[participant] framework.entities: bootstrap\n";
     epidemic::gameplay::entities::EntityService owner;
@@ -119,13 +118,8 @@ void TestEntityServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.entities", {});
     std::cerr << "[participant] framework.entities: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.entities: non-empty seed\n";
     entities::CreateEntityRequest request;
@@ -133,14 +127,10 @@ void TestEntityServiceSaveParticipant() {
     participant_tests::Check(bool(owner.Create(std::move(request))), "seed actual entity");
     std::cerr << "[participant] framework.entities: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().records.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().records.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestMaterialServiceSaveParticipant() {
     std::cerr << "[participant] framework.materials: bootstrap\n";
     epidemic::gameplay::materials::MaterialService owner;
@@ -157,30 +147,25 @@ void TestMaterialServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.materials", {});
     std::cerr << "[participant] framework.materials: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.materials: non-empty seed\n";
     const GameplayObjectRef subject{GameplayDomainId::FromString("participant.material"),
                                     GameplayObjectId::FromString("subject")};
-    materials::MaterialComposition composition{{materials::MaterialConstituent{material_id.Value(), 1'000'000}}};
-    participant_tests::Check(bool(owner.AssignComposition(subject, material_slot.Value(), std::move(composition))),
+
+    materials::MaterialComposition composition{
+        {materials::MaterialConstituent{material_id.Value(), 1'000'000}}};
+
+    participant_tests::Check(bool(owner.AssignComposition(subject, material_slot.Value(),
+                                                          std::move(composition))),
                              "seed actual material state");
     std::cerr << "[participant] framework.materials: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().states.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().states.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestStateIntegrationPersistenceSaveParticipant() {
     std::cerr << "[participant] integration.state: bootstrap\n";
     entities::EntityService entities;
@@ -193,7 +178,8 @@ void TestStateIntegrationPersistenceSaveParticipant() {
     state_entity_archetype.canonical_name = "participant.state.entity";
     const auto state_entity_archetype_id = entities.RegisterArchetype(state_entity_archetype);
     participant_tests::Check(bool(state_entity_archetype_id), "state fixture entity archetype");
-    state_integration::StateFactsAdapter facts_adapter(entities, materials, conditions, effects, facts);
+    state_integration::StateFactsAdapter facts_adapter(entities, materials, conditions, effects,
+                                                       facts);
     state_integration::StateLifecycleAdapter lifecycle(entities, materials, conditions, effects);
     state_integration::ConditionEffectsAdapter delivery(conditions, effects);
     state_integration::StateTimeAdapter time_adapter(conditions, effects, time);
@@ -213,7 +199,8 @@ void TestStateIntegrationPersistenceSaveParticipant() {
     (void)delivery.ProcessPending();
     (void)time_adapter.SynchronizeConditionSchedules();
     (void)time_adapter.SynchronizeDeferredEffects();
-    state_integration::StateIntegrationPersistence owner(facts_adapter, lifecycle, delivery, time_adapter);
+    state_integration::StateIntegrationPersistence owner(facts_adapter, lifecycle, delivery,
+                                                         time_adapter);
     savegame::SaveRestoreWorkspace workspace;
     std::cerr << "[participant] integration.state: contract\n";
     auto participant = savegame::CreateStateIntegrationPersistenceSaveParticipant(owner, workspace);
@@ -224,13 +211,16 @@ void TestStateIntegrationPersistenceSaveParticipant() {
                               savegame::SaveParticipantId::FromString("framework.effects"),
                               savegame::SaveParticipantId::FromString("framework.facts"),
                               savegame::SaveParticipantId::FromString("framework.time")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureCheckpoint();
-        checkpoint.facts.entity_cursor.sequence = 0;
-        checkpoint.lifecycle.cursor.sequence = 0;
-        return owner.RestoreCheckpoint(std::move(checkpoint));
-    });
+    participant_tests::CheckChangedStatePublication(*participant,
+                                                    [&]() -> ::epidemic::foundation::Result<void> {
+                                                        auto checkpoint = owner.CaptureCheckpoint();
+                                                        checkpoint.facts.entity_cursor.sequence = 0;
+                                                        checkpoint.lifecycle.cursor.sequence = 0;
+                                                        return owner.RestoreCheckpoint(
+                                                            std::move(checkpoint));
+                                                    });
 }
+
 int main() {
     TestConditionServiceSaveParticipant();
     TestEffectServiceSaveParticipant();

@@ -3,6 +3,7 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestGameplayFactsServiceSaveParticipant() {
     std::cerr << "[participant] framework.facts: bootstrap\n";
     epidemic::gameplay::facts::GameplayFactsService owner;
@@ -12,14 +13,15 @@ void TestGameplayFactsServiceSaveParticipant() {
     participant_tests::Check(bool(owner.RegisterFactCodec<int>(
                                  fact_type.Value(), "participant.fact.v1", 1,
                                  [](const int &value) {
-                                     return epidemic::foundation::Result<std::vector<std::byte>>::Success(
-                                         {static_cast<std::byte>(value & 0xff)});
+                                     return epidemic::foundation::Result<std::vector<std::byte>>::
+                                         Success({static_cast<std::byte>(value & 0xff)});
                                  },
                                  [](std::span<const std::byte> bytes, std::uint32_t version) {
                                      if (version != 1 || bytes.size() != 1)
                                          return epidemic::foundation::Result<int>::Failure(
-                                             epidemic::foundation::Error::Create("participant.fact.decode",
-                                                                                 "invalid participant fact payload"));
+                                             epidemic::foundation::Error::
+                                                 Create("participant.fact.decode",
+                                                        "invalid participant fact payload"));
                                      return epidemic::foundation::Result<int>::Success(
                                          static_cast<int>(std::to_integer<unsigned int>(bytes[0])));
                                  })),
@@ -31,30 +33,24 @@ void TestGameplayFactsServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.facts", {});
     std::cerr << "[participant] framework.facts: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CapturePersistenceSnapshot().Value();
-        },
-        [&](auto snapshot) {
-            return owner.RestorePersistenceSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CapturePersistenceSnapshot().Value(); },
+        [&](auto snapshot) { return owner.RestorePersistenceSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CapturePersistenceSnapshot().Value();
     std::cerr << "[participant] framework.facts: non-empty seed\n";
     const GameplayObjectRef subject{facts_domain, GameplayObjectId::FromString("subject")};
+
     auto transaction = owner.BeginTransaction(facts_domain);
     transaction.Set<int>(fact_type.Value(), subject, {}, 7, facts::FactPersistence::Persistent);
-    participant_tests::Check(bool(owner.Commit(std::move(transaction), {})), "seed actual persistent fact");
-    participant_tests::Check(bool(owner.Dispatch()), "facts fixture reaches quiescent event boundary");
+    participant_tests::Check(bool(owner.Commit(std::move(transaction), {})),
+                             "seed actual persistent fact");
+    participant_tests::Check(bool(owner.Dispatch()),
+                             "facts fixture reaches quiescent event boundary");
     std::cerr << "[participant] framework.facts: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.GetDiagnostics().persistent_fact_count;
-        },
-        [&] {
-            return owner.RestorePersistenceSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.GetDiagnostics().persistent_fact_count; },
+        [&] { return owner.RestorePersistenceSnapshot(empty_snapshot); });
 }
+
 void TestGameplayTimeServiceSaveParticipant() {
     std::cerr << "[participant] framework.time: bootstrap\n";
     epidemic::gameplay::time::GameplayTimeService owner;
@@ -69,30 +65,23 @@ void TestGameplayTimeServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.time", {});
     std::cerr << "[participant] framework.time: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.time: non-empty seed\n";
     const GameplayObjectRef subject{time_domain, GameplayObjectId::FromString("owner")};
-    participant_tests::Check(
-        bool(owner.Schedule(clock_id.Value(), GameplayTimePoint{10}, subject, action_id.Value(), {},
-                            time::CatchUpPolicy::FireOnce, time::SchedulePersistence::Persistent)),
-        "seed actual persistent schedule");
+
+    participant_tests::Check(bool(owner.Schedule(clock_id.Value(), GameplayTimePoint{10}, subject,
+                                                 action_id.Value(), {},
+                                                 time::CatchUpPolicy::FireOnce,
+                                                 time::SchedulePersistence::Persistent)),
+                             "seed actual persistent schedule");
     std::cerr << "[participant] framework.time: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().schedules.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().schedules.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 int main() {
     TestGameplayFactsServiceSaveParticipant();
     TestGameplayTimeServiceSaveParticipant();

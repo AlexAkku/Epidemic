@@ -19,6 +19,7 @@ inline void Require(bool condition, std::string_view expression, std::string_vie
         throw Failure(std::string{file} + ":" + std::to_string(line) +
                       ": requirement failed: " + std::string{expression});
     }
+
 }
 
 using TestFunction = void (*)();
@@ -38,11 +39,14 @@ inline int Run(std::string_view suite, const std::vector<TestCase> &tests) {
             ++failed;
             std::cerr << "  [fail] " << name << ": unknown exception\n";
         }
+
     }
+
     std::cout << "[result] " << (tests.size() - failed) << '/' << tests.size() << " passed\n";
     return failed == 0 ? 0 : 1;
 }
+
 } // namespace epidemic::truth_tests
 
-#define TRUTH_REQUIRE(expression)                                                                                      \
+#define TRUTH_REQUIRE(expression)                                                                  \
     ::epidemic::truth_tests::Require(static_cast<bool>(expression), #expression, __FILE__, __LINE__)

@@ -19,14 +19,18 @@ class TestSubjectStateProvider final : public IConditionSubjectStateProvider {
     ConditionSubjectMaterializationState state = ConditionSubjectMaterializationState::Materialized;
     bool throw_on_query = false;
 
-    [[nodiscard]] ConditionSubjectMaterializationState GetMaterializationState(GameplayObjectRef) const override {
+    [[nodiscard]] ConditionSubjectMaterializationState
+    GetMaterializationState(GameplayObjectRef) const override {
         if (throw_on_query) {
             throw std::runtime_error("subject state provider failure");
         }
+
         return state;
     }
+
 };
-}
+
+} // namespace
 
 int main() {
     GameplayTagRegistry tags;
@@ -48,19 +52,23 @@ int main() {
     stacking.stacking = ConditionStackingPolicy::AddStacks;
     stacking.max_stacks = 3;
     stacking.default_duration = GameplayDuration{10};
+
     stacking.periodic_interval = GameplayDuration{2};
+
     stacking.clock = clock;
     stacking.persistence = ConditionPersistencePolicy::Persistent;
     stacking.payload_type = payload_type;
     stacking.max_payload_bytes = sizeof(Payload);
-    const auto stacking_id = service.RegisterCondition(stacking, [](std::span<const std::byte> bytes) {
-        return bytes.size() == sizeof(Payload);
-    });
+    const auto stacking_id =
+        service.RegisterCondition(stacking, [](std::span<const std::byte> bytes) {
+            return bytes.size() == sizeof(Payload);
+        });
 
     ConditionDefinition refresh;
     refresh.canonical_name = "test.condition.refresh";
     refresh.stacking = ConditionStackingPolicy::RefreshDuration;
     refresh.default_duration = GameplayDuration{5};
+
     refresh.clock = clock;
     const auto refresh_id = service.RegisterCondition(refresh);
 
@@ -76,6 +84,7 @@ int main() {
     materialized.materialization = ConditionMaterializationPolicy::MaterializedOnly;
     materialized.dematerialization = ConditionDematerializationPolicy::Pause;
     materialized.default_duration = GameplayDuration{10};
+
     materialized.clock = clock;
     const auto materialized_id = service.RegisterCondition(materialized);
 
@@ -103,8 +112,10 @@ int main() {
 
     const GameplayObjectRef subject{GameplayDomainId::FromString("test.entities"),
                                     GameplayObjectId::FromString("subject")};
+
     GameplayContext context;
     context.tick = GameplayTickId{1};
+
     context.time = GameplayTimePoint{100};
 
     ApplyConditionRequest request;
@@ -136,10 +147,13 @@ int main() {
     throwing_request.type = throwing_payload_id.Value();
     throwing_request.subject = subject;
     throwing_request.payload =
-        RegisteredConditionPayload::FromTrivial(TypeId::FromString("test.condition.throwing_payload.data"), Payload{1});
+        RegisteredConditionPayload::FromTrivial(TypeId::FromString(
+                                                    "test.condition.throwing_payload.data"),
+                                                Payload{1});
     throwing_request.context = context;
     const auto before_throwing_validator = service.AllConditions().size();
-    if (service.Apply(throwing_request) || service.AllConditions().size() != before_throwing_validator)
+    if (service.Apply(throwing_request) ||
+        service.AllConditions().size() != before_throwing_validator)
         return 206;
 
     ApplyConditionRequest refresh_request;
@@ -148,6 +162,7 @@ int main() {
     refresh_request.context = context;
     const auto r1 = service.Apply(refresh_request);
     context.time = GameplayTimePoint{103};
+
     refresh_request.context = context;
     const auto r2 = service.Apply(refresh_request);
     if (!r1 || !r2 || r2.Value().disposition != ConditionApplyDisposition::Refreshed ||
@@ -188,6 +203,7 @@ int main() {
     const auto m = service.Apply(mat);
     GameplayContext pause_context = context;
     pause_context.time = GameplayTimePoint{104};
+
     if (!m || !service.NotifySubjectMaterialization(subject, false, pause_context))
         return 9;
     if (!service.Find(m.Value().instance)->paused_for_materialization)
@@ -198,14 +214,15 @@ int main() {
         return 101;
     GameplayContext resume_context = context;
     resume_context.time = GameplayTimePoint{120};
+
     if (!service.NotifySubjectMaterialization(subject, true, resume_context) ||
         service.Find(m.Value().instance)->paused_for_materialization)
         return 11;
     const auto *resumed = service.Find(m.Value().instance);
     // Applied at t=103, original expiration t=113, paused from 104..120 (16 ticks):
     // both phase and expiration move by exactly 16 ticks.
-    if (resumed == nullptr || resumed->applied_at.ticks != 119 || !resumed->expires_at.has_value() ||
-        resumed->expires_at->ticks != 129)
+    if (resumed == nullptr || resumed->applied_at.ticks != 119 ||
+        !resumed->expires_at.has_value() || resumed->expires_at->ticks != 129)
         return 111;
     if (service.HandleExpirationDue(m.Value().instance, GameplayTimePoint{128}, resume_context))
         return 112;
@@ -217,7 +234,8 @@ int main() {
         return 12;
     if (!service.HandlePeriodicDue(a.Value().instance, 7, context))
         return 13;
-    const auto early_expiration = service.HandleExpirationDue(a.Value().instance, GameplayTimePoint{109}, context);
+    const auto early_expiration =
+        service.HandleExpirationDue(a.Value().instance, GameplayTimePoint{109}, context);
     if (early_expiration || service.Find(a.Value().instance) == nullptr)
         return 14;
     if (!service.HandleExpirationDue(a.Value().instance, GameplayTimePoint{110}, context))
@@ -225,14 +243,15 @@ int main() {
     if (service.Find(a.Value().instance) != nullptr)
         return 16;
 
-    const auto harmful_conditions =
-        service.RemoveByTag(subject, harmful.Value(), tags, ConditionRemovalReason::Dispelled, context);
+    const auto harmful_conditions = service.RemoveByTag(subject, harmful.Value(), tags,
+                                                        ConditionRemovalReason::Dispelled, context);
     if (harmful_conditions != 0)
         return 17; // stacking condition already expired; others have no harmful tag.
 
     ApplyConditionRequest persistent_again = request;
     persistent_again.context = context;
     persistent_again.context.time = GameplayTimePoint{130};
+
     if (!service.Apply(persistent_again))
         return 211;
 
@@ -260,8 +279,8 @@ int main() {
     const auto restore_before = service.CaptureSnapshot();
     const auto restore_before_count = service.AllConditions().size();
     const auto restore_before_revision = service.CurrentRevision();
-    for (const auto fault :
-         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild,
+                             test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         if (service.RestoreSnapshot(restore_before))
             return 230;
@@ -274,10 +293,12 @@ int main() {
     if (diagnostics.active_conditions != count)
         return 20;
 
-    // Materialization resume rejects an unrepresentable pause interval without mutating the condition.
+    // Materialization resume rejects an unrepresentable pause interval without mutating the
+    // condition.
     subject_state_provider.state = ConditionSubjectMaterializationState::Materialized;
     ApplyConditionRequest overflow_pause = mat;
     overflow_pause.context.time = GameplayTimePoint{std::numeric_limits<std::int64_t>::min()};
+
     auto overflow_instance = service.Apply(overflow_pause);
     if (!overflow_instance)
         return 212;
@@ -294,19 +315,23 @@ int main() {
     const auto before_revision = paused_before->revision;
     GameplayContext overflow_resume_context = context;
     overflow_resume_context.time = GameplayTimePoint{std::numeric_limits<std::int64_t>::max()};
-    auto overflow_resume = service.NotifySubjectMaterialization(subject, true, overflow_resume_context);
+
+    auto overflow_resume =
+        service.NotifySubjectMaterialization(subject, true, overflow_resume_context);
     if (overflow_resume || !overflow_resume.GetError().HasCode("gameplay.time_overflow"))
         return 215;
     const auto *paused_after = service.Find(overflow_instance.Value().instance);
     if (paused_after == nullptr || !paused_after->paused_for_materialization ||
         paused_after->applied_at != before_applied || paused_after->expires_at != before_expires ||
-        paused_after->materialization_paused_at != before_paused_at || paused_after->revision != before_revision)
+        paused_after->materialization_paused_at != before_paused_at ||
+        paused_after->revision != before_revision)
         return 216;
 
     ConditionService no_provider_service;
     ConditionDefinition no_provider_materialized = materialized;
     no_provider_materialized.canonical_name = "test.condition.materialized.no_provider";
     no_provider_materialized.id = {};
+
     const auto no_provider_id = no_provider_service.RegisterCondition(no_provider_materialized);
     if (!no_provider_id)
         return 209;
@@ -324,11 +349,15 @@ int main() {
     time_overflow_request.type = refresh_id.Value();
     time_overflow_request.subject = {GameplayDomainId::FromString("test"),
                                      GameplayObjectId::FromString("overflow-new")};
+
     time_overflow_request.context = context;
-    time_overflow_request.context.time = GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 2};
+    time_overflow_request.context.time =
+        GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 2};
+
     auto time_overflow_result = service.Apply(time_overflow_request);
     const auto generator_after_overflow = service.CaptureSnapshot().id_generator;
-    if (time_overflow_result || !time_overflow_result.GetError().HasCode("gameplay.time_overflow") ||
+    if (time_overflow_result ||
+        !time_overflow_result.GetError().HasCode("gameplay.time_overflow") ||
         generator_before_overflow.scope != generator_after_overflow.scope ||
         generator_before_overflow.next != generator_after_overflow.next)
         return 217;
@@ -340,7 +369,9 @@ int main() {
     const auto link_target = current_conditions.front().id;
     const auto link_before = service.FindCopy(link_target);
     const std::optional<ScheduleId> invalid_schedule{ScheduleId{}};
-    auto invalid_links = service.SetScheduleLinks(link_target, invalid_schedule, std::nullopt, context);
+
+    auto invalid_links =
+        service.SetScheduleLinks(link_target, invalid_schedule, std::nullopt, context);
     const auto link_after = service.FindCopy(link_target);
     if (invalid_links || !link_before || !link_after ||
         link_before->expiration_schedule != link_after->expiration_schedule ||
@@ -348,7 +379,8 @@ int main() {
         link_before->revision != link_after->revision)
         return 219;
 
-    // COND-06: batch materialization is preflighted as a whole. A late overflow leaves earlier conditions unchanged.
+    // COND-06: batch materialization is preflighted as a whole. A late overflow leaves earlier
+    // conditions unchanged.
     ConditionService batch_service;
     TestSubjectStateProvider batch_provider;
     if (!batch_service.SetSubjectStateProvider(&batch_provider))
@@ -366,42 +398,51 @@ int main() {
     batch_service.Freeze();
     const GameplayObjectRef batch_subject{GameplayDomainId::FromString("test"),
                                           GameplayObjectId::FromString("batch-subject")};
+
     ApplyConditionRequest batch_request;
     batch_request.type = batch_type.Value();
     batch_request.subject = batch_subject;
     batch_request.context.time = GameplayTimePoint{0};
+
     auto batch_a = batch_service.Apply(batch_request);
     auto batch_b = batch_service.Apply(batch_request);
     if (!batch_a || !batch_b)
         return 222;
     GameplayContext batch_pause_context;
     batch_pause_context.time = GameplayTimePoint{0};
+
     if (!batch_service.NotifySubjectMaterialization(batch_subject, false, batch_pause_context))
         return 223;
     auto batch_snapshot = batch_service.CaptureSnapshot();
     if (batch_snapshot.instances.size() != 2)
         return 224;
-    std::sort(batch_snapshot.instances.begin(), batch_snapshot.instances.end(), [](const auto &lhs, const auto &rhs) {
-        return lhs.id < rhs.id;
-    });
+    std::sort(batch_snapshot.instances.begin(), batch_snapshot.instances.end(),
+              [](const auto &lhs, const auto &rhs) { return lhs.id < rhs.id; });
     batch_snapshot.instances[0].materialization_paused_at =
         GameplayTimePoint{std::numeric_limits<std::int64_t>::max() - 10};
-    batch_snapshot.instances[1].materialization_paused_at = GameplayTimePoint{std::numeric_limits<std::int64_t>::min()};
+
+    batch_snapshot.instances[1].materialization_paused_at =
+        GameplayTimePoint{std::numeric_limits<std::int64_t>::min()};
+
     if (!batch_service.RestoreSnapshot(batch_snapshot))
         return 225;
     const auto batch_before = batch_service.AllConditions();
     GameplayContext batch_resume_context;
     batch_resume_context.time = GameplayTimePoint{std::numeric_limits<std::int64_t>::max()};
-    auto batch_resume = batch_service.NotifySubjectMaterialization(batch_subject, true, batch_resume_context);
+
+    auto batch_resume =
+        batch_service.NotifySubjectMaterialization(batch_subject, true, batch_resume_context);
     const auto batch_after = batch_service.AllConditions();
     if (batch_resume || !batch_resume.GetError().HasCode("gameplay.time_overflow") ||
         batch_before.size() != batch_after.size())
         return 226;
     for (std::size_t i = 0; i < batch_before.size(); ++i) {
-        if (batch_before[i].id != batch_after[i].id || batch_before[i].applied_at != batch_after[i].applied_at ||
+        if (batch_before[i].id != batch_after[i].id ||
+            batch_before[i].applied_at != batch_after[i].applied_at ||
             batch_before[i].expires_at != batch_after[i].expires_at ||
             batch_before[i].materialization_paused_at != batch_after[i].materialization_paused_at ||
-            batch_before[i].paused_for_materialization != batch_after[i].paused_for_materialization ||
+            batch_before[i].paused_for_materialization !=
+                batch_after[i].paused_for_materialization ||
             batch_before[i].revision != batch_after[i].revision)
             return 227;
     }
@@ -409,6 +450,7 @@ int main() {
     // COND-04: global revision exhaustion rejects a valid mutation before ID/state publication.
     auto exhausted_condition_snapshot = service.CaptureSnapshot();
     exhausted_condition_snapshot.revision = Revision{std::numeric_limits<std::uint64_t>::max()};
+
     if (!service.RestoreSnapshot(exhausted_condition_snapshot))
         return 228;
     const auto exhausted_generator_before = service.CaptureSnapshot().id_generator;
@@ -416,7 +458,9 @@ int main() {
     exhausted_apply.type = refresh_id.Value();
     exhausted_apply.subject = {GameplayDomainId::FromString("test"),
                                GameplayObjectId::FromString("revision-exhausted")};
+
     exhausted_apply.context.time = GameplayTimePoint{200};
+
     auto exhausted_result = service.Apply(exhausted_apply);
     const auto exhausted_generator_after = service.CaptureSnapshot().id_generator;
     if (exhausted_result || !exhausted_result.GetError().HasCode("gameplay.revision_exhausted") ||

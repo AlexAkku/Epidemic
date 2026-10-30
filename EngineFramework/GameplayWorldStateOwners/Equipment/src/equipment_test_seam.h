@@ -1,12 +1,7 @@
 #pragma once
 
 namespace epidemic::gameplay::equipment::internal_test {
-enum class AllocationFaultPoint {
-    None,
-    RestoreProfiles,
-    RestoreBindings,
-    RestoreLoadouts
-};
+enum class AllocationFaultPoint { None, RestoreProfiles, RestoreBindings, RestoreLoadouts };
 
 inline thread_local AllocationFaultPoint g_allocation_fault = AllocationFaultPoint::None;
 
@@ -24,4 +19,5 @@ inline void ResetAllocationFault() noexcept {
     g_allocation_fault = AllocationFaultPoint::None;
     return true;
 }
+
 } // namespace epidemic::gameplay::equipment::internal_test

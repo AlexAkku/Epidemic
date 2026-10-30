@@ -18,6 +18,7 @@ foundation::Result<WorldServices> CreateWorldServices(const WorldOptions &option
     (void)options;
     auto runtime = std::make_shared<WorldRuntime>();
     WorldServices services{};
+
     services.regions = runtime;
     services.chunks = runtime;
     services.query = runtime;
@@ -26,4 +27,5 @@ foundation::Result<WorldServices> CreateWorldServices(const WorldOptions &option
     services.demotion_authority = runtime;
     return foundation::Result<WorldServices>::Success(std::move(services));
 }
+
 } // namespace epidemic::runtime

@@ -12,9 +12,12 @@ namespace epidemic::memory {
 
 struct MemoryTagStatistics {
     std::size_t allocated_bytes{};
+
     std::size_t peak_allocated_bytes{};
+
     // Counts successful allocation records over time, not the number of active allocations.
     std::size_t allocation_count{};
+
 };
 
 // Public memory accounting interface.
@@ -38,7 +41,8 @@ class IMemoryTracker {
     virtual void SetBudget(AllocationTag tag, std::size_t bytes) noexcept = 0;
 
     // Returns the configured budget for the tag, if any.
-    [[nodiscard]] virtual std::optional<std::size_t> GetBudget(AllocationTag tag) const noexcept = 0;
+    [[nodiscard]] virtual std::optional<std::size_t>
+    GetBudget(AllocationTag tag) const noexcept = 0;
 
     // Returns current allocated bytes for the tag.
     [[nodiscard]] virtual std::size_t GetUsage(AllocationTag tag) const noexcept = 0;
@@ -52,4 +56,5 @@ class IMemoryTracker {
     // Clears accumulated statistics for all tags.
     virtual void ResetStatistics() noexcept = 0;
 };
+
 } // namespace epidemic::memory

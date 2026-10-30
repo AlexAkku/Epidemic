@@ -8,4 +8,5 @@ namespace epidemic::core::detail {
 [[nodiscard]] constexpr std::uint64_t AdvanceExecutedFrameCount(std::uint64_t current) noexcept {
     return current == std::numeric_limits<std::uint64_t>::max() ? current : current + 1;
 }
+
 } // namespace epidemic::core::detail

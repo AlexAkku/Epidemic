@@ -41,27 +41,33 @@ enum class LogLevel {
     return "UNKNOWN";
 }
 
-// Captures one synchronous logging request. The text fields are borrowed for the duration of Log/Write;
-// thread_name is owned so thread-context lookup never leaves a dangling reference in the payload.
+// Captures one synchronous logging request. The text fields are borrowed for the duration of
+// Log/Write; thread_name is owned so thread-context lookup never leaves a dangling reference in the
+// payload.
 struct LogMessage {
     LogLevel level{LogLevel::Info};
+
     std::string_view module_name;
     std::string_view category;
     std::string_view message;
     std::chrono::system_clock::time_point timestamp{std::chrono::system_clock::now()};
+
     std::thread::id thread_id{std::this_thread::get_id()};
+
     std::string thread_name;
 };
 
-// Globally enables or disables logging dispatch. The flag controls observation only and is thread-safe.
+// Globally enables or disables logging dispatch. The flag controls observation only and is
+// thread-safe.
 void SetLoggingEnabled(bool enabled) noexcept;
 
 // Returns whether logging dispatch is enabled.
 [[nodiscard]] bool IsLoggingEnabled() noexcept;
 
 // Abstract logging sink used by application services, runtime wiring, and tests.
-// Public logging entry points are noexcept containment boundaries. A concrete sink may throw from Write,
-// but the failure is swallowed before it can affect authoritative engine state or replace an original error.
+// Public logging entry points are noexcept containment boundaries. A concrete sink may throw from
+// Write, but the failure is swallowed before it can affect authoritative engine state or replace an
+// original error.
 class ILogger {
   public:
     virtual ~ILogger() = default;
@@ -78,9 +84,11 @@ class ILogger {
             // Logging must contain sink failures without replacing an authoritative error.
             return;
         }
+
     }
 
-    // Builds a structured message from individual fields and forwards it to the contained sink boundary.
+    // Builds a structured message from individual fields and forwards it to the contained sink
+    // boundary.
     void Log(LogLevel level, std::string_view module_name, std::string_view category,
              std::string_view message) noexcept {
         if (!IsLoggingEnabled()) {
@@ -94,6 +102,7 @@ class ILogger {
             // Message construction failure follows the same containment contract.
             return;
         }
+
     }
 
     // Convenience overload for uncategorized log entries.
@@ -101,7 +110,8 @@ class ILogger {
         Log(level, module_name, {}, message);
     }
 
-    void Trace(std::string_view module_name, std::string_view category, std::string_view message) noexcept {
+    void Trace(std::string_view module_name, std::string_view category,
+               std::string_view message) noexcept {
         Log(LogLevel::Trace, module_name, category, message);
     }
 
@@ -109,7 +119,8 @@ class ILogger {
         Log(LogLevel::Trace, module_name, message);
     }
 
-    void Debug(std::string_view module_name, std::string_view category, std::string_view message) noexcept {
+    void Debug(std::string_view module_name, std::string_view category,
+               std::string_view message) noexcept {
         Log(LogLevel::Debug, module_name, category, message);
     }
 
@@ -117,7 +128,8 @@ class ILogger {
         Log(LogLevel::Debug, module_name, message);
     }
 
-    void Info(std::string_view module_name, std::string_view category, std::string_view message) noexcept {
+    void Info(std::string_view module_name, std::string_view category,
+              std::string_view message) noexcept {
         Log(LogLevel::Info, module_name, category, message);
     }
 
@@ -125,7 +137,8 @@ class ILogger {
         Log(LogLevel::Info, module_name, message);
     }
 
-    void Warn(std::string_view module_name, std::string_view category, std::string_view message) noexcept {
+    void Warn(std::string_view module_name, std::string_view category,
+              std::string_view message) noexcept {
         Log(LogLevel::Warning, module_name, category, message);
     }
 
@@ -133,7 +146,8 @@ class ILogger {
         Log(LogLevel::Warning, module_name, message);
     }
 
-    void Error(std::string_view module_name, std::string_view category, std::string_view message) noexcept {
+    void Error(std::string_view module_name, std::string_view category,
+               std::string_view message) noexcept {
         Log(LogLevel::Error, module_name, category, message);
     }
 
@@ -141,7 +155,8 @@ class ILogger {
         Log(LogLevel::Error, module_name, message);
     }
 
-    void Fatal(std::string_view module_name, std::string_view category, std::string_view message) noexcept {
+    void Fatal(std::string_view module_name, std::string_view category,
+               std::string_view message) noexcept {
         Log(LogLevel::Fatal, module_name, category, message);
     }
 
@@ -153,4 +168,5 @@ class ILogger {
     // Concrete sinks implement only the side effect. Exceptions are contained by ILogger::Log.
     virtual void Write(const LogMessage &message) = 0;
 };
+
 } // namespace epidemic::diagnostics

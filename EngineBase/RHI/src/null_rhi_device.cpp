@@ -7,7 +7,8 @@
 
 namespace epidemic::rhi {
 // This file implements the baseline null RHI backend.
-// The backend preserves descriptor validation and command sequencing behavior without requiring a graphics device.
+// The backend preserves descriptor validation and command sequencing behavior without requiring a
+// graphics device.
 
 namespace {
 // Returns whether a floating-point clear-color component is finite.
@@ -17,12 +18,14 @@ namespace {
 
 class NullRhiSwapChain;
 
-// Shared null-backend presentation state. Command contexts observe only the currently active swap chain.
+// Shared null-backend presentation state. Command contexts observe only the currently active swap
+// chain.
 struct NullRhiDeviceState {
     std::weak_ptr<NullRhiSwapChain> active_swap_chain;
 };
 
-// Swap-chain implementation that stores validated descriptor state without touching native presentation resources.
+// Swap-chain implementation that stores validated descriptor state without touching native
+// presentation resources.
 class NullRhiSwapChain final : public IRhiSwapChain {
   public:
     // Stores the validated descriptor for later resize/present simulation.
@@ -35,10 +38,13 @@ class NullRhiSwapChain final : public IRhiSwapChain {
     }
 
     // Validates and atomically stores new swap-chain dimensions.
-    [[nodiscard]] epidemic::foundation::Result<void> Resize(std::uint32_t width, std::uint32_t height) override {
+    [[nodiscard]] epidemic::foundation::Result<void> Resize(std::uint32_t width,
+                                                            std::uint32_t height) override {
         if (width == 0 || height == 0) {
-            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-                "rhi.invalid_swap_chain_size", "Swap chain resize dimensions must be greater than zero"));
+            return epidemic::foundation::Result<void>::Failure(
+                epidemic::foundation::Error::
+                    Create("rhi.invalid_swap_chain_size",
+                           "Swap chain resize dimensions must be greater than zero"));
         }
 
         descriptor_.width = width;
@@ -73,15 +79,19 @@ class NullRhiSwapChain final : public IRhiSwapChain {
 // Command-context implementation that validates sequencing without talking to hardware.
 class NullRhiCommandContext final : public IRhiCommandContext {
   public:
-    // Binds this context to the device's presentation state without taking ownership of a swap chain.
-    explicit NullRhiCommandContext(std::shared_ptr<NullRhiDeviceState> state) : state_(std::move(state)) {
+    // Binds this context to the device's presentation state without taking ownership of a swap
+    // chain.
+    explicit NullRhiCommandContext(std::shared_ptr<NullRhiDeviceState> state)
+        : state_(std::move(state)) {
     }
 
     // Starts a synthetic frame and rejects nested BeginFrame calls.
     [[nodiscard]] epidemic::foundation::Result<void> BeginFrame() override {
         if (frame_active_) {
-            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-                "rhi.frame_already_active", "BeginFrame called while a frame is already active"));
+            return epidemic::foundation::Result<void>::Failure(
+                epidemic::foundation::Error::
+                    Create("rhi.frame_already_active",
+                           "BeginFrame called while a frame is already active"));
         }
 
         frame_active_ = true;
@@ -89,10 +99,13 @@ class NullRhiCommandContext final : public IRhiCommandContext {
     }
 
     // Validates one synthetic clear operation against the active frame and presentation target.
-    [[nodiscard]] epidemic::foundation::Result<void> Clear(const RhiClearDesc &clear_desc) override {
+    [[nodiscard]] epidemic::foundation::Result<void>
+    Clear(const RhiClearDesc &clear_desc) override {
         if (!frame_active_) {
-            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-                "rhi.clear_outside_frame", "Clear must be called between BeginFrame and EndFrame"));
+            return epidemic::foundation::Result<void>::Failure(
+                epidemic::foundation::Error::
+                    Create("rhi.clear_outside_frame",
+                           "Clear must be called between BeginFrame and EndFrame"));
         }
 
         const auto validation_result = Validate(clear_desc);
@@ -101,8 +114,10 @@ class NullRhiCommandContext final : public IRhiCommandContext {
         }
 
         if (state_->active_swap_chain.expired()) {
-            return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-                "rhi.no_swap_chain", "RHI command context requires an active swap chain before Clear"));
+            return epidemic::foundation::Result<void>::Failure(
+                epidemic::foundation::Error::
+                    Create("rhi.no_swap_chain",
+                           "RHI command context requires an active swap chain before Clear"));
         }
 
         return epidemic::foundation::Result<void>::Success();
@@ -112,7 +127,8 @@ class NullRhiCommandContext final : public IRhiCommandContext {
     [[nodiscard]] epidemic::foundation::Result<void> EndFrame() override {
         if (!frame_active_) {
             return epidemic::foundation::Result<void>::Failure(
-                epidemic::foundation::Error::Create("rhi.no_active_frame", "EndFrame called without an active frame"));
+                epidemic::foundation::Error::Create("rhi.no_active_frame",
+                                                    "EndFrame called without an active frame"));
         }
 
         frame_active_ = false;
@@ -127,6 +143,7 @@ class NullRhiCommandContext final : public IRhiCommandContext {
   private:
     std::shared_ptr<NullRhiDeviceState> state_;
     bool frame_active_{false};
+
 };
 
 // Top-level null backend device that manufactures null command contexts and swap chains.
@@ -148,7 +165,8 @@ class NullRhiDevice final : public IRhiDevice {
     }
 
     // Creates a fresh null command context bound to the device presentation state.
-    [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>> CreateCommandContext() override {
+    [[nodiscard]] epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>>
+    CreateCommandContext() override {
         return epidemic::foundation::Result<std::shared_ptr<IRhiCommandContext>>::Success(
             std::make_shared<NullRhiCommandContext>(state_));
     }
@@ -158,25 +176,29 @@ class NullRhiDevice final : public IRhiDevice {
     CreateSwapChain(const RhiSwapChainDesc &swap_chain_desc) override {
         const auto validation_result = Validate(swap_chain_desc);
         if (!validation_result.HasValue()) {
-            return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Failure(validation_result.GetError());
+            return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Failure(
+                validation_result.GetError());
         }
 
         auto swap_chain = std::make_shared<NullRhiSwapChain>(swap_chain_desc);
         state_->active_swap_chain = swap_chain;
-        return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Success(std::move(swap_chain));
+        return epidemic::foundation::Result<std::shared_ptr<IRhiSwapChain>>::Success(
+            std::move(swap_chain));
     }
 
   private:
     RhiDeviceDesc descriptor_;
     std::shared_ptr<NullRhiDeviceState> state_;
 };
+
 } // namespace
 
 // Validates device creation parameters shared by all backends.
 epidemic::foundation::Result<void> Validate(const RhiDeviceDesc &device_desc) {
     if (device_desc.debug_name.empty()) {
         return epidemic::foundation::Result<void>::Failure(
-            epidemic::foundation::Error::Create("rhi.empty_device_name", "RHI device debug name must not be empty"));
+            epidemic::foundation::Error::Create("rhi.empty_device_name",
+                                                "RHI device debug name must not be empty"));
     }
 
     return epidemic::foundation::Result<void>::Success();
@@ -185,18 +207,22 @@ epidemic::foundation::Result<void> Validate(const RhiDeviceDesc &device_desc) {
 // Validates swap-chain creation parameters shared by all backends.
 epidemic::foundation::Result<void> Validate(const RhiSwapChainDesc &swap_chain_desc) {
     if (!swap_chain_desc.surface_handle.IsValid()) {
-        return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-            "rhi.invalid_surface_handle", "Swap chain surface handle must be valid"));
+        return epidemic::foundation::Result<void>::Failure(
+            epidemic::foundation::Error::Create("rhi.invalid_surface_handle",
+                                                "Swap chain surface handle must be valid"));
     }
 
     if (swap_chain_desc.width == 0 || swap_chain_desc.height == 0) {
-        return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-            "rhi.invalid_swap_chain_size", "Swap chain dimensions must be greater than zero"));
+        return epidemic::foundation::Result<void>::Failure(
+            epidemic::foundation::Error::Create("rhi.invalid_swap_chain_size",
+                                                "Swap chain dimensions must be greater than zero"));
     }
 
     if (swap_chain_desc.buffer_count == 0) {
-        return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-            "rhi.invalid_buffer_count", "Swap chain buffer count must be greater than zero"));
+        return epidemic::foundation::Result<void>::Failure(
+            epidemic::foundation::Error::
+                Create("rhi.invalid_buffer_count",
+                       "Swap chain buffer count must be greater than zero"));
     }
 
     switch (swap_chain_desc.color_format) {
@@ -205,8 +231,10 @@ epidemic::foundation::Result<void> Validate(const RhiSwapChainDesc &swap_chain_d
         break;
     case RhiPixelFormat::Unknown:
     default:
-        return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-            "rhi.invalid_color_format", "Swap chain color format must be a supported pixel format"));
+        return epidemic::foundation::Result<void>::Failure(
+            epidemic::foundation::Error::
+                Create("rhi.invalid_color_format",
+                       "Swap chain color format must be a supported pixel format"));
     }
 
     return epidemic::foundation::Result<void>::Success();
@@ -215,28 +243,35 @@ epidemic::foundation::Result<void> Validate(const RhiSwapChainDesc &swap_chain_d
 // Validates clear-operation parameters shared by all backends.
 epidemic::foundation::Result<void> Validate(const RhiClearDesc &clear_desc) {
     if (!clear_desc.clear_color) {
-        return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-            "rhi.nothing_to_clear", "RHI clear descriptor must request at least one clear operation"));
+        return epidemic::foundation::Result<void>::Failure(
+            epidemic::foundation::Error::
+                Create("rhi.nothing_to_clear",
+                       "RHI clear descriptor must request at least one clear operation"));
     }
 
-    if (!IsFinite(clear_desc.color.red) || !IsFinite(clear_desc.color.green) || !IsFinite(clear_desc.color.blue) ||
-        !IsFinite(clear_desc.color.alpha)) {
-        return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create(
-            "rhi.invalid_clear_color", "RHI clear color components must be finite values"));
+    if (!IsFinite(clear_desc.color.red) || !IsFinite(clear_desc.color.green) ||
+        !IsFinite(clear_desc.color.blue) || !IsFinite(clear_desc.color.alpha)) {
+        return epidemic::foundation::Result<void>::Failure(
+            epidemic::foundation::Error::
+                Create("rhi.invalid_clear_color",
+                       "RHI clear color components must be finite values"));
     }
 
     return epidemic::foundation::Result<void>::Success();
 }
 
 // Creates the null RHI device after descriptor validation succeeds.
-epidemic::foundation::Result<std::shared_ptr<IRhiDevice>> CreateNullRhiDevice(const RhiDeviceDesc &device_desc) {
+epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>
+CreateNullRhiDevice(const RhiDeviceDesc &device_desc) {
     const auto validation_result = Validate(device_desc);
     if (!validation_result.HasValue()) {
-        return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(validation_result.GetError());
+        return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Failure(
+            validation_result.GetError());
     }
 
     auto state = std::make_shared<NullRhiDeviceState>();
     return epidemic::foundation::Result<std::shared_ptr<IRhiDevice>>::Success(
         std::make_shared<NullRhiDevice>(device_desc, std::move(state)));
 }
+
 } // namespace epidemic::rhi

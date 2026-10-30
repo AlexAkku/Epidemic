@@ -30,7 +30,9 @@ using Quaternion = Quat;
 
 struct Transform {
     Vec3 position{};
+
     Quat rotation{};
+
     Vec3 scale{1.0f, 1.0f, 1.0f};
 
     [[nodiscard]] constexpr bool operator==(const Transform &) const noexcept = default;
@@ -38,6 +40,7 @@ struct Transform {
 
 struct Aabb {
     Vec3 min{};
+
     Vec3 max{};
 
     [[nodiscard]] constexpr bool operator==(const Aabb &) const noexcept = default;
@@ -45,6 +48,7 @@ struct Aabb {
 
 struct Sphere {
     Vec3 center{};
+
     float radius = 0.0f;
 
     [[nodiscard]] constexpr bool operator==(const Sphere &) const noexcept = default;
@@ -52,32 +56,39 @@ struct Sphere {
 
 [[nodiscard]] constexpr Vec3 operator+(Vec3 left, Vec3 right) noexcept {
     return Vec3{left.x + right.x, left.y + right.y, left.z + right.z};
+
 }
 
 [[nodiscard]] constexpr Vec3 operator-(Vec3 left, Vec3 right) noexcept {
     return Vec3{left.x - right.x, left.y - right.y, left.z - right.z};
+
 }
 
 [[nodiscard]] constexpr Vec3 operator*(Vec3 value, float scalar) noexcept {
     return Vec3{value.x * scalar, value.y * scalar, value.z * scalar};
+
 }
 
 [[nodiscard]] constexpr Vec3 Multiply(Vec3 left, Vec3 right) noexcept {
     return Vec3{left.x * right.x, left.y * right.y, left.z * right.z};
+
 }
 
 [[nodiscard]] inline Quaternion Normalize(const Quaternion &value) noexcept {
-    const double length_squared = (static_cast<double>(value.x) * value.x) + (static_cast<double>(value.y) * value.y) +
-                                  (static_cast<double>(value.z) * value.z) + (static_cast<double>(value.w) * value.w);
+    const double length_squared =
+        (static_cast<double>(value.x) * value.x) + (static_cast<double>(value.y) * value.y) +
+        (static_cast<double>(value.z) * value.z) + (static_cast<double>(value.w) * value.w);
     if (!std::isfinite(length_squared) || length_squared <= static_cast<double>(kSpatialEpsilon) ||
         length_squared > static_cast<double>(std::numeric_limits<float>::max())) {
         return {};
+
     }
 
     const float representable_length_squared = static_cast<float>(length_squared);
     const float inverse_length = 1.0f / std::sqrt(representable_length_squared);
     return Quaternion{value.x * inverse_length, value.y * inverse_length, value.z * inverse_length,
                       value.w * inverse_length};
+
 }
 
 [[nodiscard]] inline Quaternion Multiply(const Quaternion &left, const Quaternion &right) noexcept {
@@ -92,16 +103,19 @@ struct Sphere {
 [[nodiscard]] inline Vec3 RotateVector(const Quaternion &rotation, Vec3 value) noexcept {
     const Quaternion normalized = Normalize(rotation);
     const Vec3 q{normalized.x, normalized.y, normalized.z};
+
     const Vec3 uv{
         (q.y * value.z) - (q.z * value.y),
         (q.z * value.x) - (q.x * value.z),
         (q.x * value.y) - (q.y * value.x),
     };
+
     const Vec3 uuv{
         (q.y * uv.z) - (q.z * uv.y),
         (q.z * uv.x) - (q.x * uv.z),
         (q.x * uv.y) - (q.y * uv.x),
     };
+
     return value + (uv * (2.0f * normalized.w)) + (uuv * 2.0f);
 }
 
@@ -109,26 +123,34 @@ struct Sphere {
     return transform.position + RotateVector(transform.rotation, Multiply(point, transform.scale));
 }
 
-[[nodiscard]] inline Transform ComposeTransform(const Transform &parent, const Transform &local) noexcept {
+[[nodiscard]] inline Transform ComposeTransform(const Transform &parent,
+                                                const Transform &local) noexcept {
     // Contract: this runtime foundation stores spatial hierarchy as simplified TRS.
-    // Non-uniform parent scale combined with rotated children may produce shear in a full matrix model;
-    // ComposeTransform preserves a deterministic approximate TRS representation instead of shear.
+    // Non-uniform parent scale combined with rotated children may produce shear in a full matrix
+    // model; ComposeTransform preserves a deterministic approximate TRS representation instead of
+    // shear.
     return Transform{
         TransformPoint(parent, local.position),
         Multiply(parent.rotation, local.rotation),
         Multiply(parent.scale, local.scale),
     };
+
 }
 
 [[nodiscard]] inline Aabb TransformAabb(const Transform &transform, const Aabb &bounds) noexcept {
     const Vec3 corners[] = {
-        Vec3{bounds.min.x, bounds.min.y, bounds.min.z}, Vec3{bounds.min.x, bounds.min.y, bounds.max.z},
-        Vec3{bounds.min.x, bounds.max.y, bounds.min.z}, Vec3{bounds.min.x, bounds.max.y, bounds.max.z},
-        Vec3{bounds.max.x, bounds.min.y, bounds.min.z}, Vec3{bounds.max.x, bounds.min.y, bounds.max.z},
-        Vec3{bounds.max.x, bounds.max.y, bounds.min.z}, Vec3{bounds.max.x, bounds.max.y, bounds.max.z},
+        Vec3{bounds.min.x, bounds.min.y, bounds.min.z},
+        Vec3{bounds.min.x, bounds.min.y, bounds.max.z},
+        Vec3{bounds.min.x, bounds.max.y, bounds.min.z},
+        Vec3{bounds.min.x, bounds.max.y, bounds.max.z},
+        Vec3{bounds.max.x, bounds.min.y, bounds.min.z},
+        Vec3{bounds.max.x, bounds.min.y, bounds.max.z},
+        Vec3{bounds.max.x, bounds.max.y, bounds.min.z},
+        Vec3{bounds.max.x, bounds.max.y, bounds.max.z},
     };
 
     Aabb transformed{TransformPoint(transform, corners[0]), TransformPoint(transform, corners[0])};
+
     for (std::size_t index = 1; index < std::size(corners); ++index) {
         const Vec3 point = TransformPoint(transform, corners[index]);
         transformed.min.x = std::min(transformed.min.x, point.x);
@@ -147,22 +169,26 @@ struct Sphere {
 }
 
 [[nodiscard]] inline bool IsFinite(Quat value) noexcept {
-    return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z) && std::isfinite(value.w);
+    return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z) &&
+           std::isfinite(value.w);
 }
 
 [[nodiscard]] inline bool IsNormalized(Quat value) noexcept {
-    const double length_squared = (static_cast<double>(value.x) * value.x) + (static_cast<double>(value.y) * value.y) +
-                                  (static_cast<double>(value.z) * value.z) + (static_cast<double>(value.w) * value.w);
-    if (!std::isfinite(length_squared) || length_squared > static_cast<double>(std::numeric_limits<float>::max())) {
+    const double length_squared =
+        (static_cast<double>(value.x) * value.x) + (static_cast<double>(value.y) * value.y) +
+        (static_cast<double>(value.z) * value.z) + (static_cast<double>(value.w) * value.w);
+    if (!std::isfinite(length_squared) ||
+        length_squared > static_cast<double>(std::numeric_limits<float>::max())) {
         return false;
     }
+
     return std::abs(static_cast<float>(length_squared) - 1.0f) <= 0.001f;
 }
 
 [[nodiscard]] inline bool IsValidTransform(const Transform &transform) noexcept {
-    return IsFinite(transform.position) && IsFinite(transform.rotation) && IsFinite(transform.scale) &&
-           IsNormalized(transform.rotation) && transform.scale.x != 0.0f && transform.scale.y != 0.0f &&
-           transform.scale.z != 0.0f;
+    return IsFinite(transform.position) && IsFinite(transform.rotation) &&
+           IsFinite(transform.scale) && IsNormalized(transform.rotation) &&
+           transform.scale.x != 0.0f && transform.scale.y != 0.0f && transform.scale.z != 0.0f;
 }
 
 [[nodiscard]] inline bool IsValidAabb(const Aabb &bounds) noexcept {
@@ -172,5 +198,7 @@ struct Sphere {
 
 [[nodiscard]] constexpr Aabb TranslateBounds(const Aabb &bounds, Vec3 offset) noexcept {
     return Aabb{bounds.min + offset, bounds.max + offset};
+
 }
+
 } // namespace epidemic::runtime

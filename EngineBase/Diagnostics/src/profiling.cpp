@@ -8,6 +8,7 @@ namespace {
 std::mutex collector_mutex;
 std::shared_ptr<IProfileCollector> collector;
 std::atomic_bool profiling_enabled{true};
+
 } // namespace
 
 void InMemoryProfileCollector::Record(ProfileEvent event) {
@@ -60,6 +61,7 @@ ProfileScope::ProfileScope(std::string_view scope_name) {
         collector_.reset();
         name_.clear();
     }
+
 }
 
 ProfileScope::~ProfileScope() noexcept {
@@ -72,5 +74,7 @@ ProfileScope::~ProfileScope() noexcept {
                                         std::this_thread::get_id(), GetCurrentThreadName()});
     } catch (...) {
     }
+
 }
+
 } // namespace epidemic::diagnostics

@@ -6,15 +6,20 @@ using namespace epidemic::gameplay::ownership;
 
 static GameplayObjectRef Ref(const char *n) {
     return {GameplayDomainId::FromString("test"), GameplayObjectId::FromString(n)};
+
 }
 
 class TestRoles final : public IOwnershipRoleProvider {
   public:
     GameplayObjectRef member{};
+
     TypeId role{};
-    bool HasRole(GameplayObjectRef subject, TypeId required, const GameplayContext &) const noexcept override {
+
+    bool HasRole(GameplayObjectRef subject, TypeId required,
+                 const GameplayContext &) const noexcept override {
         return subject == member && required == role;
     }
+
 };
 
 int main() {
@@ -100,6 +105,7 @@ int main() {
 
     PermissionGrant strong = weak;
     strong.id = {};
+
     strong.strength = PermissionStrength::Strong;
     auto strong_id = o.GrantPermission(strong);
     if (!strong_id)
@@ -112,7 +118,8 @@ int main() {
     q = o.EvaluatePermission(query);
     if (q.decision != PermissionDecision::Denied)
         return 12;
-    if (o.SweepExpiredPermissions(GameplayTimeSeconds(20)) != 2 || !o.FindPermissions(player).empty())
+    if (o.SweepExpiredPermissions(GameplayTimeSeconds(20)) != 2 ||
+        !o.FindPermissions(player).empty())
         return 13;
 
     // Equal-priority deny wins deterministically over allow, independent of insertion IDs/order.
@@ -128,6 +135,7 @@ int main() {
         return 15;
     AccessRule deny = allow;
     deny.id = {};
+
     deny.decision = AccessDecision::Deny;
     if (!o.AddAccessRule(deny))
         return 16;
@@ -184,6 +192,7 @@ int main() {
     stale_revision.to_owner = npc;
     stale_revision.domain = domain;
     stale_revision.expected_revision = Revision{current_revision.value + 1};
+
     if (o.TransferOwnership(stale_revision))
         return 25;
     stale_revision.expected_revision = current_revision;
@@ -226,7 +235,8 @@ int main() {
     if (!restored.GetOwner(item, domain) || restored.GetOwner(item, domain)->owner != npc)
         return 34;
 
-    // Bounded/prunable journal must report a gap instead of silently returning an incomplete stream.
+    // Bounded/prunable journal must report a gap instead of silently returning an incomplete
+    // stream.
     const auto before = restored.ReadChangesSince(ChangeCursor{});
     if (!before.changes.empty() || before.snapshot_required)
         return 35;
@@ -247,8 +257,8 @@ int main() {
 
     // Goal 4: module-local restore fault seam replaces process-global allocation override.
     const auto restore_before = restored.CaptureSnapshot();
-    for (const auto fault :
-         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild,
+                             test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         if (restored.RestoreSnapshot(restore_before))
             return 931;
@@ -261,5 +271,6 @@ int main() {
             restore_after.change_epoch != restore_before.change_epoch)
             return 932;
     }
+
     return 0;
 }

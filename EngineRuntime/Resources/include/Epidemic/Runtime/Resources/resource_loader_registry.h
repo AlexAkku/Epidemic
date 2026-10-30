@@ -19,4 +19,5 @@ class IResourceLoaderRegistry {
     [[nodiscard]] virtual foundation::Result<void> Freeze() = 0;
     [[nodiscard]] virtual bool IsFrozen() const noexcept = 0;
 };
+
 } // namespace epidemic::runtime

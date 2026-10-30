@@ -16,4 +16,5 @@ enum class TimeRuntimeState {
     DayChanged,
     PhaseChanged,
 };
+
 } // namespace epidemic::runtime

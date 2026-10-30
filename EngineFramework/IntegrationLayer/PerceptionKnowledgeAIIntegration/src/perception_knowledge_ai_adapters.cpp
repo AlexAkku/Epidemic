@@ -13,7 +13,8 @@ namespace {
 constexpr std::uint32_t kObservationPayloadVersion = 1;
 constexpr ai::Fixed kAIUnit = 1'000'000;
 
-[[nodiscard]] knowledge::KnowledgeConfidence Convert(perception::PerceptionConfidence confidence) noexcept {
+[[nodiscard]] knowledge::KnowledgeConfidence
+Convert(perception::PerceptionConfidence confidence) noexcept {
     switch (confidence) {
     case perception::PerceptionConfidence::Certain:
         return knowledge::KnowledgeConfidence::Certain;
@@ -26,6 +27,7 @@ constexpr ai::Fixed kAIUnit = 1'000'000;
     case perception::PerceptionConfidence::None:
         return knowledge::KnowledgeConfidence::None;
     }
+
     return knowledge::KnowledgeConfidence::None;
 }
 
@@ -42,6 +44,7 @@ constexpr ai::Fixed kAIUnit = 1'000'000;
     case knowledge::KnowledgeConfidence::Certain:
         return kAIUnit;
     }
+
     return 0;
 }
 
@@ -58,6 +61,7 @@ constexpr ai::Fixed kAIUnit = 1'000'000;
     case perception::PerceptionConfidence::Certain:
         return kAIUnit;
     }
+
     return 0;
 }
 
@@ -71,7 +75,8 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     AppendUnsigned(bytes, static_cast<std::uint64_t>(value));
 }
 
-[[nodiscard]] std::vector<std::byte> ObservationPayload(const perception::PerceptionObservation &observation) {
+[[nodiscard]] std::vector<std::byte>
+ObservationPayload(const perception::PerceptionObservation &observation) {
     std::vector<std::byte> bytes;
     const auto &tags = observation.observed_tags.Values();
     bytes.reserve(4 + 8 * 8 + tags.size() * 8);
@@ -90,7 +95,8 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     return bytes;
 }
 
-[[nodiscard]] ai::AIInputValue BoolInput(ai::AIInputKeyId key, ai::AIAccessFlag access, bool value = true) {
+[[nodiscard]] ai::AIInputValue BoolInput(ai::AIInputKeyId key, ai::AIAccessFlag access,
+                                         bool value = true) {
     ai::AIInputValue input;
     input.key = key;
     input.kind = ai::AIInputValueKind::Boolean;
@@ -99,7 +105,8 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     return input;
 }
 
-[[nodiscard]] ai::AIInputValue FixedInput(ai::AIInputKeyId key, ai::AIAccessFlag access, ai::Fixed value) {
+[[nodiscard]] ai::AIInputValue FixedInput(ai::AIInputKeyId key, ai::AIAccessFlag access,
+                                          ai::Fixed value) {
     ai::AIInputValue input;
     input.key = key;
     input.kind = ai::AIInputValueKind::Fixed;
@@ -108,7 +115,8 @@ void AppendI64(std::vector<std::byte> &bytes, std::int64_t value) {
     return input;
 }
 
-[[nodiscard]] ai::AIInputValue TypeInput(ai::AIInputKeyId key, ai::AIAccessFlag access, TypeId value) {
+[[nodiscard]] ai::AIInputValue TypeInput(ai::AIInputKeyId key, ai::AIAccessFlag access,
+                                         TypeId value) {
     ai::AIInputValue input;
     input.key = key;
     input.kind = ai::AIInputValueKind::Type;
@@ -155,41 +163,49 @@ void FinalizeCandidate(CandidateState &state, const KnowledgeAIInputKeys &keys) 
         state.candidate.source = ai::AITargetSource::Known;
 
     if (state.has_current_perception)
-        UpsertInput(state.candidate.inputs, BoolInput(keys.current_perception, ai::AIAccessFlag::PerceivedState));
-    if (state.has_knowledge) {
-        UpsertInput(state.candidate.inputs, BoolInput(keys.knowledge_source, ai::AIAccessFlag::KnownState));
         UpsertInput(state.candidate.inputs,
-                    FixedInput(keys.knowledge_confidence, ai::AIAccessFlag::KnownState, state.knowledge_confidence));
+                    BoolInput(keys.current_perception, ai::AIAccessFlag::PerceivedState));
+    if (state.has_knowledge) {
+        UpsertInput(state.candidate.inputs,
+                    BoolInput(keys.knowledge_source, ai::AIAccessFlag::KnownState));
+        UpsertInput(state.candidate.inputs,
+                    FixedInput(keys.knowledge_confidence, ai::AIAccessFlag::KnownState,
+                               state.knowledge_confidence));
         std::sort(state.knowledge_tags.begin(), state.knowledge_tags.end());
-        state.knowledge_tags.erase(std::unique(state.knowledge_tags.begin(), state.knowledge_tags.end()),
+        state.knowledge_tags.erase(std::unique(state.knowledge_tags.begin(),
+                                               state.knowledge_tags.end()),
                                    state.knowledge_tags.end());
         std::vector<std::byte> tag_payload;
         AppendUnsigned(tag_payload, static_cast<std::uint32_t>(state.knowledge_tags.size()));
         for (const auto tag : state.knowledge_tags)
             AppendUnsigned(tag_payload, tag.Raw());
         UpsertInput(state.candidate.inputs,
-                    PayloadInput(keys.knowledge_semantics, ai::AIAccessFlag::KnownState, std::move(tag_payload)));
+                    PayloadInput(keys.knowledge_semantics, ai::AIAccessFlag::KnownState,
+                                 std::move(tag_payload)));
     }
-    if (state.has_last_known)
-        UpsertInput(state.candidate.inputs, BoolInput(keys.last_known_source, ai::AIAccessFlag::KnownState));
 
-    std::sort(state.candidate.inputs.begin(), state.candidate.inputs.end(), [](const auto &a, const auto &b) {
-        return a.key < b.key;
-    });
+    if (state.has_last_known)
+        UpsertInput(state.candidate.inputs,
+                    BoolInput(keys.last_known_source, ai::AIAccessFlag::KnownState));
+
+    std::sort(state.candidate.inputs.begin(), state.candidate.inputs.end(),
+              [](const auto &a, const auto &b) { return a.key < b.key; });
 }
+
 } // namespace
 
-PerceptionKnowledgeAdapter::PerceptionKnowledgeAdapter(knowledge::KnowledgeService &knowledge_service,
-                                                       PerceptionKnowledgeMapping mapping)
+PerceptionKnowledgeAdapter::PerceptionKnowledgeAdapter(
+    knowledge::KnowledgeService &knowledge_service, PerceptionKnowledgeMapping mapping)
     : knowledge_(knowledge_service), mapping_(mapping) {
 }
 
-foundation::Result<ObservationKnowledgeResult>
-PerceptionKnowledgeAdapter::LearnFromObservation(const perception::PerceptionObservation &observation) {
+foundation::Result<ObservationKnowledgeResult> PerceptionKnowledgeAdapter::LearnFromObservation(
+    const perception::PerceptionObservation &observation) {
     if (!observation.perceiver.IsValid() || !observation.sense.IsValid() ||
         observation.confidence == perception::PerceptionConfidence::None) {
-        return foundation::Result<ObservationKnowledgeResult>::Failure(foundation::Error::Create(
-            "gameplay.integration.perception.invalid_observation", "perception observation cannot be learned"));
+        return foundation::Result<ObservationKnowledgeResult>::Failure(
+            foundation::Error::Create("gameplay.integration.perception.invalid_observation",
+                                      "perception observation cannot be learned"));
     }
 
     ObservationKnowledgeResult result;
@@ -205,12 +221,15 @@ PerceptionKnowledgeAdapter::LearnFromObservation(const perception::PerceptionObs
     learn.learner = observation.perceiver;
     learn.type = mapping_.observed_belief;
     learn.topic = std::move(topic);
-    learn.source_kind = knowledge::KnowledgeSourceId::FromString("framework.knowledge.direct_perception");
-    // PerceptionObservation is already the information boundary. Never consult the stimulus source here.
+    learn.source_kind =
+        knowledge::KnowledgeSourceId::FromString("framework.knowledge.direct_perception");
+    // PerceptionObservation is already the information boundary. Never consult the stimulus source
+    // here.
     learn.source_object = observation.perceived_subject;
     learn.assertion = knowledge::KnowledgeAssertionValue::Affirmed;
-    learn.epistemic_state = observation.perceived_subject.IsValid() ? knowledge::KnowledgeEpistemicState::Known
-                                                                    : knowledge::KnowledgeEpistemicState::Suspected;
+    learn.epistemic_state = observation.perceived_subject.IsValid()
+                                ? knowledge::KnowledgeEpistemicState::Known
+                                : knowledge::KnowledgeEpistemicState::Suspected;
     learn.confidence = Convert(observation.confidence);
     learn.payload = payload;
     learn.context = observation.context;
@@ -243,16 +262,18 @@ KnowledgeAIAdapter::KnowledgeAIAdapter(const knowledge::KnowledgeService &knowle
     : knowledge_(knowledge_service), input_keys_(input_keys) {
 }
 
-ai::AIContextSnapshot KnowledgeAIAdapter::BuildContext(GameplayObjectRef agent, AIExecutionAvailability availability,
-                                                       const perception::PerceptionService *perception_service,
-                                                       GameplayTimePoint now) const {
+ai::AIContextSnapshot
+KnowledgeAIAdapter::BuildContext(GameplayObjectRef agent, AIExecutionAvailability availability,
+                                 const perception::PerceptionService *perception_service,
+                                 GameplayTimePoint now) const {
     ai::AIContextSnapshot context;
     context.now = now;
     context.materialized = availability.materialized;
     context.runtime_projection_available = availability.runtime_projection_available;
 
     std::map<GameplayObjectRef, CandidateState> candidates;
-    const auto last_known_topic = knowledge::KnowledgeTopicId::FromString("framework.knowledge.last_known_position");
+    const auto last_known_topic =
+        knowledge::KnowledgeTopicId::FromString("framework.knowledge.last_known_position");
 
     auto records = knowledge_.FindKnowledgeByOwner(agent);
     for (const auto &record : records) {
@@ -263,7 +284,8 @@ ai::AIContextSnapshot KnowledgeAIAdapter::BuildContext(GameplayObjectRef agent, 
             continue;
 
         auto topic_input =
-            BoolInput(ai::AIInputKeyId::FromType(TypeId{record.topic.id.value.Raw()}), ai::AIAccessFlag::KnownState);
+            BoolInput(ai::AIInputKeyId::FromType(TypeId{record.topic.id.value.Raw()}),
+                      ai::AIAccessFlag::KnownState);
         context.inputs.push_back(topic_input);
 
         if (!record.topic.primary_subject.IsValid())
@@ -273,9 +295,11 @@ ai::AIContextSnapshot KnowledgeAIAdapter::BuildContext(GameplayObjectRef agent, 
         state.candidate.target = record.topic.primary_subject;
         state.has_knowledge = true;
         state.has_last_known = state.has_last_known || record.topic.id == last_known_topic;
-        state.knowledge_confidence = std::max(state.knowledge_confidence, ConfidenceMicro(record.confidence));
+        state.knowledge_confidence =
+            std::max(state.knowledge_confidence, ConfidenceMicro(record.confidence));
         const auto &topic_tags = record.topic.tags.Values();
-        state.knowledge_tags.insert(state.knowledge_tags.end(), topic_tags.begin(), topic_tags.end());
+        state.knowledge_tags.insert(state.knowledge_tags.end(), topic_tags.begin(),
+                                    topic_tags.end());
         UpsertInput(state.candidate.inputs, std::move(topic_input));
     }
 
@@ -289,20 +313,26 @@ ai::AIContextSnapshot KnowledgeAIAdapter::BuildContext(GameplayObjectRef agent, 
             state.candidate.target = observation.perceived_subject;
             state.has_current_perception = true;
             UpsertInput(state.candidate.inputs,
-                        FixedInput(input_keys_.perception_confidence, ai::AIAccessFlag::PerceivedState,
+                        FixedInput(input_keys_.perception_confidence,
+                                   ai::AIAccessFlag::PerceivedState,
                                    ConfidenceMicro(observation.confidence)));
             UpsertInput(state.candidate.inputs,
-                        FixedInput(input_keys_.identity_confidence, ai::AIAccessFlag::PerceivedState,
-                                   std::clamp<ai::Fixed>(observation.identity_confidence_micro, 0, kAIUnit)));
+                        FixedInput(input_keys_.identity_confidence,
+                                   ai::AIAccessFlag::PerceivedState,
+                                   std::clamp<ai::Fixed>(observation.identity_confidence_micro, 0,
+                                                         kAIUnit)));
             UpsertInput(state.candidate.inputs,
-                        FixedInput(input_keys_.position_uncertainty, ai::AIAccessFlag::PerceivedState,
+                        FixedInput(input_keys_.position_uncertainty,
+                                   ai::AIAccessFlag::PerceivedState,
                                    std::max<ai::Fixed>(0, observation.position_uncertainty_mm)));
-            UpsertInput(state.candidate.inputs, TypeInput(input_keys_.perception_sense,
-                                                          ai::AIAccessFlag::PerceivedState, observation.sense.value));
             UpsertInput(state.candidate.inputs,
-                        PayloadInput(input_keys_.perception_semantics, ai::AIAccessFlag::PerceivedState,
-                                     ObservationPayload(observation)));
+                        TypeInput(input_keys_.perception_sense, ai::AIAccessFlag::PerceivedState,
+                                  observation.sense.value));
+            UpsertInput(state.candidate.inputs, PayloadInput(input_keys_.perception_semantics,
+                                                             ai::AIAccessFlag::PerceivedState,
+                                                             ObservationPayload(observation)));
         }
+
     }
 
     for (auto &[target, state] : candidates) {
@@ -311,17 +341,13 @@ ai::AIContextSnapshot KnowledgeAIAdapter::BuildContext(GameplayObjectRef agent, 
         context.targets.push_back(std::move(state.candidate));
     }
 
-    std::sort(context.inputs.begin(), context.inputs.end(), [](const auto &a, const auto &b) {
-        return a.key < b.key;
-    });
+    std::sort(context.inputs.begin(), context.inputs.end(),
+              [](const auto &a, const auto &b) { return a.key < b.key; });
     context.inputs.erase(std::unique(context.inputs.begin(), context.inputs.end(),
-                                     [](const auto &a, const auto &b) {
-                                         return a.key == b.key;
-                                     }),
+                                     [](const auto &a, const auto &b) { return a.key == b.key; }),
                          context.inputs.end());
-    std::sort(context.targets.begin(), context.targets.end(), [](const auto &a, const auto &b) {
-        return a.target < b.target;
-    });
+    std::sort(context.targets.begin(), context.targets.end(),
+              [](const auto &a, const auto &b) { return a.target < b.target; });
     return context;
 }
 
@@ -330,21 +356,22 @@ AIIntentExecutionRecorder::AIIntentExecutionRecorder(std::size_t retention_capac
 }
 
 void AIIntentExecutionRecorder::RecordAccepted(const ai::AIIntent &intent) {
-    auto existing = std::find_if(accepted_.begin(), accepted_.end(), [&](const ai::AIIntent &record) {
-        return record.id == intent.id;
-    });
+    auto existing =
+        std::find_if(accepted_.begin(), accepted_.end(),
+                     [&](const ai::AIIntent &record) { return record.id == intent.id; });
     if (existing != accepted_.end())
         *existing = intent;
     else
         accepted_.push_back(intent);
-    std::sort(accepted_.begin(), accepted_.end(), [](const auto &a, const auto &b) {
-        return a.id < b.id;
-    });
+    std::sort(accepted_.begin(), accepted_.end(),
+              [](const auto &a, const auto &b) { return a.id < b.id; });
     if (accepted_.size() > retention_capacity_)
-        accepted_.erase(accepted_.begin(), accepted_.begin() + (accepted_.size() - retention_capacity_));
+        accepted_.erase(accepted_.begin(),
+                        accepted_.begin() + (accepted_.size() - retention_capacity_));
 }
 
-foundation::Result<void> AIIntentExecutionRecorder::Accept(const ai::AIIntent &intent, ai::AIService &service) {
+foundation::Result<void> AIIntentExecutionRecorder::Accept(const ai::AIIntent &intent,
+                                                           ai::AIService &service) {
     auto accepted = service.MarkIntentAccepted(intent.id, intent.context);
     if (!accepted)
         return accepted;
@@ -352,10 +379,12 @@ foundation::Result<void> AIIntentExecutionRecorder::Accept(const ai::AIIntent &i
     return foundation::Result<void>::Success();
 }
 
-foundation::Result<void> AIIntentExecutionRecorder::Succeed(ai::AIIntentId intent, ai::AIService &service) {
+foundation::Result<void> AIIntentExecutionRecorder::Succeed(ai::AIIntentId intent,
+                                                            ai::AIService &service) {
     auto running = service.MarkIntentRunning(intent);
     if (!running)
         return running;
     return service.MarkIntentSucceeded(intent);
 }
+
 } // namespace epidemic::gameplay::integration

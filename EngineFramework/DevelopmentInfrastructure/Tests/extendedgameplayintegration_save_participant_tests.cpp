@@ -14,6 +14,7 @@
 #endif
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestDialogueServiceSaveParticipant() {
     std::cerr << "[participant] framework.dialogue: bootstrap\n";
     epidemic::gameplay::dialogue::DialogueService owner;
@@ -36,30 +37,26 @@ void TestDialogueServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.dialogue", {});
     std::cerr << "[participant] framework.dialogue: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.dialogue: non-empty seed\n";
-    const GameplayObjectRef subject{GameplayDomainId::FromString("fixture"), GameplayObjectId::FromString("subject")};
-    const GameplayObjectRef peer{GameplayDomainId::FromString("fixture"), GameplayObjectId::FromString("peer")};
-    participant_tests::Check(
-        bool(owner.StartConversation(definition_id.Value(), std::vector<GameplayObjectRef>{subject, peer})),
-        "seed actual waiting conversation");
+    const GameplayObjectRef subject{GameplayDomainId::FromString("fixture"),
+                                    GameplayObjectId::FromString("subject")};
+
+    const GameplayObjectRef peer{GameplayDomainId::FromString("fixture"),
+                                 GameplayObjectId::FromString("peer")};
+
+    participant_tests::Check(bool(owner.StartConversation(definition_id.Value(),
+                                                          std::vector<GameplayObjectRef>{subject,
+                                                                                         peer})),
+                             "seed actual waiting conversation");
     std::cerr << "[participant] framework.dialogue: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.GetDiagnostics().active_sessions;
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.GetDiagnostics().active_sessions; },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestEconomyServiceSaveParticipant() {
     std::cerr << "[participant] framework.economy: bootstrap\n";
     epidemic::gameplay::economy::EconomyService owner;
@@ -74,30 +71,24 @@ void TestEconomyServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.economy", {});
     std::cerr << "[participant] framework.economy: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.economy: non-empty seed\n";
     economy::EconomicAccount account;
-    account.owner = {GameplayDomainId::FromString("participant.economy"), GameplayObjectId::FromString("owner")};
+    account.owner = {GameplayDomainId::FromString("participant.economy"),
+                     GameplayObjectId::FromString("owner")};
+
     account.currency = currency_id.Value();
     account.balance = 100;
-    participant_tests::Check(bool(owner.CreateAccount(std::move(account))), "seed actual economic account");
+    participant_tests::Check(bool(owner.CreateAccount(std::move(account))),
+                             "seed actual economic account");
     std::cerr << "[participant] framework.economy: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().accounts.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().accounts.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestEquipmentServiceSaveParticipant() {
     std::cerr << "[participant] framework.equipment: bootstrap\n";
     epidemic::gameplay::equipment::EquipmentService owner;
@@ -108,28 +99,22 @@ void TestEquipmentServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.equipment", {});
     std::cerr << "[participant] framework.equipment: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.equipment: non-empty seed\n";
     equipment::EquipmentProfile profile;
-    profile.subject = {GameplayDomainId::FromString("participant.equipment"), GameplayObjectId::FromString("subject")};
-    participant_tests::Check(bool(owner.CreateProfile(std::move(profile))), "seed actual equipment profile");
+    profile.subject = {GameplayDomainId::FromString("participant.equipment"),
+                       GameplayObjectId::FromString("subject")};
+
+    participant_tests::Check(bool(owner.CreateProfile(std::move(profile))),
+                             "seed actual equipment profile");
     std::cerr << "[participant] framework.equipment: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().profiles.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().profiles.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestItemsInventoryServiceSaveParticipant() {
     std::cerr << "[participant] framework.items: bootstrap\n";
     epidemic::gameplay::items::ItemsInventoryService owner;
@@ -146,30 +131,24 @@ void TestItemsInventoryServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.items", {});
     std::cerr << "[participant] framework.items: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.items: non-empty seed\n";
     items::ContainerRecord container;
-    container.owner_object = {GameplayDomainId::FromString("participant.items"), GameplayObjectId::FromString("owner")};
+    container.owner_object = {GameplayDomainId::FromString("participant.items"),
+                              GameplayObjectId::FromString("owner")};
+
     container.max_weight = 100;
     container.max_slots = 4;
-    participant_tests::Check(bool(owner.CreateContainer(std::move(container))), "seed actual inventory container");
+    participant_tests::Check(bool(owner.CreateContainer(std::move(container))),
+                             "seed actual inventory container");
     std::cerr << "[participant] framework.items: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().containers.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().containers.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestTradeCoordinatorSaveParticipant() {
     std::cerr << "[participant] integration.trade: bootstrap\n";
     economy::EconomyService economy;
@@ -186,12 +165,15 @@ void TestTradeCoordinatorSaveParticipant() {
                              {savegame::SaveParticipantId::FromString("framework.economy"),
                               savegame::SaveParticipantId::FromString("framework.items"),
                               savegame::SaveParticipantId::FromString("framework.ownership")});
-    participant_tests::CheckChangedStatePublication(*participant, [&]() -> ::epidemic::foundation::Result<void> {
-        auto checkpoint = owner.CaptureSnapshot();
-        checkpoint.execution_ids.next += 17;
-        return owner.RestoreSnapshot(std::move(checkpoint));
-    });
+    participant_tests::CheckChangedStatePublication(*participant,
+                                                    [&]() -> ::epidemic::foundation::Result<void> {
+                                                        auto checkpoint = owner.CaptureSnapshot();
+                                                        checkpoint.execution_ids.next += 17;
+                                                        return owner.RestoreSnapshot(
+                                                            std::move(checkpoint));
+                                                    });
 }
+
 #if defined(EP_AUDITOR_SHADOW_PROBES) && EP_AUDITOR_SHADOW_PROBES
 int RunAuditorInventorySaveLoadScenario(bool corrupt_control, unsigned cycle = 0) {
     using namespace epidemic::auditor::shadow;
@@ -199,7 +181,8 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control, unsigned cycle = 0
     std::size_t environment_size = 0;
     if (_dupenv_s(&environment, &environment_size, "EP_AUDITOR_SAVE_DIRECTORY") != 0)
         return 2;
-    if (!environment && _dupenv_s(&environment, &environment_size, "EP_AUDITOR_CAUSAL_DIRECTORY") != 0)
+    if (!environment &&
+        _dupenv_s(&environment, &environment_size, "EP_AUDITOR_CAUSAL_DIRECTORY") != 0)
         return 2;
     const std::unique_ptr<char, decltype(&std::free)> owned(environment, &std::free);
     if (!environment)
@@ -208,15 +191,19 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control, unsigned cycle = 0
     if (!std::filesystem::is_directory(directory) || std::filesystem::is_symlink(directory))
         return 2;
     const auto path = directory / ("inventory-save-" + std::to_string(cycle) + ".bin");
-    const auto action_id = "save-load-action" + (cycle ? "-" + std::to_string(cycle) : std::string{});
-    const auto scenario_id = "save-load-scenario" + (cycle ? "-" + std::to_string(cycle) : std::string{});
+    const auto action_id =
+        "save-load-action" + (cycle ? "-" + std::to_string(cycle) : std::string{});
+    const auto scenario_id =
+        "save-load-scenario" + (cycle ? "-" + std::to_string(cycle) : std::string{});
     if (std::filesystem::exists(path))
         return 3;
     items::ItemsInventoryService owner;
     owner.Freeze();
     const auto empty = owner.CaptureSnapshot();
     items::ContainerRecord container;
-    container.owner_object = {GameplayDomainId::FromString("scenario.items"), GameplayObjectId::FromString("player")};
+    container.owner_object = {GameplayDomainId::FromString("scenario.items"),
+                              GameplayObjectId::FromString("player")};
+
     container.max_weight = 100;
     container.max_slots = 4;
     const auto created = owner.CreateContainer(container);
@@ -238,32 +225,37 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control, unsigned cycle = 0
     if (!encoded)
         return 6;
     const auto write_start = std::chrono::steady_clock::now();
-    if (!epidemic::platform::CommitFilePackage(epidemic::foundation::Path(path), encoded.Value(), 1024 * 1024))
+    if (!epidemic::platform::CommitFilePackage(epidemic::foundation::Path(path), encoded.Value(),
+                                               1024 * 1024))
         return 7;
     io("io.write", "inventory-save", encoded.Value().size(),
-       static_cast<std::uint64_t>(
-           std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - write_start)
-               .count()));
+       static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                      std::chrono::steady_clock::now() - write_start)
+                                      .count()));
     const auto read_start = std::chrono::steady_clock::now();
-    auto loaded = epidemic::platform::ReadFilePackage(epidemic::foundation::Path(path), 1024 * 1024);
+    auto loaded =
+        epidemic::platform::ReadFilePackage(epidemic::foundation::Path(path), 1024 * 1024);
     if (!loaded)
         return 8;
     auto bytes = std::move(loaded.Value());
     io("io.read", "inventory-load", bytes.size(),
-       static_cast<std::uint64_t>(
-           std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - read_start)
-               .count()));
+       static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                      std::chrono::steady_clock::now() - read_start)
+                                      .count()));
     if (corrupt_control) {
         auto corrupt = bytes;
         if (corrupt.empty())
             return 9;
         corrupt.back() ^= std::byte{1};
-        if (savegame::DecodeSaveGameImage(corrupt) || owner.FindContainer(created.Value()) == nullptr)
+
+        if (savegame::DecodeSaveGameImage(corrupt) ||
+            owner.FindContainer(created.Value()) == nullptr)
             return 9;
         scenario("scenario.end", scenario_id.c_str());
         action("action.end", action_id.c_str());
         return 0;
     }
+
     const auto decoded = savegame::DecodeSaveGameImage(bytes);
     if (!decoded || decoded.Value().sections.size() != 1 || bytes != encoded.Value())
         return 10;
@@ -277,13 +269,15 @@ int RunAuditorInventorySaveLoadScenario(bool corrupt_control, unsigned cycle = 0
         return 13;
     participant->CommitRestore(*stage.Value());
     const auto *restored = owner.FindContainer(created.Value());
-    if (!restored || restored->max_slots != container.max_slots || restored->max_weight != container.max_weight ||
+    if (!restored || restored->max_slots != container.max_slots ||
+        restored->max_weight != container.max_weight ||
         restored->owner_object != container.owner_object)
         return 14;
     scenario("scenario.end", scenario_id.c_str());
     action("action.end", action_id.c_str());
     return 0;
 }
+
 #endif
 int main(int argc, char **argv) {
     try {
@@ -300,17 +294,22 @@ int main(int argc, char **argv) {
             for (unsigned cycle = 1; cycle <= cycles; ++cycle) {
                 const auto result = RunAuditorInventorySaveLoadScenario(false, cycle);
                 if (result != 0) {
-                    std::printf("{\"scenario\":\"production-inventory-save-restore\",\"iterations\":%lu,\"completed\":%"
+                    std::printf("{\"scenario\":\"production-inventory-save-restore\","
+                                "\"iterations\":%lu,\"completed\":%"
                                 "u,\"failures\":1,\"state_checks\":%u,\"error_code\":%d}\n",
                                 cycles, cycle - 1, cycle - 1, result);
                     return result;
                 }
+
             }
-            std::printf("{\"scenario\":\"production-inventory-save-restore\",\"iterations\":%lu,\"completed\":%lu,"
+
+            std::printf("{\"scenario\":\"production-inventory-save-restore\",\"iterations\":%lu,"
+                        "\"completed\":%lu,"
                         "\"failures\":0,\"state_checks\":%lu}\n",
                         cycles, cycles, cycles);
             return 0;
         }
+
 #else
         (void)argc;
         (void)argv;
@@ -328,4 +327,5 @@ int main(int argc, char **argv) {
         std::fprintf(stderr, "Save participant scenario failed: unknown exception\n");
         return 1;
     }
+
 }

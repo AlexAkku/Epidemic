@@ -12,10 +12,13 @@ namespace epidemic::gameplay {
 inline constexpr std::int64_t kGameplayTimeTicksPerSecond = 1;
 inline constexpr std::int64_t kGameplaySecondsPerMinute = 60;
 inline constexpr std::int64_t kGameplayMinutesPerHour = 60;
-inline constexpr std::int64_t kGameplaySecondsPerHour = kGameplaySecondsPerMinute * kGameplayMinutesPerHour;
+inline constexpr std::int64_t kGameplaySecondsPerHour =
+    kGameplaySecondsPerMinute * kGameplayMinutesPerHour;
 inline constexpr std::int64_t kGameplayTicksPerSecond = kGameplayTimeTicksPerSecond;
-inline constexpr std::int64_t kGameplayTicksPerMinute = kGameplaySecondsPerMinute * kGameplayTicksPerSecond;
-inline constexpr std::int64_t kGameplayTicksPerHour = kGameplayMinutesPerHour * kGameplayTicksPerMinute;
+inline constexpr std::int64_t kGameplayTicksPerMinute =
+    kGameplaySecondsPerMinute * kGameplayTicksPerSecond;
+inline constexpr std::int64_t kGameplayTicksPerHour =
+    kGameplayMinutesPerHour * kGameplayTicksPerMinute;
 
 struct GameplayDuration {
     std::int64_t ticks = 0;
@@ -23,6 +26,7 @@ struct GameplayDuration {
     [[nodiscard]] constexpr bool IsZero() const noexcept {
         return ticks == 0;
     }
+
     [[nodiscard]] constexpr bool operator==(const GameplayDuration &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const GameplayDuration &) const noexcept = default;
 };
@@ -36,10 +40,12 @@ struct GameplayTimePoint {
 
 [[nodiscard]] constexpr GameplayDuration GameplaySeconds(std::int64_t seconds) noexcept {
     return GameplayDuration{seconds * kGameplayTimeTicksPerSecond};
+
 }
 
 [[nodiscard]] constexpr GameplayTimePoint GameplayTimeSeconds(std::int64_t seconds) noexcept {
     return GameplayTimePoint{seconds * kGameplayTimeTicksPerSecond};
+
 }
 
 [[nodiscard]] constexpr std::int64_t ToGameplaySeconds(GameplayDuration duration) noexcept {
@@ -50,45 +56,62 @@ struct GameplayTimePoint {
     return point.ticks / kGameplayTimeTicksPerSecond;
 }
 
-[[nodiscard]] constexpr std::optional<GameplayTimePoint> CheckedAdd(GameplayTimePoint point,
-                                                                    GameplayDuration duration) noexcept {
-    if (duration.ticks > 0 && point.ticks > std::numeric_limits<std::int64_t>::max() - duration.ticks) {
+[[nodiscard]] constexpr std::optional<GameplayTimePoint>
+CheckedAdd(GameplayTimePoint point, GameplayDuration duration) noexcept {
+    if (duration.ticks > 0 &&
+        point.ticks > std::numeric_limits<std::int64_t>::max() - duration.ticks) {
         return std::nullopt;
     }
-    if (duration.ticks < 0 && point.ticks < std::numeric_limits<std::int64_t>::min() - duration.ticks) {
+
+    if (duration.ticks < 0 &&
+        point.ticks < std::numeric_limits<std::int64_t>::min() - duration.ticks) {
         return std::nullopt;
     }
+
     return GameplayTimePoint{point.ticks + duration.ticks};
+
 }
 
-[[nodiscard]] constexpr std::optional<GameplayTimePoint> CheckedSubtract(GameplayTimePoint point,
-                                                                         GameplayDuration duration) noexcept {
-    if (duration.ticks > 0 && point.ticks < std::numeric_limits<std::int64_t>::min() + duration.ticks) {
+[[nodiscard]] constexpr std::optional<GameplayTimePoint>
+CheckedSubtract(GameplayTimePoint point, GameplayDuration duration) noexcept {
+    if (duration.ticks > 0 &&
+        point.ticks < std::numeric_limits<std::int64_t>::min() + duration.ticks) {
         return std::nullopt;
     }
-    if (duration.ticks < 0 && point.ticks > std::numeric_limits<std::int64_t>::max() + duration.ticks) {
+
+    if (duration.ticks < 0 &&
+        point.ticks > std::numeric_limits<std::int64_t>::max() + duration.ticks) {
         return std::nullopt;
     }
+
     return GameplayTimePoint{point.ticks - duration.ticks};
+
 }
 
-[[nodiscard]] constexpr std::optional<GameplayDuration> CheckedDifference(GameplayTimePoint end,
-                                                                          GameplayTimePoint begin) noexcept {
+[[nodiscard]] constexpr std::optional<GameplayDuration>
+CheckedDifference(GameplayTimePoint end, GameplayTimePoint begin) noexcept {
     if (begin.ticks < 0 && end.ticks > std::numeric_limits<std::int64_t>::max() + begin.ticks) {
         return std::nullopt;
     }
+
     if (begin.ticks > 0 && end.ticks < std::numeric_limits<std::int64_t>::min() + begin.ticks) {
         return std::nullopt;
     }
+
     return GameplayDuration{end.ticks - begin.ticks};
+
 }
 
-[[nodiscard]] constexpr GameplayTimePoint SaturatingAdd(GameplayTimePoint point, GameplayDuration duration) noexcept {
+[[nodiscard]] constexpr GameplayTimePoint SaturatingAdd(GameplayTimePoint point,
+                                                        GameplayDuration duration) noexcept {
     if (const auto checked = CheckedAdd(point, duration)) {
         return *checked;
     }
+
     return duration.ticks >= 0 ? GameplayTimePoint{std::numeric_limits<std::int64_t>::max()}
+
                                : GameplayTimePoint{std::numeric_limits<std::int64_t>::min()};
+
 }
 
 [[nodiscard]] constexpr GameplayTimePoint SaturatingSubtract(GameplayTimePoint point,
@@ -96,27 +119,37 @@ struct GameplayTimePoint {
     if (const auto checked = CheckedSubtract(point, duration)) {
         return *checked;
     }
+
     return duration.ticks >= 0 ? GameplayTimePoint{std::numeric_limits<std::int64_t>::min()}
+
                                : GameplayTimePoint{std::numeric_limits<std::int64_t>::max()};
+
 }
 
-[[nodiscard]] constexpr GameplayDuration SaturatingDifference(GameplayTimePoint end, GameplayTimePoint begin) noexcept {
+[[nodiscard]] constexpr GameplayDuration SaturatingDifference(GameplayTimePoint end,
+                                                              GameplayTimePoint begin) noexcept {
     if (const auto checked = CheckedDifference(end, begin)) {
         return *checked;
     }
+
     return end.ticks >= begin.ticks ? GameplayDuration{std::numeric_limits<std::int64_t>::max()}
+
                                     : GameplayDuration{std::numeric_limits<std::int64_t>::min()};
+
 }
 
-[[nodiscard]] constexpr GameplayTimePoint operator+(GameplayTimePoint point, GameplayDuration duration) noexcept {
+[[nodiscard]] constexpr GameplayTimePoint operator+(GameplayTimePoint point,
+                                                    GameplayDuration duration) noexcept {
     return SaturatingAdd(point, duration);
 }
 
-[[nodiscard]] constexpr GameplayTimePoint operator-(GameplayTimePoint point, GameplayDuration duration) noexcept {
+[[nodiscard]] constexpr GameplayTimePoint operator-(GameplayTimePoint point,
+                                                    GameplayDuration duration) noexcept {
     return SaturatingSubtract(point, duration);
 }
 
-[[nodiscard]] constexpr GameplayDuration operator-(GameplayTimePoint end, GameplayTimePoint begin) noexcept {
+[[nodiscard]] constexpr GameplayDuration operator-(GameplayTimePoint end,
+                                                   GameplayTimePoint begin) noexcept {
     return SaturatingDifference(end, begin);
 }
 
@@ -126,12 +159,15 @@ struct GameplayTickId {
     [[nodiscard]] constexpr bool IsValid() const noexcept {
         return value != 0;
     }
+
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value;
     }
+
     [[nodiscard]] constexpr explicit operator bool() const noexcept {
         return IsValid();
     }
+
     [[nodiscard]] constexpr bool operator==(const GameplayTickId &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const GameplayTickId &) const noexcept = default;
 };
@@ -142,6 +178,7 @@ struct Revision {
     [[nodiscard]] constexpr std::uint64_t Raw() const noexcept {
         return value;
     }
+
     [[nodiscard]] constexpr bool operator==(const Revision &) const noexcept = default;
     [[nodiscard]] constexpr auto operator<=>(const Revision &) const noexcept = default;
 };
@@ -150,21 +187,29 @@ struct Revision {
     if (revision.value == std::numeric_limits<std::uint64_t>::max()) {
         return std::nullopt;
     }
+
     return Revision{revision.value + 1};
+
 }
 
-[[nodiscard]] constexpr std::optional<std::uint64_t> CheckedNextSequence(std::uint64_t current) noexcept {
+[[nodiscard]] constexpr std::optional<std::uint64_t>
+CheckedNextSequence(std::uint64_t current) noexcept {
     if (current == std::numeric_limits<std::uint64_t>::max()) {
         return std::nullopt;
     }
+
     return current + 1;
 }
 
 struct GameplayTickContext {
     GameplayTickId tick{};
+
     GameplayTimePoint time{};
+
     GameplayDuration delta{};
+
 };
+
 } // namespace epidemic::gameplay
 
 namespace std {
@@ -172,5 +217,7 @@ template <> struct hash<epidemic::gameplay::GameplayTickId> {
     [[nodiscard]] size_t operator()(epidemic::gameplay::GameplayTickId value) const noexcept {
         return hash<std::uint64_t>{}(value.Raw());
     }
+
 };
+
 } // namespace std

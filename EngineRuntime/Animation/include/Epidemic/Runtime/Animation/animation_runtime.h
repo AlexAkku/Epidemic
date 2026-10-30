@@ -7,8 +7,9 @@
 #include <span>
 
 namespace epidemic::runtime::animation {
-// Public contracts for registering animation resources, owning animator instances and exposing pose/event state.
-// Implementations are allowed to be mock-backed while preserving lifecycle semantics.
+// Public contracts for registering animation resources, owning animator instances and exposing
+// pose/event state. Implementations are allowed to be mock-backed while preserving lifecycle
+// semantics.
 
 class ISkeletonRegistry {
   public:
@@ -36,31 +37,39 @@ class IAnimationRuntime {
   public:
     virtual ~IAnimationRuntime() = default;
 
-    [[nodiscard]] virtual foundation::Result<AnimatorHandle> CreateAnimatorHandle(const AnimatorDesc &desc) = 0;
+    [[nodiscard]] virtual foundation::Result<AnimatorHandle>
+    CreateAnimatorHandle(const AnimatorDesc &desc) = 0;
 
     [[nodiscard]] virtual foundation::Result<void> DestroyAnimator(AnimatorHandle handle) = 0;
 
-    [[nodiscard]] virtual foundation::Result<void> Play(const AnimationPlaybackCommand &command) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    Play(const AnimationPlaybackCommand &command) = 0;
     [[nodiscard]] virtual foundation::Result<void> Pause(AnimatorHandle handle) = 0;
     [[nodiscard]] virtual foundation::Result<void> Stop(AnimatorHandle handle) = 0;
-    [[nodiscard]] virtual foundation::Result<void> Crossfade(AnimatorHandle handle, AnimationClipId clip,
-                                                             FrameDuration duration) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    Crossfade(AnimatorHandle handle, AnimationClipId clip, FrameDuration duration) = 0;
 
-    [[nodiscard]] virtual foundation::Result<std::size_t> Tick(FrameDuration delta, std::size_t max_animators) = 0;
+    [[nodiscard]] virtual foundation::Result<std::size_t> Tick(FrameDuration delta,
+                                                               std::size_t max_animators) = 0;
 
-    [[nodiscard]] virtual foundation::Result<AnimatorSnapshot> GetAnimatorSnapshot(AnimatorHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<AnimatorSnapshot>
+    GetAnimatorSnapshot(AnimatorHandle handle) const = 0;
 
-    [[nodiscard]] virtual foundation::Result<void> SetLod(AnimatorHandle handle, AnimationLodLevel lod) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetLod(AnimatorHandle handle,
+                                                          AnimationLodLevel lod) = 0;
 };
 
 class IPoseProvider {
   public:
     virtual ~IPoseProvider() = default;
 
-    [[nodiscard]] virtual foundation::Result<PoseState> GetPoseState(AnimatorHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<PoseState>
+    GetPoseState(AnimatorHandle handle) const = 0;
 
-    [[nodiscard]] virtual foundation::Result<PoseSnapshot> GetPoseSnapshot(AnimatorHandle handle) const = 0;
-    [[nodiscard]] virtual foundation::Result<PoseBuffer> GetPoseBuffer(AnimatorHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<PoseSnapshot>
+    GetPoseSnapshot(AnimatorHandle handle) const = 0;
+    [[nodiscard]] virtual foundation::Result<PoseBuffer>
+    GetPoseBuffer(AnimatorHandle handle) const = 0;
 };
 
 class IAnimationResourceSource {
@@ -68,7 +77,8 @@ class IAnimationResourceSource {
     virtual ~IAnimationResourceSource() = default;
 
     [[nodiscard]] virtual foundation::Result<SkeletonDesc> LoadSkeleton(SkeletonId id) const = 0;
-    [[nodiscard]] virtual foundation::Result<AnimationClipDesc> LoadClip(AnimationClipId id) const = 0;
+    [[nodiscard]] virtual foundation::Result<AnimationClipDesc>
+    LoadClip(AnimationClipId id) const = 0;
 };
 
 class IAnimationPoseSink {
@@ -77,7 +87,8 @@ class IAnimationPoseSink {
 
     // Failure or exception means the pose was not externally committed. A sink that can commit
     // before reporting failure must provide its own idempotent/deduplicated publication boundary.
-    [[nodiscard]] virtual foundation::Result<void> Publish(std::shared_ptr<const PoseBuffer> pose) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    Publish(std::shared_ptr<const PoseBuffer> pose) = 0;
 };
 
 class IAnimationEvaluatorBackend {
@@ -111,8 +122,8 @@ struct AnimationServices {
     std::shared_ptr<IAnimationEventBuffer> events;
 };
 
-[[nodiscard]] foundation::Result<AnimationServices> CreateAnimationServices(AnimationOptions options = {},
-                                                                            AnimationDependencies dependencies = {});
+[[nodiscard]] foundation::Result<AnimationServices>
+CreateAnimationServices(AnimationOptions options = {}, AnimationDependencies dependencies = {});
 [[nodiscard]] AnimationServices CreateReferenceAnimationServices(AnimationOptions options = {});
 [[nodiscard]] AnimationServices CreateMockAnimationServices(AnimationOptions options = {});
 } // namespace epidemic::runtime::animation

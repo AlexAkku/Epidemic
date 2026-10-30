@@ -60,6 +60,7 @@ class Path {
         }
 
         const std::filesystem::path child_path{std::string(child)};
+
         if (child_path.has_root_path()) {
             throw std::invalid_argument("Path::Join requires a relative child path");
         }
@@ -77,6 +78,7 @@ class Path {
         if (value.find('\0') != std::string_view::npos) {
             throw std::invalid_argument("Path text contains an embedded NUL character");
         }
+
     }
 
     [[nodiscard]] static std::filesystem::path ValidateNative(std::filesystem::path path) {
@@ -85,9 +87,11 @@ class Path {
         if (native.find(NativeChar{}) != std::filesystem::path::string_type::npos) {
             throw std::invalid_argument("Native path contains an embedded NUL character");
         }
+
         return path;
     }
 
     std::filesystem::path path_;
 };
+
 } // namespace epidemic::foundation

@@ -9,7 +9,10 @@ class IPhysicsQuery {
   public:
     virtual ~IPhysicsQuery() = default;
 
-    [[nodiscard]] virtual foundation::Result<RaycastHit> Raycast(const RaycastQuery &query) const = 0;
-    [[nodiscard]] virtual foundation::Result<OverlapResult> Overlap(const OverlapQuery &query) const = 0;
+    [[nodiscard]] virtual foundation::Result<RaycastHit>
+    Raycast(const RaycastQuery &query) const = 0;
+    [[nodiscard]] virtual foundation::Result<OverlapResult>
+    Overlap(const OverlapQuery &query) const = 0;
 };
+
 } // namespace epidemic::runtime::physics

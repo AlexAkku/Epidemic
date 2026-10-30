@@ -25,4 +25,5 @@ enum class PersistentObjectKind {
     ZoneOverride,
     AbstractFact,
 };
-}
+
+} // namespace epidemic::runtime

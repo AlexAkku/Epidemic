@@ -22,12 +22,15 @@ struct ObjectProtectionMask {
     return static_cast<std::uint32_t>(flags);
 }
 
-[[nodiscard]] constexpr bool HasProtectionFlag(ObjectProtectionMask mask, ObjectProtectionFlags flag) noexcept {
+[[nodiscard]] constexpr bool HasProtectionFlag(ObjectProtectionMask mask,
+                                               ObjectProtectionFlags flag) noexcept {
     return (mask.value & ToProtectionMask(flag)) != 0u;
 }
 
-[[nodiscard]] constexpr ObjectProtectionMask AddProtectionFlag(ObjectProtectionMask mask,
-                                                               ObjectProtectionFlags flag) noexcept {
+[[nodiscard]] constexpr ObjectProtectionMask
+AddProtectionFlag(ObjectProtectionMask mask, ObjectProtectionFlags flag) noexcept {
     return ObjectProtectionMask{mask.value | ToProtectionMask(flag)};
+
 }
+
 } // namespace epidemic::runtime

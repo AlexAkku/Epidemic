@@ -2,7 +2,8 @@
 
 namespace epidemic::rhi {
 // This file defines the opaque handle used by RHI swap chains to reference presentation surfaces.
-// Higher layers pass native window handles through this wrapper without exposing backend-specific types here.
+// Higher layers pass native window handles through this wrapper without exposing backend-specific
+// types here.
 
 class PresentationSurfaceHandle {
   public:
@@ -29,9 +30,12 @@ class PresentationSurfaceHandle {
     }
 
     // Compares two wrapped presentation handles.
-    [[nodiscard]] constexpr bool operator==(const PresentationSurfaceHandle &) const noexcept = default;
+    [[nodiscard]] constexpr bool
+    operator==(const PresentationSurfaceHandle &) const noexcept = default;
 
   private:
     void *value_{nullptr};
+
 };
+
 } // namespace epidemic::rhi

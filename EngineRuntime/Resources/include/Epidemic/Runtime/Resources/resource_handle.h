@@ -6,6 +6,7 @@
 namespace epidemic::runtime {
 struct ResourceHandle {
     ResourceId id{};
+
     std::uint32_t generation = 0;
 
     [[nodiscard]] constexpr bool IsValid() const noexcept {
@@ -19,6 +20,7 @@ using ResourceAcquisitionId = std::uint64_t;
 
 struct ResourceLease {
     ResourceHandle resource{};
+
     ResourceAcquisitionId acquisition = 0;
 
     [[nodiscard]] constexpr bool IsValid() const noexcept {
@@ -27,4 +29,5 @@ struct ResourceLease {
 
     [[nodiscard]] constexpr bool operator==(const ResourceLease &) const noexcept = default;
 };
-}
+
+} // namespace epidemic::runtime

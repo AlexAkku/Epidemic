@@ -19,12 +19,17 @@ class IEnvironmentQuery {
 
     [[nodiscard]] virtual foundation::Result<WeatherState> GetWeather(RegionId region) const = 0;
     [[nodiscard]] virtual foundation::Result<SeasonState> GetSeason(RegionId region) const = 0;
-    [[nodiscard]] virtual foundation::Result<ClimateProfile> GetClimateProfile(RegionId region) const = 0;
-    [[nodiscard]] virtual foundation::Result<SurfaceState> GetSurfaceState(SurfaceId surface) const = 0;
-    [[nodiscard]] virtual foundation::Result<EnvironmentSnapshot> BuildSnapshot(RegionId region) const = 0;
-    [[nodiscard]] virtual foundation::Result<EnvironmentProjection> BuildProjection(RegionId region) const = 0;
+    [[nodiscard]] virtual foundation::Result<ClimateProfile>
+    GetClimateProfile(RegionId region) const = 0;
+    [[nodiscard]] virtual foundation::Result<SurfaceState>
+    GetSurfaceState(SurfaceId surface) const = 0;
+    [[nodiscard]] virtual foundation::Result<EnvironmentSnapshot>
+    BuildSnapshot(RegionId region) const = 0;
+    [[nodiscard]] virtual foundation::Result<EnvironmentProjection>
+    BuildProjection(RegionId region) const = 0;
     [[nodiscard]] virtual std::uint64_t GetRevision() const = 0;
-    [[nodiscard]] virtual foundation::Result<std::uint64_t> GetRegionRevision(RegionId region) const = 0;
+    [[nodiscard]] virtual foundation::Result<std::uint64_t>
+    GetRegionRevision(RegionId region) const = 0;
 };
 
 // Threading: mutation must occur on the runtime thread.
@@ -34,12 +39,17 @@ class IEnvironmentWriter {
     virtual ~IEnvironmentWriter() = default;
 
     [[nodiscard]] virtual foundation::Result<void>
-    RegisterRegionEnvironment(RegionId region, WeatherState weather, SeasonState season, ClimateProfile climate) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SetWeather(RegionId region, WeatherState weather) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SetSeason(RegionId region, SeasonState season) = 0;
-    [[nodiscard]] virtual foundation::Result<void> SetClimateProfile(RegionId region, ClimateProfile climate) = 0;
+    RegisterRegionEnvironment(RegionId region, WeatherState weather, SeasonState season,
+                              ClimateProfile climate) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetWeather(RegionId region,
+                                                              WeatherState weather) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetSeason(RegionId region,
+                                                             SeasonState season) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetClimateProfile(RegionId region,
+                                                                     ClimateProfile climate) = 0;
     [[nodiscard]] virtual foundation::Result<void> SetSurfaceState(SurfaceState state) = 0;
-    [[nodiscard]] virtual foundation::Result<void> ApplyUpdate(const EnvironmentStateUpdate &update) = 0;
+    [[nodiscard]] virtual foundation::Result<void>
+    ApplyUpdate(const EnvironmentStateUpdate &update) = 0;
     [[nodiscard]] virtual foundation::Result<void> Update(const EnvironmentUpdateInput &input) = 0;
 };
 
@@ -47,7 +57,8 @@ class IEnvironmentUpdatePolicy {
   public:
     virtual ~IEnvironmentUpdatePolicy() = default;
 
-    // Result failure and exceptions are contained by Update(). Returned state is fully validated before commit.
+    // Result failure and exceptions are contained by Update(). Returned state is fully validated
+    // before commit.
     [[nodiscard]] virtual foundation::Result<EnvironmentStateUpdate>
     BuildUpdate(const EnvironmentUpdateInput &input, const IEnvironmentQuery &query) const = 0;
 };
@@ -58,8 +69,10 @@ class IEnvironmentRuntime : public IEnvironmentQuery, public IEnvironmentWriter 
 
     virtual void SetUpdatePolicy(std::shared_ptr<const IEnvironmentUpdatePolicy> policy) = 0;
 
-    // Region and surface identities are boot-static once frozen. Runtime state updates for existing identities remain available.
+    // Region and surface identities are boot-static once frozen. Runtime state updates for existing
+    // identities remain available.
     virtual void FreezeRegistration() noexcept = 0;
     [[nodiscard]] virtual bool IsRegistrationFrozen() const noexcept = 0;
 };
+
 } // namespace epidemic::runtime

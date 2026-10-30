@@ -3,6 +3,7 @@
 #include "participant_test_contract.h"
 using namespace epidemic::gameplay;
 using participant_tests::CheckParticipantContract;
+
 void TestProcessesServiceSaveParticipant() {
     std::cerr << "[participant] framework.processes: bootstrap\n";
     epidemic::gameplay::processes::ProcessesService owner;
@@ -13,30 +14,23 @@ void TestProcessesServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.processes", {});
     std::cerr << "[participant] framework.processes: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.processes: non-empty seed\n";
     processes::ProcessStation station;
     station.station_object = {GameplayDomainId::FromString("participant.process"),
                               GameplayObjectId::FromString("station")};
+
     station.efficiency_micro = 1'000'000;
-    participant_tests::Check(bool(owner.RegisterStation(std::move(station))), "seed actual process station");
+    participant_tests::Check(bool(owner.RegisterStation(std::move(station))),
+                             "seed actual process station");
     std::cerr << "[participant] framework.processes: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().stations.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().stations.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestResourcesProductionServiceSaveParticipant() {
     std::cerr << "[participant] framework.resources: bootstrap\n";
     epidemic::gameplay::resources::ResourcesProductionService owner;
@@ -51,29 +45,23 @@ void TestResourcesProductionServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.resources", {});
     std::cerr << "[participant] framework.resources: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.resources: non-empty seed\n";
     resources::ResourceStockpile stockpile;
-    stockpile.owner = {GameplayDomainId::FromString("participant.resources"), GameplayObjectId::FromString("owner")};
+    stockpile.owner = {GameplayDomainId::FromString("participant.resources"),
+                       GameplayObjectId::FromString("owner")};
+
     stockpile.state = resources::StockpileState::Active;
-    participant_tests::Check(bool(owner.CreateStockpile(std::move(stockpile))), "seed actual resource stockpile");
+    participant_tests::Check(bool(owner.CreateStockpile(std::move(stockpile))),
+                             "seed actual resource stockpile");
     std::cerr << "[participant] framework.resources: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().stockpiles.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().stockpiles.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 void TestSimulationServiceSaveParticipant() {
     std::cerr << "[participant] framework.simulation: bootstrap\n";
     epidemic::gameplay::simulation::SimulationService owner;
@@ -84,28 +72,20 @@ void TestSimulationServiceSaveParticipant() {
     CheckParticipantContract(*participant, "framework.simulation", {});
     std::cerr << "[participant] framework.simulation: counters\n";
     participant_tests::CheckOwnerCounterContinuity(
-        owner, *participant,
-        [&] {
-            return owner.CaptureSnapshot();
-        },
-        [&](auto snapshot) {
-            return owner.RestoreSnapshot(std::move(snapshot));
-        });
+        owner, *participant, [&] { return owner.CaptureSnapshot(); },
+        [&](auto snapshot) { return owner.RestoreSnapshot(std::move(snapshot)); });
     const auto empty_snapshot = owner.CaptureSnapshot();
     std::cerr << "[participant] framework.simulation: non-empty seed\n";
     simulation::SimulationRegion region;
     region.canonical_name = "participant.simulation.region";
-    participant_tests::Check(bool(owner.RegisterRegion(std::move(region))), "seed actual simulation region");
+    participant_tests::Check(bool(owner.RegisterRegion(std::move(region))),
+                             "seed actual simulation region");
     std::cerr << "[participant] framework.simulation: non-empty publication\n";
     participant_tests::CheckNonEmptyPublication(
-        *participant,
-        [&] {
-            return owner.CaptureSnapshot().regions.size();
-        },
-        [&] {
-            return owner.RestoreSnapshot(empty_snapshot);
-        });
+        *participant, [&] { return owner.CaptureSnapshot().regions.size(); },
+        [&] { return owner.RestoreSnapshot(empty_snapshot); });
 }
+
 int main() {
     TestProcessesServiceSaveParticipant();
     TestResourcesProductionServiceSaveParticipant();

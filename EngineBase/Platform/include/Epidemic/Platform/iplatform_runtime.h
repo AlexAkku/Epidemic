@@ -14,13 +14,15 @@
 namespace epidemic::platform {
 // Neutral bounded byte-package I/O. One externally synchronized writer per
 // path; successful commit flushes a same-directory temporary then replaces it.
-[[nodiscard]] foundation::Result<std::vector<std::byte>> ReadFilePackage(const foundation::Path &path,
-                                                                         std::size_t max_bytes);
-[[nodiscard]] foundation::Result<void> CommitFilePackage(const foundation::Path &path, std::span<const std::byte> bytes,
+[[nodiscard]] foundation::Result<std::vector<std::byte>>
+ReadFilePackage(const foundation::Path &path, std::size_t max_bytes);
+[[nodiscard]] foundation::Result<void> CommitFilePackage(const foundation::Path &path,
+                                                         std::span<const std::byte> bytes,
                                                          std::size_t max_bytes);
 
 // This file defines the abstract runtime services provided by the host platform layer.
-// IPlatformRuntime covers process metadata, clock access, dynamic library loading, and event pumping.
+// IPlatformRuntime covers process metadata, clock access, dynamic library loading, and event
+// pumping.
 
 struct ProcessInfo {
     epidemic::foundation::Path executable_path;
@@ -51,4 +53,5 @@ class IPlatformRuntime {
     // Returns whether the runtime has observed a process-level exit request.
     [[nodiscard]] virtual bool IsExitRequested() const = 0;
 };
+
 } // namespace epidemic::platform

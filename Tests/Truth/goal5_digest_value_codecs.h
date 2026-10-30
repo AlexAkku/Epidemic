@@ -1,6 +1,7 @@
 // Generated exact private value codecs; source remains the production participant implementation.
 #pragma once
 #include "Epidemic/GameFramework/SaveGameInternal/save_participant_internal.h"
+
 namespace epidemic::gameplay::savegame::detail {
 template <> struct SnapshotValueCodec<narrative::NarrativeValue> {
     template <typename IO> static void Transfer(IO &io, narrative::NarrativeValue &value) {
@@ -26,19 +27,21 @@ template <> struct SnapshotValueCodec<narrative::NarrativeValue> {
                 value.emplace<4>();
                 break;
             }
+
         }
-        std::visit(
-            [&](auto &field) {
-                TransferSnapshot(io, field);
-            },
-            value);
+
+        std::visit([&](auto &field) { TransferSnapshot(io, field); }, value);
     }
+
 };
+
 template <> struct SnapshotValueCodec<materials::SubstanceAmount> {
     template <class IO> static void Transfer(IO &io, materials::SubstanceAmount &amount) {
         TransferSnapshot(io, amount.micro);
     }
+
 };
+
 template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord> {
     template <typename IO> static void Transfer(IO &io, knowledge::KnowledgeRecord &value) {
         TransferSnapshot(io, value.id);
@@ -63,7 +66,9 @@ template <> struct SnapshotValueCodec<knowledge::KnowledgeRecord> {
         TransferSnapshot(io, value.payload);
         TransferSnapshot(io, value.revision);
     }
+
 };
+
 template <> struct SnapshotValueCodec<processes::ProcessInstance> {
     template <typename IO> static void Transfer(IO &io, processes::ProcessInstance &value) {
         TransferSnapshot(io, value.id);
@@ -84,7 +89,9 @@ template <> struct SnapshotValueCodec<processes::ProcessInstance> {
         TransferSnapshot(io, value.runtime_payload);
         TransferSnapshot(io, value.revision);
     }
+
 };
+
 template <> struct SnapshotValueCodec<::epidemic::gameplay::ChangeCursor> {
     template <typename IO> static void Transfer(IO &io, ::epidemic::gameplay::ChangeCursor &value) {
         if constexpr (!IO::reading && requires { IO::semantic_observation_identity; }) {
@@ -94,5 +101,7 @@ template <> struct SnapshotValueCodec<::epidemic::gameplay::ChangeCursor> {
             TransferSnapshot(io, value.epoch);
         TransferSnapshot(io, value.sequence);
     }
+
 };
-}
+
+} // namespace epidemic::gameplay::savegame::detail

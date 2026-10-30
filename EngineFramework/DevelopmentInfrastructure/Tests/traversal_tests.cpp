@@ -8,7 +8,8 @@ using namespace epidemic::gameplay;
 using namespace epidemic::gameplay::traversal;
 
 namespace {
-template <class T, class Pred> bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
+template <class T, class Pred>
+bool SameVector(const std::vector<T> &a, const std::vector<T> &b, Pred pred) {
     return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), pred);
 }
 
@@ -18,35 +19,38 @@ bool SameState(const TraversalState &a, const TraversalState &b) {
 }
 
 bool SameSession(const TraversalSession &a, const TraversalSession &b) {
-    return a.id == b.id && a.subject == b.subject && a.mode == b.mode && a.route == b.route && a.state == b.state &&
-           a.started_at == b.started_at && a.revision == b.revision;
+    return a.id == b.id && a.subject == b.subject && a.mode == b.mode && a.route == b.route &&
+           a.state == b.state && a.started_at == b.started_at && a.revision == b.revision;
 }
 
 bool SameRoute(const TraversalRoute &a, const TraversalRoute &b) {
-    return a.id == b.id && a.subject == b.subject && a.from_area == b.from_area && a.to_area == b.to_area &&
-           a.mode == b.mode && a.lifetime == b.lifetime && a.source == b.source && a.payload == b.payload &&
-           a.revision == b.revision;
+    return a.id == b.id && a.subject == b.subject && a.from_area == b.from_area &&
+           a.to_area == b.to_area && a.mode == b.mode && a.lifetime == b.lifetime &&
+           a.source == b.source && a.payload == b.payload && a.revision == b.revision;
 }
 
 bool SameGrant(const TraversalCapabilityGrant &a, const TraversalCapabilityGrant &b) {
-    return a.id == b.id && a.subject == b.subject && a.capability == b.capability && a.source == b.source &&
-           a.parameter_micro == b.parameter_micro && a.expires_at == b.expires_at && a.persistent == b.persistent &&
-           a.revision == b.revision;
+    return a.id == b.id && a.subject == b.subject && a.capability == b.capability &&
+           a.source == b.source && a.parameter_micro == b.parameter_micro &&
+           a.expires_at == b.expires_at && a.persistent == b.persistent && a.revision == b.revision;
 }
 
 bool SameBinding(const TraversalCarrierBinding &a, const TraversalCarrierBinding &b) {
-    return a.passenger == b.passenger && a.carrier == b.carrier && a.carrier_mode == b.carrier_mode &&
-           a.previous_mode == b.previous_mode && a.role == b.role && a.revision == b.revision;
+    return a.passenger == b.passenger && a.carrier == b.carrier &&
+           a.carrier_mode == b.carrier_mode && a.previous_mode == b.previous_mode &&
+           a.role == b.role && a.revision == b.revision;
 }
 
 bool SameChange(const TraversalChange &a, const TraversalChange &b) {
-    return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject && a.mode == b.mode &&
-           a.session == b.session && a.carrier == b.carrier && a.reason == b.reason && a.context == b.context &&
-           a.revision == b.revision && a.capability == b.capability && a.capability_grant == b.capability_grant;
+    return a.sequence == b.sequence && a.kind == b.kind && a.subject == b.subject &&
+           a.mode == b.mode && a.session == b.session && a.carrier == b.carrier &&
+           a.reason == b.reason && a.context == b.context && a.revision == b.revision &&
+           a.capability == b.capability && a.capability_grant == b.capability_grant;
 }
 
 bool SameSnapshot(const TraversalSnapshot &a, const TraversalSnapshot &b) {
-    return SameVector(a.states, b.states, SameState) && SameVector(a.sessions, b.sessions, SameSession) &&
+    return SameVector(a.states, b.states, SameState) &&
+           SameVector(a.sessions, b.sessions, SameSession) &&
            SameVector(a.routes, b.routes, SameRoute) &&
            SameVector(a.capability_grants, b.capability_grants, SameGrant) &&
            SameVector(a.carrier_bindings, b.carrier_bindings, SameBinding) &&
@@ -54,12 +58,13 @@ bool SameSnapshot(const TraversalSnapshot &a, const TraversalSnapshot &b) {
            a.route_ids.scope == b.route_ids.scope && a.route_ids.next == b.route_ids.next &&
            a.capability_grant_ids.scope == b.capability_grant_ids.scope &&
            a.capability_grant_ids.next == b.capability_grant_ids.next && a.revision == b.revision &&
-           SameVector(a.journal, b.journal, SameChange) && a.next_change_sequence == b.next_change_sequence &&
-           a.change_epoch == b.change_epoch;
+           SameVector(a.journal, b.journal, SameChange) &&
+           a.next_change_sequence == b.next_change_sequence && a.change_epoch == b.change_epoch;
 }
 
 GameplayObjectRef Ref(const char *name) {
     return {GameplayDomainId::FromString("test.entity"), GameplayObjectId::FromString(name)};
+
 }
 
 TraversalService BuildService(TraversalModeId walk, TraversalModeId swim, TraversalModeId ride,
@@ -92,13 +97,17 @@ TraversalService BuildService(TraversalModeId walk, TraversalModeId swim, Traver
     p.canonical_name = "game.human";
     p.default_mode = walk;
     p.allowed_modes = {walk, swim, ride};
-    p.capabilities = {TraversalCapabilityValue{swim_cap, 1'000'000}, TraversalCapabilityValue{ride_cap, 1'000'000}};
+
+    p.capabilities = {TraversalCapabilityValue{swim_cap, 1'000'000},
+                      TraversalCapabilityValue{ride_cap, 1'000'000}};
+
     if (!s.RegisterProfile(p))
         return s;
     s.Freeze();
     return s;
 }
-}
+
+} // namespace
 
 int main() {
     const auto walk = TraversalModeId::FromString("game.walk");
@@ -130,7 +139,8 @@ int main() {
         return 4;
     if (s.EffectiveCapabilityParameter(actor, swim_cap) != 3'000'000)
         return 5;
-    if (!s.RevokeCapability(grant.Value()) || s.CanUseMode(actor, swim).kind != TraversalResultKind::Rejected)
+    if (!s.RevokeCapability(grant.Value()) ||
+        s.CanUseMode(actor, swim).kind != TraversalResultKind::Rejected)
         return 6;
 
     strong_swim.persistent = true;
@@ -162,6 +172,7 @@ int main() {
 
     TraversalRoute transient_route = persistent_route;
     transient_route.id = {};
+
     transient_route.lifetime = TraversalRouteLifetime::Transient;
     auto transient = s.RegisterRoute(transient_route);
     if (!transient || !s.FindRoute(transient.Value()))
@@ -176,7 +187,8 @@ int main() {
         return 17;
     if (!s.CompleteSession(session.Value()))
         return 18;
-    if (s.FindSession(session.Value()) || (s.FindState(actor) && s.FindState(actor)->active_session))
+    if (s.FindSession(session.Value()) ||
+        (s.FindState(actor) && s.FindState(actor)->active_session))
         return 19;
     if (s.GetDiagnostics().active_sessions != 0)
         return 20;
@@ -187,12 +199,14 @@ int main() {
 
     TraversalRoute snapshot_route = persistent_route;
     snapshot_route.id = {};
+
     snapshot_route.lifetime = TraversalRouteLifetime::Persistent;
     route = s.RegisterRoute(snapshot_route);
     if (!route)
         return 23;
     TraversalRoute snapshot_transient = persistent_route;
     snapshot_transient.id = {};
+
     snapshot_transient.lifetime = TraversalRouteLifetime::Session;
     transient = s.RegisterRoute(snapshot_transient);
     if (!transient)
@@ -207,6 +221,7 @@ int main() {
         if (r.id == transient.Value())
             saw_transient = true;
     }
+
     if (!saw_persistent || saw_transient)
         return 25;
 
@@ -222,12 +237,14 @@ int main() {
     const auto fail_reason = TraversalReasonId::FromString("runtime.path_failed");
     if (!restored.FailSession(fail_session.Value(), fail_reason))
         return 29;
-    if (restored.FindSession(fail_session.Value()) || restored.GetDiagnostics().active_sessions != 0)
+    if (restored.FindSession(fail_session.Value()) ||
+        restored.GetDiagnostics().active_sessions != 0)
         return 30;
 
     auto corrupt = restored.CaptureSnapshot();
     corrupt.route_ids.next = 1;
-    TraversalService should_keep_state = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
+    TraversalService should_keep_state =
+        BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!should_keep_state.AssignProfile(Ref("other"), profile))
         return 31;
     if (should_keep_state.RestoreSnapshot(corrupt))
@@ -237,15 +254,20 @@ int main() {
 
     const auto route_scope = GameplayObjectId::FromString("framework.traversal.route").High();
     TraversalRoute max_route = persistent_route;
-    max_route.id = {GameplayObjectId::FromRaw(route_scope, std::numeric_limits<std::uint64_t>::max())};
+    max_route.id = {
+        GameplayObjectId::FromRaw(route_scope, std::numeric_limits<std::uint64_t>::max())};
+
     if (!s.RegisterRoute(max_route))
         return 34;
     TraversalRoute exhausted_route = persistent_route;
     exhausted_route.id = {};
+
     if (s.RegisterRoute(exhausted_route))
         return 35;
 
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 38;
     auto traversal_journal_seed = restored.CaptureSnapshot();
@@ -259,10 +281,13 @@ int main() {
     if (traversal_exhausted.next_change_sequence != 0 || traversal_exhausted.journal.size() != 1 ||
         traversal_exhausted.journal.front().sequence != std::numeric_limits<std::uint64_t>::max())
         return 41;
-    if (!restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    if (!restored
+             .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 42;
-    TraversalService traversal_exhausted_restore = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
+    TraversalService traversal_exhausted_restore =
+        BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!traversal_exhausted_restore.RestoreSnapshot(traversal_exhausted))
         return 43;
 
@@ -273,20 +298,24 @@ int main() {
 
     TraversalService empty_journal = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!empty_journal
-             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+             .ReadChangesSince(empty_journal.LatestChangeCursor().AtSequence(
+                 std::numeric_limits<std::uint64_t>::max()))
              .snapshot_required)
         return 44;
 
-    // Goal 4 G4-INFRA-001 / G4-TRAV-002: every named failure seam starts from a fresh fixture and preserves the full snapshot.
+    // Goal 4 G4-INFRA-001 / G4-TRAV-002: every named failure seam starts from a fresh fixture and
+    // preserves the full snapshot.
     const auto seam_actor = Ref("seam-actor");
     const auto seam_carrier = Ref("seam-carrier");
     {
         auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         const auto before = service.CaptureSnapshot();
         test_seam::FailNext(test_seam::FaultPoint::AssignProfileBeforePublish);
-        if (service.AssignProfile(seam_actor, profile) || !SameSnapshot(before, service.CaptureSnapshot()))
+        if (service.AssignProfile(seam_actor, profile) ||
+            !SameSnapshot(before, service.CaptureSnapshot()))
             return 949;
     }
+
     {
         auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         if (!service.AssignProfile(seam_actor, profile))
@@ -300,6 +329,7 @@ int main() {
         if (service.GrantCapability(seam_grant) || !SameSnapshot(before, service.CaptureSnapshot()))
             return 951;
     }
+
     {
         auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         if (!service.AssignProfile(seam_actor, profile))
@@ -313,25 +343,30 @@ int main() {
         if (service.RegisterRoute(seam_route) || !SameSnapshot(before, service.CaptureSnapshot()))
             return 953;
     }
+
     {
         auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         if (!service.AssignProfile(seam_actor, profile))
             return 954;
         const auto before = service.CaptureSnapshot();
         test_seam::FailNext(test_seam::FaultPoint::StartSessionBeforePublish);
-        if (service.StartSession(seam_actor, walk, {}, {}, {}) || !SameSnapshot(before, service.CaptureSnapshot()))
+        if (service.StartSession(seam_actor, walk, {}, {}, {}) ||
+            !SameSnapshot(before, service.CaptureSnapshot()))
             return 955;
     }
+
     {
         auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         if (!service.AssignProfile(seam_actor, profile))
             return 956;
         const auto before = service.CaptureSnapshot();
         test_seam::FailNext(test_seam::FaultPoint::BoardCarrierBeforePublish);
-        if (service.BoardCarrier(seam_actor, seam_carrier, ride, TraversalCarrierRoleId::FromString("seam.role")) ||
+        if (service.BoardCarrier(seam_actor, seam_carrier, ride,
+                                 TraversalCarrierRoleId::FromString("seam.role")) ||
             !SameSnapshot(before, service.CaptureSnapshot()))
             return 975;
     }
+
     {
         auto seeded = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         if (!seeded.AssignProfile(seam_actor, profile))
@@ -343,18 +378,21 @@ int main() {
         if (!seeded.RegisterRoute(seam_route))
             return 977;
         const auto restore_seed = seeded.CaptureSnapshot();
-        for (const auto point :
-             {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+        for (const auto point : {test_seam::FaultPoint::RestoreCandidateBuild,
+                                 test_seam::FaultPoint::RestoreBeforeCommit}) {
             auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
             const auto before = service.CaptureSnapshot();
             auto target = restore_seed;
             test_seam::FailNext(point);
-            if (service.RestoreSnapshot(std::move(target)) || !SameSnapshot(before, service.CaptureSnapshot()))
+            if (service.RestoreSnapshot(std::move(target)) ||
+                !SameSnapshot(before, service.CaptureSnapshot()))
                 return 978;
         }
+
     }
 
-    // Journal allocation has an explicit recovery policy: accepted state remains authoritative and the cursor epoch rotates.
+    // Journal allocation has an explicit recovery policy: accepted state remains authoritative and
+    // the cursor epoch rotates.
     {
         auto service = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
         const auto journal_before = service.CaptureSnapshot();
@@ -364,7 +402,8 @@ int main() {
             return 973;
         const auto journal_after = service.CaptureSnapshot();
         if (!service.FindState(journal_actor) || !journal_after.journal.empty() ||
-            journal_after.change_epoch == journal_before.change_epoch || journal_after.next_change_sequence != 1)
+            journal_after.change_epoch == journal_before.change_epoch ||
+            journal_after.next_change_sequence != 1)
             return 974;
     }
 
@@ -396,22 +435,27 @@ int main() {
     const auto stable = max_guard.CaptureSnapshot();
     TraversalCapabilityGrant extra = guard_grant;
     extra.id = {};
+
     TraversalRoute extra_route = guard_route;
     extra_route.id = {};
+
     extra_route.source = Ref("guard-route-extra");
     if (max_guard.GrantCapability(extra) || max_guard.RevokeCapability(guard_grant_id.Value()) ||
         max_guard.ChangeMode({guard_actor, swim, {}}) || max_guard.RegisterRoute(extra_route) ||
-        max_guard.RemoveRoute(guard_route_id.Value()) || max_guard.StartSession(guard_actor, walk, {}, {}, {}) ||
+        max_guard.RemoveRoute(guard_route_id.Value()) ||
+        max_guard.StartSession(guard_actor, walk, {}, {}, {}) ||
         max_guard.BoardCarrier(guard_actor, Ref("guard-carrier"), ride,
                                TraversalCarrierRoleId::FromString("guard.role")))
         return 961;
     const auto stable_after = max_guard.CaptureSnapshot();
-    if (stable_after.revision != stable.revision || stable_after.states.size() != stable.states.size() ||
+    if (stable_after.revision != stable.revision ||
+        stable_after.states.size() != stable.states.size() ||
         stable_after.routes.size() != stable.routes.size() ||
         stable_after.capability_grants.size() != stable.capability_grants.size())
         return 962;
 
-    // Active and suspended session transitions also reject at max revision without breaking state cross-links.
+    // Active and suspended session transitions also reject at max revision without breaking state
+    // cross-links.
     TraversalService active_guard = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!active_guard.AssignProfile(guard_actor, profile))
         return 963;
@@ -421,7 +465,8 @@ int main() {
     auto active_max = active_guard.CaptureSnapshot();
     active_max.revision.value = std::numeric_limits<std::uint64_t>::max();
     TraversalService active_max_guard = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
-    if (!active_max_guard.RestoreSnapshot(active_max) || active_max_guard.SuspendSession(active_session.Value()) ||
+    if (!active_max_guard.RestoreSnapshot(active_max) ||
+        active_max_guard.SuspendSession(active_session.Value()) ||
         active_max_guard.CompleteSession(active_session.Value()))
         return 965;
     if (!active_max_guard.FindSession(active_session.Value()) ||
@@ -436,7 +481,8 @@ int main() {
         return 968;
     auto suspended_max = suspended_guard.CaptureSnapshot();
     suspended_max.revision.value = std::numeric_limits<std::uint64_t>::max();
-    TraversalService suspended_max_guard = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
+    TraversalService suspended_max_guard =
+        BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!suspended_max_guard.RestoreSnapshot(suspended_max) ||
         suspended_max_guard.ResumeSession(suspended_session.Value()))
         return 969;
@@ -449,7 +495,8 @@ int main() {
         return 970;
     auto carrier_max = carrier_guard.CaptureSnapshot();
     carrier_max.revision.value = std::numeric_limits<std::uint64_t>::max();
-    TraversalService carrier_max_guard = BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
+    TraversalService carrier_max_guard =
+        BuildService(walk, swim, ride, swim_cap, ride_cap, profile);
     if (!carrier_max_guard.RestoreSnapshot(carrier_max) || carrier_max_guard.Disembark(guard_actor))
         return 971;
     if (carrier_max_guard.FindCarrierPassengers(Ref("guard-carrier")).size() != 1)

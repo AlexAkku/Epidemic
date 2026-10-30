@@ -6,10 +6,10 @@
 #include <limits>
 #include <stdexcept>
 
-#define CHECK(expr)                                                                                                    \
-    do {                                                                                                               \
-        if (!(expr))                                                                                                   \
-            std::abort();                                                                                              \
+#define CHECK(expr)                                                                                \
+    do {                                                                                           \
+        if (!(expr))                                                                               \
+            std::abort();                                                                          \
     } while (false)
 
 using namespace epidemic::gameplay;
@@ -36,7 +36,9 @@ int main() {
     GameplayTagSet equality_tags;
     equality_tags.Add(TagId::FromString("environment.equality"));
     const EnvironmentHazard equality_hazard{toxic, 100, equality_tags};
+
     const EnvironmentHazard expected_equality_hazard{toxic, 100, equality_tags};
+
     CHECK(equality_hazard == expected_equality_hazard);
     EnvironmentLayer equality_layer;
     equality_layer.type = weather;
@@ -44,6 +46,7 @@ int main() {
     equality_layer.hazards.push_back(equality_hazard);
     CHECK(equality_layer == equality_layer);
     const EnvironmentSampleHazard equality_sample_hazard{{}, equality_hazard};
+
     CHECK(equality_sample_hazard == equality_sample_hazard);
 
     EnvironmentService environment = MakeService(weather, fog, toxic);
@@ -67,11 +70,15 @@ int main() {
     rain.priority = 10;
     rain.blend = EnvironmentBlendPolicy::Add;
     rain.bounds = EnvironmentAabb{{0, 0, 0}, {1000, 1000, 1000}};
-    rain.values.present = Field(EnvironmentValueField::Precipitation) | Field(EnvironmentValueField::Humidity);
+
+    rain.values.present =
+        Field(EnvironmentValueField::Precipitation) | Field(EnvironmentValueField::Humidity);
     rain.values.precipitation = 700;
     rain.values.humidity = 300;
     rain.created_at = GameplayTimePoint{5};
+
     rain.expires_at = GameplayTimePoint{10};
+
     const auto rain_id = environment.AddLayer(rain);
     CHECK(rain_id);
 
@@ -101,12 +108,15 @@ int main() {
 
     auto at_expiration = environment.Sample({100, 100, 100}, GameplayTimePoint{10});
     CHECK(at_expiration);
-    CHECK(at_expiration.Value().values.precipitation == 0 && at_expiration.Value().values.humidity == 500);
+    CHECK(at_expiration.Value().values.precipitation == 0 &&
+          at_expiration.Value().values.humidity == 500);
 
-    const auto city =
-        GameplayObjectRef{GameplayDomainId::FromString("framework.world"), GameplayObjectId::FromString("scope.city")};
-    const auto room =
-        GameplayObjectRef{GameplayDomainId::FromString("framework.world"), GameplayObjectId::FromString("scope.room")};
+    const auto city = GameplayObjectRef{GameplayDomainId::FromString("framework.world"),
+                                        GameplayObjectId::FromString("scope.city")};
+
+    const auto room = GameplayObjectRef{GameplayDomainId::FromString("framework.world"),
+                                        GameplayObjectId::FromString("scope.room")};
+
     EnvironmentLayer city_layer;
     city_layer.type = weather;
     city_layer.area_ref = city;
@@ -128,6 +138,7 @@ int main() {
     CHECK(room_layer_id);
 
     const std::array scopes{city, room};
+
     const auto scoped = environment.Sample({5000, 0, 0}, GameplayTimePoint{1}, scopes);
     CHECK(scoped);
     CHECK(scoped.Value().values.temperature_milli_c == 11000);
@@ -155,7 +166,9 @@ int main() {
     EnvironmentLayer invalid_time;
     invalid_time.type = weather;
     invalid_time.created_at = GameplayTimePoint{10};
+
     invalid_time.expires_at = GameplayTimePoint{10};
+
     CHECK(!environment.AddLayer(invalid_time));
 
     EnvironmentLayer invalid_values;
@@ -174,21 +187,27 @@ int main() {
     CHECK(!environment.AddLayer(invalid_blend));
     CHECK(environment.CurrentRevision() == before_invalid_enum_revision);
 
-    // Spatial updates are incremental: moving a layer removes its old cell membership and adds the new one.
+    // Spatial updates are incremental: moving a layer removes its old cell membership and adds the
+    // new one.
     EnvironmentLayer moving;
     moving.type = fog;
     moving.priority = 100;
     moving.bounds = EnvironmentAabb{{200000, 0, 0}, {200100, 100, 100}};
+
     moving.values.present = Field(EnvironmentValueField::Visibility);
     moving.values.visibility = 111;
     const auto moving_id = environment.AddLayer(moving);
     CHECK(moving_id);
-    CHECK(environment.Sample({200050, 50, 50}, GameplayTimePoint{1}).Value().values.visibility == 111);
+    CHECK(environment.Sample({200050, 50, 50}, GameplayTimePoint{1}).Value().values.visibility ==
+          111);
     moving.id = moving_id.Value();
     moving.bounds = EnvironmentAabb{{400000, 0, 0}, {400100, 100, 100}};
+
     CHECK(environment.UpdateLayer(moving));
-    CHECK(environment.Sample({200050, 50, 50}, GameplayTimePoint{1}).Value().values.visibility != 111);
-    CHECK(environment.Sample({400050, 50, 50}, GameplayTimePoint{1}).Value().values.visibility == 111);
+    CHECK(environment.Sample({200050, 50, 50}, GameplayTimePoint{1}).Value().values.visibility !=
+          111);
+    CHECK(environment.Sample({400050, 50, 50}, GameplayTimePoint{1}).Value().values.visibility ==
+          111);
 
     // Caller supplied IDs in the service scope advance the generator past that ID.
     EnvironmentService ids_service = MakeService(weather, fog, toxic);
@@ -209,14 +228,16 @@ int main() {
     CHECK(next_result);
     CHECK(next_result.Value().value.Low() > requested_result.Value().value.Low());
 
-    // Custom blend failures, invalid outputs and C++ exceptions are returned as controlled failures.
+    // Custom blend failures, invalid outputs and C++ exceptions are returned as controlled
+    // failures.
     const auto custom_id = EnvironmentBlendHandlerId::FromString("game.blend.custom");
     EnvironmentService custom = MakeService(weather, fog, toxic);
     CHECK(custom.RegisterBlendHandler(custom_id, "game.blend.custom",
                                       [](const EnvironmentValues &, const EnvironmentValues &) {
                                           EnvironmentValues values;
                                           values.humidity = kEnvironmentOne + 1;
-                                          return epidemic::foundation::Result<EnvironmentValues>::Success(values);
+                                          return epidemic::foundation::Result<
+                                              EnvironmentValues>::Success(values);
                                       }));
     custom.Freeze();
     EnvironmentLayer custom_layer;
@@ -229,11 +250,11 @@ int main() {
 
     const auto throwing_id = EnvironmentBlendHandlerId::FromString("game.blend.throwing");
     EnvironmentService throwing = MakeService(weather, fog, toxic);
-    CHECK(throwing.RegisterBlendHandler(
-        throwing_id, "game.blend.throwing",
-        [](const EnvironmentValues &, const EnvironmentValues &) -> epidemic::foundation::Result<EnvironmentValues> {
-            throw std::runtime_error("boom");
-        }));
+    CHECK(throwing.RegisterBlendHandler(throwing_id, "game.blend.throwing",
+                                        [](const EnvironmentValues &, const EnvironmentValues &)
+                                            -> epidemic::foundation::Result<EnvironmentValues> {
+                                            throw std::runtime_error("boom");
+                                        }));
     throwing.Freeze();
     EnvironmentLayer throwing_layer;
     throwing_layer.type = weather;
@@ -253,7 +274,9 @@ int main() {
     CHECK(restored.RestoreSnapshot(snapshot));
     CHECK(restored.GetLayer(base_id.Value()).has_value());
     CHECK(restored.ReadChangesSince(pre_restore_cursor).snapshot_required);
-    CHECK(restored.ReadChangesSince(restored.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    CHECK(restored
+              .ReadChangesSince(restored.LatestChangeCursor().AtSequence(
+                  std::numeric_limits<std::uint64_t>::max()))
               .snapshot_required);
     EnvironmentLayer epoch_layer;
     epoch_layer.type = weather;
@@ -269,7 +292,8 @@ int main() {
     corrupt.layers.push_back(corrupt.layers.front());
     const auto before_corrupt_revision = restored.CurrentRevision();
     CHECK(!restored.RestoreSnapshot(corrupt));
-    CHECK(restored.CurrentRevision() == before_corrupt_revision && restored.GetLayer(base_id.Value()).has_value());
+    CHECK(restored.CurrentRevision() == before_corrupt_revision &&
+          restored.GetLayer(base_id.Value()).has_value());
 
     auto bad_generator = snapshot;
     bad_generator.ids.next = snapshot.layers.front().id.value.Low();
@@ -286,11 +310,14 @@ int main() {
         CHECK(id);
         CHECK(journal.RemoveLayer(id.Value()));
     }
+
     const auto diagnostics = journal.GetDiagnostics();
     CHECK(diagnostics.changes <= 4096);
     const auto stale_batch = journal.ReadChangesSince(ChangeCursor{});
     CHECK(stale_batch.snapshot_required);
-    CHECK(journal.ReadChangesSince(journal.LatestChangeCursor().AtSequence(std::numeric_limits<std::uint64_t>::max()))
+    CHECK(journal
+              .ReadChangesSince(journal.LatestChangeCursor().AtSequence(
+                  std::numeric_limits<std::uint64_t>::max()))
               .snapshot_required);
     const auto current_batch = journal.ReadChangesSince(journal.LatestChangeCursor());
     CHECK(!current_batch.snapshot_required && current_batch.changes.empty());
@@ -298,8 +325,8 @@ int main() {
     // Goal 4: module-local restore fault seam replaces process-global allocation override.
     const auto restore_before = restored.CaptureSnapshot();
     const auto restore_before_diag = restored.GetDiagnostics();
-    for (const auto fault :
-         {test_seam::FaultPoint::RestoreCandidateBuild, test_seam::FaultPoint::RestoreBeforeCommit}) {
+    for (const auto fault : {test_seam::FaultPoint::RestoreCandidateBuild,
+                             test_seam::FaultPoint::RestoreBeforeCommit}) {
         test_seam::FailNext(fault);
         CHECK(!restored.RestoreSnapshot(restore_before));
         const auto restore_after = restored.CaptureSnapshot();

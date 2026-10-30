@@ -17,13 +17,15 @@ class ITransformRegistry {
   public:
     virtual ~ITransformRegistry() = default;
 
-    [[nodiscard]] virtual foundation::Result<void> SetLocalTransform(SceneNodeId node, const Transform &transform) = 0;
     [[nodiscard]] virtual foundation::Result<void>
-    SetWorldTransform(SceneNodeId node, const Transform &transform,
-                      WorldTransformWriteMode mode = WorldTransformWriteMode::RejectNonInvertibleParent) = 0;
+    SetLocalTransform(SceneNodeId node, const Transform &transform) = 0;
+    [[nodiscard]] virtual foundation::Result<void> SetWorldTransform(
+        SceneNodeId node, const Transform &transform,
+        WorldTransformWriteMode mode = WorldTransformWriteMode::RejectNonInvertibleParent) = 0;
     [[nodiscard]] virtual std::optional<Transform> GetLocalTransform(SceneNodeId node) const = 0;
     [[nodiscard]] virtual std::optional<Transform> GetWorldTransform(SceneNodeId node) const = 0;
     [[nodiscard]] virtual foundation::Result<void> MarkTransformClean(SceneNodeId node) = 0;
     [[nodiscard]] virtual bool IsTransformDirty(SceneNodeId node) const = 0;
 };
+
 } // namespace epidemic::runtime
