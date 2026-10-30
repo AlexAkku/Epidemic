@@ -124,6 +124,8 @@ foundation::Result<std::unique_ptr<PlaySession>> PlaySession::Start(std::shared_
         for (const auto &doc : state.source->definition.documents) if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc.data))
             Archetypes(prefab->root, schema, state.entities, registered);
         state.entities.Freeze();
+        const auto &definition = std::get<composition::SceneCompositionDefinition>(entry->data);
+        state.scene = Take(composition::CreateSceneComposition(definition));state.context.scene=&state.scene;
         for (const auto &doc : state.source->definition.documents) if (const auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc.data)) {
             auto bindings = options.bindings(state.context, doc.id);
             for (const auto &binding : bindings) {
@@ -134,9 +136,13 @@ foundation::Result<std::unique_ptr<PlaySession>> PlaySession::Start(std::shared_
             else (void)Take(state.host.RegisterGraphDeferred(*graph, bindings, known_types));
         }
         for (const auto &doc : state.source->definition.documents) if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc.data)) (void)Take(state.prefabs.Register(*prefab));
-        const auto &definition = std::get<composition::SceneCompositionDefinition>(entry->data);
-        state.scene = Take(composition::CreateSceneComposition(definition));
-        for (const auto &placement : definition.placements) state.instances.emplace(placement.node, Take(state.prefabs.Spawn(placement.prefab.value, placement.overrides)));
+        for (const auto &placement : definition.placements){
+            auto instance=Take(state.prefabs.Spawn(placement.prefab.value, placement.overrides));
+            const auto *root=instance->Find(instance->Definition()->root.id);
+            if(!root)throw Failure{Error("editor.play_prefab_root")};
+            Take(composition::BindSceneEntity(state.scene,state.entities,root->handle,state.scene.nodes.at(placement.node)));
+            state.instances.emplace(placement.node,std::move(instance));
+        }
         return Result::Success(std::move(session));
     } catch (const Failure &failure) { return Result::Failure(failure.error); }
     catch (const std::exception &error) { return Result::Failure(foundation::Error::Create("editor.play_exception", "session initialization or binding factory failed", error.what())); }
@@ -181,7 +187,9 @@ foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
         auto &state = *impl_->runtime;
         Take(state.time.runtime->Skip(advance));
         state.components.Synchronize(); state.behaviors.Synchronize();
+        Take(composition::SynchronizeSceneEntities(state.scene,state.entities));
         (void)Take(state.host.Prepare()); const auto tick = Take(state.simulation.runtime->Tick());
+        Take(composition::SynchronizeSceneEntities(state.scene,state.entities));
         impl_->Capture(); impl_->Refresh();
         if (!tick.failures.empty()) return foundation::Result<void>::Failure(Error("editor.play_execution_failed"));
         return foundation::Result<void>::Success();

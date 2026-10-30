@@ -35,4 +35,52 @@ foundation::Result<SceneCompositionInstance> CreateSceneComposition(const SceneC
     }
     return Result::Success(std::move(instance));
 }
+namespace {
+std::optional<runtime::SceneNodeId> EntityNode(const SceneCompositionInstance &scene,
+    const gameplay::entities::EntityService &entities,gameplay::entities::EntityHandle entity){
+    if(!scene.scene.nodes || !scene.scene.transforms)return {};
+    const auto owner=entities.Resolve(entity);
+    if(!owner || (owner->lifecycle!=gameplay::entities::EntityLifecycleState::Alive && owner->lifecycle!=gameplay::entities::EntityLifecycleState::Dormant))return {};
+    const auto found=scene.entities.find(owner->id);
+    if(found==scene.entities.end() || found->second.entity!=entity || !scene.scene.nodes->Exists(found->second.node))return {};
+    return found->second.node;
+}
+foundation::Error SpatialError(){return foundation::Error::Create("composition.entity_scene_missing","Entity has no active Scene binding");}
+}
+foundation::Result<void> BindSceneEntity(SceneCompositionInstance &scene,
+    const gameplay::entities::EntityService &entities,gameplay::entities::EntityHandle entity,runtime::SceneNodeId node){
+    const auto owner=entities.Resolve(entity);
+    if(!owner || !scene.scene.nodes || !scene.scene.transforms || (owner->lifecycle!=gameplay::entities::EntityLifecycleState::Alive && owner->lifecycle!=gameplay::entities::EntityLifecycleState::Dormant) || !scene.scene.nodes->Exists(node))
+        return foundation::Result<void>::Failure(SpatialError());
+    const auto found=scene.entities.find(owner->id);
+    if(found!=scene.entities.end() && (found->second.entity!=entity || found->second.node!=node))
+        return foundation::Result<void>::Failure(foundation::Error::Create("composition.entity_already_bound","Entity is bound to another Scene node"));
+    for(const auto &[id,link]:scene.entities)if(id!=owner->id && link.node==node)
+        return foundation::Result<void>::Failure(foundation::Error::Create("composition.scene_already_owned","Scene node already represents another Entity"));
+    scene.entities.insert_or_assign(owner->id,SceneCompositionInstance::EntityLink{entity,node});
+    return foundation::Result<void>::Success();
+}
+foundation::Result<runtime::Transform> GetEntityWorldTransform(const SceneCompositionInstance &scene,
+    const gameplay::entities::EntityService &entities,gameplay::entities::EntityHandle entity){
+    const auto node=EntityNode(scene,entities,entity);
+    if(node)if(const auto transform=scene.scene.transforms->GetWorldTransform(*node))return foundation::Result<runtime::Transform>::Success(*transform);
+    return foundation::Result<runtime::Transform>::Failure(SpatialError());
+}
+foundation::Result<void> SetEntityWorldTransform(SceneCompositionInstance &scene,
+    const gameplay::entities::EntityService &entities,gameplay::entities::EntityHandle entity,const runtime::Transform &transform){
+    const auto node=EntityNode(scene,entities,entity);
+    return node?scene.scene.transforms->SetWorldTransform(*node,transform):foundation::Result<void>::Failure(SpatialError());
+}
+foundation::Result<void> SynchronizeSceneEntities(SceneCompositionInstance &scene,const gameplay::entities::EntityService &entities){
+    if(!scene.scene.nodes)return foundation::Result<void>::Failure(SpatialError());
+    for(auto found=scene.entities.begin();found!=scene.entities.end();){
+        if(EntityNode(scene,entities,found->second.entity)){++found;continue;}
+        if(scene.scene.nodes->Exists(found->second.node)){
+            const auto hidden=scene.scene.nodes->SetVisibility(found->second.node,runtime::SceneVisibilityState::Hidden);
+            if(!hidden)return hidden;
+        }
+        found=scene.entities.erase(found);
+    }
+    return foundation::Result<void>::Success();
+}
 } // namespace epidemic::game::composition

@@ -6,6 +6,8 @@
 #include <chrono>
 #include <fstream>
 #include <thread>
+#include <array>
+#include <source_location>
 
 using namespace epidemic;
 namespace ed = game::editor;
@@ -14,7 +16,9 @@ namespace comp = gameplay::composition;
 void InspectorCases();
 void PrefabCases();
 namespace {
-void Check(bool value) { if (!value) throw std::runtime_error("workspace invariant"); }
+void Check(bool value,const std::source_location at=std::source_location::current()) {
+    if(!value)throw std::runtime_error(std::string("workspace invariant at ")+at.file_name()+":"+std::to_string(at.line()));
+}
 void Spatial() {
     ex::Schema schema;
     ed::EditorWorkspace workspace{schema.View(), [&] { return ex::Options(schema); }};
@@ -170,6 +174,49 @@ void Run() {
     }
 }
 }
+void RuntimePlacement() {
+    ex::Schema schema;auto definition=ex::Definition(schema);
+    const auto scene_id=runtime::AssetId::FromString("example.scene");
+    for(auto &document:definition.documents)if(document.id==scene_id){
+        auto &value=std::get<game::composition::SceneCompositionDefinition>(document.data);
+        const auto base=value.scene.nodes.front();const auto prefab=value.placements.front().prefab;
+        runtime::SceneNodeSnapshot parent=base;parent.id={100};parent.parent={};
+        parent.local_transform={};parent.local_transform.position={10,20,0};parent.local_transform.scale={2,2,1};
+        value.scene.nodes={parent};value.placements.clear();
+        for(std::uint64_t i=0;i<3;++i){auto node=base;node.id={42+i};node.parent=parent.id;
+            node.local_transform={};node.local_transform.position.x=static_cast<float>(i)*3-3;
+            value.scene.nodes.push_back(node);value.placements.push_back({node.id,prefab,{}});
+        }
+    }
+    ed::PlayContext *context=nullptr;
+    ed::EditorWorkspace workspace{schema.View(),[&]{
+        auto options=ex::Options(schema);
+        options.bindings=[&context,factory=std::move(options.bindings)](ed::PlayContext &value,runtime::AssetId asset){context=&value;return factory(value,asset);};
+        return options;
+    }};
+    const auto file=std::filesystem::path{EPIDEMIC_EDITOR_TEST_DIRECTORY}/"runtime-placement.epidemic";
+    ex::Take(workspace.New(file,std::move(definition)));ex::Take(workspace.Save());const auto source=workspace.Project()->Snapshot();
+    ex::Take(workspace.Play());Check(context!=nullptr);
+    std::array<gameplay::entities::EntityHandle,3> owners{};
+    for(std::uint64_t i=0;i<3;++i){
+        const auto *instance=workspace.Session()->Instance(runtime::SceneNodeId{42+i});Check(instance!=nullptr);
+        const auto *root=instance->Find(instance->Definition()->root.id);Check(root!=nullptr);owners[i]=root->handle;
+        const auto world=ex::Take(context->WorldTransform(root->handle));
+        Check(world.position.x==4+static_cast<float>(i)*6 && world.position.y==20);
+    }
+    auto moved=ex::Take(context->WorldTransform(owners[1]));moved.position={25,30,0};
+    game::composition::SceneCompositionInstance empty;
+    Check(!game::composition::BindSceneEntity(empty,context->entities,owners[0],runtime::SceneNodeId{1}));
+    Check(!game::composition::GetEntityWorldTransform(empty,context->entities,owners[0]));
+    ex::Take(context->SetWorldTransform(owners[1],moved));
+    Check(ex::Take(context->WorldTransform(owners[1])).position.x==25);
+    Check(ex::Take(context->WorldTransform(owners[0])).position.x==4);
+    const auto entity=context->entities.Resolve(owners[1]);Check(entity.has_value());
+    ex::Take(context->entities.RequestDestroy(entity->id,gameplay::entities::EntityDestroyReason::OwnerRequest));
+    Check(!context->WorldTransform(owners[1]));ex::Take(workspace.Tick(runtime::GameDuration{0}));
+    Check(context->scene->entities.size()==2 && workspace.Project()->Snapshot()==source);
+    ex::Take(workspace.Stop());Check(!workspace.IsDirty());
+}
 void FolderWorkspace() {
     ex::Schema schema;
     const auto root=std::filesystem::path{EPIDEMIC_EDITOR_TEST_DIRECTORY}/"workspace-folder";
@@ -231,6 +278,6 @@ void FolderWorkspace() {
     Check(reopened.Project()->Snapshot()->Find(scene)->name=="Folder scene");
 }
 int main() {
-    try { FolderWorkspace(); Spatial(); Run(); InspectorCases(); PrefabCases(); std::puts("PASS: workspace, schema Inspector, Prefab parameters/overrides, persistence and runtime isolation"); }
+    try { FolderWorkspace(); RuntimePlacement(); Spatial(); Run(); InspectorCases(); PrefabCases(); std::puts("PASS: workspace, schema Inspector, Prefab parameters/overrides, persistence and runtime isolation"); }
     catch (const std::exception &error) { std::fprintf(stderr, "%s\n", error.what()); return 1; }
 }

@@ -13,7 +13,7 @@ its UI never receives a mutable EditorProject or Assets catalog.
 | Platform file packages | Bounded reads and atomic individual file publication |
 | Resources loader/manager | ImageResourceLoader, immutable ImagePayload, bounded processing and leases |
 | Runtime Presentation | Owner-thread CreateTexture/Texture; retained texture ownership for recorded frames |
-| Scene/Prefab/PlaySession | Existing owners; Sprite preview is authoring, runtime spatial/Sprite integration remains partial |
+| Scene/Prefab/PlaySession | Prefab roots bind to existing runtime Scene nodes; Sprite resource/session integration remains partial |
 | Streaming | No replacement importer or resource manager is introduced |
 
 ## Publication decisions
@@ -45,6 +45,13 @@ its UI never receives a mutable EditorProject or Assets catalog.
   remain P04.1 acceptance gaps.
 
 ## Current acceptance boundary
+
+Play binds each placed Prefab root Entity handle (full128-bit EntityId) to the
+actual node created by Runtime Scene, including parent TRS. PlayContext world
+transform operations read/write that registry. Entity destruction invalidates
+queries and hides its runtime node. This is an identity adapter, not a second
+Scene or Entity store; internal Prefab child Entities are not implicitly assigned
+new spatial nodes. Authoring snapshots remain independent.
 
 ContentHotReload has one owned asynchronous slot, including cancelled work until
 it finishes. Disabling automatic watching cancels automatic work; explicit jobs

@@ -24,6 +24,15 @@ struct PlayContext {
     comp::GraphBehaviorService &behaviors;
     comp::PrefabComposer &prefabs;
     gameplay::runtime_bridge::RuntimeBridgeService &bridge;
+    composition::SceneCompositionInstance *scene=nullptr;
+    [[nodiscard]] foundation::Result<runtime::Transform> WorldTransform(gameplay::entities::EntityHandle entity) const {
+        if(scene)return composition::GetEntityWorldTransform(*scene,entities,entity);
+        return foundation::Result<runtime::Transform>::Failure(foundation::Error::Create("editor.play_scene_unavailable","Play Scene is not initialized"));
+    }
+    [[nodiscard]] foundation::Result<void> SetWorldTransform(gameplay::entities::EntityHandle entity,const runtime::Transform &transform){
+        if(scene)return composition::SetEntityWorldTransform(*scene,entities,entity,transform);
+        return foundation::Result<void>::Failure(foundation::Error::Create("editor.play_scene_unavailable","Play Scene is not initialized"));
+    }
 };
 struct PlayOptions {
     std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend;
