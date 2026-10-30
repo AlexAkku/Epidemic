@@ -112,24 +112,92 @@ struct Browser final {
         Layout();Refresh();Error("Select a PNG to preview or assign to selected Prefab.");
         SetTimer(window,20,300,nullptr);
     }
-    void Layout(){
-        RECT bounds{};GetClientRect(window,&bounds);const auto dpi=GetDpiForWindow(window);
-        const auto scale=[&](int value){return MulDiv(value,static_cast<int>(dpi),96);};
-        const int margin=scale(12),row=scale(28),gap=scale(8),width=std::max(1L,bounds.right-2*margin);
-        const int left=std::max(scale(260),width*55/100),right=std::max(1,width-left-gap),top=margin+row+gap;
-        const auto move=[&](int id,int x,int y,int w,int h){MoveWindow(Control(id),x,y,std::max(1,w),std::max(1,h),TRUE);};
-        move(Search,margin,margin,width,row);
-        move(List,margin,top,left,bounds.bottom-top-scale(142));
-        move(Preview,margin+left+gap,top,right,std::max(row,static_cast<int>(bounds.bottom)-top-scale(240)));
-        move(Info,margin+left+gap,std::max(top+row,static_cast<int>(bounds.bottom)-scale(230)),right,scale(104));
-        move(Path,margin,bounds.bottom-scale(122),width,row);
-        const int secondary=std::max(scale(70),(width-6*gap)/7);int secondary_x=margin;
-        for(int id:{AssignPrefab,Duplicate,Delete,Restore,CancelJobs,References,ShowTrash}){move(id,secondary_x,bounds.bottom-scale(155),secondary,row);secondary_x+=secondary+gap;}
-        const int button=std::max(scale(70),(width-6*gap)/7),y=bounds.bottom-scale(80);
-        int x=margin;for(int id:{Import,Reimport,Rename,UndoMove,RedoMove,Save,Close}){move(id,x,y,button,row);x+=button+gap;}
-        if(renderer){RECT preview{};GetClientRect(Control(Preview),&preview);renderer->SetClientExtent(static_cast<unsigned>(std::max(1L,preview.right)),static_cast<unsigned>(std::max(1L,preview.bottom)));renderer->Resize();}
-        InvalidateRect(Control(Preview),nullptr,FALSE);
+    
+  void Layout() {
+    RECT bounds{};
+    GetClientRect(window, &bounds);
+
+    const int dpi = static_cast<int>(GetDpiForWindow(window));
+    const auto scaled = [dpi](int value) {
+        return MulDiv(value, dpi, 96);
+    };
+
+    const int margin = scaled(12);
+    const int row = scaled(28);
+    const int gap = scaled(8);
+
+    const int width = std::max(
+        1, static_cast<int>(bounds.right) - 2 * margin
+    );
+
+    const int left = std::max(scaled(260), width * 55 / 100);
+    const int right = std::max(1, width - left - gap);
+
+    const int top = margin + row + gap;
+
+    // Reserve the bottom rows first.
+    const int primary_y =
+        static_cast<int>(bounds.bottom) - margin - row;
+    const int path_y = primary_y - gap - row;
+    const int secondary_y = path_y - gap - row;
+
+    // All content must end above the secondary buttons.
+    const int content_bottom = secondary_y - gap;
+    const int content_height =
+        std::max(1, content_bottom - top);
+
+    const int info_height =
+        std::min(scaled(104), std::max(1, content_height / 3));
+    const int preview_height =
+        std::max(1, content_height - info_height - gap);
+
+    const auto move = [&](int id, int x, int y, int w, int h) {
+        MoveWindow(
+            Control(id), x, y,
+            std::max(1, w), std::max(1, h), TRUE
+        );
+    };
+
+    move(Search, margin, margin, width, row);
+    move(List, margin, top, left, content_height);
+
+    move(Preview, margin + left + gap, top,
+         right, preview_height);
+
+    move(Info, margin + left + gap,
+         top + preview_height + gap,
+         right, info_height);
+
+    move(Path, margin, path_y, width, row);
+
+    const int button_width =
+        std::max(scaled(70), (width - 6 * gap) / 7);
+
+    int x = margin;
+    for (int id : {
+        AssignPrefab, Duplicate, Delete, Restore,
+        CancelJobs, References, ShowTrash
+    }) {
+        move(id, x, secondary_y, button_width, row);
+        x += button_width + gap;
     }
+
+    x = margin;
+    for (int id : {
+        Import, Reimport, Rename, UndoMove,
+        RedoMove, Save, Close
+    }) {
+        move(id, x, primary_y, button_width, row);
+        x += button_width + gap;
+    }
+
+    if (renderer) {
+        renderer->Resize();
+    }
+
+    InvalidateRect(Control(Preview), nullptr, FALSE);
+  }
+
     void Refresh(){
         BrowserFilter filter;filter.search=Text(Control(Search));filter.show_trashed=show_trash;
         listing=BrowseContent(*workspace.Folder(),filter);
