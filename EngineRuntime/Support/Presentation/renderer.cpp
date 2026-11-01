@@ -469,9 +469,18 @@ void Renderer::PushTransform(const D2D1_MATRIX_3X2_F &transform, float opacity) 
     canvas_->GetTransform(&previous);
     transforms_.emplace_back(previous, opacity_);
     opacity_ *= opacity;
-    canvas_->SetTransform(D2D1::Matrix3x2F(transform._11, transform._12, transform._21,
-                                           transform._22, transform._31, transform._32) *
-                          previous);
+    
+    canvas_->SetTransform(
+        D2D1::Matrix3x2F(
+            transform._11, transform._12,
+            transform._21, transform._22,
+            transform._31, transform._32
+        ) * previous
+    );
+    // GetTransform() получает текущую матрицу преобразования.
+    // D2D1::Matrix3x2F(...) создает новую матрицу преобразования на основе переданных значений.
+    // emplace_back() сохраняет предыдущую матрицу в стеке, чтобы впоследствии восстановить её.
+    // SetTransform() устанавливает новую матрицу, которая будет влиять на последующие операции отрисовки.
 }
 
 void Renderer::PopTransform() {
@@ -483,6 +492,8 @@ void Renderer::PopTransform() {
     canvas_->SetTransform(transforms_.back().first);
     opacity_ = transforms_.back().second;
     transforms_.pop_back();
+
+    // Если стек transforms_ пуст, вызов back() приводит к неопределённому поведению
 }
 
 void Renderer::Clip(float x, float y, float w, float h) {
@@ -927,9 +938,14 @@ void Renderer::Texture(RendererTexturePtr texture, float x, float y, float width
 
     if (width <= 0 || height <= 0 || alpha <= 0)
         return;
-    canvas_->DrawBitmap(texture->bitmap.Get(), D2D1::RectF(x, y, x + width, y + height),
-                        std::clamp(alpha * opacity_, 0.f, 1.f),
-                        D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR);
+    canvas_->DrawBitmap(
+        texture->bitmap.Get(),
+        D2D1::RectF(x, y, x + width, y + height),
+        std::clamp(alpha * opacity_, 0.f, 1.f),
+        D2D1_INTERPOLATION_MODE_NEAREST_NEIGHBOR
+    );
+    // DrawBitmap() использует установленное преобразование Direct2D.
+    
 }
 
 void Renderer::Image(int id, float x, float y, float width, float height, float alpha) {

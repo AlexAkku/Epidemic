@@ -487,25 +487,70 @@ struct Browser final {
 
         BeginPaint(Control(Preview), &paint);
         EndPaint(Control(Preview), &paint);
+
         if (!renderer)
             return;
+
         const auto extent = renderer->ClientExtent();
-        const float base = std::max(.001f, std::min(extent.x / 1280.f, extent.y / 720.f));
-        const float offset = (extent.x - 1280.f * base) * .5f,
-                    offset_y = (extent.y - 720.f * base) * .5f;
+
+        /*
+        const float base = std::max(
+            .001f,
+            std::min(extent.x / 1280.f, extent.y / 720.f)
+        );
+        */
+
+        // Например окно 600*400 пикселей
+        // base = min(600/1280, 400/720) = min(0.46875, 0.5555) = 0.46875
+        // Масштаб матрицы 1/base ~ 2.1333, что увеличивает изображение в 2.1333 раза, чтобы оно соответствовало размеру окна.
+
+        // const float offset = (extent.x - 1280.f * base) * .5f,
+        //             offset_y = (extent.y - 720.f * base) * .5f;
+
         renderer->Begin();
-        renderer->PushTransform(D2D1::Matrix3x2F::Scale(1 / base, 1 / base) *
-                                D2D1::Matrix3x2F::Translation(-offset / base, -offset_y / base));
         renderer->Rect(0, 0, extent.x, extent.y, 0x17222e);
+
+        /*
+        renderer->PushTransform(
+            D2D1::Matrix3x2F::Scale(1 / base, 1 / base) *
+            D2D1::Matrix3x2F::Translation(
+                -offset / base,
+                -offset_y / base
+            )
+        );
+        */
+
         if (texture && image_width && image_height) {
-            const float scale = std::min((extent.x - 16) / static_cast<float>(image_width),
-                                         (extent.y - 16) / static_cast<float>(image_height));
-            const auto w = static_cast<float>(image_width) * scale,
-                       h = static_cast<float>(image_height) * scale;
-            renderer->Texture(texture, (extent.x - w) * .5f, (extent.y - h) * .5f, w, h);
+            const float available_width = std::max(0.0f, extent.x - 16.0f);
+            const float available_height = std::max(0.0f, extent.y - 16.0f);
+
+            const float scale = std::min({
+                1.0f,
+                available_width / static_cast<float>(image_width),
+                available_height / static_cast<float>(image_height)
+            });
+            
+            
+            /*const float scale = std::min((extent.x - 16) / static_cast<float>(image_width),
+                                         (extent.y - 16) / static_cast<float>(image_height)
+                                        );*/
+
+                                         // extent.x и extent.y предположительно означают размеры области предпросмотра.
+                                         // image_width и image_height - размеры изображения, которое мы хотим отобразить. (thumbnail)
+                                         // std::min выбирает меньший коэффициент масштабирования, чтобы изображение поместилось и по ширине, и по высоте.
+            const float w = static_cast<float>(image_width) * scale;
+            const float h = static_cast<float>(image_height) * scale;
+                       // static_cast<float> преобразует числа в float
+            
+            renderer->Texture(
+                texture,
+                (extent.x - w) * .5f,
+                (extent.y - h) * .5f,
+                w,
+                h
+            );
         }
 
-        renderer->PopTransform();
         renderer->End();
     }
 
@@ -526,17 +571,18 @@ struct Browser final {
             auto prefab = chosen.document;
             if (chosen.kind == UiElement::SceneNode) {
                 const auto *scene_doc = project->Snapshot()->Find(chosen.document);
-                const auto *scene =
-                    scene_doc
+                const auto *scene = scene_doc
                         ? std::get_if<composition::SceneCompositionDefinition>(&scene_doc->data)
                         : nullptr;
-                if (scene)
-                    for (const auto &placement : scene->placements)
+
+                if (scene){
+                    for (const auto &placement : scene->placements){
                         if (placement.node.Raw() == chosen.element) {
                             prefab = placement.prefab;
                             break;
                         }
-
+                    }
+                }
             }
 
             Result(workspace.AssignPrefabSprite(prefab, selection));
