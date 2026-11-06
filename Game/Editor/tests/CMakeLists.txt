@@ -57,3 +57,13 @@ if(WIN32)
     add_test(NAME EpidemicEditorContentReopen COMMAND EpidemicEditorContentTests --read-image)
     set_tests_properties(EpidemicEditorContentReopen PROPERTIES FIXTURES_REQUIRED EditorP04RealImage FIXTURES_SETUP EditorP04ImageRead WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 endif()
+
+# Retains the retired Content Browser's native GPU/resource lifetime assertions.
+if(WIN32)
+    add_executable(EpidemicEditorPreviewResources p04_preview_tests.cpp)
+    target_link_libraries(EpidemicEditorPreviewResources PRIVATE EpidemicEditorCore EpidemicRuntimePresentation user32 ole32)
+    target_compile_definitions(EpidemicEditorPreviewResources PRIVATE EPIDEMIC_EDITOR_TEST_DIRECTORY="${PROJECT_SOURCE_DIR}/Temp/editor-tests")
+    epidemic_configure_target(EpidemicEditorPreviewResources)
+    epidemic_add_test(EpidemicEditorPreviewResources)
+    set_tests_properties(EpidemicEditorPreviewResources PROPERTIES FIXTURES_REQUIRED EditorP04ImageRead TIMEOUT 60)
+endif()

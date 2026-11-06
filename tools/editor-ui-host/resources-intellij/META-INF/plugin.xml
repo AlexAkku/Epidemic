@@ -1,0 +1,13 @@
+<idea-plugin>
+    <id>epidemic.editor.platform</id>
+    <name>Epidemic Editor Platform Host</name>
+    <vendor>Epidemic Engine</vendor>
+    <version>0.2</version>
+    <idea-version since-build="253.31033.145" until-build="253.*"/>
+    <depends>com.intellij.modules.platform</depends>
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="epidemic.editor.platform.PlatformSession"/>
+        <fileEditorProvider implementation="epidemic.editor.platform.PanelEditorProvider"/>
+        <postStartupActivity implementation="epidemic.editor.platform.PlatformStartup"/>
+    </extensions>
+</idea-plugin>

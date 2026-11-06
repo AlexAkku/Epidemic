@@ -1,0 +1,77 @@
+owners.project	Project	F2	Name, Version, Root, Descriptor Path, Format, Default Scene, Template, Targets, Script Backend, Mounts, Build Status
+owners.world	World	F2	Name/ID, Scenes, World Systems, Active/Available State
+owners.scene	Scene	F2	Name, Stable ID, Authoring/Runtime Mode, Default Camera, Background/Environment, Layers, Scene Systems, Entities, Included In Build, Revision
+owners.entity	Entity	F2	Name, Stable ID, Enabled, Visible, Parent, Children, Tags, Layer, Transform, Components, Graph/Script, Prefab Ref, Diagnostics
+owners.prefab-definition	Prefab Definition	F2	Name, Stable ID, Root Entity, Components, Nested Entities/Prefabs, Parameters/Defaults, Exposed Fields, Revision, References
+owners.prefab-instance	Prefab Instance	F2	Source Prefab, Instance ID, Local Transform, Overrides, Parameter Bindings, Apply/Revert, Nested Instances
+owners.world-scene-system	World/Scene System	F2	System Type, Stable ID, Scope, Enabled, Fields, Graph/Script Refs, runtime diagnostics; Scheduler properties только при контракте
+owners.graph-definition	Graph Definition	F2	Name/ID, Nodes, Links, Entries, Inputs/Outputs, Variables, Compilation/Validation, Usages
+owners.asset	Asset	F2	Name, Type, Asset ID, Source/Logical Path, Cooked Key, Generation, Fingerprint, Import Recipe, Dependencies, Last-good, Diagnostics
+owners.script-type	Script Type	F2	Class/Namespace, Public Fields, Methods/Events, Inheritance/Dependencies, Build Errors
+render.transform	Transform	F2	Position 2D/3D, Rotation, Scale, Parent, Local/World, Reset
+render.sprite-sprite-renderer	Sprite / Sprite Renderer	F2	Sprite Asset, Region, Tint, Opacity, Flip X/Y, Visible, Sorting Layer/Order, Size Mode
+render.sprite-sheet-region	Sprite Sheet / Region	F2	Texture, Cell Width/Height, Rows, Columns, Margin, Spacing, Manual Regions, Pivot, Stable Region IDs
+render.tilemap	Tilemap	F2	Tile Palette, Grid, Layers, Brushes, Origin, Collision Hints
+render.tilemap-renderer	Tilemap Renderer	F2	Tilemap Asset, Tint, Visibility, Render Order
+render.animator	Animator	F2	Clip/Controller, Default State, Speed, Loop, Autoplay, Parameters
+render.particle-emitter-2d	Particle Emitter 2D	F2	Effect, Spawn Rate, Lifetime, Velocity, Color, Size, Loop
+render.camera-2d	Camera 2D	F2	Zoom/Projection, Viewport, Clear Color, Render Layers, Priority
+render.mesh-renderer-3d	Mesh Renderer 3D	F2	Mesh, Materials, Visibility, Cast/Receive Shadows, Render Layer
+render.camera-3d	Camera 3D	F2	Perspective/Ortho, FOV, Near/Far, Viewport, Render Layers
+render.light-3d	Light 3D	F2	Directional/Point/Spot, Color, Intensity, Range, Shadows
+gameplay.health	Health	F5	Current/Default Health, Max Health если добавлено в Schema
+gameplay.movement	Movement	F5	Speed + schema-defined fields
+gameplay.damage-dealer	Damage Dealer	F5	Damage, Damage Type, Target Filters, Cooldown
+gameplay.projectile	Projectile	F5	Speed, Damage, Lifetime, Collision Policy, Direction
+gameplay.weapon-turret	Weapon / Turret	F5	Fire Rate, Range, Projectile/Weapon Ref, Target Rules, Upgrade Ref
+gameplay.wave-spawner	Wave Spawner	F5	Enemy Prefab List, Counts, Spawn Intervals, Spawn Points, Wave Sequence
+gameplay.lifetime-timer	Lifetime / Timer	F5	Duration, Repeat, Start Condition, Completion Event
+gameplay.inventory-currency	Inventory / Currency	F5	Capacity/Items, Resource Type, Initial Amount, Limits
+gameplay.interactable	Interactable	F5	Input/Trigger, Range, Action/Event Binding
+gameplay.state-controller-ai	State Controller / AI	F5	States, Default State, Parameters, Events
+gameplay.rigidbody-2d	Rigidbody 2D	F5	Body Type, Mass, Gravity Scale, Drag, Velocity, Constraints
+gameplay.box-circle-polygon-collider-2d	Box/Circle/Polygon Collider 2D	F5	Size/Radius/Points, Offset, Trigger, Material, Layer/Mask
+gameplay.path-follower-navigation-agent	Path Follower / Navigation Agent	F5	Path, Speed, Loop, Target, Stopping Distance, Avoidance
+gameplay.character-controller	Character Controller	F5	Move Speed, Acceleration, Constraints, Collision Rules
+gameplay.rigidbody-collider-3d	Rigidbody/Collider 3D	F5	Mass, Gravity, Drag, Shape/Size/Offset, Trigger, Layer/Mask
+behavior.graphbehavior	GraphBehavior	F4	Graph Ref, Enabled, Entry, Exposed Params, Instance Bindings, Activation Diagnostics, Open Graph
+behavior.scriptbehavior	ScriptBehavior	F4	Class/Assembly Ref, Serialized Fields, Events, Build Diagnostics, Open Code
+behavior.world-scene-system	World/Scene System	F4	Scope, Enabled, Type, Properties, Graph/Script Ref, Execution Status
+behavior.audio-emitter	Audio Emitter	F4	Audio Clip, Bus, Volume, Pitch, Loop, Autoplay, Spatial Mode, Distance
+behavior.audio-listener	Audio Listener	F4	Enabled, Position/Orientation, Priority
+behavior.ui-canvas-binding	UI Canvas Binding	F4	UI Doc, Screen, World/Screen Mode, Events, Input Focus
+behavior.custom-user-component	Custom User Component	F4	Type Descriptor, Namespace, Public Fields, Defaults, Validation, Serialization
+assets.image-sprite	Image/Sprite	F7	Source/Imported Texture, Thumbnail, Alpha, Region XYWH, Pivot XY, Zoom/Fit/1:1, Import Status
+assets.sprite-sheet	Sprite Sheet	F7	Grid, Rows/Cols, Cell Size, Margins, Regions, Stable IDs, Slice/Apply
+assets.atlas	Atlas	F7	Inputs, Dimensions, Padding, Packing Policy, Region Preview, Rebuild
+assets.tilemap	Tilemap	F7	Palette, Grid, Layer List, Brush/Eraser/Fill, Selection, Collision Hints
+assets.animation-clip	Animation Clip	F7	FPS, Duration, Frame List, Loop, Tracks/Keyframes, Markers, Preview
+assets.animation-controller	Animation Controller	F7	States, Default State, Params, Transitions, Conditions, Transition Duration
+assets.audio-asset	Audio Asset	F7	Waveform, Channels, Sample Rate, Duration, Preview/Loop
+assets.audio-mixer	Audio Mixer	F7	Master/Music/SFX/UI buses, Levels, Mute/Solo, Routing, Active Voices
+assets.material-2d	Material 2D	F7	Texture, Tint, Opacity, Blend/Sampling, Effect Parameters
+assets.material-3d	Material 3D	F7	Base Color, Metallic, Roughness, Normal, Emissive, Alpha, Double-sided
+assets.mesh-model	Mesh/Model	F7	Model Source, Mesh Count, Bounds, Material Slots, Import Status
+assets.font	Font	F7	Source, Family/Style, Preview/Diagnostics, Glyph/Size Settings when available
+ui.canvas	UI Canvas	F6	Name/ID, Parent, Visible/Enabled, Anchors, Pivot, Size, Min/Max, Margin/Padding, Alignment, Z, Opacity, Style, Input/Focus, Data Binding, Events
+ui.widgets	UI Widgets	F6	Panel, Text, Image, Button, Slider, ProgressBar, Checkbox, Input, Dropdown, Scroll View, Horizontal/Vertical/Grid Layout, Custom Widget, Font, Size, Wrap, Localization, Tint, Fit, States, OnClick, Min/Max/Value/Step, OnChange, Placeholder, Limits, Validation, Clipping, Direction
+ui.flow	UI Flow	F6	Screen Nodes, Transitions, Trigger, Conditions, Overlay, Back, Focus Policy, Navigation
+graph.canvas	Graph Canvas	F3	Zoom, Pan, Grid, Nodes, Typed Ports, Links, Selection, Comments, Validation, Graph to Scene Drag Preview
+graph.palette	Graph Palette	F3	Data, Control, Events, NativeCall, Variables, Math, Entity, UI, Debug, Search
+graph.inspector	Graph Node Inspector	F3	Node ID, Type, Input Ports, Output Ports, Defaults, Validation, Comments, Local Variables, Exposed Parameters, Binding, References
+code.space	Code Space	F4	Source Tree, Code Tabs, Symbols, Search, Syntax Highlighting, Formatting, Go to Definition, References, Compile Status, C# Template, Build Diagnostics, External IDE
+code.types	Type Definition	F4	Namespace, Name, Type ID, Fields, Defaults, Validation, Serialization, Graph Exposure, Event Signatures, Dependencies, Components, Systems, Events, Operations, Script Classes, Asset Types
+game.controls	Game Controls	F8	Play, Pause, Step, Stop, Restart, Time Scale, Active Scene, Game Input Focus, Resolution
+game.runtime	Runtime Inspector	F8	Runtime Entity, Properties, World Transform, Activations, Pinned Resources, Runtime Snapshot, Authoring Default, Instance Override
+debug.trace	Graph Debugger	F8	Activation ID, Node, Branch, Inputs, Outputs, Wait Reason/Ticks, Instruction Count, Native Count, Error, Trace, Breakpoints
+debug.console	Console	F8	Timestamp, Severity, Category, Message, Source Links, Filters, Copy, Export
+profile.metrics	Profiler	F8	Frame, CPU, GPU, Allocations, Entities, Graphs, Resources, UI Metrics
+build.settings	Build / Export	F9	Configurations, Targets, Scenes, C# Compilation, Cook, Windows Export, Web Export [Q1], Errors, Progress, Cancel
+settings.project	Project Settings	F0	General, Renderer, Input, Physics, Scripts, Assets, Build, Security
+settings.editor	Editor Preferences	U4	Theme, Layout, Keyboard, Navigation, Code Font, Performance, Accessibility
+agent.workspace	Agent Workspace	F10	Prompt, Context, Proposed Edits, Review, Approve, Diff, Validation, Logs
+inspector.types	Inspector Types	F4	Bool, Integer, Float, String, Enum/Flags, Reference, Vector2/3/4, Color RGBA, Struct, Array/List, Optional, Event Binding
+inspector.field	Inspector Field	F4	Label, Type, Value, Default, Source, Override, Min/Max/Step, Unit, Description, Validation, Reset, Copy, Paste, Revert, Missing Reference
+assets.details	Asset Details	F1	Asset ID, Source Path, Logical Path, Cooked Key, Generation, Fingerprint, Import Recipe, Cooked Status, Dependencies, References, History, Last Good, Diagnostics
+scene.transform	Transform 2D / 3D	F2	Position X/Y/Z, Rotation Angle/Euler/Quaternion, Scale X/Y/Z, Local/World, Parent Reference, Reset, Move, Rotate, Scale, Snap
+scene.tools	Scene Tools	F2	Viewport 2D/3D, Grid, Camera, Snap, Gizmos, Selected Object, World/Scene Systems, Layers, Filters

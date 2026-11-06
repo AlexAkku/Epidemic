@@ -30,7 +30,7 @@ SDK: в текущем `CMakeLists.txt` версия проекта/пакета
 ## 1. С чего начать
 
 **Хочу посмотреть, что уже работает.** Соберите `EpidemicEditorChecks`, запустите
-`EpidemicEditorDesktop` и выполните сценарий из раздела 5.
+самостоятельный Editor на IntelliJ Platform по инструкции из раздела 5.
 
 **Хочу написать игровую механику.** Начните с `Game/Composition/example/vertical_slice.cpp`:
 там есть Enemy с Health/Movement, Prefab, собственные операции и WaveDirector.
@@ -167,21 +167,16 @@ Prefab и Graph. Он не создаёт собственную независ�
 
 ### Минимальный путь к редактору
 
-```powershell
-& .\Development\AgentsRules\Scripts\Invoke-Dev.ps1 `
-  -Action Build -Profile full -Configuration Debug `
-  -BuildDirectory Temp/b/w64 -RuntimeDirectory Temp `
-  -Target EpidemicEditorChecks -BuildJobs 2 -ShortOutput
+Из корня репозитория (Windows PowerShell, без требования `pwsh`):
 
-& .\Temp\b\w64\Game\Editor\ui\Debug\EpidemicEditorDesktop.exe
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\editor-ui-host\Build-Standalone.ps1 -JdkRoot "$env:USERPROFILE\.jdks\ms-21.0.7" -Resolve -Run
 ```
 
-`EpidemicEditorChecks` собирает Editor и связанные проверочные executable;
-действие `Build` само тесты не запускает. Для этого используется `Test` из раздела 11.
-Пути executable выше соответствуют Visual Studio generator; у Ninja структура иная.
-
-Профили сборки: `base` — EngineBase; `runtime` — Base и Runtime; `full` — также
-Framework и текущие Game-цели. Для Editor нужен `full`.
+Готовое приложение: `Temp/U/distribution/EpidemicEditor/EpidemicEditor.exe`.
+Нужен весь каталог с `app` и `runtime`. Самостоятельный host собирается из открытых
+модулей IntelliJ Platform и публичного JBR; установленная IDEA для запуска не нужна.
+Старый Win32 Editor UI удалён в L0; C++ Editor Core, форматы проектов и тесты сохранены.
 
 ### Проверка сохранения без UI
 
@@ -215,72 +210,22 @@ Event/Branch/Repeat/native Spawn/Wait, создаёт врагов из Prefab �
 <a id="editor"></a>
 ## 5. Как пользоваться Editor UI
 
-Текущий UI — минимальный Windows host со стандартными контролами.
-Он предназначен для работы с данными и проверки поведения; пространственного
-viewport и графического canvas с перетаскиванием узлов пока нет.
+Launcher создаёт дочерний каталог проекта и открывает существующие проекты;
+Recent Projects сохраняет последние десять успешных открытий. Рабочее окно
+разворачивается, Project Explorer / Scene Hierarchy находятся слева, документы —
+в центре, контекстные инструменты — справа. Центральные документы выносятся
+отдельно, Tool Windows перемещаются целой группой.
 
-### Первый сеанс
+Save, Undo/Redo и Rename работают через существующий C++ Workspace.
+Клавиши: Ctrl+S, Ctrl+Shift+S (Save All), Ctrl+Z, Ctrl+Y / Ctrl+Shift+Z. Первый набор F0 добавляет Clone Saved Project и native Play/Stop (F8); непрерывная симуляция и живой Game View ещё не подключены. Закрытие изменённого проекта
+предлагает Save / Discard / Cancel. Формы будущих возможностей остаются
+неактивными до подключения и проверки реального backend.
 
-1. Нажмите **New example**, выберите путь, например `Temp/editor-guide/ui.epidemic`.
-   Будут созданы Scene, Enemy Prefab и граф Enemy behavior.
-2. В дереве раскройте **Prefab / Enemy** и выберите вложенную **Entity**.
-   В свойствах появятся Health/points и Movement/speed, enabled, label.
-3. Выберите свойство, измените значение в поле **Value** и нажмите **Apply**.
-   Например, задайте Health/points = `150`. Изменённые документы отмечаются `*`.
-4. Проверьте **Undo** и **Redo**. Нажмите **Save**.
-5. В Scene выберите **Placement 42**, нажмите **Play**, затем **Send hit**.
-   Поле Payload по умолчанию равно `10`: оно используется как величина урона
-   и как длительность ожидания в игровых ticks.
-6. Внизу наблюдайте активацию: она выполняет Damage, ждёт и выполняет Damage again.
-   Терминальный отчёт показывает статус, инструкции и native calls; при ошибке — диагностику.
-7. Нажмите **Stop**. Авторское Health/points останется `150`.
-   Изменения здоровья во время Play принадлежат отдельному игровому экземпляру.
-8. Закройте и снова откройте файл через **Open** для проверки сохранённых данных.
+Прохождение U подтверждает оболочку; готовность Clone, Scene/Prefab/Inspector,
+asset import/reimport и Play отмечается отдельно по мере F-интеграции.
+Текущий статус функций и проверок: `Development/EditorUI/UI_FEATURE_MATRIX.md`
+и `UI_QA_MATRIX.md`. Старый интерфейс больше не служит compatibility path.
 
-В данном графе при исходном здоровье 150 и payload 10 runtime-здоровье становится
-140, затем 130. Отдельного live-инспектора runtime-компонентов в UI пока нет;
-точные значения проверяются программно, как в headless-примере.
-
-### Документы и связи
-
-- **+ Scene / + Prefab / + Graph** создают документы через Command API.
-- **Add item / Delete item** действуют в контексте выбранного документа/элемента.
-  Удаление, нарушающее обязательные ссылки, отклоняется с ошибкой.
-- В Scene выберите placement и используйте **Assign Prefab**.
-- В Prefab доступны свойства зарегистрированных компонентов, **Add Health**,
-  **Add Movement** и назначение GraphBehavior. Повторное добавление существующего
-  компонента не сбрасывает его значения.
-- Для Graph выберите шаблон Event entry, Native damage или Wait и нажмите **Add item**.
-  Выберите Output/Input port и **Connect ports**. Проверка типов выполняется в Core.
-  Для удаления соединения выберите его строку Link и **Delete item**.
-- **Assign hit GraphBehavior** связывает выбранный Graph asset с событием `hit`
-  через первый входной event-порт. Необходимую форму графа проверит Play.
-
-### Черновики, сохранение и клавиши
-
-Изменение текста поля ещё не меняет документ. **Apply / Enter** публикует команду;
-**Revert field / Escape** сбрасывает черновик поля. Перед сменой выделения нужно
-применить или отменить поле. Некорректное число, NaN/Infinity и недопустимое
-игровое значение отклоняются без изменения истории и точки сохранения.
-
-**Save** сначала применяет корректный черновик. Закрытие и замена несохранённого
-проекта предлагают Save/Discard/Cancel. **Ctrl+S/O/N** — Save/Open/New example;
-**F5 / Shift+F5** — Play/Stop. **Ctrl+Z/Y** вне поля Value управляют историей проекта;
-Ctrl+Z внутри Value остаётся обычным откатом текста.
-
-### Границы текущего UI
-
-Host знает схему игрового примера. Для собственных типов нужны их регистрации
-и привязки операций в host; неизвестный компонент нельзя добавить одним названием.
-Параметры и связанные с ними свойства read-only, UI редактирования overrides отсутствует.
-Повторное назначение того же Prefab сохраняет его overrides.
-
-Play использует `ProjectDefinition::entry_scene`, а не любой выделенный Scene-документ.
-Переключателя entry Scene в UI пока нет; в Command API есть `SetEntryScene`.
-Изменения authoring во время Play видны следующей сессии. Preview-таймер продвигает
-один игровой tick примерно раз в 33 мс; это не универсальное правило времени игры.
-
-<a id="gameplay"></a>
 ## 6. Как добавить свою игровую систему
 
 ### Компонент
@@ -583,7 +528,8 @@ Temp размещение runtime-данных Auditor нужно учитыва
 | Универсальные компоненты, Prefab, GraphBehavior | `EngineFramework/IntegrationLayer/Integration` |
 | Игровые привязки графа и композиция Scene | `Game/Composition` |
 | Editor-команды, archive, PlaySession | `Game/Editor/src` и `Game/Editor/include` |
-| Контроллер Editor UI / нативное окно | `Game/Editor/ui` |
+| Editor UI / самостоятельный host | `tools/editor-ui-host` |
+| C++ Workspace / проекции / Inspector | `Game/Editor/ui` |
 | Схема игрового примера | `Game/Editor/example/demo_game.h` |
 | Инфраструктура квалификации и диагностики | `Development/AgentsRules`, `.epidemic-auditor` |
 

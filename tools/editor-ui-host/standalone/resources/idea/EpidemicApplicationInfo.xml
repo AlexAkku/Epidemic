@@ -1,0 +1,7 @@
+<component>
+    <version major="0" minor="3" eap="false"/>
+    <build number="EP-253.31033.145" date="20261104"/>
+    <names product="Epidemic Editor" fullname="Epidemic Engine Editor" edition="" script="EpidemicEditor"/>
+    <company name="Epidemic Engine" shortName="Epidemic"/>
+    <icon svg="/icons/epidemic.svg" svg-small="/icons/epidemic.svg"/>
+</component>

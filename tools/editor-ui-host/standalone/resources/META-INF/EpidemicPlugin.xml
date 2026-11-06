@@ -1,0 +1,13 @@
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
+    <id>com.intellij</id>
+    <name>Epidemic Engine Platform</name>
+    <vendor>Epidemic Engine</vendor>
+    <xi:include href="/META-INF/EpidemicPlatformLangPlugin.xml"/>
+    <xi:include href="/META-INF/EpidemicModules.xml"/>
+    <extensions defaultExtensionNs="com.intellij">
+        <appStarter id="epidemic" implementation="epidemic.launcher.EpidemicStarter"/>
+        <projectService serviceImplementation="epidemic.editor.platform.PlatformSession"/>
+        <fileEditorProvider implementation="epidemic.editor.platform.PanelEditorProvider"/>
+        <postStartupActivity implementation="epidemic.editor.platform.PlatformStartup"/>
+    </extensions>
+</idea-plugin>

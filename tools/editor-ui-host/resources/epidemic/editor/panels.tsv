@@ -1,0 +1,46 @@
+project.explorer	Project Explorer	dock.left.navigation	1	all	true
+scene.hierarchy	Scene Hierarchy	dock.left.navigation	2	all	true
+game.view	Game	dock.center.documents	1	all	true
+scene.editor	Scene	dock.center.documents	2	all	true
+graph.editor	Graph	dock.center.documents	3	all	true
+code.space	Code Space	dock.center.documents	4	all	true
+inspector	Inspector	dock.center.right.primary	1	Scene	true
+prefab.editor	Prefab Editor	dock.center.right.primary	2	Scene	true
+scene.tools	Scene Tools	dock.center.right.primary	3	Scene	true
+scene.systems	Scene Systems	dock.center.right.secondary	1	Scene	true
+scene.layers	Scene Layers	dock.center.right.secondary	2	Scene	true
+graph.palette	Graph Palette	dock.center.right.primary	1	Graph	true
+graph.inspector	Graph Inspector	dock.center.right.primary	2	Graph	true
+graph.variables	Graph Variables	dock.center.right.secondary	1	Graph	true
+graph.references	Graph References	dock.center.right.secondary	2	Graph	true
+game.controls	Game Controls	dock.center.right.primary	1	Game	true
+game.runtime.inspector	Runtime Inspector	dock.center.right.primary	2	Game	true
+game.session	Game Session	dock.center.right.secondary	1	Game	true
+code.symbols	Code Symbols	dock.center.right.primary	1	Code	true
+code.properties	Code Properties	dock.center.right.primary	2	Code	true
+code.references	Code References	dock.center.right.secondary	1	Code	true
+ui.palette	Ui Palette	dock.center.right.primary	1	UI	true
+ui.inspector	Ui Inspector	dock.center.right.primary	2	UI	true
+animation.properties	Animation Properties	dock.center.right.primary	1	Animation	true
+asset.details	Asset Details	dock.center.right.primary	1	Asset	true
+asset.references	Asset References	dock.center.right.secondary	1	Asset	true
+console	Console	dock.bottom.global	1	all	false
+problems	Problems	dock.bottom.global	2	all	false
+background.jobs	Jobs	dock.bottom.global	3	all	false
+graph.debugger	Debugger	dock.bottom.global	4	all	false
+profiler	Profiler	dock.bottom.global	5	all	false
+animation.timeline	Animation Timeline	dock.bottom.global	6	all	false
+build.output	Build Output	dock.bottom.global	7	all	false
+agent.workspace	Agent Workspace	dock.center.documents	20	all	false
+settings.project	Project Settings	dock.center.documents	20	all	false
+settings.editor	Editor Preferences	dock.center.documents	20	all	false
+ui.flow	UI Flow	dock.center.documents	20	all	false
+type.registry	Type Registry	dock.center.right.secondary	20	Code	true
+prefab.canvas	Prefab Canvas	dock.center.documents	20	all	false
+ui.canvas	Game UI Designer	dock.center.documents	20	all	false
+animation.editor	Animation	dock.center.documents	20	all	false
+sprite.editor	Sprite / Sheet	dock.center.documents	20	all	false
+tilemap.editor	Tilemap	dock.center.documents	20	all	false
+material.editor	Material	dock.center.documents	20	all	false
+audio.editor	Audio Mixer	dock.center.documents	20	all	false
+build.editor	Build / Export	dock.center.documents	20	all	false

@@ -1,0 +1,27 @@
+# UI bridge contract v1
+
+Sources: `Temp/!Tasks/U_Phase.md` U2, current EditorWorkspace/EditorProject/ProjectFolder APIs. This is the implemented private bridge contract with a capability-negotiated F0 extension. The bridge is private presentation infrastructure, not an engine public ABI or archive schema.
+
+## Ownership and transport
+
+One native companion process owns the existing example game Schema and exactly one EditorWorkspace. All calls, snapshots, selection, history and Play belong to that native owner thread. Closing or detaching a presentation window cannot create a workspace. The JVM uses one bounded serial dispatcher and publishes immutable DTOs on EDT. C++-only/headless targets have no JVM dependency. The optional viewport DLL owns only its scoped GPU surfaces on EDT; no Project, Scene, Graph or Resource addresses cross the boundary.
+
+The companion inherits private stdin/stdout pipes from its JVM owner; stdout is protocol-only, diagnostics go to stderr. Frames are unsigned big-endian length followed by at most 16 MiB. UTF-8 strings use an unsigned 32-bit byte length, capped at 1 MiB. No native strings/layouts/pointers are exposed. A request is magic `EPUI` (0x45505549), u16 major=1/minor=0, u64 correlation ID, u8 opcode, u64 expected workspace generation, u64 expected authoring revision, u16 argument count (max 8), then strings. Unknown versions/operations and malformed frames produce explicit errors; oversized/truncated input terminates the stream and releases ownership.
+
+Operations: 1 Hello, 2 Open, 3 NewFolder, 4 Snapshot, 5 RenameDocument, 6 Save, 7 Undo, 8 Redo, 9 Select, 10 Close, 11 Quit, 12 CloneFolder(destination), 13 Play, 14 Stop. Open accepts descriptor or legacy archive; all writes route through Workspace APIs and existing validated commands. Revision zero is rejected for writes to an open project. IDs are typed u64 values, preserved bit-for-bit in Java long and displayed unsigned; they are not addresses. Selection explicitly carries UiElement kind, document and element IDs.
+
+A response repeats magic/version/correlation, u8 result (0 success, 1 rejected; unavailable operations carry an explicit error string), u64 process workspace generation, capability CSV, error code/message and a snapshot-present byte. Snapshot fields: authoring/asset/selection revisions, flags (1 dirty, 2 canUndo, 4 canRedo, 8 actual native session IsPlaying), storage kind, project/entry IDs, path/title, typed selection, document rows, hierarchy rows and source asset rows. The DTO is immutable read data; it never becomes a second editable game model. Unsupported features remain planned/backend-only and do not send commands.
+
+Capabilities advertise only implemented operations. Connection and individual service states are Unavailable/Loading/Ready/Error, independently from planned feature maturity. There are at most 32 pending client tasks. Correlation, connection generation and monotonic snapshot keys reject stale completions; unchanged snapshots do not reconstruct editing/focus state. Background IO never blocks EDT. A failed/disconnected child disables mutation and preserves layout plus the last clearly marked read snapshot. Reconnect creates a new transport generation. Quit/EOF releases the native Workspace, workers, writer locks and Play; native viewport removal releases timers/GPU before peer destruction.
+
+Tests must cover Unicode, framing/version limits, stale revisions, rejected commands/no mutation, Save/reopen, legacy data, folder locks, selection identity, bounded busy/cancel/disconnect/reconnect, disabled features, and multiple UI windows sharing one process. U manual qualification is owner-provided evidence in UI_QA_MATRIX.md; programmatic tests never substitute for it. New F command wiring has its own native/IPC acceptance.
+
+Implementation notes: input text rejects malformed UTF-8 and embedded NUL. Close rejects dirty state unless explicitly passed discard; Quit rejects dirty state. Cancelling a queued task prevents dispatch; cancelling an already running native mutation is refused. Clean Save is a no-op. NewFolder exclusively owns a sibling staging envelope and publishes using Windows MoveFileW without replacing a competing destination. The sole product presentation is the standalone Platform project service; competing diagnostic/window owners are removed.
+
+## F0 lifecycle extension
+
+Opcodes 12–14 require current generation/revision and an open native project; Clone has exactly one argument, Play/Stop none. Capabilities `clone-folder`, `play`, `stop` are advertised only with these real Workspace calls. Existing frame/DTO field order remains v1; bit 8 uses a previously unused snapshot flag. No archive schema or public Framework API changes.
+
+Clone uses existing ProjectFolder CloneTo: save first, a fresh destination outside the source, preserved document/asset/cooked identities and committed source data. It leaves the active Workspace unchanged. The UI names a new folder and does not enter it in Recent until a successful Open. Save All is the same atomic whole-project Workspace Save as Save in this single-project host (opcode 6).
+
+Play and Stop call existing isolated PlaySession lifecycle. Starting/stopping cannot clear dirty authoring, alter history/revision/selection or serialize runtime state. Stop is idempotent; Close disposes the session. Runtime `Tick`, event routing, live Game View and advanced runtime controls remain later integration; this first F0 batch is not full gameplay/F0 parity.

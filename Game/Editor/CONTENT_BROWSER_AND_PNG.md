@@ -1,3 +1,5 @@
+> L0 contract (2026-11-05): the Win32 Content Browser UI is retired. This document describes retained C++ content-query/PNG services; new bindings belong to Project Explorer/F1. UI shell acceptance does not establish import parity.
+
 # Content Browser and PNG MVP
 
 Open a portable project descriptor from File / Open, or use File / New project
