@@ -1,5 +1,6 @@
 #include "demo_game.h"
 #include "Epidemic/Game/Editor/editor_workspace.h"
+#include "Epidemic/Game/Editor/editor_inspector.h"
 #include <array>
 #include <charconv>
 #include <chrono>
@@ -98,12 +99,18 @@ struct Node {
     std::uint64_t document = 0, element = 0, parent = 0;
     ed::UiElement kind = ed::UiElement::Document;
     std::string label;
+    std::uint64_t component = 0, part = 0;
 };
 
 class Backend {
     ex::Schema schema_;
     std::unique_ptr<ed::EditorWorkspace> workspace_;
-    std::uint64_t generation_ = 1, selection_revision_ = 0;
+    std::uint64_t generation_ =
+        Id::FromString(std::to_string(GetCurrentProcessId()) + "." +
+                       std::to_string(std::chrono::system_clock::now().time_since_epoch().count()))
+            .Raw() >>
+        1u;
+    std::uint64_t selection_revision_ = 0;
     std::uint64_t document_nonce_ = 0;
 
     static void CheckDocumentName(std::string_view name) {
@@ -136,6 +143,12 @@ class Backend {
             prefab.id = id.value;
             prefab.root.id = Id::FromString("editor.root." + nonce);
             prefab.root.archetype = schema_.enemy;
+            if (args.size() == 3) {
+                if (args[2] != "registered-components")
+                    throw std::runtime_error("ui.prefab_template");
+                // Real registered component recipes, no behavior/graph fixture.
+                prefab.root.components = ex::Enemy(schema_, prefab.root.id).components;
+            }
             document.data = std::move(prefab);
         } else {
             rt::graph::GraphDefinition graph;
@@ -147,6 +160,34 @@ class Backend {
         if (!workspace_->Select({id, ed::UiElement::Document, 0}))
             throw std::runtime_error("ui.selection_missing");
         ++selection_revision_;
+    }
+
+    std::vector<ed::InspectorEntry> Inspector() const {
+        if (!workspace_->Project())
+            return {};
+        auto rows = ed::InspectComponents(*workspace_->Project()->Snapshot(),
+                                          workspace_->Selection(), schema_.components, nullptr);
+        for (auto &row : rows)
+            if (!row.value) {
+                row.editable = false;
+                row.readonly_reason = "Factory default unavailable";
+            }
+        if (workspace_->Session() && workspace_->Session()->IsPlaying())
+            for (auto &row : rows) {
+                row.editable = false;
+                row.readonly_reason = "Stop Play to edit authoring";
+            }
+        return rows;
+    }
+
+    static std::string FieldKey(const ed::InspectorEntry &row, std::size_t ordinal = 0) {
+        return std::to_string(row.owner.document.Raw()) + "/" + std::to_string(row.owner.element) +
+               "/" + std::to_string(row.owner.component.Raw()) + "/" +
+               std::to_string(row.owner.part.Raw()) + "/" + std::to_string(row.property.Raw()) +
+               "/" + std::to_string(static_cast<unsigned>(row.target)) + "/" +
+               std::to_string(row.placement.document.Raw()) + "/" +
+               std::to_string(row.placement.element) +
+               (row.kind ? "" : "/readonly/" + std::to_string(ordinal));
     }
 
     void Reset() {
@@ -235,6 +276,8 @@ class Backend {
         out.Number<1>(static_cast<unsigned>(selection.kind));
         out.Number<8>(selection.document.Raw());
         out.Number<8>(selection.element);
+        out.Number<8>(selection.component.Raw());
+        out.Number<8>(selection.part.Raw());
         out.Number<4>(snapshot->definition.documents.size());
         std::vector<Node> nodes;
         for (const auto &document : snapshot->definition.documents) {
@@ -242,6 +285,7 @@ class Backend {
             out.Number<8>(document.revision);
             out.Number<1>(static_cast<unsigned>(document.Kind()));
             out.Text(document.name);
+            out.Number<1>(project->IsDirty(document.id) ? 1 : 0);
             if (const auto *scene =
                     std::get_if<epidemic::game::composition::SceneCompositionDefinition>(
                         &document.data)) {
@@ -261,6 +305,13 @@ class Backend {
                     nodes.push_back({document.id.Raw(), node->id.Raw(), parent,
                                      ed::UiElement::PrefabNode,
                                      "Prefab entity " + std::to_string(node->id.Raw())});
+                    for (const auto &component : node->components) {
+                        const auto *info = schema_.components.Find(component.type);
+                        nodes.push_back({document.id.Raw(), node->id.Raw(), node->id.Raw(),
+                                         ed::UiElement::PrefabComponent,
+                                         info ? info->name : "Component", component.type.Raw(),
+                                         component.part.Raw()});
+                    }
                     for (const auto &child : node->children)
                         pending.emplace_back(&child, node->id.Raw());
                 }
@@ -278,6 +329,8 @@ class Backend {
             out.Number<8>(node.parent);
             out.Number<1>(static_cast<unsigned>(node.kind));
             out.Text(node.label);
+            out.Number<8>(node.component);
+            out.Number<8>(node.part);
         }
         const auto *folder = workspace_->Folder();
         out.Number<4>(folder ? folder->Sources().size() : 0);
@@ -291,6 +344,20 @@ class Backend {
                 out.Text(source.relative_path);
                 out.Text(source.cooked_key);
             }
+        const auto fields = Inspector();
+        out.Number<4>(fields.size());
+        for (std::size_t index = 0; index < fields.size(); ++index) {
+            const auto &row = fields[index];
+            out.Text(FieldKey(row, index));
+            out.Text(row.name);
+            out.Number<1>(row.kind ? static_cast<unsigned>(*row.kind) : 255);
+            out.Text(row.value ? ed::EditorWorkspace::FormatValue(*row.value)
+                               : "<value unavailable>");
+            out.Number<1>(row.editable ? 1 : 0);
+            out.Text(row.source);
+            out.Text(row.readonly_reason);
+            out.Number<8>(row.reference.Raw());
+        }
     }
 
   public:
@@ -302,9 +369,11 @@ class Backend {
         std::uint64_t correlation = 0;
         std::string error;
         bool quit = false;
+        const auto previous_selection = workspace_->Selection();
+        const auto previous_selection_revision = selection_revision_;
         try {
             Reader in{bytes};
-            if (in.Number(4) != Magic || in.Number(2) != 1 || in.Number(2) != 0)
+            if (in.Number(4) != Magic || in.Number(2) != 2 || in.Number(2) != 0)
                 throw std::runtime_error("ui.protocol_version");
             correlation = in.Number(8);
             const auto operation = in.Number(1), generation = in.Number(8), revision = in.Number(8);
@@ -318,13 +387,16 @@ class Backend {
                 throw std::runtime_error("ui.trailing_bytes");
             if (operation != 1 && operation != 4 && generation != generation_)
                 throw std::runtime_error("ui.stale_generation");
-            if (((operation == 5 || operation == 15) && args.size() != 2) ||
+            if ((operation == 5 && args.size() != 2) ||
+                (operation == 15 && args.size() != 2 && args.size() != 3) ||
+                (operation == 16 && args.size() != 3) || (operation == 17 && args.size() != 1) ||
+                (operation == 9 && args.size() != 3 && args.size() != 5) ||
                 (operation == 12 && args.size() != 1) ||
                 ((operation == 13 || operation == 14) && !args.empty()))
                 throw std::runtime_error("ui.argument_count");
-            if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 15))
+            if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 17))
                 CheckWrite({generation, revision});
-            if ((operation == 5 || operation == 15) && workspace_->Session() &&
+            if ((operation == 5 || operation >= 15) && workspace_->Session() &&
                 workspace_->Session()->IsPlaying())
                 throw std::runtime_error("ui.playing_readonly");
             switch (operation) {
@@ -359,10 +431,16 @@ class Backend {
                 break;
             case 9: {
                 const auto kind = Numeric(args.at(0));
-                if (kind > static_cast<unsigned>(ed::UiElement::Connection))
+                if (kind > static_cast<unsigned>(ed::UiElement::PrefabComponent))
                     throw std::runtime_error("ui.selection_kind");
-                if (!workspace_->Select({Asset(Numeric(args.at(1))),
-                                         static_cast<ed::UiElement>(kind), Numeric(args.at(2))}))
+                if (!workspace_->Select(
+                        {Asset(Numeric(args.at(1))), static_cast<ed::UiElement>(kind),
+                         Numeric(args.at(2)),
+                         args.size() == 5 ? epidemic::gameplay::TypeId{Numeric(args[3])}
+                                          : epidemic::gameplay::TypeId{},
+                         args.size() == 5
+                             ? epidemic::gameplay::entities::EntityPartId{Numeric(args[4])}
+                             : epidemic::gameplay::entities::EntityPartId{}}))
                     throw std::runtime_error("ui.selection_missing");
                 ++selection_revision_;
                 break;
@@ -377,7 +455,31 @@ class Backend {
                 Require(workspace_->Stop());
                 break;
             case 15:
+                if (args.size() == 3 && args[0] != "1")
+                    throw std::runtime_error("ui.prefab_template");
                 CreateDocument(args, revision);
+                break;
+            case 16: {
+                if (Numeric(args[0]) != selection_revision_)
+                    throw std::runtime_error("ui.stale_selection");
+                const auto rows = Inspector();
+                const ed::InspectorEntry *row = nullptr;
+                for (std::size_t index = 0; index < rows.size(); ++index)
+                    if (FieldKey(rows[index], index) == args[1]) {
+                        row = &rows[index];
+                        break;
+                    }
+                if (!row)
+                    throw std::runtime_error("ui.field_missing");
+                const auto command = ed::InspectorCommand(*row, args[2]);
+                Require(command);
+                Require(workspace_->Execute({command.Value()}, revision));
+                break;
+            }
+            case 17:
+                Require(
+                    workspace_->Execute({ed::DiscardDocument{Asset(Numeric(args[0]))}}, revision));
+                ++selection_revision_;
                 break;
             case 10:
             case 11:
@@ -393,14 +495,19 @@ class Backend {
         } catch (const std::exception &failure) {
             error = failure.what();
         }
+        if (workspace_->Selection() != previous_selection &&
+            selection_revision_ == previous_selection_revision)
+            ++selection_revision_;
         Wire out;
         out.Number<4>(Magic);
-        out.Number<2>(1);
+        out.Number<2>(2);
         out.Number<2>(0);
         out.Number<8>(correlation);
         out.Number<1>(error.empty() ? 0 : 1);
         out.Number<8>(generation_);
-        out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-folder,play,stop,create-document");
+        out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
+                 "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
+                 "default-components");
         out.Text(error);
         Snapshot(out);
         Wire prefix;

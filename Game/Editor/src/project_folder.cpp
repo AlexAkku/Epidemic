@@ -817,6 +817,7 @@ VoidResult ProjectFolder::Save() {
         Take(Publish(SafeAt(root_, CommitPath(next)), bytes));
         generation_ = next;
         editor_->saved_state_ = editor_->current_->state_id;
+        editor_->saved_snapshot_ = editor_->current_;
         editor_->saved_documents_.swap(saved_documents);
         saved_assets_ = std::move(index.records);
         saved_visuals_ = visuals_;

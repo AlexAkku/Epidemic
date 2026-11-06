@@ -105,6 +105,7 @@ class EditorProject final {
     std::filesystem::path file_;
     ProjectSchema schema_;
     std::shared_ptr<const ProjectSnapshot> current_;
+    std::shared_ptr<const ProjectSnapshot> saved_snapshot_;
     std::uint64_t epoch_ = 1, next_state_ = 2, next_document_ = 1, saved_state_ = 0;
     std::unordered_map<std::uint64_t, std::uint64_t> saved_documents_;
     std::vector<std::shared_ptr<const ProjectSnapshot>> undo_, redo_;

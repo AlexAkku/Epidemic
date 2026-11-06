@@ -6,11 +6,11 @@ Sources: `Temp/!Tasks/UI_Roadmap.md` §§7,10–12, `Temp/!Tasks/U_Phase.md`. Cu
 |---|---|---|---|
 | project.lifecycle | Workspace Open/New/OpenFolder/NewFolder/Save/CloneFolder; folder committed revisions, writer lock and legacy reads | wired: Open/NewFolder/Save/Save All/Clone/Undo/Redo/Select; native F0 lifecycle contracts passed | F0 |
 | project.launcher | Launcher-first startup, 10 Recent, external preferences, name/parent validation | wired Platform launcher/Recent; owner manual acceptance PASS | U3/F0 |
-| history.transactions | Execute with expected revision; unified folder Undo/Redo, stable IDs; 64-step history | wired RenameDocument/Undo/Redo; remaining edit commands backend-only | F0 |
-| documents.lifecycle | Native Scene/Prefab/Graph CreateDocument and RenameDocument; stable IDs, project/generation-scoped Platform view keys, shared titles, Save/Open and Undo/Redo | limited: New/Open/Rename/Save All wired; per-document close/dirty workflow and scalar editing pending; current tracking in FI_FEATURE_MATRIX.md | F0 |
+| history.transactions | Execute with expected revision; unified folder Undo/Redo, stable IDs; 64-step history | wired document Create/Rename/Discard and scalar Inspector transactions/Undo/Redo; advanced authoring remains later | F0 |
+| documents.lifecycle | Native Scene/Prefab/Graph CreateDocument and RenameDocument; stable IDs, project/generation-scoped Platform view keys, shared titles, Save/Open and Undo/Redo | wired New/Open/Rename/Save All, per-document dirty, async Save/Discard/Cancel close; current verification/owner acceptance in FI_FEATURE_MATRIX.md | F0 |
 | scene.authoring | Add/Delete Scene node, TRS, parents, PlacePrefab, picking/gizmos; SceneViewTests | backend-only | F2 |
 | prefab.authoring | Definition tree/components/parameters, targeted instance overrides, binding/reset; workspace/Inspector tests | backend-only | F2 |
-| inspector.schema | Bool/i64/double/string/ref values supported through existing schema; future Enum/Flags/Vector/Color/Array/Optional widgets are not current runtime types | backend-only / planned fields | U4/F2/F4 |
+| inspector.schema | Bool/i64/double/string/ref values supported through existing schema; future Enum/Flags/Vector/Color/Array/Optional widgets are not current runtime types | wired stored bool/i64/double/string and read-only refs; unavailable defaults/future types remain disabled | F0/F2/F4 |
 | assets.png | WIC PNG/cook, stable AssetId, leases, async import/reimport, last-good; ContentTests/ContentReopen | backend-only | F1 |
 | assets.lifecycle | Move/rename, queued duplicate, staged delete/restore, reference diagnostics, global history; SpriteHotTests | backend-only | F1 |
 | assets.watch | Workspace-level watcher, bounded jobs, cancel, stale epoch filtering, audit; AsyncPngTests | backend-only | F1 |

@@ -30,6 +30,7 @@ foundation::Result<void> EditorProject::Save() {
         return published;
     saved_documents_.swap(documents);
     saved_state_ = current_->state_id;
+    saved_snapshot_ = current_;
     return foundation::Result<void>::Success();
 }
 
@@ -67,6 +68,7 @@ EditorProject::Open(const std::filesystem::path &file, const ProjectSchema &sche
     }
 
     project.saved_state_ = project.current_->state_id;
+    project.saved_snapshot_ = project.current_;
     for (const auto &document : project.current_->definition.documents)
         project.saved_documents_.emplace(document.id.Raw(), document.revision);
     return created;

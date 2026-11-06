@@ -29,17 +29,18 @@ Then Q0 reliability/performance/security, Q1 mandatory independently runnable We
 
 Known P04 debt must follow F1/F2, not disappear during U: configured mounts, Unicode/collision/TOCTOU policy, rich Explorer UI, true mixed DPI, native dialogs/focus, large-scale assets/security, visible V2/V3 and pilot. Preserve stable IDs, archive readers, committed fixtures, source recovery, Resource leases, last-good and Play generation isolation throughout.
 
-## F0 current batch
+## F0 current scope
 
-**F0 PARTIAL, first batch verified after L0 PASS:** Clone Saved Project, Save All alias,
-and native Play/Stop lifecycle through existing C++ APIs. No new panels, runtime
-models, asset registries or serialization fields are introduced. Tests cover
-identity/source/cooked preservation, no overwrite, independent-process clone,
-dirty/history isolation, stale requests and close while playing. Native contracts PASS (8.08 s); Release/restart/IPC/spec PASS (183.82 s);
-final-source standalone smoke PASS (78.18 s). These are automated/native checks,
-not a new owner manual qualification of every F control.
+The owner accepted `719970a` document bindings before the F0 completion batch.
+Current code wires native typed hierarchy/component selection, stored scalar
+Inspector fields, durable per-document Discard through shared transactional
+history, per-document dirty state and asynchronous Save/Discard/Cancel for tabs
+and floating document HWNDs. Save flushes drafts; publication and callbacks share
+the Platform queue. Details and actual qualification/owner statuses are in
+FI_FEATURE_MATRIX.md; visible acceptance is not inferred from smoke.
 
-Remaining F0: complete Scene/Prefab/scalar Inspector command bindings, document
-creation/default-scene workflows and continuous game interaction/view routing.
-Asset mutation/import/watch/P04 visual debt remains F1; advanced runtime/debug
-presentation remains F8. Retired UI compatibility is not a prerequisite.
+F1 remains next: Project Explorer assets/import/cook/watch/lease/history/refs
+and preserved P04 debt. Entity picking/gizmos/composition are F2. Continuous Game
+View, advanced runtime/debug presentation are F-II/F8 under the new F-I task;
+they are not remaining F0 work. Dynamic schema/default authoring stays F4.
+Retired UI compatibility remains outside the target contract.

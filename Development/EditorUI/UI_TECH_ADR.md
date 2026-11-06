@@ -11,3 +11,14 @@ Source: `Temp/!Tasks/UI_Roadmap.md`, owner contract 2026-11-05. IntelliJ Platfor
 - Win32 desktop and diagnostic Swing/U1 owners are retired in L0; optional SDK debugging uses the same PlatformSession. Removing their UI does not remove engine features, old data readers or semantic regressions. Exact inventory and retained dependencies: UI_MIGRATION_MAP.md.
 
 U-GATE PASS follows the owner's qualification and the required automated checks in UI_QA_MATRIX.md. Complete F parity, clean-machine deployment, full transitive-license review and resource budgets remain separate work. Platform descriptor-loading compatibility warnings and classified historical analyzer findings remain visible in backlog; no validator or warning gate is disabled.
+
+## F0 document close on Platform 253
+
+VirtualFilePreCloseCheck gates tabs but the locked DockWindow path calls its
+container closeAll and FrameWrapper.close directly. The host therefore wraps
+those two closing WindowListeners only on its own floating document windows,
+retaining and restoring the original handlers. The adapter awaits native
+Save/Discard, captures the requested EditorWindow and preserves peer views.
+It does not create windows, implement docking or modify signed Platform modules.
+Actual AWT close events on independent HWNDs exercise Cancel/Save/Discard and
+pending-Save ordering in packaged smoke; owner mouse acceptance stays separate.

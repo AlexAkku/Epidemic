@@ -72,6 +72,12 @@ public final class UiTests {
         try(Bridge bridge=new Bridge(executable,directory,state->{ })) {
             result(bridge.connect()); var opened=result(bridge.call(2,copy.toString()));
             require(opened.snapshot().storage()==1 && !opened.snapshot().documents().isEmpty(),"Legacy reader lost documents");
+            var prefabNode=opened.snapshot().nodes().stream().filter(n->n.kind()==2).findFirst().orElseThrow();
+            result(bridge.call(9,"2",Long.toUnsignedString(prefabNode.document()),Long.toUnsignedString(prefabNode.id())));
+            var readonly=bridge.latest().snapshot().fields().stream().filter(f->!f.editable()).findFirst().orElseThrow();
+            require(bridge.latest().snapshot().fields().stream().map(Bridge.Field::key).distinct().count()==bridge.latest().snapshot().fields().size(),"Readonly reference rows have duplicate keys");
+            nativeReject(bridge,"inspector_readonly",16,Long.toUnsignedString(bridge.latest().snapshot().selectionRevision()),readonly.key(),"change");
+            result(bridge.call(9,"0","0","0"));require(bridge.latest().snapshot().selection().document()==0&&bridge.latest().snapshot().fields().isEmpty()&&!bridge.latest().snapshot().dirty(),"Clear/project selection mutated authoring");
             result(bridge.call(4));
             require(result(bridge.call(13)).snapshot().playing(),"Existing demo Play failed");
             require(!result(bridge.call(14)).snapshot().playing(),"Existing demo Stop failed");
@@ -243,14 +249,163 @@ public final class UiTests {
                 require(!tree.isExpanded(tree.getSelectionPath().getParentPath()),"Rename reset user's collapsed document folder");
             }
             require(selections[0]==0,"Snapshot refresh emitted a selection command");
+            var selected=new java.util.concurrent.atomic.AtomicReference<Bridge.Selection>();
+            UiPanels projection=new UiPanels(catalog,features,d->{},selected::set,()->{},()->{},k->{},()->{});
+            projection.refresh(original);var tree=explorerTree(projection.view("project.explorer"));
+            tree.setSelectionPath(new javax.swing.tree.TreePath(tree.getModel().getRoot()));
+            require(new Bridge.Selection(0,0,0).equals(selected.get()),"Project root did not clear native object selection");
         });
         System.out.println("PASS F0.2 two immutable Explorer readers retain selected ID and collapsed folders on native rename without writing selection");
+    }
+    static Bridge.Field field(Bridge bridge,int kind) {
+        return bridge.latest().snapshot().fields().stream().filter(f->f.kind()==kind&&f.editable()).findFirst().orElseThrow();
+    }
+    static Bridge.Reply edit(Bridge bridge,Bridge.Field field,String text) throws Exception {
+        return result(bridge.call(16,Long.toUnsignedString(bridge.latest().snapshot().selectionRevision()),field.key(),text));
+    }
+    static String value(Bridge bridge,String key) {
+        return bridge.latest().snapshot().fields().stream().filter(f->f.key().equals(key)).findFirst().orElseThrow().value();
+    }
+    static void scalarAndDiscard(Path executable,Path directory) throws Exception {
+        Path folder=directory.resolve("F0-scalars-"+System.nanoTime());long prefab,root,oldGeneration;Map<String,String> stored=new HashMap<>();
+        try(Bridge bridge=new Bridge(executable,directory,state->{})) {
+            result(bridge.connect());nativeReject(bridge,"no_project",16,"0","missing","1");
+            result(bridge.call(3,folder.toString(),"Scalar contract"));
+            long scene=bridge.latest().snapshot().entry();
+            nativeReject(bridge,"prefab_template",15,"0","Wrong","registered-components");
+            var created=result(bridge.call(15,"1","Player","registered-components"));prefab=created.snapshot().selection().document();
+            root=created.snapshot().nodes().stream().filter(n->n.document()==prefab&&n.kind()==2).findFirst().orElseThrow().id();
+            result(bridge.call(6));
+            result(bridge.call(9,"2",Long.toUnsignedString(prefab),Long.toUnsignedString(root)));
+            require(bridge.latest().snapshot().fields().size()==4&&!bridge.latest().snapshot().dirty(),"Real scalar schema/defaults or selection dirty");
+            String[] values={"123","1.2345678901234567","false","Игрок Ω"};
+            for(int kind=0;kind<4;kind++) {
+                var f=field(bridge,kind);String before=f.value();long revision=bridge.latest().snapshot().revision();
+                var changed=edit(bridge,f,values[kind]);
+                require(changed.snapshot().revision()==revision+1&&value(bridge,f.key()).equals(values[kind]),"Scalar did not commit one exact transaction");
+                result(bridge.call(7));require(value(bridge,f.key()).equals(before),"Scalar Undo failed");
+                result(bridge.call(8));require(value(bridge,f.key()).equals(values[kind]),"Scalar Redo failed");
+                stored.put(f.key(),values[kind]);
+            }
+            var i=field(bridge,0);var d=field(bridge,1);var b=field(bridge,2);var text=field(bridge,3);
+            long revision=bridge.latest().snapshot().revision(),selection=bridge.latest().snapshot().selectionRevision();
+            for(String invalid:List.of("9223372036854775808","1.5"))nativeReject(bridge,"invalid_value",16,Long.toUnsignedString(selection),i.key(),invalid);
+            nativeReject(bridge,"component.value_rejected",16,Long.toUnsignedString(selection),i.key(),"-1");
+            for(String invalid:List.of("NaN","Inf","1e999","x"))nativeReject(bridge,"invalid_value",16,Long.toUnsignedString(selection),d.key(),invalid);
+            nativeReject(bridge,"invalid_value",16,Long.toUnsignedString(selection),b.key(),"1");
+            nativeReject(bridge,"inspector_string",16,Long.toUnsignedString(selection),text.key(),"bad\nline");
+            nativeReject(bridge,"invalid_utf8_text",16,Long.toUnsignedString(selection),text.key(),String.valueOf((char)0xd800));
+            nativeReject(bridge,"string_limit",16,Long.toUnsignedString(selection),text.key(),"я".repeat(600000));
+            nativeReject(bridge,"string_limit",16,Long.toUnsignedString(selection),text.key(),"x".repeat(1024*1024+1));
+            require(result(bridge.call(4)).snapshot().revision()==revision,"Rejected local encoding damaged the IPC stream or authoring state");
+            nativeReject(bridge,"field_missing",16,Long.toUnsignedString(selection),"missing","1");
+            require(bridge.latest().snapshot().revision()==revision,"Rejected scalar edits mutated project");
+            var component=bridge.latest().snapshot().nodes().stream().filter(n->n.document()==prefab&&n.kind()==5).findFirst().orElseThrow();
+            result(bridge.call(9,"5",Long.toUnsignedString(prefab),Long.toUnsignedString(root),Long.toUnsignedString(component.component()),Long.toUnsignedString(component.part())));
+            require(bridge.latest().snapshot().selection().component()==component.component(),"Component selection lost type/part identity");
+            nativeReject(bridge,"stale_selection",16,Long.toUnsignedString(selection),i.key(),"5");
+            nativeReject(bridge,"selection_missing",9,"5",Long.toUnsignedString(prefab),Long.toUnsignedString(root),"1","0");
+            result(bridge.call(9,"2",Long.toUnsignedString(prefab),Long.toUnsignedString(root)));
+            result(bridge.call(5,Long.toUnsignedString(scene),"Unsaved scene"));
+            result(bridge.call(17,Long.toUnsignedString(scene)));
+            require(bridge.latest().snapshot().dirty()&&bridge.latest().snapshot().documents().stream().anyMatch(doc->doc.id()==prefab&&doc.dirty())&&bridge.latest().snapshot().documents().stream().noneMatch(doc->doc.id()==scene&&doc.dirty()),"Discard affected other document dirty state");
+            result(bridge.call(7));require(bridge.latest().snapshot().documents().stream().anyMatch(doc->doc.id()==scene&&doc.name().equals("Unsaved scene")),"Discard Undo failed");
+            result(bridge.call(8));result(bridge.call(6));
+            var bytes=hashes(folder);result(bridge.call(6));require(bytes.equals(hashes(folder)),"No-op Save rewrote documents");
+            edit(bridge,field(bridge,3),"Discard me");result(bridge.call(17,Long.toUnsignedString(prefab)));
+            require(!bridge.latest().snapshot().dirty()&&value(bridge,text.key()).equals(values[3]),"Discard last dirty document did not restore exact saved value/savepoint");
+            result(bridge.call(15,"2","Unsaved graph"));long draft=bridge.latest().snapshot().selection().document();
+            result(bridge.call(17,Long.toUnsignedString(draft)));require(!bridge.latest().snapshot().dirty()&&bridge.latest().snapshot().documents().stream().noneMatch(doc->doc.id()==draft),"Discard new document retained draft/dirty");
+            result(bridge.call(7));require(bridge.latest().snapshot().documents().stream().anyMatch(doc->doc.id()==draft),"New document discard Undo lost stable ID");result(bridge.call(8));
+            nativeReject(bridge,"command_target",17,"1");
+            result(bridge.call(13));nativeReject(bridge,"playing_readonly",17,Long.toUnsignedString(prefab));
+            result(bridge.call(6));result(bridge.call(14));require(bytes.equals(hashes(folder)),"Play/Save serialized runtime state");
+            oldGeneration=bridge.latest().generation();result(bridge.call(10));result(bridge.call(11));
+        }
+        try(Bridge bridge=new Bridge(executable,directory,state->{})) {
+            result(bridge.connect());var reopened=result(bridge.call(2,folder.resolve("Project.epidemicproj").toString()));
+            require(reopened.generation()!=oldGeneration,"Backend restart reused generation");
+            try { result(bridge.callAt(oldGeneration,reopened.snapshot().revision(),17,Long.toUnsignedString(prefab)));throw new IllegalStateException("Previous-process edit accepted"); }
+            catch(ExecutionException expected){require(expected.getCause().getMessage().contains("stale_generation"),"Wrong cross-process stale diagnostic");}
+            result(bridge.call(9,"2",Long.toUnsignedString(prefab),Long.toUnsignedString(root)));
+            for(var item:stored.entrySet())require(value(bridge,item.getKey()).equals(item.getValue()),"Cross-process scalar value/ID lost");
+            require(!bridge.latest().snapshot().dirty(),"Reopen/selection became dirty");result(bridge.call(10));result(bridge.call(11));
+        }
+        System.out.println("PASS F0 typed Selection, scalar exact commits/history/reopen, stale/type/range errors, isolated document discard/history/savepoint, Play isolation");
+    }
+    static javax.swing.JComponent named(java.awt.Container root,String key) {
+        if(root instanceof javax.swing.JComponent component&&key.equals(component.getName()))return component;
+        for(var child:root.getComponents())if(child instanceof java.awt.Container container){var found=named(container,key);if(found!=null)return found;}
+        return null;
+    }
+    static void scalarWidgets(Path executable,Path directory) throws Exception {
+        var readers=new java.util.concurrent.atomic.AtomicReference<List<ScalarInspector>>(List.of());
+        var pending=new java.util.concurrent.atomic.AtomicReference<CompletableFuture<Bridge.Reply>>();
+        try(Bridge bridge=new Bridge(executable,directory,state->{
+            if(state.reply()!=null)for(var reader:readers.get())reader.refresh(state.reply().generation(),state.reply().snapshot(),state.service()==Bridge.Service.Ready);
+        })) {
+            result(bridge.connect());result(bridge.call(3,directory.resolve("widget-"+System.nanoTime()).toString(),"Widget regression"));
+            result(bridge.call(15,"1","Player","registered-components"));long prefab=bridge.latest().snapshot().selection().document();
+            var node=bridge.latest().snapshot().nodes().stream().filter(n->n.document()==prefab&&n.kind()==2).findFirst().orElseThrow();
+            result(bridge.call(9,"2",Long.toUnsignedString(prefab),Long.toUnsignedString(node.id())));
+            javax.swing.SwingUtilities.invokeAndWait(()->{
+                java.util.function.Function<ScalarInspector.Edit,CompletableFuture<Bridge.Reply>> send=edit->{
+                    var operation=bridge.callAt(edit.generation(),edit.revision(),16,Long.toUnsignedString(edit.selectionRevision()),edit.key(),edit.value());pending.set(operation);return operation;
+                };
+                readers.set(List.of(new ScalarInspector(send),new ScalarInspector(send)));
+                for(var reader:readers.get())reader.refresh(bridge.latest().generation(),bridge.latest().snapshot(),true);
+            });
+            var text=field(bridge,3);long before=bridge.latest().snapshot().revision();
+            javax.swing.SwingUtilities.invokeAndWait(()->{
+                var input=(javax.swing.JTextField)named(readers.get().getFirst(),text.key());input.setText("Cancelled draft");
+                input.getActionMap().get("native.cancel").actionPerformed(new java.awt.event.ActionEvent(input,0,"escape"));
+                require(input.getText().equals(text.value()),"Escape did not restore native scalar");
+            });
+            require(pending.get()==null&&bridge.latest().snapshot().revision()==before,"Escape mutated native authoring");
+            javax.swing.SwingUtilities.invokeAndWait(()->{var input=(javax.swing.JTextField)named(readers.get().getFirst(),text.key());input.setText("UI Кириллица");input.postActionEvent();});
+            result(pending.get());javax.swing.SwingUtilities.invokeAndWait(()->{});javax.swing.SwingUtilities.invokeAndWait(()->{
+                require(((javax.swing.JTextField)named(readers.get().get(1),text.key())).getText().equals("UI Кириллица"),"Second Inspector did not receive shared native commit");
+            });
+            javax.swing.SwingUtilities.invokeAndWait(()->((javax.swing.JTextField)named(readers.get().getFirst(),text.key())).setText("Pending second edit"));
+            result(bridge.call(4));javax.swing.SwingUtilities.invokeAndWait(()->{});javax.swing.SwingUtilities.invokeAndWait(()->{
+                var input=(javax.swing.JTextField)named(readers.get().getFirst(),text.key());require(input.getText().equals("Pending second edit"),"Native refresh overwrote an uncommitted second edit");
+                input.getActionMap().get("native.cancel").actionPerformed(new java.awt.event.ActionEvent(input,0,"escape"));
+            });
+            var decimal=field(bridge,1);
+            javax.swing.SwingUtilities.invokeAndWait(()->{var input=(javax.swing.JTextField)named(readers.get().getFirst(),decimal.key());input.setText("NaN");input.postActionEvent();});
+            try{result(pending.get());throw new IllegalStateException("Inspector accepted NaN");}catch(ExecutionException expected){require(expected.getCause().getMessage().contains("invalid_value"),"Wrong widget error");}
+            javax.swing.SwingUtilities.invokeAndWait(()->{});javax.swing.SwingUtilities.invokeAndWait(()->{
+                var input=(javax.swing.JTextField)named(readers.get().getFirst(),decimal.key());
+                require(input.getText().equals("NaN")&&((javax.swing.JTextField)named(readers.get().get(1),decimal.key())).getText().equals(decimal.value()),"Failed draft overwrote native/other Inspector");
+                input.getActionMap().get("native.cancel").actionPerformed(new java.awt.event.ActionEvent(input,0,"escape"));
+            });
+            javax.swing.SwingUtilities.invokeAndWait(()->{
+                var input=(javax.swing.JTextField)named(readers.get().getFirst(),text.key());
+                input.setText("Stale UI draft");
+            });
+            result(bridge.call(5,Long.toUnsignedString(bridge.latest().snapshot().entry()),"Concurrent scene edit"));javax.swing.SwingUtilities.invokeAndWait(()->{});
+            javax.swing.SwingUtilities.invokeAndWait(()->((javax.swing.JTextField)named(readers.get().getFirst(),text.key())).postActionEvent());
+            try{result(pending.get());throw new IllegalStateException("Stale UI draft accepted");}catch(ExecutionException expected){require(expected.getCause().getMessage().contains("stale_revision"),"Wrong stale widget diagnostic");}
+            javax.swing.SwingUtilities.invokeAndWait(()->{});javax.swing.SwingUtilities.invokeAndWait(()->{
+                var input=(javax.swing.JTextField)named(readers.get().getFirst(),text.key());input.getActionMap().get("native.cancel").actionPerformed(new java.awt.event.ActionEvent(input,0,"escape"));
+                var previous=pending.get();readers.get().getFirst().refresh(bridge.latest().generation()+1,bridge.latest().snapshot(),true);input.setText("Old generation control");input.postActionEvent();
+                require(pending.get()==previous,"Detached old-generation control sent a write");readers.get().getFirst().refresh(bridge.latest().generation(),bridge.latest().snapshot(),true);
+            });
+            var flushing=new java.util.concurrent.atomic.AtomicReference<CompletableFuture<Void>>();
+            javax.swing.SwingUtilities.invokeAndWait(()->{
+                ((javax.swing.JTextField)named(readers.get().getFirst(),text.key())).setText("Saved draft");flushing.set(readers.get().getFirst().flush());
+            });
+            flushing.get().get(20,TimeUnit.SECONDS);result(bridge.call(6));
+            require(value(bridge,text.key()).equals("Saved draft")&&!bridge.latest().snapshot().dirty(),"Save flush lost pending native scalar");
+            result(bridge.call(10));result(bridge.call(11));
+        }
+        System.out.println("PASS F0 real scalar widgets: Escape/no write, Enter/native commit, shared second view, inline invalid draft isolation, flush-before-Save");
     }
     public static void main(String[] args) throws Exception {
         Path directory = Path.of(args[0]); Files.createDirectories(directory);
         Path project = directory.resolve("Game-" + System.nanoTime());
         Path executable = Path.of(System.getProperty("epidemic.ui.backend"));
-        presentation(); documentReaders(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);
+        presentation(); documentReaders(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);scalarAndDiscard(executable,directory);scalarWidgets(executable,directory);
         try (Bridge bridge = new Bridge(executable, directory, state -> { })) {
             require(result(bridge.connect()).snapshot() == null, "Handshake created a project");
             var opened = result(bridge.call(3, project.toString(), "Новая игра"));

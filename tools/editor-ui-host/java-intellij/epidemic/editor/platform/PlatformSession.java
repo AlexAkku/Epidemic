@@ -60,6 +60,17 @@ public final class PlatformSession implements Disposable {
     private String context="",selectedPanel="scene.editor";
     private DefaultActionGroup menu;
     private AnAction saveAction,saveAllAction,undoAction,redoAction,playAction,stopAction,playToggleAction;
+    private Bridge.Selection pendingSelection;
+    private Bridge.Selection reconnectSelection;
+    private boolean selecting;
+    private boolean rejectedCommand;
+    private final Set<VirtualFile> pendingDocumentCloses=new HashSet<>();
+    private final Deque<Runnable> readyActions=new ArrayDeque<>();
+    private record FloatingGuard(List<WindowListener> originals,WindowListener guard){}
+    private Integer smokeWindowChoice;
+    private int smokeClosePrompts;
+    private CompletableFuture<Bridge.Reply> activeSave;
+    private final Map<Window,FloatingGuard> floatingGuards=new HashMap<>();
     private FeatureRegistry.Feature lifecycleFeature,playFeature;
     private ToolWindow navigation,primary,secondary,bottom;
     private final VetoableProjectManagerListener closeGuard=new VetoableProjectManagerListener(){
@@ -159,19 +170,62 @@ public final class PlatformSession implements Disposable {
     private void connect(int operation,String...args){
         if(service==Bridge.Service.Loading||opened)return;
         service=Bridge.Service.Loading;
-        if(bridge==null){bridge=new Bridge(Path.of(System.getProperty("epidemic.ui.backend")),output,this::state);bridge.connect().thenCompose(reply->bridge.call(operation,args)).whenComplete((reply,error)->edt(()->{if(error!=null)failure(error);else workspace(reply.snapshot());}));}
+        if(bridge==null){bridge=new Bridge(Path.of(System.getProperty("epidemic.ui.backend")),output,this::state,this::edt);bridge.connect().thenCompose(reply->bridge.call(operation,args)).whenComplete((reply,error)->edt(()->{if(error!=null)failure(error);else workspace(reply.snapshot());}));}
         else bridge.call(operation,args).whenComplete((reply,error)->edt(()->{if(error!=null)failure(error);else workspace(reply.snapshot());}));
     }
     private void state(Bridge.State state){
         service=state.service();
-        if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot);for(var view:List.copyOf(views)){view.reader().refresh(snapshot);refreshDocument(view);}refreshDocumentCommands();}
+        boolean rejected=service==Bridge.Service.Ready&&!state.diagnostic().isEmpty();
+        if(service==Bridge.Service.Ready)rejectedCommand=rejected;
+        if(rejected){pendingSelection=null;if(tools!=null)tools.log(state.diagnostic());}
+        if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot,rejected);for(var view:List.copyOf(views)){view.reader().refresh(snapshot,rejected);refreshDocument(view);}refreshDocumentCommands();
+            JFrame frame=WindowManager.getInstance().getFrame(project);if(frame!=null)frame.setTitle("Epidemic — "+snapshot.title()+" · "+snapshot.path()+(snapshot.dirty()?" · Unsaved":"")+(service==Bridge.Service.Loading?" · Working…":service==Bridge.Service.Error?" · Disconnected — read-only":""));
+        }
+        if(state.service()==Bridge.Service.Ready)flushSelection();
+        if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){return new UiPanels(catalog,features,this::openDocument,selection->command(9,Integer.toString(selection.kind()),Long.toUnsignedString(selection.document()),Long.toUnsignedString(selection.element())),this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument);}
+    private UiPanels reader(){return new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument,this::editField);}
+    private CompletableFuture<Bridge.Reply> editField(ScalarInspector.Edit edit){
+        if(!supports("scalar-inspector")||snapshot.playing()||!pendingDocumentCloses.isEmpty())return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
+        service=Bridge.Service.Loading;refreshDocumentCommands();
+        return bridge.callAt(edit.generation(),edit.revision(),16,Long.toUnsignedString(edit.selectionRevision()),edit.key(),edit.value());
+    }
+    private CompletableFuture<Bridge.Reply> saveProject(){
+        if(activeSave!=null&&!activeSave.isDone())return activeSave;
+        CompletableFuture<Bridge.Reply> result=new CompletableFuture<>();Bridge participant=bridge;
+        activeSave=result;
+        long projectId=snapshot==null?0:snapshot.project();
+        List<CompletableFuture<Void>> flushes=new ArrayList<>();if(tools!=null)flushes.add(tools.flushDrafts());
+        for(var view:views)flushes.add(view.reader().flushDrafts());
+        CompletableFuture.allOf(flushes.toArray(CompletableFuture[]::new)).whenComplete((v,error)->edt(()->{
+            if(error!=null)result.completeExceptionally(error);else saveReady(participant,projectId,result);
+        }));return result;
+    }
+    private void saveReady(Bridge participant,long projectId,CompletableFuture<Bridge.Reply> result){
+        if(bridge!=participant||snapshot==null||snapshot.project()!=projectId||service==Bridge.Service.Error){result.completeExceptionally(new IOException("ui.session_changed"));return;}
+        if(service==Bridge.Service.Loading){if(readyActions.size()>=32)result.completeExceptionally(new IOException("ui.queue_full"));else readyActions.addLast(()->saveReady(participant,projectId,result));return;}
+        service=Bridge.Service.Loading;refreshDocumentCommands();
+        participant.call(6).whenComplete((reply,error)->edt(()->{if(error!=null)result.completeExceptionally(error);else result.complete(reply);}));
+    }
+    private void select(Bridge.Selection selection){pendingSelection=selection;flushSelection();}
+    private void flushSelection(){
+        if(!ready()||selecting||pendingSelection==null||!pendingDocumentCloses.isEmpty())return;
+        var next=pendingSelection;pendingSelection=null;
+        if(next.equals(snapshot.selection()))return;
+        selecting=true;Bridge participant=bridge;
+        participant.call(9,Integer.toString(next.kind()),Long.toUnsignedString(next.document()),Long.toUnsignedString(next.element()),Long.toUnsignedString(next.component()),Long.toUnsignedString(next.part())).whenComplete((reply,error)->edt(()->{
+            if(bridge!=participant)return;selecting=false;if(error!=null)documentFailure(error);flushSelection();
+        }));
+    }
     private void refreshDocumentCommands(){
         boolean enabled=supports("create-document")&&!snapshot.playing();
         if(tools!=null)tools.documentCommandsEnabled(enabled);
         for(var view:views)view.reader().documentCommandsEnabled(enabled);
+        long generation=bridge==null||bridge.latest()==null?0:bridge.latest().generation();
+        boolean interactive=ready()&&pendingDocumentCloses.isEmpty();
+        if(tools!=null)tools.sessionState(generation,interactive);
+        for(var view:views)view.reader().sessionState(generation,interactive);
     }
     private Bridge.Document resolveDocument(VirtualFile file){
         var key=file.getUserData(PanelEditorProvider.DOCUMENT);
@@ -179,7 +233,7 @@ public final class PlatformSession implements Disposable {
     }
     private void selectDocument(VirtualFile file){
         var doc=resolveDocument(file);
-        if(doc!=null&&ready()&&snapshot.selection().document()!=doc.id())command(9,"0",Long.toUnsignedString(doc.id()),"0");
+        if(doc!=null&&snapshot.selection().document()!=doc.id())select(new Bridge.Selection(0,doc.id(),0));
     }
     private void openDocument(Bridge.Document document){
         if(!ready())return;
@@ -191,9 +245,11 @@ public final class PlatformSession implements Disposable {
         if(!supports("create-document")||snapshot.playing())return;
         Bridge participant=bridge;long generation=participant.latest().generation(),revision=snapshot.revision();
         String label=new String[]{"Scene","Prefab","Graph"}[kind];
-        String name=Messages.showInputDialog(project,"Document name","New "+label,Messages.getQuestionIcon(),label,null);
-        if(name==null)return;
-        participant.callAt(generation,revision,15,Integer.toString(kind),name).whenComplete((reply,error)->edt(()->{
+        JTextField nameInput=new JTextField(label);JCheckBox defaults=new JCheckBox("Registered Health / Movement components",true);
+        JPanel form=new JPanel(new GridLayout(0,1,6,6));form.add(new JLabel("Document name"));form.add(nameInput);if(kind==1)form.add(defaults);
+        if(JOptionPane.showConfirmDialog(WindowManager.getInstance().getFrame(project),form,"New "+label,JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
+        String[] args=kind==1&&defaults.isSelected()?new String[]{"1",nameInput.getText(),"registered-components"}:new String[]{Integer.toString(kind),nameInput.getText()};
+        participant.callAt(generation,revision,15,args).whenComplete((reply,error)->edt(()->{
             if(error!=null){documentFailure(error);return;}
             if(bridge!=participant||bridge.latest().generation()!=reply.generation())return;
             reply.snapshot().documents().stream().filter(d->d.id()==reply.snapshot().selection().document()).findFirst().ifPresent(this::openDocument);
@@ -216,7 +272,14 @@ public final class PlatformSession implements Disposable {
         var key=view.file().getUserData(PanelEditorProvider.DOCUMENT);if(key==null)return;
         var doc=resolveDocument(view.file());
         view.title().setText(doc==null?"Document missing or stale — refresh/open from Project Explorer":
-            doc.name()+" · ID "+Long.toUnsignedString(doc.id())+" · Revision "+doc.revision());
+            doc.name()+" · ID "+Long.toUnsignedString(doc.id())+" · Revision "+doc.revision()+(doc.dirty()?" · Unsaved":""));
+        if(doc!=null){
+            Boolean old=view.file().getUserData(PanelEditorProvider.DIRTY);view.file().putUserData(PanelEditorProvider.DIRTY,doc.dirty());
+            if(!Objects.equals(old,doc.dirty())){
+                for(FileEditor editor:FileEditorManager.getInstance(project).getAllEditors(view.file()))if(editor instanceof PanelEditorProvider.Editor bound)bound.modified(Boolean.TRUE.equals(old),doc.dirty());
+                FileEditorManager.getInstance(project).updateFilePresentation(view.file());
+            }
+        }
         if(doc!=null&&!view.file().getName().equals(doc.name()))ApplicationManager.getApplication().runWriteAction(()->{
             try{view.file().rename(this,doc.name());FileEditorManager.getInstance(project).updateFilePresentation(view.file());}catch(IOException error){failure(error);}
         });
@@ -239,6 +302,10 @@ public final class PlatformSession implements Disposable {
         }
         for(var view:views)refreshDocument(view);
         refreshDocumentCommands();
+        if(reconnectSelection!=null){
+            var wanted=reconnectSelection;reconnectSelection=null;
+            if(wanted.document()==0||wanted.kind()==0&&value.documents().stream().anyMatch(d->d.id()==wanted.document())||value.nodes().stream().anyMatch(n->n.selection().equals(wanted)))select(wanted);
+        }
         CompletableFuture.runAsync(()->{try{recent.opened(value);}catch(IOException e){throw new UncheckedIOException(e);}},io).exceptionally(e->{edt(()->failure(e));return null;});
         if(tools==null){
             tools=reader();tools.refresh(snapshot);
@@ -267,13 +334,14 @@ public final class PlatformSession implements Disposable {
             if(recoveringSmoke)later(500,()->{
                 require(snapshot.project()==recoveryProject&&views.size()==recoveryViews&&Set.copyOf(views).equals(recoveryReaders)&&frame.getBounds().equals(recoveryBounds),"Reconnect duplicated/lost project, view identities or frame bounds");
                 for(var view:views)if(view.file().getUserData(PanelEditorProvider.DOCUMENT)!=null)require(resolveDocument(view.file())!=null&&!view.title().getText().startsWith("Document missing"),"Reconnect left a stale document view");
-                record("PASS Platform crash/reconnect: same project identity and view instances; single replacement companion");close(true);
+                record("PASS Platform crash/reconnect: same project identity and view instances; single replacement companion");smokeCloseAllViews();
             });else later(1800,this::verify);
         }else if(initialDocuments&&Files.exists(profile.resolve("platform-panels.properties")))restorePanels();
     }
     private void add(String id,ToolWindow window){
         Content content=contents.get(id);
         if(content==null){content=ContentFactory.getInstance().createContent(tools.view(id),catalog.panel(id).label(),true);contents.put(id,content);}
+        if(saveAction!=null)registerWorkspaceShortcuts(content.getComponent());
         if(content.getManager()!=window.getContentManager()){
             if(content.getManager()!=null)content.getManager().removeContent(content,false);
             window.getContentManager().addContent(content);
@@ -311,7 +379,7 @@ public final class PlatformSession implements Disposable {
                 if(!id.startsWith(identity.panel()+":"))return;
             }
             VirtualFile file=documents.get(id);
-            if(file==null){LightVirtualFile created=new LightVirtualFile(document==null?panel.label():document.name(),"");created.putUserData(PanelEditorProvider.PANEL,id);created.putUserData(PanelEditorProvider.DOCUMENT,identity);documents.put(id,created);file=created;}
+            if(file==null){LightVirtualFile created=new LightVirtualFile(document==null?panel.label():document.name(),"");created.putUserData(PanelEditorProvider.PANEL,id);created.putUserData(PanelEditorProvider.DOCUMENT,identity);created.putUserData(PanelEditorProvider.OWNER,this);documents.put(id,created);file=created;}
             FileEditorManager manager=FileEditorManager.getInstance(project);manager.openFile(file,true);manager.setSelectedEditor(file,"epidemic.platform.panel");selectedPanel=id;context(Catalog.context(id));
             selectDocument(file);
         }else{
@@ -330,7 +398,10 @@ public final class PlatformSession implements Disposable {
         ActionToolbar toolbar=ActionManager.getInstance().createActionToolbar("Epidemic.Document.Toolbar",commands,true);toolbar.setTargetComponent(root);
         JPanel header=new JPanel(new BorderLayout());header.add(toolbar.getComponent(),BorderLayout.NORTH);JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(reader.view(id));
         registerWorkspaceShortcuts(root);
-        DocumentView view=new DocumentView(reader,root,file,title);views.add(view);refreshDocument(view);refreshDocumentCommands();return view;
+        for(var canvas:reader.nativeViews().values())canvas.addFocusListener(new FocusAdapter(){@Override public void focusGained(FocusEvent event){if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)selectDocument(file);else if(snapshot!=null&&snapshot.selection().document()!=snapshot.entry())select(new Bridge.Selection(0,snapshot.entry(),0));}});
+        DocumentView view=new DocumentView(reader,root,file,title);views.add(view);
+        root.addHierarchyListener(event->{if((event.getChangeFlags()&(HierarchyEvent.PARENT_CHANGED|HierarchyEvent.SHOWING_CHANGED))!=0)edt(()->guardFloatingWindow(view));});
+        refreshDocument(view);refreshDocumentCommands();return view;
     }
     public void release(DocumentView view){
         views.remove(view);
@@ -339,7 +410,83 @@ public final class PlatformSession implements Disposable {
         view.component().putClientProperty("epidemic.shortcuts",null);
         view.component().removeAll();
     }
-    private boolean ready(){return opened&&!closing&&bridge!=null&&service==Bridge.Service.Ready&&snapshot!=null;}
+    public boolean documentModified(VirtualFile file){var doc=resolveDocument(file);return doc!=null&&doc.dirty();}
+    public boolean canCloseDocument(VirtualFile file){
+        if(activeSave!=null&&!activeSave.isDone()){
+            var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);var target=manager.getCurrentWindow();
+            activeSave.whenComplete((reply,error)->{if(error==null)edt(()->{if(opened&&target!=null&&target.getComposite(file)!=null)manager.closeFileWithChecks(file,target);});});return false;
+        }
+        if(!ready()){
+            if(service==Bridge.Service.Loading&&readyActions.size()<32){
+                var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);var target=manager.getCurrentWindow();
+                readyActions.addLast(()->{if(opened&&!rejectedCommand&&target!=null&&target.getComposite(file)!=null)manager.closeFileWithChecks(file,target);});
+            }
+            return false;
+        }
+        if(!documentModified(file))return true;
+        if(!ready()||pendingDocumentCloses.contains(file))return false;
+        var target=((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).getCurrentWindow();
+        int decision=promptDocumentClose(file);
+        requestDocumentClose(file,decision,null,target);return false;
+    }
+    private int promptDocumentClose(VirtualFile file){if(smoke&&smokeWindowChoice!=null){smokeClosePrompts++;return smokeWindowChoice;}return Messages.showYesNoCancelDialog(project,"Save all project changes, or discard only this document? Other documents and imported assets are retained.","Close "+file.getName(),"Save All","Discard Document","Cancel",Messages.getQuestionIcon());}
+    private void guardFloatingWindow(DocumentView view){
+        Window window=SwingUtilities.getWindowAncestor(view.component());
+        if(window==null||window==WindowManager.getInstance().getFrame(project)||floatingGuards.containsKey(window))return;
+        if(smoke)record("INFO F0 floating candidate="+window.getClass().getName()+" showing="+window.isShowing()+" listeners="+Arrays.stream(window.getWindowListeners()).map(listener->listener.getClass().getName()).toList());
+        // Platform 253 closes DockWindow contents without VirtualFilePreCloseCheck.
+        // Keep its original lifecycle/docking handler, gating only native dirty close.
+        List<WindowListener> originals=Arrays.stream(window.getWindowListeners()).filter(listener->Set.of("com.intellij.ui.docking.impl.DockWindow$installListeners$1","com.intellij.openapi.ui.FrameWrapper$createContents$windowListener$1").contains(listener.getClass().getName())).toList();
+        if(originals.size()!=2)return;
+        WindowAdapter guard=new WindowAdapter(){
+            @Override public void windowClosing(WindowEvent event){com.intellij.openapi.application.WriteIntentReadAction.run((Runnable)()->closeFloatingWindow(window,smoke?smokeWindowChoice:null));}
+            @Override public void windowClosed(WindowEvent event){floatingGuards.remove(window);originals.forEach(listener->listener.windowClosed(event));}
+            @Override public void windowOpened(WindowEvent event){originals.forEach(listener->listener.windowOpened(event));}
+            @Override public void windowIconified(WindowEvent event){originals.forEach(listener->listener.windowIconified(event));}
+            @Override public void windowDeiconified(WindowEvent event){originals.forEach(listener->listener.windowDeiconified(event));}
+            @Override public void windowActivated(WindowEvent event){originals.forEach(listener->listener.windowActivated(event));}
+            @Override public void windowDeactivated(WindowEvent event){originals.forEach(listener->listener.windowDeactivated(event));}
+        };
+        originals.forEach(window::removeWindowListener);window.addWindowListener(guard);floatingGuards.put(window,new FloatingGuard(originals,guard));
+    }
+    private void closeFloatingWindow(Window window,Integer suppliedDecision){
+        FloatingGuard guard=floatingGuards.get(window);if(guard==null||!window.isDisplayable())return;
+        if(activeSave!=null&&!activeSave.isDone()){activeSave.whenComplete((reply,error)->{if(error==null)edt(()->closeFloatingWindow(window,suppliedDecision));});return;}
+        if(!ready()){
+            if(service==Bridge.Service.Loading&&readyActions.size()<32)readyActions.addLast(()->closeFloatingWindow(window,suppliedDecision));
+            return;
+        }
+        var dirty=views.stream().filter(view->SwingUtilities.getWindowAncestor(view.component())==window).map(DocumentView::file).filter(this::documentModified).findFirst();
+        if(dirty.isEmpty()){var event=new WindowEvent(window,WindowEvent.WINDOW_CLOSING);guard.originals().forEach(listener->listener.windowClosing(event));return;}
+        int decision=suppliedDecision==null?promptDocumentClose(dirty.get()):suppliedDecision;
+        var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);
+        var target=Arrays.stream(manager.getWindows()).filter(editor->editor.getComposite(dirty.get())!=null&&SwingUtilities.getWindowAncestor(editor.getTabbedPane().getComponent())==window).findFirst().orElse(null);
+        requestDocumentClose(dirty.get(),decision,()->closeFloatingWindow(window,null),target);
+    }
+    private void requestDocumentClose(VirtualFile file,int decision,Runnable afterClose,com.intellij.openapi.fileEditor.impl.EditorWindow target){
+        if(decision==Messages.CANCEL||pendingDocumentCloses.contains(file))return;
+        if(!ready()){
+            if(service==Bridge.Service.Loading&&readyActions.size()<32)readyActions.addLast(()->{if(opened&&(!rejectedCommand||decision==Messages.NO))requestDocumentClose(file,decision,afterClose,target);});
+            return;
+        }
+        if(target==null||target.getComposite(file)==null){documentFailure(new IOException("ui.document_window_missing"));return;}
+        var doc=resolveDocument(file);if(doc==null){pendingDocumentCloses.remove(file);return;}
+        Bridge participant=bridge;var identity=file.getUserData(PanelEditorProvider.DOCUMENT);
+        if(decision==Messages.NO){if(tools!=null)tools.cancelDrafts(doc.id());for(var view:views)view.reader().cancelDrafts(doc.id());}
+        var operation=decision==Messages.YES?saveProject():participant.callAt(identity.generation(),snapshot.revision(),17,Long.toUnsignedString(doc.id()));
+        pendingDocumentCloses.add(file);
+        refreshDocumentCommands();
+        operation.whenComplete((reply,error)->edt(()->{
+            pendingDocumentCloses.remove(file);
+            if(bridge!=participant)return;
+            if(error!=null){documentFailure(error);refreshDocumentCommands();return;}
+            if(identity.project()==snapshot.project()&&target.getComposite(file)!=null)((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).closeFile(file,target);
+            refreshDocumentCommands();flushSelection();
+            if(afterClose!=null)edt(afterClose);
+            if(!readyActions.isEmpty())edt(readyActions.removeFirst());
+        }));
+    }
+    private boolean ready(){return opened&&!closing&&pendingDocumentCloses.isEmpty()&&bridge!=null&&service==Bridge.Service.Ready&&snapshot!=null;}
     private boolean supports(String capability){return ready()&&bridge.latest()!=null&&bridge.latest().capabilities().contains(capability);}
     private boolean canClone(){return supports("clone-folder")&&snapshot.storage()==2&&!snapshot.dirty();}
     private void playback(boolean play){
@@ -388,8 +535,8 @@ public final class PlatformSession implements Disposable {
         for(String name:List.of("File","Edit","View","Project","Assets","GameObject","Graph","Build","Tools","Window","Help")){DefaultActionGroup group=new DefaultActionGroup(name,true);menu.add(group);sub.put(name,group);}
         lifecycleFeature=features.add("project.lifecycle","Project commands","F0","Native Workspace lifecycle",true);
         playFeature=features.add("play.session","Play / Stop","F0","Native isolated session lifecycle; Game View integration remains planned",true);
-        saveAction=action("Save",()->command(6),this::ready);
-        saveAllAction=action("Save All",()->command(6),this::ready);
+        saveAction=action("Save",()->saveProject().whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));}),()->opened&&!closing&&service!=Bridge.Service.Error);
+        saveAllAction=action("Save All",()->saveProject().whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));}),()->opened&&!closing&&service!=Bridge.Service.Error);
         undoAction=action("Undo",()->command(7),()->ready()&&snapshot.canUndo()&&!editableTextFocus());
         redoAction=action("Redo",()->command(8),()->ready()&&snapshot.canRedo()&&!editableTextFocus());
         playAction=action("Play",()->playback(true),()->supports("play")&&supports("stop")&&!snapshot.playing());
@@ -418,11 +565,13 @@ public final class PlatformSession implements Disposable {
         if(Boolean.getBoolean("epidemic.ui.standalone")){mainMenu.removeAll();mainMenu.addAll(menu.getChildren(actions));}
         else mainMenu.add(menu);
         registerWorkspaceShortcuts(WindowManager.getInstance().getFrame(project).getRootPane());
+        for(Content content:contents.values())registerWorkspaceShortcuts(content.getComponent());
     }
     private static boolean editableTextFocus(){
         return KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof javax.swing.text.JTextComponent text&&text.isEditable();
     }
     private void registerWorkspaceShortcuts(JComponent target){
+        if(target.getClientProperty("epidemic.shortcuts")!=null)return;
         Disposable lifetime=com.intellij.openapi.util.Disposer.newDisposable("Epidemic workspace shortcuts");
         com.intellij.openapi.util.Disposer.register(this,lifetime);
         target.putClientProperty("epidemic.shortcuts",lifetime);
@@ -437,9 +586,11 @@ public final class PlatformSession implements Disposable {
     private CompletableFuture<Void> savePanels(){Properties prefs=new Properties();prefs.setProperty("version","1");prefs.setProperty("selected",selectedPanel);prefs.setProperty("documents",String.join(",",documents.keySet()));for(var entry:groups.entrySet()){ToolWindow tool=entry.getValue();prefs.setProperty(entry.getKey()+".type",tool.getType().toString());prefs.setProperty(entry.getKey()+".anchor",tool.getAnchor().toString());prefs.setProperty(entry.getKey()+".split",Boolean.toString(tool.isSplitMode()));}
         return CompletableFuture.runAsync(()->{try{Files.createDirectories(profile);Path staging=Files.createTempFile(profile,"panels-",".tmp");try(Writer writer=Files.newBufferedWriter(staging)){prefs.store(writer,"Epidemic panel IDs; detailed editor split/window geometry is owned/persisted by IntelliJ in its SDK container");}try{Files.move(staging,profile.resolve("platform-panels.properties"),StandardCopyOption.REPLACE_EXISTING,StandardCopyOption.ATOMIC_MOVE);}catch(AtomicMoveNotSupportedException e){Files.move(staging,profile.resolve("platform-panels.properties"),StandardCopyOption.REPLACE_EXISTING);}}catch(IOException e){throw new UncheckedIOException(e);}},io).whenComplete((v,e)->{if(e!=null)edt(()->failure(e));});}
     private void restorePanels(){CompletableFuture.supplyAsync(()->{Properties prefs=new Properties();try(Reader reader=Files.newBufferedReader(profile.resolve("platform-panels.properties"))){prefs.load(reader);if(!prefs.getProperty("version","").equals("1"))throw new IOException("Unknown panel preference version");return prefs;}catch(IOException e){throw new UncheckedIOException(e);}},io).whenComplete((prefs,error)->edt(()->{if(error!=null){failure(error);return;}try{for(String id:prefs.getProperty("documents","").split(","))if(catalog.contains(id))open(id);for(var entry:groups.entrySet()){ToolWindow tool=entry.getValue();String key=entry.getKey();tool.setType(ToolWindowType.valueOf(prefs.getProperty(key+".type","DOCKED")),null);tool.setAnchor(ToolWindowAnchor.fromText(prefs.getProperty(key+".anchor",tool.getAnchor().toString())),null);tool.setSplitMode(Boolean.parseBoolean(prefs.getProperty(key+".split","false")),null);}String selected=prefs.getProperty("selected","scene.editor");if(catalog.contains(selected))open(selected);}catch(Exception e){failure(e);resetPanels();}}));}
-    private void reconnect(){String path=snapshot.path();Bridge old=bridge;bridge=null;if(old!=null)old.close();service=Bridge.Service.Unavailable;opened=false;connect(2,path);}
+    private void reconnect(){String path=snapshot.path();reconnectSelection=snapshot.selection();pendingSelection=null;selecting=false;Bridge old=bridge;bridge=null;if(old!=null)old.close();service=Bridge.Service.Unavailable;opened=false;connect(2,path);}
     private void close(boolean exit){
         if(closing)return;
+        if(activeSave!=null&&!activeSave.isDone()&&service!=Bridge.Service.Error){activeSave.whenComplete((reply,error)->{if(error==null)edt(()->close(exit));});return;}
+        if(service==Bridge.Service.Loading||!pendingDocumentCloses.isEmpty()){if(readyActions.size()<32)readyActions.addLast(()->close(exit));return;}
         if(service==Bridge.Service.Error){
             if(Messages.showYesNoDialog(project,"The backend is disconnected. Unsaved native edits cannot be saved. Close this session and keep the last committed project?","Disconnected Project",Messages.getWarningIcon())!=Messages.YES){return;}
             if(bridge!=null)bridge.close();bridge=null;closedUi(exit);return;
@@ -448,7 +599,7 @@ public final class PlatformSession implements Disposable {
         if(snapshot!=null&&snapshot.dirty()){
             int answer=Messages.showYesNoCancelDialog(project,"Save project changes before closing?","Epidemic Project","Save","Discard","Cancel",Messages.getQuestionIcon());
             if(answer==Messages.CANCEL){return;}
-            if(answer==Messages.YES){command(6);bridge.call(4).whenComplete((r,e)->edt(()->{if(e!=null)failure(e);else close(exit);}));return;}
+            if(answer==Messages.YES){saveProject().whenComplete((r,e)->edt(()->{if(e!=null)documentFailure(e);else close(exit);}));return;}
             discard=true;
         }
         closing=true;
@@ -456,9 +607,9 @@ public final class PlatformSession implements Disposable {
             closing=false;if(error!=null){failure(error);return;}closedUi(exit);
         }));
     }
-    private void closedUi(boolean exit){opened=false;snapshot=null;FileEditorManager manager=FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
+    private void closedUi(boolean exit){opened=false;snapshot=null;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
     private void exit(){if(opened){close(true);return;}finish();}
-    private void finish(){if(bridge==null){exitApplication();return;}bridge.shutdown().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}record("PASS Platform native shutdown; surfaces="+NativeViewport.metrics()[0]);exitApplication();}));}
+    private void finish(){if(bridge==null){exitApplication();return;}bridge.shutdown().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}if(smoke)require(NativeViewport.metrics()[0]==0,"Project close leaked native surfaces");record("PASS Platform native shutdown; surfaces="+NativeViewport.metrics()[0]);exitApplication();}));}
     private void exitApplication(){
         if(smoke){
             int errors=com.intellij.diagnostic.MessagePool.getInstance().getFatalErrors(true,true).size();
@@ -469,7 +620,7 @@ public final class PlatformSession implements Disposable {
     }
     private void failure(Throwable error){while(error.getCause()!=null)error=error.getCause();record("ERROR "+error);if(launcherStatus!=null)launcherStatus.setText(error.getMessage());if(tools!=null)tools.log(error.toString());if(smoke){record("FAIL Platform smoke");ApplicationManager.getApplication().exit(true,true,false,1);}}
     private static void require(boolean result,String message){if(!result)throw new IllegalStateException(message);}
-    private void later(int milliseconds,Runnable action){javax.swing.Timer timer=new javax.swing.Timer(milliseconds,event->{try{action.run();}catch(Throwable e){failure(e);}});timer.setRepeats(false);timer.start();}
+    private void later(int milliseconds,Runnable action){javax.swing.Timer timer=new javax.swing.Timer(milliseconds,event->edt(action));timer.setRepeats(false);timer.start();}
     private NativeViewport viewport(){for(DocumentView view:views)for(NativeViewport nativeView:view.reader().nativeViews().values())if(nativeView.isShowing())return nativeView;return null;}
     private void capture(String name){try{JFrame frame=WindowManager.getInstance().getFrame(project);BufferedImage image=new BufferedImage(frame.getWidth(),frame.getHeight(),BufferedImage.TYPE_INT_RGB);Graphics2D graphics=image.createGraphics();frame.printAll(graphics);NativeViewport viewport=viewport();if(viewport!=null){Path gpu=output.resolve(name+"-gpu.png");viewport.captureTo(gpu.toString());Point point=SwingUtilities.convertPoint(viewport,0,0,frame);graphics.drawImage(ImageIO.read(gpu.toFile()),point.x,point.y,viewport.getWidth(),viewport.getHeight(),null);}graphics.dispose();ImageIO.write(image,"png",output.resolve(name+".png").toFile());record("INFO own-window diagnostic print/GPU capture="+name+".png");}catch(IOException e){throw new UncheckedIOException(e);}}
     private void verify(){
@@ -480,6 +631,9 @@ public final class PlatformSession implements Disposable {
         long main=nativeView.rootWindow();capture("ui-platform-scene");record("PASS Platform 4 documents/2 navigation tabs/right Prefab/native viewport HWND="+main+" launcher-to-project-ms="+(System.nanoTime()-started)/1e6);
         primary.setType(ToolWindowType.WINDOWED,()->primary.show(()->later(700,()->{
             Window detached=SwingUtilities.getWindowAncestor(primary.getContentManager().getComponent());long root=NativeViewport.windowHandle(detached);require(root!=0&&root!=main,"IntelliJ Window mode has no distinct HWND");
+            Content active=primary.getContentManager().getSelectedContent();require(active!=null,"Floating Inspector has no selected content");
+            require(active.getComponent().getClientProperty("epidemic.shortcuts") instanceof Disposable,"Floating Inspector content has no workspace actions: "+active.getDisplayName());
+            require(SwingUtilities.getWindowAncestor(active.getComponent())==detached,"Floating Inspector active content is outside its window");
             try{BufferedImage image=new BufferedImage(detached.getWidth(),detached.getHeight(),BufferedImage.TYPE_INT_RGB);Graphics2D graphics=image.createGraphics();detached.printAll(graphics);graphics.dispose();ImageIO.write(image,"png",output.resolve("ui-platform-inspector-windowed.png").toFile());}catch(IOException e){throw new UncheckedIOException(e);}
             record("PASS Platform Window mode distinct HWND="+root+" native selection="+snapshot.selection());
             primary.setType(ToolWindowType.DOCKED,()->primary.show(()->{capture("ui-platform-redocked");screens(0);}));
@@ -511,7 +665,7 @@ public final class PlatformSession implements Disposable {
                 bridge.call(6).whenComplete((saved,failure)->edt(()->{
                     if(failure!=null){failure(failure);return;}
                     require(!snapshot.dirty(),"Document Save All did not commit");
-                    record("PASS F0.2 Platform native Scene/Prefab/Graph creation, typed document tabs, same-ID reuse, shared rename/header and Save All");smokePlayback();
+                    record("PASS F0.2 Platform native Scene/Prefab/Graph creation, typed document tabs, same-ID reuse, shared rename/header and Save All");smokeScalarClose();
                 }));
             }));return;
         }
@@ -534,6 +688,92 @@ public final class PlatformSession implements Disposable {
             smokeDocuments(kind+1);
         });
     }
+    private static JComponent named(Container root,String name){
+        if(root instanceof JComponent component&&name.equals(component.getName()))return component;
+        for(Component child:root.getComponents())if(child instanceof Container container){var found=named(container,name);if(found!=null)return found;}
+        return null;
+    }
+    private void waitFor(java.util.function.BooleanSupplier condition,int attempt,Runnable next){
+        if(condition.getAsBoolean()){next.run();return;}
+        require(attempt<50,"Timed out waiting for asynchronous document close/open; service="+service+" guards="+floatingGuards.size()+" views="+views.size()+" windows="+floatingGuards.keySet().stream().map(w->"showing="+w.isShowing()+", displayable="+w.isDisplayable()).toList());later(100,()->waitFor(condition,attempt+1,next));
+    }
+    private void smokeScalarClose(){
+        require(com.intellij.openapi.vfs.VirtualFilePreCloseCheck.Companion.getEP_NAME().getExtensionsIfPointIsRegistered().stream().anyMatch(check->check instanceof DocumentCloseCheck),"Native document pre-close extension not registered");
+        bridge.call(15,"1","Scalar Player","registered-components").thenCompose(created->{
+            long id=created.snapshot().selection().document();var node=created.snapshot().nodes().stream().filter(n->n.document()==id&&n.kind()==2).findFirst().orElseThrow();
+            return bridge.call(9,"2",Long.toUnsignedString(id),Long.toUnsignedString(node.id()));
+        }).thenCompose(selected->bridge.call(6)).whenComplete((saved,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            long id=snapshot.selection().document();var doc=snapshot.documents().stream().filter(d->d.id()==id).findFirst().orElseThrow();
+            openDocument(doc);open("prefab.editor");String panel="prefab.canvas:"+Long.toUnsignedString(id);
+            waitFor(()->documents.containsKey(panel)&&FileEditorManager.getInstance(project).getEditors(documents.get(panel)).length>0&&ready(),0,()->{
+                var field=snapshot.fields().stream().filter(f->f.kind()==3&&f.editable()).findFirst().orElseThrow();
+                JTextField input=(JTextField)named(tools.view("prefab.editor"),field.key());require(input!=null,"No real scalar control in Inspector");input.setText("F0 saved UI draft");
+                saveProject().whenComplete((reply,failed)->edt(()->{
+                    if(failed!=null){failure(failed);return;}
+                    require(!snapshot.dirty()&&snapshot.fields().stream().anyMatch(f->f.key().equals(field.key())&&f.value().equals("F0 saved UI draft")),"Save raced or ignored uncommitted scalar input");
+                    smokeTabCloseAfterEdit(documents.get(panel),id,field.key());
+                }));
+            });
+        }));
+    }
+    private void smokeTabCloseAfterEdit(VirtualFile file,long id,String key){
+        int prompts=smokeClosePrompts;smokeWindowChoice=Messages.CANCEL;
+        JTextField input=(JTextField)named(tools.view("prefab.editor"),key);input.setText("Pending tab-close edit");input.postActionEvent();
+        var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);
+        require(!manager.closeFileWithChecks(file,manager.getCurrentWindow()),"Tab closed before pending edit completed");
+        waitFor(()->smokeClosePrompts>prompts&&ready(),0,()->{
+            smokeWindowChoice=null;
+            require(manager.isFileOpen(file)&&snapshot.fields().stream().anyMatch(f->f.key().equals(key)&&f.value().equals("Pending tab-close edit")),"Deferred tab Cancel lost the committed edit/view");
+            record("PASS F0 real tab pre-close deferred until scalar completion; Cancel retained native edit and view");smokeCloseChoices(file,id);
+        });
+    }
+    private void inFloatingEditor(VirtualFile file,java.util.function.Consumer<Window> next){
+        ((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).openFileInNewWindow(file,false);
+        waitFor(()->floatingGuards.keySet().stream().anyMatch(window->window.isShowing()&&views.stream().anyMatch(view->view.file()==file&&SwingUtilities.getWindowAncestor(view.component())==window))&&ready(),0,()->{
+            Window window=floatingGuards.keySet().stream().filter(w->views.stream().anyMatch(view->view.file()==file&&SwingUtilities.getWindowAncestor(view.component())==w)).findFirst().orElseThrow();
+            require(NativeViewport.windowHandle(window)!=0&&window!=WindowManager.getInstance().getFrame(project),"No independent Platform document window");next.accept(window);
+        });
+    }
+    private void smokeWindowClose(Window window,int decision){
+        smokeWindowChoice=decision;
+        try{window.dispatchEvent(new WindowEvent(window,WindowEvent.WINDOW_CLOSING));}finally{smokeWindowChoice=null;}
+    }
+    private void smokeCloseChoices(VirtualFile file,long id){
+        inFloatingEditor(file,window->bridge.call(5,Long.toUnsignedString(id),"Saved close name").whenComplete((renamed,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            require(documentModified(file),"FileEditor did not project native per-document dirty");
+            long revision=snapshot.revision();smokeWindowClose(window,Messages.CANCEL);
+            require(snapshot.revision()==revision&&window.isDisplayable()&&FileEditorManager.getInstance(project).isFileOpen(file),"Floating Cancel mutated/closed document");
+            smokeWindowClose(window,Messages.YES);
+            waitFor(()->!window.isDisplayable()&&!pendingDocumentCloses.contains(file)&&ready(),0,()->{
+                require(!snapshot.dirty(),"Save close lost native save point");
+                var doc=snapshot.documents().stream().filter(d->d.id()==id).findFirst().orElseThrow();openDocument(doc);
+                waitFor(()->FileEditorManager.getInstance(project).getEditors(file).length>0&&ready(),0,()->inFloatingEditor(file,second->{
+                    long other=snapshot.documents().stream().filter(d->d.id()!=id&&d.kind()==2).findFirst().orElseThrow().id();
+                    bridge.call(5,Long.toUnsignedString(id),"Discard close name").thenCompose(reply->bridge.call(5,Long.toUnsignedString(other),"Keep other document edit")).whenComplete((changed,failed)->edt(()->{
+                        if(failed!=null){failure(failed);return;}
+                        smokeWindowClose(second,Messages.NO);
+                        waitFor(()->!second.isDisplayable()&&!pendingDocumentCloses.contains(file)&&ready(),0,()->{
+                            require(snapshot.dirty()&&snapshot.documents().stream().anyMatch(d->d.id()==id&&!d.dirty()&&d.name().equals("Saved close name"))&&snapshot.documents().stream().anyMatch(d->d.id()==other&&d.dirty()&&d.name().equals("Keep other document edit")),"Discard close changed another document or failed to restore save point");
+                            saveProject().whenComplete((saved,failure)->edt(()->{if(failure!=null){failure(failure);return;}record("PASS F0 native scalar widget/flush-before-Save, per-document dirty, real floating HWND Cancel/Save/Discard close, other-document preservation; pre-close extension registered");smokeOrderedSaveClose(file,id);}));
+                        });
+                    }));
+                }));
+            });
+        })));
+    }
+    private void smokeOrderedSaveClose(VirtualFile file,long id){
+        var doc=snapshot.documents().stream().filter(d->d.id()==id).findFirst().orElseThrow();openDocument(doc);
+        inFloatingEditor(file,window->bridge.call(5,Long.toUnsignedString(id),"Ordered Save close").whenComplete((changed,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            saveProject();smokeWindowClose(window,Messages.YES);
+            waitFor(()->!window.isDisplayable()&&ready(),0,()->{
+                require(!snapshot.dirty()&&snapshot.documents().stream().anyMatch(d->d.id()==id&&d.name().equals("Ordered Save close")),"Close raced an outstanding Save");
+                record("PASS F0 immediate Save then floating close awaited actual native commit");smokePlayback();
+            });
+        })));
+    }
     private void smokePlayback(){
         long revision=snapshot.revision(),identity=snapshot.project();
         bridge.call(13).thenCompose(reply->{
@@ -547,6 +787,14 @@ public final class PlatformSession implements Disposable {
             record("PASS F0 native Play/Stop lifecycle; authoring identity/revision/savepoint retained");recoverSmoke();
         }));
     }
+    private void smokeCloseAllViews(){
+        var doc=snapshot.documents().stream().filter(d->d.kind()==0).findFirst().orElseThrow();openDocument(doc);
+        String panel="scene.editor:"+Long.toUnsignedString(doc.id());
+        waitFor(()->documents.containsKey(panel)&&FileEditorManager.getInstance(project).getEditors(documents.get(panel)).length>0&&ready(),0,()->inFloatingEditor(documents.get(panel),window->{
+            require(FileEditorManager.getInstance(project).getAllEditors(documents.get(panel)).length>=2,"No peer Scene views for project-close regression");
+            record("INFO F0 project close with peer Scene editors/native surfaces across independent windows");close(true);
+        }));
+    }
     private void recoverSmoke(){
         recoveryProject=snapshot.project();recoveryViews=views.size();recoveryReaders=Set.copyOf(views);recoveryBounds=WindowManager.getInstance().getFrame(project).getBounds();expectedDisconnect=true;recoveringSmoke=true;
         Path executable=Path.of(System.getProperty("epidemic.ui.backend")).toAbsolutePath();
@@ -556,5 +804,5 @@ public final class PlatformSession implements Disposable {
             expectedDisconnect=false;reconnect();
         })));
     }
-    @Override public void dispose(){disposed=true;ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();views.clear();}
+    @Override public void dispose(){disposed=true;ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();views.clear();}
 }

@@ -51,36 +51,56 @@ The new GPU test's async callable-transfer warning was fixed; affected fixture/t
 
 Cleanup removed 18 verified obsolete build/report directories (20.10 GiB logical artifact size) and 27 stale files/directories of retired targets inside current build trees. Current builds/dependencies, canonical fixtures and game directories are preserved; cleanup rejected project/save files and reparse points.
 
-**F0 PARTIAL — first functional batch verified.** File → Clone Saved Project,
-Save All (Ctrl+Shift+S), native Play/Stop in toolbar/Project menu and F8 toggle are
-wired through existing Workspace APIs. No new panel or second domain owner.
+**F0 implementation complete; F0-GATE PARTIAL pending owner visual acceptance**
+(2026-11-06, continuation from `719970a`). No Computer Use was used.
 
-Native/common contracts PASS (`f0-native-contracts-final`, 8.08 s): empty/demo/P04
-projects, cloned asset IDs/cooked bytes, independent-process clone/edit isolation,
-no overwrite/nested destination rejection, stale generation/revision/arity/no-project
-rejection, clean/dirty/history/selection isolation, repeated Stop and Close while
-playing. Fixture copying now retains immutable cooked images and excludes writer
-locks; original fixtures remain unchanged. This is stronger than the earlier
-open-only fixture which omitted all `.epidemic` data.
+Selection now carries native kind/document/element/component/part and selection
+revision; hierarchy, context readers and document focus use the same owner.
+The scalar Inspector edits registered bool/i64/double/string through native
+InspectorCommand with revision checks and one transaction per committed edit.
+Draft/validation/Escape behavior, exact integers/UTF-8, Undo/Redo and save/reopen
+are exercised. Unsupported fields/references remain read-only.
 
-Release product + actual EXE second-launch/stale-profile restart + IPC/spec PASS
-(`f0-release-product`, 183.82 s). Final-source image after two focused Java review
-corrections PASS (`f0-final-image`, 78.18 s): actual native Play/Stop plus original
-46-panel/77-form, crash/reconnect, shutdown surfaces=0 and fatal diagnostics=0.
-Latest C++-only/managed-off backend build PASS. F0 backend analyzers retain the
-unchanged six clang-tidy header diagnostics plus one Cppcheck header diagnostic;
-combined with the renderer sites, the same nine baseline findings remain. Zero
-new own-source findings. Raw nonzero analyzer results and deleted-header selection
-blocker remain visible; no rule/validator was weakened.
+Per-document dirty state comes from native snapshots. Save flushes drafts and
+awaits actual native success. Dirty tab and floating-window close offer Save All /
+Discard Document / Cancel; in-flight edit/Save completion is ordered before close.
+Discard restores only that document from the native durable savepoint; other
+documents and asset/history state remain. Closing a project closes all peer
+document copies, including native Scene surfaces in independent Windows windows.
 
-The packaged native directory contains only backend and viewport DLL. Final JAR
-contains none of EditorApp/DockSpace/DockLayout/IslandsTabsUI/U1 probe owners.
-Final process check: no Editor, backend, retired Desktop or preview-test process.
-Independent broker service was not changed. No full Computer Use rerun or push.
+PASS: common native/UI contracts; private IPC v2 adversarial cases (14); catalog;
+managed-off C++ build; full engine CTest **161/161, zero failed/skipped**
+(`Temp/U/f0-engine-tests.xml`); architecture self-test; public-header checks.
+Earlier raw 160/161 is retained as `f0-engine-tests-before-path-fix.xml`: only the
+new discard fixture's relative output path failed. Fixed to the existing absolute
+test directory; focused Core and then full CTest passed.
 
-Remaining F0: complete Scene/Prefab/scalar Inspector/document workflows and
-continuous game stepping/interaction. Live Game View and advanced runtime/debug
-presentation still need integration; F1 asset mutation/import/watch/P04 visual
-debt is not declared complete. F0 is started, not closed. The current build/run
-instructions are in `tools/editor-ui-host/README.md`; retained/deleted owners are
-listed in `UI_MIGRATION_MAP.md`.
+PASS: latest-source Platform smoke, actual floating HWND close events with
+programmatically supplied dialog choices, busy tab Cancel, immediate Save→close,
+reconnect and project close with peer Scene views; surfaces=0, fatal diagnostics=0.
+Final Release packaging + actual EXE live-owner activation/crash/restart PASS
+(`f0-final-product`, 140.69 s). No physical mouse/visual acceptance is claimed.
+
+Deep analysis completed: 2 changed headers, 44 translation units, 88 checks,
+935.28 s. Raw result remains FAIL, without modified rules/suppressions:
+- Previously classified nine U/L0 findings: scene_state signed bitwise (4),
+  SceneCompositionInstance move exception specification (2), Renderer integer/
+  float conversion (2), RuntimeBridge queue_policy passedByValue (1).
+- Wider changed-header consumer sweep additionally reaches unchanged
+  easily-swappable filesystem-role parameter pairs in image_resource.cpp
+  PrepareImportedPng and project_folder.cpp RestoreCommit / CopyTree /
+  ImportLegacy / ResolveMount. Existing signatures and comments match HEAD;
+  no new suppression is added.
+- Unchanged project_folder_tests.cpp:125 signed bitwise and :140 exception
+  escaping main are also reached by the expanded consumer sweep; retained as
+  historical test-code backlog, not new F0 findings.
+- MSVC 14.51 xfilesystem_abi.h EnumCastOutOfRange on filesystem flag value 33,
+  reached through unchanged content_hot_reload.cpp: external-library/toolchain
+  diagnostic, not silently excluded. Retain for toolchain/backlog investigation.
+- Raw output: `Temp/U/logs/f0-deep.*` and per-translation-unit tidy/cppcheck logs.
+  These failures are not reported as analyzer PASS.
+
+NOT RUN: owner visual acceptance of this F0 batch. The complete procedure is in
+`FI_FEATURE_MATRIX.md` (Owner verification: complete F0). F1 has not started.
+Picking/gizmos, asset mutation/import, Graph authoring and continuous Game View
+remain later phases; live Game View is F-II/F8 under the current task.

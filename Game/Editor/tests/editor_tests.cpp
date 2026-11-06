@@ -90,6 +90,51 @@ void Documents() {
           "repeated Prefab placements and behaviors share a single asset dependency");
 }
 
+void DocumentDiscard() {
+    Fixture f;
+    ComponentsFixture types;
+    const auto prefab = AssetId::FromString("editor.prefab");
+    const auto graph_id = Definition().asset_id;
+    const auto child = Id("discard.saved.child");
+    auto project =
+        Take(ed::EditorProject::Create(std::filesystem::path{EPIDEMIC_EDITOR_TEST_DIRECTORY} /
+                                           "discard.epidemic",
+                                       Project(f, types), Schema(f, types)));
+    Take(project->Execute(
+        {0, {ed::AddEntity{prefab, Id("enemy"), {child, f.archetype, {}, {}, {}}}}}));
+    Take(project->Save());
+    Take(project->Execute(
+        {0,
+         {ed::DeleteEntity{prefab, child}, ed::RenameDocument{graph_id, "Other dirty document"}}}));
+    Take(project->Execute({project->Revision(), {ed::DiscardDocument{prefab}}}));
+    Check(!project->IsDirty(prefab) && project->IsDirty(graph_id) && project->IsDirty(),
+          "discard is scoped to one document");
+    Check(std::get<comp::PrefabDefinition>(project->Snapshot()->Find(prefab)->data)
+                  .root.children.size() == 1,
+          "discard restores saved retired child identity");
+    Take(project->Undo());
+    Check(std::get<comp::PrefabDefinition>(project->Snapshot()->Find(prefab)->data)
+              .root.children.empty(),
+          "discard has one undo transaction");
+    Take(project->Redo());
+    const auto before = project->Snapshot();
+    Check(!project->Execute(
+              {project->Revision(),
+               {ed::DiscardDocument{prefab}, ed::RenameDocument{graph_id, "Forbidden batch"}}}) &&
+              project->Snapshot() == before,
+          "discard cannot be injected into an unrelated batch");
+    Take(project->Save());
+    Take(project->Execute({0, {ed::DeleteEntity{prefab, child}}}));
+    Take(project->Execute({0, {ed::DiscardDocument{prefab}}}));
+    Check(!project->IsDirty(), "last document discard returns to durable save point");
+    auto reopened = Take(ed::EditorProject::Open(project->File(), Schema(f, types)));
+    Check(!reopened->IsDirty() &&
+              std::get<comp::PrefabDefinition>(reopened->Snapshot()->Find(prefab)->data)
+                      .root.children[0]
+                      .id == child,
+          "discard did not rewrite committed identity/data");
+}
+
 void Commands() {
     Fixture f;
     ComponentsFixture types;
@@ -413,6 +458,7 @@ int main(int argc, char **argv) {
             Documents();
             Commands();
             Persistence();
+            DocumentDiscard();
             Play();
             PlacementDiagnostic();
         } else if (argc == 2 && std::string_view{argv[1]} == "p04-write")

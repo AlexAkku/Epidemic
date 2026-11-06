@@ -10,6 +10,12 @@ struct DeleteDocument {
     runtime::AssetId document;
 };
 
+// Restore only this document from the native durable save point. The caller
+// cannot supply replacement data or resurrect arbitrary retired identities.
+struct DiscardDocument {
+    runtime::AssetId document;
+};
+
 struct RenameDocument {
     runtime::AssetId document;
     std::string name;
@@ -137,8 +143,8 @@ struct SetParameterOverride {
 };
 
 using Command =
-    std::variant<CreateDocument, DeleteDocument, RenameDocument, SetEntryScene, AddEntity,
-                 DeleteEntity, SetComponent, DeleteComponent, SetProperty, SetBehavior,
+    std::variant<CreateDocument, DeleteDocument, DiscardDocument, RenameDocument, SetEntryScene,
+                 AddEntity, DeleteEntity, SetComponent, DeleteComponent, SetProperty, SetBehavior,
                  DeleteBehavior, AddGraphNode, DeleteGraphNode, ConnectPorts, DisconnectPorts,
                  AddSceneNode, DeleteSceneNode, SetSceneParent, SetSceneTransform, PlacePrefab,
                  SetPrefabParameter, SetComponentOverride, SetParameterOverride>;

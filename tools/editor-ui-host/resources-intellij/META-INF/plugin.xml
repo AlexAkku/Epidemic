@@ -8,6 +8,7 @@
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="epidemic.editor.platform.PlatformSession"/>
         <fileEditorProvider implementation="epidemic.editor.platform.PanelEditorProvider"/>
+        <virtualFilePreCloseCheck implementation="epidemic.editor.platform.DocumentCloseCheck"/>
         <postStartupActivity implementation="epidemic.editor.platform.PlatformStartup"/>
     </extensions>
 </idea-plugin>

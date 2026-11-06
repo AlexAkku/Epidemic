@@ -19,6 +19,10 @@ public final class UiPanels {
     private final Runnable cancelJobs;
     private final Consumer<Integer> createDocument;
     private final Runnable renameDocument;
+    private Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField;
+    private final List<ScalarInspector> inspectors=new ArrayList<>();
+    private long generation;
+    private boolean interactive;
     private boolean documentCommandsEnabled;
     private final List<AbstractButton> documentButtons = new ArrayList<>();
     private final Map<String,JComponent> cache = new HashMap<>();
@@ -35,6 +39,15 @@ public final class UiPanels {
         this.select = select; this.importPicker = importPicker; this.cancelJobs = cancelJobs; console.setEditable(false);
         this.createDocument=createDocument;this.renameDocument=renameDocument;
     }
+    public UiPanels(Catalog catalog,FeatureRegistry features,Consumer<Bridge.Document> open,Consumer<Bridge.Selection> select,Runnable importPicker,Runnable cancelJobs,Consumer<Integer> createDocument,Runnable renameDocument,Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField){
+        this(catalog,features,open,select,importPicker,cancelJobs,createDocument,renameDocument);this.editField=editField;
+    }
+    public void sessionState(long generation,boolean ready){
+        this.generation=generation;interactive=ready;
+        for(var inspector:inspectors)inspector.refresh(generation,snapshot,ready);
+    }
+    public java.util.concurrent.CompletableFuture<Void> flushDrafts(){return java.util.concurrent.CompletableFuture.allOf(inspectors.stream().map(ScalarInspector::flush).toArray(java.util.concurrent.CompletableFuture[]::new));}
+    public void cancelDrafts(long document){if(snapshot!=null&&snapshot.selection().document()==document)inspectors.forEach(ScalarInspector::cancelDrafts);}
     public void documentCommandsEnabled(boolean enabled) {
         documentCommandsEnabled=enabled;documentButtons.forEach(button->button.setEnabled(enabled));
     }
@@ -47,7 +60,10 @@ public final class UiPanels {
             catch (javax.swing.text.BadLocationException error) { throw new IllegalStateException(error); }
     }
     public void refresh(Bridge.Snapshot value) {
-        if (Objects.equals(snapshot, value)) return;
+        refresh(value,false);
+    }
+    public void refresh(Bridge.Snapshot value,boolean force) {
+        if (!force&&Objects.equals(snapshot, value)) return;
         Bridge.Snapshot previous = snapshot;
         boolean structureChanged = previous == null || value == null || !previous.documents().equals(value.documents()) ||
             !previous.nodes().equals(value.nodes()) || !previous.assets().equals(value.assets());
@@ -96,7 +112,12 @@ public final class UiPanels {
                 }
                 if(!schema.equals(fields.getClientProperty("schema.id"))){fields.putClientProperty("schema.id",schema);fields.removeAll();fields.add(forms.computeIfAbsent(schema,key->InspectorForms.fixed(catalog,features,key)));fields.revalidate();fields.repaint();}
             });
-            panel.add(summary, BorderLayout.NORTH);panel.add(fields);return panel;
+            panel.add(summary, BorderLayout.NORTH);
+            if(!base.equals("type.registry")){
+                ScalarInspector inspector=new ScalarInspector(request->editField==null?java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("Native Inspector unavailable")):editField.apply(request));
+                inspectors.add(inspector);observe(value->inspector.refresh(generation,value,interactive));panel.add(inspector);
+            }else panel.add(fields);
+            return panel;
         }
         if (base.equals("settings.editor")) return InspectorForms.gallery(catalog, features);
         if (base.equals("asset.details") || base.equals("asset.references")) {
@@ -166,7 +187,9 @@ public final class UiPanels {
         try {
             NativeViewport viewport = new NativeViewport(); nativeViews.put(id, viewport); panel.add(viewport, BorderLayout.CENTER);
         } catch (LinkageError unavailable) { panel.add(Theme.label("Native viewport unavailable: " + unavailable.getMessage(), true)); }
-        panel.add(Theme.label("Select Scene · native viewport shell · authoring draw integration planned F2", true), BorderLayout.SOUTH);
+        JLabel selection=Theme.label("Select Scene · native viewport shell · authoring draw integration planned F2",true);
+        observe(value->selection.setText(value==null?"No Project":"Selection: "+Long.toUnsignedString(value.selection().document())+" / "+Long.toUnsignedString(value.selection().element())+" · authoring picking planned F2"));
+        panel.add(selection, BorderLayout.SOUTH);
         return panel;
     }
     private JComponent explorer() {
@@ -227,10 +250,23 @@ public final class UiPanels {
             }finally{refreshing=wasRefreshing;}
         };
         structure(value -> rebuild.run()); search.addActionListener(event -> rebuild.run());
+        observe(value->{
+            if(value==null)return;
+            var root=(DefaultMutableTreeNode)tree.getModel().getRoot();
+            for(var nodes=root.depthFirstEnumeration();nodes.hasMoreElements();){
+                var node=(DefaultMutableTreeNode)nodes.nextElement();
+                if(node.getUserObject() instanceof DocRow row&&row.document().id()==value.selection().document()){
+                    boolean expand=tree.getExpandsSelectedPaths();tree.setExpandsSelectedPaths(false);
+                    tree.setSelectionPath(new TreePath(node.getPath()));tree.setExpandsSelectedPaths(expand);return;
+                }
+            }
+            tree.clearSelection();
+        });
         tree.addTreeSelectionListener(event->{
             if(refreshing)return;Object chosen=tree.getLastSelectedPathComponent();
             if(chosen instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof DocRow row)
                 select.accept(new Bridge.Selection(0,row.document().id(),0));
+            else if(chosen==tree.getModel().getRoot())select.accept(new Bridge.Selection(0,0,0));
         });
         tree.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent event) {
             if (event.getClickCount() != 2 || refreshing) return;
@@ -252,22 +288,33 @@ public final class UiPanels {
     }
     private JComponent hierarchy() {
         JTree tree = new JTree();
-        structure(value -> {
+        observe(value -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode("World / Scene / Prefab");
             if (value != null) {
                 Map<Long,DefaultMutableTreeNode> documents = new HashMap<>();
                 for (Bridge.Document doc : value.documents()) {
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(doc.name()); root.add(node); documents.put(doc.id(), node);
+                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(new DocRow(doc)); root.add(node); documents.put(doc.id(), node);
                 }
                 Map<String,DefaultMutableTreeNode> nodes = new HashMap<>();
-                for (Bridge.Node row : value.nodes()) nodes.put(row.document() + ":" + row.id(), new DefaultMutableTreeNode(row));
+                for (Bridge.Node row : value.nodes()) nodes.put(nodeKey(row), new DefaultMutableTreeNode(row));
                 for (Bridge.Node row : value.nodes()) {
-                    DefaultMutableTreeNode parent = nodes.get(row.document() + ":" + row.parent());
+                    DefaultMutableTreeNode parent = nodes.get(row.document() + ":" + row.parent()+":"+(row.kind()==5?2:row.kind())+":0:0");
                     if (parent == null) parent = documents.get(row.document());
-                    if (parent != null) parent.add(nodes.get(row.document() + ":" + row.id()));
+                    if (parent != null) parent.add(nodes.get(nodeKey(row)));
                 }
             }
-            tree.setModel(new DefaultTreeModel(root)); tree.expandRow(0);
+            Set<String> expanded=new HashSet<>();var previous=tree.getExpandedDescendants(new TreePath(tree.getModel().getRoot()));
+            if(previous!=null)while(previous.hasMoreElements())expanded.add(treeKey(previous.nextElement()));
+            Point scroll=tree.getParent() instanceof JViewport viewport?viewport.getViewPosition():null;
+            tree.setModel(new DefaultTreeModel(root));tree.expandRow(0);
+            for(var enumeration=root.depthFirstEnumeration();enumeration.hasMoreElements();){
+                var node=(DefaultMutableTreeNode)enumeration.nextElement();var path=new TreePath(node.getPath());
+                if(expanded.contains(treeKey(path)))tree.expandPath(path);
+                if(value!=null&&(node.getUserObject() instanceof Bridge.Node row&&row.selection().equals(value.selection())||node.getUserObject() instanceof DocRow doc&&value.selection().kind()==0&&doc.document().id()==value.selection().document())){
+                    tree.setExpandsSelectedPaths(false);tree.setSelectionPath(path);tree.setExpandsSelectedPaths(true);
+                }
+            }
+            if(scroll!=null&&tree.getParent() instanceof JViewport viewport)viewport.setViewPosition(scroll);
         });
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
             @Override public Component getTreeCellRendererComponent(JTree owner, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean focus) {
@@ -280,8 +327,11 @@ public final class UiPanels {
             if (refreshing) return;
             Object value = tree.getLastSelectedPathComponent();
             if (value instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof Bridge.Node row)
-                select.accept(new Bridge.Selection(row.kind(), row.document(), row.id()));
+                select.accept(row.selection());
+            else if(value instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof DocRow doc)select.accept(new Bridge.Selection(0,doc.document().id(),0));
+            else if(value==tree.getModel().getRoot())select.accept(new Bridge.Selection(0,0,0));
         });
         return new JScrollPane(tree);
     }
+    private static String nodeKey(Bridge.Node row){return row.document()+":"+row.id()+":"+row.kind()+":"+row.component()+":"+row.part();}
 }

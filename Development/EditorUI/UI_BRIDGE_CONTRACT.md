@@ -1,46 +1,96 @@
-# UI bridge contract v1
+# UI bridge contract v2
 
-Sources: `Temp/!Tasks/U_Phase.md` U2, current EditorWorkspace/EditorProject/ProjectFolder APIs. This is the implemented private bridge contract with a capability-negotiated F0 extension. The bridge is private presentation infrastructure, not an engine public ABI or archive schema.
+Private presentation protocol, not a public Engine/Framework ABI or an archive
+schema. F-I baseline: `32eef79`; the owner accepted the first document slice
+`719970a` before this F0 completion batch. Current verification/acceptance:
+[FI_FEATURE_MATRIX.md](FI_FEATURE_MATRIX.md).
 
 ## Ownership and transport
 
-One native companion process owns the existing example game Schema and exactly one EditorWorkspace. All calls, snapshots, selection, history and Play belong to that native owner thread. Closing or detaching a presentation window cannot create a workspace. The JVM uses one bounded serial dispatcher and publishes immutable DTOs on EDT. C++-only/headless targets have no JVM dependency. The optional viewport DLL owns only its scoped GPU surfaces on EDT; no Project, Scene, Graph or Resource addresses cross the boundary.
+One C++ companion owns one EditorWorkspace, its frozen game Schema, selection,
+transactions, Play and persistence. Java has immutable projections, view keys
+and input drafts. Detached tools/documents reuse the same PlatformSession and
+companion. JNI/JAWT owns only renderer surface lifetimes on EDT, never authoring.
+Managed-off/C++-only remains independent of JVM.
 
-The companion inherits private stdin/stdout pipes from its JVM owner; stdout is protocol-only, diagnostics go to stderr. Frames are unsigned big-endian length followed by at most 16 MiB. UTF-8 strings use an unsigned 32-bit byte length, capped at 1 MiB. No native strings/layouts/pointers are exposed. A request is magic `EPUI` (0x45505549), u16 major=1/minor=0, u64 correlation ID, u8 opcode, u64 expected workspace generation, u64 expected authoring revision, u16 argument count (max 8), then strings. Unknown versions/operations and malformed frames produce explicit errors; oversized/truncated input terminates the stream and releases ownership.
+Private stdin/stdout, unsigned big-endian length, at most 16 MiB per frame.
+UTF-8 strings have u32 byte lengths, at most 1 MiB; malformed UTF-8 and NUL are
+rejected. The Java encoder reports invalid UTF-16 rather than silently replacing
+surrogates; local pre-send failures keep the valid stream Ready. There are at
+most 8 arguments and 32 queued requests; started operations finish atomically,
+queued tasks can be cancelled, backend timeout is 15 seconds.
 
-Operations: 1 Hello, 2 Open, 3 NewFolder, 4 Snapshot, 5 RenameDocument, 6 Save, 7 Undo, 8 Redo, 9 Select, 10 Close, 11 Quit, 12 CloneFolder(destination), 13 Play, 14 Stop. Open accepts descriptor or legacy archive; all writes route through Workspace APIs and existing validated commands. Revision zero is rejected for writes to an open project. IDs are typed u64 values, preserved bit-for-bit in Java long and displayed unsigned; they are not addresses. Selection explicitly carries UiElement kind, document and element IDs.
+Request: magic `EPUI` (0x45505549), u16 major **2**, u16 minor 0, u64 correlation,
+u8 opcode, u64 generation, u64 expected project revision, u16 argument count,
+then strings. A process nonce seeds generation; workspace resets advance it.
+Previous-process references cannot pass optimistic concurrency checks.
+Response: same magic/version/correlation, u8 result, u64 generation, capability
+CSV, error, snapshot-present byte. Failed writes publish authoritative state
+and an error, never success. Versions 1/3 are explicitly rejected.
 
-A response repeats magic/version/correlation, u8 result (0 success, 1 rejected; unavailable operations carry an explicit error string), u64 process workspace generation, capability CSV, error code/message and a snapshot-present byte. Snapshot fields: authoring/asset/selection revisions, flags (1 dirty, 2 canUndo, 4 canRedo, 8 actual native session IsPlaying), storage kind, project/entry IDs, path/title, typed selection, document rows, hierarchy rows and source asset rows. The DTO is immutable read data; it never becomes a second editable game model. Unsupported features remain planned/backend-only and do not send commands.
+## Operations
 
-Capabilities advertise only implemented operations. Connection and individual service states are Unavailable/Loading/Ready/Error, independently from planned feature maturity. There are at most 32 pending client tasks. Correlation, connection generation and monotonic snapshot keys reject stale completions; unchanged snapshots do not reconstruct editing/focus state. Background IO never blocks EDT. A failed/disconnected child disables mutation and preserves layout plus the last clearly marked read snapshot. Reconnect creates a new transport generation. Quit/EOF releases the native Workspace, workers, writer locks and Play; native viewport removal releases timers/GPU before peer destruction.
+| Opcode | Operation / authoritative path |
+|---|---|
+| 1 / 4 | Hello / Snapshot |
+| 2 / 3 | Open descriptor/legacy archive / NewFolder |
+| 5 / 6 | RenameDocument / atomic whole-project Save (also Save All) |
+| 7 / 8 | Workspace Undo / Redo, including mixed folder history |
+| 9 | Select: kind, document, element; optionally component and part. All-zero document selection clears to project scope. |
+| 10 / 11 | Close (explicit discard optional) / Quit; reject dirty implicit close |
+| 12 | CloneFolder into a fresh, non-nested destination; preserve source and IDs |
+| 13 / 14 | Existing isolated Play / idempotent Stop |
+| 15 | CreateDocument: kind 0 Scene / 1 Prefab / 2 Graph, UTF-8 name. Optional `registered-components` for Prefab uses real host Health/Movement recipes, no demo behavior/Graph dependency. |
+| 16 | Scalar commit: expected selection revision, field key, textual typed value. Rebuild the current native Inspector entry, validate with InspectorCommand, Execute once. |
+| 17 | DiscardDocument: stable document ID, through existing Workspace/Folder transaction/history boundary. |
 
-Tests must cover Unicode, framing/version limits, stale revisions, rejected commands/no mutation, Save/reopen, legacy data, folder locks, selection identity, bounded busy/cancel/disconnect/reconnect, disabled features, and multiple UI windows sharing one process. U manual qualification is owner-provided evidence in UI_QA_MATRIX.md; programmatic tests never substitute for it. New F command wiring has its own native/IPC acceptance.
+Writes require an open project, current generation and nonzero project revision.
+Create/Rename/scalar/Discard are read-only during Play. Unsupported capabilities
+remain disabled. Save during Play serializes authoring, never runtime values.
+Names are nonblank single-line UTF-8, at most 256 bytes. Native validators decide
+integer/range/type/string/finite-real validity. Java does not serialize game data.
 
-Implementation notes: input text rejects malformed UTF-8 and embedded NUL. Close rejects dirty state unless explicitly passed discard; Quit rejects dirty state. Cancelling a queued task prevents dispatch; cancelling an already running native mutation is refused. Clean Save is a no-op. NewFolder exclusively owns a sibling staging envelope and publishes using Windows MoveFileW without replacing a competing destination. The sole product presentation is the standalone Platform project service; competing diagnostic/window owners are removed.
+## Immutable snapshot and drafts
 
-## F0 lifecycle extension
+Snapshot: project/asset/selection revisions; dirty/undo/redo/playing flags;
+storage, project/entry IDs, path/title; typed selection including component/part;
+documents with native per-document dirty; hierarchy nodes with component/part;
+source assets; native Inspector descriptors/values/source/read-only reason/ref.
+Property keys contain typed owner/property/override IDs. Read-only rows may use
+snapshot-local ordinal suffixes, never persisted identities or writable handles.
+Integers/reals cross as lossless native text, not Java floating-point conversions.
+Unknown/unavailable defaults are explicitly read-only, not invented values.
 
-Opcodes 12–14 require current generation/revision and an open native project; Clone has exactly one argument, Play/Stop none. Capabilities `clone-folder`, `play`, `stop` are advertised only with these real Workspace calls. Existing frame/DTO field order remains v1; bit 8 uses a previously unused snapshot flag. No archive schema or public Framework API changes.
+Document files hold only generation/project/kind/ID and view ID. Titles, dirty
+and values resolve from native snapshots. Same-ID open reuses its file; missing
+views stay safe; reconnect confirms IDs and rebinds to the new generation.
+Selection is not an authoring edit and does not dirty the project. UI drafts
+capture generation/revision/selection at first text change; Enter/focus loss
+commits once, Escape restores the latest native value. Stale/invalid drafts
+show inline errors. Snapshot refresh does not overwrite an unfinished draft.
 
-Clone uses existing ProjectFolder CloneTo: save first, a fresh destination outside the source, preserved document/asset/cooked identities and committed source data. It leaves the active Workspace unchanged. The UI names a new folder and does not enter it in Recent until a successful Open. Save All is the same atomic whole-project Workspace Save as Save in this single-project host (opcode 6).
+IO stays off EDT. Platform publication and success callbacks use one ordered
+IntelliJ queue. Save flushes input commits and coalesces pending saves; close
+waits for actual Save completion. Disconnect retains read-only state. Reconnect
+restores only typed selection still present in the committed native snapshot.
 
-Play and Stop call existing isolated PlaySession lifecycle. Starting/stopping cannot clear dirty authoring, alter history/revision/selection or serialize runtime state. Stop is idempotent; Close disposes the session. Runtime `Tick`, event routing, live Game View and advanced runtime controls remain later integration; this first F0 batch is not full gameplay/F0 parity.
+## Dirty/close lifecycle
 
-## F-I first document slice
+EditorProject retains an immutable durable save-point snapshot. DiscardDocument
+restores only that saved document (or removes a new unsaved one), validates the
+candidate and publishes one undoable transaction. It cannot accept replacement
+payloads or arbitrary retired IDs. Other documents, source files, assets, visual
+metadata and their dirty/history remain owned by their existing services.
 
-Capability `create-document`, opcode 15: exactly two strings, kind (`0` Scene,
-`1` Prefab, `2` Graph) and name (1–256 UTF-8 bytes; nonblank, single-line).
-It requires the current generation/revision, allocates stable IDs in C++, and
-executes one existing `CreateDocument` transaction. The Prefab uses the host's
-currently registered archetype with no demo components/behaviors. Graph starts
-as a valid empty definition. No persisted schema, DTO layout or major version
-changes. Rename/Create are rejected during Play with `ui.playing_readonly`.
+Tabs use Platform VirtualFilePreCloseCheck. Platform 253 floating DockWindow
+close bypasses that hook: the host gates its two existing DockWindow/FrameWrapper
+closing callbacks only for its own document windows. Cancel forwards neither;
+Save All / Discard awaits native success, closes the captured EditorWindow view,
+then forwards the original lifecycle callbacks. Peer views keep their identity.
+No Platform JAR or signed module is patched, and no docking/window owner is
+introduced. The pinned adapter is covered by real AWT close-event smoke on
+independent HWNDs; physical mouse/focus acceptance remains the owner's task.
 
-Platform document files contain only `DocumentKey(generation, project, kind,
-id)` and a view ID. Their names/headers resolve from the native snapshot;
-same-ID Open reuses the VirtualFile. Missing/undone documents show a missing
-state; reconnect explicitly rebinds keys to confirmed native IDs. Revisions
-are session-local concurrency tokens, rebuilt by native Open. Stable IDs,
-document kinds and authored names survive a separate process. Java never
-serializes game documents. Per-document dirty/close policy and scalar
-Inspector integration remain subsequent F0 work, not accepted by this slice.
+U group docking/layout remains accepted. Entity picking/gizmos/composition are
+F2; Graph Canvas and continuous Game View are later phases. F0 covers document,
+typed hierarchy/component selection, real stored scalars and native lifecycle.

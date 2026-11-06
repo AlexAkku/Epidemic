@@ -24,20 +24,27 @@ Distribute the **whole `EpidemicEditor` directory**, including `app`, `runtime` 
 
 Entry: own EXE → `epidemic.launcher.Main` → open Platform bootstrap → `EpidemicStarter` → `PlatformStartup` → `PlatformSession`. Retired custom Swing owners and the U1 probe are removed. The live JNI adapter is part of this host. `Build-PlatformUI.ps1` is an optional same-code development plugin; `Build-EditorUI.ps1 -Test` runs common contracts and exposes no competing app launch route.
 
-F-I document slice: File → New Scene/Prefab/Graph, or Project Explorer → New
-Document. Single-click selects a native document; double-click opens its named
-tab. Edit / Explorer → Rename Document updates views from the shared native
-snapshot. Save All persists them; Undo/Redo includes creation/rename. The tab
-header shows its own native ID/revision. An empty Prefab contains only a root
-using the currently registered host archetype; schema/component authoring is
-later work. These are document bindings, not complete F0/Scene authoring.
-Current status and owner verification: `Development/EditorUI/FI_FEATURE_MATRIX.md`.
+F0: File / Project Explorer → New Scene/Prefab/Graph; double-click opens a
+native-ID tab. New Prefab can initialize real registered Health/Movement
+components (clear the checkbox for an empty root). In Scene Hierarchy, choose
+its root or component to edit the native i64/double/bool/string Inspector.
+Enter/focus loss commits once; Esc cancels a draft; invalid/stale input stays
+an error. Save flushes pending edits before the native atomic project save.
+Tabs show their own native ID/revision and dirty state. Closing a modified tab
+or detached document window offers Save All / Discard Document / Cancel;
+Discard is scoped to that document, including undoable restoration of its saved
+state. Other documents/assets are retained. Shortcuts also bind to tool content
+so they follow the Inspector into a separate window.
+
+Current automated results and **separate owner visual acceptance** are tracked
+in `Development/EditorUI/FI_FEATURE_MATRIX.md`. This is F0 document/scalar
+integration; Scene picking/gizmos/components and imports are later phases.
 
 ## Behavior
 
 Launcher: New/Open, Settings, ten Recent Projects. Interactive state: `%LOCALAPPDATA%/EpidemicEngine/StandaloneEditor`; smoke state: generated product's `smoke-state`. The product creates its empty container with the Platform new-project API. Games never enter IDE VFS or build scripts. C++ owns game watching; the unused IDE watcher is disabled for the empty container.
 
-Workspace opens maximized. Wired: snapshots, Rename Document, Save (Ctrl+S), Save All (Ctrl+Shift+S), Undo (Ctrl+Z), Redo (Ctrl+Y / Ctrl+Shift+Z), typed Select and Close. F0 adds File → Clone Saved Project and actual native Play/Stop (toolbar/Project menu, F8 toggle). Clone requires a saved folder project and leaves the source open; the destination must be new. Play/Stop preserve authoring/history. Continuous game stepping/live Game View remain unwired; this is partial F0, not full gameplay parity. Text fields retain their own editing commands. No-op Save preserves bytes. Dirty close offers Save/Discard/Cancel. Disconnect keeps the snapshot and disables writes; reconnect starts one replacement companion.
+Workspace opens maximized. Wired: snapshots, Rename Document, Save (Ctrl+S), Save All (Ctrl+Shift+S), Undo (Ctrl+Z), Redo (Ctrl+Y / Ctrl+Shift+Z), typed Select and Close. F0 adds File → Clone Saved Project and actual native Play/Stop (toolbar/Project menu, F8 toggle). Clone requires a saved folder project and leaves the source open; the destination must be new. Play/Stop preserve authoring/history. Continuous game stepping/live Game View remain planned for F-II/F8 and are outside the F0 contract. Text fields retain their own editing commands. No-op Save preserves bytes. Dirty close offers Save/Discard/Cancel. Disconnect keeps the snapshot and disables writes; reconnect starts one replacement companion.
 
 The main menu contains eleven product groups. View discovers panels; Tools opens Gallery/panel lookup; Window controls native Window mode and layout. The retired native editor launch route is removed in L0. Existing C++ Project/Assets/Scene/Play APIs are retained for F integration; their availability does not imply complete new-UI bindings.
 

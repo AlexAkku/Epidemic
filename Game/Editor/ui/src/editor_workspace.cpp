@@ -368,6 +368,10 @@ bool EditorWorkspace::Exists(const UiSelection &selection) const {
 }
 
 bool EditorWorkspace::Select(const UiSelection &selection) {
+    if (Project() && selection == UiSelection{}) {
+        selection_ = {};
+        return true;
+    }
     if (!Exists(selection))
         return false;
     selection_ = selection;

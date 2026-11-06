@@ -12,8 +12,13 @@ import javax.swing.SwingUtilities;
 /** One private companion/pipe and one bounded IO dispatcher per application session. */
 public final class Bridge implements AutoCloseable {
     public enum Service { Unavailable, Loading, Ready, Error }
-    public record Selection(int kind, long document, long element) { }
-    public record Document(long id, long revision, int kind, String name) { }
+    public record Selection(int kind, long document, long element, long component, long part) {
+        public Selection(int kind,long document,long element){this(kind,document,element,0,0);}
+    }
+    public record Document(long id, long revision, int kind, String name, boolean dirty) {
+        public Document(long id,long revision,int kind,String name){this(id,revision,kind,name,false);}
+    }
+    public record Field(String key,String name,int kind,String value,boolean editable,String source,String reason,long reference) { }
     /** Presentation identity only; resolves against the current native snapshot. */
     public record DocumentKey(long generation, long project, int kind, long id) {
         public Optional<Document> resolve(long currentGeneration, Snapshot snapshot) {
@@ -22,15 +27,19 @@ public final class Bridge implements AutoCloseable {
         }
         public String panel() { return switch(kind) {case 0->"scene.editor";case 1->"prefab.canvas";case 2->"graph.editor";default->throw new IllegalArgumentException("Document kind");}; }
     }
-    public record Node(long document, long id, long parent, int kind, String label) { }
+    public record Node(long document, long id, long parent, int kind, String label,long component,long part) {
+        public Selection selection(){return new Selection(kind,document,id,component,part);}
+    }
     public record Asset(long id, long type, long generation, long fingerprint, boolean trashed,
                         String path, String cookedKey) { }
     public record Snapshot(long revision, long assetRevision, long selectionRevision, int flags,
         int storage, long project, long entry, String path, String title, Selection selection,
-        List<Document> documents, List<Node> nodes, List<Asset> assets) {
+        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields) {
         public Snapshot {
             documents = List.copyOf(documents); nodes = List.copyOf(nodes); assets = List.copyOf(assets);
+            fields=List.copyOf(fields);
         }
+        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,List.of());}
         public boolean dirty() { return (flags & 1) != 0; }
         public boolean canUndo() { return (flags & 2) != 0; }
         public boolean canRedo() { return (flags & 4) != 0; }
@@ -49,6 +58,7 @@ public final class Bridge implements AutoCloseable {
     });
     private final Path executable, logs;
     private final Consumer<State> listener;
+    private final Consumer<Runnable> uiDispatch;
     private volatile Process child;
     private DataInputStream input;
     private DataOutputStream output;
@@ -57,12 +67,15 @@ public final class Bridge implements AutoCloseable {
     private volatile boolean closed, stopping;
     private volatile Reply latest;
     public Bridge(Path executable, Path logs, Consumer<State> listener) {
-        this.executable = executable; this.logs = logs; this.listener = listener;
+        this(executable,logs,listener,SwingUtilities::invokeLater);
+    }
+    public Bridge(Path executable,Path logs,Consumer<State> listener,Consumer<Runnable> uiDispatch){
+        this.executable = executable; this.logs = logs; this.listener = listener;this.uiDispatch=uiDispatch;
     }
     public Reply latest() { return latest; }
     private void publish(Service state, String diagnostic, long epoch) {
         State value = new State(state, latest, diagnostic);
-        SwingUtilities.invokeLater(() -> { if (!closed && epoch == connection) listener.accept(value); });
+        uiDispatch.accept(() -> { if (!closed && epoch == connection) listener.accept(value); });
     }
     public CompletableFuture<Reply> connect() {
         return enqueue(() -> {
@@ -91,6 +104,10 @@ public final class Bridge implements AutoCloseable {
         return enqueue(() -> exchange(operation, expectedGeneration, expectedRevision, List.of(args)));
     }
     private interface Request { Reply run() throws Exception; }
+    private static final class RequestRejected extends IOException {
+        private static final long serialVersionUID=1L;
+        RequestRejected(String message){super(message);}
+    }
     private final class Task implements Runnable {
         boolean started;
         final CompletableFuture<Reply> future = new CompletableFuture<>() {
@@ -121,6 +138,9 @@ public final class Bridge implements AutoCloseable {
                     if (reply.error().isEmpty()) future.complete(reply);
                     else future.completeExceptionally(new IOException(reply.error()));
                 } else future.completeExceptionally(new IOException("ui.cancelled"));
+            } catch (RequestRejected rejected) {
+                publish(Service.Ready,rejected.getMessage(),epoch);
+                future.completeExceptionally(rejected);
             } catch (Exception error) {
                 future.completeExceptionally(error);
                 publish(Service.Error, error.toString(), epoch);
@@ -141,8 +161,12 @@ public final class Bridge implements AutoCloseable {
         return cancelled;
     }
     private static void text(DataOutputStream out, String value) throws IOException {
-        byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        if (bytes.length > 1024 * 1024) throw new IOException("ui.string_limit");
+        if(value.length()>1024*1024)throw new RequestRejected("ui.string_limit");
+        ByteBuffer encoded;
+        try{encoded=StandardCharsets.UTF_8.newEncoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).encode(java.nio.CharBuffer.wrap(value));}
+        catch(CharacterCodingException invalid){throw new RequestRejected("ui.invalid_utf8_text");}
+        byte[] bytes=new byte[encoded.remaining()];encoded.get(bytes);
+        if (bytes.length > 1024 * 1024) throw new RequestRejected("ui.string_limit");
         out.writeInt(bytes.length); out.write(bytes);
     }
     private static String text(DataInputStream in) throws IOException {
@@ -162,18 +186,18 @@ public final class Bridge implements AutoCloseable {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream request = new DataOutputStream(bytes);
         long id = ++correlation, start = System.nanoTime();
-        request.writeInt(MAGIC); request.writeShort(1); request.writeShort(0); request.writeLong(id);
+        request.writeInt(MAGIC); request.writeShort(2); request.writeShort(0); request.writeLong(id);
         request.writeByte(operation); request.writeLong(expectedGeneration); request.writeLong(revision);
-        if (args.size() > 8) throw new IOException("ui.argument_limit");
+        if (args.size() > 8) throw new RequestRejected("ui.argument_limit");
         request.writeShort(args.size()); for (String arg : args) text(request, arg);
-        if (bytes.size() > LIMIT) throw new IOException("ui.frame_limit");
+        if (bytes.size() > LIMIT) throw new RequestRejected("ui.frame_limit");
         output.writeInt(bytes.size()); bytes.writeTo(output); output.flush();
         int size = input.readInt();
         if (size <= 0 || size > LIMIT) throw new IOException("ui.frame_limit");
         byte[] body = input.readNBytes(size);
         if (body.length != size) throw new EOFException("ui.truncated_response");
         DataInputStream in = new DataInputStream(new ByteArrayInputStream(body));
-        if (in.readInt() != MAGIC || in.readUnsignedShort() != 1 || in.readUnsignedShort() != 0 || in.readLong() != id)
+        if (in.readInt() != MAGIC || in.readUnsignedShort() != 2 || in.readUnsignedShort() != 0 || in.readLong() != id)
             throw new IOException("ui.protocol_or_correlation");
         int status = in.readUnsignedByte(); long serverGeneration = in.readLong();
         Set<String> capabilities = Set.copyOf(Arrays.asList(text(in).split(",")));
@@ -185,19 +209,21 @@ public final class Bridge implements AutoCloseable {
             int flags = in.readUnsignedByte(), storage = in.readUnsignedByte();
             long project = in.readLong(), entry = in.readLong();
             String path = text(in), title = text(in);
-            Selection selection = new Selection(in.readUnsignedByte(), in.readLong(), in.readLong());
+            Selection selection = new Selection(in.readUnsignedByte(), in.readLong(), in.readLong(),in.readLong(),in.readLong());
             List<Document> documents = new ArrayList<>();
             for (int n = count(in); n > 0; --n)
-                documents.add(new Document(in.readLong(), in.readLong(), in.readUnsignedByte(), text(in)));
+                documents.add(new Document(in.readLong(), in.readLong(), in.readUnsignedByte(), text(in),in.readBoolean()));
             List<Node> nodes = new ArrayList<>();
             for (int n = count(in); n > 0; --n)
-                nodes.add(new Node(in.readLong(), in.readLong(), in.readLong(), in.readUnsignedByte(), text(in)));
+                nodes.add(new Node(in.readLong(), in.readLong(), in.readLong(), in.readUnsignedByte(), text(in),in.readLong(),in.readLong()));
             List<Asset> assets = new ArrayList<>();
             for (int n = count(in); n > 0; --n)
                 assets.add(new Asset(in.readLong(), in.readLong(), in.readLong(), in.readLong(),
                                      in.readBoolean(), text(in), text(in)));
+            List<Field> fields=new ArrayList<>();
+            for(int n=count(in);n>0;--n)fields.add(new Field(text(in),text(in),in.readUnsignedByte(),text(in),in.readBoolean(),text(in),text(in),in.readLong()));
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,
-                                    title, selection, documents, nodes, assets);
+                                    title, selection, documents, nodes, assets,fields);
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
         return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start);

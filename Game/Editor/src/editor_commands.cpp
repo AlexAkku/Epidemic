@@ -90,6 +90,8 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
             return false;
         project.documents.push_back(command.document);
         return true;
+    } else if constexpr (std::is_same_v<C, DiscardDocument>) {
+        return false; // Requires the native save point; handled by Execute.
     } else if constexpr (std::is_same_v<C, SetEntryScene>) {
         project.entry_scene = command.document;
         return true;
@@ -310,9 +312,7 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
             }
 
         }
-
     }
-
 }
 
 } // namespace
@@ -333,8 +333,33 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
     auto used = used_ids_;
     auto before = Ids(candidate);
     std::set<std::uint64_t> changed;
+    std::set<std::uint64_t> discarded;
     for (const auto &command : request.commands) {
-        if (!std::visit([&](const auto &value) { return Apply(candidate, value); }, command))
+        const auto *discard = std::get_if<DiscardDocument>(&command);
+        auto allowed_restored_ids = IdSet{};
+        bool applied = false;
+        if (discard) {
+            if (!saved_snapshot_ || request.commands.size() != 1)
+                return Result::Failure(Error("editor.discard_scope"));
+            const auto *saved = saved_snapshot_->Find(discard->document);
+            auto *live = Find(candidate.documents,
+                              [&](const auto &doc) { return doc.id == discard->document; });
+            if (!live)
+                return Result::Failure(Error("editor.command_target"));
+            if (saved) {
+                *live = *saved;
+                allowed_restored_ids = Ids(saved_snapshot_->definition);
+            } else {
+                std::erase_if(candidate.documents,
+                              [&](const auto &doc) { return doc.id == discard->document; });
+            }
+            discarded.insert(discard->document.Raw());
+            applied = true;
+        } else {
+            applied =
+                std::visit([&](const auto &value) { return Apply(candidate, value); }, command);
+        }
+        if (!applied)
             return Result::Failure(Error("editor.command_target"));
         std::visit(
             [&](const auto &value) {
@@ -347,7 +372,8 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
             command);
         auto after = Ids(candidate);
         for (const auto &id : after)
-            if (!before.contains(id) && !used.insert(id).second)
+            if (!before.contains(id) && !used.insert(id).second &&
+                !allowed_restored_ids.contains(id))
                 return Result::Failure(Error("editor.retired_id"));
         before = std::move(after);
         if (used.size() > 65536)
@@ -362,10 +388,22 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
         return Result::Failure(persistable.GetError());
     auto document_revision = next_document_;
     for (auto &doc : candidate.documents)
-        if (changed.contains(doc.id.Raw()))
+        if (changed.contains(doc.id.Raw()) && !discarded.contains(doc.id.Raw()))
             doc.revision = document_revision++;
+    // Discarding the last dirty document returns to a clean native save point;
+    // folder asset/visual dirty state remains owned by ProjectFolder.
+    bool at_save_point = !discarded.empty() && saved_snapshot_ &&
+                         candidate.entry_scene == saved_snapshot_->definition.entry_scene &&
+                         candidate.documents.size() == saved_documents_.size();
+    if (at_save_point)
+        for (const auto &doc : candidate.documents) {
+            const auto saved = saved_documents_.find(doc.id.Raw());
+            if (saved == saved_documents_.end() || saved->second != doc.revision)
+                at_save_point = false;
+        }
     auto snapshot = std::make_shared<const ProjectSnapshot>(
-        ProjectSnapshot{std::move(candidate), valid.Value(), next_state_});
+        ProjectSnapshot{std::move(candidate), valid.Value(),
+                        at_save_point ? saved_state_ : next_state_});
     EditReceipt receipt{epoch_ + 1, {}};
 
     for (const auto id : changed)
