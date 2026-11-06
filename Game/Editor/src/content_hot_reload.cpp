@@ -1,4 +1,6 @@
 #include "Epidemic/Game/Editor/content_hot_reload.h"
+#include <utility>
+#include <cstdio>
 #include <algorithm>
 #include <chrono>
 #include <system_error>
@@ -79,6 +81,17 @@ void ContentHotReload::SetEnabled(bool enabled) noexcept {
 
 void ContentHotReload::Cancel() noexcept {
     ++epoch_;
+    try {
+        if (pending_ && cancelled_.size() < 129)
+            cancelled_.push_back({pending_->id, HotAssetEventKind::Cancelled,
+                                  "editor.reimport_cancelled", 0, pending_->relative});
+        for (const auto id : manual_)
+            if (cancelled_.size() < 129)
+                cancelled_.push_back(
+                    {id, HotAssetEventKind::Cancelled, "editor.reimport_cancelled", 0, {}});
+    } catch (...) {
+        std::fputs("Asset cancellation: terminal diagnostic allocation failed; cancellation still proceeds\n", stderr);
+    }
     CancelPending();
     manual_.clear();
     for (auto &[id, state] : tracked_) {
@@ -95,10 +108,9 @@ foundation::Result<void> ContentHotReload::Request(const ProjectFolder &folder,
     using R = foundation::Result<void>;
     const auto found = std::find_if(folder.Sources().begin(), folder.Sources().end(),
                                     [&](const auto &source) { return source.id == asset; });
-    if (found == folder.Sources().end() || found->IsTrashed() ||
-        found->type != runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
-        return R::Failure(
-            foundation::Error::Create("editor.image_type", "Reimport requires an indexed PNG"));
+    if (found == folder.Sources().end() || found->IsTrashed() || !IsImportedMedia(found->type))
+        return R::Failure(foundation::Error::Create("editor.image_type",
+                                                    "Reimport requires indexed supported media"));
     if (root_ != folder.Root())
         Reset(folder);
     auto &state = tracked_[asset.Raw()];
@@ -120,12 +132,13 @@ void ContentHotReload::Reset(const ProjectFolder &folder) {
     root_ = folder.Root();
     tracked_.clear();
     manual_.clear();
+    cancelled_.clear();
     cursor_ = 0;
     // First observations are audit candidates, not trusted content baselines.
 }
 
 std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
-    std::vector<HotAssetEvent> events;
+    std::vector<HotAssetEvent> events = std::exchange(cancelled_, {});
     if (root_ != folder.Root())
         Reset(folder);
     const auto now = std::chrono::steady_clock::now();
@@ -218,9 +231,7 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
     for (std::size_t i = 0; i < count; ++i) {
         const auto index = candidates[i];
         const auto &source = sources[index];
-        if (source.IsTrashed() ||
-            source.type !=
-                runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
+        if (source.IsTrashed() || !IsImportedMedia(source.type))
             continue;
         auto &state = tracked_[source.id.Raw()];
         if (state.path != source.relative_path) {

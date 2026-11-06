@@ -31,14 +31,24 @@ public final class Bridge implements AutoCloseable {
         public Selection selection(){return new Selection(kind,document,id,component,part);}
     }
     public record Asset(long id, long type, long generation, long fingerprint, boolean trashed,
-                        String path, String cookedKey) { }
+                        String path, String cookedKey,String originalPath,String metadata,boolean present) {
+        public Asset(long id,long type,long generation,long fingerprint,boolean trashed,String path,String cookedKey){this(id,type,generation,fingerprint,trashed,path,cookedKey,"","",true);}
+    }
+    public record AssetEvent(long id,int kind,String diagnostic,long job,String source) { }
+    public record Reference(long source,long dependent,String origin,boolean required) { }
+    public record Sprite(long document,String key,float x,float y,float sx,float sy,float rotation,float ppu,float pivotX,float pivotY) { }
+    public record AssetState(List<Sprite> sprites,int totalAssets,long revision,List<AssetEvent> events,List<Reference> references,int width,int height,String pixels,String previewError) {
+        public AssetState {sprites=List.copyOf(sprites);events=List.copyOf(events);references=List.copyOf(references);}
+        public static AssetState empty(){return new AssetState(List.of(),0,0,List.of(),List.of(),0,0,"","");}
+    }
     public record Snapshot(long revision, long assetRevision, long selectionRevision, int flags,
         int storage, long project, long entry, String path, String title, Selection selection,
-        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields) {
+        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState) {
         public Snapshot {
             documents = List.copyOf(documents); nodes = List.copyOf(nodes); assets = List.copyOf(assets);
             fields=List.copyOf(fields);
         }
+        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty());}
         public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,List.of());}
         public boolean dirty() { return (flags & 1) != 0; }
         public boolean canUndo() { return (flags & 2) != 0; }
@@ -101,7 +111,7 @@ public final class Bridge implements AutoCloseable {
         return callAt(expectedGeneration, expectedRevision, operation, args);
     }
     public CompletableFuture<Reply> callAt(long expectedGeneration, long expectedRevision, int operation, String... args) {
-        return enqueue(() -> exchange(operation, expectedGeneration, expectedRevision, List.of(args)));
+        return enqueue(() -> exchange(operation, expectedGeneration, expectedRevision, List.of(args)),operation==26);
     }
     private interface Request { Reply run() throws Exception; }
     private static final class RequestRejected extends IOException {
@@ -116,12 +126,13 @@ public final class Bridge implements AutoCloseable {
             }
         };
         final Request request;
+        final boolean quiet;
         final long epoch = connection;
-        Task(Request request) { this.request = request; }
+        Task(Request request,boolean quiet) { this.request = request;this.quiet=quiet; }
         public void run() {
             synchronized (this) { if (future.isCancelled()) return; started = true; }
             if (closed || epoch != connection) { future.completeExceptionally(new IOException("ui.cancelled")); return; }
-            publish(Service.Loading, "", epoch);
+            if(!quiet)publish(Service.Loading, "", epoch);
             ScheduledFuture<?> timeout;
             try { timeout = timer.schedule(() -> {
                 if (future.completeExceptionally(new IOException("ui.backend_timeout"))) {
@@ -148,7 +159,10 @@ public final class Bridge implements AutoCloseable {
         }
     }
     private CompletableFuture<Reply> enqueue(Request request) {
-        Task task = new Task(request);
+        return enqueue(request,false);
+    }
+    private CompletableFuture<Reply> enqueue(Request request,boolean quiet) {
+        Task task = new Task(request,quiet);
         if (closed) task.future.completeExceptionally(new IOException("ui.closed"));
         else try { worker.execute(task); }
         catch (RejectedExecutionException busy) { task.future.completeExceptionally(new IOException("ui.queue_full")); }
@@ -186,7 +200,7 @@ public final class Bridge implements AutoCloseable {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream request = new DataOutputStream(bytes);
         long id = ++correlation, start = System.nanoTime();
-        request.writeInt(MAGIC); request.writeShort(2); request.writeShort(0); request.writeLong(id);
+        request.writeInt(MAGIC); request.writeShort(3); request.writeShort(0); request.writeLong(id);
         request.writeByte(operation); request.writeLong(expectedGeneration); request.writeLong(revision);
         if (args.size() > 8) throw new RequestRejected("ui.argument_limit");
         request.writeShort(args.size()); for (String arg : args) text(request, arg);
@@ -197,7 +211,7 @@ public final class Bridge implements AutoCloseable {
         byte[] body = input.readNBytes(size);
         if (body.length != size) throw new EOFException("ui.truncated_response");
         DataInputStream in = new DataInputStream(new ByteArrayInputStream(body));
-        if (in.readInt() != MAGIC || in.readUnsignedShort() != 2 || in.readUnsignedShort() != 0 || in.readLong() != id)
+        if (in.readInt() != MAGIC || in.readUnsignedShort() != 3 || in.readUnsignedShort() != 0 || in.readLong() != id)
             throw new IOException("ui.protocol_or_correlation");
         int status = in.readUnsignedByte(); long serverGeneration = in.readLong();
         Set<String> capabilities = Set.copyOf(Arrays.asList(text(in).split(",")));
@@ -219,11 +233,22 @@ public final class Bridge implements AutoCloseable {
             List<Asset> assets = new ArrayList<>();
             for (int n = count(in); n > 0; --n)
                 assets.add(new Asset(in.readLong(), in.readLong(), in.readLong(), in.readLong(),
-                                     in.readBoolean(), text(in), text(in)));
+                                     in.readBoolean(), text(in), text(in),text(in),text(in),in.readBoolean()));
             List<Field> fields=new ArrayList<>();
             for(int n=count(in);n>0;--n)fields.add(new Field(text(in),text(in),in.readUnsignedByte(),text(in),in.readBoolean(),text(in),text(in),in.readLong()));
+            List<Sprite> sprites=new ArrayList<>();
+            for(int n=count(in);n>0;--n){long document=in.readLong();String key=text(in);float[] values=new float[8];for(int i=0;i<8;i++){values[i]=(float)in.readDouble();if(!Float.isFinite(values[i]))throw new IOException("ui.sprite_finite");}sprites.add(new Sprite(document,key,values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]));}
+            int totalAssets=count(in);long contentRevision=in.readLong();
+            List<AssetEvent> events=new ArrayList<>();
+            for(int n=count(in);n>0;--n)events.add(new AssetEvent(in.readLong(),in.readUnsignedByte(),text(in),in.readLong(),text(in)));
+            List<Reference> references=new ArrayList<>();
+            for(int n=count(in);n>0;--n)references.add(new Reference(in.readLong(),in.readLong(),text(in),in.readBoolean()));
+            int width=in.readInt(),height=in.readInt();String pixels=text(in),previewError=text(in);
+            if(width<0||height<0||width>128||height>128||pixels.length()!=width*height*8)throw new IOException("ui.preview_bounds");
+            for(int at=0;at<pixels.length();at++){char hex=pixels.charAt(at);if(!((hex>='0'&&hex<='9')||(hex>='a'&&hex<='f')))throw new IOException("ui.preview_encoding");}
+            AssetState assetState=new AssetState(sprites,totalAssets,contentRevision,events,references,width,height,pixels,previewError);
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,
-                                    title, selection, documents, nodes, assets,fields);
+                                    title, selection, documents, nodes, assets,fields,assetState);
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
         return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start);

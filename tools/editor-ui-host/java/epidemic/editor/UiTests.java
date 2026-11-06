@@ -405,7 +405,7 @@ public final class UiTests {
         Path directory = Path.of(args[0]); Files.createDirectories(directory);
         Path project = directory.resolve("Game-" + System.nanoTime());
         Path executable = Path.of(System.getProperty("epidemic.ui.backend"));
-        presentation(); documentReaders(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);scalarAndDiscard(executable,directory);scalarWidgets(executable,directory);
+        presentation(); documentReaders(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);scalarAndDiscard(executable,directory);scalarWidgets(executable,directory);AssetTests.run(executable,directory);
         try (Bridge bridge = new Bridge(executable, directory, state -> { })) {
             require(result(bridge.connect()).snapshot() == null, "Handshake created a project");
             var opened = result(bridge.call(3, project.toString(), "Новая игра"));

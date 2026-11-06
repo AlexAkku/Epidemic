@@ -211,8 +211,7 @@ foundation::Result<void> EditorWorkspace::ReimportPng(runtime::AssetId asset) {
         return Finish(foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
     for (const auto &record : folder_->Sources())
         if (record.id == asset) {
-            if (record.type !=
-                runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")})
+            if (!IsImportedMedia(record.type))
                 return Finish(foundation::Result<void>::Failure(Error("editor.image_type")));
             return Finish(
                 hot_reload_.Request(*folder_,
@@ -329,6 +328,11 @@ std::vector<std::shared_ptr<const PlayActivation>> EditorWorkspace::Activations(
 bool EditorWorkspace::Exists(const UiSelection &selection) const {
     if (!Project())
         return false;
+    if (selection.kind == UiElement::Asset)
+        return folder_ && !selection.document.IsValid() && !selection.component.IsValid() &&
+               !selection.part.IsValid() &&
+               std::any_of(folder_->Sources().begin(), folder_->Sources().end(),
+                           [&](const auto &asset) { return asset.id.Raw() == selection.element; });
     const auto *doc = Project()->Snapshot()->Find(selection.document);
     if (!doc)
         return false;

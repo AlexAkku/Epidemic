@@ -3,6 +3,7 @@
 #include "Epidemic/Game/Editor/project_path.h"
 #include <limits>
 #include <utility>
+#include <cstdio>
 
 namespace epidemic::game::editor {
 ContentImportQueue::~ContentImportQueue() {
@@ -11,13 +12,32 @@ ContentImportQueue::~ContentImportQueue() {
 
 void ContentImportQueue::Cancel() noexcept {
     ++epoch_;
+    // Keep bounded terminal outcomes for the existing owner-thread Poll stream.
+    try {
+        for (const auto &request : queued_)
+            if (cancelled_.size() < 129)
+                cancelled_.push_back({{},
+                                      HotAssetEventKind::Cancelled,
+                                      "editor.import_cancelled",
+                                      request.job,
+                                      request.destination});
+    } catch (...) {
+        std::fputs("Asset cancellation: terminal diagnostic allocation failed; cancellation still proceeds\n", stderr);
+    }
     queued_.clear();
     if (!pending_)
         return;
     pending_->cancel->store(true, std::memory_order_relaxed);
     try {
-        if (pending_->worker.wait_for(std::chrono::milliseconds{0}) == std::future_status::ready)
+        if (pending_->worker.wait_for(std::chrono::milliseconds{0}) == std::future_status::ready) {
+            if (cancelled_.size() < 129)
+                cancelled_.push_back({{},
+                                      HotAssetEventKind::Cancelled,
+                                      "editor.import_cancelled",
+                                      pending_->request.job,
+                                      pending_->request.destination});
             pending_.reset();
+        }
     } catch (...) {
         return;
     }
@@ -26,6 +46,7 @@ void ContentImportQueue::Cancel() noexcept {
 
 void ContentImportQueue::Reset(const std::filesystem::path &root) {
     Cancel();
+    cancelled_.clear();
     root_ = root;
 }
 
@@ -61,7 +82,7 @@ foundation::Result<std::uint64_t> ContentImportQueue::Enqueue(const ProjectFolde
 std::vector<HotAssetEvent> ContentImportQueue::Poll(ProjectFolder &folder) {
     if (root_ != folder.Root())
         Reset(folder.Root());
-    std::vector<HotAssetEvent> events;
+    std::vector<HotAssetEvent> events = std::exchange(cancelled_, {});
     if (pending_ &&
         pending_->worker.wait_for(std::chrono::milliseconds{0}) == std::future_status::ready) {
         auto completed = std::exchange(pending_, nullptr);
@@ -77,6 +98,7 @@ std::vector<HotAssetEvent> ContentImportQueue::Poll(ProjectFolder &folder) {
             }
 
         }();
+        const auto first_event = events.size();
         if (completed->request.epoch != epoch_ ||
             completed->cancel->load(std::memory_order_relaxed))
             events.push_back({{}, HotAssetEventKind::Cancelled, "editor.import_cancelled"});
@@ -99,6 +121,10 @@ std::vector<HotAssetEvent> ContentImportQueue::Poll(ProjectFolder &folder) {
                      imported.GetError().code + ": " + completed->request.destination});
         }
 
+        for (auto index = first_event; index < events.size(); ++index) {
+            events[index].job = completed->request.job;
+            events[index].source = completed->request.destination;
+        }
     }
 
     if (!pending_ && !queued_.empty()) {
@@ -112,7 +138,9 @@ std::vector<HotAssetEvent> ContentImportQueue::Poll(ProjectFolder &folder) {
             pending_ = std::move(next);
             events.push_back({{},
                               HotAssetEventKind::Queued,
-                              "editor.asset_importing: " + pending_->request.destination});
+                              "editor.asset_importing: " + pending_->request.destination,
+                              pending_->request.job,
+                              pending_->request.destination});
         } catch (const std::exception &error) {
             events.push_back({{},
                               HotAssetEventKind::Failed,

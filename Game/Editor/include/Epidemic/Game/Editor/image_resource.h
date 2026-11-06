@@ -76,6 +76,7 @@ class PreparedCookedPng final {
     friend foundation::Result<PreparedCookedPng> PrepareImportedPng(const std::filesystem::path &,
                                                                     const std::filesystem::path &,
                                                                     const std::atomic_bool *);
+    runtime::AssetType type_{foundation::StringId::FromString("epidemic.texture.png")};
     std::string key_, relative_;
     std::filesystem::path root_;
     std::uint64_t source_hash_ = 0;
@@ -90,6 +91,10 @@ PrepareCookedPng(const std::filesystem::path &root, std::string_view relative,
 [[nodiscard]] foundation::Result<PreparedCookedPng>
 PrepareImportedPng(const std::filesystem::path &root, const std::filesystem::path &external,
                    const std::atomic_bool *cancel = nullptr);
+[[nodiscard]] std::string CookedMediaMetadata(const std::filesystem::path &root,
+                                              std::string_view key);
+[[nodiscard]] bool IsImportedMedia(runtime::AssetType type) noexcept;
+[[nodiscard]] bool IsImportedTexture(runtime::AssetType type) noexcept;
 // Same PBGRA source pixels, nearest reduction; bounded to a 128x128 preview.
 [[nodiscard]] DecodedPng MakeImageThumbnail(const DecodedPng &image);
 } // namespace epidemic::game::editor

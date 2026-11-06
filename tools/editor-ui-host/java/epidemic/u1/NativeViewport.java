@@ -15,6 +15,11 @@ public final class NativeViewport extends Canvas {
             System.load(java.nio.file.Path.of(System.getProperty("java.home"),"bin","jawt.dll").toString());
         System.load(System.getProperty("epidemic.u1.native"));
     }
+    private String sceneRoot="",appliedRoot="";
+    private java.util.List<epidemic.editor.Bridge.Sprite> sprites=java.util.List.of(),appliedSprites=java.util.List.of();
+    private long appliedSurface;
+    public void projectScene(String root,java.util.List<epidemic.editor.Bridge.Sprite> sprites){edt();sceneRoot=root;this.sprites=java.util.List.copyOf(sprites);}
+    private static native String scene(long surface,String root,String[] keys,float[] geometry);
     private long surface;
     private long root;
     private String result = "NOT RUN";
@@ -60,6 +65,12 @@ public final class NativeViewport extends Canvas {
         String[] parts = result.split(" ");
         surface = Long.parseLong(parts[1]);
         root = Long.parseLong(parts[3]);
+        if(!sceneRoot.isEmpty()&&(appliedSurface!=surface||!appliedRoot.equals(sceneRoot)||!appliedSprites.equals(sprites))){
+            String[] keys=new String[sprites.size()];float[] geometry=new float[sprites.size()*8];
+            for(int i=0;i<sprites.size();i++){var row=sprites.get(i);keys[i]=row.key();float[] values={row.x(),row.y(),row.sx(),row.sy(),row.rotation(),row.ppu(),row.pivotX(),row.pivotY()};System.arraycopy(values,0,geometry,i*8,8);}
+            String reply=scene(surface,sceneRoot,keys,geometry);if(!reply.startsWith("PASS "))throw new IllegalStateException(reply);
+            appliedRoot=sceneRoot;appliedSprites=sprites;appliedSurface=surface;
+        }
         ++submittedFrames;
     }
     public long rootWindow() { return root; }

@@ -1,0 +1,11 @@
+Microsoft Visual C++ Runtime (x64, release redistributable)
+
+The product bundles the release CRT from the build machine's licensed Visual
+Studio VC/Redist/MSVC distribution, at least as new as the active compiler.
+The Microsoft-signed binaries are copied unchanged. No debug CRT or system UCRT
+files are redistributed. These files are governed by the applicable Microsoft
+Visual Studio license and redistributable terms:
+https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files
+
+The derived product runtime overlays this compatible release CRT to prevent an
+older JBR-local CRT from shadowing it. The verified upstream JBR cache is intact.

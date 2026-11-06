@@ -60,6 +60,10 @@ public final class PlatformSession implements Disposable {
     private String context="",selectedPanel="scene.editor";
     private DefaultActionGroup menu;
     private AnAction saveAction,saveAllAction,undoAction,redoAction,playAction,stopAction,playToggleAction;
+    private javax.swing.Timer assetPoll;
+    private boolean assetPolling;
+    private long loggedContentRevision;
+    private String importFolder="",assetQuery="";
     private Bridge.Selection pendingSelection;
     private Bridge.Selection reconnectSelection;
     private boolean selecting;
@@ -181,11 +185,15 @@ public final class PlatformSession implements Disposable {
         if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot,rejected);for(var view:List.copyOf(views)){view.reader().refresh(snapshot,rejected);refreshDocument(view);}refreshDocumentCommands();
             JFrame frame=WindowManager.getInstance().getFrame(project);if(frame!=null)frame.setTitle("Epidemic — "+snapshot.title()+" · "+snapshot.path()+(snapshot.dirty()?" · Unsaved":"")+(service==Bridge.Service.Loading?" · Working…":service==Bridge.Service.Error?" · Disconnected — read-only":""));
         }
-        if(state.service()==Bridge.Service.Ready)flushSelection();
+        if(snapshot!=null && tools!=null && snapshot.assetState().revision()!=loggedContentRevision){
+            var events=snapshot.assetState().events();int count=(int)Math.min(events.size(),Math.max(0,snapshot.assetState().revision()-loggedContentRevision));
+            for(var event:events.subList(events.size()-count,events.size()))tools.log(event.diagnostic());loggedContentRevision=snapshot.assetState().revision();
+        }
+        if(state.service()==Bridge.Service.Ready){startAssetPolling();if(snapshot!=null&&snapshot.selection().kind()==6&&!context.equals("Asset"))context("Asset");else if(snapshot!=null&&snapshot.selection().kind()!=6&&context.equals("Asset"))context(Catalog.context(selectedPanel));flushSelection();}
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){return new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument,this::editField);}
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);return result;}
     private CompletableFuture<Bridge.Reply> editField(ScalarInspector.Edit edit){
         if(!supports("scalar-inspector")||snapshot.playing()||!pendingDocumentCloses.isEmpty())return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
         service=Bridge.Service.Loading;refreshDocumentCommands();
@@ -302,6 +310,7 @@ public final class PlatformSession implements Disposable {
         }
         for(var view:views)refreshDocument(view);
         refreshDocumentCommands();
+        if(!assetQuery.isEmpty())bridge.call(28,assetQuery).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});
         if(reconnectSelection!=null){
             var wanted=reconnectSelection;reconnectSelection=null;
             if(wanted.document()==0||wanted.kind()==0&&value.documents().stream().anyMatch(d->d.id()==wanted.document())||value.nodes().stream().anyMatch(n->n.selection().equals(wanted)))select(wanted);
@@ -513,14 +522,53 @@ public final class PlatformSession implements Disposable {
         }catch(IOException|RuntimeException error){failure(error);}
     }
     private void command(int operation,String...args){if(!ready())return;bridge.call(operation,args).whenComplete((r,e)->{if(e!=null)edt(()->failure(e));});}
+    private void startAssetPolling(){
+        if(assetPoll!=null)return;
+        assetPoll=new javax.swing.Timer(500,event->{
+            if(smoke||!ready()||assetPolling||!supports("asset-pipeline"))return;
+            assetPolling=true;Bridge participant=bridge;
+            participant.call(26).whenComplete((reply,error)->edt(()->{assetPolling=false;if(bridge==participant&&error!=null&&service!=Bridge.Service.Error)documentFailure(error);}));
+        });assetPoll.start();com.intellij.openapi.util.Disposer.register(this,()->assetPoll.stop());
+    }
+    private void assetAction(String action,Long id){
+        if(!supports("asset-pipeline"))return;
+        if(action.startsWith("Search:")){assetQuery=action.substring(7);bridge.call(28,assetQuery).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});return;}
+        if(action.equals("cancel")){bridge.call(25).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});return;}
+        if(action.equals("Watch")){int choice=Messages.showYesNoDialog(project,"Watch indexed Content sources? Polling/debounce remains native. External original files are not watched; edit the source copied inside Content or use Import again.","Native Content Watch",Messages.getQuestionIcon());bridge.call(27,choice==Messages.YES?"1":"0");return;}
+        var asset=snapshot.assets().stream().filter(a->a.id()==id).findFirst().orElse(null);if(asset==null){Messages.showInfoMessage(project,"Select an asset in Project Explorer first.","Asset command");return;}
+        long generation=bridge.latest().generation(),revision=snapshot.revision(),assetRevision=snapshot.assetRevision();
+        String token=Long.toUnsignedString(assetRevision),assetId=Long.toUnsignedString(id);int operation;String[] args;
+        switch(action){
+            case "Rename / Move","Duplicate"->{String path=Messages.showInputDialog(project,"New Content-relative path (existing parent folder; no cross-volume moves)",action,Messages.getQuestionIcon(),asset.path().replaceFirst("^Content/",""),null);if(path==null)return;operation=action.equals("Duplicate")?21:20;args=new String[]{token,assetId,path};}
+            case "Reimport"->{operation=19;args=new String[]{token,assetId};}
+            case "Restore"->{operation=23;args=new String[]{token,assetId};}
+            case "Delete"->{
+                var incoming=snapshot.assetState().references().stream().filter(r->r.source()==id).toList();
+                String names=incoming.stream().limit(20).map(r->snapshot.documents().stream().filter(d->d.id()==r.dependent()).findFirst().map(d->d.name()+" ["+Long.toUnsignedString(d.id())+"]").orElse(Long.toUnsignedString(r.dependent()))+" · "+r.origin()).collect(java.util.stream.Collectors.joining("\n"));
+                String message="Stage delete "+asset.path()+"?\nIncoming references ("+incoming.size()+"):\n"+names+(incoming.size()>20?"\n...see Asset References for the remaining IDs":"")+"\nStable identities remain missing; Restore is available.";
+                if(Messages.showYesNoDialog(project,message,"Delete asset",Messages.getWarningIcon())!=Messages.YES)return;operation=22;args=new String[]{token,assetId,incoming.isEmpty()?"0":"1"};
+            }
+            case "Assign to Prefab"->{var prefabs=snapshot.documents().stream().filter(d->d.kind()==1).toList();if(prefabs.isEmpty()){Messages.showInfoMessage(project,"Create a Prefab first.","Assign sprite");return;}String[] choices=prefabs.stream().map(d->d.name()+" ["+Long.toUnsignedString(d.id())+"]").toArray(String[]::new);JComboBox<String> picker=new JComboBox<>(choices);if(JOptionPane.showConfirmDialog(WindowManager.getInstance().getFrame(project),picker,"Assign Sprite",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;int choice=picker.getSelectedIndex();if(choice<0)return;operation=24;args=new String[]{token,Long.toUnsignedString(prefabs.get(choice).id()),assetId};}
+            default->{return;}
+        }
+        bridge.callAt(generation,revision,operation,args).whenComplete((r,e)->edt(()->{if(e!=null)documentFailure(e);}));
+    }
     private void importPicker(){
         // Platform owns modal/focus state and chooses a supported picker for the
         // runtime (its own dialog on standard OpenJDK, native chooser on JBR).
         // A raw AWT FileDialog bypasses that state in an IntelliJ application.
-        FileChooserDescriptor descriptor=new FileChooserDescriptor(true,false,false,false,false,false)
-            .withTitle("Import source file — planned F1");
-        FileChooser.chooseFile(descriptor,project,WindowManager.getInstance().getFrame(project),null,
-            file->tools.log("Selected "+file.getPath()+"; import mutation planned for F1"));
+        if(!supports("asset-pipeline")||snapshot.storage()!=2||snapshot.playing())return;
+        FileChooserDescriptor descriptor=new FileChooserDescriptor(true,false,false,false,false,true)
+            .withTitle("Import PNG / WebP / PCM WAV / TTF / OTF").withFileFilter(file->{if(file.isDirectory())return true;String ext=file.getExtension();return ext!=null&&Set.of("png","webp","wav","ttf","otf").contains(ext.toLowerCase(Locale.ROOT));});
+        Window active=KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
+        Component pickerParent=active==null?WindowManager.getInstance().getFrame(project):active;
+        FileChooser.chooseFiles(descriptor,project,pickerParent,null,files->{
+            if(files.isEmpty())return;
+            String destination=Messages.showInputDialog(project,"Existing Content-relative destination folder (empty = Content root)","Import Files",Messages.getQuestionIcon(),importFolder,null);if(destination==null)return;
+            importFolder=destination;Bridge participant=bridge;long generation=participant.latest().generation();
+            CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);
+            for(var file:files)chain=chain.thenCompose(v->{var current=participant.latest().snapshot();return participant.callAt(generation,current.revision(),18,Long.toUnsignedString(current.assetRevision()),file.getPath(),(destination.isBlank()?"":destination+"/")+file.getName()).handle((reply,error)->{if(error!=null)edt(()->{Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();tools.log("Import rejected: "+file.getPath()+" · "+cause.getMessage());});return (Void)null;});});
+        });
     }
     private AnAction action(String label,Runnable run,java.util.function.BooleanSupplier enabled){
         return new AnAction(label){
@@ -552,7 +600,7 @@ public final class PlatformSession implements Disposable {
         for(Catalog.Panel panel:catalog.panels())sub.get("View").add(action(panel.label(),()->open(panel.id()),()->opened));
         sub.get("Project").add(action("Project Settings",()->open("settings.project"),()->opened));sub.get("Project").add(action("Reconnect native backend",this::reconnect,()->opened&&service==Bridge.Service.Error));
         sub.get("Project").addSeparator();sub.get("Project").add(playAction);sub.get("Project").add(stopAction);
-        sub.get("Assets").add(action("Import…",this::importPicker,()->opened));
+        sub.get("Assets").add(action("Import…",this::importPicker,()->supports("asset-pipeline")&&snapshot.storage()==2&&!snapshot.playing()));
         for(String group:List.of("GameObject","Graph","Build"))sub.get(group).add(action("Backend planned for "+(group.equals("Graph")?"F3":group.equals("Build")?"F9":"F2"),()->{},()->false));
         sub.get("Tools").add(action("UI Gallery",()->open("settings.editor"),()->opened));sub.get("Tools").add(action("Type Registry",()->open("type.registry"),()->opened));sub.get("Tools").add(action("Find Panel…",this::palette,()->opened));
         sub.get("Window").add(action("Move Inspector to Windows window",()->primary.setType(ToolWindowType.WINDOWED,()->primary.show(null)),()->opened));
@@ -607,7 +655,7 @@ public final class PlatformSession implements Disposable {
             closing=false;if(error!=null){failure(error);return;}closedUi(exit);
         }));
     }
-    private void closedUi(boolean exit){opened=false;snapshot=null;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
+    private void closedUi(boolean exit){opened=false;snapshot=null;loggedContentRevision=0;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
     private void exit(){if(opened){close(true);return;}finish();}
     private void finish(){if(bridge==null){exitApplication();return;}bridge.shutdown().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}if(smoke)require(NativeViewport.metrics()[0]==0,"Project close leaked native surfaces");record("PASS Platform native shutdown; surfaces="+NativeViewport.metrics()[0]);exitApplication();}));}
     private void exitApplication(){
@@ -695,7 +743,7 @@ public final class PlatformSession implements Disposable {
     }
     private void waitFor(java.util.function.BooleanSupplier condition,int attempt,Runnable next){
         if(condition.getAsBoolean()){next.run();return;}
-        require(attempt<50,"Timed out waiting for asynchronous document close/open; service="+service+" guards="+floatingGuards.size()+" views="+views.size()+" windows="+floatingGuards.keySet().stream().map(w->"showing="+w.isShowing()+", displayable="+w.isDisplayable()).toList());later(100,()->waitFor(condition,attempt+1,next));
+        require(attempt<50,"Timed out waiting for asynchronous document close/open; service="+service+" native="+Arrays.toString(NativeViewport.metrics())+" sprites="+(snapshot==null?0:snapshot.assetState().sprites().size())+" guards="+floatingGuards.size()+" views="+views.size()+" windows="+floatingGuards.keySet().stream().map(w->"showing="+w.isShowing()+", displayable="+w.isDisplayable()).toList());later(100,()->waitFor(condition,attempt+1,next));
     }
     private void smokeScalarClose(){
         require(com.intellij.openapi.vfs.VirtualFilePreCloseCheck.Companion.getEP_NAME().getExtensionsIfPointIsRegistered().stream().anyMatch(check->check instanceof DocumentCloseCheck),"Native document pre-close extension not registered");
@@ -770,9 +818,61 @@ public final class PlatformSession implements Disposable {
             saveProject();smokeWindowClose(window,Messages.YES);
             waitFor(()->!window.isDisplayable()&&ready(),0,()->{
                 require(!snapshot.dirty()&&snapshot.documents().stream().anyMatch(d->d.id()==id&&d.name().equals("Ordered Save close")),"Close raced an outstanding Save");
-                record("PASS F0 immediate Save then floating close awaited actual native commit");smokePlayback();
+                record("PASS F0 immediate Save then floating close awaited actual native commit");smokeAssets();
             });
         })));
+    }
+    private void captureAssetColor(NativeViewport canvas,String filename,int rgb){
+        Path target=output.resolve(filename);canvas.captureTo(target.toString());
+        try{BufferedImage image=ImageIO.read(target.toFile());int count=0,left=image.getWidth(),right=0,top=image.getHeight(),bottom=0;
+            for(int y=0;y<image.getHeight();y++)for(int x=0;x<image.getWidth();x++)if((image.getRGB(x,y)&0xffffff)==rgb){++count;left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+            require(count>0,"Native Renderer capture has no published sprite color: "+filename);
+            require(Math.abs((right-left+1)-2*(bottom-top+1))<=2,"Native sprite aspect/clip mismatch: "+filename);
+            record("PASS F1 native GPU pixels "+filename+" matching="+count+" bounds="+(right-left+1)+"x"+(bottom-top+1));
+        }catch(IOException error){throw new UncheckedIOException(error);}
+    }
+    private void smokeAssetPoll(java.util.function.BooleanSupplier condition,int attempt,Runnable next){
+        if(attempt>300){failure(new IllegalStateException("F1 native asset publication timeout"));return;}
+        bridge.call(26).whenComplete((reply,error)->edt(()->{if(error!=null){failure(error);return;}if(condition.getAsBoolean())next.run();else later(40,()->smokeAssetPoll(condition,attempt+1,next));}));
+    }
+    private void smokeAssets(){
+        WindowManager.getInstance().getFrame(project).setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+        Path external=output.resolve("f1-import.png");
+        CompletableFuture.runAsync(()->{try{BufferedImage image=new BufferedImage(8,4,BufferedImage.TYPE_INT_ARGB);for(int y=0;y<4;y++)for(int x=0;x<8;x++)image.setRGB(x,y,0xffff0000);ImageIO.write(image,"png",external.toFile());}catch(IOException error){throw new UncheckedIOException(error);}},io)
+        .thenCompose(v->bridge.call(18,Long.toUnsignedString(bridge.latest().snapshot().assetRevision()),external.toString(),"f1-import.png"))
+        .whenComplete((reply,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            smokeAssetPoll(()->snapshot.assets().stream().anyMatch(asset->asset.path().equals("Content/f1-import.png")),0,()->{
+                var asset=snapshot.assets().stream().filter(a->a.path().equals("Content/f1-import.png")).findFirst().orElseThrow();
+                var prefab=snapshot.documents().stream().filter(d->d.kind()==1).findFirst().orElseThrow();
+                bridge.call(24,Long.toUnsignedString(snapshot.assetRevision()),Long.toUnsignedString(prefab.id()),Long.toUnsignedString(asset.id())).whenComplete((assigned,failed)->edt(()->{
+                    if(failed!=null){failure(failed);return;}openDocument(prefab);
+                    String panel="prefab.canvas:"+Long.toUnsignedString(prefab.id());
+                    waitFor(()->NativeViewport.metrics().length==9&&NativeViewport.metrics()[7]>0&&NativeViewport.metrics()[8]==0,0,()->{
+                        NativeViewport canvas=views.stream().filter(view->view.file()==documents.get(panel)).map(view->view.reader().nativeView(panel)).filter(Objects::nonNull).findFirst().orElseThrow();
+                        captureAssetColor(canvas,"f1-native-sprite-before.png",0x00ff0000);
+                        smokeAssetReimport(external,asset.id(),asset.cookedKey(),canvas);
+                    });
+                }));
+            });
+        }));
+    }
+    private void smokeAssetReimport(Path external,long id,String oldKey,NativeViewport canvas){
+        Path source=Path.of(snapshot.path()).getParent().resolve("Content/f1-import.png");
+        CompletableFuture.runAsync(()->{try{BufferedImage image=new BufferedImage(8,4,BufferedImage.TYPE_INT_ARGB);for(int y=0;y<4;y++)for(int x=0;x<8;x++)image.setRGB(x,y,0xff0000ff);ImageIO.write(image,"png",source.toFile());}catch(IOException error){throw new UncheckedIOException(error);}},io)
+        .thenCompose(v->bridge.call(19,Long.toUnsignedString(bridge.latest().snapshot().assetRevision()),Long.toUnsignedString(id)))
+        .whenComplete((reply,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            smokeAssetPoll(()->snapshot.assets().stream().anyMatch(a->a.id()==id&&!a.cookedKey().equals(oldKey)),0,()->{
+                bridge.call(9,"6","0",Long.toUnsignedString(id)).whenComplete((selected,failed)->edt(()->{
+                    if(failed!=null){failure(failed);return;}
+                    waitFor(()->NativeViewport.metrics()[7]>0&&NativeViewport.metrics()[8]==0,0,()->later(300,()->{
+                        captureAssetColor(canvas,"f1-native-sprite-after.png",0x000000ff);capture("f1-asset-details");
+                        saveProject().whenComplete((saved,saveError)->edt(()->{if(saveError!=null){failure(saveError);return;}record("PASS F1 actual Platform import/assignment/reimport, selected Asset Details, retained native Renderer sprite/Resource leases; captured both generations");smokePlayback();}));
+                    }));
+                }));
+            });
+        }));
     }
     private void smokePlayback(){
         long revision=snapshot.revision(),identity=snapshot.project();

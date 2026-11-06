@@ -39,8 +39,9 @@ and floating document HWNDs. Save flushes drafts; publication and callbacks shar
 the Platform queue. Details and actual qualification/owner statuses are in
 FI_FEATURE_MATRIX.md; visible acceptance is not inferred from smoke.
 
-F1 remains next: Project Explorer assets/import/cook/watch/lease/history/refs
-and preserved P04 debt. Entity picking/gizmos/composition are F2. Continuous Game
+F1 now wires Project Explorer, typed PNG/WebP/WAV/SFNT import, cook/watch,
+leases, mixed history, refs and native previews; qualification/owner acceptance
+are tracked in FI_FEATURE_MATRIX.md. Preserve remaining P04 debt explicitly. Entity picking/gizmos/composition are F2. Continuous Game
 View, advanced runtime/debug presentation are F-II/F8 under the new F-I task;
 they are not remaining F0 work. Dynamic schema/default authoring stays F4.
 Retired UI compatibility remains outside the target contract.

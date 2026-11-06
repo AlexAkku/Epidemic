@@ -499,6 +499,11 @@ Restored RestoreCommit(const std::filesystem::path &root, const std::filesystem:
 
 }
 
+std::string Utf8Filename(const std::filesystem::path &path) {
+    const auto bytes = path.filename().generic_u8string();
+    return {reinterpret_cast<const char *>(bytes.data()), bytes.size()};
+}
+
 std::vector<std::filesystem::path> Commits(const std::filesystem::path &root) {
     std::vector<std::filesystem::path> result;
     std::error_code ec;
@@ -506,7 +511,7 @@ std::vector<std::filesystem::path> Commits(const std::filesystem::path &root) {
     if (!std::filesystem::is_directory(dir, ec) || ec)
         return result;
     for (const auto &item : std::filesystem::directory_iterator(dir)) {
-        const auto name = item.path().filename().string();
+        const auto name = Utf8Filename(item.path());
         if (name.size() != 23 || !name.ends_with(".commit") ||
             !std::all_of(name.begin(), name.begin() + 16,
                          [](char c) { return c >= '0' && c <= '9'; }))
@@ -538,6 +543,13 @@ bool IsSubpath(const std::filesystem::path &root, const std::filesystem::path &c
     return true;
 }
 
+std::string SourceExtension(const std::filesystem::path &path) {
+    auto result = path.extension().string();
+    std::transform(result.begin(), result.end(), result.begin(),
+                   [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+    return result;
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters) -- Named filesystem/source and mount/path
 // roles intentionally share their public value types.
 void CopyTree(const std::filesystem::path &src, const std::filesystem::path &dest,
@@ -551,7 +563,7 @@ void CopyTree(const std::filesystem::path &src, const std::filesystem::path &des
          iterator != std::filesystem::recursive_directory_iterator{}; ++iterator) {
         const auto &entry = *iterator;
         if (skip_imports && iterator.depth() == 0) {
-            auto name = entry.path().filename().generic_string();
+            auto name = Utf8Filename(entry.path());
             std::transform(name.begin(), name.end(), name.begin(),
                            [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
             if (name == ".imports") {
@@ -1166,8 +1178,7 @@ VoidResult ProjectFolder::PublishCooked(runtime::AssetId id, const PreparedCooke
                                         [&](const auto &asset) { return asset.id == id; });
         Require(found != assets_.end() && !found->IsTrashed() &&
                     found->relative_path == "Content/" + candidate.relative_ &&
-                    found->type == runtime::AssetType{foundation::StringId::FromString(
-                                       "epidemic.texture.png")} &&
+                    found->type == candidate.type_ &&
                     found->generation < std::numeric_limits<std::uint32_t>::max(),
                 "editor.folder_cooked", "Prepared source identity changed");
         if (found->cooked_key != candidate.key_ || found->source_hash != candidate.source_hash_) {
@@ -1200,6 +1211,9 @@ VoidResult ProjectFolder::ApplySourceMove(runtime::AssetId id, std::string_view 
         auto relative = "Content/" + std::string(new_content_path);
         const auto old_path = SafeAt(root_, found->relative_path);
         const auto new_path = SafeAt(root_, relative);
+        Require(!IsImportedMedia(found->type) ||
+                    SourceExtension(old_path) == SourceExtension(new_path),
+                "editor.import_extension", "Rename cannot change a registered media format");
         Require(old_path != new_path, "editor.folder_path", "Destination matches source");
         auto folded = relative;
         std::transform(folded.begin(), folded.end(), folded.begin(),
@@ -1332,6 +1346,9 @@ ProjectFolder::CommitImportedPng(PreparedCookedPng &&candidate, std::string_view
         Require(!destination.empty() && !IsPrivateContentPath(destination),
                 "editor.import_destination", "Invalid destination");
         const auto target = SafeAt(root_, "Content/" + std::string(destination));
+        Require(SourceExtension(target) ==
+                    SourceExtension(std::filesystem::path{candidate.relative_}),
+                "editor.import_extension", "Destination extension must match validated source");
         std::error_code error;
         Require(!std::filesystem::exists(target, error) && !error &&
                     std::filesystem::is_directory(target.parent_path(), error) && !error,
@@ -1349,7 +1366,7 @@ ProjectFolder::CommitImportedPng(PreparedCookedPng &&candidate, std::string_view
                  std::any_of(assets_.begin(), assets_.end(),
                              [&](const auto &source) { return source.id == id; }));
         ProjectSourceAsset record{id,
-                                  {foundation::StringId::FromString("epidemic.texture.png")},
+                                  candidate.type_,
                                   "Content/" + std::string(destination),
                                   candidate.source_hash_,
                                   1,
@@ -1383,7 +1400,7 @@ ProjectFolder::CommitImportedPng(PreparedCookedPng &&candidate, std::string_view
         step.before_source = record;
         step.before_source.original_path = record.relative_path;
         step.before_source.relative_path =
-            "Content/.Trash/" + std::to_string(id.Raw()) + "/" + target.filename().generic_string();
+            "Content/.Trash/" + std::to_string(id.Raw()) + "/" + Utf8Filename(target);
         step.before = visuals_;
         step.after = visual;
         auto history = PrepareEdit(std::move(step));
@@ -1424,7 +1441,7 @@ VoidResult ProjectFolder::StageDeleteSource(runtime::AssetId id, bool allow_brok
         step.after_source.original_path = found->relative_path;
         step.after_source.relative_path =
             "Content/.Trash/" + std::to_string(id.Raw()) + "/" +
-            std::filesystem::path(found->relative_path).filename().generic_string();
+            found->relative_path.substr(found->relative_path.find_last_of('/') + 1);
         auto history = PrepareEdit(step);
         const auto removed = ApplySourceLifecycle(step.after_source);
         if (!removed)
@@ -1512,9 +1529,7 @@ VoidResult ProjectFolder::Execute(const AssetEditRequest &request) {
                             return asset.id == binding.texture;
                         });
                     Require(source != assets_.end() && !source->IsTrashed() &&
-                                source->type == runtime::AssetType{foundation::StringId::FromString(
-                                                    "epidemic.texture.png")} &&
-                                !source->cooked_key.empty(),
+                                IsImportedTexture(source->type) && !source->cooked_key.empty(),
                             "editor.sprite_texture", "Sprite requires cooked PNG");
                     if (binding.region_id) {
                         const auto sheet =

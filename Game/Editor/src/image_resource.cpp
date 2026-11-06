@@ -3,7 +3,10 @@
 #include "Epidemic/Platform/iplatform_runtime.h"
 #include "Epidemic/Runtime/Serialization/serialization_services.h"
 #include "Epidemic/Runtime/Serialization/document_codec.h"
+#include "Epidemic/Game/Editor/content_media.h"
+#include <webp/decode.h>
 #include <algorithm>
+#include <cctype>
 #include <array>
 #include <fstream>
 #include <stdexcept>
@@ -66,7 +69,8 @@ struct SourceDigest {
 };
 
 SourceDigest Fingerprint(const std::filesystem::path &path,
-                         const std::atomic_bool *cancel = nullptr) {
+                         const std::atomic_bool *cancel = nullptr,
+                         std::string_view profile = kRecipe) {
 #ifdef _WIN32
     struct Hash {
         BCRYPT_ALG_HANDLE algorithm = nullptr;
@@ -93,7 +97,7 @@ SourceDigest Fingerprint(const std::filesystem::path &path,
                              0) >= 0,
             "editor.image_digest");
     // The hash provider only reads these bytes; its legacy API lacks const.
-    auto recipe = std::string(kRecipe);
+    auto recipe = std::string(profile);
     Require(BCryptHashData(state.hash, reinterpret_cast<PUCHAR>(recipe.data()),
                            static_cast<ULONG>(recipe.size()), 0) >= 0,
             "editor.image_digest");
@@ -237,7 +241,8 @@ ImageResourceLoader::Load(runtime::ResourceRequest request) {
                    height = Take(reader->ReadUInt64("height"));
         Require(width > 0 && height > 0 && width <= 4096 && height <= 4096,
                 "editor.image_dimensions");
-        Require(Take(reader->ReadString("recipe")) == kRecipe &&
+        const auto recipe = Take(reader->ReadString("recipe"));
+        Require((recipe == kRecipe || recipe == "webp/libwebp-1.6.0/v1;pbgra8") &&
                     Take(reader->ReadString("key")) == entry->second,
                 "editor.image_recipe");
         auto pixels = Take(reader->ReadBytes("pixels"));
@@ -275,7 +280,22 @@ foundation::Result<PreparedCookedPng> PrepareCookedPng(const std::filesystem::pa
         prepared.source_read_ =
             std::shared_ptr<void>(handle, [](void *value) { CloseHandle(value); });
 #endif
-        const auto digest = Fingerprint(path, cancel);
+        auto extension = path.extension().string();
+        std::transform(extension.begin(), extension.end(), extension.begin(),
+                       [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+        const bool png = extension == ".png", webp = extension == ".webp";
+        const bool wave = extension == ".wav", font = extension == ".ttf" || extension == ".otf";
+        Require(png || webp || wave || font, "editor.import_format");
+        const std::string recipe = png    ? std::string(kRecipe)
+                                   : webp ? "webp/libwebp-1.6.0/v1;pbgra8"
+                                   : wave ? "wav/pcm/v1"
+                                          : "font/sfnt/v1";
+        prepared.type_ =
+            runtime::AssetType{foundation::StringId::FromString(png    ? "epidemic.texture.png"
+                                                                : webp ? "epidemic.texture.webp"
+                                                                : wave ? "epidemic.audio.wav"
+                                                                       : "epidemic.font.sfnt")};
+        const auto digest = Fingerprint(path, cancel, recipe);
         prepared.key_ = digest.key;
         prepared.source_hash_ = digest.hash;
         prepared.root_ = root;
@@ -285,7 +305,68 @@ foundation::Result<PreparedCookedPng> PrepareCookedPng(const std::filesystem::pa
         // Periodic audit/startup reconciliation needs hashing, not repeat decoding.
         if (key == previous_key && std::filesystem::is_regular_file(Cooked(root, key)))
             return R::Success(std::move(prepared));
-        auto image = Take(DecodePng(path));
+        DecodedPng image;
+        std::vector<std::byte> source;
+        std::string metadata;
+        if (png)
+            image = Take(DecodePng(path));
+        else {
+            std::ifstream input(path, std::ios::binary);
+            input.seekg(0, std::ios::end);
+            const auto size = input.tellg();
+            Require(size > 0 &&
+                        size < static_cast<std::streamoff>(runtime::kMaxDocumentBytes - 4096),
+                    "editor.media_size");
+            source.resize(static_cast<std::size_t>(size));
+            input.seekg(0);
+            input.read(reinterpret_cast<char *>(source.data()), size);
+            Require(input.good(), "editor.media_read");
+            check();
+            if (webp) {
+                WebPBitstreamFeatures features{};
+                const auto *data = reinterpret_cast<const std::uint8_t *>(source.data());
+                Require(WebPGetFeatures(data, source.size(), &features) == VP8_STATUS_OK &&
+                            !features.has_animation && features.width > 0 && features.height > 0 &&
+                            features.width <= 4096 && features.height <= 4096,
+                        "editor.webp_features");
+                image.width = static_cast<std::uint32_t>(features.width);
+                image.height = static_cast<std::uint32_t>(features.height);
+                image.pixels.resize(std::size_t{image.width} * image.height * 4);
+                Require(WebPDecodeBGRAInto(data, source.size(),
+                                           reinterpret_cast<std::uint8_t *>(image.pixels.data()),
+                                           image.pixels.size(),
+                                           static_cast<int>(image.width * 4)) != nullptr,
+                        "editor.webp_decode");
+                for (std::size_t at = 0; at < image.pixels.size(); at += 4) {
+                    const auto alpha = std::to_integer<unsigned>(image.pixels[at + 3]);
+                    for (std::size_t c = 0; c < 3; ++c)
+                        image.pixels[at + c] = static_cast<std::byte>(
+                            (std::to_integer<unsigned>(image.pixels[at + c]) * alpha + 127u) /
+                            255u);
+                }
+            } else if (wave) {
+                const auto pcm = media::DecodeWavPcm(source);
+                Require(static_cast<bool>(pcm), pcm.error);
+                const auto frame_bytes =
+                    std::size_t{pcm.value.channels} * (std::size_t{pcm.value.bits_per_sample} / 8u);
+                metadata = "PCM WAV; channels=" + std::to_string(pcm.value.channels) +
+                           "; sample rate=" + std::to_string(pcm.value.sample_rate) +
+                           "; bits=" + std::to_string(pcm.value.bits_per_sample) + "; frames=" +
+                           std::to_string(pcm.value.interleaved_pcm.size() / frame_bytes);
+                metadata +=
+                    "; duration seconds=" +
+                    std::to_string(static_cast<double>(pcm.value.interleaved_pcm.size()) /
+                                   static_cast<double>(frame_bytes) / pcm.value.sample_rate);
+            } else {
+                const auto face = media::ValidateSfntFont(source);
+                Require(static_cast<bool>(face), face.error);
+                Require((extension == ".ttf" && face.value.scaler == 0x00010000u) ||
+                            (extension == ".otf" && face.value.scaler == 0x4f54544fu),
+                        "editor.font_extension");
+                metadata = "SFNT font; scaler=" + std::to_string(face.value.scaler) +
+                           "; tables=" + std::to_string(face.value.tables);
+            }
+        }
         check();
         Require(image.pixels.size() < runtime::kMaxDocumentBytes - 4096,
                 "editor.image_cooked_limit");
@@ -295,11 +376,19 @@ foundation::Result<PreparedCookedPng> PrepareCookedPng(const std::filesystem::pa
         Require(writer != nullptr, "editor.image_codec");
         Take(writer->WriteUInt64("width", image.width));
         Take(writer->WriteUInt64("height", image.height));
-        Take(writer->WriteString("recipe", kRecipe));
+        Take(writer->WriteString("recipe", recipe));
         Take(writer->WriteString("key", key));
-        Take(writer->WriteBytes("pixels", image.pixels));
-        const auto bytes =
-            Take(runtime::EncodeDocument(Take(writer->Finalize(kImageType, kVersion))));
+        if (png || webp)
+            Take(writer->WriteBytes("pixels", image.pixels));
+        else {
+            Take(writer->WriteBytes("source", source));
+            Take(writer->WriteString("metadata", metadata));
+        }
+        const auto bytes = Take(runtime::EncodeDocument(Take(
+            writer->Finalize((png || webp)
+                                 ? kImageType
+                                 : foundation::StringId::FromString("epidemic.editor.cooked_media"),
+                             kVersion))));
         const auto destination = Cooked(root, key);
         std::error_code ec;
         std::filesystem::create_directories(destination.parent_path(), ec);
@@ -349,7 +438,13 @@ foundation::Result<PreparedCookedPng> PrepareImportedPng(const std::filesystem::
             relative += digits[byte % 16];
         }
 
-        relative += ".png";
+        auto extension = external.extension().string();
+        std::transform(extension.begin(), extension.end(), extension.begin(),
+                       [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+        Require(extension == ".png" || extension == ".webp" || extension == ".wav" ||
+                    extension == ".ttf" || extension == ".otf",
+                "editor.import_format");
+        relative += extension;
         const auto stage = Take(ResolveProjectPath(root, "Content/" + relative));
         std::error_code error;
         std::filesystem::create_directories(stage.parent_path(), error);
@@ -426,4 +521,38 @@ DecodedPng MakeImageThumbnail(const DecodedPng &image) {
     return out;
 }
 
+} // namespace epidemic::game::editor
+
+namespace epidemic::game::editor {
+bool IsImportedTexture(runtime::AssetType type) noexcept {
+    return type == runtime::AssetType{foundation::StringId::FromString("epidemic.texture.png")} ||
+           type == runtime::AssetType{foundation::StringId::FromString("epidemic.texture.webp")};
+}
+
+bool IsImportedMedia(runtime::AssetType type) noexcept {
+    return IsImportedTexture(type) ||
+           type == runtime::AssetType{foundation::StringId::FromString("epidemic.audio.wav")} ||
+           type == runtime::AssetType{foundation::StringId::FromString("epidemic.font.sfnt")};
+}
+
+std::string CookedMediaMetadata(const std::filesystem::path &root, std::string_view key) {
+    try {
+        const auto bytes = Take(platform::ReadFilePackage(foundation::Path{Cooked(root, key)},
+                                                          runtime::kMaxDocumentBytes));
+        const auto document = Take(runtime::DecodeDocument(bytes));
+        Require(document.GetSchemaVersion() == kVersion, "editor.media_version");
+        auto services = Take(runtime::CreateSerializationServices());
+        auto reader = Take(services.archives->CreateReader(document));
+        if (document.GetTypeId() == kImageType)
+            return "Image " + std::to_string(Take(reader->ReadUInt64("width"))) + " x " +
+                   std::to_string(Take(reader->ReadUInt64("height"))) + "; " +
+                   Take(reader->ReadString("recipe"));
+        Require(document.GetTypeId() ==
+                    foundation::StringId::FromString("epidemic.editor.cooked_media"),
+                "editor.media_type");
+        return Take(reader->ReadString("metadata")) + "; " + Take(reader->ReadString("recipe"));
+    } catch (const std::exception &) {
+        return "Cooked metadata unavailable";
+    }
+}
 } // namespace epidemic::game::editor

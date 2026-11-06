@@ -51,6 +51,7 @@ class ContentImportQueue final {
     std::filesystem::path root_;
     std::deque<Request> queued_;
     std::unique_ptr<Pending> pending_;
+    std::vector<HotAssetEvent> cancelled_;
     std::uint64_t next_job_ = 1, epoch_ = 0;
 };
 

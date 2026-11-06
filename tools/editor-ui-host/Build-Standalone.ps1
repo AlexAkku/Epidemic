@@ -46,7 +46,7 @@ Copy-Item "$PSScriptRoot/standalone/licenses/*" "$productRoot/licenses" -Recurse
 $retiredNative=Join-Path $productRoot 'native/EpidemicEditorDesktop.exe'
 if(Test-Path -LiteralPath $retiredNative){Remove-Item -LiteralPath $retiredNative -Force}
 Copy-Item "$build/$Configuration/EpidemicEditorBackend.exe","$build/$Configuration/EpidemicUiViewport.dll" "$productRoot/native" -Force
-$sources=@(Get-ChildItem "$PSScriptRoot/java" -Recurse -Filter '*.java' | Where-Object Name -notin @('EditorApp.java','DockSpace.java','DockLayout.java','UiTests.java','IslandsTabsUI.java') | ForEach-Object FullName)
+$sources=@(Get-ChildItem "$PSScriptRoot/java" -Recurse -Filter '*.java' | Where-Object Name -notin @('EditorApp.java','DockSpace.java','DockLayout.java','UiTests.java','AssetTests.java','IslandsTabsUI.java') | ForEach-Object FullName)
 $sources+=@(Get-ChildItem "$PSScriptRoot/java-intellij","$PSScriptRoot/standalone/java","$PSScriptRoot/standalone/upstream" -Recurse -Filter '*.java' | ForEach-Object FullName)
 & "$jdk/bin/javac.exe" --release 21 -encoding UTF-8 -Xlint:deprecation -classpath "$productRoot/lib/*" -d $classes $sources
 if($LASTEXITCODE){throw 'Standalone product compilation failed'}
@@ -64,6 +64,39 @@ if($LASTEXITCODE){throw 'Product jar failed'}
 [IO.File]::WriteAllText("$productRoot/build.txt",'EP-253.31033.145')
 [IO.File]::WriteAllText("$productRoot/product-info.json",(@{name='Epidemic Engine Editor';version='0.3';buildNumber='253.31033.145';productCode='EP';dataDirectoryName='EpidemicEditor';vendor='Epidemic Engine';launch=@()} | ConvertTo-Json -Depth 4),[Text.UTF8Encoding]::new($false))
 [IO.File]::WriteAllText("$productRoot/bin/idea.properties",'# Product bootstrap supplies isolated paths.')
+# Both the companion and JNI use the current MSVC STL. JBR carries an older
+# app-local CRT which must not shadow that toolset (notably std::mutex/future).
+# Build a derived product runtime; the checksum-verified upstream cache is intact.
+if($StandardOpenJdk -and -not(Test-Path "$runtime/bin/java.exe")){
+    & "$jdk/bin/jlink.exe" --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --output $runtime
+    if($LASTEXITCODE){throw 'OpenJDK runtime image failed'}
+}
+. "$root/Development/AgentsRules/Scripts/Common.ps1"
+Import-VsDevEnvironment
+$crt=Get-ChildItem -LiteralPath (Join-Path $env:VCToolsRedistDir 'x64') -Directory -Filter 'Microsoft.VC*.CRT' | Select-Object -First 1
+if(-not $crt){throw 'Matching x64 MSVC redistributable is missing'}
+$crtInfo=[Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $crt.FullName 'msvcp140.dll'))
+$crtVersion=[version]"$($crtInfo.FileMajorPart).$($crtInfo.FileMinorPart).$($crtInfo.FileBuildPart).$($crtInfo.FilePrivatePart)"
+if($crtVersion -lt [version]($env:VCToolsVersion.Trim())){throw 'Redistributable predates the active MSVC toolset'}
+$derived=[IO.Path]::GetFullPath((Join-Path $root 'Temp/U/product-runtime'))
+if($derived -ne [IO.Path]::GetFullPath((Join-Path $root 'Temp/U/product-runtime'))){throw 'Unexpected product runtime directory'}
+$runtimeSignature=[IO.Path]::GetFullPath($runtime)+'|'+(Get-FileHash -LiteralPath "$runtime/release" -Algorithm SHA256).Hash
+$marker=Join-Path $derived '.source-runtime'
+if(-not(Test-Path "$derived/bin/java.exe") -or -not(Test-Path -LiteralPath $marker) -or [IO.File]::ReadAllText($marker) -ne $runtimeSignature){
+    if(Test-Path -LiteralPath $derived){
+        if(([IO.File]::GetAttributes($derived) -band [IO.FileAttributes]::ReparsePoint) -ne 0){throw 'Product runtime cache cannot be a reparse point'}
+        Remove-Item -LiteralPath $derived -Recurse -Force
+    }
+    New-Item -ItemType Directory -Force $derived | Out-Null
+    foreach($entry in Get-ChildItem -LiteralPath $runtime -Force){Copy-Item -LiteralPath $entry.FullName -Destination $derived -Recurse -Force}
+    [IO.File]::WriteAllText($marker,$runtimeSignature)
+}
+foreach($dll in Get-ChildItem -LiteralPath $crt.FullName -Filter '*.dll'){
+    Copy-Item -LiteralPath $dll.FullName -Destination "$derived/bin" -Force
+    Copy-Item -LiteralPath $dll.FullName -Destination "$productRoot/native" -Force
+}
+$runtime=$derived
+Write-Output "PASS app-local MSVC CRT $crtVersion in product runtime and native directory; upstream JBR unchanged"
 $options=@('-Xmx2048m','-Djava.system.class.loader=com.intellij.util.lang.PathClassLoader','-Dfile.encoding=UTF-8','--enable-native-access=ALL-UNNAMED')
 foreach($package in Get-Content "$PSScriptRoot/standalone/jvm-opens.txt"){$options+="--add-opens=$package=ALL-UNNAMED"}
 if(-not $NoPackage){
@@ -93,6 +126,6 @@ if(-not $NoPackage){
     Write-Output "PASS standalone Windows application: $image/EpidemicEditor.exe"
 }
 if($Run -or $Smoke){
-    if($NoPackage){$java=if($StandardOpenJdk){"$jdk/bin/java.exe"}else{"$runtime/bin/java.exe"};$arguments=$options+@('-cp',"$productRoot/lib/epidemic.jar;$productRoot/lib/*",'epidemic.launcher.Main');if($Smoke){$arguments+='--smoke'};& $java @arguments;if($LASTEXITCODE){throw 'Standalone bootstrap failed'}}
+    if($NoPackage){$java="$runtime/bin/java.exe";$arguments=$options+@('-cp',"$productRoot/lib/epidemic.jar;$productRoot/lib/*",'epidemic.launcher.Main');if($Smoke){$arguments+='--smoke'};& $java @arguments;if($LASTEXITCODE){throw 'Standalone bootstrap failed'}}
     else{$style=if($Smoke){'Hidden'}else{'Normal'};$launch=@{FilePath="$image/EpidemicEditor.exe";WindowStyle=$style;PassThru=$true};if($Smoke){$launch.ArgumentList=@('--smoke')};$owned=Start-Process @launch;$owned.WaitForExit();if($owned.ExitCode){throw "Standalone EXE exited $($owned.ExitCode)"}}
 }

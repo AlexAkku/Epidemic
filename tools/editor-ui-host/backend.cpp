@@ -1,6 +1,13 @@
 #include "demo_game.h"
 #include "Epidemic/Game/Editor/editor_workspace.h"
 #include "Epidemic/Game/Editor/editor_inspector.h"
+#include "Epidemic/Game/Editor/content_browser.h"
+#include "Epidemic/Game/Editor/content_dependencies.h"
+#include "Epidemic/Game/Editor/content_thumbnail_cache.h"
+#include "Epidemic/Game/Editor/project_path.h"
+#include "Epidemic/Game/Editor/scene_view.h"
+#include <bit>
+#include <cmath>
 #include <array>
 #include <charconv>
 #include <chrono>
@@ -10,6 +17,8 @@
 #include <iostream>
 #include <limits>
 #include <span>
+#include <set>
+#include <unordered_map>
 #include <Windows.h>
 
 namespace {
@@ -112,6 +121,8 @@ class Backend {
         1u;
     std::uint64_t selection_revision_ = 0;
     std::uint64_t document_nonce_ = 0;
+    mutable ed::ThumbnailCache thumbnails_;
+    std::string asset_query_;
 
     static void CheckDocumentName(std::string_view name) {
         if (name.empty() || name.size() > 256 ||
@@ -191,6 +202,8 @@ class Backend {
     }
 
     void Reset() {
+        thumbnails_.Clear();
+        asset_query_.clear();
         workspace_.reset();
         workspace_ = std::make_unique<ed::EditorWorkspace>(schema_.View(),
                                                            [this] { return ex::Options(schema_); });
@@ -264,7 +277,9 @@ class Backend {
         out.Number<8>(selection_revision_);
         out.Number<1>((workspace_->IsDirty() ? 1u : 0u) | (workspace_->CanUndo() ? 2u : 0u) |
                       (workspace_->CanRedo() ? 4u : 0u) |
-                      (workspace_->Session() && workspace_->Session()->IsPlaying() ? 8u : 0u));
+                      (workspace_->Session() && workspace_->Session()->IsPlaying() ? 8u : 0u) |
+                      (workspace_->AssetJobsBusy() ? 16u : 0u) |
+                      (workspace_->ContentWatchEnabled() ? 32u : 0u));
         out.Number<1>(workspace_->Folder() ? 2 : 1);
         out.Number<8>(snapshot->definition.id.Raw());
         out.Number<8>(snapshot->definition.entry_scene.Raw());
@@ -333,17 +348,47 @@ class Backend {
             out.Number<8>(node.part);
         }
         const auto *folder = workspace_->Folder();
-        out.Number<4>(folder ? folder->Sources().size() : 0);
-        if (folder)
-            for (const auto &source : folder->Sources()) {
-                out.Number<8>(source.id.Raw());
-                out.Number<8>(source.type.value.Raw());
-                out.Number<8>(source.generation);
-                out.Number<8>(source.source_hash);
-                out.Number<1>(source.IsTrashed() ? 1 : 0);
-                out.Text(source.relative_path);
-                out.Text(source.cooked_key);
-            }
+        std::vector<const ed::ProjectSourceAsset *> visible;
+        if (folder) {
+            const auto listing =
+                ed::BrowseContent(*folder,
+                                  {.search = asset_query_, .show_trashed = true, .limit = 1000});
+            std::unordered_map<std::uint64_t, const ed::ProjectSourceAsset *> indexed;
+            for (const auto &source : folder->Sources())
+                indexed.emplace(source.id.Raw(), &source);
+            std::set<std::uint64_t> matching;
+            for (const auto &item : listing.items)
+                matching.insert(item.id.Raw());
+            for (const auto &source : folder->Sources())
+                if (matching.contains(source.id.Raw()))
+                    visible.push_back(&source);
+            if (selection.kind == ed::UiElement::Asset && indexed.contains(selection.element) &&
+                std::none_of(visible.begin(), visible.end(), [&](const auto *asset) {
+                    return asset->id.Raw() == selection.element;
+                }))
+                visible.push_back(indexed.at(selection.element));
+        }
+        out.Number<4>(visible.size());
+        for (const auto *asset : visible) {
+            const auto &source = *asset;
+            out.Number<8>(source.id.Raw());
+            out.Number<8>(source.type.value.Raw());
+            out.Number<8>(source.generation);
+            out.Number<8>(source.source_hash);
+            out.Number<1>(source.IsTrashed() ? 1 : 0);
+            out.Text(source.relative_path);
+            out.Text(source.cooked_key);
+            out.Text(source.original_path);
+            out.Text(selection.kind == ed::UiElement::Asset &&
+                             selection.element == source.id.Raw() && !source.cooked_key.empty()
+                         ? ed::CookedMediaMetadata(folder->Root(), source.cooked_key)
+                         : "");
+            const auto resolved = ed::ResolveProjectPath(folder->Root(), source.relative_path);
+            std::error_code fs_error;
+            out.Number<1>(resolved &&
+                          std::filesystem::is_regular_file(resolved.Value(), fs_error) &&
+                          !fs_error);
+        }
         const auto fields = Inspector();
         out.Number<4>(fields.size());
         for (std::size_t index = 0; index < fields.size(); ++index) {
@@ -358,6 +403,125 @@ class Backend {
             out.Text(row.readonly_reason);
             out.Number<8>(row.reference.Raw());
         }
+
+        struct DrawSprite {
+            std::uint64_t document = 0;
+            std::string key;
+            rt::Transform world;
+            ed::PrefabSpriteBinding binding;
+        };
+
+        std::vector<DrawSprite> sprites;
+        if (folder) {
+            const auto append = [&](const ed::EditorDocument &doc, rt::AssetId prefab,
+                                    const rt::Transform &world) {
+                for (const auto &binding : folder->SpriteBindings())
+                    if (binding.prefab == prefab) {
+                        const auto found =
+                            std::find_if(folder->Sources().begin(), folder->Sources().end(),
+                                         [&](const auto &asset) {
+                                             return asset.id == binding.texture &&
+                                                    !asset.IsTrashed() &&
+                                                    ed::IsImportedTexture(asset.type);
+                                         });
+                        if (found != folder->Sources().end() && !found->cooked_key.empty())
+                            sprites.push_back({doc.id.Raw(), found->cooked_key, world, binding});
+                    }
+            };
+            for (const auto &doc : snapshot->definition.documents) {
+                if (doc.Kind() == ed::DocumentKind::Prefab)
+                    append(doc, doc.id, {});
+                else if (const auto *scene =
+                             std::get_if<epidemic::game::composition::SceneCompositionDefinition>(
+                                 &doc.data)) {
+                    ed::SceneView projection;
+                    Require(projection.Update(*snapshot, doc.id));
+                    for (const auto &placement : scene->placements)
+                        for (const auto &item : projection.Items())
+                            if (item.id == placement.node)
+                                append(doc, placement.prefab, item.world);
+                }
+            }
+        }
+        out.Number<4>(sprites.size());
+        for (const auto &sprite : sprites) {
+            out.Number<8>(sprite.document);
+            out.Text(sprite.key);
+            const double values[]{sprite.world.position.x,
+                                  sprite.world.position.y,
+                                  sprite.world.scale.x,
+                                  sprite.world.scale.y,
+                                  2.0 *
+                                      std::atan2(sprite.world.rotation.z, sprite.world.rotation.w) *
+                                      180.0 / 3.141592653589793,
+                                  sprite.binding.pixels_per_unit,
+                                  sprite.binding.pivot_x,
+                                  sprite.binding.pivot_y};
+            for (const auto value : values)
+                out.Number<8>(std::bit_cast<std::uint64_t>(value));
+        }
+        out.Number<4>(folder ? folder->Sources().size() : 0);
+        out.Number<8>(workspace_->ContentRevision());
+        const auto events = workspace_->ContentEventsSince(0);
+        out.Number<4>(events.size());
+        for (const auto &event : events) {
+            out.Number<8>(event.id.Raw());
+            out.Number<1>(static_cast<unsigned>(event.kind));
+            out.Text(event.diagnostic);
+            out.Number<8>(event.job);
+            out.Text(event.source);
+        }
+        const auto references = folder ? ed::BuildContentDependencyIndex(*folder).references
+                                       : std::vector<ed::ContentReference>{};
+        out.Number<4>(references.size());
+        for (const auto &reference : references) {
+            out.Number<8>(reference.source.Raw());
+            out.Number<8>(reference.dependent.Raw());
+            out.Text(reference.origin);
+            out.Number<1>(reference.required);
+        }
+        ed::ThumbnailPixels preview;
+        std::string preview_error;
+        if (folder && selection.kind == ed::UiElement::Asset) {
+            for (const auto &asset : folder->Sources())
+                if (asset.id.Raw() == selection.element && !asset.cooked_key.empty() &&
+                    ed::IsImportedTexture(asset.type)) {
+                    const auto cached = thumbnails_.Get(asset.cooked_key);
+                    if (cached)
+                        preview = *cached;
+                    else {
+                        ed::ImageResourceLoader loader(folder->Root());
+                        const auto id = loader.Register(asset.cooked_key);
+                        if (id) {
+                            const auto loaded = loader.Load({id.Value(), loader.GetResourceType()});
+                            if (loaded) {
+                                const auto payload =
+                                    std::dynamic_pointer_cast<const ed::ImagePayload>(
+                                        loaded.Value().payload);
+                                if (payload) {
+                                    const auto thumb = ed::MakeImageThumbnail(payload->image);
+                                    preview = {thumb.width, thumb.height, thumb.pixels};
+                                    (void)thumbnails_.Put(asset.cooked_key, preview);
+                                }
+                            } else
+                                preview_error = loaded.GetError().code;
+                        } else
+                            preview_error = id.GetError().code;
+                    }
+                }
+        }
+        out.Number<4>(preview.width);
+        out.Number<4>(preview.height);
+        std::string pixels;
+        pixels.reserve(preview.bgra.size() * 2);
+        constexpr char hex[] = "0123456789abcdef";
+        for (const auto byte : preview.bgra) {
+            const auto value = std::to_integer<unsigned>(byte);
+            pixels.push_back(hex[value >> 4u]);
+            pixels.push_back(hex[value & 15u]);
+        }
+        out.Text(pixels);
+        out.Text(preview_error);
     }
 
   public:
@@ -373,7 +537,7 @@ class Backend {
         const auto previous_selection_revision = selection_revision_;
         try {
             Reader in{bytes};
-            if (in.Number(4) != Magic || in.Number(2) != 2 || in.Number(2) != 0)
+            if (in.Number(4) != Magic || in.Number(2) != 3 || in.Number(2) != 0)
                 throw std::runtime_error("ui.protocol_version");
             correlation = in.Number(8);
             const auto operation = in.Number(1), generation = in.Number(8), revision = in.Number(8);
@@ -394,9 +558,14 @@ class Backend {
                 (operation == 12 && args.size() != 1) ||
                 ((operation == 13 || operation == 14) && !args.empty()))
                 throw std::runtime_error("ui.argument_count");
+            if (operation >= 18 && operation <= 24) {
+                if (args.empty() || Numeric(args[0]) != workspace_->AssetRevision())
+                    throw std::runtime_error("ui.stale_asset_revision");
+                CheckWrite({generation, revision});
+            }
             if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 17))
                 CheckWrite({generation, revision});
-            if ((operation == 5 || operation >= 15) && workspace_->Session() &&
+            if ((operation == 5 || (operation >= 15 && operation <= 24)) && workspace_->Session() &&
                 workspace_->Session()->IsPlaying())
                 throw std::runtime_error("ui.playing_readonly");
             switch (operation) {
@@ -431,7 +600,7 @@ class Backend {
                 break;
             case 9: {
                 const auto kind = Numeric(args.at(0));
-                if (kind > static_cast<unsigned>(ed::UiElement::PrefabComponent))
+                if (kind > static_cast<unsigned>(ed::UiElement::Asset))
                     throw std::runtime_error("ui.selection_kind");
                 if (!workspace_->Select(
                         {Asset(Numeric(args.at(1))), static_cast<ed::UiElement>(kind),
@@ -445,6 +614,62 @@ class Backend {
                 ++selection_revision_;
                 break;
             }
+            case 18:
+                if (args.size() != 3)
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->QueueImportPng(Path(args[1]), args[2]));
+                break;
+            case 19:
+                if (args.size() != 2)
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->ReimportPng(Asset(Numeric(args[1]))));
+                break;
+            case 20:
+                if (args.size() != 3)
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->MoveAsset(Asset(Numeric(args[1])), args[2]));
+                break;
+            case 21:
+                if (args.size() != 3)
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->QueueDuplicate(Asset(Numeric(args[1])), args[2]));
+                break;
+            case 22:
+                if (args.size() != 3 || (args[2] != "0" && args[2] != "1"))
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->DeleteAsset(Asset(Numeric(args[1])), args[2] == "1"));
+                break;
+            case 23:
+                if (args.size() != 2)
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->RestoreAsset(Asset(Numeric(args[1]))));
+                break;
+            case 24:
+                if (args.size() != 3)
+                    throw std::runtime_error("ui.argument_count");
+                Require(workspace_->AssignPrefabSprite(Asset(Numeric(args[1])),
+                                                       Asset(Numeric(args[2]))));
+                break;
+            case 25:
+                if (!args.empty())
+                    throw std::runtime_error("ui.argument_count");
+                workspace_->CancelAssetJobs();
+                break;
+            case 26:
+                if (!args.empty())
+                    throw std::runtime_error("ui.argument_count");
+                (void)workspace_->PollContent();
+                break;
+            case 28:
+                if (args.size() != 1 || args[0].size() > 1024)
+                    throw std::runtime_error("ui.asset_query");
+                asset_query_ = args[0];
+                break;
+            case 27:
+                if (args.size() != 1 || (args[0] != "0" && args[0] != "1"))
+                    throw std::runtime_error("ui.argument_count");
+                workspace_->EnableContentWatch(args[0] == "1");
+                break;
             case 12:
                 Require(workspace_->CloneFolder(Path(args.at(0))));
                 break;
@@ -500,14 +725,14 @@ class Backend {
             ++selection_revision_;
         Wire out;
         out.Number<4>(Magic);
-        out.Number<2>(2);
+        out.Number<2>(3);
         out.Number<2>(0);
         out.Number<8>(correlation);
         out.Number<1>(error.empty() ? 0 : 1);
         out.Number<8>(generation_);
         out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
                  "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
-                 "default-components");
+                 "default-components,asset-pipeline");
         out.Text(error);
         Snapshot(out);
         Wire prefix;

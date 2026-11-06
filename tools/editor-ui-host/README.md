@@ -20,7 +20,7 @@ Launch directly after building:
 & '.\Temp\U\distribution\EpidemicEditor\EpidemicEditor.exe'
 ```
 
-Distribute the **whole `EpidemicEditor` directory**, including `app`, `runtime` and notices. This is an app image, not an MSI. Native binaries require the Microsoft C++ runtime; clean-machine deployment is a separate check.
+Distribute the **whole `EpidemicEditor` directory**, including `app`, `runtime` and notices. This is an app image, not an MSI. The matching Microsoft release CRT is bundled app-local with the native binaries and a derived JBR runtime; system DLLs and the verified upstream JBR cache are unchanged. Clean-machine deployment remains a separate check.
 
 Entry: own EXE → `epidemic.launcher.Main` → open Platform bootstrap → `EpidemicStarter` → `PlatformStartup` → `PlatformSession`. Retired custom Swing owners and the U1 probe are removed. The live JNI adapter is part of this host. `Build-PlatformUI.ps1` is an optional same-code development plugin; `Build-EditorUI.ps1 -Test` runs common contracts and exposes no competing app launch route.
 
@@ -38,7 +38,38 @@ so they follow the Inspector into a separate window.
 
 Current automated results and **separate owner visual acceptance** are tracked
 in `Development/EditorUI/FI_FEATURE_MATRIX.md`. This is F0 document/scalar
-integration; Scene picking/gizmos/components and imports are later phases.
+integration; F1 now wires asset workflows below. Scene picking/gizmos/components remain F2.
+
+## F1 asset workflow
+
+Project Explorer is the only browser: Tree/List/Grid, Enter-to-search through the
+native catalog (1000-result window plus selection, real total shown), native IDs
+and generations, missing/trash entries. Select an asset for Asset Details with
+metadata, alpha/aspect preview and References; reference navigation opens the
+actual document. Source/cooked state stays in ProjectFolder.
+
+Import uses the existing parented Platform FileChooser with multi-select and a
+Content-relative existing destination folder (empty = Content root). Supported:
+PNG, static WebP, integer PCM WAV (1/2ch, 8/16/24/32-bit, 8–192kHz), TTF/OTF
+SFNT registration. WAV/font metadata/IDs are real; playback/glyph authoring is
+later. Ogg and animated WebP are not advertised. First native configure downloads
+SHA-256-pinned libwebp 1.6.0; decoder links statically, notices ship in licenses.
+The native companion embeds longPathAware; Windows long-path policy must also
+be enabled for paths beyond MAX_PATH (qualification did not change that policy).
+
+Select the asset, then Rename / Move, Duplicate, Reimport, Delete, Restore or
+Assign to Prefab. Media extension changes are rejected. A move needs an existing
+parent in Content; cross-volume moves are unsupported. Delete names incoming
+references and retains stable missing identities; permanent deletion is disabled.
+Asset edits use native mixed Undo/Redo and project dirty/Save All (bindings and
+asset metadata are not separate document serialization).
+
+Background Jobs shows native IDs/phases/outcomes and Cancel. Problems/Console
+retains per-file failures. Watch observes the imported source inside **Content**;
+changing the original external file alone does not change the project copy.
+Reimport/Watch keeps last-good pixels on invalid source and clears current error
+on recovery. Native Prefab/Scene previews follow published texture generations;
+128px reduced previews are for qualification, full scene authoring is F2.
 
 ## Behavior
 

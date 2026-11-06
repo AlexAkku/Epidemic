@@ -1,6 +1,35 @@
+# Official libwebp 1.6.0; static decoder only, no optional tools or system codec.
+include(FetchContent)
+foreach(_webp_option ANIM_UTILS CWEBP DWEBP GIF2WEBP IMG2WEBP VWEBP WEBPINFO LIBWEBPMUX WEBPMUX EXTRAS FUZZTEST)
+    set(WEBP_BUILD_${_webp_option} OFF CACHE BOOL "" FORCE)
+endforeach()
+set(WEBP_LINK_STATIC ON CACHE BOOL "" FORCE)
+FetchContent_Declare(epidemic_webp
+    URL https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz
+    URL_HASH SHA256=e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_MakeAvailable(epidemic_webp)
+get_target_property(_webp_decoder_kind webpdecoder TYPE)
+if(NOT _webp_decoder_kind STREQUAL "STATIC_LIBRARY")
+    message(FATAL_ERROR "Editor media requires a static libwebp decoder; configure BUILD_SHARED_LIBS=OFF")
+endif()
+install(FILES "${epidemic_webp_SOURCE_DIR}/COPYING" "${epidemic_webp_SOURCE_DIR}/PATENTS" "${epidemic_webp_SOURCE_DIR}/AUTHORS"
+    DESTINATION share/Epidemic/licenses/libwebp)
+# Keep each include directory a separate generator expression (workspace paths
+# contain spaces; the upstream multi-directory expression is not list-safe).
+foreach(_webp_library webpdecoder webp webpdemux sharpyuv)
+    if(TARGET ${_webp_library})
+        set_property(TARGET ${_webp_library} PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+            "$<BUILD_INTERFACE:${epidemic_webp_SOURCE_DIR}/src>"
+            "$<BUILD_INTERFACE:${epidemic_webp_SOURCE_DIR}>"
+            "$<BUILD_INTERFACE:${epidemic_webp_BINARY_DIR}>")
+        # Codec headers are implementation details of EditorCore, not SDK API.
+        set_property(TARGET ${_webp_library} PROPERTY PUBLIC_HEADER "")
+    endif()
+endforeach()
 add_library(EpidemicEditorCore STATIC src/editor_project.cpp src/project_path.cpp src/project_folder.cpp src/content_hot_reload.cpp src/content_import_queue.cpp src/content_dependencies.cpp src/sprite_sheet.cpp src/content_media.cpp src/content_thumbnail_cache.cpp src/content_browser.cpp src/png_import.cpp src/image_resource.cpp src/editor_commands.cpp src/editor_persistence.cpp src/project_archive.cpp src/play_session.cpp)
 target_include_directories(EpidemicEditorCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_link_libraries(EpidemicEditorCore PUBLIC EpidemicGameComposition PRIVATE EpidemicPlatform)
+target_link_libraries(EpidemicEditorCore PUBLIC EpidemicGameComposition PRIVATE EpidemicPlatform webpdecoder)
 epidemic_configure_target(EpidemicEditorCore)
 if(WIN32)
     target_link_libraries(EpidemicEditorCore PRIVATE ole32 windowscodecs bcrypt)

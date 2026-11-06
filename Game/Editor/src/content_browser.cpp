@@ -34,12 +34,8 @@ BrowserListing BrowseContent(const ProjectFolder &project, const BrowserFilter &
             continue;
         if (filter.type && asset.type != *filter.type)
             continue;
-        std::error_code error;
-        auto resolved = project.ResolveMount("Content", path);
-        const bool present =
-            resolved && std::filesystem::is_regular_file(resolved.Value(), error) && !error;
         result.items.push_back({asset.id, asset.type, path, asset.generation, asset.source_hash,
-                                present, asset.IsTrashed()});
+                                false, asset.IsTrashed()});
         for (auto slash = path.find('/'); slash != std::string::npos;
              slash = path.find('/', slash + 1))
             folders.insert(path.substr(0, slash));
@@ -50,6 +46,13 @@ BrowserListing BrowseContent(const ProjectFolder &project, const BrowserFilter &
             return a.path < b.path;
         return a.id.Raw() < b.id.Raw();
     });
+    result.items.resize(std::min(result.items.size(), filter.limit));
+    for (auto &item : result.items) {
+        std::error_code error;
+        const auto resolved = project.ResolveMount("Content", item.path);
+        item.present =
+            resolved && std::filesystem::is_regular_file(resolved.Value(), error) && !error;
+    }
     result.folders.assign(folders.begin(), folders.end());
     return result;
 }

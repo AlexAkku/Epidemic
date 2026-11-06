@@ -51,7 +51,7 @@ The new GPU test's async callable-transfer warning was fixed; affected fixture/t
 
 Cleanup removed 18 verified obsolete build/report directories (20.10 GiB logical artifact size) and 27 stale files/directories of retired targets inside current build trees. Current builds/dependencies, canonical fixtures and game directories are preserved; cleanup rejected project/save files and reparse points.
 
-**F0 implementation complete; F0-GATE PARTIAL pending owner visual acceptance**
+**F0-GATE PASS: implementation, automatic checks and owner visual acceptance**
 (2026-11-06, continuation from `719970a`). No Computer Use was used.
 
 Selection now carries native kind/document/element/component/part and selection
@@ -100,7 +100,77 @@ Deep analysis completed: 2 changed headers, 44 translation units, 88 checks,
 - Raw output: `Temp/U/logs/f0-deep.*` and per-translation-unit tidy/cppcheck logs.
   These failures are not reported as analyzer PASS.
 
-NOT RUN: owner visual acceptance of this F0 batch. The complete procedure is in
-`FI_FEATURE_MATRIX.md` (Owner verification: complete F0). F1 has not started.
-Picking/gizmos, asset mutation/import, Graph authoring and continuous Game View
-remain later phases; live Game View is F-II/F8 under the current task.
+PASS: owner confirmed visual acceptance of the complete F0 batch on 2026-11-06. The complete procedure is in
+`FI_FEATURE_MATRIX.md` (Owner verification: complete F0). F1 continuation is below.
+Picking/gizmos, Graph authoring and continuous Game View remain later phases; live Game View is F-II/F8 under the current task.
+
+
+**F1 implementation and automatic functional qualification complete; owner visual NOT RUN.**
+Starting point `195e0c7`, following confirmed F0-GATE PASS. No Computer Use.
+
+PASS current native/common/UI contracts and IPC v3 adversarial cases (15).
+All declared formats (PNG, static WebP with alpha, PCM WAV, real SFNT TTF)
+exercise staged import, metadata/IDs, typed reimport, malformed/last-good/recovery,
+UTF-8 filename/root, trash/restore, Windows case collision and >260 path Move,
+bounded native query, source references, mixed Undo/Redo, Duplicate, Save/Open/
+Clone and cancellation (including ready-unpublished worker and manual reimport).
+Current polling 78 samples: p50 6.900ms/p95 11.601ms; EDT heartbeat p95 .169ms.
+Protected legacy/P04 fixtures and F0 contracts passed in the same common run.
+
+PASS packaged Release/GPU/actual EXE activation/crash/stale-profile restart:
+`f1-crt-release`, 181.19s; peak1268.67MiB, minimum free16.24GiB physical/
+12.23GiB virtual. Before/after native sprite captures each prove16928 actual
+red/blue pixels,184x92 bounds (2:1), after reimport. Native surfaces=0/fatal=0
+on close, Resource invariant checks=0 while loaded. No physical drag/focus/DPI
+acceptance is inferred from this application-API/GPU test.
+
+The preceding `f1-final` batch is retained as raw FAIL489.14s. Common/IPC/native
+build passed, but the packaged companion access-violated in JBR's MSVCP14014.29
+at first async import. Windows event1000 and an independent Release companion
+PASS localized the CRT shadowing. Matching release CRT14.51.36247 is now bundled
+in app/native and a derived product runtime; upstream cached JBR14.29 and system
+DLLs/registry were not modified. Actual package smoke/restart then passed.
+Earlier raw tests exposed/fixed native Busy excluding pending reimport,
+projection-generated selection, UTF-8 basename conversion, longPathAware opt-in,
+and GPU upload during Begin. Regressions are retained; no checks weakened.
+
+PASS full current engine configure/build, CTest **161/161 zero failed/skipped**
+(321s test time, Temp/U/f1-engine-tests.xml), architecture self-test and public
+header self-containment: f1-engine-final PASS798.20s, peak2037.23MiB, minimum
+free14.98GiB physical/11.39GiB virtual.
+
+PASS final common Java/Release companion regression with actual installed OTF
+in addition to PNG/WebP/WAV/TTF: f1-cff-contracts16.29s. All five formats exercised
+metadata, invalid/recovery and persisted asset workflows; polling70samples p50
+3.265ms/p95 6.593ms, EDT p95 .233ms. The OTF is a local system-font fixture,
+not redistributed as an application asset. Native codec notices ship separately.
+
+Deep changed-header analysis completed: 6 headers, 28 translation units,
+56 checks. Raw result FAIL retained under f1-deep2. New F1 diagnostics were
+fixed (cancellation diagnostics, stream open flags, PCM arithmetic/conversions,
+DTO initialization, Result borrowing and size_t budget). All five affected TU
+were rerun with the identical clang-tidy/Cppcheck policies (f1-fixed-static),
+then the final PCM cast was rechecked in f1-media-static. No diagnostic remains
+on new F1 code; no suppression/rule/validator changed.
+
+Remaining raw failures: the previously classified signed-bitwise/exception/
+Renderer/RuntimeBridge sites; unchanged filesystem-role parameter signatures in
+PrepareImportedPng and ProjectFolder; unchanged ThumbnailCache constructor's
+adjacent size_t parameters (newly reached); MSVC filesystem enum casts33/9 in
+xfilesystem_abi. These are backlog/toolchain findings, not analyzer PASS.
+The first clangd preparation attempt (f1-deep) failed because the new C dependency
+selected clang.exe with MSVC flags; the runtime-only preparation explicitly set
+C and C++ to clang-cl, and the complete consumer scan succeeded. Stable pipeline
+scripts were not edited.
+
+PASS final current-source qualification after all diagnostic fixes, 2026-11-07:
+`f1-final2` PASS1081.50s, peak1674.70MiB, minimum free18.81GiB physical/
+17.06GiB virtual (8GiB owned-job cap, 4GiB reserves). Common F0/P04/F1 contracts
+including actual OTF, IPC15, packaged Release/GPU, actual EXE live-owner
+activation and crash/stale-profile restart, full current engine build and CTest
+**161/161 zero failed/skipped, 334.01s** all passed. Current JUnit output:
+`Temp/U/f1-engine-tests.xml`; logs: `Temp/U/logs/f1-final2.*`.
+Polling84samples p50=4.832ms/p95=8.163ms; EDT heartbeat p95=.145ms.
+Historical analyzer findings remain classified, not suppressed or reported PASS.
+F1-GATE is PARTIAL only pending owner visual acceptance using FI_FEATURE_MATRIX.md;
+F2 has not started. No Computer Use was performed.

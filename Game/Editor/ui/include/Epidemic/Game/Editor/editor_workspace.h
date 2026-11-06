@@ -6,7 +6,15 @@
 #include "Epidemic/Game/Editor/content_import_queue.h"
 
 namespace epidemic::game::editor {
-enum class UiElement { Document, SceneNode, PrefabNode, GraphNode, Connection, PrefabComponent };
+enum class UiElement {
+    Document,
+    SceneNode,
+    PrefabNode,
+    GraphNode,
+    Connection,
+    PrefabComponent,
+    Asset
+};
 
 enum class UiTransformField {
     PositionX,
@@ -91,6 +99,10 @@ class EditorWorkspace final {
     void EnableContentWatch(bool enabled) noexcept {
         content_watch_enabled_ = enabled;
         hot_reload_.SetEnabled(enabled);
+    }
+
+    [[nodiscard]] bool ContentWatchEnabled() const noexcept {
+        return content_watch_enabled_;
     }
 
     [[nodiscard]] bool IsDirty() const noexcept {

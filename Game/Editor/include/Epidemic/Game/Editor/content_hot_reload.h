@@ -21,6 +21,8 @@ struct HotAssetEvent {
 
     HotAssetEventKind kind = HotAssetEventKind::Updated;
     std::string diagnostic;
+    std::uint64_t job = 0;
+    std::string source;
 };
 
 // P04.4/P04.5: one outstanding decode/cook at a time. The worker may read
@@ -49,7 +51,7 @@ class ContentHotReload final {
     }
 
     [[nodiscard]] bool Busy() const noexcept {
-        return pending_ != nullptr;
+        return pending_ != nullptr || !manual_.empty();
     }
 
     [[nodiscard]] std::vector<HotAssetEvent> Poll(ProjectFolder &folder);
@@ -91,6 +93,7 @@ class ContentHotReload final {
     Prepare prepare_;
     std::chrono::milliseconds audit_interval_;
     std::deque<runtime::AssetId> manual_;
+    std::vector<HotAssetEvent> cancelled_;
     bool enabled_ = true;
 };
 

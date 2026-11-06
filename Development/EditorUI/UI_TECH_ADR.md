@@ -22,3 +22,38 @@ Save/Discard, captures the requested EditorWindow and preserves peer views.
 It does not create windows, implement docking or modify signed Platform modules.
 Actual AWT close events on independent HWNDs exercise Cancel/Save/Discard and
 pending-Save ordering in packaged smoke; owner mouse acceptance stays separate.
+
+
+## F1 native asset bindings (2026-11-06)
+
+F0 visual acceptance is confirmed by the owner at 195e0c7. F1 keeps one
+EditorWorkspace/ProjectFolder owner: immutable catalog queries/selection,
+QueueImportPng (retained historical API name) generalized to validated typed
+media, canonical Content watcher, mixed asset history and refs. Bridge v3 adds
+asset-revision writes, bounded catalog queries and real job/preview projections.
+The public Framework ABI/archive source schema is unchanged.
+
+Static SHA-256-pinned libwebp1.6.0 is a private EditorCore dependency; no system
+codec or additional DLL is required. Existing bounded WAV PCM / SFNT probes feed
+the same staging/cook/publication flow. Codec notices ship with product and SDK.
+Native companion longPathAware fixes >260 path operations on a system whose
+long-path policy is enabled; no registry setting is changed by the application.
+
+Native viewport reads immutable cooked images asynchronously through retained
+ImageResourceLoader/ResourceServices, retaining ResourceLease and Renderer
+texture ownership per surface. Upload occurs before Begin; new keys replace
+old generations and reparent/close releases their surfaces. SceneView-derived
+world data and Prefab bindings are projections, not a second authoring Scene.
+128px previews are intentionally bounded; full-resolution authoring/camera and
+picking remain F2. Physical acceptance is separate from API/GPU qualification.
+
+
+Release qualification found the packaged JBR's MSVCP140 14.29 shadowing the
+VS2026 native companion's STL: actual access violation in std::future/mutex
+(first async import). The same Release companion passed outside the package.
+Build-Standalone now resolves the active toolset's licensed x64 release CRT,
+checks it is not older, and copies it unchanged into app/native and a derived
+runtime. No system installation/registry update, cached-upstream mutation,
+signed-JAR modification or static/mixed-CRT workaround. This covers both JNI
+and companion initialization; the actual packaged EXE regression remains mandatory.
+[Microsoft runtime compatibility](https://learn.microsoft.com/en-us/lifecycle/faq/visual-c-faq).

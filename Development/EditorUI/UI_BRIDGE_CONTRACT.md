@@ -1,4 +1,4 @@
-# UI bridge contract v2
+# UI bridge contract v3
 
 Private presentation protocol, not a public Engine/Framework ABI or an archive
 schema. F-I baseline: `32eef79`; the owner accepted the first document slice
@@ -20,13 +20,13 @@ surrogates; local pre-send failures keep the valid stream Ready. There are at
 most 8 arguments and 32 queued requests; started operations finish atomically,
 queued tasks can be cancelled, backend timeout is 15 seconds.
 
-Request: magic `EPUI` (0x45505549), u16 major **2**, u16 minor 0, u64 correlation,
+Request: magic `EPUI` (0x45505549), u16 major **3**, u16 minor 0, u64 correlation,
 u8 opcode, u64 generation, u64 expected project revision, u16 argument count,
 then strings. A process nonce seeds generation; workspace resets advance it.
 Previous-process references cannot pass optimistic concurrency checks.
 Response: same magic/version/correlation, u8 result, u64 generation, capability
 CSV, error, snapshot-present byte. Failed writes publish authoritative state
-and an error, never success. Versions 1/3 are explicitly rejected.
+and an error, never success. Versions 1/2/4 are explicitly rejected.
 
 ## Operations
 
@@ -43,6 +43,13 @@ and an error, never success. Versions 1/3 are explicitly rejected.
 | 15 | CreateDocument: kind 0 Scene / 1 Prefab / 2 Graph, UTF-8 name. Optional `registered-components` for Prefab uses real host Health/Movement recipes, no demo behavior/Graph dependency. |
 | 16 | Scalar commit: expected selection revision, field key, textual typed value. Rebuild the current native Inspector entry, validate with InspectorCommand, Execute once. |
 | 17 | DiscardDocument: stable document ID, through existing Workspace/Folder transaction/history boundary. |
+| 18 | QueueImportPng (historical native API name, now typed supported media): asset revision, external source, Content-relative destination. |
+| 19 | Reimport selected: asset revision, AssetId; native worker/publication only. |
+| 20 / 21 | Move / queued Duplicate: asset revision, AssetId, new Content-relative path. Preserve media extension. |
+| 22 / 23 | Stage Delete (asset revision, AssetId, explicit allow-broken 0/1) / Restore (revision, AssetId). |
+| 24 | Assign native typed texture binding: asset revision, Prefab ID, texture AssetId. |
+| 25 / 26 / 27 | Cancel native jobs / Poll native content / enable canonical Content watch (0/1). |
+| 28 | Bounded native asset query (UTF-8 search, max 1024 bytes); presentation only, no authoring revision. |
 
 Writes require an open project, current generation and nonzero project revision.
 Create/Rename/scalar/Discard are read-only during Play. Unsupported capabilities
@@ -94,3 +101,49 @@ independent HWNDs; physical mouse/focus acceptance remains the owner's task.
 U group docking/layout remains accepted. Entity picking/gizmos/composition are
 F2; Graph Canvas and continuous Game View are later phases. F0 covers document,
 typed hierarchy/component selection, real stored scalars and native lifecycle.
+
+## F1 asset projection and media
+
+Asset selection is kind 6, document 0, element AssetId. One native selection
+feeds Explorer, Asset Details/References and detached readers. Asset writes also
+check expected asset revision; no silent retry after Conflict. Poll can publish
+new asset generations while the project document revision stays unchanged.
+Flags 16/32 describe native job busy/content watch. Pure query/poll does not
+simulate import or create another asset model.
+
+Asset snapshots expose native type/ID/generation/fingerprint/cooked SHA-256,
+canonical Content path, trash original path, source presence and selected cooked
+metadata. Browser queries return at most 1000 sorted matches plus the selected
+asset, with the native total count; rows virtualize in List/Grid. Existing native
+ASCII-fold search semantics remain. Service-root entry is read-only.
+
+The bounded native event stream (64 recent events) exposes importer job IDs,
+source/destination, phase and terminal outcome. Reimport/watch events carry
+AssetId; there is no invented percentage. Cancel includes ready but unpublished
+workers. Partial batch request failures go to Problems/Console per file.
+The existing 32-stats-per-poll watcher / two-observation debounce / five-second
+hash audit stays native. JVM polls at 500 ms and never owns a WatchService.
+Watch observes project Content copies, not the external originals chosen for
+import; clone remains independent of their paths.
+
+Supported native import subset: PNG; static WebP (bundled static libwebp 1.6.0);
+integer PCM WAV, 1/2 channels, 8/16/24/32-bit, 8–192 kHz; SFNT TrueType TTF and
+CFF OTF validated for registration/metadata. Ogg, animated WebP, playback,
+glyph atlas generation and new font/audio component slots remain unavailable.
+The file chooser only offers the supported subset. Media uses the existing
+private staging, source lease, content digest, immutable cooked archive and
+atomic ProjectFolder publication; source/cooked files and IDs survive Save/Clone.
+The historical PreparedCookedPng API name is retained, not a parallel importer.
+PNG recipe/archive compatibility is unchanged; other media has distinct recipes
+and a cooked_media document type. No public Framework ABI changed.
+
+128px native thumbnails retain aspect/alpha and use existing bounded cache
+policy. Scene/Prefab viewport receives only native SceneView world projections
+and typed bindings/cooked keys. Existing ImageResourceLoader/ResourceServices
+prepare immutable preview payloads on a worker; Renderer uploads before Begin,
+then draws with retained leases/textures. Replaced generations release after
+frame use; closing/reparenting surfaces releases the view resources. Preview
+cache is 128 entries/16 MiB per live view, using reduced pixels and original
+source dimensions for geometry. Full-resolution scene authoring/camera/gizmos
+remain F2; continuous Game View remains F-II/F8. GPU captures qualify actual
+published colors/aspect, not physical mouse/focus/DPI acceptance.

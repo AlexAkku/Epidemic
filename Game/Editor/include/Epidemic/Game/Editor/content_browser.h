@@ -1,5 +1,6 @@
 #pragma once
 #include "Epidemic/Game/Editor/project_folder.h"
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -12,6 +13,7 @@ struct BrowserFilter {
     std::string search;
     std::optional<runtime::AssetType> type;
     bool show_trashed = false;
+    std::size_t limit = 16384;
 };
 
 struct BrowserItem {

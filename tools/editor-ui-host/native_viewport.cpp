@@ -1,4 +1,6 @@
 #include "renderer.h"
+#include "native_scene_preview.h"
+#include <cmath>
 #include <jawt.h>
 #include <jawt_md.h>
 #include <jni.h>
@@ -58,6 +60,7 @@ struct View {
     DWORD thread = GetCurrentThreadId();
     HWND hwnd = nullptr;
     std::unique_ptr<Renderer> renderer;
+    std::unique_ptr<epidemic::editor_host::ScenePreview> scene;
 };
 
 // Diagnostic scoped surface IDs, never C++ addresses or authoring identities.
@@ -116,6 +119,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
             if (view.thread != GetCurrentThreadId())
                 throw std::runtime_error("Viewport thread mismatch");
             if (view.hwnd != hwnd) {
+                view.scene.reset();
                 view.renderer.reset();
                 view.hwnd = hwnd;
             }
@@ -131,6 +135,8 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
                 const float base = size.x / logical.x;
                 const float offset_x = (size.x - std::min(1280.f, size.x) * base) * .5f;
                 const float offset_y = (size.y - 720.f * base) * .5f;
+                if (view.scene)
+                    view.scene->Pump(*view.renderer);
                 view.renderer->Begin();
                 // Same native editor surface integration: remove gameplay letterboxing.
                 view.renderer->PushTransform(
@@ -143,9 +149,14 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
                 for (unsigned y = 0; y < static_cast<unsigned>(size.y); y += 48)
                     view.renderer->Line(0, static_cast<float>(y), size.x, static_cast<float>(y),
                                         0x363640);
-                view.renderer->RoundRect(size.x / 2 - 50, size.y / 2 - 36, 100, 72, 6, 0xa855d5);
-                view.renderer->Text(L"U1 / existing D3D11 + D2D Renderer", 20, 20, 16, 0xf0f0f4,
-                                    size.x - 40);
+                if (view.scene)
+                    view.scene->Draw(*view.renderer, D2D1::SizeF(size.x, size.y));
+                else
+                    view.renderer->RoundRect(size.x / 2 - 50, size.y / 2 - 36, 100, 72, 6,
+                                             0xa855d5);
+                view.renderer->Text(view.scene ? L"Native asset preview / retained Renderer"
+                                               : L"U1 / existing D3D11 + D2D Renderer",
+                                    20, 20, 16, 0xf0f0f4, size.x - 40);
                 view.renderer->PopTransform();
                 view.renderer->End();
             }
@@ -213,7 +224,7 @@ extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(
                                                                                 jclass) noexcept {
     try {
         CheckThread();
-        // No application model, native thread or callback into Java is created.
+        // Diagnostics do not create an application model or callbacks into Java.
         PROCESS_MEMORY_COUNTERS_EX memory{};
         memory.cb = sizeof(memory);
         GetProcessMemoryInfo(GetCurrentProcess(),
@@ -233,16 +244,28 @@ extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(
             }
             CloseHandle(snapshot);
         }
+        std::size_t preview_bytes = 0, preview_textures = 0, preview_invariants = 0;
+        for (const auto &[id, view] : Views())
+            if (view.scene) {
+                (void)id;
+                const auto stats = view.scene->Memory();
+                preview_bytes += stats.resident_bytes;
+                preview_textures += view.scene->TextureCount();
+                preview_invariants += stats.invariant_failure_count;
+            }
         const jlong values[]{static_cast<jlong>(Views().size()),
                              static_cast<jlong>(handles),
                              static_cast<jlong>(
                                  GetGuiResources(GetCurrentProcess(), GR_GDIOBJECTS)),
                              static_cast<jlong>(memory.WorkingSetSize),
                              static_cast<jlong>(memory.PrivateUsage),
-                             static_cast<jlong>(threads)};
-        auto result = env->NewLongArray(6);
+                             static_cast<jlong>(threads),
+                             static_cast<jlong>(preview_bytes),
+                             static_cast<jlong>(preview_textures),
+                             static_cast<jlong>(preview_invariants)};
+        auto result = env->NewLongArray(9);
         if (result)
-            env->SetLongArrayRegion(result, 0, 6, values);
+            env->SetLongArrayRegion(result, 0, 9, values);
         return result;
     } catch (...) {
         return env->NewLongArray(0); // Explicit failed diagnostic result, no C++ escape.
@@ -258,5 +281,61 @@ Java_epidemic_u1_NativeViewport_windowHandle(JNIEnv *env, jclass, jobject compon
         return IsWindow(root) ? static_cast<jlong>(Number(root)) : 0;
     } catch (...) {
         return 0; // Explicit unavailable diagnostic, no borrowed native handle escapes.
+    }
+}
+
+extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_scene(
+    JNIEnv *env, jclass, jlong id, jstring root, jobjectArray keys, jfloatArray geometry) noexcept {
+    try {
+        CheckThread();
+        auto found = Views().find(id);
+        if (found == Views().end())
+            throw std::runtime_error("Stale viewport handle");
+        const auto count = env->GetArrayLength(keys);
+        if (count < 0 || count > 262144 || env->GetArrayLength(geometry) != count * 8)
+            throw std::runtime_error("Preview geometry bounds");
+        const auto chars = env->GetStringChars(root, nullptr);
+        if (!chars)
+            throw std::runtime_error("Preview path unavailable");
+        std::wstring value(reinterpret_cast<const wchar_t *>(chars),
+                           static_cast<std::size_t>(env->GetStringLength(root)));
+        env->ReleaseStringChars(root, chars);
+        const std::filesystem::path path{value};
+        std::vector<float> coordinates(static_cast<std::size_t>(count) * 8);
+        env->GetFloatArrayRegion(geometry, 0, count * 8, coordinates.data());
+        if (env->ExceptionCheck())
+            throw std::runtime_error("Preview geometry unavailable");
+        std::vector<epidemic::editor_host::PreviewSprite> sprites;
+        for (jsize i = 0; i < count; ++i) {
+            auto key = static_cast<jstring>(env->GetObjectArrayElement(keys, i));
+            const auto text = env->GetStringUTFChars(key, nullptr);
+            if (!text)
+                throw std::runtime_error("Preview key unavailable");
+            std::string digest(text);
+            env->ReleaseStringUTFChars(key, text);
+            env->DeleteLocalRef(key);
+            if (digest.size() != 64 ||
+                digest.find_first_not_of("0123456789abcdef") != std::string::npos)
+                throw std::runtime_error("Preview digest invalid");
+            epidemic::editor_host::PreviewSprite sprite;
+            sprite.key = std::move(digest);
+            for (std::size_t n = 0; n < 8; ++n) {
+                sprite.geometry[n] = coordinates[static_cast<std::size_t>(i) * 8 + n];
+                if (!std::isfinite(sprite.geometry[n]))
+                    throw std::runtime_error("Preview finite geometry required");
+            }
+            if (sprite.geometry[5] <= 0)
+                throw std::runtime_error("Preview pixels per unit invalid");
+            sprites.push_back(std::move(sprite));
+        }
+        auto &view = found->second;
+        if (!view.scene || view.scene->Root() != path)
+            view.scene = std::make_unique<epidemic::editor_host::ScenePreview>(path);
+        view.scene->Update(std::move(sprites));
+        return Reply(env, "PASS scene projection");
+    } catch (const std::exception &error) {
+        return Failure(env, error.what());
+    } catch (...) {
+        return Failure(env, "unknown scene preview failure");
     }
 }

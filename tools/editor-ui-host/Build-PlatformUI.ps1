@@ -27,7 +27,7 @@ $sources=@(Get-ChildItem "$PSScriptRoot/java-intellij" -Recurse -Filter '*.java'
 & "$jdk/bin/javac.exe" --release 21 -encoding UTF-8 -Xlint:deprecation -classpath "$common;$sdk/lib/*" -d $classes $sources
 if($LASTEXITCODE){throw 'IntelliJ Platform adapter compile failed'}
 # The diagnostic Swing dock/window implementation is intentionally absent from this plugin.
-Get-ChildItem "$common/epidemic/editor" -Filter '*.class' | Where-Object { $_.Name -notmatch '^(EditorApp|DockSpace|DockLayout|UiTests|IslandsTabsUI)(\$|\.)' } | Copy-Item -Destination "$stage/epidemic/editor" -Force
+Get-ChildItem "$common/epidemic/editor" -Filter '*.class' | Where-Object { $_.Name -notmatch '^(EditorApp|DockSpace|DockLayout|UiTests|AssetTests|IslandsTabsUI)(\$|\.)' } | Copy-Item -Destination "$stage/epidemic/editor" -Force
 Copy-Item "$common/epidemic/u1/NativeViewport*.class" "$stage/epidemic/u1" -Force
 Copy-Item "$PSScriptRoot/resources/epidemic/editor/*.tsv" "$stage/epidemic/editor" -Force
 Copy-Item "$classes/epidemic/editor/platform" "$stage/epidemic/editor" -Recurse -Force

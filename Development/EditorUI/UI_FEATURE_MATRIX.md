@@ -11,12 +11,12 @@ Sources: `Temp/!Tasks/UI_Roadmap.md` §§7,10–12, `Temp/!Tasks/U_Phase.md`. Cu
 | scene.authoring | Add/Delete Scene node, TRS, parents, PlacePrefab, picking/gizmos; SceneViewTests | backend-only | F2 |
 | prefab.authoring | Definition tree/components/parameters, targeted instance overrides, binding/reset; workspace/Inspector tests | backend-only | F2 |
 | inspector.schema | Bool/i64/double/string/ref values supported through existing schema; future Enum/Flags/Vector/Color/Array/Optional widgets are not current runtime types | wired stored bool/i64/double/string and read-only refs; unavailable defaults/future types remain disabled | F0/F2/F4 |
-| assets.png | WIC PNG/cook, stable AssetId, leases, async import/reimport, last-good; ContentTests/ContentReopen | backend-only | F1 |
-| assets.lifecycle | Move/rename, queued duplicate, staged delete/restore, reference diagnostics, global history; SpriteHotTests | backend-only | F1 |
-| assets.watch | Workspace-level watcher, bounded jobs, cancel, stale epoch filtering, audit; AsyncPngTests | backend-only | F1 |
+| assets.png | WIC PNG/cook, stable AssetId, leases, async import/reimport, last-good; ContentTests/ContentReopen | wired native commands/metadata/preview; current qualification in FI_FEATURE_MATRIX.md | F1 |
+| assets.lifecycle | Move/rename, queued duplicate, staged delete/restore, reference diagnostics, global history; SpriteHotTests | wired native commands/metadata/preview; current qualification in FI_FEATURE_MATRIX.md | F1 |
+| assets.watch | Workspace-level watcher, bounded jobs, cancel, stale epoch filtering, audit; AsyncPngTests | wired native commands/metadata/preview; current qualification in FI_FEATURE_MATRIX.md | F1 |
 | assets.sheet | Typed visual/sheet metadata, stable regions, thumbnail cache helpers; SheetCore/ThumbnailCache tests | backend-only / limited | F1/F7 |
-| assets.explorer | Folder tree, breadcrumb, rich filters/grid, multi-select, typed drag/drop, full Project Explorer | planned | U6/F1 |
-| assets.native-picker | Platform FileChooser/JBR Windows native selection; selected source performs no import | picker wired; import/cook backend-only | U6/F1 |
+| assets.explorer | Folder tree, breadcrumb, rich filters/grid, multi-select, typed drag/drop, full Project Explorer | wired bounded native query, Tree/List/Grid and typed selection | U6/F1 |
+| assets.native-picker | Platform FileChooser/JBR Windows native selection; validated source queues native import | wired multi-select picker to native staged import/cook | U6/F1 |
 | graph.authoring | Existing command-based nodes/ports/connections, validation and native command services; editor tests | backend-only | F3 |
 | graph.canvas | Canvas zoom/pan, typed visual ports, palette, variables, node Inspector, comments | planned | U6/F3 |
 | graph.scene-drag | Drawn affordance and helper text; reference creation must be disabled until contract | planned | U6/F3 |
@@ -34,7 +34,7 @@ Sources: `Temp/!Tasks/UI_Roadmap.md` §§7,10–12, `Temp/!Tasks/U_Phase.md`. Cu
 | animation.tools | Clip/controller, timeline, tracks/keyframes/markers/states/transitions | planned | U6/F7 |
 | art.tools | Sprite/atlas/tilemap editor tools, packing, palette/brushes; metadata helpers are not full tools | planned / limited helpers | U6/F7 |
 | materials.tools | 2D texture/color/blend/effects and 3D metallic/roughness/normal slots | planned | U6/F7/F13 |
-| audio.tools | Clip properties/waveform/preview, mixer master/music/SFX/UI routes, listener/emitter | planned; MediaProbe is helper coverage only | U6/F7 |
+| audio.tools | Clip properties/waveform/preview, mixer master/music/SFX/UI routes, listener/emitter | PCM WAV import/metadata wired F1; playback/mixer planned F7 | U6/F7 |
 | debug.console | Current diagnostic/activation text exists; complete Console/Problems/Debugger UI needs routing | limited backend-only / planned | U6/F8 |
 | profile.metrics | Frame/CPU/GPU/resources/allocations/entities/graphs/UI panels | planned | U6/F8 |
 | build.export | Settings/targets/scenes/cook/script compile/Windows and mandatory Web export shells | planned | U6/F9/Q1 |
