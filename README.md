@@ -1,112 +1,116 @@
 # Epidemic Engine
 
-Epidemic Engine — C++23 движок с основной Windows-платформой и экспериментальным WebAssembly backend, построенный как несколько строго направленных слоев. Нижние слои предоставляют стабильные механизмы, верхние добавляют игровое значение и зависят только от разрешённых нижних слоёв.
+**Epidemic Engine** is a modular game engine written in C++23, designed for developing 2D games with a path toward full 3D support.
 
-Порядок слоёв от нижнего к верхнему; разрешённые зависимости направлены сверху вниз (`Game → EngineFramework → EngineRuntime → EngineBase`):
+The engine provides a native game runtime, an extensible gameplay framework, a visual editor, and tools for building interactive applications. Its development focuses on performance, modularity, predictable execution, and automated testing.
 
-```text
-EngineBase
-    ↓
-EngineRuntime
-    ↓
-EngineFramework (GameFramework)
-    ↓
-Game
-```
+Windows is the primary development platform. Experimental WebAssembly support enables selected engine components and games to run in a web browser.
 
-`EngineBase` содержит минимальную платформу исполнения: общие типы, память и диагностику, microkernel и lifecycle приложения, Win32 platform/windowing, raw input и минимальный RHI с D3D11 backend. `EngineRuntime` содержит независимые engine majors: assets/resources, persistence, time/environment, scene/world/streaming, renderer, physics, navigation, animation, audio и simulation. Между Runtime majors нет прямых зависимостей; их технические связи собирает только `EngineRuntime/Support`.
+## Features
 
-`GameFramework` должен содержать переиспользуемые gameplay-системы, а `Game` — конкретные правила, контент и конечный composition root.
+### Game Development
 
-Подробное устройство слоев описано в [архитектуре](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/architecture.md>). Документация EngineBase: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/using_enginebase.md>). Документация EngineRuntime: [обзор](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/README.md>) и [практическое использование](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/using_engineruntime.md>). Документация GameFramework: [обзор и правила использования](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineFramework/README.md>).
+- **2D Rendering:** Sprite rendering, transformations, layered scenes, cameras, and visual presentation.
+- **Scene Management:** Hierarchical scene objects, reusable entities, world management, and scene serialization.
+- **Game Objects:** Hybrid architecture combining object hierarchies with entity-component principles.
+- **Physics:** Engine-level systems for physical simulation and collision handling.
+- **Animation:** Runtime infrastructure for animated objects and characters.
+- **Audio:** Sound playback and audio resource management.
+- **Input:** Keyboard, mouse, and platform input processing.
+- **Resources:** Asset loading, resource management, and reusable content.
+- **Persistence:** Serialization, scene storage, and persistent game data.
+- **Time and Simulation:** Fixed-step updates, independent execution clocks, and controlled simulation.
 
-Релиз: [Epidemic Engine 1.1](Documentation/release-1.1.md), CMake/SDK 1.1.0.
+Some runtime subsystems are still being expanded and integrated into the editor.
 
-## Быстрый старт разработки игры
+### Visual Editor
 
-[Принципы создания игры и маршрут для ИИ-агента](Documentation/game-authoring.md):
-выбор SDK/платформы, composition root, владение, fixed-step/UI/audio clocks,
-ресурсы, сохранения, составные 2D-персонажи и UI. Начните с этой страницы;
-исторический Vault используйте как справочник. Новые helpers доступны в
-`Examples/MinimalGame --rig-preview` (в этом проходе не собирались и не запускались).
+Epidemic Editor is the development environment for creating and managing games.
 
-[TODO по аудиту](Documentation/maintenance-todo.md) ·
-[Архив отчётов](Documentation/Reports/Archive/README.md).
+Its capabilities include:
 
-## Сборка
+- Reusable prefabs and scene content.
+- Visual scripting and execution graphs.
+- In-editor game execution and testing.
+- Customizable workspaces.
 
-Экспериментальная цель WebAssembly (Emscripten 6.0.13) собирается
-отдельно от Windows. 2D Presentation использует Canvas2D, RHI-пример — WebGL2:
-[запуск и ограничения](Documentation/web-platform.md),
-[план переноса по коду ASCENT](Documentation/web-platform-roadmap.md).
-Полный браузерный target ASCENT 0.1.20 использует настоящие игровые экраны,
-спрайты, звук и профиль IndexedDB. Отдельный диагностический пример сохранён.
+The editor is under active development. Feature availability depends on the current development milestone.
 
-Для новой игры начните с [практической интеграции SDK 1.1](<Documentation/Epidemic Engine Vault/03 Работа с движком/Практическая интеграция игры.md>): установка, внешний CMake-клиент, цикл окна, ресурсы, сохранения и адресные проверки. [Запуск Auditor](<Documentation/Epidemic Engine Vault/08 Auditor/Запуск Auditor.md>) описывает наблюдение готового EXE и отдельную диагностическую сборку. API-страницы Vault сохраняют снимок от 10 октября; новые фасады сверяйте с текущими headers.
+### Programming and Scripting
 
-Из корня репозитория:
+Epidemic supports multiple approaches to implementing game logic.
+
+**C++23:** Native programming provides direct access to engine systems and is intended for performance-sensitive code, engine extensions, and gameplay implementation.
+
+**C#:** The engine includes a native-to-managed interoperability layer designed to support gameplay scripting through C#.
+
+**Visual Scripting:** A graph-based execution system supports control flow, events, branching, repetition, scheduled execution, and asynchronous waits.
+
+The graph runtime includes compilation, a virtual machine, execution scheduling, and serialization.
+
+These approaches are intended to coexist within a single game project as their integrations mature.
+
+### Development and Diagnostics
+
+The engine includes infrastructure for automated verification and debugging:
+
+- Modular CMake builds.
+- Automated module and integration tests.
+- Headless execution for testing without a graphical window.
+- Runtime diagnostics and logging.
+- Deterministic execution and persistence verification.
+- Independent test and diagnostic applications.
+- SDK packaging for external game projects.
+
+## Supported Platforms
+
+| Platform | Status |
+|---|---|
+| Windows 11 | Primary development platform |
+| Win32 / Direct3D 11 | Primary native backend |
+| WebAssembly / Emscripten | Experimental |
+| WebGL2 / Canvas2D | Experimental browser presentation |
+| iOS, macOS, Android | Not currently supported as complete game targets |
+
+Additional graphics backends and platform support are planned for future development.
+
+## Building
+
+The primary build environment is Windows with CMake, a C++23-compatible compiler, and the required Windows development SDK.
+
+From the repository root:
 
 ```powershell
 cmake -S . -B build
 cmake --build build --config Debug
 ```
 
-## Установленный SDK
-
-После конфигурации `cmake -S . -B build/full-release -A x64`
-команда `cmake --build build/full-release --config Release --target EpidemicSDK` собирает
-библиотеки без запуска/сборки всего набора тестов. Затем
-`cmake --install build/full-release --config Release --prefix <sdk>` создаёт
-переносимую поставку для `find_package(Epidemic 1.1.0 CONFIG REQUIRED)`.
-Пример независимого клиента находится в `Examples/MinimalGame`; задайте
-`CMAKE_PREFIX_PATH=<sdk>`. `--headless` не создаёт окно, `--tool` пропускает
-заставку, обычный запуск показывает её перед первым игровым кадром.
-`EPIDEMIC_REQUIRED_ABI=1` проверяет совместимость при конфигурации.
-Идентификаторы доступны в `Epidemic/build_info.h`, хеши библиотек — в
-`share/Epidemic/sdk.json`. SDK включает Presentation и Session, ресурсы ASCENT
-не требуются. Существующий SDK ASCENT собирается независимо.
-
-## Тесты модулей
+Run the registered tests:
 
 ```powershell
 ctest --test-dir build -C Debug --output-on-failure
 ```
 
-Только Runtime:
+The available build targets depend on the selected configuration and development branch.
 
-```powershell
-ctest --test-dir build -C Debug -R EpidemicRuntime --output-on-failure
-```
+For game integration and SDK usage, see [Game Authoring](Documentation/game-authoring.md).
 
-## Smoke-приложения EngineBase
+## Documentation
 
-После Debug-сборки:
+- [Architecture](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/architecture.md>)
+- [Game Development Guide](Documentation/game-authoring.md)
+- [EngineBase Documentation](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineBase/README.md>)
+- [EngineRuntime Documentation](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineRuntime/README.md>)
+- [GameFramework Documentation](<Documentation/Epidemic Engine Vault/90 Первоисточники/Documentation/EngineFramework/README.md>)
+- [Web Platform](Documentation/web-platform.md)
 
-```powershell
-.\build\EngineBase\Apps\HeadlessCoreApp\Debug\EpidemicHeadlessCoreApp.exe
-.\build\EngineBase\Apps\WindowSmokeApp\Debug\EpidemicWindowSmokeApp.exe
-.\build\EngineBase\Apps\InputSmokeApp\Debug\EpidemicInputSmokeApp.exe
-.\build\EngineBase\Apps\RhiClearScreenApp\Debug\EpidemicRhiClearScreenApp.exe
-```
+## Project Status
 
-Пути выше соответствуют Visual Studio generator; у Ninja нет подкаталога `Debug`. Логи запускаемых вручную smoke-приложений зависят от рабочего каталога; для разработки запускайте их с рабочим каталогом `.ai/`, чтобы логи оставались в `.ai/logs/`.
+Epidemic Engine is under active development.
 
-## Подготовка рабочего пространства
+The current development direction focuses on completing the 2D game development workflow, integrating editor functionality with runtime systems, and improving stability through automated testing.
 
-Единый контракт работы агента: [`Development/AgentsRules/AGENT_RULES.md`](Development/AgentsRules/AGENT_RULES.md). Подробное описание процесса: [`Development/AgentsRules/WORKFLOW.ru.md`](Development/AgentsRules/WORKFLOW.ru.md).
-
-```powershell
-Development/AgentsRules/Scripts/Setup-AgentTools.ps1
-Development/AgentsRules/Scripts/Invoke-Dev.ps1 -Action Build -Profile full -Configuration Debug
-```
-
-C++ сборки находятся в `build/`. Все остальные создаваемые инструменты, виртуальные окружения, индексы, модели, временные файлы и логи находятся в `.ai/`. Исходники и настройки инструментов хранятся в `Development/AgentsRules/`.
-
-## Главное правило зависимостей
-
-Нижний слой никогда не зависит от верхнего. Внутри `EngineRuntime` один major не включает и не линкует другой major; взаимодействие между ними осуществляется через public contracts и adapters в `Support`. Gameplay-смысл не добавляется в EngineBase или Runtime ради удобства верхнего кода.
-
-Текущая базовая платформа — Windows 11 / Win32 / D3D11.
+Future development includes expanded 3D capabilities, additional rendering backends, and broader platform support.
 
 ## TODO
 
@@ -117,23 +121,17 @@ C++ сборки находятся в `build/`. Все остальные со�
   - [x] Цель 3. Полный локальный freeze-аудит EngineRuntime
   - [x] Цель 4. Полный локальный freeze-аудит EngineFramework
   - [x] Цель 5. Доказать persistence и determinism всего движка
-  - [x] Цель 6. Build independent observer — частично завершена; полное закрытие отложено до завершения MS8 и появления первой тестовой игры в `Game`.
+  - [x] Цель 6. Build independent observer
   - [ ] Цель 7. Hardering
   - [ ] Цель 8. Integration qualification
   - [ ] Цель 9. Destructive/stress/fault qualification
-- [ ] Framework Documentation cleanup, freeze
-- [ ] Base and Runtime docs checkup
-- [ ] Комментарии
-  -   [ ] Base перевод комментариев на русский
-  -   [ ] Runtime добавить комментарии в код на английском и русском
-  -   [ ] Framework добавить комментарии в код на английском и русском
-- [ ] Добавление заготовки под DX11/12/Vulacan/Metal для мультиплатформенности
-- [ ] Интеграция Angel Script
+- [ ] Editor UI
+- [ ] Documentation
+- [ ] Интеграция DX11/12/Vulacan/Metal для Win/Mac/Android
 - [ ] Добавление дефолтного проекта
-- [ ] Полноценная мультиплатформенность Win/Mac/Android
-- [ ] Переход на С++ 26 после выхода stable версии языка
+- [ ] Переход на С++ 26
 
-Текущая базовая платформа — Windows 11 / Win32 / D3D11. Cross-platform поддержка не является целью этого этапа.
+Текущая базовая платформа — Windows 11 / Win32 / D3D11.
 
 ## License
 
