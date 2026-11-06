@@ -28,7 +28,7 @@ import javax.swing.*;
 
 /** One native workspace per IDE container. IntelliJ is the only window/docking owner. */
 public final class PlatformSession implements Disposable {
-    public record DocumentView(UiPanels reader,JComponent component){}
+    public record DocumentView(UiPanels reader,JComponent component,VirtualFile file,JLabel title){}
     public final Catalog catalog=new Catalog();
     private final Project project;
     private final FeatureRegistry features=new FeatureRegistry();
@@ -76,7 +76,7 @@ public final class PlatformSession implements Disposable {
         if(target instanceof Frame frame)frame.setExtendedState(frame.getExtendedState()&~Frame.ICONIFIED);
         target.setVisible(true);target.toFront();target.requestFocus();
     });}
-    private void edt(Runnable action){ApplicationManager.getApplication().invokeLater(()->{if(!disposed&&!project.isDisposed())action.run();});}
+    private void edt(Runnable action){ApplicationManager.getApplication().invokeLater(()->{if(!disposed&&!project.isDisposed())try{action.run();}catch(Throwable error){failure(error);}});}
     private void record(String message){
         System.out.println(message);
         try{Files.createDirectories(output);Files.writeString(output.resolve("platform-status.log"),message+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}
@@ -112,7 +112,7 @@ public final class PlatformSession implements Disposable {
         project.getMessageBus().connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,new FileEditorManagerListener(){
             @Override public void selectionChanged(FileEditorManagerEvent event){
                 VirtualFile file=event.getNewFile();String id=file==null?null:file.getUserData(PanelEditorProvider.PANEL);
-                if(id!=null){selectedPanel=id;context(Catalog.context(id));}
+                if(id!=null){selectedPanel=id;context(Catalog.context(id));selectDocument(file);}
             }
         });
         launcher();
@@ -164,10 +164,63 @@ public final class PlatformSession implements Disposable {
     }
     private void state(Bridge.State state){
         service=state.service();
-        if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot);for(var view:List.copyOf(views))view.reader().refresh(snapshot);}
+        if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot);for(var view:List.copyOf(views)){view.reader().refresh(snapshot);refreshDocument(view);}refreshDocumentCommands();}
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){return new UiPanels(catalog,features,document->{String base=switch(document.kind()){case 0->"scene.editor";case 1->"prefab.canvas";default->"graph.editor";};open(base+":"+Long.toUnsignedString(document.id()));},selection->command(9,Integer.toString(selection.kind()),Long.toUnsignedString(selection.document()),Long.toUnsignedString(selection.element())),this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());});}
+    private UiPanels reader(){return new UiPanels(catalog,features,this::openDocument,selection->command(9,Integer.toString(selection.kind()),Long.toUnsignedString(selection.document()),Long.toUnsignedString(selection.element())),this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument);}
+    private void refreshDocumentCommands(){
+        boolean enabled=supports("create-document")&&!snapshot.playing();
+        if(tools!=null)tools.documentCommandsEnabled(enabled);
+        for(var view:views)view.reader().documentCommandsEnabled(enabled);
+    }
+    private Bridge.Document resolveDocument(VirtualFile file){
+        var key=file.getUserData(PanelEditorProvider.DOCUMENT);
+        return key==null||bridge==null||bridge.latest()==null?null:key.resolve(bridge.latest().generation(),snapshot).orElse(null);
+    }
+    private void selectDocument(VirtualFile file){
+        var doc=resolveDocument(file);
+        if(doc!=null&&ready()&&snapshot.selection().document()!=doc.id())command(9,"0",Long.toUnsignedString(doc.id()),"0");
+    }
+    private void openDocument(Bridge.Document document){
+        if(!ready())return;
+        var key=new Bridge.DocumentKey(bridge.latest().generation(),snapshot.project(),document.kind(),document.id());
+        if(key.resolve(bridge.latest().generation(),snapshot).isEmpty())return;
+        open(key.panel()+":"+Long.toUnsignedString(key.id()));
+    }
+    private void newDocument(int kind){
+        if(!supports("create-document")||snapshot.playing())return;
+        Bridge participant=bridge;long generation=participant.latest().generation(),revision=snapshot.revision();
+        String label=new String[]{"Scene","Prefab","Graph"}[kind];
+        String name=Messages.showInputDialog(project,"Document name","New "+label,Messages.getQuestionIcon(),label,null);
+        if(name==null)return;
+        participant.callAt(generation,revision,15,Integer.toString(kind),name).whenComplete((reply,error)->edt(()->{
+            if(error!=null){documentFailure(error);return;}
+            if(bridge!=participant||bridge.latest().generation()!=reply.generation())return;
+            reply.snapshot().documents().stream().filter(d->d.id()==reply.snapshot().selection().document()).findFirst().ifPresent(this::openDocument);
+        }));
+    }
+    private void renameDocument(){
+        if(!supports("rename-document")||snapshot.playing())return;
+        var selected=snapshot.documents().stream().filter(d->d.id()==snapshot.selection().document()).findFirst();
+        if(selected.isEmpty())return;
+        Bridge participant=bridge;long generation=participant.latest().generation(),revision=snapshot.revision();
+        String name=Messages.showInputDialog(project,"Document name","Rename Document",Messages.getQuestionIcon(),selected.get().name(),null);
+        if(name!=null)participant.callAt(generation,revision,5,Long.toUnsignedString(selected.get().id()),name).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});
+    }
+    private void documentFailure(Throwable error){
+        failure(error);if(smoke)return;
+        while(error.getCause()!=null)error=error.getCause();
+        Messages.showErrorDialog(project,error.getMessage(),"Document operation failed");
+    }
+    private void refreshDocument(DocumentView view){
+        var key=view.file().getUserData(PanelEditorProvider.DOCUMENT);if(key==null)return;
+        var doc=resolveDocument(view.file());
+        view.title().setText(doc==null?"Document missing or stale — refresh/open from Project Explorer":
+            doc.name()+" · ID "+Long.toUnsignedString(doc.id())+" · Revision "+doc.revision());
+        if(doc!=null&&!view.file().getName().equals(doc.name()))ApplicationManager.getApplication().runWriteAction(()->{
+            try{view.file().rename(this,doc.name());FileEditorManager.getInstance(project).updateFilePresentation(view.file());}catch(IOException error){failure(error);}
+        });
+    }
     private ToolWindow group(String id,ToolWindowAnchor anchor,boolean split){
         ToolWindow tool=ToolWindowManager.getInstance(project).registerToolWindow(RegisterToolWindowTask.notClosable(id,anchor));
         tool.getComponent().putClientProperty(com.intellij.openapi.wm.impl.content.ToolWindowContentUi.HIDE_ID_LABEL,"true");
@@ -177,6 +230,15 @@ public final class PlatformSession implements Disposable {
     }
     private void workspace(Bridge.Snapshot value){
         snapshot=value;opened=true;launcher.setVisible(false);
+        // Reconnect explicitly rebinds presentation keys only after the native
+        // project and document identities have been confirmed in a new snapshot.
+        for(VirtualFile file:documents.values()){
+            var old=file.getUserData(PanelEditorProvider.DOCUMENT);
+            if(old!=null&&old.project()==value.project())file.putUserData(PanelEditorProvider.DOCUMENT,
+                new Bridge.DocumentKey(bridge.latest().generation(),old.project(),old.kind(),old.id()));
+        }
+        for(var view:views)refreshDocument(view);
+        refreshDocumentCommands();
         CompletableFuture.runAsync(()->{try{recent.opened(value);}catch(IOException e){throw new UncheckedIOException(e);}},io).exceptionally(e->{edt(()->failure(e));return null;});
         if(tools==null){
             tools=reader();tools.refresh(snapshot);
@@ -204,6 +266,7 @@ public final class PlatformSession implements Disposable {
         if(smoke){
             if(recoveringSmoke)later(500,()->{
                 require(snapshot.project()==recoveryProject&&views.size()==recoveryViews&&Set.copyOf(views).equals(recoveryReaders)&&frame.getBounds().equals(recoveryBounds),"Reconnect duplicated/lost project, view identities or frame bounds");
+                for(var view:views)if(view.file().getUserData(PanelEditorProvider.DOCUMENT)!=null)require(resolveDocument(view.file())!=null&&!view.title().getText().startsWith("Document missing"),"Reconnect left a stale document view");
                 record("PASS Platform crash/reconnect: same project identity and view instances; single replacement companion");close(true);
             });else later(1800,this::verify);
         }else if(initialDocuments&&Files.exists(profile.resolve("platform-panels.properties")))restorePanels();
@@ -239,23 +302,35 @@ public final class PlatformSession implements Disposable {
     public void open(String id){
         if(!opened)return;Catalog.Panel panel=catalog.panel(id);
         if(panel.anchor().equals("dock.center.documents")){
-            VirtualFile file=documents.computeIfAbsent(id,key->{LightVirtualFile created=new LightVirtualFile(panel.label(),"");created.putUserData(PanelEditorProvider.PANEL,key);return created;});
+            Bridge.DocumentKey identity=null;Bridge.Document document=null;
+            if(id.contains(":")){
+                long nativeId=Long.parseUnsignedLong(id.substring(id.indexOf(':')+1));
+                document=snapshot.documents().stream().filter(d->d.id()==nativeId).findFirst().orElse(null);
+                if(document==null)return;
+                identity=new Bridge.DocumentKey(bridge.latest().generation(),snapshot.project(),document.kind(),nativeId);
+                if(!id.startsWith(identity.panel()+":"))return;
+            }
+            VirtualFile file=documents.get(id);
+            if(file==null){LightVirtualFile created=new LightVirtualFile(document==null?panel.label():document.name(),"");created.putUserData(PanelEditorProvider.PANEL,id);created.putUserData(PanelEditorProvider.DOCUMENT,identity);documents.put(id,created);file=created;}
             FileEditorManager manager=FileEditorManager.getInstance(project);manager.openFile(file,true);manager.setSelectedEditor(file,"epidemic.platform.panel");selectedPanel=id;context(Catalog.context(id));
+            selectDocument(file);
         }else{
             ToolWindow target=groups.get(targets.get(id));
             if(target==null)target=panel.anchor().equals("dock.left.navigation")?navigation:panel.anchor().equals("dock.bottom.global")?bottom:panel.anchor().equals("dock.center.right.secondary")?secondary:primary;
             add(id,target);target.getContentManager().setSelectedContent(contents.get(id));target.show(null);
         }
     }
-    public DocumentView documentView(String id){
+    public DocumentView documentView(VirtualFile file){
+        String id=file.getUserData(PanelEditorProvider.PANEL);
         UiPanels reader=reader();reader.refresh(snapshot);JPanel root=new JPanel(new BorderLayout());
         DefaultActionGroup commands=new DefaultActionGroup();commands.add(saveAction);
         commands.add(undoAction);commands.add(redoAction);
         commands.addSeparator();commands.add(playAction);commands.add(stopAction);commands.add(action("Build · F9",()->{},()->false));
         commands.add(action("Jobs",()->open("background.jobs"),()->opened));commands.add(action("Find Panel",this::palette,()->opened));
-        ActionToolbar toolbar=ActionManager.getInstance().createActionToolbar("Epidemic.Document.Toolbar",commands,true);toolbar.setTargetComponent(root);root.add(toolbar.getComponent(),BorderLayout.NORTH);root.add(reader.view(id));
+        ActionToolbar toolbar=ActionManager.getInstance().createActionToolbar("Epidemic.Document.Toolbar",commands,true);toolbar.setTargetComponent(root);
+        JPanel header=new JPanel(new BorderLayout());header.add(toolbar.getComponent(),BorderLayout.NORTH);JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(reader.view(id));
         registerWorkspaceShortcuts(root);
-        DocumentView view=new DocumentView(reader,root);views.add(view);return view;
+        DocumentView view=new DocumentView(reader,root,file,title);views.add(view);refreshDocument(view);refreshDocumentCommands();return view;
     }
     public void release(DocumentView view){
         views.remove(view);
@@ -322,8 +397,11 @@ public final class PlatformSession implements Disposable {
         playToggleAction=action("Play / Stop",this::togglePlayback,()->supports("play")&&supports("stop"));
         playAction.getTemplatePresentation().setDescription("Start an isolated Play session. Game View preview is not connected yet.");
         sub.get("File").add(saveAction);sub.get("File").add(saveAllAction);sub.get("File").add(action("Clone Saved Project…",this::cloneProject,this::canClone));sub.get("File").add(action("Close Project",()->close(false),()->opened));
+        for(int kind=0;kind<3;kind++){
+            final int type=kind;sub.get("File").add(action("New "+new String[]{"Scene","Prefab","Graph"}[kind]+"…",()->newDocument(type),()->supports("create-document")&&!snapshot.playing()));
+        }
         sub.get("Edit").add(undoAction);sub.get("Edit").add(redoAction);
-        sub.get("Edit").add(action("Rename selected document…",()->{var selected=snapshot.documents().stream().filter(d->d.id()==snapshot.selection().document()).findFirst();if(selected.isEmpty())return;long generation=bridge.latest().generation(),revision=snapshot.revision();String name=Messages.showInputDialog(project,"Document name","Rename",Messages.getQuestionIcon(),selected.get().name(),null);if(name!=null)bridge.callAt(generation,revision,5,Long.toUnsignedString(selected.get().id()),name).whenComplete((r,e)->{if(e!=null)edt(()->failure(e));});},this::ready));
+        sub.get("Edit").add(action("Rename selected document…",this::renameDocument,()->supports("rename-document")&&!snapshot.playing()&&snapshot.documents().stream().anyMatch(d->d.id()==snapshot.selection().document())));
         for(Catalog.Panel panel:catalog.panels())sub.get("View").add(action(panel.label(),()->open(panel.id()),()->opened));
         sub.get("Project").add(action("Project Settings",()->open("settings.project"),()->opened));sub.get("Project").add(action("Reconnect native backend",this::reconnect,()->opened&&service==Bridge.Service.Error));
         sub.get("Project").addSeparator();sub.get("Project").add(playAction);sub.get("Project").add(stopAction);
@@ -417,11 +495,45 @@ public final class PlatformSession implements Disposable {
                 JComponent form=InspectorForms.form(schema,features);form.setSize(520,720);layout(form);
                 try{BufferedImage image=new BufferedImage(520,720,BufferedImage.TYPE_INT_RGB);Graphics2D graphics=image.createGraphics();form.printAll(graphics);graphics.dispose();Path folder=output.resolve("schemas");Files.createDirectories(folder);ImageIO.write(image,"png",folder.resolve(schema.id()+".png").toFile());}catch(IOException e){throw new UncheckedIOException(e);}
             }
-            savePanels().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}record("PASS Platform U2-U7 shell smoke: actual ToolWindowManager/FileEditorProvider/ActionManager, shared native project, 46 panels captured; 77 form diagnostic prints; navigation left authoring clean");smokePlayback();}));return;
+            savePanels().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}record("PASS Platform U2-U7 shell smoke: actual ToolWindowManager/FileEditorProvider/ActionManager, shared native project, 46 panels captured; 77 form diagnostic prints; navigation left authoring clean");smokeDocuments(0);}));return;
         }
         String id=ids.get(index);open(id);later(350,()->{capture("ui-platform-"+id.replace('.','-'));screens(index+1);});
     }
     private static void layout(Container parent){parent.doLayout();for(Component child:parent.getComponents())if(child instanceof Container nested)layout(nested);}
+    private void smokeDocuments(int kind){
+        if(kind==3){
+            var doc=snapshot.documents().stream().filter(d->d.kind()==2).findFirst().orElseThrow();String id="graph.editor:"+Long.toUnsignedString(doc.id());
+            bridge.call(5,Long.toUnsignedString(doc.id()),"Renamed native document").whenComplete((renamed,error)->edt(()->{
+                if(error!=null){failure(error);return;}
+                VirtualFile file=documents.get(id);
+                require(file!=null&&file.getName().equals("Renamed native document"),"Document tab title not refreshed from native snapshot");
+                for(var view:views)if(view.file()==file)require(view.title().getText().startsWith("Renamed native document"),"Document header not refreshed");
+                bridge.call(6).whenComplete((saved,failure)->edt(()->{
+                    if(failure!=null){failure(failure);return;}
+                    require(!snapshot.dirty(),"Document Save All did not commit");
+                    record("PASS F0.2 Platform native Scene/Prefab/Graph creation, typed document tabs, same-ID reuse, shared rename/header and Save All");smokePlayback();
+                }));
+            }));return;
+        }
+        bridge.call(15,Integer.toString(kind),"Native document "+kind).whenComplete((created,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            var doc=created.snapshot().documents().stream().filter(d->d.id()==created.snapshot().selection().document()).findFirst().orElseThrow();
+            openDocument(doc);awaitDocument(doc,kind,0);
+        }));
+    }
+    private void awaitDocument(Bridge.Document doc,int kind,int attempts){
+        String id=new Bridge.DocumentKey(bridge.latest().generation(),snapshot.project(),doc.kind(),doc.id()).panel()+":"+Long.toUnsignedString(doc.id());
+        VirtualFile file=documents.get(id);
+        if(file==null||FileEditorManager.getInstance(project).getEditors(file).length==0||!ready()){
+            require(attempts<30,"Native document FileEditor did not become ready");later(100,()->awaitDocument(doc,kind,attempts+1));return;
+        }
+        require(resolveDocument(file).id()==doc.id(),"FileEditor has no current typed native identity");
+        int count=views.size();var existing=Set.copyOf(views);openDocument(doc);
+        later(150,()->{
+            require(documents.get(id)==file&&views.size()==count&&Set.copyOf(views).equals(existing),"Duplicate native document view/owner on second Open");
+            smokeDocuments(kind+1);
+        });
+    }
     private void smokePlayback(){
         long revision=snapshot.revision(),identity=snapshot.project();
         bridge.call(13).thenCompose(reply->{

@@ -104,6 +104,50 @@ class Backend {
     ex::Schema schema_;
     std::unique_ptr<ed::EditorWorkspace> workspace_;
     std::uint64_t generation_ = 1, selection_revision_ = 0;
+    std::uint64_t document_nonce_ = 0;
+
+    static void CheckDocumentName(std::string_view name) {
+        if (name.empty() || name.size() > 256 ||
+            name.find_first_not_of(" \t\r\n") == std::string_view::npos ||
+            name.find_first_of("\r\n\t") != std::string_view::npos)
+            throw std::runtime_error("ui.document_name");
+    }
+
+    void CreateDocument(const std::vector<std::string> &args, std::uint64_t revision) {
+        const auto kind = Numeric(args.at(0));
+        if (kind > 2)
+            throw std::runtime_error("ui.document_kind");
+        CheckDocumentName(args.at(1));
+        const auto nonce = std::to_string(GetCurrentProcessId()) + "." +
+                           std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) +
+                           "." + std::to_string(++document_nonce_);
+        const auto id = rt::AssetId::FromString("editor.document." + nonce);
+        ed::EditorDocument document;
+        document.id = id;
+        document.name = args.at(1);
+        if (kind == 0) {
+            epidemic::game::composition::SceneCompositionDefinition scene;
+            scene.asset_id = id;
+            document.data = std::move(scene);
+        } else if (kind == 1) {
+            // Use the current registered schema, without demo components/behaviors.
+            // User-defined archetype authoring belongs to F4.
+            ed::comp::PrefabDefinition prefab;
+            prefab.id = id.value;
+            prefab.root.id = Id::FromString("editor.root." + nonce);
+            prefab.root.archetype = schema_.enemy;
+            document.data = std::move(prefab);
+        } else {
+            rt::graph::GraphDefinition graph;
+            graph.asset_id = id;
+            graph.name = document.name;
+            document.data = std::move(graph);
+        }
+        Require(workspace_->Execute({ed::CreateDocument{std::move(document)}}, revision));
+        if (!workspace_->Select({id, ed::UiElement::Document, 0}))
+            throw std::runtime_error("ui.selection_missing");
+        ++selection_revision_;
+    }
 
     void Reset() {
         workspace_.reset();
@@ -274,11 +318,15 @@ class Backend {
                 throw std::runtime_error("ui.trailing_bytes");
             if (operation != 1 && operation != 4 && generation != generation_)
                 throw std::runtime_error("ui.stale_generation");
-            if ((operation == 12 && args.size() != 1) ||
+            if (((operation == 5 || operation == 15) && args.size() != 2) ||
+                (operation == 12 && args.size() != 1) ||
                 ((operation == 13 || operation == 14) && !args.empty()))
                 throw std::runtime_error("ui.argument_count");
-            if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 14))
+            if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 15))
                 CheckWrite({generation, revision});
+            if ((operation == 5 || operation == 15) && workspace_->Session() &&
+                workspace_->Session()->IsPlaying())
+                throw std::runtime_error("ui.playing_readonly");
             switch (operation) {
             case 1:
             case 4:
@@ -294,6 +342,7 @@ class Backend {
                 NewFolder(args);
                 break;
             case 5:
+                CheckDocumentName(args.at(1));
                 Require(workspace_->Execute({ed::RenameDocument{Asset(Numeric(args.at(0))),
                                                                 args.at(1)}},
                                             revision));
@@ -327,6 +376,9 @@ class Backend {
             case 14:
                 Require(workspace_->Stop());
                 break;
+            case 15:
+                CreateDocument(args, revision);
+                break;
             case 10:
             case 11:
                 if (workspace_->IsDirty() &&
@@ -348,7 +400,7 @@ class Backend {
         out.Number<8>(correlation);
         out.Number<1>(error.empty() ? 0 : 1);
         out.Number<8>(generation_);
-        out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-folder,play,stop");
+        out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-folder,play,stop,create-document");
         out.Text(error);
         Snapshot(out);
         Wire prefix;

@@ -1,6 +1,7 @@
 [CmdletBinding()]
-param([string]$ImageRoot=(Join-Path $PSScriptRoot '../../../Temp/U/distribution/EpidemicEditor'))
+param([string]$ImageRoot)
 $ErrorActionPreference='Stop'
+if(-not $ImageRoot){$ImageRoot=Join-Path $PSScriptRoot '../../../Temp/U/distribution/EpidemicEditor'}
 $image=(Resolve-Path -LiteralPath $ImageRoot).Path
 $exe=Join-Path $image 'EpidemicEditor.exe'
 $state=Join-Path $image 'app/qualification-state'

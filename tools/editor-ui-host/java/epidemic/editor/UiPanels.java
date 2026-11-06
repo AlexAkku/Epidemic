@@ -17,6 +17,10 @@ public final class UiPanels {
     private final Consumer<Bridge.Selection> select;
     private final Runnable importPicker;
     private final Runnable cancelJobs;
+    private final Consumer<Integer> createDocument;
+    private final Runnable renameDocument;
+    private boolean documentCommandsEnabled;
+    private final List<AbstractButton> documentButtons = new ArrayList<>();
     private final Map<String,JComponent> cache = new HashMap<>();
     private final Map<String,NativeViewport> nativeViews = new HashMap<>();
     private final List<Consumer<Bridge.Snapshot>> readers = new ArrayList<>();
@@ -25,9 +29,14 @@ public final class UiPanels {
     private Bridge.Snapshot snapshot;
     private boolean refreshing;
     public UiPanels(Catalog catalog, FeatureRegistry features, Consumer<Bridge.Document> open,
-                    Consumer<Bridge.Selection> select, Runnable importPicker, Runnable cancelJobs) {
+                    Consumer<Bridge.Selection> select, Runnable importPicker, Runnable cancelJobs,
+                    Consumer<Integer> createDocument, Runnable renameDocument) {
         this.catalog = catalog; this.features = features; this.openDocument = open;
         this.select = select; this.importPicker = importPicker; this.cancelJobs = cancelJobs; console.setEditable(false);
+        this.createDocument=createDocument;this.renameDocument=renameDocument;
+    }
+    public void documentCommandsEnabled(boolean enabled) {
+        documentCommandsEnabled=enabled;documentButtons.forEach(button->button.setEnabled(enabled));
     }
     public NativeViewport nativeView(String id) { return nativeViews.get(id); }
     public Map<String,NativeViewport> nativeViews() { return Map.copyOf(nativeViews); }
@@ -167,9 +176,18 @@ public final class UiPanels {
         JTree tree = new JTree(new DefaultMutableTreeNode("Choose a project")); tree.setRootVisible(true);
         JPanel header = new JPanel(new BorderLayout(4, 4)); header.add(search, BorderLayout.NORTH); header.add(breadcrumb, BorderLayout.SOUTH);
         panel.add(header, BorderLayout.NORTH); panel.add(new JScrollPane(tree));
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
         buttons.add(Theme.button("Import…", importPicker));
-        for (String action : new String[]{"Create", "Rename", "Move"}) buttons.add(features.plannedButton("assets." + action, action, "F1"));
+        JButton create=new JButton("New Document…"),rename=new JButton("Rename Document…");
+        JPopupMenu kinds=new JPopupMenu();
+        for(int kind=0;kind<3;kind++) {
+            final int type=kind;JMenuItem item=new JMenuItem(new String[]{"Scene","Prefab","Graph"}[kind]);
+            item.addActionListener(event->createDocument.accept(type));kinds.add(item);
+        }
+        create.addActionListener(event->kinds.show(create,0,create.getHeight()));
+        rename.addActionListener(event->renameDocument.run());
+        for(JButton button:List.of(create,rename)){button.setEnabled(documentCommandsEnabled);documentButtons.add(button);buttons.add(button);}
+        buttons.add(features.plannedButton("assets.Move","Move Asset","F1"));
         panel.add(buttons, BorderLayout.SOUTH);
         Runnable rebuild = () -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode(snapshot == null ? "Choose a project" : snapshot.title());
@@ -188,19 +206,50 @@ public final class UiPanels {
                     parent.add(new DefaultMutableTreeNode(asset.path() + " [" + Long.toUnsignedString(asset.id()) + "]"));
                 }
             }
-            tree.setModel(new DefaultTreeModel(root)); tree.expandRow(0); tree.expandRow(1);
+            // A rename/revision refresh must keep the native selection and the
+            // user's expanded folders/scroll, without emitting another edit.
+            Set<String> expanded=new HashSet<>();
+            var oldRoot=new TreePath(tree.getModel().getRoot());var paths=tree.getExpandedDescendants(oldRoot);
+            if(paths!=null)while(paths.hasMoreElements())expanded.add(treeKey(paths.nextElement()));
+            Point scroll=tree.getParent() instanceof JViewport viewport?viewport.getViewPosition():null;
+            boolean wasRefreshing=refreshing;refreshing=true;
+            try{
+                tree.setModel(new DefaultTreeModel(root));tree.expandRow(0);
+                if(snapshot!=null)for(var nodes=root.depthFirstEnumeration();nodes.hasMoreElements();){
+                    var node=(DefaultMutableTreeNode)nodes.nextElement();TreePath path=new TreePath(node.getPath());
+                    if(expanded.contains(treeKey(path))||expanded.isEmpty()&&node==docs)tree.expandPath(path);
+                    if(node.getUserObject() instanceof DocRow row&&row.document().id()==snapshot.selection().document()){
+                        boolean expand=tree.getExpandsSelectedPaths();tree.setExpandsSelectedPaths(false);
+                        try{tree.setSelectionPath(path);}finally{tree.setExpandsSelectedPaths(expand);}
+                    }
+                }
+                if(scroll!=null&&tree.getParent() instanceof JViewport viewport)viewport.setViewPosition(scroll);
+            }finally{refreshing=wasRefreshing;}
         };
         structure(value -> rebuild.run()); search.addActionListener(event -> rebuild.run());
+        tree.addTreeSelectionListener(event->{
+            if(refreshing)return;Object chosen=tree.getLastSelectedPathComponent();
+            if(chosen instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof DocRow row)
+                select.accept(new Bridge.Selection(0,row.document().id(),0));
+        });
         tree.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent event) {
             if (event.getClickCount() != 2 || refreshing) return;
             Object selected = tree.getLastSelectedPathComponent();
             if (selected instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof DocRow row) {
-                select.accept(new Bridge.Selection(0, row.document().id(), 0)); openDocument.accept(row.document());
+                openDocument.accept(row.document());
             }
         } });
         return panel;
     }
     private record DocRow(Bridge.Document document) { @Override public String toString() { return document.name() + " [" + Long.toUnsignedString(document.id()) + "]"; } }
+    private static String treeKey(TreePath path){
+        StringBuilder key=new StringBuilder();Object[] parts=path.getPath();
+        for(int i=1;i<parts.length;i++){
+            Object value=((DefaultMutableTreeNode)parts[i]).getUserObject();
+            key.append('/').append(value instanceof DocRow row?Long.toUnsignedString(row.document().id()):value);
+        }
+        return key.toString();
+    }
     private JComponent hierarchy() {
         JTree tree = new JTree();
         structure(value -> {

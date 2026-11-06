@@ -25,3 +25,22 @@ Opcodes 12–14 require current generation/revision and an open native project; 
 Clone uses existing ProjectFolder CloneTo: save first, a fresh destination outside the source, preserved document/asset/cooked identities and committed source data. It leaves the active Workspace unchanged. The UI names a new folder and does not enter it in Recent until a successful Open. Save All is the same atomic whole-project Workspace Save as Save in this single-project host (opcode 6).
 
 Play and Stop call existing isolated PlaySession lifecycle. Starting/stopping cannot clear dirty authoring, alter history/revision/selection or serialize runtime state. Stop is idempotent; Close disposes the session. Runtime `Tick`, event routing, live Game View and advanced runtime controls remain later integration; this first F0 batch is not full gameplay/F0 parity.
+
+## F-I first document slice
+
+Capability `create-document`, opcode 15: exactly two strings, kind (`0` Scene,
+`1` Prefab, `2` Graph) and name (1–256 UTF-8 bytes; nonblank, single-line).
+It requires the current generation/revision, allocates stable IDs in C++, and
+executes one existing `CreateDocument` transaction. The Prefab uses the host's
+currently registered archetype with no demo components/behaviors. Graph starts
+as a valid empty definition. No persisted schema, DTO layout or major version
+changes. Rename/Create are rejected during Play with `ui.playing_readonly`.
+
+Platform document files contain only `DocumentKey(generation, project, kind,
+id)` and a view ID. Their names/headers resolve from the native snapshot;
+same-ID Open reuses the VirtualFile. Missing/undone documents show a missing
+state; reconnect explicitly rebinds keys to confirmed native IDs. Revisions
+are session-local concurrency tokens, rebuilt by native Open. Stable IDs,
+document kinds and authored names survive a separate process. Java never
+serializes game documents. Per-document dirty/close policy and scalar
+Inspector integration remain subsequent F0 work, not accepted by this slice.

@@ -160,11 +160,97 @@ public final class UiTests {
         }
         System.out.println("PASS F0 actual clone/no-overwrite/independent process, Play/Stop/dirty isolation, stale/arity/no-project rejection and close during Play");
     }
+    static void documents(Path executable, Path directory) throws Exception {
+        Path folder=directory.resolve("Документы-"+System.nanoTime());
+        List<Bridge.Document> saved;
+        try(Bridge bridge=new Bridge(executable,directory,state->{ })) {
+            result(bridge.connect());
+            nativeReject(bridge,"no_project",15,"0","Scene");
+            result(bridge.call(3,folder.toString(),"Document workflow"));
+            var baseline=bridge.latest();
+            nativeReject(bridge,"argument_count",15,"0");
+            nativeReject(bridge,"document_kind",15,"3","Wrong kind");
+            nativeReject(bridge,"document_name",15,"0","");
+            nativeReject(bridge,"document_name",15,"0","bad\nname");
+            nativeReject(bridge,"document_name",15,"0","я".repeat(129));
+            require(bridge.latest().snapshot().equals(baseline.snapshot()),"Rejected create mutated snapshot");
+            Set<Long> ids=new HashSet<>();ids.add(baseline.snapshot().documents().getFirst().id());
+            for(int kind=0;kind<3;kind++) {
+                var before=bridge.latest();
+                var created=result(bridge.call(15,Integer.toString(kind),"Документ "+kind));
+                long id=created.snapshot().selection().document();
+                var doc=created.snapshot().documents().stream().filter(d->d.id()==id).findFirst().orElseThrow();
+                require(id!=0&&ids.add(id)&&doc.kind()==kind&&created.snapshot().dirty()&&doc.revision()>0,"Create identity/kind/revision");
+                require(created.snapshot().revision()>before.snapshot().revision(),"Create did not advance revision");
+                result(bridge.call(7));
+                require(bridge.latest().snapshot().documents().stream().noneMatch(d->d.id()==id),"Undo retained document");
+                require(result(bridge.call(8)).snapshot().documents().contains(doc),"Redo changed document identity");
+                try { result(bridge.callAt(before.generation(),before.snapshot().revision(),15,"0","Stale"));throw new IllegalStateException("Stale create accepted"); }
+                catch(ExecutionException expected){require(expected.getCause().getMessage().contains("stale_revision"),"Wrong stale create diagnostic");}
+                var selected=result(bridge.call(9,"0",Long.toUnsignedString(id),"0"));
+                var renamed=result(bridge.call(5,Long.toUnsignedString(id),"Имя "+kind));
+                require(renamed.snapshot().selection().document()==id&&renamed.snapshot().revision()>selected.snapshot().revision(),"Rename lost selection or revision");
+            }
+            nativeReject(bridge,"document_name",5,Long.toUnsignedString(ids.iterator().next())," ");
+            result(bridge.call(6));saved=bridge.latest().snapshot().documents();
+            require(!bridge.latest().snapshot().dirty(),"Save All did not clear dirty");
+            result(bridge.call(13));
+            nativeReject(bridge,"playing_readonly",15,"0","During Play");
+            nativeReject(bridge,"playing_readonly",5,Long.toUnsignedString(saved.getFirst().id()),"During Play");
+            result(bridge.call(14));result(bridge.call(10));result(bridge.call(11));
+        }
+        try(Bridge reopened=new Bridge(executable,directory,state->{ })) {
+            result(reopened.connect());var reply=result(reopened.call(2,folder.resolve("Project.epidemicproj").toString()));
+            // Revisions are session-local optimistic concurrency tokens. The
+            // native archive rebuilds them on Open; persisted identities/names
+            // and kinds must survive unchanged, not the old session's tokens.
+            require(reply.snapshot().documents().size()==saved.size()&&!reply.snapshot().dirty(),"Separate-process Save/Open lost documents/savepoint");
+            for(var doc:saved)require(reply.snapshot().documents().stream().anyMatch(d->d.id()==doc.id()&&d.kind()==doc.kind()&&d.name().equals(doc.name())&&d.revision()>0),"Separate-process Save/Open lost ID/kind/name or valid revision");
+            var first=saved.getFirst();var key=new Bridge.DocumentKey(reply.generation(),reply.snapshot().project(),first.kind(),first.id());
+            require(key.resolve(reply.generation(),reply.snapshot()).isPresent(),"Document key lost live native identity");
+            require(key.resolve(reply.generation()+1,reply.snapshot()).isEmpty(),"Old generation key resolved");
+            require(new Bridge.DocumentKey(reply.generation(),reply.snapshot().project()+1,first.kind(),first.id()).resolve(reply.generation(),reply.snapshot()).isEmpty(),"Foreign project key resolved");
+            require(new Bridge.DocumentKey(reply.generation(),reply.snapshot().project(),(first.kind()+1)%3,first.id()).resolve(reply.generation(),reply.snapshot()).isEmpty(),"Wrong kind key resolved");
+            require(new Bridge.DocumentKey(reply.generation(),reply.snapshot().project(),first.kind(),0).resolve(reply.generation(),reply.snapshot()).isEmpty(),"Missing ID key resolved");
+            long id=saved.getLast().id(),revision=reply.snapshot().revision();
+            result(reopened.call(9,"0",Long.toUnsignedString(id),"0"));
+            require(reopened.latest().snapshot().revision()==revision&&!reopened.latest().snapshot().dirty(),"Selection dirtied document");
+            result(reopened.call(10));result(reopened.call(11));
+        }
+        System.out.println("PASS F0.2 Scene/Prefab/Graph creation, typed IDs, revision, invalid/stale/Play rejection, Undo/Redo, Rename, separate-process Save/Open");
+    }
+    static javax.swing.JTree explorerTree(java.awt.Container component) {
+        if(component instanceof javax.swing.JTree tree)return tree;
+        for(var child:component.getComponents())if(child instanceof java.awt.Container container){
+            var tree=explorerTree(container);if(tree!=null)return tree;
+        }
+        return null;
+    }
+    static void documentReaders() throws Exception {
+        javax.swing.SwingUtilities.invokeAndWait(()->{
+            Catalog catalog=new Catalog();FeatureRegistry features=new FeatureRegistry();int[] selections={0};
+            var original=new Bridge.Snapshot(1,1,1,0,2,1,8,"test","Project",new Bridge.Selection(0,8,0),
+                List.of(new Bridge.Document(8,1,0,"Original")),List.of(),List.of());
+            var renamed=new Bridge.Snapshot(2,1,1,1,2,1,8,"test","Project",new Bridge.Selection(0,8,0),
+                List.of(new Bridge.Document(8,2,0,"Renamed")),List.of(),List.of());
+            for(int view=0;view<2;view++){
+                UiPanels reader=new UiPanels(catalog,features,d->{},s->selections[0]++,()->{},()->{},k->{},()->{});
+                reader.refresh(original);var tree=explorerTree(reader.view("project.explorer"));
+                require(tree!=null&&tree.getSelectionPath()!=null,"Explorer did not project native selection");
+                var documents=tree.getSelectionPath().getParentPath();tree.collapsePath(documents);
+                reader.refresh(renamed);
+                require(tree.getSelectionPath()!=null&&tree.getSelectionPath().getLastPathComponent().toString().startsWith("Renamed"),"Rename lost highlighted native document");
+                require(!tree.isExpanded(tree.getSelectionPath().getParentPath()),"Rename reset user's collapsed document folder");
+            }
+            require(selections[0]==0,"Snapshot refresh emitted a selection command");
+        });
+        System.out.println("PASS F0.2 two immutable Explorer readers retain selected ID and collapsed folders on native rename without writing selection");
+    }
     public static void main(String[] args) throws Exception {
         Path directory = Path.of(args[0]); Files.createDirectories(directory);
         Path project = directory.resolve("Game-" + System.nanoTime());
         Path executable = Path.of(System.getProperty("epidemic.ui.backend"));
-        presentation(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);
+        presentation(); documentReaders(); recent(directory); compatibility(executable,directory);lifecycle(executable,directory);documents(executable,directory);
         try (Bridge bridge = new Bridge(executable, directory, state -> { })) {
             require(result(bridge.connect()).snapshot() == null, "Handshake created a project");
             var opened = result(bridge.call(3, project.toString(), "Новая игра"));

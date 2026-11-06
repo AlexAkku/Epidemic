@@ -12,7 +12,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\editor-ui-host\B
 
 Prerequisites: VS 2026 C++ tools, CMake, Python, Maven (`mvn.cmd`), Microsoft OpenJDK **21.0.7+6-LTS**. Initial resolution needs Internet access. IDEA installation, account and license are not required. Default configuration is Release; the compiler remains Microsoft OpenJDK 21.0.7 while the product bundles the separately downloaded public JBR. The first runtime resolution needs network access. Close any running copy of this app image before rebuilding; the script checks this before changing generated files and again before packaging.
 
-The script resolves public Platform **253.31033.145** artifacts, checks `standalone/dependencies.lock.json`, builds the native backend/viewport/compatibility editor, compiles the product, resolves public vanilla JBR 21.0.10+1-b1163.108 with pinned publisher SHA512 and a Windows app image with jpackage. `-UpdateLock` is only for intentional dependency updates. No installed IDEA JAR, launcher, runtime or artwork is copied.
+The script resolves public Platform **253.31033.145** artifacts, checks `standalone/dependencies.lock.json`, builds the native backend/viewport, compiles the product, resolves public vanilla JBR 21.0.10+1-b1163.108 with pinned publisher SHA512 and a Windows app image with jpackage. `-UpdateLock` is only for intentional dependency updates. No installed IDEA JAR, launcher, runtime or artwork is copied.
 
 Launch directly after building:
 
@@ -23,6 +23,15 @@ Launch directly after building:
 Distribute the **whole `EpidemicEditor` directory**, including `app`, `runtime` and notices. This is an app image, not an MSI. Native binaries require the Microsoft C++ runtime; clean-machine deployment is a separate check.
 
 Entry: own EXE → `epidemic.launcher.Main` → open Platform bootstrap → `EpidemicStarter` → `PlatformStartup` → `PlatformSession`. Retired custom Swing owners and the U1 probe are removed. The live JNI adapter is part of this host. `Build-PlatformUI.ps1` is an optional same-code development plugin; `Build-EditorUI.ps1 -Test` runs common contracts and exposes no competing app launch route.
+
+F-I document slice: File → New Scene/Prefab/Graph, or Project Explorer → New
+Document. Single-click selects a native document; double-click opens its named
+tab. Edit / Explorer → Rename Document updates views from the shared native
+snapshot. Save All persists them; Undo/Redo includes creation/rename. The tab
+header shows its own native ID/revision. An empty Prefab contains only a root
+using the currently registered host archetype; schema/component authoring is
+later work. These are document bindings, not complete F0/Scene authoring.
+Current status and owner verification: `Development/EditorUI/FI_FEATURE_MATRIX.md`.
 
 ## Behavior
 
@@ -41,7 +50,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\editor-ui-host\B
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\editor-ui-host\Run-U8-Checks.ps1 -JdkRoot "$env:USERPROFILE\.jdks\ms-21.0.7"
 ```
 
-Batch checks run sequentially and continue after failures: common contracts, packaged product smoke, actual EXE second-launch/crash/restart regression, protocol, spec coverage, native regressions, C++-only build, full engine and analyzers. The batch stays nonzero while mandatory acceptance is incomplete. Full engine now passes **165/165**, zero skipped; missing process drivers are restored under `tools/ci`. Existing analyzer findings remain classified, not suppressed. **U-GATE PASS under the owner contract dated 2026-11-05; see QA for exact L0/F status and retained nonblocking diagnostics.**
+Batch checks run sequentially and continue after failures: common contracts, packaged product smoke, actual EXE second-launch/crash/restart regression, protocol, spec coverage, native regressions, C++-only build, full engine and analyzers. The batch stays nonzero while mandatory acceptance is incomplete. The U/L0 full-engine closure passed **161/161**, zero skipped; missing process drivers are restored under `tools/ci`. This is historical evidence, not a claim that every later F change has run the full profile. Existing analyzer findings remain classified, not suppressed. **U-GATE PASS under the owner contract dated 2026-11-05; see QA for exact L0/F status and retained nonblocking diagnostics.**
 
 ## Diagnostics
 

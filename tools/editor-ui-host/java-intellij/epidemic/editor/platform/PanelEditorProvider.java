@@ -10,16 +10,17 @@ import java.beans.PropertyChangeListener;
 /** IntelliJ owns editor tabs, splits, floating editor windows and their disposal. */
 public final class PanelEditorProvider implements FileEditorProvider, DumbAware {
     public static final Key<String> PANEL=Key.create("epidemic.ui.panel.id");
+    public static final Key<epidemic.editor.Bridge.DocumentKey> DOCUMENT=Key.create("epidemic.ui.document.key");
     public boolean accept(Project project,VirtualFile file){return file.getUserData(PANEL)!=null;}
     public FileEditor createEditor(Project project,VirtualFile file){return new Editor(project.getService(PlatformSession.class),file);}
     public String getEditorTypeId(){return "epidemic.platform.panel";}
     public FileEditorPolicy getPolicy(){return FileEditorPolicy.HIDE_DEFAULT_EDITOR;}
     static final class Editor extends UserDataHolderBase implements FileEditor {
         final PlatformSession session;final VirtualFile file;final PlatformSession.DocumentView view;
-        Editor(PlatformSession session,VirtualFile file){this.session=session;this.file=file;view=session.documentView(file.getUserData(PANEL));}
+        Editor(PlatformSession session,VirtualFile file){this.session=session;this.file=file;view=session.documentView(file);}
         public JComponent getComponent(){return view.component();}
         public JComponent getPreferredFocusedComponent(){return view.component();}
-        public String getName(){return session.catalog.panel(file.getUserData(PANEL)).label();}
+        public String getName(){return file.getName();}
         public void setState(FileEditorState state){}
         public boolean isModified(){return false;}
         public boolean isValid(){return !session.isDisposed()&&file.isValid();}

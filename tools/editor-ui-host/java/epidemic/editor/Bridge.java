@@ -14,6 +14,14 @@ public final class Bridge implements AutoCloseable {
     public enum Service { Unavailable, Loading, Ready, Error }
     public record Selection(int kind, long document, long element) { }
     public record Document(long id, long revision, int kind, String name) { }
+    /** Presentation identity only; resolves against the current native snapshot. */
+    public record DocumentKey(long generation, long project, int kind, long id) {
+        public Optional<Document> resolve(long currentGeneration, Snapshot snapshot) {
+            if(generation!=currentGeneration||snapshot==null||snapshot.project()!=project)return Optional.empty();
+            return snapshot.documents().stream().filter(d->d.id()==id&&d.kind()==kind).findFirst();
+        }
+        public String panel() { return switch(kind) {case 0->"scene.editor";case 1->"prefab.canvas";case 2->"graph.editor";default->throw new IllegalArgumentException("Document kind");}; }
+    }
     public record Node(long document, long id, long parent, int kind, String label) { }
     public record Asset(long id, long type, long generation, long fingerprint, boolean trashed,
                         String path, String cookedKey) { }
