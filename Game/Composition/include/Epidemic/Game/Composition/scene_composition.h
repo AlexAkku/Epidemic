@@ -22,6 +22,7 @@ struct SceneCompositionDefinition {
 
     runtime::SceneSnapshot scene;
     std::vector<ScenePrefabPlacement> placements;
+    std::map<std::uint64_t, std::string> node_names;
 };
 
 struct SceneCompositionInstance {

@@ -1,5 +1,6 @@
 #include "renderer.h"
 #include "native_scene_preview.h"
+#include "Epidemic/Game/Editor/scene_drag.h"
 #include <cmath>
 #include <jawt.h>
 #include <jawt_md.h>
@@ -11,6 +12,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <map>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -61,6 +63,11 @@ struct View {
     HWND hwnd = nullptr;
     std::unique_ptr<Renderer> renderer;
     std::unique_ptr<epidemic::editor_host::ScenePreview> scene;
+    epidemic::game::editor::SceneView camera;
+    epidemic::runtime::SceneNodeId selected{};
+    bool editing_scene = false;
+    bool show_grid = true;
+    epidemic::game::editor::GizmoTool tool = epidemic::game::editor::GizmoTool::Move;
 };
 
 // Diagnostic scoped surface IDs, never C++ addresses or authoring identities.
@@ -143,19 +150,56 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
                     D2D1::Matrix3x2F::Scale(1 / base, 1 / base) *
                     D2D1::Matrix3x2F::Translation(-offset_x / base, -offset_y / base));
                 view.renderer->Rect(0, 0, size.x, size.y, 0x191920);
-                for (unsigned x = 0; x < static_cast<unsigned>(size.x); x += 48)
-                    view.renderer->Line(static_cast<float>(x), 0, static_cast<float>(x), size.y,
-                                        0x363640);
-                for (unsigned y = 0; y < static_cast<unsigned>(size.y); y += 48)
-                    view.renderer->Line(0, static_cast<float>(y), size.x, static_cast<float>(y),
-                                        0x363640);
+                view.camera.Resize(size.x, size.y);
+                const auto origin = view.editing_scene ? view.camera.ToScreen({}) :
+                    epidemic::game::editor::ViewPoint{};
+                const float x0 = static_cast<float>(std::fmod(origin.x,48.0));
+                const float y0 = static_cast<float>(std::fmod(origin.y,48.0));
+                if (view.show_grid) {
+                    for (float x = x0; x < size.x; x += 48)
+                        view.renderer->Line(x, 0, x, size.y, 0x363640);
+                    for (float y = y0; y < size.y; y += 48)
+                        view.renderer->Line(0, y, size.x, y, 0x363640);
+                }
+                if (view.editing_scene) {
+                    if (origin.x >= 0 && origin.x < size.x)
+                        view.renderer->Line(static_cast<float>(origin.x),0,static_cast<float>(origin.x),size.y,0x505f76);
+                    if (origin.y >= 0 && origin.y < size.y)
+                        view.renderer->Line(0,static_cast<float>(origin.y),size.x,static_cast<float>(origin.y),0x744e54);
+                }
                 if (view.scene)
-                    view.scene->Draw(*view.renderer, D2D1::SizeF(size.x, size.y));
-                else
+                    view.scene->Draw(*view.renderer, D2D1::SizeF(size.x, size.y), view.editing_scene ? &view.camera : nullptr);
+                else if (!view.editing_scene)
                     view.renderer->RoundRect(size.x / 2 - 50, size.y / 2 - 36, 100, 72, 6,
                                              0xa855d5);
-                view.renderer->Text(view.scene ? L"Native asset preview / retained Renderer"
-                                               : L"U1 / existing D3D11 + D2D Renderer",
+                for (const auto &item : view.camera.Items()) {
+                    const auto b = view.camera.ScreenBounds(item);
+                    if (b.left >= size.x || b.top >= size.y || b.right <= 0 || b.bottom <= 0)
+                        continue;
+                    const float l = static_cast<float>(std::clamp(b.left, -1.0, static_cast<double>(size.x) + 1.0));
+                    const float r = static_cast<float>(std::clamp(b.right, -1.0, static_cast<double>(size.x) + 1.0));
+                    const float t = static_cast<float>(std::clamp(b.top, -1.0, static_cast<double>(size.y) + 1.0));
+                    const float d = static_cast<float>(std::clamp(b.bottom, -1.0, static_cast<double>(size.y) + 1.0));
+                    const auto color = item.id == view.selected ? 0x78bbffu : 0x687787u;
+                    view.renderer->Line(l,t,r,t,color);
+                    view.renderer->Line(r,t,r,d,color);
+                    view.renderer->Line(r,d,l,d,color);
+                    view.renderer->Line(l,d,l,t,color);
+                    if (item.id == view.selected) {
+                        namespace ed = epidemic::game::editor;
+                        const auto gizmo = ed::MakeGizmo(view.camera,item.world,ed::GizmoSpace::Local);
+                        const float x = static_cast<float>(gizmo.pivot.x), y = static_cast<float>(gizmo.pivot.y);
+                        if (view.tool == ed::GizmoTool::Rotate)
+                            view.renderer->Outline(x,y,52,0x78bbffu);
+                        else {
+                            view.renderer->Line(x,y,static_cast<float>(gizmo.x.x),static_cast<float>(gizmo.x.y),0xe36d6du,3);
+                            view.renderer->Line(x,y,static_cast<float>(gizmo.y.x),static_cast<float>(gizmo.y.y),0x79cf8au,3);
+                            view.renderer->Rect(x-5,y-5,10,10,0x78bbffu);
+                        }
+                    }
+                }
+                view.renderer->Text(view.editing_scene ? (view.camera.Items().empty() ? L"Empty Scene" : L"")
+                                                       : view.scene ? L"" : L"U1 / existing D3D11 + D2D Renderer",
                                     20, 20, 16, 0xf0f0f4, size.x - 40);
                 view.renderer->PopTransform();
                 view.renderer->End();
@@ -337,5 +381,110 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_scene(
         return Failure(env, error.what());
     } catch (...) {
         return Failure(env, "unknown scene preview failure");
+    }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL Java_epidemic_u1_NativeViewport_sceneItems(
+    JNIEnv *env, jclass, jlong surface, jlong document, jlong selection, jlongArray ids,
+    jdoubleArray bounds) noexcept {
+    try {
+        CheckThread();
+        auto &view = Views().at(surface);
+        const auto size = env->GetArrayLength(ids);
+        if (size < 0 || size > 4096 || env->GetArrayLength(bounds) != size * 7)
+            return JNI_FALSE;
+        std::vector<jlong> keys(static_cast<std::size_t>(size));
+        std::vector<jdouble> values(keys.size() * 7);
+        env->GetLongArrayRegion(ids, 0, size, keys.data());
+        env->GetDoubleArrayRegion(bounds, 0, size * 7, values.data());
+        if (env->ExceptionCheck())
+            return JNI_FALSE;
+        namespace ed = epidemic::game::editor;
+        namespace rt = epidemic::runtime;
+        std::vector<ed::SceneViewItem> items;
+        items.reserve(keys.size());
+        for (std::size_t index = 0; index < keys.size(); ++index) {
+            const auto *value = values.data() + index * 7;
+            if (!std::all_of(value, value + 7, [](double v) { return std::isfinite(v); }) ||
+                value[0] > value[2] || value[1] > value[3] ||
+                std::abs(value[4]) > std::numeric_limits<float>::max() ||
+                std::abs(value[5]) > std::numeric_limits<float>::max())
+                return JNI_FALSE;
+            rt::Transform world{};
+            world.position.x = static_cast<float>(value[4]);
+            world.position.y = static_cast<float>(value[5]);
+            world.rotation.z = static_cast<float>(std::sin(value[6] * .5));
+            world.rotation.w = static_cast<float>(std::cos(value[6] * .5));
+            items.push_back({rt::SceneNodeId{static_cast<std::uint64_t>(keys[index])}, {},
+                             {value[0], value[1], value[2], value[3]}, world});
+        }
+        view.editing_scene = document != 0;
+        view.selected = rt::SceneNodeId{static_cast<std::uint64_t>(selection)};
+        if (view.editing_scene) {
+            const auto scene = rt::AssetId{epidemic::foundation::StringId{static_cast<std::uint64_t>(document)}};
+            const bool initial_fit = view.camera.Document() != scene || (view.camera.Items().empty() && !items.empty());
+            view.camera.Project(scene,std::move(items));
+            if (initial_fit && !view.camera.Items().empty()) {
+                const auto extent = view.camera.Extent();
+                view.camera.Zoom({extent.x*.5,extent.y*.5},-1);
+            }
+        } else
+            view.camera.Clear();
+        return JNI_TRUE;
+    } catch (...) {
+        return JNI_FALSE;
+    }
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_epidemic_u1_NativeViewport_sceneInput(
+    JNIEnv *, jclass, jlong surface, jint operation, jdouble x, jdouble y, jdouble delta) noexcept {
+    try {
+        CheckThread();
+        auto &view = Views().at(surface);
+        if (!view.editing_scene || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(delta))
+            return 0;
+        const auto size = view.camera.Extent();
+        const epidemic::game::editor::ViewPoint point{x * size.x, y * size.y};
+        switch (operation) {
+        case 0: return static_cast<jlong>(view.camera.Pick(point).Raw());
+        case 1: view.camera.Pan(point); break;
+        case 2: view.camera.Zoom(point, delta); break;
+        case 3: view.camera.Fit(); break;
+        case 4:
+            if (delta >= 0 && delta <= 2)
+                view.tool = static_cast<epidemic::game::editor::GizmoTool>(static_cast<int>(delta));
+            break;
+        case 5: view.show_grid = delta != 0; break;
+        }
+    } catch (...) {
+        return 0;
+    }
+    return 0;
+}
+
+extern "C" JNIEXPORT jdoubleArray JNICALL Java_epidemic_u1_NativeViewport_scenePointer(
+    JNIEnv *env, jclass, jlong surface, jdouble x, jdouble y) noexcept {
+    try {
+        CheckThread();
+        const auto &view = Views().at(surface);
+        if (!view.editing_scene || !std::isfinite(x) || !std::isfinite(y))
+            return env->NewDoubleArray(0);
+        namespace ed = epidemic::game::editor;
+        const auto extent = view.camera.Extent();
+        const ed::ViewPoint cursor{x * extent.x,y * extent.y};
+        const auto center = view.camera.ToWorld({extent.x*.5,extent.y*.5});
+        const auto world = view.camera.ToWorld(cursor);
+        auto handle = ed::GizmoHandle::None;
+        const auto item = std::ranges::find(view.camera.Items(),view.selected,&ed::SceneViewItem::id);
+        if (item != view.camera.Items().end())
+            handle = ed::PickGizmo(ed::MakeGizmo(view.camera,item->world,ed::GizmoSpace::Local),view.tool,cursor);
+        const jdouble data[]{cursor.x,cursor.y,extent.x,extent.y,center.x,center.y,view.camera.Scale(),
+                             static_cast<double>(handle),world.x,world.y};
+        auto result = env->NewDoubleArray(static_cast<jsize>(std::size(data)));
+        if (result)
+            env->SetDoubleArrayRegion(result,0,static_cast<jsize>(std::size(data)),data);
+        return result;
+    } catch (...) {
+        return env->NewDoubleArray(0);
     }
 }

@@ -194,8 +194,8 @@ std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,
         for (const auto &placement : scene->placements)
             if (placement.node.Raw() == selection.element) {
                 const auto *prefab_doc = snapshot.Find(placement.prefab);
-                const auto *definition =
-                    prefab_doc ? std::get_if<comp::PrefabDefinition>(&prefab_doc->data) : nullptr;
+                const auto expanded = MaterializePrefab(snapshot.definition,placement.prefab);
+                const auto *definition = expanded ? &expanded.Value() : nullptr;
                 const auto first = rows.size();
                 if (definition) {
                     Parameters(rows, *definition, prefab_doc->id, &placement);

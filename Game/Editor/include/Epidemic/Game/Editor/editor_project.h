@@ -30,12 +30,30 @@ struct EditorDocument {
 
 };
 
+struct ProjectSystem {
+    foundation::StringId id{};
+    runtime::AssetId scene{};
+    runtime::AssetId graph{};
+    bool enabled = true;
+    bool operator==(const ProjectSystem &) const = default;
+};
+
+struct PrefabLink {
+    comp::PrefabNodeId id{};
+    runtime::AssetId owner{};
+    comp::PrefabNodeId parent{};
+    runtime::AssetId target{};
+    bool operator==(const PrefabLink &) const = default;
+};
+
 struct ProjectDefinition {
     foundation::StringId id{};
 
     runtime::AssetId entry_scene{};
 
     std::vector<EditorDocument> documents;
+    std::vector<ProjectSystem> systems{};
+    std::vector<PrefabLink> prefab_links{};
 };
 
 struct ProjectSchema {
@@ -50,6 +68,12 @@ struct ProjectSnapshot {
     std::uint64_t state_id = 0;
     [[nodiscard]] const EditorDocument *Find(runtime::AssetId id) const noexcept;
 };
+
+[[nodiscard]] foundation::Result<comp::GraphBehaviorDefinition>
+DefaultGraphBehavior(const ProjectDefinition &definition, const ProjectSchema &schema,
+                     runtime::AssetId graph, foundation::StringId id);
+[[nodiscard]] foundation::Result<comp::PrefabDefinition>
+MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab);
 
 [[nodiscard]] foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>
 ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema);

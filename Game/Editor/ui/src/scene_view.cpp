@@ -5,6 +5,13 @@
 #include <unordered_map>
 
 namespace epidemic::game::editor {
+void SceneView::Project(runtime::AssetId scene, std::vector<SceneViewItem> items) {
+    const bool fit = document_ != scene || (items_.empty() && !items.empty());
+    document_ = scene;
+    items_ = std::move(items);
+    if (fit)
+        Fit();
+}
 namespace {
 bool Finite(ViewPoint p) {
     return std::isfinite(p.x) && std::isfinite(p.y);
@@ -111,6 +118,16 @@ void SceneView::Resize(double width, double height) {
     if (Finite({width, height}) && width > 0 && height > 0)
         extent_ = {width, height};
 
+}
+
+bool SceneView::RestoreCamera(ViewPoint extent, ViewPoint center, double scale) {
+    if (!Finite(extent) || !Finite(center) || extent.x <= 0 || extent.y <= 0 ||
+        !std::isfinite(scale) || scale < 1e-36 || scale > 1e6)
+        return false;
+    extent_ = extent;
+    center_ = center;
+    scale_ = scale;
+    return true;
 }
 
 ViewPoint SceneView::ToScreen(ViewPoint p) const {

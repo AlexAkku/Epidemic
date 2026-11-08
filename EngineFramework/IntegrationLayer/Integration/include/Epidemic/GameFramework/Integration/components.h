@@ -148,6 +148,8 @@ class ComponentRegistry final {
     }
 
     [[nodiscard]] const ComponentTypeInfo *Find(TypeId type) const noexcept;
+    [[nodiscard]] std::vector<ComponentTypeInfo> Types() const;
+    [[nodiscard]] foundation::Result<std::vector<PropertyAssignment>> Defaults(TypeId type) const;
     [[nodiscard]] foundation::Result<void>
     Validate(TypeId type, std::span<const PropertyAssignment> properties) const;
     [[nodiscard]] foundation::Result<Prepared>

@@ -12,6 +12,7 @@ import javax.swing.*;
 public final class ScalarInspector extends JPanel {
     public record Edit(long generation,long revision,long selectionRevision,String key,String value) { }
     private final Function<Edit,CompletableFuture<Bridge.Reply>> commit;
+    private final Function<Edit,CompletableFuture<Bridge.Reply>> revert;
     private final JPanel body=new JPanel();
     private final Map<String,Row> rows=new LinkedHashMap<>();
     private Bridge.Snapshot snapshot;
@@ -19,6 +20,8 @@ public final class ScalarInspector extends JPanel {
     private boolean ready,updating;
     private List<String> keys=List.of();
     private final class Row {
+        final JButton reset=new JButton("Revert Override");
+        final JLabel source=new JLabel();
         Bridge.Field field;final JComponent input;final JLabel error=new JLabel(" ");
         Edit draft;boolean active=true,pending;
         CompletableFuture<Bridge.Reply> completion;
@@ -44,14 +47,29 @@ public final class ScalarInspector extends JPanel {
             }
             input.setName(field.key());input.getAccessibleContext().setAccessibleName(field.name());
             JPanel box=new JPanel(new BorderLayout(3,3));box.setAlignmentX(LEFT_ALIGNMENT);
-            JLabel label=new JLabel(field.name());label.setLabelFor(input);box.add(label,BorderLayout.NORTH);box.add(input);
-            error.setForeground(new Color(0xe58c8c));box.add(error,BorderLayout.SOUTH);
+            JLabel label=new JLabel(field.name());label.setLabelFor(input);
+            JPanel heading=new JPanel(new BorderLayout());heading.add(label);heading.add(reset,BorderLayout.EAST);
+            reset.addActionListener(e->{
+                if(!ready||!active||pending||revert==null)return;
+                draft=null;
+                pending=true;reset.setEnabled(false);input.setEnabled(false);
+                revert.apply(token(this.field.key(),"")).whenComplete((reply,failure)->SwingUtilities.invokeLater(()->{
+                    pending=false;
+                    if(active){if(failure!=null)error.setText(failure.getMessage());refresh(generation,snapshot,ready);}
+                }));
+            });
+            box.add(heading,BorderLayout.NORTH);box.add(input);
+            error.setForeground(new Color(0xe58c8c));
+            JPanel note=new JPanel(new BorderLayout());note.add(source,BorderLayout.NORTH);note.add(error,BorderLayout.SOUTH);box.add(note,BorderLayout.SOUTH);
             box.setBorder(BorderFactory.createEmptyBorder(4,0,4,0));box.setMaximumSize(new Dimension(Integer.MAX_VALUE,100));
             body.add(box);
         }
     }
     public ScalarInspector(Function<Edit,CompletableFuture<Bridge.Reply>> commit){
-        super(new BorderLayout());this.commit=commit;body.setLayout(new BoxLayout(body,BoxLayout.Y_AXIS));add(new JScrollPane(body));
+        this(commit,null);
+    }
+    public ScalarInspector(Function<Edit,CompletableFuture<Bridge.Reply>> commit,Function<Edit,CompletableFuture<Bridge.Reply>> revert){
+        super(new BorderLayout());this.commit=commit;this.revert=revert;body.setLayout(new BoxLayout(body,BoxLayout.Y_AXIS));add(new JScrollPane(body));
     }
     private Edit token(String key,String value){return new Edit(generation,snapshot.revision(),snapshot.selectionRevision(),key,value);}
     public void refresh(long currentGeneration,Bridge.Snapshot value,boolean interactive){
@@ -70,6 +88,10 @@ public final class ScalarInspector extends JPanel {
                 Row row=rows.get(field.key());row.field=field;
                 if(row.draft==null&&!row.pending)refreshValue(row);
                 row.input.setEnabled(ready&&field.editable()&&!row.pending&&field.kind()<4);
+                row.source.setText(field.source());
+                boolean overridden=value.selection().kind()==1&&(field.source().equals("instance override")||field.source().equals("instance parameter override"));
+                row.reset.setVisible(revert!=null&&overridden);
+                row.reset.setEnabled(ready&&overridden&&!row.pending);
                 row.input.setToolTipText(field.source()+(field.reason().isBlank()?"":" · "+field.reason())+
                     (field.reference()==0?"":" · ID "+Long.toUnsignedString(field.reference())));
             }

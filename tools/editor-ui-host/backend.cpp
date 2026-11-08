@@ -6,6 +6,7 @@
 #include "Epidemic/Game/Editor/content_thumbnail_cache.h"
 #include "Epidemic/Game/Editor/project_path.h"
 #include "Epidemic/Game/Editor/scene_view.h"
+#include "Epidemic/Game/Editor/scene_drag.h"
 #include <bit>
 #include <cmath>
 #include <array>
@@ -109,6 +110,7 @@ struct Node {
     ed::UiElement kind = ed::UiElement::Document;
     std::string label;
     std::uint64_t component = 0, part = 0;
+    std::uint64_t prefab = 0;
 };
 
 class Backend {
@@ -123,12 +125,253 @@ class Backend {
     std::uint64_t document_nonce_ = 0;
     mutable ed::ThumbnailCache thumbnails_;
     std::string asset_query_;
+    ed::SceneDrag drag_;
+    ed::SceneView drag_view_;
+    mutable std::weak_ptr<const ed::ProjectSnapshot> projected_source_;
+    mutable std::map<std::uint64_t,ed::SceneView> scene_projections_;
+
+    static double Real(std::string_view value) {
+        const auto parsed = ed::EditorWorkspace::ParseValue(ed::comp::PropertyKind::Real,value);
+        Require(parsed);
+        return std::get<double>(parsed.Value());
+    }
+
+    rt::SceneNodeId NewSceneNode() {
+        return rt::SceneNodeId{Id::FromString("editor.scene.node." + std::to_string(generation_) +
+                                             "." + std::to_string(++document_nonce_)).Raw()};
+    }
+
+    void EditSystems(const std::vector<std::string> &args,std::uint64_t revision) {
+        if (args.size() == 3 && args[0] == "add") {
+            const auto scope = Asset(Numeric(args[1]));
+            const auto id = Id::FromString("editor.system." + std::to_string(generation_) + "." + std::to_string(++document_nonce_));
+            Require(workspace_->Execute({ed::EditSystem{scope,{id,scope,Asset(Numeric(args[2])),true}}},revision));
+            return;
+        }
+        if (args.size() < 2)
+            throw std::runtime_error("ui.argument_count");
+        const auto snap = workspace_->Project()->Snapshot();
+        const auto id = Id{Numeric(args[1])};
+        const auto found = std::ranges::find(snap->definition.systems,id,&ed::ProjectSystem::id);
+        if (found == snap->definition.systems.end())
+            throw std::runtime_error("ui.system_missing");
+        auto system = *found;
+        bool remove = false;
+        if (args[0] == "remove" && args.size() == 2)
+            remove = true;
+        else if (args[0] == "enable" && args.size() == 3 && (args[2] == "1" || args[2] == "0"))
+            system.enabled = args[2] == "1";
+        else if (args[0] == "graph" && args.size() == 3)
+            system.graph = Asset(Numeric(args[2]));
+        else
+            throw std::runtime_error("ui.system_command");
+        Require(workspace_->Execute({ed::EditSystem{system.scene,system,remove}},revision));
+    }
+
+    void PlaceResource(const std::vector<std::string> &args, std::uint64_t revision) {
+        const auto snap = workspace_->Project()->Snapshot();
+        if (args.size() == 5 && args[0] == "place") {
+            const auto document = Asset(Numeric(args[1]));
+            const auto prefab = Asset(Numeric(args[2]));
+            const auto x = Real(args[3]), y = Real(args[4]);
+            if (std::abs(x) > std::numeric_limits<float>::max() || std::abs(y) > std::numeric_limits<float>::max())
+                throw std::runtime_error("ui.placement_range");
+            rt::SceneNodeSnapshot node;
+            node.id = NewSceneNode();
+            node.local_transform.position.x = static_cast<float>(x);
+            node.local_transform.position.y = static_cast<float>(y);
+            Require(workspace_->Execute({ed::AddSceneNode{document,node},ed::PlacePrefab{document,{node.id,prefab,{}}}},revision));
+            (void)workspace_->Select({document,ed::UiElement::SceneNode,node.id.Raw()});
+        } else if (args.size() == 5 && args[0] == "sprite") {
+            if (Numeric(args[1]) != workspace_->AssetRevision())
+                throw std::runtime_error("ui.stale_asset_revision");
+            const auto document = Asset(Numeric(args[2]));
+            const auto node = rt::SceneNodeId{Numeric(args[3])};
+            const auto *doc = snap->Find(document);
+            if (!doc)
+                throw std::runtime_error("ui.sprite_owner");
+            auto prefab = document;
+            if (const auto *scene = std::get_if<epidemic::game::composition::SceneCompositionDefinition>(&doc->data)) {
+                const auto placement = std::ranges::find(scene->placements,node,&epidemic::game::composition::ScenePrefabPlacement::node);
+                if (placement == scene->placements.end())
+                    throw std::runtime_error("ui.sprite_requires_prefab");
+                prefab = placement->prefab;
+            }
+            Require(workspace_->AssignPrefabSprite(prefab,Asset(Numeric(args[4]))));
+        } else {
+            throw std::runtime_error("ui.resource_command");
+        }
+    }
+
+    void SceneGesture(const std::vector<std::string> &args) {
+        if (args.empty())
+            throw std::runtime_error("ui.argument_count");
+        if (args[0] == "cancel" && args.size() == 1) {
+            drag_.Cancel();
+        } else if (args[0] == "begin" && args.size() == 8) {
+            drag_.Cancel();
+            const auto selected = workspace_->Selection();
+            const auto doc = Asset(Numeric(args[1]));
+            if (selected.document != doc || selected.kind != ed::UiElement::SceneNode)
+                throw std::runtime_error("ui.scene_selection");
+            const std::string_view mode_token = args[2];
+            const auto separator = mode_token.find(':');
+            if (separator == std::string_view::npos || Numeric(mode_token.substr(separator+1)) != selection_revision_)
+                throw std::runtime_error("ui.stale_selection");
+            const auto tool = Numeric(mode_token.substr(0,separator));
+            if (tool > 2)
+                throw std::runtime_error("ui.drag_tool");
+            const auto snap = workspace_->Project()->Snapshot();
+            Require(drag_view_.Update(*snap, doc));
+            std::string_view camera = args[7];
+            const auto first = camera.find(',');
+            const auto last = camera.rfind(',');
+            if (first == std::string_view::npos || first == last ||
+                !drag_view_.RestoreCamera({Real(args[5]),Real(args[6])},
+                    {Real(camera.substr(0,first)),Real(camera.substr(first+1,last-first-1))},Real(camera.substr(last+1))))
+                throw std::runtime_error("ui.drag_camera");
+            const auto item = std::ranges::find(drag_view_.Items(), rt::SceneNodeId{selected.element}, &ed::SceneViewItem::id);
+            if (item == drag_view_.Items().end())
+                throw std::runtime_error("ui.scene_selection");
+            const ed::ViewPoint point{Real(args[3]),Real(args[4])};
+            const auto mode = static_cast<ed::GizmoTool>(tool);
+            const auto space = ed::GizmoSpace::Local;
+            const auto handle = ed::PickGizmo(ed::MakeGizmo(drag_view_, item->world, space),mode,point);
+            Require(drag_.Begin(*workspace_,drag_view_,mode,space,handle,point));
+        } else if ((args[0] == "move" || args[0] == "commit") && args.size() == 4) {
+            if (!drag_.Current(*workspace_))
+                throw std::runtime_error("ui.stale_gesture");
+            const auto result = drag_.Move(drag_view_,{Real(args[1]),Real(args[2])},Real(args[3]));
+            if (args[0] == "commit") {
+                if (!result)
+                    drag_.Cancel();
+                Require(result);
+                Require(drag_.Commit(*workspace_));
+            } else
+                Require(result);
+        } else {
+            throw std::runtime_error("ui.gesture_command");
+        }
+    }
 
     static void CheckDocumentName(std::string_view name) {
         if (name.empty() || name.size() > 256 ||
             name.find_first_not_of(" \t\r\n") == std::string_view::npos ||
             name.find_first_of("\r\n\t") != std::string_view::npos)
             throw std::runtime_error("ui.document_name");
+    }
+
+    void EditSceneHierarchy(const std::vector<std::string> &args, std::uint64_t revision) {
+        if (args.size() < 3 || args.size() > 4)
+            throw std::runtime_error("ui.argument_count");
+        const auto document = Asset(Numeric(args[1]));
+        const auto node = rt::SceneNodeId{Numeric(args[2])};
+        const auto snapshot = workspace_->Project()->Snapshot();
+        const auto *doc = snapshot->Find(document);
+        if (args[0] == "prefab-parent" && args.size() == 4) {
+            Require(workspace_->Execute({ed::ReparentPrefabNode{document,ed::comp::PrefabNodeId{node.Raw()},
+                ed::comp::PrefabNodeId{Numeric(args[3])}}},revision));
+            return;
+        }
+        if (args[0] == "link-prefab" && args.size() == 4) {
+            const auto id = Id::FromString("editor.prefab.link." + std::to_string(generation_) +
+                                           "." + std::to_string(++document_nonce_));
+            Require(workspace_->Execute({ed::EditPrefabLink{document,
+                {id,document,ed::comp::PrefabNodeId{node.Raw()},Asset(Numeric(args[3]))},false}},revision));
+            (void)workspace_->Select({document,ed::UiElement::PrefabLink,id.Raw()});
+            return;
+        }
+        if (args[0] == "unlink-prefab" && args.size() == 3) {
+            Require(workspace_->Execute({ed::EditPrefabLink{document,{Id{node.Raw()},document,{},{}},true}},revision));
+            return;
+        }
+        using Scene = epidemic::game::composition::SceneCompositionDefinition;
+        const auto *scene = doc ? std::get_if<Scene>(&doc->data) : nullptr;
+        if (!scene)
+            throw std::runtime_error("ui.scene_missing");
+        if (args[0] == "create" && args.size() == 3) {
+            rt::SceneNodeSnapshot child;
+            child.id = NewSceneNode();
+            child.parent = node;
+            Require(workspace_->Execute({ed::AddSceneNode{document, child}}, revision));
+            (void)workspace_->Select({document, ed::UiElement::SceneNode, child.id.Raw()});
+        } else if (args[0] == "delete" && args.size() == 3) {
+            Require(workspace_->Execute({ed::DeleteSceneNode{document, node}}, revision));
+        } else if (args[0] == "parent" && args.size() == 4) {
+            const auto parent = rt::SceneNodeId{Numeric(args[3])};
+            const auto existing = std::ranges::find(scene->scene.nodes, node, &rt::SceneNodeSnapshot::id);
+            if (existing == scene->scene.nodes.end() || existing->parent != parent)
+                Require(workspace_->Execute({ed::SetSceneParent{document, node, parent}}, revision));
+        } else if (args[0] == "order" && args.size() == 4) {
+            const std::string_view position = args[3];
+            const auto separator = position.find(':');
+            if (separator == std::string_view::npos)
+                throw std::runtime_error("ui.scene_order");
+            const auto parent = rt::SceneNodeId{Numeric(position.substr(0,separator))};
+            const auto before = rt::SceneNodeId{Numeric(position.substr(separator+1))};
+            if (node != before)
+                Require(workspace_->Execute({ed::SetSceneParent{document,node,parent},ed::OrderSceneNode{document,node,before}},revision));
+        } else if (args[0] == "rename" && args.size() == 4) {
+            Require(workspace_->Execute({ed::RenameSceneNode{document, node, args[3]}}, revision));
+        } else if (args[0] == "prefab" && args.size() == 4) {
+            const auto prefab = Asset(Numeric(args[3]));
+            for (const auto &placement : scene->placements)
+                if (placement.node == node) {
+                    if (placement.prefab == prefab)
+                        return;
+                    if (!placement.overrides.components.empty() || !placement.overrides.parameters.empty())
+                        throw std::runtime_error("ui.placement_has_overrides");
+                }
+            Require(workspace_->Execute({ed::PlacePrefab{document, {node, prefab, {}}}}, revision));
+        } else {
+            throw std::runtime_error("ui.hierarchy_command");
+        }
+    }
+
+    void EditComponent(const std::vector<std::string> &args, std::uint64_t revision) {
+        if (args.size() < 2 || Numeric(args[0]) != selection_revision_)
+            throw std::runtime_error("ui.stale_selection");
+        const auto selection = workspace_->Selection();
+        const auto node = ed::comp::PrefabNodeId{selection.element};
+        if (args[1] == "add" && args.size() == 3) {
+            ed::comp::PrefabComponent recipe;
+            recipe.type = epidemic::gameplay::TypeId{Numeric(args[2])};
+            auto defaults = schema_.components.Defaults(recipe.type);
+            Require(defaults);
+            for (auto &property : defaults.Value())
+                recipe.properties.push_back({property.property, std::move(property.value), {}});
+            auto commands = ed::ComponentCommands(*workspace_->Project()->Snapshot(), selection, recipe);
+            Require(commands);
+            Require(workspace_->Execute(std::move(commands).Value(), revision));
+            (void)workspace_->Select({selection.document, ed::UiElement::PrefabComponent, selection.element, recipe.type, recipe.part});
+        } else if (args[1] == "remove" && args.size() == 2 && selection.kind == ed::UiElement::PrefabComponent) {
+            Require(workspace_->Execute({ed::DeleteComponent{selection.document, node, selection.component, selection.part}}, revision));
+            (void)workspace_->Select({selection.document, ed::UiElement::PrefabNode, selection.element});
+        } else if (args[1] == "graph" && args.size() == 3 &&
+                   (selection.kind == ed::UiElement::PrefabNode || selection.kind == ed::UiElement::PrefabComponent)) {
+            const auto graph = Asset(Numeric(args[2]));
+            auto behavior = ed::DefaultGraphBehavior(workspace_->Project()->Snapshot()->definition,
+                schema_.View(),graph,Id::FromString("editor.graph.binding." + args[2]));
+            Require(behavior);
+            Require(workspace_->Execute({ed::SetBehavior{selection.document, node, selection.component, selection.part, std::move(behavior).Value()}}, revision));
+        } else if (args[1] == "child" && args.size() == 2 && selection.kind == ed::UiElement::PrefabNode) {
+            ed::comp::PrefabNode child;
+            child.id = Id::FromString("editor.prefab.node." + std::to_string(generation_) +
+                                     "." + std::to_string(++document_nonce_));
+            child.archetype = schema_.enemy;
+            const auto id = child.id;
+            Require(workspace_->Execute({ed::AddEntity{selection.document,node,std::move(child)}},revision));
+            (void)workspace_->Select({selection.document,ed::UiElement::PrefabNode,id.Raw()});
+        } else if (args[1] == "delete-child" && args.size() == 2 && selection.kind == ed::UiElement::PrefabNode) {
+            const auto snap = workspace_->Project()->Snapshot();
+            const auto *doc = snap->Find(selection.document);
+            const auto *prefab = doc ? std::get_if<ed::comp::PrefabDefinition>(&doc->data) : nullptr;
+            if (!prefab || prefab->root.id == node)
+                throw std::runtime_error("ui.prefab_root");
+            Require(workspace_->Execute({ed::DeleteEntity{selection.document,node}},revision));
+        } else {
+            throw std::runtime_error("ui.component_command");
+        }
     }
 
     void CreateDocument(const std::vector<std::string> &args, std::uint64_t revision) {
@@ -177,7 +420,7 @@ class Backend {
         if (!workspace_->Project())
             return {};
         auto rows = ed::InspectComponents(*workspace_->Project()->Snapshot(),
-                                          workspace_->Selection(), schema_.components, nullptr);
+                                          workspace_->Selection(), schema_.components, workspace_->Session(), true);
         for (auto &row : rows)
             if (!row.value) {
                 row.editable = false;
@@ -191,6 +434,18 @@ class Backend {
         return rows;
     }
 
+    const rt::SceneNodeSnapshot *SelectedSceneNode(const ed::ProjectSnapshot &snapshot) const {
+        const auto selected = workspace_->Selection();
+        const auto *doc = snapshot.Find(selected.document);
+        if (selected.kind != ed::UiElement::SceneNode || !doc)
+            return nullptr;
+        const auto *scene = std::get_if<epidemic::game::composition::SceneCompositionDefinition>(&doc->data);
+        if (!scene)
+            return nullptr;
+        const auto at = std::ranges::find(scene->scene.nodes, rt::SceneNodeId{selected.element}, &rt::SceneNodeSnapshot::id);
+        return at == scene->scene.nodes.end() ? nullptr : &*at;
+    }
+
     static std::string FieldKey(const ed::InspectorEntry &row, std::size_t ordinal = 0) {
         return std::to_string(row.owner.document.Raw()) + "/" + std::to_string(row.owner.element) +
                "/" + std::to_string(row.owner.component.Raw()) + "/" +
@@ -202,6 +457,9 @@ class Backend {
     }
 
     void Reset() {
+        drag_.Cancel();
+        projected_source_.reset();
+        scene_projections_.clear();
         thumbnails_.Clear();
         asset_query_.clear();
         workspace_.reset();
@@ -304,10 +562,24 @@ class Backend {
             if (const auto *scene =
                     std::get_if<epidemic::game::composition::SceneCompositionDefinition>(
                         &document.data)) {
-                for (const auto &node : scene->scene.nodes)
+                std::unordered_map<std::uint64_t, const ed::EditorDocument *> prefabs;
+                for (const auto &placement : scene->placements)
+                    if (const auto *prefab = snapshot->Find(placement.prefab))
+                        prefabs.emplace(placement.node.Raw(), prefab);
+                for (const auto &node : scene->scene.nodes) {
+                    const auto label = scene->node_names.find(node.id.Raw());
+                    auto text = label == scene->node_names.end()
+                        ? "Entity " + std::to_string(node.id.Raw()) : label->second;
+                    std::uint64_t prefab_id = 0;
+                    if (const auto prefab = prefabs.find(node.id.Raw()); prefab != prefabs.end()) {
+                        text += " · " + prefab->second->name;
+                        prefab_id = prefab->second->id.Raw();
+                    }
+                    if (node.visibility == rt::SceneVisibilityState::Hidden)
+                        text += " [hidden]";
                     nodes.push_back({document.id.Raw(), node.id.Raw(), node.parent.Raw(),
-                                     ed::UiElement::SceneNode,
-                                     "Entity " + std::to_string(node.id.Raw())});
+                                     ed::UiElement::SceneNode, std::move(text), 0, 0, prefab_id});
+                }
             } else if (const auto *prefab =
                            std::get_if<ed::comp::PrefabDefinition>(&document.data)) {
                 std::vector<std::pair<const ed::comp::PrefabNode *, std::uint64_t>> pending{
@@ -330,6 +602,11 @@ class Backend {
                     for (const auto &child : node->children)
                         pending.emplace_back(&child, node->id.Raw());
                 }
+                for (const auto &link : snapshot->definition.prefab_links)
+                    if (link.owner == document.id)
+                        if (const auto *target = snapshot->Find(link.target))
+                            nodes.push_back({document.id.Raw(),link.id.Raw(),link.parent.Raw(),
+                                ed::UiElement::PrefabLink,"Linked Prefab · " + target->name,0,0,target->id.Raw()});
             } else if (const auto *graph =
                            std::get_if<rt::graph::GraphDefinition>(&document.data)) {
                 for (const auto &node : graph->nodes)
@@ -346,6 +623,7 @@ class Backend {
             out.Text(node.label);
             out.Number<8>(node.component);
             out.Number<8>(node.part);
+            out.Number<8>(node.prefab);
         }
         const auto *folder = workspace_->Folder();
         std::vector<const ed::ProjectSourceAsset *> visible;
@@ -390,7 +668,26 @@ class Backend {
                           !fs_error);
         }
         const auto fields = Inspector();
-        out.Number<4>(fields.size());
+        const auto *transform_node = SelectedSceneNode(*snapshot);
+        constexpr std::string_view transform_names[]{"Local X","Local Y","Local Z","Scale X","Scale Y","Scale Z","Rotation Z (degrees)"};
+        out.Number<4>(fields.size() + (transform_node ? std::size(transform_names) : 0));
+        if (transform_node) {
+            const auto &t = transform_node->local_transform;
+            const bool planar = t.rotation.x == 0 && t.rotation.y == 0;
+            const double values[]{t.position.x,t.position.y,t.position.z,t.scale.x,t.scale.y,t.scale.z,
+                2.0 * std::atan2(t.rotation.z,t.rotation.w) * 180.0 / 3.141592653589793};
+            for (std::size_t index = 0; index < std::size(values); ++index) {
+                const bool supported = index != 6 || planar;
+                out.Text("transform:" + std::to_string(index));
+                out.Text(transform_names[index]);
+                out.Number<1>(static_cast<unsigned>(ed::comp::PropertyKind::Real));
+                out.Text(supported ? ed::EditorWorkspace::FormatValue(ed::comp::PropertyValue{values[index]}) : "Non-planar rotation");
+                out.Number<1>(supported && !(workspace_->Session() && workspace_->Session()->IsPlaying()));
+                out.Text("Scene local transform");
+                out.Text(supported ? "" : "Edit Z rotation on XY nodes");
+                out.Number<8>(0);
+            }
+        }
         for (std::size_t index = 0; index < fields.size(); ++index) {
             const auto &row = fields[index];
             out.Text(FieldKey(row, index));
@@ -412,6 +709,19 @@ class Backend {
         };
 
         std::vector<DrawSprite> sprites;
+        if (projected_source_.lock() != snapshot) {
+            std::map<std::uint64_t,ed::SceneView> projections;
+            for (const auto &doc : snapshot->definition.documents)
+                if (doc.Kind() == ed::DocumentKind::Scene)
+                    Require(projections[doc.id.Raw()].Update(*snapshot,doc.id));
+            scene_projections_.swap(projections);
+            projected_source_ = snapshot;
+        }
+        const bool dragging = drag_.Current(*workspace_);
+        const auto &scenes = scene_projections_;
+        const auto &projection_for = [&](std::uint64_t document) -> const ed::SceneView & {
+            return dragging && drag_view_.Document().Raw() == document ? drag_view_ : scenes.at(document);
+        };
         if (folder) {
             const auto append = [&](const ed::EditorDocument &doc, rt::AssetId prefab,
                                     const rt::Transform &world) {
@@ -434,8 +744,7 @@ class Backend {
                 else if (const auto *scene =
                              std::get_if<epidemic::game::composition::SceneCompositionDefinition>(
                                  &doc.data)) {
-                    ed::SceneView projection;
-                    Require(projection.Update(*snapshot, doc.id));
+                    const auto &projection = projection_for(doc.id.Raw());
                     for (const auto &placement : scene->placements)
                         for (const auto &item : projection.Items())
                             if (item.id == placement.node)
@@ -522,6 +831,33 @@ class Backend {
         }
         out.Text(pixels);
         out.Text(preview_error);
+        const auto types = schema_.components.Types();
+        out.Number<4>(types.size());
+        for (const auto &type : types) {
+            out.Number<8>(type.id.Raw());
+            out.Text(type.name);
+        }
+        std::size_t scene_item_count = 0;
+        for (const auto &scene : scenes)
+            scene_item_count += projection_for(scene.first).Items().size();
+        out.Number<4>(scene_item_count);
+        for (const auto &scene : scenes)
+            for (const auto &item : projection_for(scene.first).Items()) {
+                out.Number<8>(scene.first);
+                out.Number<8>(item.id.Raw());
+                const double values[]{item.bounds.left,item.bounds.top,item.bounds.right,item.bounds.bottom,
+                                      item.world.position.x,item.world.position.y,
+                                      2.0 * std::atan2(item.world.rotation.z,item.world.rotation.w)};
+                for (const double value : values)
+                    out.Number<8>(std::bit_cast<std::uint64_t>(value));
+            }
+        out.Number<4>(snapshot->definition.systems.size());
+        for (const auto &system : snapshot->definition.systems) {
+            out.Number<8>(system.id.Raw());
+            out.Number<8>(system.scene.Raw());
+            out.Number<8>(system.graph.Raw());
+            out.Number<1>(system.enabled);
+        }
     }
 
   public:
@@ -537,7 +873,7 @@ class Backend {
         const auto previous_selection_revision = selection_revision_;
         try {
             Reader in{bytes};
-            if (in.Number(4) != Magic || in.Number(2) != 3 || in.Number(2) != 0)
+            if (in.Number(4) != Magic || in.Number(2) != 4 || in.Number(2) != 0)
                 throw std::runtime_error("ui.protocol_version");
             correlation = in.Number(8);
             const auto operation = in.Number(1), generation = in.Number(8), revision = in.Number(8);
@@ -563,9 +899,11 @@ class Backend {
                     throw std::runtime_error("ui.stale_asset_revision");
                 CheckWrite({generation, revision});
             }
-            if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 17))
+            if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 17) ||
+                (operation >= 29 && operation <= 31) || (operation == 32 && (args.empty() || args[0] != "cancel")) ||
+                operation == 33 || operation == 34)
                 CheckWrite({generation, revision});
-            if ((operation == 5 || (operation >= 15 && operation <= 24)) && workspace_->Session() &&
+            if ((operation == 5 || (operation >= 15 && operation <= 24) || (operation >= 29 && operation <= 34)) && workspace_->Session() &&
                 workspace_->Session()->IsPlaying())
                 throw std::runtime_error("ui.playing_readonly");
             switch (operation) {
@@ -600,7 +938,7 @@ class Backend {
                 break;
             case 9: {
                 const auto kind = Numeric(args.at(0));
-                if (kind > static_cast<unsigned>(ed::UiElement::Asset))
+                if (kind > static_cast<unsigned>(ed::UiElement::PrefabLink))
                     throw std::runtime_error("ui.selection_kind");
                 if (!workspace_->Select(
                         {Asset(Numeric(args.at(1))), static_cast<ed::UiElement>(kind),
@@ -687,6 +1025,18 @@ class Backend {
             case 16: {
                 if (Numeric(args[0]) != selection_revision_)
                     throw std::runtime_error("ui.stale_selection");
+                if (args[1].starts_with("transform:")) {
+                    const auto snap = workspace_->Project()->Snapshot();
+                    const auto *node = SelectedSceneNode(*snap);
+                    const auto field = Numeric(std::string_view(args[1]).substr(10));
+                    if (!node || field > static_cast<unsigned>(ed::UiTransformField::RotationZDegrees))
+                        throw std::runtime_error("ui.field_missing");
+                    const auto command = ed::EditorWorkspace::TransformCommand(workspace_->Selection().document,
+                        node->id,node->local_transform,static_cast<ed::UiTransformField>(field),args[2]);
+                    Require(command);
+                    Require(workspace_->Execute({command.Value()}, revision));
+                    break;
+                }
                 const auto rows = Inspector();
                 const ed::InspectorEntry *row = nullptr;
                 for (std::size_t index = 0; index < rows.size(); ++index)
@@ -705,6 +1055,46 @@ class Backend {
                 Require(
                     workspace_->Execute({ed::DiscardDocument{Asset(Numeric(args[0]))}}, revision));
                 ++selection_revision_;
+                break;
+            case 29:
+                EditSceneHierarchy(args, revision);
+                break;
+            case 30:
+                EditComponent(args, revision);
+                break;
+            case 31: {
+                if ((args.size() != 1 && args.size() != 2) || Numeric(args[0]) != selection_revision_)
+                    throw std::runtime_error("ui.stale_selection");
+                if (args.size() == 2) {
+                    const auto rows = Inspector();
+                    bool found = false;
+                    for (std::size_t index = 0; index < rows.size(); ++index)
+                        if (FieldKey(rows[index],index) == args[1]) {
+                            const auto command = ed::InspectorResetCommand(rows[index]);
+                            Require(command);
+                            Require(workspace_->Execute({command.Value()},revision));
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        throw std::runtime_error("ui.field_missing");
+                    break;
+                }
+                const auto snap = workspace_->Project()->Snapshot();
+                const auto *node = SelectedSceneNode(*snap);
+                if (!node)
+                    throw std::runtime_error("ui.scene_selection");
+                Require(workspace_->Execute({ed::SetSceneTransform{workspace_->Selection().document,node->id,{}}},revision));
+                break;
+            }
+            case 32:
+                SceneGesture(args);
+                break;
+            case 33:
+                PlaceResource(args,revision);
+                break;
+            case 34:
+                EditSystems(args,revision);
                 break;
             case 10:
             case 11:
@@ -725,14 +1115,14 @@ class Backend {
             ++selection_revision_;
         Wire out;
         out.Number<4>(Magic);
-        out.Number<2>(3);
+        out.Number<2>(4);
         out.Number<2>(0);
         out.Number<8>(correlation);
         out.Number<1>(error.empty() ? 0 : 1);
         out.Number<8>(generation_);
         out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
                  "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
-                 "default-components,asset-pipeline");
+                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems");
         out.Text(error);
         Snapshot(out);
         Wire prefix;

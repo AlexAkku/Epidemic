@@ -111,6 +111,21 @@ void Run() {
     view.Fit();
     Check(std::isfinite(view.Scale()));
     Check(workspace.Project()->IsDirty()); // Camera/selection never write authoring or history.
+    const auto authored = workspace.Project()->Snapshot();
+    const auto &definition = std::get<ed::comp::PrefabDefinition>(authored->Find(prefab)->data);
+    const auto prefab_root = definition.root.id;
+    std::vector<ed::Command> overrides;
+    std::int64_t points = 100;
+    for (const auto node : {runtime::SceneNodeId{42},second.id,third.id}) {
+        overrides.emplace_back(ed::SetComponentOverride{scene,node,prefab,
+            {prefab_root,schema.health,{}, {schema.points,points}}});
+        points += 50;
+    }
+    const auto graph = runtime::AssetId::FromString("example.graph");
+    overrides.emplace_back(ed::EditSystem{{},{ex::Id("test.world.system"),{},graph,true}});
+    overrides.emplace_back(ed::EditSystem{scene,{ex::Id("test.scene.system"),scene,graph,false}});
+    overrides.emplace_back(ed::RenameSceneNode{scene,second.id,"Second Enemy"});
+    ex::Take(workspace.Execute(std::move(overrides),workspace.Project()->Revision()));
     ex::Take(workspace.Save());
     const auto saved = workspace.Project()->Snapshot();
     view.Pan({9, 8});
@@ -118,12 +133,22 @@ void Run() {
     view.Fit(second.id);
     Check(workspace.Project()->Snapshot() == saved && !workspace.Project()->IsDirty());
     ex::Take(workspace.Open(file));
+    const auto reopened = workspace.Project()->Snapshot();
+    Check(reopened->definition.systems.size() == 2);
+    Check(reopened->definition.systems[0].enabled && !reopened->definition.systems[1].enabled);
+    const auto &reopened_scene = std::get<game::composition::SceneCompositionDefinition>(reopened->Find(scene)->data);
+    Check(reopened_scene.node_names.at(second.id.Raw()) == "Second Enemy");
     ex::Take(view.Update(*workspace.Project()->Snapshot(), scene));
     view.Fit();
     Check(view.Pick(view.ToScreen({10, 6})) == third.id);
     ex::Take(workspace.Play());
+    Check(workspace.Session()->Scene()->entities.size() == 3);
+    points = 100;
     for (const runtime::SceneNodeId id : {runtime::SceneNodeId{42}, second.id, third.id}) {
-        Check(workspace.Session()->Instance(id) != nullptr);
+        Check(workspace.Session()->Instance(id) && workspace.Session()->Instance(id)->Objects().size() == 1);
+        const auto value=ex::Take(workspace.Session()->ReadComponentProperty(id,prefab_root,schema.health,{},schema.points));
+        Check(std::get<std::int64_t>(value)==points);
+        points += 50;
         Check(ex::Take(workspace.Send(id, {ex::Id("hit"), 1})) == 1);
     }
 
@@ -134,6 +159,46 @@ void Run() {
         Check(activation->IsFinished());
     ex::Take(workspace.Stop());
     Check(schema.entities.AllEntities().empty() && !workspace.Project()->IsDirty());
+    const auto stopped = workspace.Project()->Snapshot();
+    ex::Take(workspace.Play());
+    Check(workspace.Session()->Scene()->entities.size() == 3);
+    points=100;
+    for (const auto node : {runtime::SceneNodeId{42},second.id,third.id}) {
+        const auto value=ex::Take(workspace.Session()->ReadComponentProperty(node,prefab_root,schema.health,{},schema.points));
+        Check(std::get<std::int64_t>(value)==points);
+        points+=50;
+    }
+    ex::Take(workspace.Stop());
+    Check(workspace.Project()->Snapshot() == stopped);
+    const auto nested_asset = runtime::AssetId::FromString("test.nested.prefab");
+    const auto nested_root = ex::Id("test.nested.root");
+    const auto link = ex::Id("test.prefab.link");
+    ex::Take(workspace.Execute({ed::CreateDocument{{nested_asset,"Nested Enemy",0,
+                                   ed::comp::PrefabDefinition{nested_asset.value,{},ex::Enemy(schema,nested_root)}}},
+                               ed::EditPrefabLink{prefab,{link,prefab,prefab_root,nested_asset},false}},
+                               workspace.Project()->Revision()));
+    auto expanded = ex::Take(ed::MaterializePrefab(workspace.Project()->Snapshot()->definition,prefab));
+    Check(expanded.root.children.size() == 1);
+    const auto nested_instance_node = expanded.root.children.front().id;
+    const auto cycle_revision = workspace.Project()->Revision();
+    Check(!workspace.Execute({ed::EditPrefabLink{nested_asset,
+        {ex::Id("test.prefab.cycle"),nested_asset,nested_root,prefab},false}},cycle_revision));
+    Check(workspace.Project()->Revision() == cycle_revision);
+    ex::Take(workspace.Execute({ed::SetComponentOverride{scene,runtime::SceneNodeId{42},prefab,
+                                   {nested_instance_node,schema.health,{}, {schema.points,std::int64_t{333}}}},
+                               ed::SetProperty{nested_asset,nested_root,schema.health,{},
+                                   {schema.points,std::int64_t{222},{}}}},cycle_revision));
+    ex::Take(workspace.Save());
+    ex::Take(workspace.Open(file));
+    expanded = ex::Take(ed::MaterializePrefab(workspace.Project()->Snapshot()->definition,prefab));
+    Check(expanded.root.children.front().id == nested_instance_node);
+    ex::Take(workspace.Play());
+    Check(workspace.Session()->Instance(second.id)->Objects().size() == 2);
+    Check(std::get<std::int64_t>(ex::Take(workspace.Session()->ReadComponentProperty(
+        runtime::SceneNodeId{42},nested_instance_node,schema.health,{},schema.points))) == 333);
+    Check(std::get<std::int64_t>(ex::Take(workspace.Session()->ReadComponentProperty(
+        second.id,nested_instance_node,schema.health,{},schema.points))) == 222);
+    ex::Take(workspace.Stop());
     auto missing = *snapshot;
     std::erase_if(missing.definition.documents, [&](const auto &doc) { return doc.id == prefab; });
     ex::Take(view.Update(missing, scene));

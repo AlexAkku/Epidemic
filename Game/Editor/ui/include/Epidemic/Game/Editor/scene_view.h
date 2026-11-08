@@ -24,12 +24,14 @@ class SceneView final {
   public:
     [[nodiscard]] foundation::Result<void> Update(const ProjectSnapshot &project,
                                                   runtime::AssetId scene);
+    void Project(runtime::AssetId scene, std::vector<SceneViewItem> items);
     [[nodiscard]] bool Preview(const composition::SceneCompositionInstance &scene);
     void Clear();
     void Resize(double width, double height); // Device independent pixels.
     void Pan(ViewPoint delta);
     void Zoom(ViewPoint cursor, double wheel_steps);
     void Fit(runtime::SceneNodeId selection = {});
+    [[nodiscard]] bool RestoreCamera(ViewPoint extent, ViewPoint center, double scale);
     [[nodiscard]] ViewPoint ToScreen(ViewPoint world) const;
     [[nodiscard]] ViewPoint ToWorld(ViewPoint screen) const;
     [[nodiscard]] ViewRect ScreenBounds(const SceneViewItem &item) const;

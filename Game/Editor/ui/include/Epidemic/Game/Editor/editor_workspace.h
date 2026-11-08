@@ -13,7 +13,8 @@ enum class UiElement {
     GraphNode,
     Connection,
     PrefabComponent,
-    Asset
+    Asset,
+    PrefabLink
 };
 
 enum class UiTransformField {

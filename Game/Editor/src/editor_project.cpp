@@ -90,10 +90,101 @@ const EditorDocument *ProjectSnapshot::Find(runtime::AssetId id) const noexcept 
     return editor::Find(definition, id);
 }
 
+foundation::Result<comp::GraphBehaviorDefinition>
+DefaultGraphBehavior(const ProjectDefinition &definition, const ProjectSchema &schema,
+                     runtime::AssetId graph, foundation::StringId id) {
+    using Result = foundation::Result<comp::GraphBehaviorDefinition>;
+    const auto *document = Find(definition,graph);
+    const auto *source = document ? std::get_if<runtime::graph::GraphDefinition>(&document->data) : nullptr;
+    if (!source || !id.IsValid())
+        return Result::Failure(Error("editor.graph_reference"));
+    foundation::StringId entry;
+    for (const auto &node : source->nodes) {
+        const auto type = std::ranges::find(schema.operations,node.type_id,
+            &std::pair<runtime::graph::TypeId,runtime::graph::Operation>::first);
+        if (type == schema.operations.end() || type->second != runtime::graph::Operation::EventEntry)
+            continue;
+        for (const auto &port : node.ports)
+            if (port.kind == runtime::graph::PortKind::Event &&
+                port.direction == runtime::graph::PortDirection::Input &&
+                port.type_id == runtime::graph::kI64Type &&
+                (!entry.IsValid() || port.id.Raw() < entry.Raw()))
+                entry = port.id;
+    }
+    if (!entry.IsValid())
+        return Result::Failure(Error("editor.graph_event_entry"));
+    return Result::Success({id,graph.value,{{entry,entry}},{}});
+}
+
+foundation::Result<comp::PrefabDefinition>
+MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab) {
+    using Result = foundation::Result<comp::PrefabDefinition>;
+    const auto reject = [] {return Result::Failure(Error("editor.prefab_link"));};
+    std::vector<runtime::AssetId> active;
+    std::size_t count = 0;
+    const auto find_node = [](auto &&self, auto &node, comp::PrefabNodeId id) -> decltype(&node) {
+        if (node.id == id)
+            return &node;
+        for (auto &child : node.children)
+            if (auto *found = self(self,child,id))
+                return found;
+        return nullptr;
+    };
+    const auto count_nodes = [&](auto &&self, const comp::PrefabNode &node,std::size_t depth) -> bool {
+        if (depth > 32 || ++count > 1024)
+            return false;
+        return std::ranges::all_of(node.children,[&](const auto &child) {return self(self,child,depth+1);});
+    };
+    const auto expand = [&](auto &&self, runtime::AssetId id) -> Result {
+        if (active.size() >= 32 || std::ranges::find(active,id) != active.end())
+            return reject();
+        const auto *document = Find(definition,id);
+        const auto *source = document ? std::get_if<comp::PrefabDefinition>(&document->data) : nullptr;
+        if (!source || !count_nodes(count_nodes,source->root,active.size()))
+            return reject();
+        active.push_back(id);
+        auto result = *source;
+        for (const auto &link : definition.prefab_links) {
+            if (link.owner != id)
+                continue;
+            if (!find_node(find_node,source->root,link.parent))
+                return reject();
+            auto nested = self(self,link.target);
+            if (!nested)
+                return nested;
+            auto &child = nested.Value();
+            const auto remap = [&](auto &&visit, comp::PrefabNode &node) -> bool {
+                node.id = foundation::StringId::FromString("editor.prefab.link." +
+                    std::to_string(link.id.Raw()) + "." + std::to_string(node.id.Raw()));
+                for (auto &component : node.components)
+                    for (auto &property : component.properties)
+                        if (property.parameter.IsValid()) {
+                            const auto parameter = std::ranges::find(child.parameters,property.parameter,&comp::PrefabParameter::id);
+                            if (parameter == child.parameters.end())
+                                return false;
+                            property.value = parameter->value;
+                            property.parameter = {};
+                        }
+                return std::ranges::all_of(node.children,[&](auto &descendant) {return visit(visit,descendant);});
+            };
+            if (!remap(remap,child.root))
+                return reject();
+            auto *parent = find_node(find_node,result.root,link.parent);
+            if (!parent)
+                return reject();
+            parent->children.push_back(std::move(child.root));
+        }
+        active.pop_back();
+        return Result::Success(std::move(result));
+    };
+    return expand(expand,prefab);
+}
+
 foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>
 ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema) {
     using Result = foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>;
-    if (!definition.id.IsValid() || definition.documents.size() > 64 ||
+    if (!definition.id.IsValid() || definition.documents.size() > 64 || definition.systems.size() > 128 ||
+        definition.prefab_links.size() > 256 ||
         !schema.entities.IsFrozen() || !schema.components.IsFrozen())
         return Result::Failure(Error("editor.invalid_project"));
     std::unordered_set<std::uint64_t> ids;
@@ -116,6 +207,29 @@ ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema
     comp::ComponentStore components{schema.entities, schema.components};
 
     comp::PrefabComposer prefabs{schema.entities, schema.components, components, behaviors};
+    std::unordered_set<std::uint64_t> links;
+    for (const auto &link : definition.prefab_links) {
+        const auto *owner = Find(definition,link.owner);
+        const auto *target = Find(definition,link.target);
+        if (!link.id.IsValid() || !links.insert(link.id.Raw()).second || !link.parent.IsValid() ||
+            !owner || owner->Kind()!=DocumentKind::Prefab || !target || target->Kind()!=DocumentKind::Prefab)
+            return Result::Failure(Error("editor.prefab_link"));
+    }
+    std::unordered_set<std::uint64_t> systems;
+    for (const auto &system : definition.systems) {
+        const auto *scene = Find(definition,system.scene);
+        const auto *graph = Find(definition,system.graph);
+        if (!system.id.IsValid() || !systems.insert(system.id.Raw()).second ||
+            (system.scene.IsValid() && (!scene || scene->Kind()!=DocumentKind::Scene)) ||
+            !graph || graph->Kind()!=DocumentKind::Graph)
+            return Result::Failure(Error("editor.system_reference"));
+        const auto behavior = DefaultGraphBehavior(definition,schema,system.graph,system.id);
+        if (!behavior)
+            return Result::Failure(behavior.GetError());
+        const auto valid = behaviors.Validate(behavior.Value());
+        if (!valid)
+            return Result::Failure(valid.GetError());
+    }
 
     auto assets = runtime::CreateAssetServices();
     if (!assets)
@@ -135,7 +249,10 @@ ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema
             const auto &prefab = std::get<comp::PrefabDefinition>(document.data);
             if (prefab.id != document.id.value)
                 return Result::Failure(Error("editor.document_identity"));
-            const auto valid = prefabs.Register(prefab);
+            const auto expanded = MaterializePrefab(definition,document.id);
+            if (!expanded)
+                return Result::Failure(expanded.GetError());
+            const auto valid = prefabs.Register(expanded.Value());
             if (!valid)
                 return Result::Failure(valid.GetError());
         }
@@ -172,10 +289,16 @@ ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema
             }
 
             metadata.type = {foundation::StringId::FromString("editor.scene")};
+            for (const auto &system : definition.systems)
+                if (!system.scene.IsValid() || system.scene == document.id)
+                    metadata.dependencies.push_back({system.graph,true});
 
         } else if (document.Kind() == DocumentKind::Prefab) {
             Dependencies(std::get<comp::PrefabDefinition>(document.data).root,
                          metadata.dependencies);
+            for (const auto &link : definition.prefab_links)
+                if (link.owner == document.id)
+                    metadata.dependencies.push_back({link.target,true});
             metadata.type = {foundation::StringId::FromString("editor.prefab")};
 
         } else

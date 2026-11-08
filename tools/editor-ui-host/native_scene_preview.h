@@ -1,5 +1,6 @@
 #pragma once
 #include "Epidemic/Game/Editor/image_resource.h"
+#include "Epidemic/Game/Editor/scene_view.h"
 #include "Epidemic/Runtime/Resources/resource_services.h"
 #include "renderer.h"
 #include <array>
@@ -164,7 +165,8 @@ class ScenePreview final {
         }
     }
 
-    void Draw(rt::presentation::Renderer &renderer, D2D1_SIZE_F size) const {
+    void Draw(rt::presentation::Renderer &renderer, D2D1_SIZE_F size,
+              const ed::SceneView *camera = nullptr) const {
         const auto width = size.width, height = size.height;
         double extent = .001;
         for (const auto &sprite : sprites_)
@@ -178,18 +180,21 @@ class ScenePreview final {
                 extent = std::max(extent, std::max(std::abs(static_cast<double>(g[0])) + radius,
                                                    std::abs(static_cast<double>(g[1])) + radius));
             }
-        const double scale = std::min(width, height) * .4 / extent;
+        const double scale = camera ? camera->Scale() : std::min(width, height) * .4 / extent;
         for (const auto &sprite : sprites_)
             if (const auto item = textures_.find(sprite.key); item != textures_.end()) {
                 const auto &g = sprite.geometry;
-                const float x = static_cast<float>(width * .5 + g[0] * scale),
-                            y = static_cast<float>(height * .5 - g[1] * scale);
+                const auto center = camera ? camera->ToScreen({g[0],g[1]}) :
+                    ed::ViewPoint{width * .5 + g[0] * scale, height * .5 - g[1] * scale};
+                const float x = static_cast<float>(center.x), y = static_cast<float>(center.y);
                 const float w =
                     static_cast<float>(static_cast<double>(item->second.width) *
                                        std::abs(static_cast<double>(g[2])) * scale / g[5]);
                 const float h =
                     static_cast<float>(static_cast<double>(item->second.height) *
                                        std::abs(static_cast<double>(g[3])) * scale / g[5]);
+                if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(w) || !std::isfinite(h))
+                    continue;
                 renderer.PushTransform(D2D1::Matrix3x2F::Scale(g[2] < 0 ? -1.0f : 1.0f,
                                                                g[3] < 0 ? -1.0f : 1.0f,
                                                                D2D1::Point2F(x, y)) *

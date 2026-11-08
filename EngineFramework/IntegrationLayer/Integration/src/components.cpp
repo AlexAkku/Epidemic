@@ -1,8 +1,30 @@
 #include "Epidemic/GameFramework/Integration/components.h"
+#include <algorithm>
 #include <limits>
 #include <unordered_set>
 
 namespace epidemic::gameplay::composition {
+std::vector<ComponentTypeInfo> ComponentRegistry::Types() const {
+    std::vector<ComponentTypeInfo> result;
+    result.reserve(types_.size());
+    for (const auto &item : types_)
+        result.push_back(item.second->info);
+    std::sort(result.begin(), result.end(), [](const auto &a, const auto &b) { return a.name < b.name; });
+    return result;
+}
+
+foundation::Result<std::vector<PropertyAssignment>> ComponentRegistry::Defaults(TypeId type) const {
+    using Result = foundation::Result<std::vector<PropertyAssignment>>;
+    auto prepared = Prepare(type, {});
+    if (!prepared)
+        return Result::Failure(prepared.GetError());
+    const auto &descriptor = *types_.at(type.Raw());
+    std::vector<PropertyAssignment> result;
+    result.reserve(descriptor.info.properties.size());
+    for (const auto &property : descriptor.info.properties)
+        result.push_back({property.id, descriptor.properties.at(property.id.Raw()).read(prepared.Value().object_.get())});
+    return Result::Success(std::move(result));
+}
 const ComponentTypeInfo *ComponentRegistry::Find(TypeId type) const noexcept {
     const auto found = types_.find(type.Raw());
     return found == types_.end() ? nullptr : &found->second->info;

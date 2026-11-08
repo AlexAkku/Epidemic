@@ -268,6 +268,18 @@ void Scene(IO &io, composition::SceneCompositionDefinition &scene) {
     io.Array("nodes", scene.scene.nodes, 4096, [&](auto &node) {
         io.Id("id", node.id);
         io.Id("parent", node.parent);
+        if (io.writer) {
+            if (const auto label = scene.node_names.find(node.id.Raw()); label != scene.node_names.end())
+                io.S("name", label->second);
+        } else {
+            auto label = io.reader->ReadString("name");
+            if (label) {
+                Require(!label.Value().empty() && label.Value().size() <= 256);
+                scene.node_names.emplace(node.id.Raw(), std::move(label).Value());
+            } else {
+                Require(label.GetError().code == "serialization.field_missing");
+            }
+        }
         io.Object("position", [&] { Vector(io, node.local_transform.position); });
         io.Object("scale", [&] { Vector(io, node.local_transform.scale); });
         io.Object("rotation", [&] {
@@ -315,6 +327,34 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
              runtime::IArchiveFactory &archives) {
     io.Id("id", project.definition.id);
     io.Id("entry", project.definition.entry_scene);
+    bool have_systems = !project.definition.systems.empty();
+    if (io.reader) {
+        const auto present = io.reader->IsNull("systems");
+        if (!present)
+            Require(present.GetError().code == "serialization.field_missing");
+        have_systems = present && !present.Value();
+    }
+    if (have_systems)
+        io.Array("systems",project.definition.systems,128,[&](auto &system) {
+            io.Id("id",system.id);
+            io.Id("scene",system.scene);
+            io.Id("graph",system.graph);
+            io.B("enabled",system.enabled);
+        });
+    bool have_links = !project.definition.prefab_links.empty();
+    if (io.reader) {
+        const auto present = io.reader->IsNull("prefab_links");
+        if (!present)
+            Require(present.GetError().code == "serialization.field_missing");
+        have_links = present && !present.Value();
+    }
+    if (have_links)
+        io.Array("prefab_links",project.definition.prefab_links,256,[&](auto &link) {
+            io.Id("id",link.id);
+            io.Id("owner",link.owner);
+            io.Id("parent",link.parent);
+            io.Id("target",link.target);
+        });
     runtime::GraphDefinitionSerializer graph_codec{Types(schema)};
 
     io.Array("documents", project.definition.documents, 64, [&](auto &doc) {

@@ -346,6 +346,10 @@ bool EditorWorkspace::Exists(const UiSelection &selection) const {
                std::any_of(scene->scene.nodes.begin(), scene->scene.nodes.end(),
                            [&](const auto &n) { return n.id.Raw() == selection.element; });
     if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc->data)) {
+        if (selection.kind == UiElement::PrefabLink)
+            return std::ranges::any_of(Project()->Snapshot()->definition.prefab_links,[&](const auto &link) {
+                return link.owner == selection.document && link.id.Raw() == selection.element;
+            });
         const auto *node = FindNode(prefab->root, selection.element);
         if (!node)
             return false;

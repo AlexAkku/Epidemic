@@ -3,6 +3,8 @@ package epidemic.editor;
 import epidemic.u1.NativeViewport;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.*;
@@ -23,11 +25,38 @@ public final class UiPanels {
     private final List<ScalarInspector> inspectors=new ArrayList<>();
     private BiConsumer<String,Long> assetCommand=(action,id)->{};
     public void assetCommands(BiConsumer<String,Long> action){assetCommand=action;}
+    public record HierarchyEdit(long generation,long revision,String action,long document,long node,String argument) {}
+    private Consumer<HierarchyEdit> hierarchyCommand=edit->{};
+    private BooleanSupplier hierarchyAvailable=()->false;
+    public void hierarchyCommands(BooleanSupplier available,Consumer<HierarchyEdit> action){
+        hierarchyAvailable=available;
+        hierarchyCommand=action;
+    }
+    public record ComponentEdit(long generation,long revision,long selectionRevision,String action,String argument) {}
+    private Consumer<ComponentEdit> componentCommand=edit->{};
+    private BooleanSupplier componentAvailable=()->false;
+    public void componentCommands(BooleanSupplier available,Consumer<ComponentEdit> action){
+        componentAvailable=available;
+        componentCommand=action;
+    }
+    public record GestureEdit(long generation,long revision,int operation,List<String> arguments) {}
+    private Function<GestureEdit,java.util.concurrent.CompletableFuture<Bridge.Reply>> gestureCommand=
+        edit->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("Scene gestures unavailable"));
+    private BooleanSupplier gesturesAvailable=()->false;
+    private BooleanSupplier sceneResourcesAvailable=()->false;
+    private BooleanSupplier systemsAvailable=()->false;
+    public void sceneResources(BooleanSupplier available){sceneResourcesAvailable=available;}
+    public void systemsCommands(BooleanSupplier available){systemsAvailable=available;}
+    public void sceneGestures(BooleanSupplier available,Function<GestureEdit,java.util.concurrent.CompletableFuture<Bridge.Reply>> action){
+        gesturesAvailable=available;
+        gestureCommand=action;
+    }
     private long generation;
     private boolean interactive;
     private boolean documentCommandsEnabled;
     private final List<AbstractButton> assetButtons=new ArrayList<>();
     private final List<AbstractButton> documentButtons = new ArrayList<>();
+    private final List<Runnable> authoringControls = new ArrayList<>();
     private final Map<String,JComponent> cache = new HashMap<>();
     private final Map<String,NativeViewport> nativeViews = new HashMap<>();
     private final List<Consumer<Bridge.Snapshot>> readers = new ArrayList<>();
@@ -48,6 +77,7 @@ public final class UiPanels {
     public void sessionState(long generation,boolean ready){
         this.generation=generation;interactive=ready;assetButtons.forEach(button->button.setEnabled(ready&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()));
         for(var inspector:inspectors)inspector.refresh(generation,snapshot,ready);
+        authoringControls.forEach(Runnable::run);
     }
     public java.util.concurrent.CompletableFuture<Void> flushDrafts(){return java.util.concurrent.CompletableFuture.allOf(inspectors.stream().map(ScalarInspector::flush).toArray(java.util.concurrent.CompletableFuture[]::new));}
     public void cancelDrafts(long document){if(snapshot!=null&&snapshot.selection().document()==document)inspectors.forEach(ScalarInspector::cancelDrafts);}
@@ -72,8 +102,8 @@ public final class UiPanels {
             !previous.nodes().equals(value.nodes()) || !previous.assets().equals(value.assets());
         snapshot = value; refreshing = true;
         try {
-            for (var reader : readers) reader.accept(value);
             if (structureChanged) for (var reader : structureReaders) reader.accept(value);
+            for (var reader : readers) reader.accept(value);
         }
         finally { refreshing = false; }
     }
@@ -87,6 +117,7 @@ public final class UiPanels {
         String base = id.contains(":") ? id.substring(0, id.indexOf(':')) : id;
         if (base.equals("project.explorer")) return explorer();
         if (base.equals("scene.hierarchy")) return hierarchy();
+        if (base.equals("scene.systems")) return systems();
         if (base.equals("scene.editor")||base.equals("prefab.canvas")) return scene(id);
         if (base.equals("background.jobs")) {
             JPanel panel=Theme.island(new BorderLayout(6,6));
@@ -103,11 +134,20 @@ public final class UiPanels {
             JPanel panel = Theme.island(new BorderLayout(6, 6));
             JTextArea summary = new JTextArea(5, 20); summary.setEditable(false); summary.setLineWrap(true); summary.setWrapStyleWord(true);
             summary.setFont(UIManager.getFont("Label.font"));
-            observe(value -> summary.setText(value == null ? "Select a project / object" :
-                "Revision " + value.revision() + "\nSelection kind: " + value.selection().kind() +
-                "\nDocument ID: " + Long.toUnsignedString(value.selection().document()) +
-                "\nElement ID: " + Long.toUnsignedString(value.selection().element()) +
-                "\nAuthoring data / runtime values are separate"));
+            observe(value -> {
+                if(value==null){summary.setText("Select a project or object");return;}
+                var selection=value.selection();
+                String document=value.documents().stream().filter(doc->doc.id()==selection.document())
+                    .map(doc->doc.name()+" · document revision "+doc.revision()).findFirst().orElse(value.title());
+                String scope=switch(selection.kind()){
+                    case 1->"Scene entity / placement";
+                    case 2,5->"Prefab definition";
+                    case 7->"Linked Prefab reference";
+                    default->"Authoring selection";
+                };
+                summary.setText(document+"\n"+scope+"\nDocument ID: "+unsigned(selection.document())+
+                    "\nElement ID: "+unsigned(selection.element()));
+            });
             JPanel fields=new JPanel(new BorderLayout());Map<String,JComponent> forms=new HashMap<>();
             observe(value->{
                 String schema=base.equals("prefab.editor")?"owners.prefab-definition":base.equals("graph.inspector")?"graph.inspector":base.equals("type.registry")?"code.types":"owners.project";
@@ -121,8 +161,13 @@ public final class UiPanels {
             });
             panel.add(summary, BorderLayout.NORTH);
             if(!base.equals("type.registry")){
-                ScalarInspector inspector=new ScalarInspector(request->editField==null?java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("Native Inspector unavailable")):editField.apply(request));
+                ScalarInspector inspector=new ScalarInspector(request->editField==null?java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("Native Inspector unavailable")):editField.apply(request),
+                    request->gestureCommand.apply(new GestureEdit(request.generation(),request.revision(),31,List.of(unsigned(request.selectionRevision()),request.key()))));
                 inspectors.add(inspector);observe(value->inspector.refresh(generation,value,interactive));panel.add(inspector);
+                JPanel actions=new JPanel();
+                actions.setLayout(new BoxLayout(actions,BoxLayout.Y_AXIS));
+                actions.add(componentActions());actions.add(resourceActions());
+                panel.add(actions,BorderLayout.SOUTH);
             }else panel.add(fields);
             return panel;
         }
@@ -181,22 +226,134 @@ public final class UiPanels {
     private JComponent scene(String id) {
         JPanel panel = Theme.island(new BorderLayout(6, 6));
         JToolBar tools = new JToolBar(); tools.setFloatable(false);tools.setLayout(new GridLayout(0,4,4,4));
-        for (String tool : new String[]{"2D", "3D", "Move", "Rotate", "Scale", "Grid", "Snap", "Camera"})
-            tools.add(features.plannedButton("scene." + tool, tool, "F2"));
+        boolean sceneEditor=id.startsWith("scene.editor");
+        JButton fit=new JButton("Fit"),reset=new JButton("Reset Transform");
+        JCheckBox snap=new JCheckBox("Move Snap (1 unit)"),grid=new JCheckBox("Grid",true);
+        var toolButtons=new ArrayList<JToggleButton>();
+        if(sceneEditor){
+            tools.add(fit);
+            ButtonGroup modes=new ButtonGroup();
+            for(String label:List.of("Move","Rotate","Scale")){
+                var button=new JToggleButton(label);modes.add(button);tools.add(button);toolButtons.add(button);
+            }
+            toolButtons.getFirst().setSelected(true);
+            tools.add(grid);tools.add(snap);tools.add(reset);
+        }
         panel.add(tools, BorderLayout.NORTH);
         try {
             NativeViewport viewport = new NativeViewport(); nativeViews.put(id, viewport); panel.add(viewport, BorderLayout.CENTER);
+            fit.addActionListener(e->viewport.fit());
+            grid.addActionListener(e->viewport.grid(grid.isSelected()));
+            if(sceneEditor){
+                var mouse=new SceneInput(id,viewport,snap);
+                viewport.addMouseListener(mouse);viewport.addMouseMotionListener(mouse);viewport.addMouseWheelListener(mouse);
+                if(!GraphicsEnvironment.isHeadless())installSceneDrop(id,viewport);
+                viewport.addKeyListener(new KeyAdapter(){
+                    @Override public void keyPressed(KeyEvent e){if(e.getKeyCode()==KeyEvent.VK_ESCAPE){mouse.cancel();e.consume();}}
+                });
+                viewport.addFocusListener(new FocusAdapter(){@Override public void focusLost(FocusEvent e){mouse.cancel();}});
+                viewport.addHierarchyListener(e->{if(!viewport.isShowing())mouse.cancel();});
+                viewport.addComponentListener(new ComponentAdapter(){@Override public void componentResized(ComponentEvent e){mouse.cancel();}});
+                for(int index=0;index<toolButtons.size();index++){
+                    int mode=index;
+                    toolButtons.get(index).addActionListener(e->{mouse.cancel();mouse.tool=mode;viewport.tool(mode);});
+                }
+                Runnable availability=()->{
+                    boolean enabled=interactive&&snapshot!=null&&!snapshot.playing()&&gesturesAvailable.getAsBoolean();
+                    toolButtons.forEach(button->button.setEnabled(enabled));
+                    snap.setEnabled(enabled);
+                    reset.setEnabled(enabled&&snapshot.selection().kind()==1&&snapshot.selection().document()==sceneDocument(id,snapshot));
+                };
+                authoringControls.add(availability);observe(value->availability.run());
+                reset.addActionListener(e->{
+                    if(reset.isEnabled())gestureCommand.apply(new GestureEdit(generation,snapshot.revision(),31,List.of(unsigned(snapshot.selectionRevision()))));
+                });
+            }
         } catch (LinkageError unavailable) { panel.add(Theme.label("Native viewport unavailable: " + unavailable.getMessage(), true)); }
         observe(value->{
             NativeViewport viewport=nativeViews.get(id);
-            if(viewport==null||value==null||value.storage()!=2)return;
-            long document=id.contains(":")?Long.parseUnsignedLong(id.substring(id.indexOf(':')+1)):value.entry();
-            viewport.projectScene(java.nio.file.Path.of(value.path()).getParent().toString(),value.assetState().sprites().stream().filter(sprite->sprite.document()==document).toList());
+            if(viewport==null||value==null)return;
+            long document=sceneDocument(id,value);
+            if(value.storage()==2)viewport.projectScene(java.nio.file.Path.of(value.path()).getParent().toString(),value.assetState().sprites().stream().filter(sprite->sprite.document()==document).toList());
+            if(sceneEditor)viewport.projectItems(document,value.selection().kind()==1&&value.selection().document()==document?value.selection().element():0,
+                value.sceneItems().stream().filter(item->item.document()==document).toList());
         });
-        JLabel selection=Theme.label("Select Scene · native viewport shell · authoring draw integration planned F2",true);
-        observe(value->selection.setText(value==null?"No Project":"Selection: "+Long.toUnsignedString(value.selection().document())+" / "+Long.toUnsignedString(value.selection().element())+" · authoring picking planned F2"));
+        JLabel selection=Theme.label(sceneEditor?"Middle drag to pan · Wheel to zoom":"Prefab root preview",true);
+        observe(value->{
+            if(value==null){selection.setText("No Project");return;}
+            var selected=value.selection();
+            String name=value.nodes().stream().filter(node->node.selection().equals(selected)).map(Bridge.Node::label)
+                .findFirst().orElse("Selection");
+            selection.setText(name+" ["+unsigned(selected.element())+"]"+(sceneEditor?" · Middle drag to pan · Wheel to zoom":" · Prefab root preview"));
+        });
         panel.add(selection, BorderLayout.SOUTH);
         return panel;
+    }
+    private static long sceneDocument(String id,Bridge.Snapshot snapshot){
+        return id.contains(":")?Long.parseUnsignedLong(id.substring(id.indexOf(':')+1)):snapshot.entry();
+    }
+    private final class SceneInput extends MouseAdapter {
+        private final String panel;
+        private final NativeViewport viewport;
+        private final JCheckBox snap;
+        private Point pan;
+        private GestureEdit active;
+        private boolean pending;
+        private int tool;
+        SceneInput(String panel,NativeViewport viewport,JCheckBox snap){this.panel=panel;this.viewport=viewport;this.snap=snap;}
+        @Override public void mousePressed(MouseEvent e){
+            viewport.requestFocusInWindow();
+            if(SwingUtilities.isMiddleMouseButton(e)&&active==null)pan=e.getPoint();
+            if(!SwingUtilities.isLeftMouseButton(e)||snapshot==null||snapshot.playing()||!interactive)return;
+            long document=sceneDocument(panel,snapshot);
+            var point=viewport.pointer(e.getX(),e.getY());
+            if(gesturesAvailable.getAsBoolean()&&point.length==10&&point[7]!=0&&
+                snapshot.selection().kind()==1&&snapshot.selection().document()==document){
+                var edit=new GestureEdit(generation,snapshot.revision(),32,List.of("begin",unsigned(document),
+                    tool+":"+unsigned(snapshot.selectionRevision()),Double.toString(point[0]),Double.toString(point[1]),
+                    Double.toString(point[2]),Double.toString(point[3]),point[4]+","+point[5]+","+point[6]));
+                active=edit;
+                gestureCommand.apply(edit).whenComplete((reply,error)->SwingUtilities.invokeLater(()->{
+                    if(error!=null&&active==edit)active=null;
+                }));
+                return;
+            }
+            long picked=viewport.pick(e.getX(),e.getY());
+            select.accept(new Bridge.Selection(picked==0?0:1,document,picked));
+        }
+        @Override public void mouseDragged(MouseEvent e){
+            if(pan!=null){
+                viewport.pan(e.getX()-pan.x,e.getY()-pan.y);
+                pan=e.getPoint();
+            }else if(active!=null&&!pending){
+                var edit=motion("move",e);
+                if(edit==null)return;
+                pending=true;
+                gestureCommand.apply(edit).whenComplete((reply,error)->SwingUtilities.invokeLater(()->pending=false));
+            }
+        }
+        @Override public void mouseReleased(MouseEvent e){
+            if(SwingUtilities.isMiddleMouseButton(e))pan=null;
+            if(!SwingUtilities.isLeftMouseButton(e)||active==null)return;
+            var edit=motion("commit",e);
+            if(edit==null)cancel();
+            else {active=null;gestureCommand.apply(edit);}
+        }
+        @Override public void mouseWheelMoved(MouseWheelEvent e){
+            if(active==null)viewport.zoom(e.getX(),e.getY(),-e.getPreciseWheelRotation());
+        }
+        private GestureEdit motion(String action,MouseEvent e){
+            var point=viewport.pointer(e.getX(),e.getY());
+            return point.length!=10?null:new GestureEdit(active.generation(),active.revision(),32,
+                List.of(action,Double.toString(point[0]),Double.toString(point[1]),snap.isSelected()?"1":"0"));
+        }
+        void cancel(){
+            pan=null;
+            if(active!=null){
+                var edit=active;active=null;
+                gestureCommand.apply(new GestureEdit(edit.generation(),edit.revision(),32,List.of("cancel")));
+            }
+        }
     }
     private JComponent explorer() {
         JPanel panel = Theme.island(new BorderLayout(4, 4));
@@ -208,6 +365,12 @@ public final class UiPanels {
         JCheckBox internal=new JCheckBox("Show Internal (read-only)");
         JPanel options=new JPanel(new BorderLayout());options.add(mode,BorderLayout.WEST);options.add(internal);header.add(options,BorderLayout.CENTER);
         DefaultListModel<Object> listing=new DefaultListModel<>();JList<Object> list=new JList<>(listing);
+        if(!GraphicsEnvironment.isHeadless()){
+            installResourceDrag(tree,()->tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null);
+            installResourceDrag(list,list::getSelectedValue);
+            tree.setDragEnabled(true);
+            list.setDragEnabled(true);
+        }
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         CardLayout cards=new CardLayout();JPanel browser=new JPanel(cards);browser.add(new JScrollPane(tree),"Tree");browser.add(new JScrollPane(list),"List");
         mode.addActionListener(e->{boolean grid=mode.getSelectedItem().equals("Grid");list.setLayoutOrientation(grid?JList.HORIZONTAL_WRAP:JList.VERTICAL);list.setVisibleRowCount(grid?-1:0);list.setFixedCellWidth(grid?220:-1);list.setFixedCellHeight(grid?64:-1);cards.show(browser,mode.getSelectedItem().equals("Tree")?"Tree":"List");});
@@ -311,18 +474,31 @@ public final class UiPanels {
     }
     private JComponent hierarchy() {
         JTree tree = new JTree();
-        observe(value -> {
+        Map<Bridge.Selection,DefaultMutableTreeNode> selections=new HashMap<>();
+        structure(value -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode("World / Scene / Prefab");
+            selections.clear();
             if (value != null) {
                 Map<Long,DefaultMutableTreeNode> documents = new HashMap<>();
                 for (Bridge.Document doc : value.documents()) {
                     DefaultMutableTreeNode node = new DefaultMutableTreeNode(new DocRow(doc)); root.add(node); documents.put(doc.id(), node);
+                    selections.put(new Bridge.Selection(0,doc.id(),0),node);
                 }
                 Map<String,DefaultMutableTreeNode> nodes = new HashMap<>();
-                for (Bridge.Node row : value.nodes()) nodes.put(nodeKey(row), new DefaultMutableTreeNode(row));
+                Map<DefaultMutableTreeNode,DefaultMutableTreeNode> componentGroups=new HashMap<>();
                 for (Bridge.Node row : value.nodes()) {
-                    DefaultMutableTreeNode parent = nodes.get(row.document() + ":" + row.parent()+":"+(row.kind()==5?2:row.kind())+":0:0");
+                    var node=new DefaultMutableTreeNode(row);
+                    nodes.put(nodeKey(row),node);
+                    selections.put(row.selection(),node);
+                }
+                for (Bridge.Node row : value.nodes()) {
+                    DefaultMutableTreeNode parent = nodes.get(row.document() + ":" + row.parent()+":"+(row.kind()==5||row.kind()==7?2:row.kind())+":0:0");
                     if (parent == null) parent = documents.get(row.document());
+                    if(parent!=null&&row.kind()==5) {
+                        var group=componentGroups.get(parent);
+                        if(group==null){group=new DefaultMutableTreeNode("Components");parent.add(group);componentGroups.put(parent,group);}
+                        parent=group;
+                    }
                     if (parent != null) parent.add(nodes.get(nodeKey(row)));
                 }
             }
@@ -333,11 +509,17 @@ public final class UiPanels {
             for(var enumeration=root.depthFirstEnumeration();enumeration.hasMoreElements();){
                 var node=(DefaultMutableTreeNode)enumeration.nextElement();var path=new TreePath(node.getPath());
                 if(expanded.contains(treeKey(path)))tree.expandPath(path);
-                if(value!=null&&(node.getUserObject() instanceof Bridge.Node row&&row.selection().equals(value.selection())||node.getUserObject() instanceof DocRow doc&&value.selection().kind()==0&&doc.document().id()==value.selection().document())){
-                    tree.setExpandsSelectedPaths(false);tree.setSelectionPath(path);tree.setExpandsSelectedPaths(true);
-                }
             }
             if(scroll!=null&&tree.getParent() instanceof JViewport viewport)viewport.setViewPosition(scroll);
+        });
+        observe(value->{
+            var node=value==null?null:selections.get(value.selection());
+            var path=node==null?null:new TreePath(node.getPath());
+            if(!Objects.equals(tree.getSelectionPath(),path)){
+                tree.setExpandsSelectedPaths(false);
+                tree.setSelectionPath(path);
+                tree.setExpandsSelectedPaths(true);
+            }
         });
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
             @Override public Component getTreeCellRendererComponent(JTree owner, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean focus) {
@@ -354,7 +536,379 @@ public final class UiPanels {
             else if(value instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof DocRow doc)select.accept(new Bridge.Selection(0,doc.document().id(),0));
             else if(value==tree.getModel().getRoot())select.accept(new Bridge.Selection(0,0,0));
         });
+        tree.addMouseListener(new MouseAdapter(){
+            @Override public void mousePressed(MouseEvent event){popup(event);}
+            @Override public void mouseReleased(MouseEvent event){popup(event);}
+            private void popup(MouseEvent event){
+                if(!event.isPopupTrigger()||!canEditHierarchy())return;
+                var path=tree.getPathForLocation(event.getX(),event.getY());
+                var target=hierarchyTarget(path);
+                if(target==null&&path!=null&&path.getLastPathComponent() instanceof DefaultMutableTreeNode node&&
+                    node.getUserObject() instanceof Bridge.Node row&&(row.kind()==2||row.kind()==7)){
+                    var menu=new JPopupMenu();
+                    var base=snapshot;
+                    long token=generation;
+                    if(row.kind()==2&&row.parent()!=0)menuItem(menu,"Reparent Prefab Child…",()->{
+                        var parents=base.nodes().stream().filter(parent->parent.kind()==2&&parent.document()==row.document()&&parent.id()!=row.id()).toList();
+                        int chosen=choose(tree,"Logical Prefab Parent",parents.stream().map(Bridge.Node::label).toList());
+                        if(chosen>=0)hierarchyCommand.accept(new HierarchyEdit(token,base.revision(),"prefab-parent",
+                            row.document(),row.id(),unsigned(parents.get(chosen).id())));
+                    });
+                    if(row.kind()==2)menuItem(menu,"Link Nested Prefab…",()->{
+                        var prefabs=base.documents().stream().filter(doc->doc.kind()==1&&doc.id()!=row.document()).toList();
+                        if(prefabs.isEmpty())return;
+                        int chosen=choose(tree,"Link Nested Prefab",prefabs.stream().map(Bridge.Document::name).toList());
+                        if(chosen>=0)hierarchyCommand.accept(new HierarchyEdit(token,base.revision(),"link-prefab",
+                            row.document(),row.id(),unsigned(prefabs.get(chosen).id())));
+                    });
+                    if(row.kind()==7){
+                        menuItem(menu,"Open Linked Definition",()->base.documents().stream().filter(doc->doc.id()==row.prefab())
+                            .findFirst().ifPresent(openDocument));
+                        menuItem(menu,"Remove Prefab Link",()->hierarchyCommand.accept(new HierarchyEdit(token,base.revision(),
+                            "unlink-prefab",row.document(),row.id(),null)));
+                    }
+                    menu.show(tree,event.getX(),event.getY());
+                    return;
+                }
+                if(target==null)return;
+                var menu=new JPopupMenu();
+                long document=target.document(),node=target.element();
+                long token=generation,revision=snapshot.revision();
+                BiConsumer<String,String> edit=(action,argument)->hierarchyCommand.accept(new HierarchyEdit(token,revision,action,document,node,argument));
+                menuItem(menu,node==0?"New Entity":"Create Child",()->edit.accept("create",null));
+                if(node!=0){
+                    menuItem(menu,"Rename",()->{
+                        String name=JOptionPane.showInputDialog(tree,"Entity name");
+                        if(name!=null&&!name.isBlank())edit.accept("rename",name);
+                    });
+                    menuItem(menu,"Delete Subtree",()->{
+                        if(JOptionPane.showConfirmDialog(tree,"Delete this entity and its children?","Delete Subtree",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION)
+                            edit.accept("delete",null);
+                    });
+                    menuItem(menu,"Reparent…",()->{
+                        var parents=snapshot.nodes().stream().filter(row->row.kind()==1&&row.document()==document&&row.id()!=node).toList();
+                        if(parents.isEmpty())return;
+                        var choice=choose(tree,"Reparent (keep local transform)",parents.stream().map(row->row.label()+" ["+unsigned(row.id())+"]").toList());
+                        if(choice>=0)edit.accept("parent",unsigned(parents.get(choice).id()));
+                    });
+                    menuItem(menu,"Unparent",()->edit.accept("parent","0"));
+                    menuItem(menu,"Assign Prefab…",()->{
+                        var prefabs=snapshot.documents().stream().filter(doc->doc.kind()==1).toList();
+                        if(prefabs.isEmpty())return;
+                        var choice=choose(tree,"Assign Prefab",prefabs.stream().map(doc->doc.name()+" ["+unsigned(doc.id())+"]").toList());
+                        if(choice>=0)edit.accept("prefab",unsigned(prefabs.get(choice).id()));
+                    });
+                }
+                menu.show(tree,event.getX(),event.getY());
+            }
+        });
+        if(!GraphicsEnvironment.isHeadless()){
+            tree.setDragEnabled(true);
+            tree.setDropMode(DropMode.ON_OR_INSERT);
+            tree.setTransferHandler(new TransferHandler(){
+                private final DataFlavor flavor=localFlavor(HierarchyEdit.class,"Scene hierarchy");
+                @Override public int getSourceActions(JComponent component){return MOVE;}
+                @Override protected Transferable createTransferable(JComponent component){
+                    var source=hierarchyTarget(tree.getSelectionPath());
+                    if(!canEditHierarchy()||source==null||source.element()==0)return null;
+                    var move=new HierarchyEdit(generation,snapshot.revision(),"parent",source.document(),source.element(),null);
+                    return new Transferable(){
+                        public DataFlavor[] getTransferDataFlavors(){return new DataFlavor[]{flavor};}
+                        public boolean isDataFlavorSupported(DataFlavor type){return flavor.equals(type);}
+                        public Object getTransferData(DataFlavor type)throws UnsupportedFlavorException{
+                            if(!isDataFlavorSupported(type))throw new UnsupportedFlavorException(type);
+                            return move;
+                        }
+                    };
+                }
+                private HierarchyEdit drop(TransferSupport support){
+                    if(!support.isDrop()||!canEditHierarchy()||!support.isDataFlavorSupported(flavor))return null;
+                    var location=(JTree.DropLocation)support.getDropLocation();
+                    var target=hierarchyTarget(location.getPath());
+                    try{
+                        var edit=(HierarchyEdit)support.getTransferable().getTransferData(flavor);
+                        if(target==null||target.document()!=edit.document()||target.element()==edit.node()
+                            ||generation!=edit.generation()||snapshot.revision()!=edit.revision())return null;
+                        int index=location.getChildIndex();
+                        if(index<0)
+                            return new HierarchyEdit(edit.generation(),edit.revision(),"parent",edit.document(),edit.node(),unsigned(target.element()));
+                        var parent=(DefaultMutableTreeNode)location.getPath().getLastPathComponent();
+                        long before=0;
+                        if(index<parent.getChildCount()){
+                            var child=(DefaultMutableTreeNode)parent.getChildAt(index);
+                            if(!(child.getUserObject() instanceof Bridge.Node row)||row.kind()!=1)return null;
+                            before=row.id();
+                        }
+                        if(before==edit.node())return null;
+                        return new HierarchyEdit(edit.generation(),edit.revision(),"order",edit.document(),edit.node(),unsigned(target.element())+":"+unsigned(before));
+                    }catch(UnsupportedFlavorException|java.io.IOException error){return null;}
+                }
+                @Override public boolean canImport(TransferSupport support){return drop(support)!=null;}
+                @Override public boolean importData(TransferSupport support){
+                    var edit=drop(support);if(edit==null)return false;hierarchyCommand.accept(edit);return true;
+                }
+            });
+        }
         return new JScrollPane(tree);
+    }
+    private boolean canEditHierarchy(){return interactive&&snapshot!=null&&!snapshot.playing()&&hierarchyAvailable.getAsBoolean();}
+    private boolean canEditSystems(){return interactive&&snapshot!=null&&!snapshot.playing()&&systemsAvailable.getAsBoolean();}
+    private JComponent systems(){
+        var panel=new JPanel(new BorderLayout(4,4));
+        var world=new JCheckBox("World scope");
+        var rows=new DefaultListModel<Bridge.SystemItem>();
+        var list=new JList<>(rows);
+        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setCellRenderer(new DefaultListCellRenderer(){
+            @Override public Component getListCellRendererComponent(JList<?> owner,Object value,int index,boolean selected,boolean focused){
+                super.getListCellRendererComponent(owner,value,index,selected,focused);
+                if(value instanceof Bridge.SystemItem system&&snapshot!=null){
+                    String graph=snapshot.documents().stream().filter(doc->doc.id()==system.graph()).map(Bridge.Document::name)
+                        .findFirst().orElse("Missing Graph");
+                    setText((system.enabled()?"Enabled":"Disabled")+" · "+graph+" ["+unsigned(system.graph())+"]");
+                }
+                return this;
+            }
+        });
+        var controls=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton add=new JButton("Add System…"),edit=new JButton("Change Graph…");
+        JButton toggle=new JButton("Enable / Disable"),remove=new JButton("Remove");
+        for(var button:List.of(add,edit,toggle,remove))controls.add(button);
+        panel.add(world,BorderLayout.NORTH);panel.add(new JScrollPane(list));panel.add(controls,BorderLayout.SOUTH);
+        LongSupplier scope=()->world.isSelected()||snapshot==null?0:
+            snapshot.documents().stream().filter(doc->doc.kind()==0&&doc.id()==snapshot.selection().document())
+                .mapToLong(Bridge.Document::id).findFirst().orElse(snapshot.entry());
+        Runnable availability=()->{
+            boolean graph=canEditSystems()&&snapshot.documents().stream().anyMatch(doc->doc.kind()==2);
+            add.setEnabled(graph);
+            edit.setEnabled(graph&&list.getSelectedValue()!=null);
+            toggle.setEnabled(canEditSystems()&&list.getSelectedValue()!=null);
+            remove.setEnabled(toggle.isEnabled());
+        };
+        Runnable refresh=()->{
+            var desired=snapshot==null?List.<Bridge.SystemItem>of():snapshot.systems().stream().filter(row->row.scene()==scope.getAsLong()).toList();
+            if(!Collections.list(rows.elements()).equals(desired)){
+                long selected=list.getSelectedValue()==null?0:list.getSelectedValue().id();
+                rows.clear();desired.forEach(rows::addElement);
+                for(int i=0;i<rows.size();i++)if(rows.get(i).id()==selected)list.setSelectedIndex(i);
+            }
+            list.repaint();availability.run();
+        };
+        observe(value->refresh.run());authoringControls.add(availability);
+        world.addActionListener(e->refresh.run());
+        list.addListSelectionListener(e->availability.run());
+        BiConsumer<String,Long> chooseGraph=(action,target)->{
+            var base=snapshot;
+            long token=generation;
+            var graphs=base.documents().stream().filter(doc->doc.kind()==2).toList();
+            int chosen=choose(panel,action.equals("add")?"Add Graph System":"Change System Graph",
+                graphs.stream().map(doc->doc.name()+" ["+unsigned(doc.id())+"]").toList());
+            if(chosen>=0)gestureCommand.apply(new GestureEdit(token,base.revision(),34,List.of(action,unsigned(target),unsigned(graphs.get(chosen).id()))));
+        };
+        add.addActionListener(e->{if(add.isEnabled())chooseGraph.accept("add",scope.getAsLong());});
+        edit.addActionListener(e->{if(edit.isEnabled())chooseGraph.accept("graph",list.getSelectedValue().id());});
+        toggle.addActionListener(e->{
+            if(!toggle.isEnabled())return;
+            var system=list.getSelectedValue();
+            gestureCommand.apply(new GestureEdit(generation,snapshot.revision(),34,List.of("enable",unsigned(system.id()),system.enabled()?"0":"1")));
+        });
+        remove.addActionListener(e->{
+            if(remove.isEnabled())gestureCommand.apply(new GestureEdit(generation,snapshot.revision(),34,List.of("remove",unsigned(list.getSelectedValue().id()))));
+        });
+        return panel;
+    }
+    private record ResourceDrag(long generation,long project,long revision,long id,boolean prefab) {}
+    private static final DataFlavor RESOURCE_FLAVOR=localFlavor(ResourceDrag.class,"Project resource");
+    private static DataFlavor localFlavor(Class<?> type,String label){
+        try{
+            return new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType+";class="+type.getName(),label,type.getClassLoader());
+        }catch(ClassNotFoundException error){throw new ExceptionInInitializerError(error);}
+    }
+    private boolean canPlaceResource(){return interactive&&snapshot!=null&&!snapshot.playing()&&sceneResourcesAvailable.getAsBoolean();}
+    private static boolean texture(Bridge.Asset asset){
+        String path=asset.path().toLowerCase(Locale.ROOT);
+        return !asset.trashed()&&!asset.cookedKey().isEmpty()&&(path.endsWith(".png")||path.endsWith(".webp"));
+    }
+    private void installResourceDrag(JComponent source,Supplier<Object> selection){
+        source.setTransferHandler(new TransferHandler(){
+            @Override public int getSourceActions(JComponent component){return COPY;}
+            @Override protected Transferable createTransferable(JComponent component){
+                if(!canPlaceResource())return null;
+                Object row=selection.get();
+                ResourceDrag data;
+                if(row instanceof DocRow doc&&doc.document().kind()==1)
+                    data=new ResourceDrag(generation,snapshot.project(),snapshot.revision(),doc.document().id(),true);
+                else if(row instanceof AssetRow asset&&texture(asset.asset()))
+                    data=new ResourceDrag(generation,snapshot.project(),snapshot.revision(),asset.asset().id(),false);
+                else return null;
+                return new Transferable(){
+                    public DataFlavor[] getTransferDataFlavors(){return new DataFlavor[]{RESOURCE_FLAVOR};}
+                    public boolean isDataFlavorSupported(DataFlavor flavor){return RESOURCE_FLAVOR.equals(flavor);}
+                    public Object getTransferData(DataFlavor flavor)throws UnsupportedFlavorException{
+                        if(!isDataFlavorSupported(flavor))throw new UnsupportedFlavorException(flavor);
+                        return data;
+                    }
+                };
+            }
+        });
+    }
+    private void installSceneDrop(String panel,NativeViewport viewport){
+        new DropTarget(viewport,DnDConstants.ACTION_COPY,new DropTargetAdapter(){
+            @Override public void drop(DropTargetDropEvent event){
+                if(!canPlaceResource()||!event.isDataFlavorSupported(RESOURCE_FLAVOR)){event.rejectDrop();return;}
+                try {
+                    event.acceptDrop(DnDConstants.ACTION_COPY);
+                    var data=(ResourceDrag)event.getTransferable().getTransferData(RESOURCE_FLAVOR);
+                    var base=snapshot;
+                    if(data.generation()!=generation||data.project()!=base.project()||data.revision()!=base.revision()){
+                        event.dropComplete(false);return;
+                    }
+                    long scene=sceneDocument(panel,base);
+                    Point cursor=event.getLocation();
+                    if(data.prefab()){
+                        double[] point=viewport.pointer(cursor.x,cursor.y);
+                        if(point.length!=10){event.dropComplete(false);return;}
+                        gestureCommand.apply(new GestureEdit(generation,base.revision(),33,List.of("place",unsigned(scene),
+                            unsigned(data.id()),Double.toString(point[8]),Double.toString(point[9]))));
+                    }else{
+                        long picked=viewport.pick(cursor.x,cursor.y);
+                        if(base.nodes().stream().noneMatch(node->node.document()==scene&&node.id()==picked&&node.prefab()!=0)){
+                            if(picked!=0){event.dropComplete(false);return;}
+                            double[] point=viewport.pointer(cursor.x,cursor.y);
+                            var prefabs=base.assetState().references().stream()
+                                .filter(ref->ref.source()==data.id()&&ref.origin().equals("prefab.sprite"))
+                                .map(ref->base.documents().stream().filter(doc->doc.kind()==1&&doc.id()==ref.dependent()).findFirst())
+                                .flatMap(Optional::stream).distinct().toList();
+                            if(point.length!=10||prefabs.isEmpty()){event.dropComplete(false);return;}
+                            SwingUtilities.invokeLater(()->{
+                                if(!canPlaceResource()||generation!=data.generation())return;
+                                int choice=choose(viewport,"Place Prefab Using This Sprite",prefabs.stream().map(Bridge.Document::name).toList());
+                                if(choice>=0)gestureCommand.apply(new GestureEdit(data.generation(),base.revision(),33,
+                                    List.of("place",unsigned(scene),unsigned(prefabs.get(choice).id()),Double.toString(point[8]),Double.toString(point[9]))));
+                            });
+                        }else{
+                            SwingUtilities.invokeLater(()->assignSprite(viewport,base,data.generation(),scene,picked,data.id()));
+                        }
+                    }
+                    event.dropComplete(true);
+                }catch(UnsupportedFlavorException|java.io.IOException error){event.dropComplete(false);}
+            }
+        });
+    }
+    private void assignSprite(Component parent,Bridge.Snapshot base,long token,long document,long node,long texture){
+        if(!canPlaceResource()||generation!=token)return;
+        if(node!=0&&JOptionPane.showConfirmDialog(parent,"Assign to the Prefab definition? All its instances will use this sprite.",
+            "Assign Sprite",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
+        gestureCommand.apply(new GestureEdit(token,base.revision(),33,List.of("sprite",unsigned(base.assetRevision()),
+            unsigned(document),unsigned(node),unsigned(texture))));
+    }
+    private static long selectedPrefab(Bridge.Snapshot snapshot){
+        var selection=snapshot.selection();
+        if(selection.kind()==7)return 0;
+        if(selection.kind()==1)return snapshot.nodes().stream().filter(node->node.kind()==1&&node.document()==selection.document()&&node.id()==selection.element())
+            .mapToLong(Bridge.Node::prefab).findFirst().orElse(0);
+        return snapshot.documents().stream().anyMatch(doc->doc.kind()==1&&doc.id()==selection.document())?selection.document():0;
+    }
+    private JPanel resourceActions(){
+        var panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var sprite=new JButton("Choose Sprite…");
+        var definition=new JButton("Open Prefab Definition");
+        var binding=new JLabel();
+        panel.add(sprite);panel.add(definition);panel.add(binding);
+        Runnable update=()->{
+            long prefab=snapshot==null?0:selectedPrefab(snapshot);
+            panel.setVisible(prefab!=0);
+            sprite.setEnabled(prefab!=0&&canPlaceResource()&&snapshot.storage()==2&&snapshot.assets().stream().anyMatch(UiPanels::texture));
+            definition.setVisible(prefab!=0&&snapshot.selection().kind()==1);
+            binding.setText(prefab==0?"":snapshot.assetState().references().stream()
+                .filter(ref->ref.dependent()==prefab&&ref.origin().equals("prefab.sprite")).findFirst()
+                .map(ref->snapshot.assets().stream().filter(asset->asset.id()==ref.source()).findFirst()
+                    .map(asset->(asset.trashed()||!asset.present()?"Missing: ":"Sprite: ")+asset.path()+" ["+unsigned(asset.id())+"]")
+                    .orElse("Sprite ID "+unsigned(ref.source()))).orElse("No sprite"));
+        };
+        observe(value->update.run());authoringControls.add(update);
+        definition.addActionListener(e->{
+            if(snapshot==null)return;
+            long prefab=selectedPrefab(snapshot);
+            snapshot.documents().stream().filter(doc->doc.id()==prefab).findFirst().ifPresent(openDocument);
+            snapshot.nodes().stream().filter(node->node.kind()==2&&node.parent()==0&&node.document()==prefab).findFirst()
+                .ifPresent(node->select.accept(node.selection()));
+        });
+        sprite.addActionListener(e->{
+            if(!canPlaceResource())return;
+            var base=snapshot;
+            long token=generation;
+            var textures=base.assets().stream().filter(UiPanels::texture).toList();
+            int chosen=choose(panel,"Choose Imported Sprite",textures.stream().map(asset->asset.path()+" ["+unsigned(asset.id())+"]").toList());
+            if(chosen>=0)assignSprite(panel,base,token,base.selection().document(),base.selection().kind()==1?base.selection().element():0,textures.get(chosen).id());
+        });
+        return panel;
+    }
+    private boolean canEditComponent(){return interactive&&snapshot!=null&&!snapshot.playing()&&componentAvailable.getAsBoolean();}
+    private JPanel componentActions(){
+        JPanel toolbar=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton add=new JButton("Add Component"),remove=new JButton("Remove Component"),graph=new JButton("Attach Graph…");
+        JButton child=new JButton("Create Prefab Child"),deleteChild=new JButton("Delete Prefab Child");
+        for(var button:List.of(add,remove,graph,child,deleteChild))toolbar.add(button);
+        Runnable update=()->{
+            int kind=snapshot==null?0:snapshot.selection().kind();
+            toolbar.setVisible(kind==2||kind==5);
+            add.setEnabled(canEditComponent()&&kind==2&&!snapshot.componentTypes().isEmpty());
+            remove.setEnabled(canEditComponent()&&kind==5);
+            graph.setEnabled(canEditComponent()&&(kind==2||kind==5)&&snapshot.documents().stream().anyMatch(doc->doc.kind()==2));
+            child.setEnabled(canEditComponent()&&kind==2);
+            deleteChild.setEnabled(canEditComponent()&&kind==2&&snapshot.nodes().stream().anyMatch(node->
+                node.kind()==2&&node.parent()!=0&&node.selection().equals(snapshot.selection())));
+        };
+        observe(value->update.run());
+        authoringControls.add(update);
+        add.addActionListener(e->{
+            if(!canEditComponent()||snapshot.selection().kind()!=2)return;
+            var base=snapshot;
+            long token=generation;
+            var types=base.componentTypes();
+            int chosen=choose(toolbar,"Add Component",types.stream().map(Bridge.ComponentType::name).toList());
+            if(chosen>=0)componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"add",unsigned(types.get(chosen).id())));
+        });
+        remove.addActionListener(e->{
+            if(!canEditComponent()||snapshot.selection().kind()!=5)return;
+            var base=snapshot;
+            long token=generation;
+            if(JOptionPane.showConfirmDialog(toolbar,"Remove the selected component from its Prefab definition?","Remove Component",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION)
+                componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"remove",null));
+        });
+        graph.addActionListener(e->{
+            if(!canEditComponent())return;
+            var base=snapshot;
+            long token=generation;
+            var graphs=base.documents().stream().filter(doc->doc.kind()==2).toList();
+            int chosen=choose(toolbar,"Attach Graph",graphs.stream().map(Bridge.Document::name).toList());
+            if(chosen>=0)componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"graph",unsigned(graphs.get(chosen).id())));
+        });
+        child.addActionListener(e->{
+            if(child.isEnabled())componentCommand.accept(new ComponentEdit(generation,snapshot.revision(),snapshot.selectionRevision(),"child",null));
+        });
+        deleteChild.addActionListener(e->{
+            if(!deleteChild.isEnabled())return;
+            var edit=new ComponentEdit(generation,snapshot.revision(),snapshot.selectionRevision(),"delete-child",null);
+            if(JOptionPane.showConfirmDialog(toolbar,"Delete the selected Prefab subtree?","Delete Prefab Child",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION)
+                componentCommand.accept(edit);
+        });
+        return toolbar;
+    }
+    private static Bridge.Selection hierarchyTarget(TreePath path){
+        if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return null;
+        if(node.getUserObject() instanceof Bridge.Node row&&row.kind()==1)return row.selection();
+        if(node.getUserObject() instanceof DocRow row&&row.document().kind()==0)return new Bridge.Selection(0,row.document().id(),0);
+        return null;
+    }
+    private static String unsigned(long id){return Long.toUnsignedString(id);}
+    private static void menuItem(JPopupMenu menu,String label,Runnable action){
+        var item=new JMenuItem(label);item.addActionListener(e->action.run());menu.add(item);
+    }
+    private static int choose(Component parent,String title,List<String> labels){
+        var picker=new JComboBox<>(labels.toArray(String[]::new));
+        return JOptionPane.showConfirmDialog(parent,picker,title,JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION?picker.getSelectedIndex():-1;
     }
     private static String nodeKey(Bridge.Node row){return row.document()+":"+row.id()+":"+row.kind()+":"+row.component()+":"+row.part();}
 }

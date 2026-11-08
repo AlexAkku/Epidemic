@@ -18,8 +18,35 @@ public final class NativeViewport extends Canvas {
     private String sceneRoot="",appliedRoot="";
     private java.util.List<epidemic.editor.Bridge.Sprite> sprites=java.util.List.of(),appliedSprites=java.util.List.of();
     private long appliedSurface;
+    private long document,selected,appliedDocument,appliedSelection,itemsSurface;
+    private int tool,appliedTool=-1;
+    private boolean grid=true;
+    private java.util.List<epidemic.editor.Bridge.SceneItem> items=java.util.List.of(),appliedItems=java.util.List.of();
+    public void projectItems(long document,long selected,java.util.List<epidemic.editor.Bridge.SceneItem> items){
+        edt();
+        this.document=document;this.selected=selected;this.items=java.util.List.copyOf(items);
+    }
     public void projectScene(String root,java.util.List<epidemic.editor.Bridge.Sprite> sprites){edt();sceneRoot=root;this.sprites=java.util.List.copyOf(sprites);}
     private static native String scene(long surface,String root,String[] keys,float[] geometry);
+    private static native boolean sceneItems(long surface,long document,long selected,long[] ids,double[] bounds);
+    private static native long sceneInput(long surface,int operation,double x,double y,double delta);
+    private static native double[] scenePointer(long surface,double x,double y);
+    public void tool(int value){edt();tool=value;}
+    public void grid(boolean show){edt();grid=show;input(5,0,0,grid?1:0);}
+    public double[] pointer(double x,double y){
+        edt();
+        if(surface==0||document==0||getWidth()==0||getHeight()==0)return new double[0];
+        return scenePointer(surface,x/getWidth(),y/getHeight());
+    }
+    public long pick(double x,double y){return input(0,x,y,0);}
+    public void pan(double x,double y){input(1,x,y,0);}
+    public void zoom(double x,double y,double steps){input(2,x,y,steps);}
+    public void fit(){input(3,0,0,0);}
+    private long input(int operation,double x,double y,double delta){
+        edt();
+        if(surface==0||document==0||getWidth()==0||getHeight()==0)return 0;
+        return sceneInput(surface,operation,x/getWidth(),y/getHeight(),delta);
+    }
     private long surface;
     private long root;
     private String result = "NOT RUN";
@@ -65,6 +92,21 @@ public final class NativeViewport extends Canvas {
         String[] parts = result.split(" ");
         surface = Long.parseLong(parts[1]);
         root = Long.parseLong(parts[3]);
+        if(document!=0&&(itemsSurface!=surface||appliedDocument!=document||appliedSelection!=selected||!appliedItems.equals(items))){
+            long[] ids=new long[items.size()];
+            double[] bounds=new double[items.size()*7];
+            for(int i=0;i<items.size();i++){
+                var item=items.get(i);
+                ids[i]=item.id();
+                int at=i*7;
+                bounds[at]=item.left();bounds[at+1]=item.top();bounds[at+2]=item.right();
+                bounds[at+3]=item.bottom();bounds[at+4]=item.x();bounds[at+5]=item.y();bounds[at+6]=item.rotation();
+            }
+            if(!sceneItems(surface,document,selected,ids,bounds))throw new IllegalStateException("Native Scene bounds rejected");
+            itemsSurface=surface;appliedDocument=document;appliedSelection=selected;appliedItems=items;appliedTool=-1;
+            sceneInput(surface,5,0,0,grid?1:0);
+        }
+        if(document!=0&&appliedTool!=tool){sceneInput(surface,4,0,0,tool);appliedTool=tool;}
         if(!sceneRoot.isEmpty()&&(appliedSurface!=surface||!appliedRoot.equals(sceneRoot)||!appliedSprites.equals(sprites))){
             String[] keys=new String[sprites.size()];float[] geometry=new float[sprites.size()*8];
             for(int i=0;i<sprites.size();i++){var row=sprites.get(i);keys[i]=row.key();float[] values={row.x(),row.y(),row.sx(),row.sy(),row.rotation(),row.ppu(),row.pivotX(),row.pivotY()};System.arraycopy(values,0,geometry,i*8,8);}

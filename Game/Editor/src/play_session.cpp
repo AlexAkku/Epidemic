@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/play_session.h"
+#include "Epidemic/GameFramework/Integration/system_instance.h"
 #include <unordered_set>
 #include <algorithm>
 #include <exception>
@@ -91,6 +92,7 @@ struct PlayRuntime {
     PlayContext context;
     composition::SceneCompositionInstance scene;
     std::unordered_map<runtime::SceneNodeId, std::shared_ptr<const comp::PrefabInstance>> instances;
+    std::vector<std::unique_ptr<comp::SystemInstance>> systems;
 
     explicit PlayRuntime(
         const ProjectSchema &schema,
@@ -254,8 +256,21 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             }
 
         for (const auto &doc : state.source->definition.documents)
-            if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc.data))
-                (void)Take(state.prefabs.Register(*prefab));
+            if (doc.Kind() == DocumentKind::Prefab)
+                (void)Take(state.prefabs.Register(Take(MaterializePrefab(state.source->definition,doc.id))));
+        for (const auto &system : state.source->definition.systems) {
+            if (!system.enabled || (system.scene.IsValid() && system.scene != entry->id))
+                continue;
+            const bool scene_scope = system.scene.IsValid();
+            auto instance = Take(comp::SystemInstance::Create(
+                scene_scope ? comp::GraphScopeKind::Scene : comp::GraphScopeKind::World,
+                gameplay::GameplayObjectId::FromString("editor.system.owner." +
+                    std::to_string(scene_scope ? entry->id.Raw() : state.source->definition.id.Raw())),
+                system.id));
+            auto behavior = Take(DefaultGraphBehavior(state.source->definition,schema,system.graph,system.id));
+            (void)Take(state.behaviors.Attach(instance->Scope(),behavior));
+            state.systems.push_back(std::move(instance));
+        }
         for (const auto &placement : definition.placements) {
             auto instance = Take(state.prefabs.Spawn(placement.prefab.value, placement.overrides));
             const auto *root = instance->Find(instance->Definition()->root.id);

@@ -25,6 +25,18 @@ struct SetEntryScene {
     runtime::AssetId document;
 };
 
+struct EditSystem {
+    runtime::AssetId document;
+    ProjectSystem system;
+    bool remove = false;
+};
+
+struct EditPrefabLink {
+    runtime::AssetId document;
+    PrefabLink link;
+    bool remove = false;
+};
+
 struct AddEntity {
     runtime::AssetId document;
     comp::PrefabNodeId parent;
@@ -34,6 +46,11 @@ struct AddEntity {
 struct DeleteEntity {
     runtime::AssetId document;
     comp::PrefabNodeId node;
+};
+
+struct ReparentPrefabNode {
+    runtime::AssetId document;
+    comp::PrefabNodeId node, parent;
 };
 
 struct SetComponent {
@@ -108,6 +125,17 @@ struct SetSceneParent {
     runtime::SceneNodeId node, parent;
 };
 
+struct RenameSceneNode {
+    runtime::AssetId document;
+    runtime::SceneNodeId node;
+    std::string name;
+};
+
+struct OrderSceneNode {
+    runtime::AssetId document;
+    runtime::SceneNodeId node, before;
+};
+
 struct SetSceneTransform {
     runtime::AssetId document;
     runtime::SceneNodeId node;
@@ -143,10 +171,10 @@ struct SetParameterOverride {
 };
 
 using Command =
-    std::variant<CreateDocument, DeleteDocument, DiscardDocument, RenameDocument, SetEntryScene,
-                 AddEntity, DeleteEntity, SetComponent, DeleteComponent, SetProperty, SetBehavior,
+    std::variant<CreateDocument, DeleteDocument, DiscardDocument, RenameDocument, SetEntryScene, EditSystem, EditPrefabLink,
+                 AddEntity, DeleteEntity, ReparentPrefabNode, SetComponent, DeleteComponent, SetProperty, SetBehavior,
                  DeleteBehavior, AddGraphNode, DeleteGraphNode, ConnectPorts, DisconnectPorts,
-                 AddSceneNode, DeleteSceneNode, SetSceneParent, SetSceneTransform, PlacePrefab,
+                 AddSceneNode, DeleteSceneNode, SetSceneParent, RenameSceneNode, OrderSceneNode, SetSceneTransform, PlacePrefab,
                  SetPrefabParameter, SetComponentOverride, SetParameterOverride>;
 
 struct EditReceipt {

@@ -193,7 +193,32 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);return result;}
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));return result;}
+    private CompletableFuture<Bridge.Reply> sceneGesture(UiPanels.GestureEdit edit){
+        if(!supports(switch(edit.operation()){case 33->"scene-resources";case 34->"scene-systems";default->"scene-gestures";})||snapshot.playing())
+            return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
+        var future=bridge.callAt(edit.generation(),edit.revision(),edit.operation(),edit.arguments().toArray(String[]::new));
+        if(!Set.of("move","cancel").contains(edit.arguments().getFirst()))
+            future.whenComplete((reply,error)->{if(error!=null)edt(()->documentFailure(error));});
+        return future;
+    }
+    private void componentEdit(UiPanels.ComponentEdit edit){
+        if(!supports("component-authoring")||snapshot.playing())return;
+        String selection=Long.toUnsignedString(edit.selectionRevision());
+        String[] args=edit.argument()==null?new String[]{selection,edit.action()}:new String[]{selection,edit.action(),edit.argument()};
+        bridge.callAt(edit.generation(),edit.revision(),30,args)
+            .whenComplete((reply,error)->{if(error!=null)edt(()->documentFailure(error));});
+    }
+    private void hierarchyEdit(UiPanels.HierarchyEdit edit){
+        if(!supports("scene-hierarchy")||snapshot.playing())return;
+        var args=new ArrayList<String>();
+        args.add(edit.action());
+        args.add(Long.toUnsignedString(edit.document()));
+        args.add(Long.toUnsignedString(edit.node()));
+        if(edit.argument()!=null)args.add(edit.argument());
+        bridge.callAt(edit.generation(),edit.revision(),29,args.toArray(String[]::new))
+            .whenComplete((reply,error)->{if(error!=null)edt(()->documentFailure(error));});
+    }
     private CompletableFuture<Bridge.Reply> editField(ScalarInspector.Edit edit){
         if(!supports("scalar-inspector")||snapshot.playing()||!pendingDocumentCloses.isEmpty())return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
         service=Bridge.Service.Loading;refreshDocumentCommands();

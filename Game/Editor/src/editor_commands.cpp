@@ -95,6 +95,28 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
     } else if constexpr (std::is_same_v<C, SetEntryScene>) {
         project.entry_scene = command.document;
         return true;
+    } else if constexpr (std::is_same_v<C, EditSystem>) {
+        const auto matches = [&](const auto &system) { return system.id == command.system.id; };
+        auto *existing = Find(project.systems,matches);
+        if (command.document != command.system.scene || (existing && existing->scene != command.document))
+            return false;
+        if (command.remove)
+            return existing && Erase(project.systems,matches);
+        if (existing)
+            *existing = command.system;
+        else
+            project.systems.push_back(command.system);
+        return true;
+    } else if constexpr (std::is_same_v<C, EditPrefabLink>) {
+        if (command.document != command.link.owner)
+            return false;
+        const auto matches = [&](const auto &link) { return link.id == command.link.id && link.owner == command.document; };
+        if (command.remove)
+            return Erase(project.prefab_links,matches);
+        if (Find(project.prefab_links,matches))
+            return false;
+        project.prefab_links.push_back(command.link);
+        return true;
     } else if constexpr (std::is_same_v<C, DeleteDocument>) {
         return Erase(project.documents,
                      [&](const auto &doc) { return doc.id == command.document; });
@@ -120,13 +142,32 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                 prefab->parameters.push_back(command.parameter);
             return true;
         } else if constexpr (std::is_same_v<C, AddEntity> || std::is_same_v<C, DeleteEntity> ||
+                             std::is_same_v<C, ReparentPrefabNode> ||
                              std::is_same_v<C, SetComponent> ||
                              std::is_same_v<C, DeleteComponent> || std::is_same_v<C, SetProperty> ||
                              std::is_same_v<C, SetBehavior> || std::is_same_v<C, DeleteBehavior>) {
             auto *prefab = std::get_if<comp::PrefabDefinition>(&doc->data);
             if (!prefab)
                 return false;
-            if constexpr (std::is_same_v<C, AddEntity>) {
+            if constexpr (std::is_same_v<C, ReparentPrefabNode>) {
+                auto *source = Node(prefab->root,command.node);
+                if (!source || prefab->root.id == command.node || Node(*source,command.parent) ||
+                    !Node(prefab->root,command.parent))
+                    return false;
+                auto subtree = *source;
+                const auto detach = [&](auto &&self, comp::PrefabNode &parent) -> bool {
+                    if (Erase(parent.children,[&](const auto &child) {return child.id == command.node;}))
+                        return true;
+                    for (auto &child : parent.children)
+                        if (self(self,child))
+                            return true;
+                    return false;
+                };
+                if (!detach(detach,prefab->root))
+                    return false;
+                Node(prefab->root,command.parent)->children.push_back(std::move(subtree));
+                return true;
+            } else if constexpr (std::is_same_v<C, AddEntity>) {
                 if (!command.parent.IsValid()) {
                     if (prefab->root.id.IsValid())
                         return false;
@@ -284,6 +325,19 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                 else
                     scene->placements.push_back(command.placement);
                 return true;
+            } else if constexpr (std::is_same_v<C, OrderSceneNode>) {
+                auto &nodes = scene->scene.nodes;
+                const auto source = std::ranges::find(nodes,command.node,&runtime::SceneNodeSnapshot::id);
+                const auto before = command.before.IsValid()
+                    ? std::ranges::find(nodes,command.before,&runtime::SceneNodeSnapshot::id) : nodes.end();
+                if (source == nodes.end() ||
+                    (command.before.IsValid() && (before == nodes.end() || before->parent != source->parent)))
+                    return false;
+                if (source < before)
+                    std::rotate(source,source+1,before);
+                else if (before < source)
+                    std::rotate(before,source,source+1);
+                return true;
             } else {
                 auto *node = Find(scene->scene.nodes,
                                   [&](const auto &value) { return value.id == command.node; });
@@ -291,6 +345,13 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                     return false;
                 if constexpr (std::is_same_v<C, SetSceneParent>) {
                     node->parent = command.parent;
+                    return true;
+                } else if constexpr (std::is_same_v<C, RenameSceneNode>) {
+                    if (command.name.empty() || command.name.size() > 256 ||
+                        command.name.find_first_not_of(" \t\r\n") == std::string::npos ||
+                        command.name.find_first_of("\t\r\n") != std::string::npos)
+                        return false;
+                    scene->node_names.insert_or_assign(node->id.Raw(), command.name);
                     return true;
                 } else if constexpr (std::is_same_v<C, SetSceneTransform>) {
                     node->local_transform = command.transform;
@@ -306,6 +367,8 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                           [&](const auto &value) { return removed.contains(value.node.Raw()); });
                     Erase(scene->scene.nodes,
                           [&](const auto &value) { return removed.contains(value.id.Raw()); });
+                    for (const auto id : removed)
+                        scene->node_names.erase(id);
                     return true;
                 }
 
@@ -346,8 +409,19 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
                               [&](const auto &doc) { return doc.id == discard->document; });
             if (!live)
                 return Result::Failure(Error("editor.command_target"));
+            std::erase_if(candidate.systems,[&](const auto &s) { return s.scene == discard->document; });
+            std::erase_if(candidate.prefab_links,[&](const auto &link) { return link.owner == discard->document; });
             if (saved) {
                 *live = *saved;
+                if (saved->Kind() == DocumentKind::Scene) {
+                    for (const auto &system : saved_snapshot_->definition.systems)
+                        if (system.scene == discard->document)
+                            candidate.systems.push_back(system);
+                }
+                if (saved->Kind() == DocumentKind::Prefab)
+                    for (const auto &link : saved_snapshot_->definition.prefab_links)
+                        if (link.owner == discard->document)
+                            candidate.prefab_links.push_back(link);
                 allowed_restored_ids = Ids(saved_snapshot_->definition);
             } else {
                 std::erase_if(candidate.documents,
@@ -380,6 +454,10 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
             return Result::Failure(Error("editor.identity_limit"));
     }
 
+    std::stable_sort(candidate.systems.begin(),candidate.systems.end(),
+                     [](const auto &a,const auto &b) { return a.scene.Raw() < b.scene.Raw(); });
+    std::stable_sort(candidate.prefab_links.begin(),candidate.prefab_links.end(),
+                     [](const auto &a,const auto &b) { return a.owner.Raw() < b.owner.Raw(); });
     const auto valid = ValidateProject(candidate, schema_);
     if (!valid)
         return Result::Failure(valid.GetError());
@@ -394,6 +472,8 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
     // folder asset/visual dirty state remains owned by ProjectFolder.
     bool at_save_point = !discarded.empty() && saved_snapshot_ &&
                          candidate.entry_scene == saved_snapshot_->definition.entry_scene &&
+                         candidate.systems == saved_snapshot_->definition.systems &&
+                         candidate.prefab_links == saved_snapshot_->definition.prefab_links &&
                          candidate.documents.size() == saved_documents_.size();
     if (at_save_point)
         for (const auto &doc : candidate.documents) {

@@ -16,7 +16,8 @@ No Computer Use. Owner accepted complete F0 visual checks on 2026-11-06 (195e0c7
 | Discard | Operation 17 → DiscardDocument; restore only the target from the native durable savepoint, retaining other documents/assets/history. No second mutable model. |
 | Assets / viewport | Existing native catalog/cook/leases and Renderer/JNI retained. Asset mutation wiring is F1; picking, gizmos and scene authoring are F2. |
 
-Private IPC is version 3 after F1, with no archive schema/public Framework ABI change.
+Private IPC is version 4 in F2. Scene names, nested Prefab links and system
+assignments are optional native archive fields. The editor reads older project data.
 Process-specific generations reject previous-companion tokens; malformed UTF-16
 never becomes silent replacement UTF-8. Bridge publication and success callbacks
 use the same Platform queue. Drafts stay local until Enter/focus commit, checkbox
@@ -37,7 +38,8 @@ change or Save flush; Escape restores the current native value.
 | F1 implementation and owner acceptance | PASS | Implementation at `695bd40`. Functional/Release/full-engine checks passed on 2026-11-07. Owner confirmed manual acceptance on 2026-11-08. |
 | F1-GATE | PASS | Owner acceptance and functional qualification complete. On 2026-11-08 the owner accepted disk-full and Windows reboot during import as nonblocking NOT RUN backlog items. Historical/external analyzer findings remain classified. |
 | F2.0 native contract | PASS | Scene/Prefab ownership, persistence and IPC gaps audited. Nine existing targeted CTest cases passed. |
-| F2.1–F2.11 / F-I-GATE | NOT RUN | F2.1 hierarchy wiring follows the F2.0 audit. |
+| F2.1–F2.10 | Implementation complete | Targeted native parity, standalone Release, IPC framing and the packaged companion scenario passed. |
+| F2.11 / F2-GATE / F-I-GATE | PARTIAL | Owner UI qualification and the full F-I run remain pending by the owner's requested schedule. |
 
 ## Verification
 
@@ -252,3 +254,35 @@ and SceneDrag, Workspace and Inspector, Core, Demo Edit/ReadPlay, GameCompositio
 and Folder Create/Reopen/Recovery. The F1.9 packaged Scene capture already verifies
 the retained Renderer path with three persisted placements. The remaining IPC
 work is recorded in UI_TECH_ADR.md.
+
+## F2 implementation
+
+Entry commit `46199a9`. The focused SceneView/SceneDrag target passed with
+three persisted Health overrides, nested link cycle rejection and Save/Open
+with an inherited default update and a retained nested override. The Release
+EXE was packaged and IPC v4 passed all 16 framing cases. A short packaged
+companion run verified hierarchy edits, one-edit SceneDrag and Undo, registered
+component defaults and Prefab placement. Computer Use was not used. Full
+engine and owner visual qualification are reserved for the combined F-I run.
+
+| Stage | Wiring and remaining work |
+|---|---|
+| F2.1 | Scene Hierarchy uses native Add/Delete/Rename, KeepLocal reparent, unparent, sibling reorder and Prefab assignment. Context actions and scoped drop submit a single transaction. Tree refresh preserves typed selection and uses existing IDs. Subtree duplicate remains unavailable. |
+| F2.2 | Component Registry IDs and real factory defaults drive Add/Remove. Inspector keeps native scalar validation. Graph links use a compatible native Event Entry and AssetId. |
+| F2.3–F2.4 | The existing native viewport draws bounds, axes, grid, selection and resource sprites. Native SceneView supplies pan/zoom/pick. Numeric local TRS, reset and SceneDrag implement Move, Rotate, Scale and move snapping. Cancel and preview are transient. UI/DPI/capture behavior remains for owner qualification. |
+| F2.5 | Drag a Prefab from Explorer to place it at the native world point. Drop a texture on a placed Prefab or choose it in Inspector. A texture already bound to a Prefab can place that Prefab from an empty-space drop. The existing Sprite binding is definition-scoped and the UI confirms that scope. Creating a standalone sprite from an unbound texture remains unavailable. |
+| F2.6–F2.7 | Prefab child/component authoring stays definition-scoped. Placement fields show definition, override or runtime values. Instance edits and Revert use the existing native override commands. Preview shows the bound root sprite. |
+| F2.8 | Scene parenting and logical reparent of a Prefab's own child nodes preserve identity. Native archive links retain target AssetId and stable link ID. The editor materializes linked definitions for the existing PrefabComposer and Inspector. Per-placement nested overrides persist on deterministic expanded node IDs. A native transaction rejects cycles. Nested Prefab content is logical and uses the root sprite preview. |
+| F2.9 | Scene and World Graph assignments persist with enabled state and stable IDs. Play creates existing Framework SystemInstances for enabled assignments and registers their Graph behaviors. Graph routing uses an existing compatible Event Entry. |
+| F2.10 | Existing native SceneView test extended for three persisted placements, Health 100/150/200, repeated Play/Stop and linked-definition update with a preserved nested instance override. |
+| F2.11 | Owner scenario and full F-I qualification pending for the combined run. |
+
+For the owner run, create a disposable Scene and Prefab, add a registered Health
+component, and choose an imported PNG/WebP. Place three copies from Explorer.
+Use both hierarchy and viewport to select them, then set independent Health
+overrides and local transforms. Drag a gizmo and undo it once. Cancel a second
+gesture with Escape. Reorder and reparent Scene rows, try an invalid cycle, then
+Save and reopen. In Prefab Hierarchy, link a second definition, change its
+default, and check that an explicit nested placement override survives. Exercise
+Scene/World system add, enable and remove with a Graph that has an Event Entry.
+Finish with Play/Stop, Clone, resize and a detached viewport.

@@ -1,4 +1,4 @@
-# UI bridge contract v3
+# UI bridge contract v4
 
 Private presentation protocol, not a public Engine/Framework ABI or an archive
 schema. F-I baseline: `32eef79`; the owner accepted the first document slice
@@ -20,7 +20,7 @@ surrogates; local pre-send failures keep the valid stream Ready. There are at
 most 8 arguments and 32 queued requests; started operations finish atomically,
 queued tasks can be cancelled, backend timeout is 15 seconds.
 
-Request: magic `EPUI` (0x45505549), u16 major **3**, u16 minor 0, u64 correlation,
+Request: magic `EPUI` (0x45505549), u16 major **4**, u16 minor 0, u64 correlation,
 u8 opcode, u64 generation, u64 expected project revision, u16 argument count,
 then strings. A process nonce seeds generation; workspace resets advance it.
 Previous-process references cannot pass optimistic concurrency checks.
@@ -144,6 +144,22 @@ prepare immutable preview payloads on a worker; Renderer uploads before Begin,
 then draws with retained leases/textures. Replaced generations release after
 frame use; closing/reparenting surfaces releases the view resources. Preview
 cache is 128 entries/16 MiB per live view, using reduced pixels and original
-source dimensions for geometry. Full-resolution scene authoring/camera/gizmos
-remain F2; continuous Game View remains F-II/F8. GPU captures qualify actual
-published colors/aspect, not physical mouse/focus/DPI acceptance.
+source dimensions for geometry. Continuous Game View remains F-II/F8.
+
+## F2 authoring operations
+
+| Opcode | Native operation |
+|---|---|
+| 29 | Create, rename, delete, reparent, reorder and assign Prefab on a Scene node. Logical Prefab reparent and nested link edits use the same workspace transaction boundary. |
+| 30 | Selection revision plus native Add/Remove Component, attach a Graph with an eligible Event Entry, or add/delete a logical Prefab child. |
+| 31 | Selection revision plus reset local TRS, or revert the addressed override field by key. |
+| 32 | SceneDrag begin/move/commit/cancel. Pointer and camera values are presentation coordinates. Move publishes an ephemeral snapshot. Commit is one native transform edit. |
+| 33 | Place a registered Prefab at the native viewport world coordinate, or assign an imported texture to the addressed Prefab definition with the expected asset revision. |
+| 34 | Add, remove, enable or change Graph on a persisted Scene/World system. Play uses Framework SystemInstance and the existing scheduler. |
+
+The v4 snapshot adds Prefab IDs to Scene rows, registered component type
+IDs/names, native Scene item bounds and pivots, and system assignments.
+Mutations carry the project generation and expected revision. Inspector edits
+also carry selection revision and keep using operation 16, including native
+local transform fields. Native viewport input maps client coordinates through
+SceneView and returns stable SceneNodeIds. No runtime handles cross IPC.
