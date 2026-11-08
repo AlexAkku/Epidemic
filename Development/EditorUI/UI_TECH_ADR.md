@@ -47,6 +47,31 @@ world data and Prefab bindings are projections, not a second authoring Scene.
 128px previews are intentionally bounded; full-resolution authoring/camera and
 picking remain F2. Physical acceptance is separate from API/GPU qualification.
 
+## F2.0 missing bridge contracts
+
+F2.1 can reuse the current hierarchy rows and typed selection. Extend the
+native snapshot for the missing per-node visibility and placement identity,
+keeping SceneNodeId scoped to its document. Expose only commands supported by
+the native owner. Start with AddSceneNode, DeleteSceneNode, SetSceneParent and
+PlacePrefab through EditorWorkspace. Allocate new IDs natively. Batch child
+creation or placement with its related edits under one expected revision.
+Scene node rename, enabled and subtree duplication need a native contract
+before activation.
+
+Later slices need read projections for local TRS, world bounds and camera
+geometry, plus a command path for native SceneView and SceneDrag gestures.
+Keep gesture state native and commit through SetSceneTransform once per
+completed gesture. Expose component descriptors and per-placement overrides
+through the existing Inspector/Workspace operations as each UI slice needs
+them. Carry document, node, component type, part and property IDs with the
+existing generation/revision checks. The backend rejects stale writes and
+invalid document scope. Java carries display DTOs and input events.
+
+System assignment and nested Prefab asset instances first need native
+persistence and validation. Their absence from the current archive is a domain
+gap beyond exposing a bridge operation. See FI_FEATURE_MATRIX.md for the
+existing owners and retained renderer path.
+
 
 Release qualification found the packaged JBR's MSVCP140 14.29 shadowing the
 VS2026 native companion's STL: actual access violation in std::future/mutex

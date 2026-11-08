@@ -36,7 +36,8 @@ change or Save flush; Escape restores the current native value.
 | F0.7 / F0-GATE | PASS | Owner confirmed the complete F0 visual scenario on 2026-11-06. Automatic checks passed; historical analyzer findings remain separately classified. |
 | F1 implementation and owner acceptance | PASS | Implementation at `695bd40`. Functional/Release/full-engine checks passed on 2026-11-07. Owner confirmed manual acceptance on 2026-11-08. |
 | F1-GATE | PASS | Owner acceptance and functional qualification complete. On 2026-11-08 the owner accepted disk-full and Windows reboot during import as nonblocking NOT RUN backlog items. Historical/external analyzer findings remain classified. |
-| F2 / F-I-GATE | NOT RUN | F2 has not started. |
+| F2.0 native contract | PASS | Scene/Prefab ownership, persistence and IPC gaps audited. Nine existing targeted CTest cases passed. |
+| F2.1–F2.11 / F-I-GATE | NOT RUN | F2.1 hierarchy wiring follows the F2.0 audit. |
 
 ## Verification
 
@@ -214,3 +215,40 @@ surface teardown passed. Logs are in `.ai/logs/`; captures are in
 The Windows token has a filtered Administrators group. Hyper-V denied both
 `Get-VM` and creation of a small test VHD. A separate bounded Windows volume
 and a rebootable Windows guest are needed for the two remaining F1.8 scenarios.
+
+## F2.0 Scene and Prefab contract
+
+Entry commit `aa5b336` closed F1. The audit uses the existing C++ authoring
+owners, archive and viewport. The next change starts with hierarchy wiring.
+
+| Surface | Native ownership and persisted identity |
+|---|---|
+| Scene hierarchy | `SceneCompositionDefinition` owns `SceneSnapshot` and placements. The archive persists the Scene AssetId and each SceneNodeId, parent, local TRS, mobility, visibility and optional local bounds. `CreateSceneComposition` maps authoring IDs to runtime nodes, attaches parents with KeepLocal and derives world transforms/bounds. A Scene node is a spatial record. A placement on that node references the Prefab AssetId and carries overrides. |
+| Prefab definition | `PrefabDefinition` owns a logical tree of PrefabNodeIds and an archetype per node. The archive persists children, parameters, component type/part, property IDs and behavior bindings. `UiSelection` addresses a component by document, node, type and part. Logical children have no persisted spatial TRS or reference to an independent nested Prefab definition. |
+| Placement overrides | `SetParameterOverride` targets a placement and parameter ID. `SetComponentOverride` targets its Prefab node, component type, part and property ID. Both verify the expected Prefab and patch only the addressed override. Reset erases that entry so the definition value applies. |
+| Runtime instances | `PlaySession` takes the native snapshot, registers archetypes and freezes EntityService, builds Scene spatial services, registers graphs and Prefabs, then calls `PrefabComposer::Spawn` for each placement with its overrides. The composer plans and validates through ComponentRegistry, creates fresh EntityService entities, attaches prepared components and behaviors, and rolls back failed instantiation. Play binds the spawned root entity to the runtime node for that placement. Runtime handles stay inside Play. |
+| Systems | Framework `SystemInstance` supports Scene and World scopes through GraphBehaviorService and the existing scheduler. `Game/Composition/tests/system_instance_tests.cpp` covers separate lifetimes and event routing. The current project archive and `PlaySession` have no persisted Scene/World system assignment path. F2.9 needs that native owner contract before enabling edits. |
+| Scene rendering and input | The companion derives world items from native `SceneView`. `UiPanels.scene` feeds the projected sprite DTOs to `NativeViewport` and the same `EpidemicUiViewport` JNI/JAWT DLL and D3D11/D2D Renderer qualified in U and F1. `SceneView` already owns DIP/world conversion, fit, pan/zoom and hit testing. `SceneDrag` owns local/world gizmo preview, staleness checks and commit/cancel. F1 feeds a sprite preview into the renderer. F2 must connect editor camera and gestures to these existing contracts. |
+
+Native `EditorWorkspace::Execute` and `EditorProject` validate the expected
+revision, apply the whole command batch to a candidate, validate graph and
+persistence invariants, then publish one history step. Use one batch for child
+creation and placement, one validated commit for a completed drag, and zero edits
+for a cancelled or stale drag. Undo/Redo restore IDs and links. Reparenting uses
+KeepLocal, preserves the node and placement IDs, and rejects invalid parents,
+cycles and cross-document input. DeleteSceneNode removes the subtree and its
+placements as one edit.
+
+The current P03 path supports one typed selection and existing PlacePrefab
+transactions. It has no dedicated subtree duplication or Scene node rename
+command. Scene nodes store visibility and local TRS, with no authoring name or
+enabled field. Prefab preview draws the bound root sprite. Spatial Prefab
+children and nested asset instances are limited by the archive contract above.
+The native placement-to-runtime path is present and covered by CTest. Live
+runtime presentation is a separate integration.
+
+Verification on 2026-11-08: **9/9 targeted CTest cases passed** across SceneView
+and SceneDrag, Workspace and Inspector, Core, Demo Edit/ReadPlay, GameComposition
+and Folder Create/Reopen/Recovery. The F1.9 packaged Scene capture already verifies
+the retained Renderer path with three persisted placements. The remaining IPC
+work is recorded in UI_TECH_ADR.md.
