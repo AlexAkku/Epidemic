@@ -29,6 +29,11 @@ Then Q0 reliability/performance/security, Q1 mandatory independently runnable We
 
 Known P04 debt must follow F1/F2, not disappear during U: configured mounts, Unicode/collision/TOCTOU policy, rich Explorer UI, true mixed DPI, native dialogs/focus, large-scale assets/security, visible V2/V3 and pilot. Preserve stable IDs, archive readers, committed fixtures, source recovery, Resource leases, last-good and Play generation isolation throughout.
 
+F1.8 qualification backlog, accepted as nonblocking by the owner on 2026-11-08:
+
+- **NOT RUN** — Import to a full isolated Windows volume. Check error reporting, preservation of the saved catalog, absence of partial publication and successful retry after freeing space.
+- **NOT RUN** — Reboot an isolated Windows guest during an unpublished import. Check saved project and asset integrity, recovery and retry after reboot.
+
 ## F0 current scope
 
 The owner accepted `719970a` document bindings before the F0 completion batch.

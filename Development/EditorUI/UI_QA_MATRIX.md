@@ -178,7 +178,10 @@ It verified Windows junction rejection, sharing-denied source handling,
 128-waiting-job backpressure and cancellation, and saved-project recovery
 with successful retry after an unpublished import was interrupted.
 
-F1-GATE remains PARTIAL under the full specification. The earlier owner-only
-qualification note omitted unverified F1.8 fault scenarios, per-format
-boundary cases and separate F1.9 evidence. See the F1 completion audit in
-FI_FEATURE_MATRIX.md. F2 has not started.
+Follow-up qualification PASS for destination ACL denial and retry, all five
+format boundaries in F1.8a, and F1.9 Scene GPU captures and direct source/cooked
+SHA-256 comparisons. Product code remains at the qualified `695bd40` state.
+**F1-GATE PASS, 2026-11-08.** The owner accepted disk-full and Windows reboot
+during import as nonblocking backlog checks, both NOT RUN. Hyper-V access and
+small VHD creation were denied by Windows. See the F1 completion audit in
+FI_FEATURE_MATRIX.md and the backlog in UI_FEATURE_MIGRATION_BACKLOG.md.

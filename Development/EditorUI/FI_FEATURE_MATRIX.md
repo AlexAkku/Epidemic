@@ -35,7 +35,7 @@ change or Save flush; Escape restores the current native value.
 | F0.6 | PASS automatic | Native Play/Stop, authoring isolation, editing disabled while running, repeated Stop/close. Live Game View belongs to F-II/F8. |
 | F0.7 / F0-GATE | PASS | Owner confirmed the complete F0 visual scenario on 2026-11-06. Automatic checks passed; historical analyzer findings remain separately classified. |
 | F1 implementation and owner acceptance | PASS | Implementation at `695bd40`. Functional/Release/full-engine checks passed on 2026-11-07. Owner confirmed manual acceptance on 2026-11-08. |
-| F1-GATE (full specification) | PARTIAL | Owner acceptance complete. Remaining qualification evidence is listed in the F1 audit below. Historical/external analyzer findings remain classified. |
+| F1-GATE | PASS | Owner acceptance and functional qualification complete. On 2026-11-08 the owner accepted disk-full and Windows reboot during import as nonblocking NOT RUN backlog items. Historical/external analyzer findings remain classified. |
 | F2 / F-I-GATE | NOT RUN | F2 has not started. |
 
 ## Verification
@@ -191,9 +191,9 @@ code was unchanged during this review.
 | F1.4 metadata, previews and references | PASS. Asset Details capture, alpha and aspect tests, current native metadata and stable reference navigation. FI-018. |
 | F1.5–F1.6 lifecycle | PASS. Stable IDs, reference-aware delete/restore, history, Save/Open and Clone. FI-019–021 and FI-026. |
 | F1.7 watch and last-good | PASS for canonical project Content. Native debounce, same-size/same-mtime replacement, stable ID, last-good and recovery covered by AssetTests and P04 async tests. FI-022–024. |
-| F1.8 safety and performance | PARTIAL. Traversal, case collision, Unicode, long paths, junction escape, bounded queue, read sharing violation and companion restart after interrupted import verified. Real disk-full, destination ACL denial and Windows reboot during import have no recorded run. FI-025 path coverage passed. |
-| F1.8a additional formats | Implementation PASS. PNG, static WebP, PCM WAV, TrueType TTF and CFF OTF imported, reopened and reimported with invalid-source recovery. FI-026a. Full per-format boundary coverage for oversized input and in-flight cancellation has no recorded run. |
-| F1.9 gate evidence | PARTIAL. Owner workflow, native stable ID and fingerprint/cooked-key change, Asset Details capture, Prefab GPU sprite before/after, cancellation and persisted P04 model verified. Separate before/after Scene sprite capture and direct cooked byte checksum comparison have no recorded run. |
+| F1.8 safety and performance | PASS under the owner-approved gate exception. Traversal, case collision, Unicode, long paths, junction escape, bounded queue, denied source sharing, destination ACL denial and companion restart after interrupted import verified. Disk-full and Windows reboot during import remain NOT RUN in the backlog. FI-025 path coverage passed. |
+| F1.8a additional formats | PASS. PNG, static WebP, PCM WAV, TrueType TTF and CFF OTF imported, reopened and reimported with invalid-source recovery. Each format rejected mismatched bytes and a 128 MiB + 1 byte source, and cancelled during a confirmed partial staging copy without publishing or leaving staging files. FI-026a. |
+| F1.9 gate evidence | PASS. Owner workflow, native stable ID, Asset Details capture, Prefab and Scene GPU before/after, source and cooked SHA-256 changes, cancellation and persisted P04 model verified. Scene proof used the current Scene panel, packaged viewport DLL/runtime and native snapshots from a P04 copy with three Prefab placements. |
 
 Closure audit on 2026-11-08 used the packaged Release companion on a disposable
 project. It rejected a destination junction with zero writes outside Content,
@@ -201,3 +201,16 @@ reported a locked source without publishing it, rejected the 129th waiting
 job and cancelled the queue, and reopened the saved project after the companion
 was terminated before import publication. The interrupted destination was
 absent and retry succeeded. See `Temp/U/logs/f1-closure-audit.stdout.log`.
+
+The follow-up `f1-remaining-native` run verified Windows `ERROR_ACCESS_DENIED`
+on private staging, unchanged catalog on failure and successful retry after
+ACL restoration. `f1-scene-proof` captured three unclipped sprites before and
+after reimport, each 89–90×45 pixels, plus Asset Details. AssetId
+`4152778353207564332` remained stable while the native fingerprint, generation,
+cooked key and both file SHA-256 digests changed. Native resource invariants and
+surface teardown passed. Logs are in `.ai/logs/`; captures are in
+`Temp/U/f1-scene-proof-adc146b518194109b1b8574221134414/captures/`.
+
+The Windows token has a filtered Administrators group. Hyper-V denied both
+`Get-VM` and creation of a small test VHD. A separate bounded Windows volume
+and a rebootable Windows guest are needed for the two remaining F1.8 scenarios.
