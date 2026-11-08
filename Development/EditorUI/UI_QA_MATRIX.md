@@ -105,7 +105,7 @@ PASS: owner confirmed visual acceptance of the complete F0 batch on 2026-11-06. 
 Picking/gizmos, Graph authoring and continuous Game View remain later phases; live Game View is F-II/F8 under the current task.
 
 
-**F1 implementation and automatic functional qualification complete; owner visual NOT RUN.**
+**F1 implementation, automatic functional qualification and owner manual acceptance complete.**
 Starting point `195e0c7`, following confirmed F0-GATE PASS. No Computer Use.
 
 PASS current native/common/UI contracts and IPC v3 adversarial cases (15).
@@ -172,5 +172,13 @@ activation and crash/stale-profile restart, full current engine build and CTest
 `Temp/U/f1-engine-tests.xml`; logs: `Temp/U/logs/f1-final2.*`.
 Polling84samples p50=4.832ms/p95=8.163ms; EDT heartbeat p95=.145ms.
 Historical analyzer findings remain classified, not suppressed or reported PASS.
-F1-GATE is PARTIAL only pending owner visual acceptance using FI_FEATURE_MATRIX.md;
-F2 has not started. No Computer Use was performed.
+Owner manual acceptance PASS, 2026-11-08, for implementation commit `695bd40`.
+Closure audit `f1-closure-audit` PASS, 2.88s, peak owned memory 39.55MiB.
+It verified Windows junction rejection, sharing-denied source handling,
+128-waiting-job backpressure and cancellation, and saved-project recovery
+with successful retry after an unpublished import was interrupted.
+
+F1-GATE remains PARTIAL under the full specification. The earlier owner-only
+qualification note omitted unverified F1.8 fault scenarios, per-format
+boundary cases and separate F1.9 evidence. See the F1 completion audit in
+FI_FEATURE_MATRIX.md. F2 has not started.

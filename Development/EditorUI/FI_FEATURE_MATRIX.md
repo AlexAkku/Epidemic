@@ -34,8 +34,9 @@ change or Save flush; Escape restores the current native value.
 | F0.5 | PASS automatic | Flush-before-Save; native tab/floating Save/Discard/Cancel, in-flight edit/Save ordering, isolated discard, all-window project close. |
 | F0.6 | PASS automatic | Native Play/Stop, authoring isolation, editing disabled while running, repeated Stop/close. Live Game View belongs to F-II/F8. |
 | F0.7 / F0-GATE | PASS | Owner confirmed the complete F0 visual scenario on 2026-11-06. Automatic checks passed; historical analyzer findings remain separately classified. |
-| F1 / F1-GATE | PARTIAL | Implementation complete; final functional/Release/full-engine checks PASS on 2026-11-07; own analyzer findings fixed, historical/external raw failures classified; only owner visual acceptance NOT RUN. |
-| F2 / F-I-GATE | NOT RUN | F2 starts after owner acceptance of F1. |
+| F1 implementation and owner acceptance | PASS | Implementation at `695bd40`. Functional/Release/full-engine checks passed on 2026-11-07. Owner confirmed manual acceptance on 2026-11-08. |
+| F1-GATE (full specification) | PARTIAL | Owner acceptance complete. Remaining qualification evidence is listed in the F1 audit below. Historical/external analyzer findings remain classified. |
+| F2 / F-I-GATE | NOT RUN | F2 has not started. |
 
 ## Verification
 
@@ -148,8 +149,9 @@ these are not represented as analyzer PASS. No Computer Use was performed.
 
 ## Owner verification: F1
 
-Run `Temp/U/distribution/EpidemicEditor/EpidemicEditor.exe` maximized, with a new
-disposable Cyrillic-path project. These new F1 visual checks are **NOT RUN**.
+The owner confirmed the F1 manual verification on 2026-11-08. The checklist
+below is the procedure supplied with implementation commit `695bd40`. Run the
+standalone EXE maximized with a disposable Cyrillic-path project to reproduce it.
 
 1. Create a Prefab. Import multiple PNG/static WebP files (include non-square
    alpha), a supported PCM WAV and a TTF/OTF. Empty destination means Content
@@ -175,4 +177,27 @@ disposable Cyrillic-path project. These new F1 visual checks are **NOT RUN**.
    reconnect and closing detached/native views. Clone a saved project into a new
    directory; open the clone, verify independent source/cooked data and IDs.
 
-F1-GATE stays PARTIAL until this owner's visual acceptance; F2 has not started.
+## F1 completion audit
+
+Reviewed the specification against `695bd40`, the existing native regression
+sources, the common UI/IPC contracts, and the packaged Release evidence. Product
+code was unchanged during this review.
+
+| Requirement | Status and evidence |
+|---|---|
+| F1.0 native ownership | PASS. Owner and query/command mapping above and in UI_BRIDGE_CONTRACT.md. Protected P04 fixtures passed. |
+| F1.1–F1.2 Explorer and import | PASS. Common catalog/selection/import tests plus owner acceptance of Explorer, File Picker, Unicode and Cancel. FI-013–015 and FI-017. |
+| F1.3 queue and cancellation | PASS. Native job outcomes, cancellation before publication and explicit 128-waiting-job backpressure. FI-016 and closure audit. |
+| F1.4 metadata, previews and references | PASS. Asset Details capture, alpha and aspect tests, current native metadata and stable reference navigation. FI-018. |
+| F1.5–F1.6 lifecycle | PASS. Stable IDs, reference-aware delete/restore, history, Save/Open and Clone. FI-019–021 and FI-026. |
+| F1.7 watch and last-good | PASS for canonical project Content. Native debounce, same-size/same-mtime replacement, stable ID, last-good and recovery covered by AssetTests and P04 async tests. FI-022–024. |
+| F1.8 safety and performance | PARTIAL. Traversal, case collision, Unicode, long paths, junction escape, bounded queue, read sharing violation and companion restart after interrupted import verified. Real disk-full, destination ACL denial and Windows reboot during import have no recorded run. FI-025 path coverage passed. |
+| F1.8a additional formats | Implementation PASS. PNG, static WebP, PCM WAV, TrueType TTF and CFF OTF imported, reopened and reimported with invalid-source recovery. FI-026a. Full per-format boundary coverage for oversized input and in-flight cancellation has no recorded run. |
+| F1.9 gate evidence | PARTIAL. Owner workflow, native stable ID and fingerprint/cooked-key change, Asset Details capture, Prefab GPU sprite before/after, cancellation and persisted P04 model verified. Separate before/after Scene sprite capture and direct cooked byte checksum comparison have no recorded run. |
+
+Closure audit on 2026-11-08 used the packaged Release companion on a disposable
+project. It rejected a destination junction with zero writes outside Content,
+reported a locked source without publishing it, rejected the 129th waiting
+job and cancelled the queue, and reopened the saved project after the companion
+was terminated before import publication. The interrupted destination was
+absent and retry succeeded. See `Temp/U/logs/f1-closure-audit.stdout.log`.
