@@ -39,7 +39,7 @@ change or Save flush; Escape restores the current native value.
 | F1-GATE | PASS | Owner acceptance and functional qualification complete. On 2026-11-08 the owner accepted disk-full and Windows reboot during import as nonblocking NOT RUN backlog items. Historical/external analyzer findings remain classified. |
 | F2.0 native contract | PASS | Scene/Prefab ownership, persistence and IPC gaps audited. Nine existing targeted CTest cases passed. |
 | F2.1–F2.10 | Implementation complete | Targeted native parity, standalone Release, IPC framing and the packaged companion scenario passed. |
-| F2.11 / F2-GATE / F-I-GATE | PARTIAL | Owner UI qualification and the full F-I run remain pending by the owner's requested schedule. |
+| F2.11 / F2-GATE / F-I-GATE | PARTIAL | Full engine CTest passed on 2026-11-10. Owner visual qualification and remaining F-I gate checks are tracked separately. |
 
 ## Verification
 
@@ -91,10 +91,13 @@ Owner confirmed these F0 steps PASS on 2026-11-06. No Computer Use by the agent.
 4. Focus a noneditable heading before global Ctrl+Z/Ctrl+Y (text fields retain
    text-editing shortcuts). One edit undoes/redoes once; two Inspector views agree.
    Save All also flushes the active valid draft.
-5. Modify two documents. Close one tab or floating window: Cancel retains it;
-   Discard restores only that document, leaving the other dirty; Save All
-   completes before closing the requested view. Try immediate Save→close and
-   closing just after a field commit. Check dirty marks and window titles.
+5. Save All, then rename a temporary Scene and change an Enemy Prefab field.
+   Use X on the tab of the renamed Scene itself. Check its header for Unsaved
+   before closing. Cancel retains the tab. Click X again and choose Discard
+   Document: reopen the Scene and check its saved name, then check Enemy is
+   still dirty. Repeat with Save All and in a floating window. A clean document
+   or a generic Scene panel can close without prompting. Asset edits are saved
+   at project scope and do not dirty individual document tabs.
 6. Save All (Ctrl+Shift+S), restart/reopen: names, IDs and scalar values persist;
    revision tokens may be rebuilt. Close Project with multiple Scene peer windows:
    document views close and the launcher is clean.
@@ -159,14 +162,17 @@ standalone EXE maximized with a disposable Cyrillic-path project to reproduce it
 1. Create a Prefab. Import multiple PNG/static WebP files (include non-square
    alpha), a supported PCM WAV and a TTF/OTF. Empty destination means Content
    root; a nested destination parent must already exist. Cancel picker/destination:
-   no imported row or dirty change. Repeat an existing destination: explicit
-   per-file failure in Problems, no silent duplicate.
+   no imported row or dirty change. Repeat the same destination for one file:
+   Problems opens with that file's destination and the rejection. To update an
+   existing indexed file, use Reimport.
 2. Compare Explorer Tree/List/Grid; Enter-to-search, clear filter, select assets.
    Check real ID/type/generation/source/cooked metadata, long/Cyrillic paths,
    aspect/alpha/Fit preview, retained selection/scroll and metadata clipboard copy.
    WAV/font have metadata/IDs without pretending image preview or playback.
-3. Assign a PNG/WebP to the Prefab, open its canvas: native sprite appears. Move /
-   Rename within Content and Duplicate: original ID/refs stay, duplicate ID differs.
+3. Select the imported file under Content, then Assign to Prefab and open its
+   canvas. Use Rename / Move and Duplicate on the same imported file. Original
+   ID/refs stay and Duplicate proposes a separate Copy filename. Document
+   Rename is a separate command for Scene, Prefab and Graph.
    Undo/Redo and Save All. Asset References navigates to the actual Prefab document.
 4. Open Asset Details and the document in independent windows. Edit the canonical
    imported file under the project's **Content**, not only its external original.
@@ -275,7 +281,7 @@ engine and owner visual qualification are reserved for the combined F-I run.
 | F2.8 | Scene parenting and logical reparent of a Prefab's own child nodes preserve identity. Native archive links retain target AssetId and stable link ID. The editor materializes linked definitions for the existing PrefabComposer and Inspector. Per-placement nested overrides persist on deterministic expanded node IDs. A native transaction rejects cycles. Nested Prefab content is logical and uses the root sprite preview. |
 | F2.9 | Scene and World Graph assignments persist with enabled state and stable IDs. Play creates existing Framework SystemInstances for enabled assignments and registers their Graph behaviors. Graph routing uses an existing compatible Event Entry. |
 | F2.10 | Existing native SceneView test extended for three persisted placements, Health 100/150/200, repeated Play/Stop and linked-definition update with a preserved nested instance override. |
-| F2.11 | Owner scenario and full F-I qualification pending for the combined run. |
+| F2.11 | Full engine CTest and packaged smoke passed. See the updated owner retest below and UI_QA_MATRIX.md. |
 
 For the owner run, create a disposable Scene and Prefab, add a registered Health
 component, and choose an imported PNG/WebP. Place three copies from Explorer.
@@ -286,3 +292,27 @@ Save and reopen. In Prefab Hierarchy, link a second definition, change its
 default, and check that an explicit nested placement override survives. Exercise
 Scene/World system add, enable and remove with a Graph that has an Event Entry.
 Finish with Play/Stop, Clone, resize and a detached viewport.
+
+## Owner retest after the 2026-11-10 fixes
+
+Use the updated standalone image. Close the previous editor window before
+opening this build with the normal profile.
+
+1. Open a Scene, then select an imported file under Content. Try Rename / Move,
+   Duplicate, Reimport and Delete. Restore the deleted row. Check that each
+   command applies to the row and that returning from an asset dialog keeps
+   that asset selected.
+2. Import the same file into the same destination. Problems should open and
+   name the destination. Importing a second copy into another folder is valid.
+3. Save All, rename an open Scene document, and change a field in Enemy
+   (a Prefab). Click X on the renamed Scene's own tab while it says Unsaved.
+   Cancel keeps it open. Discard Document closes it and restores the saved name.
+   Enemy's edit remains. Reopen the Scene and repeat with Save All.
+4. With several central tabs open, scroll over the Scene grid, then over the
+   tab strip. The grid gesture zooms Scene. Tab-strip scrolling stays available
+   over the tabs. Save, Undo, Redo and Play remain in the merged main toolbar
+   when switching documents.
+
+The registered example Health points range is 0–10000 inclusive.
+`component.value_rejected` for -1 or 112322 is expected. A rejected draft
+blocks Save until it is corrected or cancelled with Escape.

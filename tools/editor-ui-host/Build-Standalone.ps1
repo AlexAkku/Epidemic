@@ -7,6 +7,7 @@ param(
     [switch]$StandardOpenJdk,
     [ValidateSet('Debug','Release')][string]$Configuration='Release',
     [switch]$NoPackage,
+    [switch]$SideBySide,
     [switch]$Run,
     [switch]$Smoke
 )
@@ -17,8 +18,10 @@ if((Get-Content "$jdk/release" -Raw) -notmatch 'JAVA_RUNTIME_VERSION="21.0.7\+6-
 $productRoot=Join-Path $root 'Temp/U/standalone'
 $classes=Join-Path $root 'Temp/U/standalone-classes'
 $build=Join-Path $root 'Temp/b/ui-host'
+$destination=if($SideBySide){Join-Path $root ('Temp/U/verification-images/'+[guid]::NewGuid().ToString('N'))}else{Join-Path $root 'Temp/U/distribution'}
+$image=[IO.Path]::GetFullPath((Join-Path $destination 'EpidemicEditor'))
 if(-not $NoPackage){
-    $runningImage=[IO.Path]::GetFullPath((Join-Path $root 'Temp/U/distribution/EpidemicEditor/EpidemicEditor.exe'))
+    $runningImage=Join-Path $image 'EpidemicEditor.exe'
     $running=@(Get-CimInstance Win32_Process -Filter "Name='EpidemicEditor.exe'" | Where-Object {$_.ExecutablePath -eq $runningImage})
     if($running.Count){throw 'Close the running standalone EpidemicEditor before rebuilding its app image. No distribution files were changed.'}
 }
@@ -104,13 +107,19 @@ if(-not $NoPackage){
         & "$jdk/bin/jlink.exe" --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --output $runtime
         if($LASTEXITCODE){throw 'OpenJDK runtime image failed'}
     }
-    $destination=Join-Path $root 'Temp/U/distribution'
-    $image=[IO.Path]::GetFullPath((Join-Path $destination 'EpidemicEditor'))
-    if($image -ne [IO.Path]::GetFullPath((Join-Path $root 'Temp/U/distribution/EpidemicEditor'))){throw 'Unexpected generated product path'}
+    if($SideBySide -and (Test-Path -LiteralPath $destination)){throw 'Side-by-side image destination already exists'}
+    if(-not $SideBySide -and $image -ne [IO.Path]::GetFullPath((Join-Path $root 'Temp/U/distribution/EpidemicEditor'))){throw 'Unexpected generated product path'}
     # Recheck after compilation: the user may have launched the previous image meanwhile.
     $running=@(Get-CimInstance Win32_Process -Filter "Name='EpidemicEditor.exe'" | Where-Object {$_.ExecutablePath -eq (Join-Path $image 'EpidemicEditor.exe')})
     if($running.Count){throw 'Standalone app started during the build; close it before packaging. Existing distribution was preserved.'}
-    if(Test-Path -LiteralPath $image){Remove-Item -LiteralPath $image -Recurse -Force}
+    if(-not $SideBySide -and (Test-Path -LiteralPath $image)){
+        $resolved=(Resolve-Path -LiteralPath $image).ProviderPath
+        if($resolved -ne $image -or ((Get-Item -LiteralPath $image).Attributes -band [IO.FileAttributes]::ReparsePoint) -or
+            ((Get-Item -LiteralPath $destination).Attributes -band [IO.FileAttributes]::ReparsePoint)){
+            throw 'Unexpected resolved product path'
+        }
+        Remove-Item -LiteralPath $image -Recurse -Force
+    }
     $arguments=@('--type','app-image','--name','EpidemicEditor','--app-version','0.3.0','--vendor','Epidemic Engine','--dest',$destination,'--input',$productRoot,'--main-jar','lib/epidemic.jar','--main-class','epidemic.launcher.Main','--runtime-image',$runtime)
     $packageInput=Join-Path $root 'Temp/U/standalone-image-input'
     if([IO.Path]::GetFullPath($packageInput) -ne [IO.Path]::GetFullPath((Join-Path $root 'Temp/U/standalone-image-input'))){throw 'Unexpected generated packaging directory'}

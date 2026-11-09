@@ -130,5 +130,9 @@ public final class ScalarInspector extends JPanel {
         }
         return CompletableFuture.allOf(work.toArray(CompletableFuture[]::new));
     }
+    public boolean hasDraft(long document){
+        return snapshot!=null&&snapshot.selection().document()==document&&rows.values().stream().anyMatch(row->
+            row.pending||row.draft!=null&&row.input instanceof JTextField text&&!text.getText().equals(row.field.value()));
+    }
     public void cancelDrafts(){for(Row row:rows.values())if(!row.pending){row.draft=null;row.error.setText(" ");refreshValue(row);}}
 }

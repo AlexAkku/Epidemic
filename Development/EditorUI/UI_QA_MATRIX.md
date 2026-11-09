@@ -185,3 +185,33 @@ SHA-256 comparisons. Product code remains at the qualified `695bd40` state.
 during import as nonblocking backlog checks, both NOT RUN. Hyper-V access and
 small VHD creation were denied by Windows. See the F1 completion audit in
 FI_FEATURE_MATRIX.md and the backlog in UI_FEATURE_MIGRATION_BACKLOG.md.
+
+## F-I owner feedback fixes
+
+2026-11-10: owner confirmed Unicode document creation/rename and scalar
+editing. Reported asset actions losing selection, duplicate import not
+surfacing in Problems, Scene wheel moving the tab strip, and tab X bypassing
+the dirty prompt. Keep owner retest separate from automatic evidence.
+
+PASS packaged Platform smoke. The actual tab label action defers during a
+pending edit and Cancel keeps the tab. Floating Cancel/Save/Discard preserves
+the other dirty document. Reimport button uses the selected asset ID and a
+destination conflict selects Problems. Merged toolbar is visible in the
+captured frame. Play/Stop, reconnect and surface shutdown passed with zero
+fatal diagnostics. The first attempt exposed an unsupported Platform
+action-group enumeration. The rerun used the supported ActionManager path.
+
+PASS packaged F2 companion scenario and 16 protocol cases. A separate native
+Scene replay on a P04 copy consumed a dispatched wheel event, changed camera
+scale, and captured three unclipped 208×103 sprites before and after reimport
+with unchanged AssetId and changed source/cooked SHA-256. No physical mouse
+operation was inferred from the programmatic dispatch.
+
+PASS common UI/native contracts on the same packaged companion, including
+protected P04 data, scalar drafts and discard, all five format fixtures,
+asset lifecycle, last-good, cancellation, clone/reopen and writer recovery.
+
+PASS full current engine build and CTest **161/161**, zero failed, disabled
+or skipped. Real test time 323.44s. `fi-post-release` completed in 664.75s
+with peak owned memory 3082.13MiB. JUnit is `Temp/U/fi-engine-tests.xml`.
+Owner visual retest is tracked in FI_FEATURE_MATRIX.md. F-I-GATE remains PARTIAL.

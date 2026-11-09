@@ -81,6 +81,7 @@ public final class UiPanels {
     }
     public java.util.concurrent.CompletableFuture<Void> flushDrafts(){return java.util.concurrent.CompletableFuture.allOf(inspectors.stream().map(ScalarInspector::flush).toArray(java.util.concurrent.CompletableFuture[]::new));}
     public void cancelDrafts(long document){if(snapshot!=null&&snapshot.selection().document()==document)inspectors.forEach(ScalarInspector::cancelDrafts);}
+    public boolean hasDraft(long document){return inspectors.stream().anyMatch(inspector->inspector.hasDraft(document));}
     public void documentCommandsEnabled(boolean enabled) {
         documentCommandsEnabled=enabled;documentButtons.forEach(button->button.setEnabled(enabled));
     }
@@ -228,7 +229,7 @@ public final class UiPanels {
         JToolBar tools = new JToolBar(); tools.setFloatable(false);tools.setLayout(new GridLayout(0,4,4,4));
         boolean sceneEditor=id.startsWith("scene.editor");
         JButton fit=new JButton("Fit"),reset=new JButton("Reset Transform");
-        JCheckBox snap=new JCheckBox("Move Snap (1 unit)"),grid=new JCheckBox("Grid",true);
+        JCheckBox snap=new JCheckBox("Snap (1 unit)"),grid=new JCheckBox("Grid",true);
         var toolButtons=new ArrayList<JToggleButton>();
         if(sceneEditor){
             tools.add(fit);
@@ -340,6 +341,7 @@ public final class UiPanels {
             else {active=null;gestureCommand.apply(edit);}
         }
         @Override public void mouseWheelMoved(MouseWheelEvent e){
+            e.consume();
             if(active==null)viewport.zoom(e.getX(),e.getY(),-e.getPreciseWheelRotation());
         }
         private GestureEdit motion(String action,MouseEvent e){
@@ -379,7 +381,7 @@ public final class UiPanels {
         panel.add(header, BorderLayout.NORTH); panel.add(browser);
         JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
         JButton importButton=Theme.button("Import…",importPicker);assetButtons.add(importButton);buttons.add(importButton);
-        JButton create=new JButton("New Document…"),rename=new JButton("Rename Document…");
+        JButton create=new JButton("New Document…"),rename=new JButton("Rename Doc…");
         JPopupMenu kinds=new JPopupMenu();
         for(int kind=0;kind<3;kind++) {
             final int type=kind;JMenuItem item=new JMenuItem(new String[]{"Scene","Prefab","Graph"}[kind]);
@@ -388,7 +390,37 @@ public final class UiPanels {
         create.addActionListener(event->kinds.show(create,0,create.getHeight()));
         rename.addActionListener(event->renameDocument.run());
         for(JButton button:List.of(create,rename)){button.setEnabled(documentCommandsEnabled);documentButtons.add(button);buttons.add(button);}
-        for(String name:List.of("Rename / Move","Duplicate","Reimport","Delete","Restore","Assign to Prefab","Watch")){JButton button=Theme.button(name,()->assetCommand.accept(name,snapshot!=null&&snapshot.selection().kind()==6?snapshot.selection().element():0L));assetButtons.add(button);buttons.add(button);}
+        Supplier<Bridge.Asset> selectedAsset=()->{
+            Object row;
+            if(mode.getSelectedItem().equals("Tree"))
+                row=tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null;
+            else row=list.getSelectedValue();
+            return row instanceof AssetRow asset?asset.asset():null;
+        };
+        Map<String,JButton> assetEdits=new LinkedHashMap<>();
+        for(String name:List.of("Rename / Move","Duplicate","Reimport","Delete","Restore","Assign to Prefab")){
+            var button=Theme.button(name,()->{
+                var selected=selectedAsset.get();
+                if(selected!=null)assetCommand.accept(name,selected.id());
+            });
+            button.setName("asset."+name);
+            assetEdits.put(name,button);buttons.add(button);
+        }
+        JButton watch=Theme.button("Watch Content…",()->assetCommand.accept("Watch",0L));
+        assetButtons.add(watch);buttons.add(watch);
+        Runnable updateAssetActions=()->{
+            var selected=selectedAsset.get();
+            boolean ready=interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()&&selected!=null;
+            assetEdits.forEach((name,button)->button.setEnabled(ready&&switch(name){
+                case "Restore"->selected.trashed();
+                case "Assign to Prefab"->texture(selected);
+                default->!selected.trashed();
+            }));
+        };
+        authoringControls.add(updateAssetActions);
+        mode.addActionListener(event->updateAssetActions.run());
+        list.addListSelectionListener(event->updateAssetActions.run());
+        tree.addTreeSelectionListener(event->updateAssetActions.run());
         panel.add(buttons, BorderLayout.SOUTH);
         Runnable rebuild = () -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode(snapshot == null ? "Choose a project" : snapshot.title());
@@ -434,17 +466,20 @@ public final class UiPanels {
         };
         structure(value -> rebuild.run()); search.addActionListener(event -> {assetCommand.accept("Search:"+search.getText(),0L);rebuild.run();});internal.addActionListener(event->rebuild.run());
         observe(value->{
-            if(value==null)return;
-            for(int i=0;i<listing.size();i++){Object row=listing.get(i);if(row instanceof DocRow doc&&doc.document().id()==value.selection().document() || row instanceof AssetRow asset&&value.selection().kind()==6&&asset.asset().id()==value.selection().element()){list.setSelectedIndex(i);break;}}
+            if(value==null){updateAssetActions.run();return;}
+            int selectedIndex=-1;
+            for(int i=0;i<listing.size();i++){Object row=listing.get(i);if(row instanceof DocRow doc&&doc.document().id()==value.selection().document() || row instanceof AssetRow asset&&value.selection().kind()==6&&asset.asset().id()==value.selection().element()){selectedIndex=i;break;}}
+            list.setSelectedIndex(selectedIndex);
             var root=(DefaultMutableTreeNode)tree.getModel().getRoot();
             for(var nodes=root.depthFirstEnumeration();nodes.hasMoreElements();){
                 var node=(DefaultMutableTreeNode)nodes.nextElement();
                 if(node.getUserObject() instanceof DocRow row&&row.document().id()==value.selection().document() || node.getUserObject() instanceof AssetRow assetRow&&value.selection().kind()==6&&assetRow.asset().id()==value.selection().element()){
                     boolean expand=tree.getExpandsSelectedPaths();tree.setExpandsSelectedPaths(false);
-                    tree.setSelectionPath(new TreePath(node.getPath()));tree.setExpandsSelectedPaths(expand);return;
+                    tree.setSelectionPath(new TreePath(node.getPath()));tree.setExpandsSelectedPaths(expand);updateAssetActions.run();return;
                 }
             }
             tree.clearSelection();
+            updateAssetActions.run();
         });
         tree.addTreeSelectionListener(event->{
             if(refreshing)return;Object chosen=tree.getLastSelectedPathComponent();

@@ -103,8 +103,9 @@ public final class PlatformSession implements Disposable {
             // The game product has its own menu/document commands. IDE project
             // and run-configuration widgets would expose an unrelated workflow.
             var settings=com.intellij.ide.ui.UISettings.getInstance();
-            settings.setShowMainToolbar(false);
-            settings.setShowNewMainToolbar(false);
+            settings.setShowMainToolbar(true);
+            settings.setShowNewMainToolbar(true);
+            settings.setMainMenuDisplayMode(com.intellij.ide.ui.MainMenuDisplayMode.MERGED_WITH_MAIN_TOOLBAR);
             settings.setShowNavigationBar(false);
             settings.fireUISettingsChanged();
         }
@@ -127,7 +128,9 @@ public final class PlatformSession implements Disposable {
         project.getMessageBus().connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,new FileEditorManagerListener(){
             @Override public void selectionChanged(FileEditorManagerEvent event){
                 VirtualFile file=event.getNewFile();String id=file==null?null:file.getUserData(PanelEditorProvider.PANEL);
-                if(id!=null){selectedPanel=id;context(Catalog.context(id));selectDocument(file);}
+                if(id!=null&&!Objects.equals(file,event.getOldFile())){
+                    selectedPanel=id;context(Catalog.context(id));selectDocument(file);
+                }
             }
         });
         launcher();
@@ -187,7 +190,11 @@ public final class PlatformSession implements Disposable {
         }
         if(snapshot!=null && tools!=null && snapshot.assetState().revision()!=loggedContentRevision){
             var events=snapshot.assetState().events();int count=(int)Math.min(events.size(),Math.max(0,snapshot.assetState().revision()-loggedContentRevision));
-            for(var event:events.subList(events.size()-count,events.size()))tools.log(event.diagnostic());loggedContentRevision=snapshot.assetState().revision();
+            for(var event:events.subList(events.size()-count,events.size())){
+                if(event.kind()==3)reportProblem(event.diagnostic());
+                else tools.log(event.diagnostic());
+            }
+            loggedContentRevision=snapshot.assetState().revision();
         }
         if(state.service()==Bridge.Service.Ready){startAssetPolling();if(snapshot!=null&&snapshot.selection().kind()==6&&!context.equals("Asset"))context("Asset");else if(snapshot!=null&&snapshot.selection().kind()!=6&&context.equals("Asset"))context(Catalog.context(selectedPanel));flushSelection();}
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
@@ -300,6 +307,11 @@ public final class PlatformSession implements Disposable {
         failure(error);if(smoke)return;
         while(error.getCause()!=null)error=error.getCause();
         Messages.showErrorDialog(project,error.getMessage(),"Document operation failed");
+    }
+    private void reportProblem(String message){
+        if(!opened||tools==null)return;
+        tools.log(message);
+        open("problems");
     }
     private void refreshDocument(DocumentView view){
         var key=view.file().getUserData(PanelEditorProvider.DOCUMENT);if(key==null)return;
@@ -430,11 +442,16 @@ public final class PlatformSession implements Disposable {
         commands.addSeparator();commands.add(playAction);commands.add(stopAction);commands.add(action("Build · F9",()->{},()->false));
         commands.add(action("Jobs",()->open("background.jobs"),()->opened));commands.add(action("Find Panel",this::palette,()->opened));
         ActionToolbar toolbar=ActionManager.getInstance().createActionToolbar("Epidemic.Document.Toolbar",commands,true);toolbar.setTargetComponent(root);
-        JPanel header=new JPanel(new BorderLayout());header.add(toolbar.getComponent(),BorderLayout.NORTH);JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(reader.view(id));
+        JPanel header=new JPanel(new BorderLayout());
+        if(!Boolean.getBoolean("epidemic.ui.standalone"))header.add(toolbar.getComponent(),BorderLayout.NORTH);
+        JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(reader.view(id));
         registerWorkspaceShortcuts(root);
-        for(var canvas:reader.nativeViews().values())canvas.addFocusListener(new FocusAdapter(){@Override public void focusGained(FocusEvent event){if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)selectDocument(file);else if(snapshot!=null&&snapshot.selection().document()!=snapshot.entry())select(new Bridge.Selection(0,snapshot.entry(),0));}});
         DocumentView view=new DocumentView(reader,root,file,title);views.add(view);
-        root.addHierarchyListener(event->{if((event.getChangeFlags()&(HierarchyEvent.PARENT_CHANGED|HierarchyEvent.SHOWING_CHANGED))!=0)edt(()->guardFloatingWindow(view));});
+        root.addHierarchyListener(event->{if((event.getChangeFlags()&(HierarchyEvent.PARENT_CHANGED|HierarchyEvent.SHOWING_CHANGED))!=0)edt(()->{
+            installCheckedTabClose(file);
+            guardFloatingWindow(view);
+        });});
+        edt(()->installCheckedTabClose(file));
         refreshDocument(view);refreshDocumentCommands();return view;
     }
     public void release(DocumentView view){
@@ -445,21 +462,77 @@ public final class PlatformSession implements Disposable {
         view.component().removeAll();
     }
     public boolean documentModified(VirtualFile file){var doc=resolveDocument(file);return doc!=null&&doc.dirty();}
+    private boolean documentNeedsClosePrompt(VirtualFile file){
+        var doc=resolveDocument(file);
+        return doc!=null&&(doc.dirty()||tools!=null&&tools.hasDraft(doc.id())||
+            views.stream().anyMatch(view->view.reader().hasDraft(doc.id())));
+    }
+    private void installCheckedTabClose(VirtualFile file){
+        if(file.getUserData(PanelEditorProvider.DOCUMENT)==null)return;
+        var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);
+        for(var window:manager.getWindows()){
+            var tabs=window.getTabbedPane().getTabs();
+            var component=tabs.getComponent();
+            if(component.getClientProperty("epidemic.scene.wheel")==null){
+                for(var listener:component.getMouseWheelListeners()){
+                    component.removeMouseWheelListener(listener);
+                    component.addMouseWheelListener(event->{
+                        var deepest=SwingUtilities.getDeepestComponentAt(component,event.getX(),event.getY());
+                        if(!event.isConsumed()&&!(deepest instanceof NativeViewport))listener.mouseWheelMoved(event);
+                    });
+                }
+                component.putClientProperty("epidemic.scene.wheel",Boolean.TRUE);
+            }
+            var tab=tabs.findInfo(file);
+            if(tab==null||!(tab.getTabLabelActions() instanceof DefaultActionGroup existing))continue;
+            var group=new DefaultActionGroup();
+            boolean changed=false;
+            for(var action:existing.getChildren(ActionManager.getInstance())){
+                if(action instanceof com.intellij.openapi.fileEditor.impl.tabActions.CloseTab){
+                    group.add(new CheckedTabClose(file,window,action));
+                    changed=true;
+                }else group.add(action);
+            }
+            if(changed)tab.setTabLabelActions(group,"EditorTab");
+        }
+    }
+    private final class CheckedTabClose extends com.intellij.openapi.project.DumbAwareAction {
+        private final VirtualFile file;
+        private final com.intellij.openapi.fileEditor.impl.EditorWindow window;
+        private final AnAction original;
+        CheckedTabClose(VirtualFile file,com.intellij.openapi.fileEditor.impl.EditorWindow window,AnAction original){
+            this.file=file;this.window=window;this.original=original;copyFrom(original);
+        }
+        @Override public ActionUpdateThread getActionUpdateThread(){return original.getActionUpdateThread();}
+        @Override public void update(AnActionEvent event){original.update(event);}
+        @Override public void actionPerformed(AnActionEvent event){
+            if(canCloseDocument(file,window))original.actionPerformed(event);
+        }
+    }
     public boolean canCloseDocument(VirtualFile file){
+        if(file.getUserData(PanelEditorProvider.DOCUMENT)==null)return true;
+        var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);
+        var current=manager.getCurrentWindow();
+        var target=current!=null&&current.getComposite(file)!=null?current:
+            Arrays.stream(manager.getWindows()).filter(window->window.getComposite(file)!=null).findFirst().orElse(null);
+        return canCloseDocument(file,target);
+    }
+    private void closeTabChecked(VirtualFile file,com.intellij.openapi.fileEditor.impl.EditorWindow target){
+        if(opened&&target!=null&&target.getComposite(file)!=null&&canCloseDocument(file,target))
+            ((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).closeFile(file,target);
+    }
+    private boolean canCloseDocument(VirtualFile file,com.intellij.openapi.fileEditor.impl.EditorWindow target){
         if(activeSave!=null&&!activeSave.isDone()){
-            var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);var target=manager.getCurrentWindow();
-            activeSave.whenComplete((reply,error)->{if(error==null)edt(()->{if(opened&&target!=null&&target.getComposite(file)!=null)manager.closeFileWithChecks(file,target);});});return false;
+            activeSave.whenComplete((reply,error)->{if(error==null)edt(()->closeTabChecked(file,target));});return false;
         }
         if(!ready()){
             if(service==Bridge.Service.Loading&&readyActions.size()<32){
-                var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);var target=manager.getCurrentWindow();
-                readyActions.addLast(()->{if(opened&&!rejectedCommand&&target!=null&&target.getComposite(file)!=null)manager.closeFileWithChecks(file,target);});
+                readyActions.addLast(()->closeTabChecked(file,target));
             }
             return false;
         }
-        if(!documentModified(file))return true;
+        if(!documentNeedsClosePrompt(file))return true;
         if(!ready()||pendingDocumentCloses.contains(file))return false;
-        var target=((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).getCurrentWindow();
         int decision=promptDocumentClose(file);
         requestDocumentClose(file,decision,null,target);return false;
     }
@@ -490,7 +563,7 @@ public final class PlatformSession implements Disposable {
             if(service==Bridge.Service.Loading&&readyActions.size()<32)readyActions.addLast(()->closeFloatingWindow(window,suppliedDecision));
             return;
         }
-        var dirty=views.stream().filter(view->SwingUtilities.getWindowAncestor(view.component())==window).map(DocumentView::file).filter(this::documentModified).findFirst();
+        var dirty=views.stream().filter(view->SwingUtilities.getWindowAncestor(view.component())==window).map(DocumentView::file).filter(this::documentNeedsClosePrompt).findFirst();
         if(dirty.isEmpty()){var event=new WindowEvent(window,WindowEvent.WINDOW_CLOSING);guard.originals().forEach(listener->listener.windowClosing(event));return;}
         int decision=suppliedDecision==null?promptDocumentClose(dirty.get()):suppliedDecision;
         var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);
@@ -507,6 +580,11 @@ public final class PlatformSession implements Disposable {
         var doc=resolveDocument(file);if(doc==null){pendingDocumentCloses.remove(file);return;}
         Bridge participant=bridge;var identity=file.getUserData(PanelEditorProvider.DOCUMENT);
         if(decision==Messages.NO){if(tools!=null)tools.cancelDrafts(doc.id());for(var view:views)view.reader().cancelDrafts(doc.id());}
+        if(decision==Messages.NO&&!doc.dirty()){
+            ((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).closeFile(file,target);
+            if(afterClose!=null)edt(afterClose);
+            return;
+        }
         var operation=decision==Messages.YES?saveProject():participant.callAt(identity.generation(),snapshot.revision(),17,Long.toUnsignedString(doc.id()));
         pendingDocumentCloses.add(file);
         refreshDocumentCommands();
@@ -559,12 +637,21 @@ public final class PlatformSession implements Disposable {
         if(!supports("asset-pipeline"))return;
         if(action.startsWith("Search:")){assetQuery=action.substring(7);bridge.call(28,assetQuery).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});return;}
         if(action.equals("cancel")){bridge.call(25).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});return;}
-        if(action.equals("Watch")){int choice=Messages.showYesNoDialog(project,"Watch indexed Content sources? Polling/debounce remains native. External original files are not watched; edit the source copied inside Content or use Import again.","Native Content Watch",Messages.getQuestionIcon());bridge.call(27,choice==Messages.YES?"1":"0");return;}
+        if(action.equals("Watch")){int choice=Messages.showYesNoCancelDialog(project,"Automatically reimport files changed inside this project's Content folder?","Watch Content","Enable","Disable","Cancel",Messages.getQuestionIcon());if(choice!=Messages.CANCEL)bridge.call(27,choice==Messages.YES?"1":"0");return;}
         var asset=snapshot.assets().stream().filter(a->a.id()==id).findFirst().orElse(null);if(asset==null){Messages.showInfoMessage(project,"Select an asset in Project Explorer first.","Asset command");return;}
         long generation=bridge.latest().generation(),revision=snapshot.revision(),assetRevision=snapshot.assetRevision();
         String token=Long.toUnsignedString(assetRevision),assetId=Long.toUnsignedString(id);int operation;String[] args;
         switch(action){
-            case "Rename / Move","Duplicate"->{String path=Messages.showInputDialog(project,"New Content-relative path (existing parent folder; no cross-volume moves)",action,Messages.getQuestionIcon(),asset.path().replaceFirst("^Content/",""),null);if(path==null)return;operation=action.equals("Duplicate")?21:20;args=new String[]{token,assetId,path};}
+            case "Rename / Move","Duplicate"->{
+                String suggested=asset.path().replaceFirst("^Content/","");
+                if(action.equals("Duplicate")){
+                    int dot=suggested.lastIndexOf('.');
+                    if(dot>suggested.lastIndexOf('/'))suggested=suggested.substring(0,dot)+" Copy"+suggested.substring(dot);
+                    else suggested+=" Copy";
+                }
+                String path=Messages.showInputDialog(project,"New path inside Content. The destination folder must already exist.",action,Messages.getQuestionIcon(),suggested,null);
+                if(path==null)return;operation=action.equals("Duplicate")?21:20;args=new String[]{token,assetId,path};
+            }
             case "Reimport"->{operation=19;args=new String[]{token,assetId};}
             case "Restore"->{operation=23;args=new String[]{token,assetId};}
             case "Delete"->{
@@ -592,8 +679,25 @@ public final class PlatformSession implements Disposable {
             String destination=Messages.showInputDialog(project,"Existing Content-relative destination folder (empty = Content root)","Import Files",Messages.getQuestionIcon(),importFolder,null);if(destination==null)return;
             importFolder=destination;Bridge participant=bridge;long generation=participant.latest().generation();
             CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);
-            for(var file:files)chain=chain.thenCompose(v->{var current=participant.latest().snapshot();return participant.callAt(generation,current.revision(),18,Long.toUnsignedString(current.assetRevision()),file.getPath(),(destination.isBlank()?"":destination+"/")+file.getName()).handle((reply,error)->{if(error!=null)edt(()->{Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();tools.log("Import rejected: "+file.getPath()+" · "+cause.getMessage());});return (Void)null;});});
+            for(var file:files)chain=chain.thenCompose(v->queueImport(participant,generation,file.getPath(),(destination.isBlank()?"":destination+"/")+file.getName()));
         });
+    }
+    private CompletableFuture<Void> queueImport(Bridge participant,long generation,String source,String destination){
+        var latest=participant.latest();
+        if(latest==null||latest.snapshot()==null||latest.generation()!=generation)return CompletableFuture.completedFuture(null);
+        var current=latest.snapshot();
+        return participant.callAt(generation,current.revision(),18,Long.toUnsignedString(current.assetRevision()),source,destination)
+            .handle((reply,error)->{
+                if(error!=null)edt(()->{
+                    if(bridge!=participant||participant.latest()==null||participant.latest().generation()!=generation)return;
+                    Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();
+                    String message=cause.getMessage();
+                    if(message!=null&&message.startsWith("editor.import_destination:"))
+                        message="The destination already exists or is invalid. Use Reimport for an existing asset. ("+message+")";
+                    reportProblem("Import rejected: "+destination+" · "+message);
+                });
+                return null;
+            });
     }
     private AnAction action(String label,Runnable run,java.util.function.BooleanSupplier enabled){
         return new AnAction(label){
@@ -635,10 +739,28 @@ public final class PlatformSession implements Disposable {
         sub.get("Help").add(action("About Epidemic UI",()->Messages.showInfoMessage(project,"JetBrains IntelliJ Platform 253.31033.145\nNative C++ Workspace / versioned IPC\nToolWindowManager and FileEditorProvider own docking.\nUnwired future features remain disabled.","Epidemic Editor"),()->true));
         ActionManager actions=ActionManager.getInstance();actions.registerAction("Epidemic.MainMenu",menu,PluginId.getId(Boolean.getBoolean("epidemic.ui.standalone")?"com.intellij":"epidemic.editor.platform"));
         DefaultActionGroup mainMenu=(DefaultActionGroup)actions.getAction("MainMenu");
-        if(Boolean.getBoolean("epidemic.ui.standalone")){mainMenu.removeAll();mainMenu.addAll(menu.getChildren(actions));}
+        if(Boolean.getBoolean("epidemic.ui.standalone")){
+            mainMenu.removeAll();mainMenu.addAll(menu.getChildren(actions));
+            var center=(DefaultActionGroup)actions.getAction("MainToolbarCenter");
+            if(center!=null){
+                center.removeAll();
+                for(var button:List.of(saveAction,undoAction,redoAction,playAction,stopAction,
+                    action("Jobs",()->open("background.jobs"),()->opened),
+                    action("Find Panel",this::palette,()->opened)))center.add(button);
+            }
+            removeToolbarAction(actions,"MainToolbarLeft","main.toolbar.Project");
+            removeToolbarAction(actions,"MainToolbarRight","NewUiRunWidget");
+            removeToolbarAction(actions,"MainToolbarRight","ExecutionTargetsToolbarGroup");
+            com.intellij.ide.ui.UISettings.getInstance().fireUISettingsChanged();
+        }
         else mainMenu.add(menu);
         registerWorkspaceShortcuts(WindowManager.getInstance().getFrame(project).getRootPane());
         for(Content content:contents.values())registerWorkspaceShortcuts(content.getComponent());
+    }
+    private static void removeToolbarAction(ActionManager manager,String groupId,String actionId){
+        var action=manager.getAction(actionId);
+        if(action!=null&&manager.getAction(groupId) instanceof DefaultActionGroup group)
+            group.remove(action,manager);
     }
     private static boolean editableTextFocus(){
         return KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof javax.swing.text.JTextComponent text&&text.isEditable();
@@ -794,11 +916,16 @@ public final class PlatformSession implements Disposable {
         int prompts=smokeClosePrompts;smokeWindowChoice=Messages.CANCEL;
         JTextField input=(JTextField)named(tools.view("prefab.editor"),key);input.setText("Pending tab-close edit");input.postActionEvent();
         var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);
-        require(!manager.closeFileWithChecks(file,manager.getCurrentWindow()),"Tab closed before pending edit completed");
+        var tab=manager.getCurrentWindow().getTabbedPane().getTabs().findInfo(file);
+        require(tab!=null,"Native document tab missing");
+        var close=Arrays.stream(((DefaultActionGroup)tab.getTabLabelActions()).getChildren(ActionManager.getInstance()))
+            .filter(CheckedTabClose.class::isInstance).findFirst().orElseThrow();
+        close.actionPerformed(AnActionEvent.createEvent(DataContext.EMPTY_CONTEXT,new Presentation(),"EditorTab",ActionUiKind.NONE,null));
+        require(manager.isFileOpen(file),"Tab X closed before pending edit completed");
         waitFor(()->smokeClosePrompts>prompts&&ready(),0,()->{
             smokeWindowChoice=null;
             require(manager.isFileOpen(file)&&snapshot.fields().stream().anyMatch(f->f.key().equals(key)&&f.value().equals("Pending tab-close edit")),"Deferred tab Cancel lost the committed edit/view");
-            record("PASS F0 real tab pre-close deferred until scalar completion; Cancel retained native edit and view");smokeCloseChoices(file,id);
+            record("PASS F0 real tab X deferred until scalar completion; Cancel retained native edit and view");smokeCloseChoices(file,id);
         });
     }
     private void inFloatingEditor(VirtualFile file,java.util.function.Consumer<Window> next){
@@ -893,11 +1020,37 @@ public final class PlatformSession implements Disposable {
                     if(failed!=null){failure(failed);return;}
                     waitFor(()->NativeViewport.metrics()[7]>0&&NativeViewport.metrics()[8]==0,0,()->later(300,()->{
                         captureAssetColor(canvas,"f1-native-sprite-after.png",0x000000ff);capture("f1-asset-details");
-                        saveProject().whenComplete((saved,saveError)->edt(()->{if(saveError!=null){failure(saveError);return;}record("PASS F1 actual Platform import/assignment/reimport, selected Asset Details, retained native Renderer sprite/Resource leases; captured both generations");smokePlayback();}));
+                        smokeExplorerActions(external,id);
                     }));
                 }));
             });
         }));
+    }
+    private void smokeExplorerActions(Path external,long assetId){
+        var explorer=tools.view("project.explorer");
+        var reimport=(JButton)named(explorer,"asset.Reimport");
+        require(reimport!=null&&reimport.isEnabled(),"Explorer action did not resolve the selected asset row");
+        require(snapshot.selection().kind()==6&&snapshot.selection().element()==assetId,"Asset selection changed");
+        long revision=snapshot.assetState().revision();
+        reimport.doClick();
+        smokeAssetPoll(()->snapshot.assetState().revision()>revision&&snapshot.selection().element()==assetId,0,()->
+            queueImport(bridge,bridge.latest().generation(),external.toString(),"f1-import.png").whenComplete((reply,error)->edt(()->{
+                if(error!=null){failure(error);return;}
+                var problem=contents.get("problems");
+                var scroll=(JScrollPane)tools.view("problems");
+                var text=(JTextArea)scroll.getViewport().getView();
+                require(problem!=null&&problem.getManager().getSelectedContent()==problem&&
+                    text.getText().contains("Import rejected: f1-import.png"),"Import conflict was not presented in Problems");
+                var settings=com.intellij.ide.ui.UISettings.getInstance();
+                require(!Boolean.getBoolean("epidemic.ui.standalone")||
+                    settings.getMainMenuDisplayMode()==com.intellij.ide.ui.MainMenuDisplayMode.MERGED_WITH_MAIN_TOOLBAR,
+                    "Standalone Main Menu merge setting was lost");
+                saveProject().whenComplete((saved,saveError)->edt(()->{
+                    if(saveError!=null){failure(saveError);return;}
+                    record("PASS F1 Explorer button retained asset ID; duplicate destination opened Problems; merged toolbar mode retained");
+                    smokePlayback();
+                }));
+            })));
     }
     private void smokePlayback(){
         long revision=snapshot.revision(),identity=snapshot.project();
