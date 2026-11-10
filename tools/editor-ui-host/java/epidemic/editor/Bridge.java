@@ -49,12 +49,12 @@ public final class Bridge implements AutoCloseable {
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
     public record Snapshot(long revision, long assetRevision, long selectionRevision, int flags,
         int storage, long project, long entry, String path, String title, Selection selection,
-        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState,List<ComponentType> componentTypes,List<SceneItem> sceneItems,List<SystemItem> systems) {
+        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState,List<ComponentType> componentTypes,List<SceneItem> sceneItems,List<SystemItem> systems,List<String> contentFolders) {
         public Snapshot {
             documents = List.copyOf(documents); nodes = List.copyOf(nodes); assets = List.copyOf(assets);
-            fields=List.copyOf(fields);
+            fields=List.copyOf(fields); contentFolders=List.copyOf(contentFolders);
         }
-        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty(),List.of(),List.of(),List.of());}
+        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty(),List.of(),List.of(),List.of(),List.of());}
         public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,List.of());}
         public boolean dirty() { return (flags & 1) != 0; }
         public boolean canUndo() { return (flags & 2) != 0; }
@@ -301,8 +301,11 @@ public final class Bridge implements AutoCloseable {
             }
             List<SystemItem> systems=new ArrayList<>();
             for(int n=count(in);n>0;--n)systems.add(new SystemItem(in.readLong(),in.readLong(),in.readLong(),in.readBoolean()));
+            List<String> folders=new ArrayList<>();
+            if(capabilities.contains("content-folders"))
+                for(int n=count(in);n>0;--n)folders.add(text(in));
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,
-                                    title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems));
+                                    title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems),folders);
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
         return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start, null);

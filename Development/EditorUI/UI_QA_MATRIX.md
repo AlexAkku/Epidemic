@@ -214,4 +214,29 @@ asset lifecycle, last-good, cancellation, clone/reopen and writer recovery.
 PASS full current engine build and CTest **161/161**, zero failed, disabled
 or skipped. Real test time 323.44s. `fi-post-release` completed in 664.75s
 with peak owned memory 3082.13MiB. JUnit is `Temp/U/fi-engine-tests.xml`.
-Owner visual retest is tracked in FI_FEATURE_MATRIX.md. F-I-GATE remains PARTIAL.
+At that checkpoint F-I-GATE was PARTIAL pending the owner retest.
+
+## F-I freeze qualification
+
+2026-11-10. **F2-GATE PASS. F-I-GATE PASS.** The owner retest and the
+qualification of the final Content folder and nested Inspector changes are
+recorded in [FI_FEATURE_MATRIX.md](FI_FEATURE_MATRIX.md). Owner check 18 is
+PASS\*, with a repeat on more complex projects in subsequent phases.
+A repeat physical test of the updated context menu and nested fields remains
+NOT RUN. The previous owner mouse qualification and the current application
+smoke are separate evidence.
+
+- Full CTest passed **161/161**. The complete run is retained in
+  `Temp/U/logs/fi-freeze-full-ctest.log`.
+- The C++-only companion and the architecture self-test passed.
+- The packaged Release passed the Platform smoke and all 16 IPC framing
+  cases. It covered real instance field editing, inheritance on a second
+  placement and the actual Revert Override control. The independent Swing/IPC
+  contract covered folder creation, import, Explorer projection and reopening.
+- The broad consumer scan reached its time limit. Focused analysis covered
+  every changed C++ translation unit and retains its raw baseline findings.
+  The new implicit widening
+  diagnostic in the directory snapshot bound was corrected by typing the
+  constant with the same value. The focused rerun found only pre-existing
+  findings. After that correction the packaged Release and all six focused
+  native CTest cases passed again.

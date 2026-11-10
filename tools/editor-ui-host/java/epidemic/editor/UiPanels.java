@@ -22,6 +22,8 @@ public final class UiPanels {
     private final Consumer<Integer> createDocument;
     private BiConsumer<String,Bridge.Document> documentCommand=(action,doc)->{};
     private AssetDetails.PreviewLoader previewLoader;
+    private Consumer<String> newContentFolder;
+    public void contentFolderCommands(Consumer<String> action){newContentFolder=action;}
     public void documentCommands(BiConsumer<String,Bridge.Document> action){documentCommand=action;}
     public void assetPreview(AssetDetails.PreviewLoader loader){previewLoader=loader;}
     private Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField;
@@ -110,7 +112,8 @@ public final class UiPanels {
         if (!force&&Objects.equals(snapshot, value)) return;
         Bridge.Snapshot previous = snapshot;
         boolean structureChanged = previous == null || value == null || !previous.documents().equals(value.documents()) ||
-            !previous.nodes().equals(value.nodes()) || !previous.assets().equals(value.assets());
+            !previous.nodes().equals(value.nodes()) || !previous.assets().equals(value.assets()) ||
+            !previous.contentFolders().equals(value.contentFolders());
         snapshot = value; refreshing = true;
         try {
             if (structureChanged) for (var reader : structureReaders) reader.accept(value);
@@ -155,10 +158,10 @@ public final class UiPanels {
                     .map(doc->doc.name()+" · document revision "+doc.revision()).findFirst().orElse(value.title());
                 String scope=switch(selection.kind()){
                     case 1->value.nodes().stream().anyMatch(node->node.selection().equals(selection)&&node.prefab()!=0)
-                        ?"Prefab placement · component edits apply to this instance"
+                        ?"Prefab placement · edit a field to override it on this instance"
                         :"Scene entity";
                     case 2,5->"Prefab definition";
-                    case 7->"Linked Prefab reference";
+                    case 7->"Linked Prefab · inherited values. Open Linked Definition to edit.";
                     default->"Authoring selection";
                 };
                 summary.setText(document+"\n"+scope+"\nDocument ID: "+unsigned(selection.document())+
@@ -447,21 +450,23 @@ public final class UiPanels {
         list.addListSelectionListener(event->updateAssetActions.run());
         tree.addTreeSelectionListener(event->updateAssetActions.run());
         panel.add(buttons, BorderLayout.SOUTH);
+        Set<String> shownFolders=new HashSet<>();
         Runnable rebuild = () -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode(snapshot == null ? "Choose a project" : snapshot.title());
-            DefaultMutableTreeNode docs = new DefaultMutableTreeNode("Documents"), assets = new DefaultMutableTreeNode("Content"); root.add(docs); root.add(assets); root.add(new DefaultMutableTreeNode("Scripts"));if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service data, read-only]"));
+            DefaultMutableTreeNode docs = new DefaultMutableTreeNode("Documents"), assets = new DefaultMutableTreeNode(new FolderRow("")); root.add(docs); root.add(assets); root.add(new DefaultMutableTreeNode("Scripts"));if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service data, read-only]"));
             String filter = search.getText().toLowerCase(Locale.ROOT);
             breadcrumb.setText("Content · "+(snapshot==null?0:snapshot.assets().size())+" shown / "+(snapshot==null?0:snapshot.assetState().totalAssets())+" total · max 1000 filtered; Enter to search");
+            Map<String,DefaultMutableTreeNode> folders=new LinkedHashMap<>();
+            folders.put("",assets);
             if (snapshot != null) {
                 for (Bridge.Document doc : snapshot.documents()) if (doc.name().toLowerCase(Locale.ROOT).contains(filter)) docs.add(new DefaultMutableTreeNode(new DocRow(doc)));
-                Map<String,DefaultMutableTreeNode> folders = new HashMap<>(); folders.put("Content", assets);
-                for (Bridge.Asset asset : snapshot.assets().stream().filter(a->a.path().toLowerCase(Locale.ROOT).contains(filter)).sorted(Comparator.comparing(Bridge.Asset::path)).limit(1000).toList()) if (asset.path().toLowerCase(Locale.ROOT).contains(filter)) {
-                    String[] path = asset.path().split("/"); DefaultMutableTreeNode parent = assets; String prefix = "Content";
-                    for (int i = path[0].equals("Content") ? 1 : 0; i < path.length - 1; ++i) {
-                        prefix += "/" + path[i]; DefaultMutableTreeNode folder = folders.get(prefix);
-                        if (folder == null) { folder = new DefaultMutableTreeNode(path[i]); folders.put(prefix, folder); parent.add(folder); }
-                        parent = folder;
-                    }
+                for(String folder:snapshot.contentFolders())
+                    if(folder.toLowerCase(Locale.ROOT).contains(filter))contentFolder(folders,folder);
+                for(Bridge.Asset asset:snapshot.assets().stream().filter(a->a.path().toLowerCase(Locale.ROOT).contains(filter))
+                    .sorted(Comparator.comparing(Bridge.Asset::path)).limit(1000).toList()){
+                    String path=asset.path().replaceFirst("^Content/","");
+                    int slash=path.lastIndexOf('/');
+                    var parent=slash<0?assets:contentFolder(folders,path.substring(0,slash));
                     parent.add(new DefaultMutableTreeNode(new AssetRow(asset)));
                 }
             }
@@ -485,6 +490,14 @@ public final class UiPanels {
                         try{tree.setSelectionPath(path);}finally{tree.setExpandsSelectedPaths(expand);}
                     }
                 }
+                if(shownFolders.isEmpty()&&!folders.keySet().equals(Set.of("")))tree.expandPath(new TreePath(assets.getPath()));
+                if(!shownFolders.isEmpty())
+                    folders.forEach((key,node)->{
+                        if(!shownFolders.contains(key)&&node.getParent() instanceof DefaultMutableTreeNode parent)
+                            tree.expandPath(new TreePath(parent.getPath()));
+                    });
+                shownFolders.clear();
+                if(snapshot!=null)shownFolders.addAll(folders.keySet());
                 if(scroll!=null&&tree.getParent() instanceof JViewport viewport)viewport.setViewPosition(scroll);
                 if(listScroll!=null&&list.getParent() instanceof JViewport viewport)viewport.setViewPosition(listScroll);
             }finally{refreshing=wasRefreshing;}
@@ -513,7 +526,20 @@ public final class UiPanels {
             else if(chosen instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof AssetRow row)select.accept(new Bridge.Selection(6,0,row.asset().id()));
             else if(chosen==tree.getModel().getRoot())select.accept(new Bridge.Selection(0,0,0));
         });
-        tree.addMouseListener(new MouseAdapter() { @Override public void mouseClicked(MouseEvent event) {
+        tree.addMouseListener(new MouseAdapter() {
+            @Override public void mousePressed(MouseEvent event){folderMenu(event);}
+            @Override public void mouseReleased(MouseEvent event){folderMenu(event);}
+            private void folderMenu(MouseEvent event){
+                if(!event.isPopupTrigger()||newContentFolder==null||!interactive||snapshot==null||
+                    snapshot.storage()!=2||snapshot.playing())return;
+                var path=tree.getPathForLocation(event.getX(),event.getY());
+                if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node)||
+                    !(node.getUserObject() instanceof FolderRow folder))return;
+                var menu=new JPopupMenu();
+                menuItem(menu,"New Folder…",()->newContentFolder.accept(folder.path()));
+                menu.show(tree,event.getX(),event.getY());
+            }
+            @Override public void mouseClicked(MouseEvent event) {
             if (event.getClickCount() != 2 || refreshing) return;
             Object selected = tree.getLastSelectedPathComponent();
             if (selected instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof DocRow row) {
@@ -521,6 +547,25 @@ public final class UiPanels {
             }
         } });
         return panel;
+    }
+    private record FolderRow(String path){
+        @Override public String toString(){return path.isEmpty()?"Content":path.substring(path.lastIndexOf('/')+1);}
+    }
+    private static DefaultMutableTreeNode contentFolder(Map<String,DefaultMutableTreeNode> folders,String path){
+        String prefix="";
+        var parent=folders.get("");
+        for(String part:path.split("/")){
+            prefix=prefix.isEmpty()?part:prefix+"/"+part;
+            String key=prefix.toLowerCase(Locale.ROOT);
+            var folder=folders.get(key);
+            if(folder==null){
+                folder=new DefaultMutableTreeNode(new FolderRow(prefix));
+                folders.put(key,folder);
+                parent.add(folder);
+            }
+            parent=folder;
+        }
+        return parent;
     }
     private record AssetRow(Bridge.Asset asset){@Override public String toString(){return asset.path()+" ["+Long.toUnsignedString(asset.id())+"] g"+asset.generation()+(asset.trashed()?" · Trash":!asset.present()?" · Missing":"");}}
     private record DocRow(Bridge.Document document) { @Override public String toString() { return document.name() + " [" + Long.toUnsignedString(document.id()) + "]"; } }

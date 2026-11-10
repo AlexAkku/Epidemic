@@ -24,7 +24,40 @@ public final class AssetTests {
     private static void png(Path file,int argb)throws Exception{
         BufferedImage image=new BufferedImage(260,132,BufferedImage.TYPE_INT_ARGB);for(int y=0;y<image.getHeight();y++)for(int x=0;x<image.getWidth();x++)image.setRGB(x,y,argb);ImageIO.write(image,"png",file.toFile());
     }
+    private static void folders(Path executable,Path directory)throws Exception{
+        Path work=Files.createTempDirectory(directory,"content-folders-"),root=work.resolve("project");
+        Path source=work.resolve("source.png");png(source,0xffff0000);
+        try(Bridge bridge=new Bridge(executable,work,s->{})){
+            UiTests.result(bridge.connect());call(bridge,3,root.toString(),"Content folders");call(bridge,27,"0");
+            call(bridge,37,"123/Пустая папка");
+            var empty=call(bridge,37,"123/Пустая папка").snapshot();
+            UiTests.require(empty.contentFolders().equals(List.of("123","123/Пустая папка"))&&
+                empty.assets().isEmpty()&&!empty.dirty(),"Empty folders are absent from the native snapshot");
+            UiTests.nativeReject(bridge,"editor.project_path",37,"../outside");
+            UiTests.nativeReject(bridge,"editor.content_folder",37,".imports/hidden");
+            edit(bridge,18,source.toString(),"123/source.png");
+            var imported=settle(bridge);
+            UiTests.require(imported.assets().stream().anyMatch(a->a.path().equals("Content/123/source.png")),
+                "Import into newly created folder failed");
+            javax.swing.SwingUtilities.invokeAndWait(()->{
+                var panels=new UiPanels(new Catalog(),new FeatureRegistry(),d->{},s->{},()->{},()->{},k->{},()->{});
+                var tree=UiTests.explorerTree(panels.view("project.explorer"));
+                panels.refresh(empty);
+                var rootNode=(javax.swing.tree.DefaultMutableTreeNode)tree.getModel().getRoot();
+                var content=(javax.swing.tree.DefaultMutableTreeNode)rootNode.getChildAt(1);
+                UiTests.require(content.getChildAt(0).toString().equals("123")&&
+                    content.getChildAt(0).getChildAt(0).toString().equals("Пустая папка"),"Explorer hid an empty folder");
+                panels.refresh(imported);
+            });
+            call(bridge,6);call(bridge,10);
+            var reopened=call(bridge,2,root.resolve("Project.epidemicproj").toString()).snapshot();
+            UiTests.require(reopened.contentFolders().equals(empty.contentFolders()),"Empty folder disappeared on reopen");
+            call(bridge,10);call(bridge,11);
+        }
+        System.out.println("PASS F1 native Content folder creation, Explorer projection, import and reopen");
+    }
     public static void run(Path executable,Path directory)throws Exception{
+        folders(executable,directory);
         Path work=Files.createTempDirectory(directory,"F1-\u041f\u0440\u043e\u0435\u043a\u0442-"),root=work.resolve("project"),source=work.resolve("\u0442\u0435\u043a\u0441\u0442\u0443\u0440\u0430.png");png(source,0xffff0000);
         Path webp=work.resolve("alpha.webp");Files.write(webp,Base64.getDecoder().decode("UklGRhwAAABXRUJQVlA4TBAAAAAvAQAAEA8Q8x/zH4yM6H8A"));
         Path wave=work.resolve("sound.wav");ByteBuffer pcm=ByteBuffer.allocate(76).order(ByteOrder.LITTLE_ENDIAN);pcm.put("RIFF".getBytes(java.nio.charset.StandardCharsets.US_ASCII)).putInt(68).put("WAVEfmt ".getBytes(java.nio.charset.StandardCharsets.US_ASCII)).putInt(16).putShort((short)1).putShort((short)1).putInt(16000).putInt(32000).putShort((short)2).putShort((short)16).put("data".getBytes(java.nio.charset.StandardCharsets.US_ASCII)).putInt(32);Files.write(wave,pcm.array());

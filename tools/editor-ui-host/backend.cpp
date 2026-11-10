@@ -125,6 +125,8 @@ class Backend {
     std::uint64_t document_nonce_ = 0;
     mutable ed::ThumbnailCache thumbnails_;
     std::string asset_query_;
+    mutable std::chrono::steady_clock::time_point refresh_content_folders_{};
+    mutable std::vector<std::string> content_folders_;
     ed::SceneDrag drag_;
     ed::SceneView drag_view_;
     mutable std::weak_ptr<const ed::ProjectSnapshot> projected_source_;
@@ -532,6 +534,8 @@ class Backend {
         scene_projections_.clear();
         thumbnails_.Clear();
         asset_query_.clear();
+        refresh_content_folders_ = {};
+        content_folders_.clear();
         workspace_.reset();
         workspace_ = std::make_unique<ed::EditorWorkspace>(schema_.View(),
                                                            [this] { return ex::Options(schema_); });
@@ -929,6 +933,15 @@ class Backend {
             out.Number<8>(system.graph.Raw());
             out.Number<1>(system.enabled);
         }
+        const auto now = std::chrono::steady_clock::now();
+        if (folder && now >= refresh_content_folders_) {
+            content_folders_ = folder->ContentFolders();
+            refresh_content_folders_ = now + std::chrono::seconds{2};
+        }
+        out.Number<4>(folder ? content_folders_.size() : 0);
+        if (folder)
+            for (const auto &path : content_folders_)
+                out.Text(path);
     }
 
   public:
@@ -1175,6 +1188,17 @@ class Backend {
             case 36:
                 preview = AssetPreview(args);
                 break;
+            case 37: {
+                CheckWrite({generation, revision});
+                const auto *folder = workspace_->Folder();
+                if (!folder || args.size() != 1)
+                    throw std::runtime_error("ui.content_folder");
+                if (workspace_->Session() && workspace_->Session()->IsPlaying())
+                    throw std::runtime_error("ui.playing_readonly");
+                Require(folder->CreateContentFolder(args.front()));
+                refresh_content_folders_ = {};
+                break;
+            }
             case 10:
             case 11:
                 if (workspace_->IsDirty() &&
@@ -1201,7 +1225,7 @@ class Backend {
         out.Number<8>(generation_);
         out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
                  "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
-                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview");
+                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview,content-folders");
         out.Text(error);
         if (operation == 36) {
             out.Number<4>(preview.width);

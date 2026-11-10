@@ -193,6 +193,9 @@ class ProjectFolder final {
     [[nodiscard]] foundation::Result<std::filesystem::path>
     ResolveMount(std::string_view mount, std::string_view relative) const;
 
+    [[nodiscard]] foundation::Result<void> CreateContentFolder(std::string_view relative) const;
+    [[nodiscard]] std::vector<std::string> ContentFolders() const;
+
   private:
     struct WriterLock;
 

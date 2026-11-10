@@ -1105,6 +1105,53 @@ Result<std::filesystem::path> ProjectFolder::ResolveMount(std::string_view mount
     return ResolveProjectPath(root_, prefix + "/" + std::string(relative));
 }
 
+VoidResult ProjectFolder::CreateContentFolder(std::string_view relative) const {
+    if (IsPrivateContentPath(relative))
+        return VoidResult::Failure(Error("editor.content_folder", "Reserved Content folder"));
+    const auto resolved = ResolveMount("Content", relative);
+    if (!resolved)
+        return VoidResult::Failure(resolved.GetError());
+    std::error_code error;
+    std::filesystem::create_directories(resolved.Value(), error);
+    if (error || !std::filesystem::is_directory(resolved.Value(), error) || error)
+        return VoidResult::Failure(Error("editor.content_folder", "Cannot create Content folder"));
+    return VoidResult::Success();
+}
+
+std::vector<std::string> ProjectFolder::ContentFolders() const {
+    constexpr std::size_t MaxEntries = 16384;
+    constexpr std::size_t MaxFolders = 4096;
+    constexpr std::size_t MaxPathBytes = std::size_t{512} * 1024;
+    const auto content = ResolveProjectPath(root_, "Content");
+    if (!content)
+        return {};
+    std::vector<std::string> folders;
+    std::size_t path_bytes = 0;
+    std::error_code error;
+    std::filesystem::recursive_directory_iterator entry(
+        content.Value(), std::filesystem::directory_options::skip_permission_denied, error), end;
+    for (std::size_t seen = 0; !error && entry != end && seen < MaxEntries &&
+         folders.size() < MaxFolders; ++seen, entry.increment(error)) {
+        std::error_code status_error;
+        if (!std::filesystem::is_directory(entry->symlink_status(status_error))) {
+            entry.disable_recursion_pending();
+            continue;
+        }
+        const auto path = entry->path().lexically_relative(content.Value()).generic_u8string();
+        std::string relative(path.begin(), path.end());
+        if (IsPrivateContentPath(relative) || !ResolveMount("Content", relative) ||
+            path_bytes + relative.size() > MaxPathBytes) {
+            entry.disable_recursion_pending();
+            continue;
+        }
+        path_bytes += relative.size();
+        folders.push_back(std::move(relative));
+    }
+    std::ranges::sort(folders);
+    return folders;
+}
+
+
 Result<runtime::AssetId> ProjectFolder::IndexSource(std::string_view path, runtime::AssetType type,
                                                     std::string cooked_key) {
     using R = Result<runtime::AssetId>;

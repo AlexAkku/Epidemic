@@ -208,7 +208,7 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -716,6 +716,22 @@ public final class PlatformSession implements Disposable {
         }
         bridge.callAt(generation,revision,operation,args).whenComplete((r,e)->edt(()->{if(e!=null)documentFailure(e);}));
     }
+    private void newContentFolder(String parent){
+        if(!supports("content-folders")||snapshot.storage()!=2||snapshot.playing())return;
+        Bridge participant=bridge;
+        long generation=participant.latest().generation();
+        String name=Messages.showInputDialog(project,"Folder name","New Content Folder",Messages.getQuestionIcon());
+        if(name==null)return;
+        if(name.isBlank()||name.contains("/")){
+            Messages.showErrorDialog(project,"Enter a single folder name.","New Content Folder");
+            return;
+        }
+        String path=parent.isEmpty()?name:parent+"/"+name;
+        var current=participant.latest();
+        if(bridge!=participant||current.generation()!=generation)return;
+        participant.callAt(generation,current.snapshot().revision(),37,path)
+            .whenComplete((reply,error)->{if(error!=null)edt(()->documentFailure(error));});
+    }
     private void importPicker(){
         // Platform owns modal/focus state and chooses a supported picker for the
         // runtime (its own dialog on standard OpenJDK, native chooser on JBR).
@@ -729,11 +745,20 @@ public final class PlatformSession implements Disposable {
         Component pickerParent=active==null?WindowManager.getInstance().getFrame(project):active;
         FileChooser.chooseFiles(descriptor,project,pickerParent,null,files->{
             if(files.isEmpty()||bridge!=participant||participant.latest().generation()!=generation)return;
-            String destination=Messages.showInputDialog(project,"Existing Content-relative destination folder (empty = Content root)","Import Files",Messages.getQuestionIcon(),importFolder,null);
+            String destination=Messages.showInputDialog(project,"Destination under Content. Missing folders will be created (empty = Content root).","Import Files",Messages.getQuestionIcon(),importFolder,null);
             if(destination==null||pickerImport!=null)return;
             importFolder=destination;
-            pickerImport=new PickerImport(participant,generation,List.copyOf(files),destination);
-            submitImport(pickerImport,0);
+            var batch=new PickerImport(participant,generation,List.copyOf(files),destination);
+            pickerImport=batch;
+            if(destination.isBlank())submitImport(batch,0);
+            else{
+                var current=participant.latest();
+                participant.callAt(generation,current.snapshot().revision(),37,destination).whenComplete((reply,error)->edt(()->{
+                    if(pickerImport!=batch)return;
+                    if(error!=null){pickerImport=null;documentFailure(error);}
+                    else submitImport(batch,0);
+                }));
+            }
         });
     }
     private void submitImport(PickerImport batch,int index){
@@ -1140,40 +1165,72 @@ public final class PlatformSession implements Disposable {
         });
     }
     private void smokeInstanceInspector(){
-        bridge.call(15,"1","Health placement fixture","registered-components").thenCompose(created->{
-            String prefab=Long.toUnsignedString(created.snapshot().selection().document());
-            String scene=Long.toUnsignedString(created.snapshot().entry());
-            return bridge.call(33,"place",scene,prefab,"0","0").thenCompose(first->{
-                String firstNode=Long.toUnsignedString(first.snapshot().selection().element());
-                return bridge.call(33,"place",scene,prefab,"2","0").thenCompose(second->
-                    bridge.call(9,"1",scene,firstNode).thenApply(selected->second.snapshot().selection()));
+        bridge.call(15,"1","Nested Health","registered-components").thenCompose(nested->{
+            long child=nested.snapshot().selection().document();
+            long childRoot=nested.snapshot().nodes().stream().filter(n->n.document()==child&&n.kind()==2).findFirst().orElseThrow().id();
+            return bridge.call(15,"1","Health placement fixture","registered-components").thenCompose(created->{
+                long parent=created.snapshot().selection().document();
+                long parentRoot=created.snapshot().nodes().stream().filter(n->n.document()==parent&&n.kind()==2).findFirst().orElseThrow().id();
+                String scene=Long.toUnsignedString(created.snapshot().entry());
+                return bridge.call(29,"link-prefab",Long.toUnsignedString(parent),Long.toUnsignedString(parentRoot),
+                    Long.toUnsignedString(child)).thenCompose(link->{
+                    require(link.snapshot().fields().stream().anyMatch(f->f.name().endsWith(".health / points")&&
+                        f.source().equals("Inherited from Nested Health")&&!f.editable()),"Linked definition has no inherited Health");
+                    return bridge.call(33,"place",scene,Long.toUnsignedString(parent),"0","0");
+                }).thenCompose(first->bridge.call(33,"place",scene,Long.toUnsignedString(parent),"2","0")
+                    .thenCompose(second->smokeSelect(first.snapshot().selection()).thenApply(selected->
+                        new NestedHealthFixture(child,childRoot,parent,parentRoot,first.snapshot().selection(),second.snapshot().selection()))));
             });
-        }).whenComplete((other,error)->edt(()->{
+        }).whenComplete((fixture,error)->edt(()->{
             if(error!=null){failure(error);return;}
             open("inspector");
-            var points=snapshot.fields().stream().filter(f->f.name().endsWith(".health / points")&&f.editable()).findFirst().orElseThrow();
-            var control=(JTextField)named(tools.view("inspector"),points.key());
-            require(control!=null&&control.isEnabled(),"Instance Health control is unavailable");
+            var panel=tools.view("inspector");
+            var points=nestedPoints(snapshot);
+            var control=(JTextField)named(panel,points.key());
+            require(points.editable()&&control!=null&&control.isEnabled(),"Nested instance Health control is unavailable");
             control.setText("150");control.postActionEvent();
-            waitFor(()->ready()&&snapshot.fields().stream().anyMatch(f->f.key().equals(points.key())&&f.value().equals("150")&&
-                f.source().equals("instance override")),0,()->{
-                var first=snapshot.selection();
-                bridge.call(9,"1",Long.toUnsignedString(other.document()),Long.toUnsignedString(other.element())).thenCompose(selected->{
-                    require(selected.snapshot().fields().stream().anyMatch(f->f.name().equals(points.name())&&
-                        f.value().equals(points.value())&&f.source().equals("definition")),"Editing one placement changed its peer");
-                    return bridge.call(9,"1",Long.toUnsignedString(first.document()),Long.toUnsignedString(first.element()));
-                }).thenCompose(selected->bridge.call(31,Long.toUnsignedString(selected.snapshot().selectionRevision()),points.key()))
-                    .thenCompose(reverted->{
-                        require(reverted.snapshot().fields().stream().anyMatch(f->f.name().equals(points.name())&&
-                            f.value().equals(points.value())&&f.source().equals("definition")),"Revert did not restore the definition default");
-                        return bridge.call(6);
-                    }).whenComplete((saved,failed)->edt(()->{
-                        if(failed!=null){failure(failed);return;}
-                        record("PASS F2 Health scalar widget committed an instance override; peer and Revert retained definition");
-                        smokePlayback();
-                    }));
-            });
+            waitFor(()->ready()&&nestedPoints(snapshot).value().equals("150")&&nestedPoints(snapshot).source().equals("instance override"),0,
+                ()->smokeNestedDefault(fixture));
         }));
+    }
+    private record NestedHealthFixture(long child,long childRoot,long parent,long parentRoot,Bridge.Selection first,Bridge.Selection second) {}
+    private Bridge.Field nestedPoints(Bridge.Snapshot value){
+        return value.fields().stream().filter(f->f.name().contains(".health / points · Nested Health")).findFirst().orElseThrow();
+    }
+    private CompletableFuture<Bridge.Reply> smokeSelect(Bridge.Selection selected){
+        return bridge.call(9,Integer.toString(selected.kind()),Long.toUnsignedString(selected.document()),Long.toUnsignedString(selected.element()));
+    }
+    private void smokeNestedDefault(NestedHealthFixture fixture){
+        smokeSelect(new Bridge.Selection(2,fixture.child(),fixture.childRoot())).thenCompose(selected->{
+            var value=selected.snapshot();
+            var points=value.fields().stream().filter(f->f.name().endsWith(".health / points")&&f.editable()).findFirst().orElseThrow();
+            return bridge.call(16,Long.toUnsignedString(value.selectionRevision()),points.key(),"180");
+        }).thenCompose(changed->smokeSelect(new Bridge.Selection(2,fixture.parent(),fixture.parentRoot())))
+            .thenCompose(parent->{
+                var inherited=nestedPoints(parent.snapshot());
+                require(inherited.value().equals("180")&&!inherited.editable(),"Parent definition did not display the updated linked default");
+                return smokeSelect(fixture.second());
+            }).thenCompose(peer->{
+                require(nestedPoints(peer.snapshot()).value().equals("180"),"Peer placement did not inherit the linked default");
+                return smokeSelect(fixture.first());
+            }).whenComplete((selected,error)->edt(()->{
+                if(error!=null){failure(error);return;}
+                var points=nestedPoints(snapshot);
+                require(points.value().equals("150"),"Linked default change overwrote the first instance");
+                var panel=tools.view("inspector");
+                var revert=(JButton)named(panel,"scalar.revert:"+points.key());
+                var control=(JTextField)named(panel,points.key());
+                require(revert!=null&&revert.isVisible()&&revert.isEnabled()&&control!=null,"Missing nested Revert Override control");
+                layout(panel);
+                require(control.getHeight()>=control.getPreferredSize().height&&control.getWidth()>0,"Revert compressed the scalar editor");
+                revert.doClick();
+                waitFor(()->ready()&&nestedPoints(snapshot).value().equals("180")&&!revert.isVisible(),0,()->
+                    bridge.call(6).whenComplete((saved,failed)->edt(()->{
+                        if(failed!=null){failure(failed);return;}
+                        record("PASS F2 linked Health default reached parent and peer; real instance field and Revert kept the editor height");
+                        smokePlayback();
+                    })));
+            }));
     }
     private void smokePlayback(){
         long revision=snapshot.revision(),identity=snapshot.project();

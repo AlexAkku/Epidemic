@@ -39,7 +39,7 @@ change or Save flush; Escape restores the current native value.
 | F1-GATE | PASS | Owner acceptance and functional qualification complete. On 2026-11-08 the owner accepted disk-full and Windows reboot during import as nonblocking NOT RUN backlog items. Historical/external analyzer findings remain classified. |
 | F2.0 native contract | PASS | Scene/Prefab ownership, persistence and IPC gaps audited. Nine existing targeted CTest cases passed. |
 | F2.1–F2.10 | Implementation complete | Targeted native parity, standalone Release, IPC framing and the packaged companion scenario passed. |
-| F2.11 / F2-GATE / F-I-GATE | PARTIAL | Full engine CTest passed on 2026-11-10. Owner visual qualification and remaining F-I gate checks are tracked separately. |
+| F2.11 / F2-GATE / F-I-GATE | PASS | Frozen on 2026-11-10. Owner results and the automated qualification of the final fixes are recorded below. |
 
 ## Verification
 
@@ -387,3 +387,52 @@ Health override через поле Inspector. Ручная квалификац
     систему, сохраните и проверьте её после открытия. Повторите с World scope.
     Попытка назначить новый пустой Graph должна дать `editor.graph_event_entry`.
     В конце удалите тестовые назначения.
+
+## Финальная приёмка перед заморозкой F-I
+
+Владелец проверил сборку `6d87970`. Операции с Documents, разделение
+Problems и Console, качество превью, отмена импорта и Watch, независимость
+Health и Revert, плавающее окно и Clone (19), Scene/World Systems (20)
+подтверждены. Зафиксированы два замечания к UX и одна правка раскладки.
+
+| Проверка | Результат владельца |
+|---|---|
+| Пустая папка Content | Требовалось создание через ПКМ и отображение до импорта. |
+| Revert Override | Значение возвращается, но раскладка сжимала поля ввода. |
+| 17. Вложенный Prefab | Связь и отклонение цикла подтверждены. Требовалось показать унаследованное поле в A и сделать его override в экземпляре различимым. |
+| 18. Save / перезапуск / Play | **PASS\***. Повторить на последующих этапах со сложными взаимодействиями и системами. |
+| 19. Плавающее окно / Clone | PASS. |
+| 20. Scene / World Systems | PASS. |
+
+### Проверка исправлений
+
+1. В режиме Tree щёлкнуть ПКМ по **Content → New Folder…**, ввести `123`.
+   Пустая папка появляется сразу. Создать подпапку тем же способом.
+   При импорте указать новый путь вроде `123/Импорт`. Подпапка создаётся
+   автоматически и остаётся в дереве после перезапуска.
+2. Связать Prefab A с B, у которого есть Health. Выбрать строку **Linked
+   Prefab · B** или корень A. Поля B показываются с источником
+   **Inherited from B**. Правка значения по умолчанию выполняется в B.
+3. Разместить A дважды. У первого экземпляра найти **Health / points · B**
+   и ввести `150`, затем Enter. Кнопка **Revert Override** появляется после
+   записи override. Поменять Health в B на `180`. Первый экземпляр сохраняет
+   `150`, второй наследует `180`. Revert у первого возвращает `180`.
+   Сузить Inspector и проверить, что при появлении Revert поле сохраняет высоту.
+
+Автоматически подтверждены создание вложенной пустой папки, её проекция в
+Swing Explorer, импорт, сохранение и повторное открытие проекта, а также
+отклонение пути за пределы Content и служебного пути. В упакованном Release
+проверены унаследованный Health в определении A, два экземпляра, обновление
+значения в B, сохранение override и реальная кнопка Revert без сжатия поля.
+В этом прогоне использовались вызовы виджетов приложения и IPC.
+
+**F2-GATE PASS. F-I-GATE PASS. Этап заморожен 2026-11-10.** Основание для
+закрытия — ручной прогон владельца и автоматическое подтверждение исправлений
+в текущем приложении. Повторный физический прогон исправленного ПКМ и
+вложенного Inspector отмечен отдельно как NOT RUN. Пункт 18 остаётся PASS\*.
+
+Ограничения F-I сохраняются в backlog. Квалификация импорта при заполненном
+диске и перезагрузке Windows остаётся NOT RUN по принятому исключению F1.
+Вложенные Prefab в F-I поддерживают композицию и overrides. Пространственный
+предпросмотр вложенных спрайтов относится к последующей работе над viewport.
+Полноценный Graph authoring и Live Game View относятся к F-II.

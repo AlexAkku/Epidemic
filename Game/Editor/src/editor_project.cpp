@@ -117,7 +117,8 @@ DefaultGraphBehavior(const ProjectDefinition &definition, const ProjectSchema &s
 }
 
 foundation::Result<comp::PrefabDefinition>
-MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab) {
+MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab,
+                  LinkedPrefabSources *linked_sources) {
     using Result = foundation::Result<comp::PrefabDefinition>;
     const auto reject = [] {return Result::Failure(Error("editor.prefab_link"));};
     std::vector<runtime::AssetId> active;
@@ -135,7 +136,7 @@ MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab) 
             return false;
         return std::ranges::all_of(node.children,[&](const auto &child) {return self(self,child,depth+1);});
     };
-    const auto expand = [&](auto &&self, runtime::AssetId id) -> Result {
+    const auto expand = [&](auto &&self, runtime::AssetId id, LinkedPrefabSources *sources) -> Result {
         if (active.size() >= 32 || std::ranges::find(active,id) != active.end())
             return reject();
         const auto *document = Find(definition,id);
@@ -149,13 +150,19 @@ MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab) 
                 continue;
             if (!find_node(find_node,source->root,link.parent))
                 return reject();
-            auto nested = self(self,link.target);
+            LinkedPrefabSources child_sources;
+            auto nested = self(self, link.target, sources ? &child_sources : nullptr);
             if (!nested)
                 return nested;
             auto &child = nested.Value();
             const auto remap = [&](auto &&visit, comp::PrefabNode &node) -> bool {
+                const auto original = node.id;
                 node.id = foundation::StringId::FromString("editor.prefab.link." +
-                    std::to_string(link.id.Raw()) + "." + std::to_string(node.id.Raw()));
+                    std::to_string(link.id.Raw()) + "." + std::to_string(original.Raw()));
+                if (sources) {
+                    const auto found = child_sources.find(original.Raw());
+                    sources->emplace(node.id.Raw(), found == child_sources.end() ? link.target : found->second);
+                }
                 for (auto &component : node.components)
                     for (auto &property : component.properties)
                         if (property.parameter.IsValid()) {
@@ -177,7 +184,9 @@ MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab) 
         active.pop_back();
         return Result::Success(std::move(result));
     };
-    return expand(expand,prefab);
+    if (linked_sources)
+        linked_sources->clear();
+    return expand(expand, prefab, linked_sources);
 }
 
 foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>

@@ -13,12 +13,19 @@ public final class ScalarInspector extends JPanel {
     public record Edit(long generation,long revision,long selectionRevision,String key,String value) { }
     private final Function<Edit,CompletableFuture<Bridge.Reply>> commit;
     private final Function<Edit,CompletableFuture<Bridge.Reply>> revert;
-    private final JPanel body=new JPanel();
+    private final JPanel body=new FieldList();
     private final Map<String,Row> rows=new LinkedHashMap<>();
     private Bridge.Snapshot snapshot;
     private long generation;
     private boolean ready,updating;
     private List<String> keys=List.of();
+    private static final class FieldList extends JPanel implements Scrollable {
+        public Dimension getPreferredScrollableViewportSize(){return getPreferredSize();}
+        public int getScrollableUnitIncrement(Rectangle visible,int orientation,int direction){return 20;}
+        public int getScrollableBlockIncrement(Rectangle visible,int orientation,int direction){return Math.max(20,visible.height-20);}
+        public boolean getScrollableTracksViewportWidth(){return true;}
+        public boolean getScrollableTracksViewportHeight(){return false;}
+    }
     private final class Row {
         final JButton reset=new JButton("Revert Override");
         final JLabel source=new JLabel();
@@ -31,7 +38,7 @@ public final class ScalarInspector extends JPanel {
                 JCheckBox check=new JCheckBox();input=check;
                 check.addActionListener(e->{if(!updating){draft=token(field.key(),Boolean.toString(check.isSelected()));send(this);}});
             }else{
-                JTextField text=new JTextField();input=text;
+                JTextField text=new JTextField(12);input=text;
                 text.getDocument().addDocumentListener(new javax.swing.event.DocumentListener(){
                     private void changed(){if(active&&!updating&&draft==null)draft=token(Row.this.field.key(),Row.this.field.value());}
                     public void insertUpdate(javax.swing.event.DocumentEvent event){changed();}
@@ -46,9 +53,12 @@ public final class ScalarInspector extends JPanel {
                 text.getActionMap().put("native.cancel",new AbstractAction(){public void actionPerformed(ActionEvent e){draft=null;error.setText(" ");refreshValue(Row.this);}});
             }
             input.setName(field.key());input.getAccessibleContext().setAccessibleName(field.name());
-            JPanel box=new JPanel(new BorderLayout(3,3));box.setAlignmentX(LEFT_ALIGNMENT);
+            JPanel box=new JPanel(new BorderLayout(3,3)){
+                @Override public Dimension getMaximumSize(){return new Dimension(Integer.MAX_VALUE,getPreferredSize().height);}
+            };
+            box.setAlignmentX(LEFT_ALIGNMENT);
             JLabel label=new JLabel(UiPanels.componentLabel(field.name()));label.setLabelFor(input);label.setToolTipText(field.name());
-            JPanel heading=new JPanel(new BorderLayout());heading.add(label);heading.add(reset,BorderLayout.EAST);
+            reset.setName("scalar.revert:"+field.key());
             reset.addActionListener(e->{
                 if(!ready||!active||pending||revert==null)return;
                 draft=null;
@@ -58,10 +68,14 @@ public final class ScalarInspector extends JPanel {
                     if(active){if(failure!=null)error.setText(failure.getMessage());refresh(generation,snapshot,ready);}
                 }));
             });
-            box.add(heading,BorderLayout.NORTH);box.add(input);
+            box.add(label,BorderLayout.NORTH);box.add(input);
             error.setForeground(new Color(0xe58c8c));
-            JPanel note=new JPanel(new BorderLayout());note.add(source,BorderLayout.NORTH);note.add(error,BorderLayout.SOUTH);box.add(note,BorderLayout.SOUTH);
-            box.setBorder(BorderFactory.createEmptyBorder(4,0,4,0));box.setMaximumSize(new Dimension(Integer.MAX_VALUE,100));
+            JPanel origin=new JPanel(new BorderLayout(4,0));
+            origin.add(source,BorderLayout.CENTER);origin.add(reset,BorderLayout.EAST);
+            JPanel note=new JPanel(new BorderLayout());
+            note.add(origin,BorderLayout.NORTH);note.add(error,BorderLayout.SOUTH);
+            box.add(note,BorderLayout.SOUTH);
+            box.setBorder(BorderFactory.createEmptyBorder(4,0,4,0));
             body.add(box);
         }
     }
@@ -69,7 +83,7 @@ public final class ScalarInspector extends JPanel {
         this(commit,null);
     }
     public ScalarInspector(Function<Edit,CompletableFuture<Bridge.Reply>> commit,Function<Edit,CompletableFuture<Bridge.Reply>> revert){
-        super(new BorderLayout());this.commit=commit;this.revert=revert;body.setLayout(new BoxLayout(body,BoxLayout.Y_AXIS));add(new JScrollPane(body));
+        super(new BorderLayout());this.commit=commit;this.revert=revert;body.setLayout(new BoxLayout(body,BoxLayout.Y_AXIS));add(new JScrollPane(body,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
     }
     private Edit token(String key,String value){return new Edit(generation,snapshot.revision(),snapshot.selectionRevision(),key,value);}
     public void refresh(long currentGeneration,Bridge.Snapshot value,boolean interactive){

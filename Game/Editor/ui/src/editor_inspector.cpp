@@ -173,6 +173,25 @@ std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,
     if (!doc)
         return rows;
     if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc->data)) {
+        if (selection.kind == UiElement::PrefabLink) {
+            const auto &links = snapshot.definition.prefab_links;
+            const auto link = std::ranges::find_if(links, [&](const auto &item) {
+                return item.owner == doc->id && item.id.Raw() == selection.element;
+            });
+            const auto *target = link == links.end() ? nullptr : snapshot.Find(link->target);
+            const auto *definition = target ? std::get_if<comp::PrefabDefinition>(&target->data) : nullptr;
+            if (!definition)
+                return rows;
+            rows = InspectComponents(snapshot, {target->id, UiElement::PrefabNode, definition->root.id.Raw()},
+                                     registry, nullptr, false);
+            for (auto &row : rows) {
+                row.editable = false;
+                row.readonly_reason = "Open Linked Definition to edit the default";
+                if (!row.source.starts_with("Inherited from "))
+                    row.source = "Inherited from " + target->name;
+            }
+            return rows;
+        }
         if (const auto *node = Node(prefab->root, selection.element)) {
             for (const auto &component : node->components) {
                 if (selection.kind == UiElement::PrefabComponent &&
@@ -186,6 +205,28 @@ std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,
 
             if (selection.kind != UiElement::PrefabComponent)
                 Behaviors(rows, snapshot, node->behaviors, "");
+            if (selection.kind == UiElement::PrefabNode && node == &prefab->root &&
+                std::ranges::any_of(snapshot.definition.prefab_links, [&](const auto &link) { return link.owner == doc->id; })) {
+                LinkedPrefabSources sources;
+                const auto expanded = MaterializePrefab(snapshot.definition, doc->id, &sources);
+                if (expanded)
+                    for (const auto *child : Nodes(expanded.Value().root)) {
+                        const auto found = sources.find(child->id.Raw());
+                        if (found == sources.end())
+                            continue;
+                        const auto *source = snapshot.Find(found->second);
+                        if (!source)
+                            continue;
+                        const auto first = rows.size();
+                        for (const auto &component : child->components)
+                            Properties(rows, registry, expanded.Value(), *child, component, nullptr, doc->id, false, "");
+                        for (auto i = first; i < rows.size(); ++i) {
+                            rows[i].name += " · " + source->name + " [" + Id(child->id.Raw()) + "]";
+                            rows[i].source = "Inherited from " + source->name;
+                            rows[i].readonly_reason = "Open Linked Definition to edit the default";
+                        }
+                    }
+            }
         }
 
         Parameters(rows, *prefab, doc->id);
@@ -194,17 +235,24 @@ std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,
         for (const auto &placement : scene->placements)
             if (placement.node.Raw() == selection.element) {
                 const auto *prefab_doc = snapshot.Find(placement.prefab);
-                const auto expanded = MaterializePrefab(snapshot.definition,placement.prefab);
+                LinkedPrefabSources sources;
+                const auto expanded = MaterializePrefab(snapshot.definition, placement.prefab, &sources);
                 const auto *definition = expanded ? &expanded.Value() : nullptr;
                 const auto first = rows.size();
                 if (definition) {
                     Parameters(rows, *definition, prefab_doc->id, &placement);
                     for (const auto *node : Nodes(definition->root)) {
+                        const auto inherited = sources.find(node->id.Raw());
+                        const auto *source = inherited == sources.end() ? nullptr : snapshot.Find(inherited->second);
                         const auto prefix = node == &definition->root ? std::string{} :
                             "Node [" + Id(node->id.Raw()) + "] / ";
                         for (const auto &component : node->components) {
+                            const auto first_property = rows.size();
                             Properties(rows, registry, *definition, *node, component,
-                                       &placement.overrides, prefab_doc->id, false, prefix);
+                                       &placement.overrides, prefab_doc->id, false, source ? "" : prefix);
+                            if (source)
+                                for (auto i = first_property; i < rows.size(); ++i)
+                                    rows[i].name += " · " + source->name + " [" + Id(node->id.Raw()) + "]";
                             Behaviors(rows, snapshot, component.behaviors,
                                       prefix + "Component [" + Id(component.type.Raw()) + " / " +
                                           Id(component.part.Raw()) + "] / ",

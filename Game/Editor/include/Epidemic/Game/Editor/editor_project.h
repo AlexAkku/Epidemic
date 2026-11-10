@@ -3,6 +3,7 @@
 #include "Epidemic/Game/Composition/scene_composition.h"
 #include "Epidemic/Runtime/Assets/asset_services.h"
 #include <filesystem>
+#include <map>
 #include <variant>
 #include <set>
 
@@ -72,8 +73,11 @@ struct ProjectSnapshot {
 [[nodiscard]] foundation::Result<comp::GraphBehaviorDefinition>
 DefaultGraphBehavior(const ProjectDefinition &definition, const ProjectSchema &schema,
                      runtime::AssetId graph, foundation::StringId id);
+using LinkedPrefabSources = std::map<std::uint64_t, runtime::AssetId>;
+
 [[nodiscard]] foundation::Result<comp::PrefabDefinition>
-MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab);
+MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab,
+                  LinkedPrefabSources *linked_sources = nullptr);
 
 [[nodiscard]] foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>
 ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema);
