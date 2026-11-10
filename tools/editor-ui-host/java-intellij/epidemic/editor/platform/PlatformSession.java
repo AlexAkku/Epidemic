@@ -64,6 +64,8 @@ public final class PlatformSession implements Disposable {
     private boolean assetPolling;
     private long loggedContentRevision;
     private String importFolder="",assetQuery="";
+    private record PickerImport(Bridge participant,long generation,List<VirtualFile> files,String folder) {}
+    private PickerImport pickerImport;
     private Bridge.Selection pendingSelection;
     private Bridge.Selection reconnectSelection;
     private boolean selecting;
@@ -184,14 +186,20 @@ public final class PlatformSession implements Disposable {
         service=state.service();
         boolean rejected=service==Bridge.Service.Ready&&!state.diagnostic().isEmpty();
         if(service==Bridge.Service.Ready)rejectedCommand=rejected;
-        if(rejected){pendingSelection=null;if(tools!=null)tools.log(state.diagnostic());}
+        if(rejected){
+            pendingSelection=null;
+            if(tools!=null){
+                if(state.diagnostic().startsWith("Import rejected:"))reportProblem(state.diagnostic());
+                else tools.problem(state.diagnostic());
+            }
+        }
         if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot,rejected);for(var view:List.copyOf(views)){view.reader().refresh(snapshot,rejected);refreshDocument(view);}refreshDocumentCommands();
             JFrame frame=WindowManager.getInstance().getFrame(project);if(frame!=null)frame.setTitle("Epidemic — "+snapshot.title()+" · "+snapshot.path()+(snapshot.dirty()?" · Unsaved":"")+(service==Bridge.Service.Loading?" · Working…":service==Bridge.Service.Error?" · Disconnected — read-only":""));
         }
         if(snapshot!=null && tools!=null && snapshot.assetState().revision()!=loggedContentRevision){
             var events=snapshot.assetState().events();int count=(int)Math.min(events.size(),Math.max(0,snapshot.assetState().revision()-loggedContentRevision));
             for(var event:events.subList(events.size()-count,events.size())){
-                if(event.kind()==3)reportProblem(event.diagnostic());
+                if(event.kind()==2||event.kind()==3)reportProblem(event.diagnostic());
                 else tools.log(event.diagnostic());
             }
             loggedContentRevision=snapshot.assetState().revision();
@@ -200,7 +208,14 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,()->{if(bridge!=null)tools.log("Cancelled queued requests: "+bridge.cancelQueued());},this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));return result;}
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);
+        result.assetPreview((id,key,divisor)->{
+            Bridge participant=bridge;
+            var current=participant==null?null:participant.latest();
+            if(current==null||!current.capabilities().contains("asset-preview"))
+                return CompletableFuture.failedFuture(new IOException("ui.preview_unavailable"));
+            return participant.assetPreview(current.generation(),id,key,divisor);
+        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));return result;}
     private CompletableFuture<Bridge.Reply> sceneGesture(UiPanels.GestureEdit edit){
         if(!supports(switch(edit.operation()){case 33->"scene-resources";case 34->"scene-systems";default->"scene-gestures";})||snapshot.playing())
             return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
@@ -297,11 +312,48 @@ public final class PlatformSession implements Disposable {
     }
     private void renameDocument(){
         if(!supports("rename-document")||snapshot.playing())return;
-        var selected=snapshot.documents().stream().filter(d->d.id()==snapshot.selection().document()).findFirst();
-        if(selected.isEmpty())return;
-        Bridge participant=bridge;long generation=participant.latest().generation(),revision=snapshot.revision();
-        String name=Messages.showInputDialog(project,"Document name","Rename Document",Messages.getQuestionIcon(),selected.get().name(),null);
-        if(name!=null)participant.callAt(generation,revision,5,Long.toUnsignedString(selected.get().id()),name).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});
+        snapshot.documents().stream().filter(d->d.id()==snapshot.selection().document())
+            .findFirst().ifPresent(doc->documentAction("rename",doc));
+    }
+    private void documentAction(String action,Bridge.Document selected){
+        if(!supports(action.equals("rename")?"rename-document":"document-lifecycle")||snapshot.playing()||
+            snapshot.documents().stream().noneMatch(doc->doc.id()==selected.id()))return;
+        Bridge participant=bridge;
+        long generation=participant.latest().generation(),revision=snapshot.revision();
+        String id=Long.toUnsignedString(selected.id());
+        CompletableFuture<Bridge.Reply> request;
+        if(action.equals("delete")){
+            if(selected.id()==snapshot.entry())return;
+            if(Messages.showYesNoDialog(project,"Delete "+selected.name()+"? Its open tabs will close. You can undo the deletion.",
+                "Delete Document",Messages.getWarningIcon())!=Messages.YES)return;
+            request=participant.callAt(generation,revision,35,"delete",id);
+        }else{
+            boolean duplicate=action.equals("duplicate");
+            String title=duplicate?"Duplicate Document":"Rename Document";
+            String name=Messages.showInputDialog(project,"Document name",title,Messages.getQuestionIcon(),
+                selected.name()+(duplicate?" Copy":""),null);
+            if(name==null)return;
+            request=duplicate?participant.callAt(generation,revision,35,"duplicate",id,name)
+                :participant.callAt(generation,revision,5,id,name);
+        }
+        request.whenComplete((reply,error)->edt(()->{
+            if(bridge!=participant||participant.latest().generation()!=generation)return;
+            if(error!=null){documentFailure(error);return;}
+            if(action.equals("duplicate")){
+                reply.snapshot().documents().stream().filter(doc->doc.id()==reply.snapshot().selection().document())
+                    .findFirst().ifPresent(this::openDocument);
+            }else if(action.equals("delete")){
+                var iterator=documents.values().iterator();
+                while(iterator.hasNext()){
+                    VirtualFile file=iterator.next();
+                    var key=file.getUserData(PanelEditorProvider.DOCUMENT);
+                    if(key!=null&&key.id()==selected.id()&&key.generation()==generation){
+                        iterator.remove();
+                        ((com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project)).closeFile(file,true,true);
+                    }
+                }
+            }
+        }));
     }
     private void documentFailure(Throwable error){
         failure(error);if(smoke)return;
@@ -310,7 +362,7 @@ public final class PlatformSession implements Disposable {
     }
     private void reportProblem(String message){
         if(!opened||tools==null)return;
-        tools.log(message);
+        tools.problem(message);
         open("problems");
     }
     private void refreshDocument(DocumentView view){
@@ -636,7 +688,6 @@ public final class PlatformSession implements Disposable {
     private void assetAction(String action,Long id){
         if(!supports("asset-pipeline"))return;
         if(action.startsWith("Search:")){assetQuery=action.substring(7);bridge.call(28,assetQuery).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});return;}
-        if(action.equals("cancel")){bridge.call(25).whenComplete((r,e)->{if(e!=null)edt(()->documentFailure(e));});return;}
         if(action.equals("Watch")){int choice=Messages.showYesNoCancelDialog(project,"Automatically reimport files changed inside this project's Content folder?","Watch Content","Enable","Disable","Cancel",Messages.getQuestionIcon());if(choice!=Messages.CANCEL)bridge.call(27,choice==Messages.YES?"1":"0");return;}
         var asset=snapshot.assets().stream().filter(a->a.id()==id).findFirst().orElse(null);if(asset==null){Messages.showInfoMessage(project,"Select an asset in Project Explorer first.","Asset command");return;}
         long generation=bridge.latest().generation(),revision=snapshot.revision(),assetRevision=snapshot.assetRevision();
@@ -669,35 +720,53 @@ public final class PlatformSession implements Disposable {
         // Platform owns modal/focus state and chooses a supported picker for the
         // runtime (its own dialog on standard OpenJDK, native chooser on JBR).
         // A raw AWT FileDialog bypasses that state in an IntelliJ application.
-        if(!supports("asset-pipeline")||snapshot.storage()!=2||snapshot.playing())return;
+        if(!supports("asset-pipeline")||snapshot.storage()!=2||snapshot.playing()||pickerImport!=null)return;
+        Bridge participant=bridge;
+        long generation=participant.latest().generation();
         FileChooserDescriptor descriptor=new FileChooserDescriptor(true,false,false,false,false,true)
             .withTitle("Import PNG / WebP / PCM WAV / TTF / OTF").withFileFilter(file->{if(file.isDirectory())return true;String ext=file.getExtension();return ext!=null&&Set.of("png","webp","wav","ttf","otf").contains(ext.toLowerCase(Locale.ROOT));});
         Window active=KeyboardFocusManager.getCurrentKeyboardFocusManager().getActiveWindow();
         Component pickerParent=active==null?WindowManager.getInstance().getFrame(project):active;
         FileChooser.chooseFiles(descriptor,project,pickerParent,null,files->{
-            if(files.isEmpty())return;
-            String destination=Messages.showInputDialog(project,"Existing Content-relative destination folder (empty = Content root)","Import Files",Messages.getQuestionIcon(),importFolder,null);if(destination==null)return;
-            importFolder=destination;Bridge participant=bridge;long generation=participant.latest().generation();
-            CompletableFuture<Void> chain=CompletableFuture.completedFuture(null);
-            for(var file:files)chain=chain.thenCompose(v->queueImport(participant,generation,file.getPath(),(destination.isBlank()?"":destination+"/")+file.getName()));
+            if(files.isEmpty()||bridge!=participant||participant.latest().generation()!=generation)return;
+            String destination=Messages.showInputDialog(project,"Existing Content-relative destination folder (empty = Content root)","Import Files",Messages.getQuestionIcon(),importFolder,null);
+            if(destination==null||pickerImport!=null)return;
+            importFolder=destination;
+            pickerImport=new PickerImport(participant,generation,List.copyOf(files),destination);
+            submitImport(pickerImport,0);
         });
+    }
+    private void submitImport(PickerImport batch,int index){
+        if(pickerImport!=batch)return;
+        if(index==batch.files().size()||bridge!=batch.participant()||service==Bridge.Service.Error||
+            bridge.latest().generation()!=batch.generation()){
+            pickerImport=null;
+            return;
+        }
+        VirtualFile file=batch.files().get(index);
+        String prefix=batch.folder().isBlank()?"":batch.folder()+"/";
+        queueImport(batch.participant(),batch.generation(),file.getPath(),prefix+file.getName())
+            .whenComplete((ignored,error)->edt(()->submitImport(batch,index+1)));
+    }
+    private void cancelImports(){
+        pickerImport=null;
+        Bridge participant=bridge;
+        var current=participant==null?null:participant.latest();
+        if(!opened||closing||service==Bridge.Service.Error||current==null||!current.capabilities().contains("asset-pipeline"))return;
+        // Both this action and batch submission run on the EDT. This request follows
+        // the last submitted import and no remaining picker items can follow it.
+        participant.callAt(current.generation(),0,25).whenComplete((reply,error)->edt(()->{
+            if(bridge!=participant)return;
+            if(error!=null)documentFailure(error);
+            else tools.log("Import cancellation requested. Published assets are kept.");
+        }));
     }
     private CompletableFuture<Void> queueImport(Bridge participant,long generation,String source,String destination){
         var latest=participant.latest();
         if(latest==null||latest.snapshot()==null||latest.generation()!=generation)return CompletableFuture.completedFuture(null);
         var current=latest.snapshot();
         return participant.callAt(generation,current.revision(),18,Long.toUnsignedString(current.assetRevision()),source,destination)
-            .handle((reply,error)->{
-                if(error!=null)edt(()->{
-                    if(bridge!=participant||participant.latest()==null||participant.latest().generation()!=generation)return;
-                    Throwable cause=error;while(cause.getCause()!=null)cause=cause.getCause();
-                    String message=cause.getMessage();
-                    if(message!=null&&message.startsWith("editor.import_destination:"))
-                        message="The destination already exists or is invalid. Use Reimport for an existing asset. ("+message+")";
-                    reportProblem("Import rejected: "+destination+" · "+message);
-                });
-                return null;
-            });
+            .handle((reply,error)->null);
     }
     private AnAction action(String label,Runnable run,java.util.function.BooleanSupplier enabled){
         return new AnAction(label){
@@ -729,7 +798,9 @@ public final class PlatformSession implements Disposable {
         for(Catalog.Panel panel:catalog.panels())sub.get("View").add(action(panel.label(),()->open(panel.id()),()->opened));
         sub.get("Project").add(action("Project Settings",()->open("settings.project"),()->opened));sub.get("Project").add(action("Reconnect native backend",this::reconnect,()->opened&&service==Bridge.Service.Error));
         sub.get("Project").addSeparator();sub.get("Project").add(playAction);sub.get("Project").add(stopAction);
-        sub.get("Assets").add(action("Import…",this::importPicker,()->supports("asset-pipeline")&&snapshot.storage()==2&&!snapshot.playing()));
+        sub.get("Assets").add(action("Import…",this::importPicker,()->supports("asset-pipeline")&&snapshot.storage()==2&&!snapshot.playing()&&pickerImport==null));
+        sub.get("Assets").add(action("Watch Content…",()->assetAction("Watch",0L),()->supports("asset-pipeline")&&snapshot.storage()==2));
+        sub.get("Assets").add(action("Cancel native imports",this::cancelImports,()->opened&&service!=Bridge.Service.Error));
         for(String group:List.of("GameObject","Graph","Build"))sub.get(group).add(action("Backend planned for "+(group.equals("Graph")?"F3":group.equals("Build")?"F9":"F2"),()->{},()->false));
         sub.get("Tools").add(action("UI Gallery",()->open("settings.editor"),()->opened));sub.get("Tools").add(action("Type Registry",()->open("type.registry"),()->opened));sub.get("Tools").add(action("Find Panel…",this::palette,()->opened));
         sub.get("Window").add(action("Move Inspector to Windows window",()->primary.setType(ToolWindowType.WINDOWED,()->primary.show(null)),()->opened));
@@ -802,7 +873,7 @@ public final class PlatformSession implements Disposable {
             closing=false;if(error!=null){failure(error);return;}closedUi(exit);
         }));
     }
-    private void closedUi(boolean exit){opened=false;snapshot=null;loggedContentRevision=0;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
+    private void closedUi(boolean exit){opened=false;snapshot=null;pickerImport=null;loggedContentRevision=0;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
     private void exit(){if(opened){close(true);return;}finish();}
     private void finish(){if(bridge==null){exitApplication();return;}bridge.shutdown().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}if(smoke)require(NativeViewport.metrics()[0]==0,"Project close leaked native surfaces");record("PASS Platform native shutdown; surfaces="+NativeViewport.metrics()[0]);exitApplication();}));}
     private void exitApplication(){
@@ -1048,9 +1119,61 @@ public final class PlatformSession implements Disposable {
                 saveProject().whenComplete((saved,saveError)->edt(()->{
                     if(saveError!=null){failure(saveError);return;}
                     record("PASS F1 Explorer button retained asset ID; duplicate destination opened Problems; merged toolbar mode retained");
-                    smokePlayback();
+                    smokePickerCancel(text);
                 }));
             })));
+    }
+    private void smokePickerCancel(JTextArea problems){
+        var console=(JTextArea)((JScrollPane)tools.view("console")).getViewport().getView();
+        require(console.getText().contains("editor.asset_imported")&&!problems.getText().contains("editor.asset_imported")&&
+            !problems.getText().contains("editor.asset_queued"),"Routine asset activity leaked into Problems");
+        var batch=new PickerImport(bridge,bridge.latest().generation(),List.of(
+            new LightVirtualFile("picker-first.png"),new LightVirtualFile("picker-unsent.png")),"");
+        pickerImport=batch;
+        submitImport(batch,0);
+        cancelImports();
+        smokeAssetPoll(()->snapshot.assetState().events().stream().anyMatch(e->e.kind()==5&&e.source().equals("picker-first.png")),0,()->{
+            require(pickerImport==null&&(snapshot.flags()&64)==0&&snapshot.assetState().events().stream().noneMatch(e->
+                e.source().equals("picker-unsent.png")),"Picker resubmitted files after native cancel");
+            record("PASS F1 Problems/Console separation and picker cancellation before a later submission");
+            smokeInstanceInspector();
+        });
+    }
+    private void smokeInstanceInspector(){
+        bridge.call(15,"1","Health placement fixture","registered-components").thenCompose(created->{
+            String prefab=Long.toUnsignedString(created.snapshot().selection().document());
+            String scene=Long.toUnsignedString(created.snapshot().entry());
+            return bridge.call(33,"place",scene,prefab,"0","0").thenCompose(first->{
+                String firstNode=Long.toUnsignedString(first.snapshot().selection().element());
+                return bridge.call(33,"place",scene,prefab,"2","0").thenCompose(second->
+                    bridge.call(9,"1",scene,firstNode).thenApply(selected->second.snapshot().selection()));
+            });
+        }).whenComplete((other,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            open("inspector");
+            var points=snapshot.fields().stream().filter(f->f.name().endsWith(".health / points")&&f.editable()).findFirst().orElseThrow();
+            var control=(JTextField)named(tools.view("inspector"),points.key());
+            require(control!=null&&control.isEnabled(),"Instance Health control is unavailable");
+            control.setText("150");control.postActionEvent();
+            waitFor(()->ready()&&snapshot.fields().stream().anyMatch(f->f.key().equals(points.key())&&f.value().equals("150")&&
+                f.source().equals("instance override")),0,()->{
+                var first=snapshot.selection();
+                bridge.call(9,"1",Long.toUnsignedString(other.document()),Long.toUnsignedString(other.element())).thenCompose(selected->{
+                    require(selected.snapshot().fields().stream().anyMatch(f->f.name().equals(points.name())&&
+                        f.value().equals(points.value())&&f.source().equals("definition")),"Editing one placement changed its peer");
+                    return bridge.call(9,"1",Long.toUnsignedString(first.document()),Long.toUnsignedString(first.element()));
+                }).thenCompose(selected->bridge.call(31,Long.toUnsignedString(selected.snapshot().selectionRevision()),points.key()))
+                    .thenCompose(reverted->{
+                        require(reverted.snapshot().fields().stream().anyMatch(f->f.name().equals(points.name())&&
+                            f.value().equals(points.value())&&f.source().equals("definition")),"Revert did not restore the definition default");
+                        return bridge.call(6);
+                    }).whenComplete((saved,failed)->edt(()->{
+                        if(failed!=null){failure(failed);return;}
+                        record("PASS F2 Health scalar widget committed an instance override; peer and Revert retained definition");
+                        smokePlayback();
+                    }));
+            });
+        }));
     }
     private void smokePlayback(){
         long revision=snapshot.revision(),identity=snapshot.project();

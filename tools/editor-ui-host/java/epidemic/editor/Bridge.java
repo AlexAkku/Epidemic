@@ -1,5 +1,7 @@
 package epidemic.editor;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.*;
@@ -60,9 +62,10 @@ public final class Bridge implements AutoCloseable {
         public boolean playing() { return (flags & 8) != 0; }
     }
     public record Reply(long generation, String error, Set<String> capabilities, Snapshot snapshot,
-                        long latencyNanos) { }
+                        long latencyNanos, BufferedImage preview) { }
     public record State(Service service, Reply reply, String diagnostic) { }
     private static final int MAGIC = 0x45505549, LIMIT = 16 * 1024 * 1024;
+    private static final int PREVIEW_EDGE = 4096;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
         new ArrayBlockingQueue<>(32), runnable -> {
             Thread thread = new Thread(runnable, "Editor bridge IO"); thread.setDaemon(true); return thread;
@@ -116,7 +119,13 @@ public final class Bridge implements AutoCloseable {
     }
     public CompletableFuture<Reply> callAt(long expectedGeneration, long expectedRevision, int operation, String... args) {
         return enqueue(() -> exchange(operation, expectedGeneration, expectedRevision, List.of(args)),
-            operation==26||operation==32&&args.length>0&&args[0].equals("move"));
+            operation==26||operation==32&&args.length>0&&args[0].equals("move"),
+            false, operation==18&&args.length==3?args[2]:null);
+    }
+    public CompletableFuture<BufferedImage> assetPreview(long expectedGeneration, long asset, String key, int divisor) {
+        return enqueue(() -> exchange(36, expectedGeneration, 0,
+            List.of(Long.toUnsignedString(asset), key, Integer.toString(divisor))), true, true, null)
+            .thenApply(Reply::preview);
     }
     private interface Request { Reply run() throws Exception; }
     private static final class RequestRejected extends IOException {
@@ -131,9 +140,22 @@ public final class Bridge implements AutoCloseable {
             }
         };
         final Request request;
-        final boolean quiet;
+        final boolean quiet, preview;
+        final String importDestination;
         final long epoch = connection;
-        Task(Request request,boolean quiet) { this.request = request;this.quiet=quiet; }
+        Task(Request request, boolean quiet, boolean preview, String importDestination) {
+            this.request=request;this.quiet=quiet;this.preview=preview;this.importDestination=importDestination;
+        }
+        void reject(String message) {
+            String diagnostic=message;
+            if(importDestination!=null){
+                diagnostic="Import rejected: "+importDestination+" · "+message;
+                if(message.equals("editor.import_destination")||message.equals("editor.import_destination_pending"))
+                    diagnostic+=" · The destination exists, is invalid or is already queued. Use Reimport for an existing asset.";
+            }
+            if(!preview)publish(Service.Ready,diagnostic,epoch);
+            future.completeExceptionally(new IOException(message));
+        }
         public void run() {
             synchronized (this) { if (future.isCancelled()) return; started = true; }
             if (closed || epoch != connection) { future.completeExceptionally(new IOException("ui.cancelled")); return; }
@@ -149,14 +171,14 @@ public final class Bridge implements AutoCloseable {
             try {
                 Reply reply = request.run();
                 if (!closed && epoch == connection && !future.isDone()) {
-                    latest = reply; generation = reply.generation();
-                    publish(Service.Ready, reply.error(), epoch);
-                    if (reply.error().isEmpty()) future.complete(reply);
-                    else future.completeExceptionally(new IOException(reply.error()));
+                    if(!preview){latest=reply;generation=reply.generation();}
+                    if (reply.error().isEmpty()) {
+                        if(!preview)publish(Service.Ready,"",epoch);
+                        future.complete(reply);
+                    } else reject(reply.error());
                 } else future.completeExceptionally(new IOException("ui.cancelled"));
             } catch (RequestRejected rejected) {
-                publish(Service.Ready,rejected.getMessage(),epoch);
-                future.completeExceptionally(rejected);
+                reject(rejected.getMessage());
             } catch (Exception error) {
                 future.completeExceptionally(error);
                 publish(Service.Error, error.toString(), epoch);
@@ -164,10 +186,10 @@ public final class Bridge implements AutoCloseable {
         }
     }
     private CompletableFuture<Reply> enqueue(Request request) {
-        return enqueue(request,false);
+        return enqueue(request,false,false,null);
     }
-    private CompletableFuture<Reply> enqueue(Request request,boolean quiet) {
-        Task task = new Task(request,quiet);
+    private CompletableFuture<Reply> enqueue(Request request, boolean quiet, boolean preview, String importDestination) {
+        Task task = new Task(request,quiet,preview,importDestination);
         if (closed) task.future.completeExceptionally(new IOException("ui.closed"));
         else try { worker.execute(task); }
         catch (RejectedExecutionException busy) { task.future.completeExceptionally(new IOException("ui.queue_full")); }
@@ -222,6 +244,19 @@ public final class Bridge implements AutoCloseable {
         Set<String> capabilities = Set.copyOf(Arrays.asList(text(in).split(",")));
         String error = text(in);
         if ((status == 0) != error.isEmpty()) throw new IOException("ui.invalid_result");
+        if(operation==36){
+            int width=in.readInt(),height=in.readInt();
+            if(width<0||height<0||width>PREVIEW_EDGE||height>PREVIEW_EDGE||
+                in.available()!=width*height*4||(status==0)!=(width>0&&height>0))
+                throw new IOException("ui.preview_bounds");
+            BufferedImage preview=null;
+            if(status==0){
+                preview=new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB_PRE);
+                int[] pixels=((DataBufferInt)preview.getRaster().getDataBuffer()).getData();
+                for(int i=0;i<pixels.length;i++)pixels[i]=Integer.reverseBytes(in.readInt());
+            }
+            return new Reply(serverGeneration,error,capabilities,null,System.nanoTime()-start,preview);
+        }
         Snapshot snapshot = null;
         if (in.readBoolean()) {
             long rev = in.readLong(), assetsRev = in.readLong(), selectionRev = in.readLong();
@@ -270,7 +305,7 @@ public final class Bridge implements AutoCloseable {
                                     title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems));
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
-        return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start);
+        return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start, null);
     }
     public CompletableFuture<Void> shutdown() {
         stopping = true;

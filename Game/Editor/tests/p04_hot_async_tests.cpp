@@ -124,6 +124,17 @@ int main() {
             });
         };
 
+        Check(until(watch, [&](const auto &events) {
+                  Check(std::none_of(events.begin(), events.end(), [](const auto &event) {
+                            return event.kind == ed::HotAssetEventKind::Queued;
+                        }),
+                        "Unchanged periodic audit was presented as a new queued import");
+                  return watch.Busy();
+              }),
+              "Unchanged periodic audit did not start");
+        Check(until(watch, [&](const auto &) { return !watch.Busy(); }),
+              "Unchanged periodic audit did not finish");
+
         const auto same_time = fs::last_write_time(path);
         const auto same_size = fs::file_size(path);
         write(blue);

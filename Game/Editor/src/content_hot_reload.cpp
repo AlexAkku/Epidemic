@@ -288,6 +288,9 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
         next->initial_cooked_key = source.cooked_key;
         next->initial_source_hash = source.source_hash;
         next->cancel = std::make_shared<std::atomic_bool>(false);
+        // Periodic same-signature audits still check the hash, but only real
+        // changes and manual requests need a Queued entry in activity history.
+        const bool report_queue = state.dirty || next->manual;
         state.dirty = false;
         state.next_audit = now + audit_interval_;
         try {
@@ -299,8 +302,9 @@ std::vector<HotAssetEvent> ContentHotReload::Poll(ProjectFolder &folder) {
                 manual_.pop_front();
             pending_ = std::move(next);
             cursor_ = (index + 1) % sources.size();
-            events.push_back(
-                {source.id, HotAssetEventKind::Queued, "editor.asset_queued: " + relative});
+            if (report_queue)
+                events.push_back(
+                    {source.id, HotAssetEventKind::Queued, "editor.asset_queued: " + relative});
             return events; // Fair round-robin even when all assets are due for audit.
         } catch (const std::exception &) {
             state.failed = true;

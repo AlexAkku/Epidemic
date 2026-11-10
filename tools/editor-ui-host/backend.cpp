@@ -374,14 +374,18 @@ class Backend {
         }
     }
 
+    std::string DocumentNonce() {
+        return std::to_string(GetCurrentProcessId()) + "." +
+                           std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) +
+                           "." + std::to_string(++document_nonce_);
+    }
+
     void CreateDocument(const std::vector<std::string> &args, std::uint64_t revision) {
         const auto kind = Numeric(args.at(0));
         if (kind > 2)
             throw std::runtime_error("ui.document_kind");
         CheckDocumentName(args.at(1));
-        const auto nonce = std::to_string(GetCurrentProcessId()) + "." +
-                           std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) +
-                           "." + std::to_string(++document_nonce_);
+        const auto nonce = DocumentNonce();
         const auto id = rt::AssetId::FromString("editor.document." + nonce);
         ed::EditorDocument document;
         document.id = id;
@@ -414,6 +418,72 @@ class Backend {
         if (!workspace_->Select({id, ed::UiElement::Document, 0}))
             throw std::runtime_error("ui.selection_missing");
         ++selection_revision_;
+    }
+
+    void DocumentLifecycle(const std::vector<std::string> &args, std::uint64_t revision) {
+        if (args.size() == 3 && args[0] == "duplicate") {
+            const auto source = Asset(Numeric(args[1]));
+            CheckDocumentName(args[2]);
+            const auto copy = rt::AssetId::FromString("editor.document." + DocumentNonce());
+            Require(workspace_->Execute({ed::DuplicateDocument{source, copy, args[2]}}, revision));
+            (void)workspace_->Select({copy, ed::UiElement::Document, 0});
+        } else if (args.size() == 2 && args[0] == "delete") {
+            const auto id = Asset(Numeric(args[1]));
+            if (workspace_->Project()->Snapshot()->definition.entry_scene == id)
+                throw std::runtime_error("ui.entry_scene_delete");
+            Require(workspace_->Execute({ed::DeleteDocument{id}}, revision));
+        } else
+            throw std::runtime_error("ui.document_command");
+    }
+
+    ed::DecodedPng AssetPreview(const std::vector<std::string> &args) const {
+        if (args.size() != 3)
+            throw std::runtime_error("ui.argument_count");
+        const auto id = Asset(Numeric(args[0]));
+        const auto divisor = Numeric(args[2]);
+        if (divisor != 1 && divisor != 2 && divisor != 4)
+            throw std::runtime_error("ui.preview_quality");
+        const auto *folder = workspace_->Folder();
+        if (!folder)
+            throw std::runtime_error("ui.no_project");
+        const auto &sources = folder->Sources();
+        const auto asset = std::find_if(sources.begin(), sources.end(), [&](const auto &source) {
+            return source.id == id && source.cooked_key == args[1] && !source.cooked_key.empty() &&
+                   ed::IsImportedTexture(source.type);
+        });
+        if (asset == sources.end())
+            throw std::runtime_error("ui.preview_stale");
+        ed::ImageResourceLoader loader(folder->Root());
+        const auto registered = loader.Register(asset->cooked_key);
+        Require(registered);
+        const auto loaded = loader.Load({registered.Value(), loader.GetResourceType()});
+        Require(loaded);
+        const auto payload = std::dynamic_pointer_cast<const ed::ImagePayload>(loaded.Value().payload);
+        if (!payload)
+            throw std::runtime_error("ui.preview_unavailable");
+        const auto &image = payload->image;
+        // Keep room for the normal reply header within the existing frame limit.
+        if (image.pixels.size() > MaxFrame - 1024)
+            throw std::runtime_error("ui.preview_bounds");
+        if (divisor == 1)
+            return image;
+        const auto step = static_cast<std::uint32_t>(divisor);
+        ed::DecodedPng reduced{(image.width + step - 1) / step, (image.height + step - 1) / step, {}};
+        reduced.pixels.resize(static_cast<std::size_t>(reduced.width) * reduced.height * 4);
+        for (std::uint32_t y = 0; y < reduced.height; ++y)
+            for (std::uint32_t x = 0; x < reduced.width; ++x) {
+                unsigned sum[4]{}, count = 0;
+                for (auto sy = y * step; sy < std::min((y + 1) * step, image.height); ++sy)
+                    for (auto sx = x * step; sx < std::min((x + 1) * step, image.width); ++sx) {
+                        for (unsigned channel = 0; channel < 4; ++channel)
+                            sum[channel] += std::to_integer<unsigned>(image.pixels[(sy * image.width + sx) * 4 + channel]);
+                        ++count;
+                    }
+                for (unsigned channel = 0; channel < 4; ++channel)
+                    reduced.pixels[(y * reduced.width + x) * 4 + channel] =
+                        static_cast<std::byte>((sum[channel] + count / 2) / count);
+            }
+        return reduced;
     }
 
     std::vector<ed::InspectorEntry> Inspector() const {
@@ -537,7 +607,8 @@ class Backend {
                       (workspace_->CanRedo() ? 4u : 0u) |
                       (workspace_->Session() && workspace_->Session()->IsPlaying() ? 8u : 0u) |
                       (workspace_->AssetJobsBusy() ? 16u : 0u) |
-                      (workspace_->ContentWatchEnabled() ? 32u : 0u));
+                      (workspace_->ContentWatchEnabled() ? 32u : 0u) |
+                      (workspace_->ImportsBusy() ? 64u : 0u));
         out.Number<1>(workspace_->Folder() ? 2 : 1);
         out.Number<8>(snapshot->definition.id.Raw());
         out.Number<8>(snapshot->definition.entry_scene.Raw());
@@ -866,9 +937,10 @@ class Backend {
     }
 
     bool Request(const Bytes &bytes) {
-        std::uint64_t correlation = 0;
+        std::uint64_t correlation = 0, operation = 0;
         std::string error;
         bool quit = false;
+        ed::DecodedPng preview;
         const auto previous_selection = workspace_->Selection();
         const auto previous_selection_revision = selection_revision_;
         try {
@@ -876,7 +948,8 @@ class Backend {
             if (in.Number(4) != Magic || in.Number(2) != 4 || in.Number(2) != 0)
                 throw std::runtime_error("ui.protocol_version");
             correlation = in.Number(8);
-            const auto operation = in.Number(1), generation = in.Number(8), revision = in.Number(8);
+            operation = in.Number(1);
+            const auto generation = in.Number(8), revision = in.Number(8);
             const auto count = in.Number(2);
             if (count > 8)
                 throw std::runtime_error("ui.argument_limit");
@@ -901,9 +974,9 @@ class Backend {
             }
             if ((operation >= 5 && operation <= 9) || (operation >= 12 && operation <= 17) ||
                 (operation >= 29 && operation <= 31) || (operation == 32 && (args.empty() || args[0] != "cancel")) ||
-                operation == 33 || operation == 34)
+                (operation >= 33 && operation <= 35))
                 CheckWrite({generation, revision});
-            if ((operation == 5 || (operation >= 15 && operation <= 24) || (operation >= 29 && operation <= 34)) && workspace_->Session() &&
+            if ((operation == 5 || (operation >= 15 && operation <= 24) || (operation >= 29 && operation <= 35)) && workspace_->Session() &&
                 workspace_->Session()->IsPlaying())
                 throw std::runtime_error("ui.playing_readonly");
             switch (operation) {
@@ -1096,6 +1169,12 @@ class Backend {
             case 34:
                 EditSystems(args,revision);
                 break;
+            case 35:
+                DocumentLifecycle(args, revision);
+                break;
+            case 36:
+                preview = AssetPreview(args);
+                break;
             case 10:
             case 11:
                 if (workspace_->IsDirty() &&
@@ -1122,14 +1201,21 @@ class Backend {
         out.Number<8>(generation_);
         out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
                  "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
-                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems");
+                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview");
         out.Text(error);
-        Snapshot(out);
+        if (operation == 36) {
+            out.Number<4>(preview.width);
+            out.Number<4>(preview.height);
+        } else
+            Snapshot(out);
         Wire prefix;
-        prefix.Number<4>(out.data.size());
+        prefix.Number<4>(out.data.size() + preview.pixels.size());
         std::cout.write(reinterpret_cast<const char *>(prefix.data.data()), 4);
         std::cout.write(reinterpret_cast<const char *>(out.data.data()),
                         static_cast<std::streamsize>(out.data.size()));
+        if (!preview.pixels.empty())
+            std::cout.write(reinterpret_cast<const char *>(preview.pixels.data()),
+                            static_cast<std::streamsize>(preview.pixels.size()));
         std::cout.flush();
         return !quit && static_cast<bool>(std::cout);
     }

@@ -919,18 +919,52 @@ Result<EditReceipt> ProjectFolder::Execute(const EditRequest &request) {
     try {
         if (request.expected_revision != editor_->Revision())
             return editor_->Execute(request);
-        for (const auto &command : request.commands)
-            if (const auto *created = std::get_if<CreateDocument>(&command))
-                if (std::any_of(assets_.begin(), assets_.end(), [&](const auto &source) {
-                        return source.id == created->document.id;
-                    }))
-                    return Result<EditReceipt>::Failure(
-                        Error("editor.folder_identity",
-                              "Document ID is reserved by a source asset"));
+        std::shared_ptr<VisualState> visual;
+        std::vector<runtime::AssetId> removed_visual_owners;
+        for (const auto &command : request.commands) {
+            const auto *created = std::get_if<CreateDocument>(&command);
+            const auto *duplicated = std::get_if<DuplicateDocument>(&command);
+            const auto new_id = created ? created->document.id : duplicated ? duplicated->copy : runtime::AssetId{};
+            if (new_id.IsValid() && std::any_of(assets_.begin(), assets_.end(), [&](const auto &source) {
+                    return source.id == new_id;
+                }))
+                return Result<EditReceipt>::Failure(
+                    Error("editor.folder_identity", "Document ID is reserved by a source asset"));
+            const auto *deleted = std::get_if<DeleteDocument>(&command);
+            const auto *discarded = std::get_if<DiscardDocument>(&command);
+            if (!duplicated && !deleted && !discarded)
+                continue;
+            if (!visual)
+                visual = std::make_shared<VisualState>(*visuals_);
+            if (duplicated) {
+                const auto binding = std::find_if(visual->sprites.begin(), visual->sprites.end(),
+                    [&](const auto &sprite) { return sprite.prefab == duplicated->document; });
+                if (binding != visual->sprites.end()) {
+                    auto copy = *binding;
+                    copy.prefab = duplicated->copy;
+                    visual->sprites.push_back(std::move(copy));
+                }
+            } else
+                removed_visual_owners.push_back(deleted ? deleted->document : discarded->document);
+        }
         auto history = PrepareEdit({});
         const auto revision = editor_->Revision();
         auto edited = editor_->Execute(request);
         if (edited && revision != editor_->Revision()) {
+            if (visual) {
+                const auto snapshot = editor_->Snapshot();
+                std::erase_if(visual->sprites, [&](const auto &binding) {
+                    return std::find(removed_visual_owners.begin(), removed_visual_owners.end(), binding.prefab)
+                               != removed_visual_owners.end() && !snapshot->Find(binding.prefab);
+                });
+                if (*visual != *visuals_) {
+                    history.back().before = visuals_;
+                    history.back().after = visual;
+                    visuals_ = std::move(visual);
+                    RefreshVisualDirty();
+                    ++asset_revision_;
+                }
+            }
             edits_.swap(history);
             edit_cursor_ = edits_.size();
         }
@@ -957,8 +991,16 @@ VoidResult ProjectFolder::RestoreEdit(const EditStep &step, bool forward) {
         return applied;
     }
 
-    if (step.kind == EditStep::Kind::Document)
-        return forward ? editor_->Redo() : editor_->Undo();
+    if (step.kind == EditStep::Kind::Document) {
+        const auto result = forward ? editor_->Redo() : editor_->Undo();
+        const auto &visual = forward ? step.after : step.before;
+        if (result && visual) {
+            visuals_ = visual;
+            RefreshVisualDirty();
+            ++asset_revision_;
+        }
+        return result;
+    }
     if (step.kind == EditStep::Kind::Move) {
         const auto moved =
             ApplySourceMove(step.move.id, (forward ? step.move.after : step.move.before).substr(8));

@@ -20,7 +20,10 @@ public final class UiPanels {
     private final Runnable importPicker;
     private final Runnable cancelJobs;
     private final Consumer<Integer> createDocument;
-    private final Runnable renameDocument;
+    private BiConsumer<String,Bridge.Document> documentCommand=(action,doc)->{};
+    private AssetDetails.PreviewLoader previewLoader;
+    public void documentCommands(BiConsumer<String,Bridge.Document> action){documentCommand=action;}
+    public void assetPreview(AssetDetails.PreviewLoader loader){previewLoader=loader;}
     private Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField;
     private final List<ScalarInspector> inspectors=new ArrayList<>();
     private BiConsumer<String,Long> assetCommand=(action,id)->{};
@@ -61,7 +64,7 @@ public final class UiPanels {
     private final Map<String,NativeViewport> nativeViews = new HashMap<>();
     private final List<Consumer<Bridge.Snapshot>> readers = new ArrayList<>();
     private final List<Consumer<Bridge.Snapshot>> structureReaders = new ArrayList<>();
-    private final JTextArea console = new JTextArea();
+    private final JTextArea console = new JTextArea(), problems = new JTextArea();
     private Bridge.Snapshot snapshot;
     private boolean refreshing;
     public UiPanels(Catalog catalog, FeatureRegistry features, Consumer<Bridge.Document> open,
@@ -69,7 +72,7 @@ public final class UiPanels {
                     Consumer<Integer> createDocument, Runnable renameDocument) {
         this.catalog = catalog; this.features = features; this.openDocument = open;
         this.select = select; this.importPicker = importPicker; this.cancelJobs = cancelJobs; console.setEditable(false);
-        this.createDocument=createDocument;this.renameDocument=renameDocument;
+        this.createDocument=createDocument;this.documentCommand=(action,doc)->{if(action.equals("rename"))renameDocument.run();};
     }
     public UiPanels(Catalog catalog,FeatureRegistry features,Consumer<Bridge.Document> open,Consumer<Bridge.Selection> select,Runnable importPicker,Runnable cancelJobs,Consumer<Integer> createDocument,Runnable renameDocument,Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField){
         this(catalog,features,open,select,importPicker,cancelJobs,createDocument,renameDocument);this.editField=editField;
@@ -88,9 +91,16 @@ public final class UiPanels {
     public NativeViewport nativeView(String id) { return nativeViews.get(id); }
     public Map<String,NativeViewport> nativeViews() { return Map.copyOf(nativeViews); }
     public void log(String text) {
-        console.append(text + "\n");
-        if (console.getDocument().getLength() > 65536)
-            try { console.getDocument().remove(0, console.getDocument().getLength() - 49152); }
+        append(console,text);
+    }
+    public void problem(String text) {
+        append(problems,text);
+        log(text);
+    }
+    private static void append(JTextArea output,String text) {
+        output.append(text + "\n");
+        if (output.getDocument().getLength() > 65536)
+            try { output.getDocument().remove(0, output.getDocument().getLength() - 49152); }
             catch (javax.swing.text.BadLocationException error) { throw new IllegalStateException(error); }
     }
     public void refresh(Bridge.Snapshot value) {
@@ -123,13 +133,16 @@ public final class UiPanels {
         if (base.equals("background.jobs")) {
             JPanel panel=Theme.island(new BorderLayout(6,6));
             panel.add(Theme.label("Bridge queue: at most 32 pending requests. Running mutations finish atomically.",true),BorderLayout.NORTH);
-            panel.add(Theme.button("Cancel native imports",()->assetCommand.accept("cancel",0L)),BorderLayout.SOUTH);
+            JPanel actions=new JPanel(new FlowLayout(FlowLayout.LEFT));
+            actions.add(Theme.button("Cancel native imports",cancelJobs));
+            actions.add(Theme.button("Watch Content…",()->assetCommand.accept("Watch",0L)));
+            panel.add(actions,BorderLayout.SOUTH);
             JTextArea state=new JTextArea();
-            observe(value->{StringBuilder rows=new StringBuilder("Native import queue: bounded to 128; one worker.\n");if(value!=null){rows.append((value.flags()&16)!=0?"Busy\n":"Idle\n");rows.append((value.flags()&32)!=0?"Content watch: on\n":"Content watch: off\n");long completed=value.assetState().events().stream().filter(e->e.job()>0&&e.kind()!=0).count();rows.append("Observed terminal import outcomes (last 64 events): ").append(completed).append("\n");}if(value!=null)for(var event:value.assetState().events())rows.append("Job ").append(event.job()).append(" · ").append(event.source()).append(" · ").append(new String[]{"Importing","Updated","Missing","Failed","Recovered","Cancelled"}[event.kind()]).append(" · ").append(event.diagnostic()).append('\n');state.setText(rows.toString());});
+            observe(value->{StringBuilder rows=new StringBuilder("Native import queue: bounded to 128; one worker.\n");if(value!=null){rows.append((value.flags()&64)!=0?"Import queue: busy\n":"Import queue: idle\n");rows.append((value.flags()&32)!=0?"Content watch: on\n":"Content watch: off\n");long completed=value.assetState().events().stream().filter(e->e.job()>0&&e.kind()!=0).count();rows.append("Observed terminal import outcomes (last 64 events): ").append(completed).append("\n");}if(value!=null)for(var event:value.assetState().events())rows.append("Job ").append(event.job()).append(" · ").append(event.source()).append(" · ").append(new String[]{"Importing","Updated","Missing","Failed","Recovered","Cancelled"}[event.kind()]).append(" · ").append(event.diagnostic()).append('\n');if(!state.getText().contentEquals(rows)){int caret=state.getCaretPosition();state.setText(rows.toString());state.setCaretPosition(Math.min(caret,state.getDocument().getLength()));}});
             state.setEditable(false);state.setLineWrap(true);state.setWrapStyleWord(true);panel.add(state);return panel;
         }
         if (base.equals("console") || base.equals("problems") || base.equals("build.output")) {
-            JTextArea view = new JTextArea(); view.setEditable(false); view.setDocument(console.getDocument()); return new JScrollPane(view);
+            JTextArea view = new JTextArea(); view.setEditable(false); view.setDocument((base.equals("problems")?problems:console).getDocument()); return new JScrollPane(view);
         }
         if (base.equals("type.registry") || base.equals("inspector") || base.equals("prefab.editor") || base.equals("graph.inspector")) {
             JPanel panel = Theme.island(new BorderLayout(6, 6));
@@ -141,7 +154,9 @@ public final class UiPanels {
                 String document=value.documents().stream().filter(doc->doc.id()==selection.document())
                     .map(doc->doc.name()+" · document revision "+doc.revision()).findFirst().orElse(value.title());
                 String scope=switch(selection.kind()){
-                    case 1->"Scene entity / placement";
+                    case 1->value.nodes().stream().anyMatch(node->node.selection().equals(selection)&&node.prefab()!=0)
+                        ?"Prefab placement · component edits apply to this instance"
+                        :"Scene entity";
                     case 2,5->"Prefab definition";
                     case 7->"Linked Prefab reference";
                     default->"Authoring selection";
@@ -174,7 +189,7 @@ public final class UiPanels {
         }
         if (base.equals("settings.editor")) return InspectorForms.gallery(catalog, features);
         if (base.equals("asset.details") || base.equals("asset.references")) {
-            AssetDetails details=new AssetDetails(base.equals("asset.references"),idValue->{if(snapshot!=null){var doc=snapshot.documents().stream().filter(d->d.id()==idValue).findFirst();if(doc.isPresent())openDocument.accept(doc.get());else if(snapshot.assets().stream().anyMatch(asset->asset.id()==idValue))select.accept(new Bridge.Selection(6,0,idValue));}});
+            AssetDetails details=new AssetDetails(base.equals("asset.references"),idValue->{if(snapshot!=null){var doc=snapshot.documents().stream().filter(d->d.id()==idValue).findFirst();if(doc.isPresent())openDocument.accept(doc.get());else if(snapshot.assets().stream().anyMatch(asset->asset.id()==idValue))select.accept(new Bridge.Selection(6,0,idValue));}},previewLoader);
             observe(details::refresh);return details;
         }
         JPanel panel = Theme.island(new BorderLayout(6, 6));
@@ -381,22 +396,31 @@ public final class UiPanels {
         panel.add(header, BorderLayout.NORTH); panel.add(browser);
         JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
         JButton importButton=Theme.button("Import…",importPicker);assetButtons.add(importButton);buttons.add(importButton);
-        JButton create=new JButton("New Document…"),rename=new JButton("Rename Doc…");
+        JButton create=new JButton("New Document…"),documentActions=new JButton("Document Actions…");
         JPopupMenu kinds=new JPopupMenu();
         for(int kind=0;kind<3;kind++) {
             final int type=kind;JMenuItem item=new JMenuItem(new String[]{"Scene","Prefab","Graph"}[kind]);
             item.addActionListener(event->createDocument.accept(type));kinds.add(item);
         }
         create.addActionListener(event->kinds.show(create,0,create.getHeight()));
-        rename.addActionListener(event->renameDocument.run());
-        for(JButton button:List.of(create,rename)){button.setEnabled(documentCommandsEnabled);documentButtons.add(button);buttons.add(button);}
-        Supplier<Bridge.Asset> selectedAsset=()->{
-            Object row;
-            if(mode.getSelectedItem().equals("Tree"))
-                row=tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null;
-            else row=list.getSelectedValue();
-            return row instanceof AssetRow asset?asset.asset():null;
-        };
+        create.setEnabled(documentCommandsEnabled);documentButtons.add(create);buttons.add(create);
+        Supplier<Object> selectedRow=()->mode.getSelectedItem().equals("Tree")
+            ?(tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode node?node.getUserObject():null)
+            :list.getSelectedValue();
+        Supplier<Bridge.Asset> selectedAsset=()->selectedRow.get() instanceof AssetRow asset?asset.asset():null;
+        documentActions.addActionListener(event->{
+            if(!(selectedRow.get() instanceof DocRow row)||snapshot==null)return;
+            var doc=row.document();
+            JPopupMenu menu=new JPopupMenu();
+            menuItem(menu,"Rename Document…",()->documentCommand.accept("rename",doc));
+            menuItem(menu,"Duplicate Document…",()->documentCommand.accept("duplicate",doc));
+            JMenuItem delete=new JMenuItem("Delete Document…");
+            delete.setEnabled(doc.id()!=snapshot.entry());
+            delete.addActionListener(e->documentCommand.accept("delete",doc));
+            menu.add(delete);
+            menu.show(documentActions,0,documentActions.getHeight());
+        });
+        documentActions.setEnabled(false);buttons.add(documentActions);
         Map<String,JButton> assetEdits=new LinkedHashMap<>();
         for(String name:List.of("Rename / Move","Duplicate","Reimport","Delete","Restore","Assign to Prefab")){
             var button=Theme.button(name,()->{
@@ -409,6 +433,7 @@ public final class UiPanels {
         JButton watch=Theme.button("Watch Content…",()->assetCommand.accept("Watch",0L));
         assetButtons.add(watch);buttons.add(watch);
         Runnable updateAssetActions=()->{
+            documentActions.setEnabled(interactive&&snapshot!=null&&!snapshot.playing()&&selectedRow.get() instanceof DocRow);
             var selected=selectedAsset.get();
             boolean ready=interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()&&selected!=null;
             assetEdits.forEach((name,button)->button.setEnabled(ready&&switch(name){
@@ -760,7 +785,7 @@ public final class UiPanels {
         }catch(ClassNotFoundException error){throw new ExceptionInInitializerError(error);}
     }
     private boolean canPlaceResource(){return interactive&&snapshot!=null&&!snapshot.playing()&&sceneResourcesAvailable.getAsBoolean();}
-    private static boolean texture(Bridge.Asset asset){
+    static boolean texture(Bridge.Asset asset){
         String path=asset.path().toLowerCase(Locale.ROOT);
         return !asset.trashed()&&!asset.cookedKey().isEmpty()&&(path.endsWith(".png")||path.endsWith(".webp"));
     }
@@ -880,15 +905,30 @@ public final class UiPanels {
         return panel;
     }
     private boolean canEditComponent(){return interactive&&snapshot!=null&&!snapshot.playing()&&componentAvailable.getAsBoolean();}
+    static String componentLabel(String name){
+        String prefix="editor.example.";
+        int at=name.indexOf(prefix);
+        if(at<0||at+prefix.length()>=name.length())return name;
+        int start=at+prefix.length();
+        return name.substring(0,at)+Character.toUpperCase(name.charAt(start))+name.substring(start+1);
+    }
+    private List<Bridge.ComponentType> availableComponents(Bridge.Snapshot value){
+        var selected=value.selection();
+        return value.componentTypes().stream().filter(type->value.nodes().stream().noneMatch(node->
+            node.kind()==5&&node.document()==selected.document()&&node.id()==selected.element()&&
+                node.component()==type.id()&&node.part()==0)).toList();
+    }
     private JPanel componentActions(){
         JPanel toolbar=new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton add=new JButton("Add Component"),remove=new JButton("Remove Component"),graph=new JButton("Attach Graph…");
+        add.setToolTipText("Add a registered component to this Prefab entity. Placements inherit it.");
+        remove.setToolTipText("Remove this component from the Prefab definition.");
         JButton child=new JButton("Create Prefab Child"),deleteChild=new JButton("Delete Prefab Child");
         for(var button:List.of(add,remove,graph,child,deleteChild))toolbar.add(button);
         Runnable update=()->{
             int kind=snapshot==null?0:snapshot.selection().kind();
             toolbar.setVisible(kind==2||kind==5);
-            add.setEnabled(canEditComponent()&&kind==2&&!snapshot.componentTypes().isEmpty());
+            add.setEnabled(canEditComponent()&&kind==2&&!availableComponents(snapshot).isEmpty());
             remove.setEnabled(canEditComponent()&&kind==5);
             graph.setEnabled(canEditComponent()&&(kind==2||kind==5)&&snapshot.documents().stream().anyMatch(doc->doc.kind()==2));
             child.setEnabled(canEditComponent()&&kind==2);
@@ -901,8 +941,8 @@ public final class UiPanels {
             if(!canEditComponent()||snapshot.selection().kind()!=2)return;
             var base=snapshot;
             long token=generation;
-            var types=base.componentTypes();
-            int chosen=choose(toolbar,"Add Component",types.stream().map(Bridge.ComponentType::name).toList());
+            var types=availableComponents(base);
+            int chosen=choose(toolbar,"Add Component",types.stream().map(type->componentLabel(type.name())).toList());
             if(chosen>=0)componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"add",unsigned(types.get(chosen).id())));
         });
         remove.addActionListener(e->{

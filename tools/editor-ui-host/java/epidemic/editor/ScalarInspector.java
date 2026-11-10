@@ -47,7 +47,7 @@ public final class ScalarInspector extends JPanel {
             }
             input.setName(field.key());input.getAccessibleContext().setAccessibleName(field.name());
             JPanel box=new JPanel(new BorderLayout(3,3));box.setAlignmentX(LEFT_ALIGNMENT);
-            JLabel label=new JLabel(field.name());label.setLabelFor(input);
+            JLabel label=new JLabel(UiPanels.componentLabel(field.name()));label.setLabelFor(input);label.setToolTipText(field.name());
             JPanel heading=new JPanel(new BorderLayout());heading.add(label);heading.add(reset,BorderLayout.EAST);
             reset.addActionListener(e->{
                 if(!ready||!active||pending||revert==null)return;
@@ -88,7 +88,12 @@ public final class ScalarInspector extends JPanel {
                 Row row=rows.get(field.key());row.field=field;
                 if(row.draft==null&&!row.pending)refreshValue(row);
                 row.input.setEnabled(ready&&field.editable()&&!row.pending&&field.kind()<4);
-                row.source.setText(field.source());
+                row.source.setText(switch(field.source()){
+                    case "definition"->value.selection().kind()==1?"Definition default":"Prefab definition";
+                    case "instance override"->"Instance override";
+                    case "instance parameter override"->"Instance parameter override";
+                    default->field.source();
+                });
                 boolean overridden=value.selection().kind()==1&&(field.source().equals("instance override")||field.source().equals("instance parameter override"));
                 row.reset.setVisible(revert!=null&&overridden);
                 row.reset.setEnabled(ready&&overridden&&!row.pending);

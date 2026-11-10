@@ -92,6 +92,8 @@ class EditorWorkspace final {
         return hot_reload_.Busy() || imports_.Busy();
     }
 
+    [[nodiscard]] bool ImportsBusy() const noexcept { return imports_.Busy(); }
+
     void CancelAssetJobs() noexcept {
         hot_reload_.Cancel();
         imports_.Cancel();

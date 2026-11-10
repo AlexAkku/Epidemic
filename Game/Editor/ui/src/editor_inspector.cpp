@@ -200,7 +200,8 @@ std::vector<InspectorEntry> InspectComponents(const ProjectSnapshot &snapshot,
                 if (definition) {
                     Parameters(rows, *definition, prefab_doc->id, &placement);
                     for (const auto *node : Nodes(definition->root)) {
-                        const auto prefix = "Node [" + Id(node->id.Raw()) + "] / ";
+                        const auto prefix = node == &definition->root ? std::string{} :
+                            "Node [" + Id(node->id.Raw()) + "] / ";
                         for (const auto &component : node->components) {
                             Properties(rows, registry, *definition, *node, component,
                                        &placement.overrides, prefab_doc->id, false, prefix);

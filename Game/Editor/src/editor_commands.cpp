@@ -118,8 +118,47 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
         project.prefab_links.push_back(command.link);
         return true;
     } else if constexpr (std::is_same_v<C, DeleteDocument>) {
-        return Erase(project.documents,
-                     [&](const auto &doc) { return doc.id == command.document; });
+        if (project.entry_scene == command.document ||
+            !Erase(project.documents, [&](const auto &doc) { return doc.id == command.document; }))
+            return false;
+        Erase(project.systems, [&](const auto &system) { return system.scene == command.document; });
+        Erase(project.prefab_links, [&](const auto &link) { return link.owner == command.document; });
+        return true;
+    } else if constexpr (std::is_same_v<C, DuplicateDocument>) {
+        const auto *source = Find(project.documents, [&](const auto &doc) { return doc.id == command.document; });
+        if (!source || Find(project.documents, [&](const auto &doc) { return doc.id == command.copy; }))
+            return false;
+        auto copy = *source;
+        copy.id = command.copy;
+        copy.name = command.name;
+        copy.revision = 0;
+        if (auto *scene = std::get_if<composition::SceneCompositionDefinition>(&copy.data))
+            scene->asset_id = copy.id;
+        else if (auto *prefab = std::get_if<comp::PrefabDefinition>(&copy.data))
+            prefab->id = copy.id.value;
+        else {
+            auto &graph = std::get<runtime::graph::GraphDefinition>(copy.data);
+            graph.asset_id = copy.id;
+            graph.name = copy.name;
+        }
+        const auto scoped_id = [&](foundation::StringId id) {
+            return foundation::StringId::FromString("editor.document.copy." +
+                std::to_string(command.copy.Raw()) + "." + std::to_string(id.Raw()));
+        };
+        for (std::size_t i = 0, count = project.systems.size(); i < count; ++i)
+            if (auto system = project.systems[i]; system.scene == command.document) {
+                system.scene = command.copy;
+                system.id = scoped_id(system.id);
+                project.systems.push_back(system);
+            }
+        for (std::size_t i = 0, count = project.prefab_links.size(); i < count; ++i)
+            if (auto link = project.prefab_links[i]; link.owner == command.document) {
+                link.owner = command.copy;
+                link.id = scoped_id(link.id);
+                project.prefab_links.push_back(link);
+            }
+        project.documents.push_back(std::move(copy));
+        return true;
     } else {
         auto *doc = Find(project.documents,
                          [&](const auto &value) { return value.id == command.document; });
@@ -440,6 +479,8 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
                 using C = std::decay_t<decltype(value)>;
                 if constexpr (std::is_same_v<C, CreateDocument>)
                     changed.insert(value.document.id.Raw());
+                else if constexpr (std::is_same_v<C, DuplicateDocument>)
+                    changed.insert(value.copy.Raw());
                 else if constexpr (!std::is_same_v<C, SetEntryScene>)
                     changed.insert(value.document.Raw());
             },

@@ -22,7 +22,7 @@ public final class AssetTests {
         throw new IllegalStateException("Native import did not settle");
     }
     private static void png(Path file,int argb)throws Exception{
-        BufferedImage image=new BufferedImage(4,2,BufferedImage.TYPE_INT_ARGB);for(int y=0;y<2;y++)for(int x=0;x<4;x++)image.setRGB(x,y,argb);ImageIO.write(image,"png",file.toFile());
+        BufferedImage image=new BufferedImage(260,132,BufferedImage.TYPE_INT_ARGB);for(int y=0;y<image.getHeight();y++)for(int x=0;x<image.getWidth();x++)image.setRGB(x,y,argb);ImageIO.write(image,"png",file.toFile());
     }
     public static void run(Path executable,Path directory)throws Exception{
         Path work=Files.createTempDirectory(directory,"F1-\u041f\u0440\u043e\u0435\u043a\u0442-"),root=work.resolve("project"),source=work.resolve("\u0442\u0435\u043a\u0441\u0442\u0443\u0440\u0430.png");png(source,0xffff0000);
@@ -42,7 +42,20 @@ public final class AssetTests {
                 var selected=bridge.latest().snapshot();UiTests.require(!selected.assets().getLast().cookedKey().isBlank(),"No cooked identity");
                 UiTests.require(selected.assets().getLast().metadata().length()>5,"No typed metadata");
                 if(external.equals(webp))UiTests.require(selected.assetState().width()==2&&selected.assetState().pixels().endsWith("00000000"),"WebP alpha conversion/preview failed");
-                if(external.equals(source))UiTests.require(selected.assetState().width()==4&&selected.assetState().height()==2,"PNG aspect/preview dimensions");
+                if(external.equals(source)){
+                    UiTests.require(selected.assetState().width()>0&&selected.assetState().width()<=128,"Snapshot thumbnail must stay bounded");
+                    long version=bridge.latest().generation();
+                    for(int divisor:List.of(1,2,4)){
+                        var preview=bridge.assetPreview(version,imported.id(),imported.cookedKey(),divisor).get(15,TimeUnit.SECONDS);
+                        UiTests.require(preview.getWidth()==260/divisor&&preview.getHeight()==132/divisor&&
+                            preview.getRGB(0,0)==0xffff0000,"PNG cooked preview quality "+divisor);
+                    }
+                    UiTests.require(bridge.latest().snapshot()==selected,"Preview replaced the project snapshot");
+                }
+                if(external.equals(webp)){
+                    var preview=bridge.assetPreview(bridge.latest().generation(),imported.id(),imported.cookedKey(),1).get(15,TimeUnit.SECONDS);
+                    UiTests.require(preview.getRGB(preview.getWidth()-1,preview.getHeight()-1)==0,"Full cooked preview lost alpha");
+                }
             }
             UiTests.nativeReject(bridge,"editor.import_destination",18,id(bridge.latest().snapshot().assetRevision()),source.toString(),source.getFileName().toString().toUpperCase(Locale.ROOT));
             for(Path external:formats.subList(1,formats.size())){
@@ -59,6 +72,17 @@ public final class AssetTests {
             javax.swing.SwingUtilities.invokeAndWait(()->{AssetDetails view=new AssetDetails(false,x->{});view.refresh(bridge.latest().snapshot());UiTests.require(view.getComponentCount()==3,"Asset Details lost native preview");});
             call(bridge,15,"1","Sprite owner","registered-components");long prefab=bridge.latest().snapshot().selection().document();edit(bridge,24,id(prefab),id(assetId));
             UiTests.require(bridge.latest().snapshot().assetState().references().stream().anyMatch(r->r.source()==assetId&&r.dependent()==prefab),"Native stable reference missing");
+            long copy=call(bridge,35,"duplicate",id(prefab),"Sprite owner copy").snapshot().selection().document();
+            UiTests.require(copy!=prefab&&bridge.latest().snapshot().assetState().references().stream()
+                .anyMatch(r->r.source()==assetId&&r.dependent()==copy),"Duplicated Prefab lost its sprite");
+            call(bridge,35,"delete",id(copy));
+            UiTests.require(bridge.latest().snapshot().documents().stream().noneMatch(doc->doc.id()==copy)&&
+                bridge.latest().snapshot().assetState().references().stream().noneMatch(r->r.dependent()==copy),"Document deletion left an orphan binding");
+            call(bridge,7);
+            UiTests.require(bridge.latest().snapshot().assetState().references().stream()
+                .anyMatch(r->r.source()==assetId&&r.dependent()==copy),"Undo did not restore document and sprite together");
+            call(bridge,8);
+            UiTests.nativeReject(bridge,"ui.entry_scene_delete",35,"delete",id(bridge.latest().snapshot().entry()));
             call(bridge,28,"sound");UiTests.require(bridge.latest().snapshot().assets().size()==1&&bridge.latest().snapshot().assetState().totalAssets()==formats.size(),"Native bounded catalog query did not filter");call(bridge,28,"");
             UiTests.require(bridge.latest().snapshot().assetState().sprites().stream().anyMatch(sprite->sprite.document()==prefab&&sprite.key().equals(cooked)),"Native render projection lost sprite binding");
             UiTests.nativeReject(bridge,"editor.import_extension",20,id(bridge.latest().snapshot().assetRevision()),id(assetId),"mismatch.wav");
