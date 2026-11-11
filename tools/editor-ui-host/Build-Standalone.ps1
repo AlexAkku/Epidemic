@@ -107,6 +107,13 @@ $runtime=$derived
 Write-Output "PASS app-local MSVC CRT $crtVersion in product runtime and native directory; upstream JBR unchanged"
 $options=@('-Xmx2048m','-Djava.system.class.loader=com.intellij.util.lang.PathClassLoader','-Dfile.encoding=UTF-8','--enable-native-access=ALL-UNNAMED')
 foreach($package in Get-Content "$PSScriptRoot/standalone/jvm-opens.txt"){$options+="--add-opens=$package=ALL-UNNAMED"}
+[IO.File]::WriteAllLines("$productRoot/launcher-options.txt",$options,[Text.UTF8Encoding]::new($false))
+$nativeLauncher=if(-not $StandardOpenJdk -and -not $NoPackage){& "$PSScriptRoot/Build-Launcher.ps1" -JdkRoot $jdk | Select-Object -Last 1}else{$null}
+if($nativeLauncher){
+    $launcherSources=Join-Path $productRoot 'licenses/native-launcher'
+    New-Item -ItemType Directory -Force $launcherSources | Out-Null
+    Copy-Item "$PSScriptRoot/standalone/native-launcher/*","$PSScriptRoot/Build-Launcher.ps1","$PSScriptRoot/editor-host.manifest" $launcherSources -Force
+}
 if(-not $NoPackage){
     if($StandardOpenJdk -and -not(Test-Path "$runtime/bin/java.exe")){
         & "$jdk/bin/jlink.exe" --add-modules ALL-MODULE-PATH --strip-debug --no-header-files --no-man-pages --output $runtime
@@ -131,12 +138,14 @@ if(-not $NoPackage){
     if(Test-Path -LiteralPath $packageInput){Remove-Item -LiteralPath $packageInput -Recurse -Force}
     New-Item -ItemType Directory -Force $packageInput | Out-Null
     foreach($directory in @('lib','native','bin','licenses')){Copy-Item -LiteralPath "$productRoot/$directory" -Destination $packageInput -Recurse -Force}
+    Copy-Item -LiteralPath "$productRoot/launcher-options.txt" -Destination $packageInput -Force
     Copy-Item -LiteralPath "$productRoot/build.txt" -Destination $packageInput -Force
     Copy-Item -LiteralPath "$productRoot/product-info.json" -Destination $packageInput -Force
     $arguments[$arguments.IndexOf('--input')+1]=$packageInput
     foreach($option in $options){$arguments+=@('--java-options',$option)}
     & "$jdk/bin/jpackage.exe" @arguments
     if($LASTEXITCODE){throw 'Standalone EXE image failed'}
+    if($nativeLauncher){Copy-Item -LiteralPath $nativeLauncher -Destination "$image/EpidemicEditor.exe" -Force}
     Write-Output "PASS standalone Windows application: $image/EpidemicEditor.exe"
 }
 if($Run -or $Smoke){
@@ -146,13 +155,13 @@ if($Run -or $Smoke){
             $deadline=[DateTime]::UtcNow.AddSeconds(15)
             $prefix=[IO.Path]::GetFullPath($image)+[IO.Path]::DirectorySeparatorChar
             do {
-                $remaining=@(Get-CimInstance Win32_Process -Filter "Name='cef_server.exe' OR Name='jcef_helper.exe'" |
+                $remaining=@(Get-CimInstance Win32_Process -Filter "Name='cef_server.exe' OR Name='jcef_helper.exe' OR Name='EpidemicEditor.exe'" |
                     Where-Object {$_.ExecutablePath -and $_.ExecutablePath.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)})
                 if(-not $remaining.Count){break}
                 Start-Sleep -Milliseconds 200
             } while([DateTime]::UtcNow -lt $deadline)
             if($remaining.Count){throw "Owned JCEF processes did not exit within 15s: $($remaining.ProcessId -join ',')"}
-            Write-Output 'PASS standalone JCEF shutdown: no owned cef_server/jcef_helper processes within 15s'
+            Write-Output 'PASS standalone JCEF shutdown: no owned launcher/CEF processes within 15s'
         }
     }
 }

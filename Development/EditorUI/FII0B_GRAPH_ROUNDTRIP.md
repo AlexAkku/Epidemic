@@ -1,59 +1,61 @@
 # F-II.0b: native Graph roundtrip
 
-Дата: 11 ноября 2026. Отправная точка: `5324262`, поверх замороженного F-I `ce06956`. Push не выполнялся.
+Дата: 11 ноября 2026. Отправная точка этого батча: `7402924`, поверх F-II.0a `5324262` и замороженного F-I `ce06956`. Push не выполнялся.
 
-**F-II.0b BLOCKED. Native Graph roundtrip PASS.**
+**F-II.0b PASS. F-II.0 PASS. Вход в F-II.1 открыт; реализация F-II.1 не начата.**
 
-## Реализовано
+## Реализация
 
-1. Штатная сборка использует официальный `jbr_jcef-21.0.10-windows-x64-b1163.108`. Архив проверяется publisher SHA512, повторно извлекается из проверенного offline cache. Vanilla JBR больше не является default. Runtime legal сохранён. Добавлены точные JCEF/CEF/Chromium BSD и полный встроенный credits: 542 компонента, 14 862 123 байта HTML, SHA512 проверяется при упаковке. Rete/React/plugins/esbuild закреплены package-lock с integrity; зависимости разрешаются один раз, нормальная сборка использует npm offline.
-2. Настоящий Graph FileEditor содержит Rete. Его сообщения проходят JSQuery → Java Bridge → private stdio IPC v4 → EditorWorkspace::Execute. Ответный native snapshot — источник отображения. Авторитетная модель остаётся GraphDefinition. Узлы Event/Native Call/Wait происходят из текущих зарегистрированных native операций; IDs выделяет C++.
-3. DTO v1 содержит graph/document, node/type/name, порты id/name/kind/direction/type, edges с двумя port IDs, координаты. ID и revision передаются в JavaScript строками. Native команды create/connect/disconnect/move/delete имеют обычные generation/revision и Play read-only guards.
-4. EditorDocument хранит только редакторские позиции. Архив `graph_layout.version=1`; отсутствующий v0 мигрирует к implicit grid. MoveGraphNode участвует в native Undo/Redo и dirty/Save. Неизвестная версия, недопустимые/дублирующиеся node IDs и non-finite/out-of-range координаты отклоняются. При удалении узла очищаются координаты и связи.
-5. Browser/query принадлежат одной FileEditor view и освобождаются через Disposer. При rebind поколения создаётся новый adapter. Preferred focus делегируется JCEF. JS имеет обработчики Ctrl+S/Z/Y и Escape; во время перестроения проекции pointer input блокируется. Отмена drag не создаёт native-команду.
-6. HTML/JS поставляются локально. CSP разрешает hash bundle и inline style renderer, запрещает остальные источники. Request handler ограничен точным виртуальным file-origin экземпляра, блокирует прочие file/network ресурсы, навигацию, popup и OS protocol execution. Bridge допускает только graph edits и Save/Undo/Redo, проверяет nonce, DocumentKey, revision/generation, размер и число строк. Произвольных filesystem/shell RPC нет.
-7. Окончательные контракты Code Space и managed lifecycle вынесены в [F-II.2](FII_CODESPACE_MANAGED_CONTRACT.md). Выбран worker на поколение Play с C++ владельцем simulation, сохранением ABI v1 и отзывом handles на Stop. Это контракт будущей реализации: LSP, Rider и C# из Play здесь не подключались.
+- Штатный Windows EXE теперь собственный native launcher. В основном EXE до JVM создаётся настоящий `CefScopedSandboxInfo`, статически связанный с официальным CEF 137 `/MT`. Chromium дочерние процессы запускают тот же EXE и входят в публичный `jcef_helper.dll!execute_subprocess` без JVM. Сохраняется JCEF message router. JNI передаёт настоящий hexadecimal pointer и точную CEF version, принудительно используется in-process JCEF. NativeLauncher проверяет зарегистрированный JNI, а Graph отвергает no_sandbox/remote mode. Unsandboxed исключение для smoke удалено.
+- Официальный JBR/JCEF `21.0.10-windows-x64-b1163.108` сохранён. Совместимый SDK: `cef_binary_137.0.17+gf354b0e+chromium-137.0.7151.104_windows64_minimal`. SHA512 архива закреплён в `Build-Launcher.ps1` и проверяется при каждой сборке. После первоначального разрешения JBR, CEF SDK, Maven и npm нормальная упаковка работает из проверенных offline caches. Пустой cache не объявляется offline-ready. Подробности, хеш и исходные контракты: [native launcher](../../tools/editor-ui-host/standalone/native-launcher/README.md).
+- JNI явно перечисляет locked JARs, помещает продуктовый epidemic.jar первым для существующих bootstrap corrections DirectoryLock/MainImpl, задаёт system context classloader и прежние JVM opens. Runtime DLL поиск ограничен app/system и bundled bin; используется официальный CEF delay-load list, необходимый для Win32k lockdown. Реальный Platform HttpConfigurable инициализируется до JBCefApp Holder, чтобы повторный профиль не создавал proxy service внутри class initializer. Сохраняются runtime legal, CEF/JCEF BSD, полные Chromium credits (542 компонента), npm notices; исходники launcher/manifest/build script входят в notices продукта. Это не юридическая квалификация публичного распространения.
+- Rete остаётся проекцией настоящего GraphDefinition: JSQuery → Java Bridge → private IPC v4 → EditorWorkspace::Execute. Op 38 create/connect/disconnect/move/delete, DTO v1 nodes/ports/edges/layout, stable IDs, generation/revision и Play read-only guards. Отдельного авторитетного JS-графа нет.
+- Presentation metadata `graph_layout.version=1` принадлежит EditorDocument; v0 без поля мигрирует к implicit grid. Native MoveGraphNode участвует в Undo/Redo, dirty/Save. Неизвестные версии/узлы, дубликаты и недопустимые координаты отклоняются. Delete/Undo восстанавливает incident edges и позиции.
+- Исправлен найденный вводом дефект: Rete останавливает bubbling pointerdown, поэтому сброс отменённого жеста теперь выполняется capture listener. После Escape следующий drag снова работает; откат возвращает координаты без пересоздания узлов во время удержания мыши. Постоянный standalone smoke проверяет реальный preview, удерживаемый drag/Escape/release, восстановление позиции и следующий commit через JCEF input APIs.
+- CSP hash bundle, точный локальный origin, запреты external resources/navigation/popup/protocol и allowlist Bridge сохранены. Нет shell/filesystem RPC. Browser/query принадлежат FileEditor и освобождаются Disposer. [Контракты Code Space и managed F-II.2](FII_CODESPACE_MANAGED_CONTRACT.md) окончательные; LSP/Rider/C# Play в этом батче не реализованы.
 
-## Выполненные проверки
+## Пройденная квалификация
 
-- **PASS:** production Java Bridge test: три native-узла, соединение, отказ несовместимого/неизвестных endpoints, stale revision, отказ NaN/выхода за диапазон, Undo/Redo связи и перемещения, Save/Open во втором companion-процессе с точными IDs/layout, delete/Undo с восстановлением рёбер и координат.
-- **PASS:** layout migration в EditorCoreTests: архив v0 без поля, повторное чтение после миграции, v1 coordinates, отказ v2. `fii0b-layout-migration.stdout.log`.
-- **PASS:** 19/19 адресных CTest с пересборкой изменённых editor consumers; Graph definition/VM/control/scheduler/time/serialization, schema, renderer, Editor Core/Workspace/SceneView/Headless и архитектура. `fii0b-regressions.stdout.log`. Полный профиль 161/161 не повторялся.
-- **PASS:** IPC v4 adversarial framing, 16 случаев; catalog coverage. `fii0b-qualification.stdout.log`.
-- **PASS:** штатный standalone Release EXE с JBR/JCEF и offline npm: JSQuery/native create/connect/move/Undo/Redo/Save; React DOM содержит native узлы/ребро; FileEditor close/reopen освобождает browser/query; отдельный HWND; после shutdown нет принадлежащих CEF helpers в пределах 15 секунд. В `platform-status.log` есть явный LIMIT об unsandboxed qualification.
-- **PASS:** в этом же EXE CSP отклонила file/HTTPS/loopback fetch и eval, Bridge отклонил open без изменения native revision.
-- **KNOWN DIAGNOSTICS:** адресный clang-analyzer/bugprone на editor_commands.cpp, project_archive.cpp, backend.cpp. Новое замечание integer division в implicit grid исправлено. В повторном backend scan нет diagnostics на изменённых строках; сохраняются ранее известные категории signed-bitwise, exception-escape, unsafe-to-allow-exceptions, easily-swappable-parameters в Scene/Composition/EditorDocument/CreateDocument/ThumbnailCache. Статический анализ не объявляется чистым PASS и его checks не менялись.
+| Проверка | Результат |
+|---|---|
+| Собственный Release launcher, `/W4 /WX`, штатная offline-упаковка | PASS; штатный `Temp/U/distribution/EpidemicEditor/EpidemicEditor.exe` |
+| Настоящий Windows CEF sandbox | PASS; own renderer имеет restricted token, integrity RID 0 (Untrusted), Win32kDisabled=true; `no_sandbox=false`, remote=false. Job membership — дополнительная информация, не единственное доказательство. AppContainer не заявляется. |
+| Production Bridge / native Graph roundtrip | PASS; три native-узла, типизированное соединение/reject, stale guard, invalid layout reject, Undo/Redo, exact IDs/coordinates Save/Open во втором companion, delete/Undo |
+| Standalone Rete/JSQuery/native | PASS; native DTO отрисован React DOM, create/connect/move/history/Save |
+| Отмена удерживаемого drag | PASS; JCEF sendMouseEvent/sendKeyEvent: press/drag/Escape/release не меняет revision; следующий drag даёт ровно один native edit, Save |
+| CSP и Bridge | PASS; file/HTTPS/loopback fetch и eval запрещены, open отвергнут без смены revision |
+| FileEditor lifecycle / shutdown | PASS; close/reopen освобождает browser/query и создаёт новую view, независимый HWND; после smoke нет owned launcher/CEF процессов в пределах 15 секунд |
+| Live owner / stale startup lock | PASS; повторный EXE активирует прежний owner; после аварийного завершения проверенного собственного main повторный запуск с тем же изолированным профилем проходит полный smoke |
+| IPC / catalog | PASS; 16 adversarial framing cases, 38 canonical panels + 8 on-demand, 325 tabulated fields |
+| Адресные CTest / архитектура | PASS; 19/19 Graph/VM/control/scheduler/time/serialization/schema/renderer, Editor Core/Workspace/SceneView/Headless и архитектура. Layout migration входит в Core. C++ engine не менялся относительно `7402924`. |
+| Изменённые native TU, штатный Verify-Changed | PASS; обе новые C++ единицы, clang-analyzer/bugprone, 0 failures |
 
-Журналы временные: `.ai/logs/fii0b-*`.
+Адресно проверен настоящий Windows UI в maximized workspace, без полного Computer Use прогона: создание Native Call кнопкой, совместимое соединение мышью, Control→Data reject `graph.connection_kind`, отмена начатого соединения Escape, следующий move, Ctrl+Z/Y/S. Graph вынесен через штатное Open Tab in New Window; там работают клавиатура и Save. После закрытия отдельного окна основной workspace сохраняет граф. Новый Editor-процесс открыл сохранённые 4 узла/2 связи/координаты. Удерживаемый mouse-down→Escape проверен отдельно JCEF input APIs, а не выдан за физический жест. Найденный дефект следующего move после Escape воспроизведён и повторно проверен исправленным UI.
 
-**Финальный Release smoke PASS:** `.ai/logs/fii0b-release-focus.stdout.log`.
-Артефакт: `Temp/U/verification-images/a2affd15934c441f93311fd1d0c07514/EpidemicEditor/EpidemicEditor.exe`.
-Проверена передача FileEditor preferred focus браузеру JCEF. При холодном старте найден и исправлен race фиксированной задержки: теперь canvas сообщает явный ready через ограниченный JSQuery, а тест ждёт readiness с timeout. В финальном EXE прошли Graph roundtrip, CSP/Bridge rejection, disposal/reopen, HWND, существующий standalone smoke и CEF shutdown. Проверки физического ввода остаются NOT RUN.
+Финальные автоматические проверки: `sandbox-input-final`, `sandbox-regressions`, `sandbox-restart`; runtime подробности в `Temp/U/distribution/EpidemicEditor/app/{smoke-state,qualification-state}/log/platform-status.log`. Успешные Run-Quiet логи могут очищаться согласно штатной политике; runtime состояние временное.
 
-Это квалификационный side-by-side image; рабочий пользовательский дистрибутив не заменялся.
+**Блокеров F-II.0b нет.** Не выполнены и не включены в этот gate: полный повтор CTest 161, 500/2000-node performance/stress и полный U/мониторы/DPI прогон. Это не PASS по F-II.1. Известные исторические analyzer diagnostics Scene/Composition/EditorDocument/ThumbnailCache остаются backlog; проверки не ослаблены.
 
-## Точный блокер и оставшаяся квалификация
+## Повтор
 
-**Технический блокер — Windows CEF sandbox в launcher.** jpackage EXE не создаёт sandbox info до JVM. В закреплённом Platform SettingsHelper отсутствие `jcef.sandbox.ptr` приводит к `no_sandbox=true`; лог прямо это подтверждает. В обычном запуске Graph поэтому закрыт с Unavailable. Только изолированный `--smoke` допускает локальный unsandboxed сценарий. Это не production/security PASS.
-
-Нужен native Windows launcher с sandbox info, созданным именно в основном EXE, совместимой CEF sandbox library/version, затем проверка renderer mitigations и повтор ограниченного security/lifecycle smoke. Простая установка свойства или фиктивного указателя не исправляет этот контракт. Основание: [CEF sandbox setup](https://chromiumembedded.github.io/cef/sandbox_setup) и SettingsHelper закреплённого ui-jcef 253.31033.145.
-
-**NOT RUN:** физические мышиные connection/move/Escape, клавиатура в основной и отдельной Graph tab, возврат вкладки, нагрузка 500 nodes. Проверка HWND и preferred-focus API не выдаётся за физический ввод. После исправления launcher требуется только адресный сценарий из [Acceptance](FII_ACCEPTANCE.md), без полного U/Computer Use прогона.
-
-## Повтор адресного native roundtrip
-
-Из корня, после штатной Release-сборки:
+Из корня репозитория:
 
 ```powershell
-New-Item -ItemType Directory -Force .ai/graph-tests | Out-Null
-& C:/Users/Akku/.jdks/ms-21.0.7/bin/javac.exe --release 21 -encoding UTF-8 -d .ai/graph-tests tools/editor-ui-host/java/epidemic/editor/Bridge.java tools/editor-ui-host/tests/GraphTests.java
-& C:/Users/Akku/.jdks/ms-21.0.7/bin/java.exe -cp .ai/graph-tests epidemic.editor.GraphTests Temp/b/ui-host/Release/EpidemicEditorBackend.exe .ai/graph-tests
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/editor-ui-host/Build-Standalone.ps1 -JdkRoot C:/Users/Akku/.jdks/ms-21.0.7 -Smoke
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/editor-ui-host/tests/Test-StandaloneRestart.ps1
 python tools/editor-ui-host/tests/test_protocol.py Temp/b/ui-host/Release/EpidemicEditorBackend.exe
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/editor-ui-host/Build-Standalone.ps1 -JdkRoot C:/Users/Akku/.jdks/ms-21.0.7 -SideBySide -Smoke
+python tools/editor-ui-host/tests/test_catalog.py
 ```
 
-Первичное наполнение npm offline cache: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/editor-ui-host/Build-Graph.ps1 -Resolve`. Для offline упаковки также нужны уже разрешённые 353 Maven artifacts и закреплённый JBR tar.gz. Полностью пустой cache не объявляется offline-ready.
+Native roundtrip: скомпилировать `Bridge.java` и `tests/GraphTests.java` Microsoft JDK 21 в `.ai/graph-tests`, запустить `epidemic.editor.GraphTests` с аргументами `Temp/b/ui-host/Release/EpidemicEditorBackend.exe .ai/graph-tests`. Для первоначального npm cache: `Build-Graph.ps1 -Resolve`; launcher SDK первоначально разрешает `Build-Launcher.ps1` и затем всегда сверяет SHA512.
 
-## Подготовка F-II.1
+## Вход в F-II.1
 
-Реализация **не начата**, вход закрыт F-II.0b. После sandbox/приёмки первый батч расширяет существующий Graph adapter: schema-derived palette, Selection/Inspector, удаление/разрыв из UI, диагностика ссылок, load/stress. Остаются тот же native owner, op 38 и versioned DTO; не создаётся альтернативный граф или новая docking оболочка. Code Space/managed остаются в F-II.2 согласно отдельному контракту.
+Готов фундамент §4 F-II_Implementation_Spec; следующий батч расширяет текущий adapter, не создаёт новую оболочку или graph owner:
+
+1. Schema-derived catalogue и DTO (schema revision, port multiplicity/defaults, params/diagnostics/feature states), затем подключение существующих Graph Palette и Node Inspector/Selection. Активировать только подтверждённые native операции; Variables/C# без backend остаются disabled.
+2. Native UI create/delete/duplicate/connect/disconnect/parameters, bulk actions атомарно через EditRequest; stable IDs и revision/conflict guards. Validate/Compile и Problems→Node ID; выполнение сравнивается с headless Graph VM.
+3. Pan/zoom/fit/reset, selection/multi-select, bounded Copy/Paste, comments/groups/minimap и markers согласно spec. UI history лишь transient; `rete-engine` не используется. Camera/selection сохраняются при incremental projection; один commit на drop, rollback Escape/capture loss.
+4. Расширить security tests: JSON depth/count/rate и output/HTML injection. Замерить 100/500/2000-node профили, соблюдая существующий native лимит 1024: превышение должно давать bounded reject до отдельно обоснованного изменения контракта. Нет скрытого повышения лимитов ради benchmark.
+
+F-II.1-GATE пока NOT RUN: его DoD требует compile/execute native VM, расширенное редактирование и собственную адресную квалификацию. Graph↔Scene остаётся F-II.3, Code Space/managed — F-II.2.

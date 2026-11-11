@@ -1,6 +1,6 @@
 # F-II.0. Технический отчёт и ADR
 
-**Статус F-II.0 — PARTIAL.** Базовая ревизия, инвентаризация и повторная квалификация составляют **F-II.0a PASS**. F-II.0b BLOCKED по Windows CEF sandbox; native Graph roundtrip PASS. По уточнённому заданию Code Space/managed закреплены контрактами для F-II.2. [Отчёт F-II.0b](FII0B_GRAPH_ROUNDTRIP.md). [Базовая ревизия](FII_BASELINE.md) · [Матрица функций](FII_FEATURE_MATRIX.md) · [Проверки](FII_QA_MATRIX.md) · [Приёмка](FII_ACCEPTANCE.md).
+**Статус F-II.0 — PASS. F-II.0a PASS, F-II.0b PASS.** Native Graph roundtrip и настоящий Windows CEF sandbox квалифицированы в штатном продукте. Code Space/managed по уточнённому заданию закреплены окончательными контрактами F-II.2. [Отчёт F-II.0b](FII0B_GRAPH_ROUNDTRIP.md) · [Baseline](FII_BASELINE.md) · [Матрица](FII_FEATURE_MATRIX.md) · [Проверки](FII_QA_MATRIX.md) · [Приёмка](FII_ACCEPTANCE.md).
 
 ## Зависимости на Windows 11 x64
 
@@ -8,8 +8,9 @@
 |---|---|---|
 | IntelliJ Platform | 253.31033.145, 353 закреплённых артефакта с индивидуальными LICENSE/NOTICE/POM в продукте. | `app` базового EXE занимает 378 572 966 байт без сгенерированного smoke-профиля. Пакет работает с локальным runtime и локальным companion. |
 | Vanilla JBR | 21.0.10+1-b1163.108, OpenJDK GPLv2 с Classpath Exception и сопроводительные notices. | Пакетный `runtime` 166 469 319 байт. В запущенной Platform `JBCefApp.isSupported() == false`. |
-| JBR с JCEF | Публичный Windows x64 `jbr_jcef-21.0.10-windows-x64-b1163.108`. Проверен SHA512 издателя `f231d37bf2f358486bc38c21931651b2240a5d13c86b6b86467e43bd5c4db50e4e5585f1e4515ab7fd7b70b05efeaaef644a692799f52bc0270d9e8aba6cb34a`. Лицензии JBR плюс уведомления CEF/Chromium требуют инвентаризации перед распространением. | Архив 259 461 195 байт, распакованный runtime 541 529 756 байт. В архиве есть `jcef.dll`, `libcef.dll`, `chrome_elf.dll`, helpers, `*.pak` и ICU. [Публикация JetBrains](https://github.com/JetBrains/JetBrainsRuntime/releases/tag/jbr-release-21.0.10b1163.108). |
-| Rete и renderer | MIT. `rete@2.0.6`, `rete-area-plugin@2.3.2`, `rete-connection-plugin@2.0.5`, `rete-react-plugin@2.1.2`, React/React DOM 19.1.1, styled-components 6.1.19. esbuild 0.25.9 используется при сборке. | Минифицированный JS 308 537 байт плюс notices. Загрузка локальных HTML и JS, CSP запрещает сетевые подключения. Первое разрешение npm-зависимостей использует сеть. |
+| JBR с JCEF | Публичный Windows x64 `jbr_jcef-21.0.10-windows-x64-b1163.108`. Проверен SHA512 издателя `f231d37bf2f358486bc38c21931651b2240a5d13c86b6b86467e43bd5c4db50e4e5585f1e4515ab7fd7b70b05efeaaef644a692799f52bc0270d9e8aba6cb34a`. Runtime legal, JCEF/CEF BSD и полный Chromium credits сохранены; публичный redistribution review остаётся отдельной задачей. | Архив 259 461 195 байт, распакованный runtime 541 529 756 байт. В архиве есть `jcef.dll`, `libcef.dll`, `chrome_elf.dll`, helpers, `*.pak` и ICU. [Публикация JetBrains](https://github.com/JetBrains/JetBrainsRuntime/releases/tag/jbr-release-21.0.10b1163.108). |
+| Rete и renderer | MIT. `rete@2.0.6`, `rete-area-plugin@2.3.2`, `rete-connection-plugin@2.0.5`, `rete-react-plugin@2.1.2`, React/React DOM 19.1.1, styled-components 6.1.19. esbuild 0.25.9 используется при сборке. | Минифицированный JS 310 334 байта плюс notices. Загрузка локальных HTML и JS, CSP запрещает сетевые подключения. Первое разрешение npm-зависимостей использует сеть. |
+| Native Windows launcher | Собственный EXE + официальный CEF sandbox SDK 137.0.17 (BSD/Chromium notices), matching JBR/JCEF. SHA512 закреплён в Build-Launcher.ps1. | Release EXE 1 050 624 байт. SDK архив 202 011 285 байт — build-time cache, не runtime dependency; повторная упаковка offline после первичного разрешения. |
 | C# language service | `csharp-ls@0.28.0`, MIT, Roslyn, net10.0. LSP4IJ 0.19.3 — кандидат EPL-2.0. В release notes этой версии явно указана поддержка Platform 253. | Изолированная установка csharp-ls 102 966 567 байт, требует .NET SDK. Проверен локальный процесс и проект без внешних package references. Размер и интеграция LSP4IJ в standalone — NOT RUN. [Пакет csharp-ls](https://www.nuget.org/packages/csharp-ls/0.28.0) · [LSP4IJ 0.19.3](https://github.com/redhat-developer/lsp4ij/releases/tag/0.19.3) · [Лицензия LSP4IJ](https://github.com/redhat-developer/lsp4ij/blob/main/LICENSE). |
 | .NET и Rider | Установлены .NET SDK 10.0.402, hostfxr 10.0.13 для managed-пробы. Rider является отдельной установкой JetBrains. | .NET SDK и Rider используются как инструменты машины. Rider в проверенных путях не найден. [Синтаксис открытия файла](https://www.jetbrains.com/help/rider/Opening_Files_from_Command_Line.html). |
 
@@ -23,9 +24,9 @@ Layout принадлежит EditorDocument, runtime GraphDefinition сохра
 
 В штатном EXE прошли browser/native authoring, React DOM, FileEditor close/reopen с disposal browser/query и отдельный HWND. Production Bridge test сохранил IDs/координаты при Save/Open во втором native-процессе. CSP и request handler запрещают внешние ресурсы, popup и OS protocol execution; JS Bridge ограничен allowlist, nonce, bound DocumentKey и generation/revision. Проверены отказ file/HTTPS/loopback fetch, eval и Bridge open. Полные результаты: [F-II.0b](FII0B_GRAPH_ROUNDTRIP.md).
 
-**Блокер:** jpackage launcher на Windows не создаёт CEF sandbox до JVM. Закреплённый SettingsHelper обнаруживает отсутствие `jcef.sandbox.ptr` и выключает sandbox. Обычный Graph FileEditor поэтому показывает Unavailable; только изолированный `--smoke` допускает локальную unsandboxed квалификацию с явным LIMIT. Нужен native launcher с настоящим sandbox info в основном EXE, совместимой CEF sandbox library и проверкой Windows renderer mitigations. Фиктивный указатель не используется. [CEF sandbox setup](https://chromiumembedded.github.io/cef/sandbox_setup).
+**Решение launcher — реализовано и PASS.** Собственный Windows EXE статически связывает matching официальный CEF sandbox SDK 137.0.17 и создаёт CefScopedSandboxInfo до JVM. Дочерние Chromium процессы входят через публичный JBR jcef_helper.dll!execute_subprocess того же EXE, без JVM; native pointer передаётся hexadecimal вместе с точной CEF version. JNI classpath явно перечисляет locked JARs с продуктовым epidemic.jar первым, сохраняя приоритет bootstrap corrections DirectoryLock/MainImpl. JCEF работает in-process, Graph отвергает no_sandbox/remote и отсутствие зарегистрированного JNI. Unsandboxed smoke исключение удалено. SDK закреплён SHA512, используется offline из проверенного архива. [Контракты, pin и build](../../tools/editor-ui-host/standalone/native-launcher/README.md).
 
-Реальные mouse/keyboard gestures и Escape во время drag пока NOT RUN. Передача preferred focus JCEF реализована и проверена на уровне FileEditor API. До устранения sandbox F-II.1 закрыт.
+В штатном EXE renderer проверен OS API: restricted token, integrity RID 0, Win32kDisabled=true; job membership не единственное доказательство. AppContainer не заявляется. CSP и Bridge denial, disposal/reopen, отдельный HWND и отсутствие owned CEF процессов после shutdown прошли. Адресный maximized Windows input прошёл create/connect/reject/Escape/move/Ctrl+Z/Y/S, floating view и Save/Open в новом Editor-процессе. Удерживаемый drag/Escape/release отдельно проверен JCEF input APIs. Полный CU и 500/2000-node stress не заявляются.
 
 ## B. Code Space, LSP и Rider
 
@@ -39,9 +40,9 @@ Layout принадлежит EditorDocument, runtime GraphDefinition сохра
 
 Временный fixture собрал две net10.0 DLL. Native probe через штатный hostfxr вызвал `Turret.ApplyDamage` версии V1, получил 89 и 78, закрыл сессию и проверил отказ старого handle. V2 с другим assembly name и удвоенным уроном вернул 78 при первом вызове. После Close его handle также был отозван. Артефакт `Temp/U/fii0/turret/build/Debug/FiiTurretProbe.exe`.
 
-В существующем загрузчике нет публичного контракта выгрузки DLL через collectible ALC. Для F-II.2 требуется выбрать модель поколений и срок жизни сборки относительно Play/Stop. Сохраняем действующий C ABI и проверяем загрузку новой версии отдельно от выгрузки старой. [Microsoft Assembly unloadability](https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability).
+В существующем загрузчике нет публичного контракта выгрузки DLL через collectible ALC. Для F-II.2 выбран отдельный managed worker на поколение Play и отзыв handles на Stop согласно окончательному контракту; реализация ещё не выполнена. Сохраняем действующий C ABI и проверяем загрузку новой версии отдельно от выгрузки старой. [Microsoft Assembly unloadability](https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability).
 
-## Воспроизводимость проб
+## Исторические пробы F-II.0a (не текущая сборка)
 
 - Базовый Release и CTest повторяются по командам из [baseline](FII_BASELINE.md).
 - Локальные файлы браузера, npm lock и исходники диагностического расширения находятся в `Temp/U/fii0/rete` и `Temp/U/fii0`. Бандл собран через `esbuild probe.js --bundle --minify --legal-comments=linked --outfile=bundle.js`. Диагностический запуск использует копию app image, отдельный проверенный JBR и временные классы `PlatformStartup.java` / `FiiBrowserProbe.java`, собранные Microsoft JDK 21 с classpath штатного продукта. В копии JAR эти классы подключаются при старте, `EPIDEMIC_FII0_RETE_PAGE` указывает на локальный `rete/index.html`, запуск выполняется с `--smoke`. HTML содержит CSP с SHA-256 скрипта и `connect-src 'none'`.
@@ -49,6 +50,6 @@ Layout принадлежит EditorDocument, runtime GraphDefinition сохра
 
 ## Решение на выходе F-II.0b
 
-**BLOCKED: Windows CEF sandbox в launcher.** Native Graph roundtrip PASS. [Результаты и оставшиеся проверки](FII0B_GRAPH_ROUNDTRIP.md).
+**PASS: native Windows launcher, настоящий CEF sandbox и native Graph roundtrip.** [Квалификация и подготовка F-II.1](FII0B_GRAPH_ROUNDTRIP.md).
 
-[Контракт Code Space / managed](FII_CODESPACE_MANAGED_CONTRACT.md) закрепляет задачи F-II.2. LSP, Rider и C# Play сейчас не реализованы. F-II.1 подготовлен, реализация не начата до PASS F-II.0b.
+[Контракт Code Space / managed](FII_CODESPACE_MANAGED_CONTRACT.md) закрепляет задачи F-II.2. LSP, Rider и C# Play сейчас не реализованы. F-II.1 READY; реализация не начата. Его расширенные Graph authoring/compile/VM и performance проверки остаются отдельным gate.

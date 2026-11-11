@@ -72,7 +72,8 @@ area.addPipe(context => {
     if (!rendering && !cancelledGesture && context.type === 'nodetranslated') dragging = { id: context.data.id, ...context.data.position };
     return context;
 });
-document.addEventListener('pointerdown', () => { cancelledGesture = false; });
+// Rete stops bubbling pointerdown on nodes; reset before its drag handler.
+document.addEventListener('pointerdown', () => { cancelledGesture = false; }, true);
 document.addEventListener('pointerup', () => {
     if (cancelledGesture) { cancelledGesture = false; dragging = undefined; return; }
     if (!dragging || rendering) return;
@@ -83,7 +84,13 @@ document.addEventListener('pointerup', () => {
 document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
         cancelledGesture = true; dragging = undefined; connections.drop();
-        if (snapshot) window.graphSnapshot(snapshot);
+        // Preserve the live drag owner until pointerup; rebuilding all node views
+        // while a button is held loses Rete's pointer lifecycle.
+        queue = queue.then(async () => {
+            rendering = true;
+            try { for (const [id, position] of positions) await area.translate(id, position); }
+            finally { rendering = false; }
+        });
         event.preventDefault();
     }
     if ((event.ctrlKey || event.metaKey) && ['s', 'z', 'y'].includes(event.key.toLowerCase())) {
@@ -93,6 +100,7 @@ document.addEventListener('keydown', event => {
 });
 for (const button of document.querySelectorAll('[data-create]'))
     button.addEventListener('click', () => send('create', button.dataset.create, 80 + (snapshot?.nodes.length || 0) * 40, 100));
+window.graphFit = () => AreaExtensions.zoomAt(area, editor.getNodes());
 window.graphDispose = () => area.destroy();
 window.graphCanvasReady = true;
 

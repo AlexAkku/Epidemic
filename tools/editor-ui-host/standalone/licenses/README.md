@@ -39,3 +39,14 @@ verified against the publisher SHA512 in `Resolve-Runtime.ps1`. Its unmodified
 
 This preserves the bundled notices; the general distribution/source-offer review
 above remains distinct from local F-II qualification.
+
+## Native CEF sandbox launcher
+
+The product EXE statically links the matching official CEF sandbox library. Its
+exact SDK archive/SHA512 and public source contracts are in
+`../native-launcher/README.md` and `../../Build-Launcher.ps1`. CEF BSD and the full
+Chromium credits above apply; SDK headers/CMake and sandbox library are taken
+from that verified archive. Product packaging additionally retains this own
+launcher's C++/CMake sources, manifest, README and build script under
+`licenses/native-launcher`. No installed IDEA or proprietary launcher binary is
+used. SDK cache is build-time only; running the packaged EXE needs no downloads.

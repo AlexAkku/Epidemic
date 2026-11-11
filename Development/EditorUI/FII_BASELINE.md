@@ -50,3 +50,7 @@ python tools/editor-ui-host/tests/test_catalog.py
 ## Отправная точка реализации F-II.0b
 
 Локальный `5324262` поверх замороженного F-I `ce06956`. Штатная сборка теперь использует JBR/JCEF; старые vanilla-измерения выше остаются baseline. [Текущая квалификация](FII0B_GRAPH_ROUNDTRIP.md).
+
+## Закрытие F-II.0b
+
+Батч native sandbox launcher начат от `7402924`. F-II.0b PASS: штатный distribution EXE использует собственный CEF sandbox launcher и JBR/JCEF. Повторены Graph/IPC/catalog, 19 адресных CTest/архитектура, standalone Release smoke, startup lock/restart и changed-TU static checks. Адресный Windows ввод проверен без полного CU. [Текущая квалификация, ограничения и вход F-II.1](FII0B_GRAPH_ROUNDTRIP.md).

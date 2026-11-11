@@ -21,7 +21,11 @@ Rete uses `../graph-web/package-lock.json`. Run `../Build-Graph.ps1 -Resolve`
 once to seed `.ai/npm-cache`; normal packaging uses npm offline. The product
 retains runtime legal, complete JCEF/CEF/Chromium credits and npm notices.
 
-F-II.0b remains blocked: jpackage does not initialize Windows CEF sandbox.
-Normal Graph FileEditors fail closed with Unavailable. Only isolated `--smoke`
-permits unsandboxed local qualification with an explicit LIMIT. See
-`Development/EditorUI/FII0B_GRAPH_ROUNDTRIP.md`.
+The Windows app image uses the product-owned native CEF sandbox launcher;
+jpackage only assembles the image. See `native-launcher/README.md` for the exact
+SDK SHA512, offline build and public JBR helper/JNI contract. Graph fails closed
+without the actual native sandbox (including smoke); no unsandboxed exception
+remains. The packaged smoke checks restricted renderer tokens, low/untrusted
+integrity, Win32k lockdown, CSP/Bridge denial, real JCEF input cancellation,
+FileEditor disposal/reopen and bounded shutdown. F-II.0b is PASS; full F-II.1
+Graph authoring/compile/VM remains the next stage.

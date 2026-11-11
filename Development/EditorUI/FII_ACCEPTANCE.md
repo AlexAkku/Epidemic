@@ -1,18 +1,21 @@
 # Приёмка F-II.0
 
-**F-II.0a PASS. F-II.0b BLOCKED. F-II.0 PARTIAL.**
+**F-II.0a PASS. F-II.0b PASS. F-II.0 PASS.**
 
-Сквозной Graph authoring и native Save/Open во втором процессе прошли. Подтверждённый технический блокер — Windows CEF sandbox: jpackage launcher не инициализирует его до JVM. Обычный Graph FileEditor показывает Unavailable. Изолированный unsandboxed smoke с явным LIMIT не является security PASS.
+Сквозной Graph authoring работает в штатном самостоятельном Editor с настоящим Windows CEF sandbox. Native launcher создаёт sandbox до JVM; renderer имеет restricted token, Untrusted integrity и Win32k lockdown. Unsandboxed smoke исключение удалено.
 
-После исправления launcher остаются адресные проверки **NOT RUN**:
+| Обязательный результат F-II.0b | Статус |
+|---|---|
+| Native GraphDefinition через Rete/Java Bridge/IPC v4/Execute; узлы/порты/связи | PASS |
+| Native create/connect/type reject, координаты, миграция, Undo/Redo, Save/Open в другом процессе | PASS |
+| Официальный JBR/JCEF, проверяемый offline cache, SHA512, notices | PASS |
+| Настоящий sandbox, CSP/file/network/eval/Bridge ограничения | PASS |
+| FileEditor close/reopen, независимое Windows окно, keyboard focus, bounded shutdown | PASS |
+| Мышь: compatible/rejected connections, Escape; клавиатура Ctrl+S/Z/Y в основной и отдельной view | PASS, адресный Windows сценарий |
+| Удерживаемый node drag→Escape→release; следующий drag | PASS через реальные JCEF input APIs: ноль edits, затем ровно один commit |
+| Адресные 19 CTest/архитектура, IPC/catalog, два launcher TU static analysis, startup lock regression | PASS |
+| Code Space и managed lifecycle | PASS по окончательным контрактам F-II.2; LSP/Rider/C# Play не реализованы |
 
-1. Мышью создать/соединить Event, Native Call, Wait; несовместимое Control → Data должно отклоняться.
-2. Переместить узел, Ctrl+Z/Ctrl+Y; начать новый drag, нажать Escape до отпускания мыши и проверить отсутствие native edit.
-3. Настоящий клавиатурный фокус и Ctrl+S/Z/Y в основной Graph tab и отдельном окне Windows; возврат вкладки обратно.
-4. Проверка фактического Windows sandbox, повтор security и bounded CEF shutdown на новом launcher.
+Полный U/Computer Use прогон не выполнялся. Нагрузочные 500/2000 nodes и расширенное редактирование/compile/VM составляют F-II.1 и пока NOT RUN. Исторические анализаторные предупреждения остаются backlog.
 
-Программно проверены JSQuery/native authoring, rejected edits, второй процесс, layout history, FileEditor disposal/reopen, независимый HWND, preferred focus API и CSP/ограниченный Bridge. Полный повтор U/CUA не требуется.
-
-Code Space/LSP/Rider/managed Play реализуются в F-II.2. В текущей задаче требовалось закрепить их [контракты](FII_CODESPACE_MANAGED_CONTRACT.md), это выполнено.
-
-[Точный отчёт, регрессии и подготовка F-II.1](FII0B_GRAPH_ROUNDTRIP.md).
+[Отчёт и подготовленный вход F-II.1](FII0B_GRAPH_ROUNDTRIP.md) · [Контракты F-II.2](FII_CODESPACE_MANAGED_CONTRACT.md).

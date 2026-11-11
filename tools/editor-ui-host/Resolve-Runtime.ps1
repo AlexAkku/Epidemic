@@ -36,7 +36,7 @@ if($release -notmatch 'JAVA_RUNTIME_VERSION="21.0.10\+1-b1163.108"' -or $release
     throw 'Unexpected public JBR release'
 }
 if(-not(Test-Path -LiteralPath "$runtime/bin/server/jvm.dll")){throw 'Incomplete public JBR runtime'}
-foreach($required in @('bin/jcef.dll','bin/libcef.dll','bin/chrome_elf.dll','bin/cef_server.exe','bin/jcef_helper.exe','legal/java.base/LICENSE')){
+foreach($required in @('bin/jcef.dll','bin/libcef.dll','bin/chrome_elf.dll','bin/cef_server.exe','bin/jcef_helper.exe','bin/jcef_helper.dll','legal/java.base/LICENSE')){
     if(-not(Test-Path -LiteralPath (Join-Path $runtime $required))){throw "Incomplete public JCEF runtime: $required"}
 }
 Write-Output $runtime

@@ -996,7 +996,7 @@ public final class PlatformSession implements Disposable {
         require(Arrays.stream(FileEditorManager.getInstance(project).getAllEditors(file))
             .anyMatch(editor -> editor.getPreferredFocusedComponent() == graph.preferredFocus()),
             "Graph FileEditor doesn't delegate focus to JCEF");
-        record("LIMIT F-II.0b browser qualification uses unsandboxed jpackage launcher; security gate remains OPEN");
+        require(epidemic.launcher.NativeLauncher.available(), "No actual launcher sandbox info");
         later(1500, () -> graph.smokeCommand("create", "0", "40", "80")
             .thenCompose(created -> graph.smokeCommand("create", "1", "340", "80"))
             .thenCompose(created -> graph.smokeCommand("create", "2", "640", "80"))
@@ -1021,6 +1021,17 @@ public final class PlatformSession implements Disposable {
                         later(1200, () -> graph.source(dom -> edt(() -> {
                             require(dom.contains("data-testid=\"node\"") && dom.contains("data-testid=\"connection\""), "Rete DOM didn't project native nodes/edge");
                             record("PASS F-II.0b packaged Rete -> JBCefJSQuery -> Java Bridge -> IPC v4 -> EditorWorkspace::Execute; 3 nodes/edge/layout/Undo/Redo/Save; native DTO rendered in React DOM");
+                            var securityState = com.google.gson.JsonParser.parseString(epidemic.launcher.NativeLauncher.security()).getAsJsonObject();
+                            int rendererCount = 0;
+                            for (var item : securityState.getAsJsonArray("processes")) {
+                                var process = item.getAsJsonObject();
+                                if (!process.get("renderer").getAsBoolean()) continue;
+                                ++rendererCount;
+                                require(process.get("restricted").getAsBoolean() && process.get("integrity").getAsLong() <= 4096 && process.get("win32kDisabled").getAsBoolean(),
+                                    "Renderer lacks a restricted low/untrusted Windows token: " + process);
+                            }
+                            require(rendererCount > 0, "No owned renderer process verified: " + securityState);
+                            record("PASS F-II.0b native CEF sandbox: " + securityState);
                             long revision = snapshot.revision();
                             graph.smokeCommand("open").handle((reply, rejected) -> {
                                 require(rejected != null, "Graph bridge exposed arbitrary operation"); return true;
@@ -1029,7 +1040,12 @@ public final class PlatformSession implements Disposable {
                                 require(security.contains("\"denied\":[true,true,true]") && security.contains("\"evalDenied\":true") &&
                                     snapshot.revision() == revision, "Graph CSP/bridge denial failed: " + security);
                                 record("PASS F-II.0b Graph CSP denies file/HTTPS/loopback fetch and eval; bridge rejects non-allowlisted open; revision unchanged");
-                                smokeGraphLifecycle(doc, file, graph);
+                                graph.smokeDragCancel().thenCompose(ignored -> graph.smokeCommand("save"))
+                                    .whenComplete((dragSaved, dragError) -> edt(() -> {
+                                        if (dragError != null) { failure(dragError); return; }
+                                        record("PASS F-II.0b JCEF input: held drag/Escape/release has zero native edits; next drag commits exactly one; Save");
+                                        smokeGraphLifecycle(doc, file, graph);
+                                    }));
                             }));
                         })));
                     }));
