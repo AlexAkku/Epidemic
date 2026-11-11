@@ -46,6 +46,8 @@ if(-not $NativeReady){
 if($UpdateLock){& python "$PSScriptRoot/standalone/lock_platform.py" --update}else{& python "$PSScriptRoot/standalone/lock_platform.py"}
 if($LASTEXITCODE){throw 'Runtime dependency lock/license collection failed'}
 Copy-Item "$PSScriptRoot/standalone/licenses/*" "$productRoot/licenses" -Recurse -Force
+& python "$PSScriptRoot/standalone/expand_jcef_notices.py" "$productRoot/licenses"
+if($LASTEXITCODE){throw 'JCEF/Chromium attribution assembly failed'}
 $retiredNative=Join-Path $productRoot 'native/EpidemicEditorDesktop.exe'
 if(Test-Path -LiteralPath $retiredNative){Remove-Item -LiteralPath $retiredNative -Force}
 Copy-Item "$build/$Configuration/EpidemicEditorBackend.exe","$build/$Configuration/EpidemicUiViewport.dll" "$productRoot/native" -Force
@@ -53,6 +55,9 @@ $sources=@(Get-ChildItem "$PSScriptRoot/java" -Recurse -Filter '*.java' | Where-
 $sources+=@(Get-ChildItem "$PSScriptRoot/java-intellij","$PSScriptRoot/standalone/java","$PSScriptRoot/standalone/upstream" -Recurse -Filter '*.java' | ForEach-Object FullName)
 & "$jdk/bin/javac.exe" --release 21 -encoding UTF-8 -Xlint:deprecation -classpath "$productRoot/lib/*" -d $classes $sources
 if($LASTEXITCODE){throw 'Standalone product compilation failed'}
+$graphOutput=& "$PSScriptRoot/Build-Graph.ps1" -Resolve:$Resolve | Select-Object -Last 1
+Copy-Item "$graphOutput/graph" $classes -Recurse -Force
+Copy-Item "$graphOutput/licenses/*" "$productRoot/licenses" -Recurse -Force
 Copy-Item "$PSScriptRoot/resources/*","$PSScriptRoot/standalone/resources/*" $classes -Recurse -Force
 & python "$PSScriptRoot/standalone/prepare_resources.py" $classes "$productRoot/lib"
 if($LASTEXITCODE){throw 'Product resource assembly failed'}
@@ -136,5 +141,18 @@ if(-not $NoPackage){
 }
 if($Run -or $Smoke){
     if($NoPackage){$java="$runtime/bin/java.exe";$arguments=$options+@('-cp',"$productRoot/lib/epidemic.jar;$productRoot/lib/*",'epidemic.launcher.Main');if($Smoke){$arguments+='--smoke'};& $java @arguments;if($LASTEXITCODE){throw 'Standalone bootstrap failed'}}
-    else{$style=if($Smoke){'Hidden'}else{'Normal'};$launch=@{FilePath="$image/EpidemicEditor.exe";WindowStyle=$style;PassThru=$true};if($Smoke){$launch.ArgumentList=@('--smoke')};$owned=Start-Process @launch;$owned.WaitForExit();if($owned.ExitCode){throw "Standalone EXE exited $($owned.ExitCode)"}}
+    else{$style=if($Smoke){'Hidden'}else{'Normal'};$launch=@{FilePath="$image/EpidemicEditor.exe";WindowStyle=$style;PassThru=$true};if($Smoke){$launch.ArgumentList=@('--smoke')};$owned=Start-Process @launch;$owned.WaitForExit();if($owned.ExitCode){throw "Standalone EXE exited $($owned.ExitCode)"}
+        if($Smoke){
+            $deadline=[DateTime]::UtcNow.AddSeconds(15)
+            $prefix=[IO.Path]::GetFullPath($image)+[IO.Path]::DirectorySeparatorChar
+            do {
+                $remaining=@(Get-CimInstance Win32_Process -Filter "Name='cef_server.exe' OR Name='jcef_helper.exe'" |
+                    Where-Object {$_.ExecutablePath -and $_.ExecutablePath.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)})
+                if(-not $remaining.Count){break}
+                Start-Sleep -Milliseconds 200
+            } while([DateTime]::UtcNow -lt $deadline)
+            if($remaining.Count){throw "Owned JCEF processes did not exit within 15s: $($remaining.ProcessId -join ',')"}
+            Write-Output 'PASS standalone JCEF shutdown: no owned cef_server/jcef_helper processes within 15s'
+        }
+    }
 }

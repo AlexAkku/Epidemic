@@ -47,14 +47,22 @@ public final class Bridge implements AutoCloseable {
     public record ComponentType(long id,String name) {}
     public record SceneItem(long document,long id,double left,double top,double right,double bottom,double x,double y,double rotation) {}
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
+    public record GraphPort(long id, String name, int kind, int direction, long type) {}
+    public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports) {
+        public GraphNode { ports = List.copyOf(ports); }
+    }
+    public record GraphEdge(long id, long output, long input) {}
+    public record Graph(long document, List<GraphNode> nodes, List<GraphEdge> edges) {
+        public Graph { nodes = List.copyOf(nodes); edges = List.copyOf(edges); }
+    }
     public record Snapshot(long revision, long assetRevision, long selectionRevision, int flags,
         int storage, long project, long entry, String path, String title, Selection selection,
-        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState,List<ComponentType> componentTypes,List<SceneItem> sceneItems,List<SystemItem> systems,List<String> contentFolders) {
+        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState,List<ComponentType> componentTypes,List<SceneItem> sceneItems,List<SystemItem> systems,List<String> contentFolders,List<Graph> graphs) {
         public Snapshot {
             documents = List.copyOf(documents); nodes = List.copyOf(nodes); assets = List.copyOf(assets);
-            fields=List.copyOf(fields); contentFolders=List.copyOf(contentFolders);
+            fields=List.copyOf(fields); contentFolders=List.copyOf(contentFolders); graphs=List.copyOf(graphs);
         }
-        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty(),List.of(),List.of(),List.of(),List.of());}
+        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty(),List.of(),List.of(),List.of(),List.of(),List.of());}
         public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,List.of());}
         public boolean dirty() { return (flags & 1) != 0; }
         public boolean canUndo() { return (flags & 2) != 0; }
@@ -304,8 +312,36 @@ public final class Bridge implements AutoCloseable {
             List<String> folders=new ArrayList<>();
             if(capabilities.contains("content-folders"))
                 for(int n=count(in);n>0;--n)folders.add(text(in));
+            List<Graph> graphs = new ArrayList<>();
+            if (capabilities.contains("graph-authoring")) {
+                if (in.readUnsignedShort() != 1) throw new IOException("ui.graph_dto_version");
+                for (int g = count(in); g > 0; --g) {
+                    long document = in.readLong();
+                    List<GraphNode> graphNodes = new ArrayList<>();
+                    for (int n = count(in); n > 0; --n) {
+                        long graphNodeId = in.readLong(), type = in.readLong();
+                        String name = text(in);
+                        double x = in.readDouble(), y = in.readDouble();
+                        if (!Double.isFinite(x) || !Double.isFinite(y) || Math.abs(x) > 1000000 || Math.abs(y) > 1000000)
+                            throw new IOException("ui.graph_position");
+                        List<GraphPort> ports = new ArrayList<>();
+                        for (int p = count(in); p > 0; --p) {
+                            long port = in.readLong(); String label = text(in);
+                            int kind = in.readUnsignedByte(), direction = in.readUnsignedByte();
+                            long portType = in.readLong();
+                            if (kind > 2 || direction > 1) throw new IOException("ui.graph_port");
+                            ports.add(new GraphPort(port, label, kind, direction, portType));
+                        }
+                        graphNodes.add(new GraphNode(graphNodeId, type, name, x, y, ports));
+                    }
+                    List<GraphEdge> edges = new ArrayList<>();
+                    for (int e = count(in); e > 0; --e)
+                        edges.add(new GraphEdge(in.readLong(), in.readLong(), in.readLong()));
+                    graphs.add(new Graph(document, graphNodes, edges));
+                }
+            }
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,
-                                    title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems),folders);
+                                    title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems),folders,graphs);
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
         return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start, null);

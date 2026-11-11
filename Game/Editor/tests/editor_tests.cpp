@@ -3,6 +3,9 @@
 #include "../../Composition/tests/user_components.h"
 #include <fstream>
 #include <array>
+#include "../src/project_archive.h"
+#include "Epidemic/Runtime/Serialization/serialization_services.h"
+#include "Epidemic/Runtime/Support/graph_serialization.h"
 
 using namespace composition_tests;
 namespace ed = epidemic::game::editor;
@@ -40,6 +43,64 @@ ed::ProjectSchema Schema(Fixture &f, const ComponentsFixture &types) {
              {Id("call.type"), graph::Operation::NativeCall},
              {Id("wait.type"), graph::Operation::Wait}}};
 
+}
+
+void GraphLayoutMigration() {
+    namespace rt = epidemic::runtime;
+    Fixture fixture;
+    ComponentsFixture components;
+    const auto schema = Schema(fixture, components);
+    auto graph = Definition();
+    auto services = Take(rt::CreateSerializationServices());
+    std::vector<graph::TypeId> types{graph::kI64Type};
+    for (const auto &[type, operation] : schema.operations) {
+        (void)operation;
+        types.push_back(type);
+    }
+    rt::GraphDefinitionSerializer codec{types};
+    const auto graph_bytes = Take(rt::EncodeDocument(Take(rt::SerializeToDocument(codec, graph, *services.archives))));
+    const auto archive = [&](std::uint64_t layout_version) {
+        auto writer = services.archives->CreateWriter();
+        Take(writer->WriteUInt64("id", Id("layout.project").Raw()));
+        Take(writer->WriteUInt64("entry", 0));
+        Take(writer->BeginArray("documents", 1));
+        Take(writer->BeginArrayElement(0));
+        Take(writer->WriteUInt64("id", graph.asset_id.Raw()));
+        Take(writer->WriteString("name", "Graph"));
+        Take(writer->WriteUInt64("kind", 2));
+        Take(writer->BeginObject("data"));
+        Take(writer->WriteBytes("archive", graph_bytes));
+        Take(writer->EndObject());
+        if (layout_version) {
+            Take(writer->BeginObject("graph_layout"));
+            Take(writer->WriteUInt64("version", layout_version));
+            Take(writer->BeginArray("positions", 1));
+            Take(writer->BeginArrayElement(0));
+            Take(writer->WriteUInt64("node", graph.nodes.front().id.Raw()));
+            Take(writer->WriteDouble("x", 12.5));
+            Take(writer->WriteDouble("y", -24.25));
+            Take(writer->EndArrayElement());
+            Take(writer->EndArray());
+            Take(writer->EndObject());
+        }
+        Take(writer->EndArrayElement());
+        Take(writer->EndArray());
+        Take(writer->BeginArray("identities", 0));
+        Take(writer->EndArray());
+        return Take(rt::EncodeDocument(Take(writer->Finalize(Id("epidemic.editor.project"), {1, 0, 0}))));
+    };
+    auto old = Take(ed::detail::ReadProject(archive(0), schema));
+    Check(old.definition.documents.front().graph_layout.empty() &&
+          std::get<graph::GraphDefinition>(old.definition.documents.front().data) == graph,
+          "v0 migration preserves native graph and implicit deterministic positions");
+    auto migrated = Take(ed::detail::ReadProject(Take(ed::detail::WriteProject(old, schema)), schema));
+    Check(migrated.definition.documents.front().graph_layout.empty(), "migration is stable on second read");
+    auto current = Take(ed::detail::ReadProject(archive(1), schema));
+    Check(current.definition.documents.front().graph_layout ==
+          std::vector<ed::GraphNodePosition>{{graph.nodes.front().id.Raw(), 12.5, -24.25}},
+          "v1 coordinates preserved");
+    const auto future = ed::detail::ReadProject(archive(2), schema);
+    Check(!future && future.GetError().HasCode("editor.invalid_archive"), "unknown layout version rejected");
 }
 
 void Documents() {
@@ -455,6 +516,7 @@ void PlacementDiagnostic() {
 int main(int argc, char **argv) {
     try {
         if (argc == 1) {
+            GraphLayoutMigration();
             Documents();
             Commands();
             Persistence();

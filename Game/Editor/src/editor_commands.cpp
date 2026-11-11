@@ -1,6 +1,7 @@
 #include "Epidemic/Game/Editor/editor_commands.h"
 #include "project_archive.h"
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <type_traits>
 
@@ -284,17 +285,27 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
         } else if constexpr (std::is_same_v<C, AddGraphNode> ||
                              std::is_same_v<C, DeleteGraphNode> ||
                              std::is_same_v<C, ConnectPorts> ||
-                             std::is_same_v<C, DisconnectPorts>) {
+                             std::is_same_v<C, DisconnectPorts> || std::is_same_v<C, MoveGraphNode>) {
             auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc->data);
             if (!graph)
                 return false;
             if constexpr (std::is_same_v<C, AddGraphNode>) {
                 graph->nodes.push_back(command.node);
                 return true;
+            } else if constexpr (std::is_same_v<C, MoveGraphNode>) {
+                if (!std::isfinite(command.x) || !std::isfinite(command.y) ||
+                    std::abs(command.x) > 1000000 || std::abs(command.y) > 1000000 ||
+                    !Find(graph->nodes, [&](const auto &node) { return node.id == command.node; }))
+                    return false;
+                auto *position = Find(doc->graph_layout, [&](const auto &p) { return p.node == command.node.Raw(); });
+                const GraphNodePosition value{command.node.Raw(), command.x, command.y};
+                if (position) *position = value;
+                else doc->graph_layout.push_back(value);
+                return true;
             } else if constexpr (std::is_same_v<C, ConnectPorts>) {
                 graph->connections.push_back(command.connection);
                 return true;
-            } else if constexpr (std::is_same_v<C, DisconnectPorts>)
+            } else if constexpr (std::is_same_v<C, DisconnectPorts> || std::is_same_v<C, MoveGraphNode>)
                 return Erase(graph->connections,
                              [&](const auto &value) { return value.id == command.connection; });
             else {
@@ -303,6 +314,7 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                 if (!node)
                     return false;
                 const auto ports = node->ports;
+                std::erase_if(doc->graph_layout, [&](const auto &p) { return p.node == command.node.Raw(); });
                 Erase(graph->connections, [&](const auto &edge) {
                     return std::any_of(ports.begin(), ports.end(), [&](const auto &port) {
                         return port.id == edge.input_port || port.id == edge.output_port;

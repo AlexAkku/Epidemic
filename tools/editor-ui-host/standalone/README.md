@@ -8,10 +8,20 @@ The upstream essential set references two identifier-highlighting modules absent
 
 Published library JARs omit generated product wrapper descriptors. Service-free `intellij.libraries.*` descriptors describe real locked bytecode on the shared core classpath. Platform descriptors/implementations come from actual artifacts. Upstream `idea.force.use.core.classloader` preserves class identity in this flattened Maven layout.
 
-Known warnings: this pinned Platform supports a deprecated distribution-descriptor path without `plugin-classpath.txt`; a later upgrade must migrate assembly. The default product bundles a separately downloaded public JBR 21.0.10+1-b1163.108, pinned by publisher SHA512 in Resolve-Runtime.ps1. The optional -StandardOpenJdk diagnostic build uses basic font selection and the Platform picker fallback. Neither warning establishes physical DPI acceptance. Product-specific external support/update URLs and a clean-machine legal/deployment review remain work; retaining notices is not a legal-audit PASS.
+Known warnings: this pinned Platform supports a deprecated distribution-descriptor path without `plugin-classpath.txt`; a later upgrade must migrate assembly. The default product bundles a separately downloaded public JBR/JCEF jbr_jcef-21.0.10-windows-x64-b1163.108, pinned by publisher SHA512 in Resolve-Runtime.ps1. The optional -StandardOpenJdk diagnostic build uses basic font selection and the Platform picker fallback. Neither warning establishes physical DPI acceptance. Product-specific external support/update URLs and a clean-machine legal/deployment review remain work; retaining notices is not a legal-audit PASS.
 
 Ship the complete app image, runtime legal files and notices. Local smoke cannot prove clean-machine C++ runtime installation, GPU/driver availability, IME or physical monitor behavior.
 
 The pinned DirectoryLock correction and TCP cache migration are documented in `upstream/README.md`. Owner activation and stale-lock recovery are exercised by `../tests/Test-StandaloneRestart.ps1` against the packaged EXE. The product includes its own empty productivity-feature catalogue; shared Platform features still come from their actual resources.
 
 File selection goes through Platform FileChooser so modality/focus are registered with the application. On Microsoft OpenJDK, the pinned factory deliberately uses the Platform chooser; native Windows chooser support checks for JetBrains Runtime. The default public JBR product selects the native chooser through this upstream factory; the standard-OpenJDK diagnostic fallback is not labelled a Windows native-picker test.
+
+
+Rete uses `../graph-web/package-lock.json`. Run `../Build-Graph.ps1 -Resolve`
+once to seed `.ai/npm-cache`; normal packaging uses npm offline. The product
+retains runtime legal, complete JCEF/CEF/Chromium credits and npm notices.
+
+F-II.0b remains blocked: jpackage does not initialize Windows CEF sandbox.
+Normal Graph FileEditors fail closed with Unavailable. Only isolated `--smoke`
+permits unsandboxed local qualification with an explicit LIMIT. See
+`Development/EditorUI/FII0B_GRAPH_ROUNDTRIP.md`.

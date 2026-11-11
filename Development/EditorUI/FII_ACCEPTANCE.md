@@ -1,9 +1,18 @@
 # Приёмка F-II.0
 
-**F-II.0a PASS. F-II.0 PARTIAL.**
+**F-II.0a PASS. F-II.0b BLOCKED. F-II.0 PARTIAL.**
 
-- **A — PARTIAL.** Renderer и освобождение браузера проверены в Graph tab на технической схеме. Проверить сквозной authoring на одноразовой копии проекта. Открыть реальный сохранённый Graph, перетащить узел, соединить совместимые порты, проверить Ctrl+Z/Ctrl+Y, Save/Open в другом процессе, отделение и возврат Graph tab. Физический фокус, мышь и два HWND для JCEF имеют статус NOT RUN.
-- **B — PARTIAL.** Проверить текущую Code Space с интегрированным editor, dirty/Save, внешним изменением чистого и dirty файла, диагностикой и fallback. В отдельном запуске проверить Rider file:line при доступной установке. EditorFactory и Roslyn уже проверены по отдельности.
-- **C — PARTIAL.** Две DLL Turret загружены штатным hostfxr и ABI, вызов после Close отклонён. Интеграция с пользовательской schema, Play/Stop и unload остаются отдельными проверками.
+Сквозной Graph authoring и native Save/Open во втором процессе прошли. Подтверждённый технический блокер — Windows CEF sandbox: jpackage launcher не инициализирует его до JVM. Обычный Graph FileEditor показывает Unavailable. Изолированный unsandboxed smoke с явным LIMIT не является security PASS.
 
-Полный gate требует сквозных результатов A–C. Следующий шаг и конкретные файлы описаны в [ADR](FII_TECH_ADR.md).
+После исправления launcher остаются адресные проверки **NOT RUN**:
+
+1. Мышью создать/соединить Event, Native Call, Wait; несовместимое Control → Data должно отклоняться.
+2. Переместить узел, Ctrl+Z/Ctrl+Y; начать новый drag, нажать Escape до отпускания мыши и проверить отсутствие native edit.
+3. Настоящий клавиатурный фокус и Ctrl+S/Z/Y в основной Graph tab и отдельном окне Windows; возврат вкладки обратно.
+4. Проверка фактического Windows sandbox, повтор security и bounded CEF shutdown на новом launcher.
+
+Программно проверены JSQuery/native authoring, rejected edits, второй процесс, layout history, FileEditor disposal/reopen, независимый HWND, preferred focus API и CSP/ограниченный Bridge. Полный повтор U/CUA не требуется.
+
+Code Space/LSP/Rider/managed Play реализуются в F-II.2. В текущей задаче требовалось закрепить их [контракты](FII_CODESPACE_MANAGED_CONTRACT.md), это выполнено.
+
+[Точный отчёт, регрессии и подготовка F-II.1](FII0B_GRAPH_ROUNDTRIP.md).

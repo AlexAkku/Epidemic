@@ -1,6 +1,6 @@
 # F-II.0. Технический отчёт и ADR
 
-**Статус F-II.0 — PARTIAL.** Базовая ревизия, инвентаризация и повторная квалификация составляют **F-II.0a PASS**. Полный сквозной граф из §3.1 и интеграция Code Space из §3.2 остаются условиями входа в F-II.1. [Базовая ревизия](FII_BASELINE.md) · [Матрица функций](FII_FEATURE_MATRIX.md) · [Проверки](FII_QA_MATRIX.md) · [Приёмка](FII_ACCEPTANCE.md).
+**Статус F-II.0 — PARTIAL.** Базовая ревизия, инвентаризация и повторная квалификация составляют **F-II.0a PASS**. F-II.0b BLOCKED по Windows CEF sandbox; native Graph roundtrip PASS. По уточнённому заданию Code Space/managed закреплены контрактами для F-II.2. [Отчёт F-II.0b](FII0B_GRAPH_ROUNDTRIP.md). [Базовая ревизия](FII_BASELINE.md) · [Матрица функций](FII_FEATURE_MATRIX.md) · [Проверки](FII_QA_MATRIX.md) · [Приёмка](FII_ACCEPTANCE.md).
 
 ## Зависимости на Windows 11 x64
 
@@ -15,11 +15,17 @@
 
 ## A. Graph Canvas и JCEF
 
-Официальная сборка JBR с JCEF того же релиза подтверждена для пробы F-II.0b. В копии EXE с этим runtime проверка поддержки вернула true, Chromium 137 загрузил локальный Rete внутри Graph FileEditor. React DOM содержал три узла и одно ребро. Java получила результат через JBCefJSQuery и освободила browser и query. Размер runtime диагностической копии с CRT — 542 829 324 байта. Product-слой уже содержит `ui-jcef:253.31033.145` и Java API JCEF, зафиксированный в lock. Для интеграции нужен feature capability и экран Unavailable с результатом проверки JCEF и диагностикой runtime. [IntelliJ JCEF SDK](https://plugins.jetbrains.com/docs/intellij/embedded-browser-jcef.html).
+Официальный `jbr_jcef-21.0.10-windows-x64-b1163.108` интегрирован в штатную сборку. SHA512 проверяется перед извлечением; offline-источник — закреплённый архив. Runtime legal, JCEF/CEF/Chromium BSD и полные встроенные credits для 542 компонентов сохранены. Rete собирается локально с npm integrity lock; обычная упаковка использует `npm ci --offline`, первоначальное разрешение — `Build-Graph.ps1 -Resolve`.
 
-Выбран `rete-react-plugin` с классическим preset. Он поддерживает документированный API render/area/connection и совместим с закреплённым React 19. Для первой пробы подходят стандартные nodes, sockets и edges. Альтернативные renderer plugins нужны только при обнаружении конкретного ограничения. Бандл спайка использует техническую схему из трёх узлов с портами i64 и одним ребром. [Руководство Rete React](https://retejs.org/docs/guides/renderers/react/) · [Лицензия Rete](https://github.com/retejs/rete/blob/main/LICENSE) · [Лицензия renderer](https://github.com/retejs/react-plugin/blob/main/LICENSE).
+Rete отображает настоящий GraphDefinition через Graph FileEditor → JBCefJSQuery → Java Bridge → private IPC v4 / DTO v1 → EditorWorkspace::Execute. Native owner выделяет IDs, проверяет типы и публикует snapshot. Op 38 допускает create/connect/disconnect/move/delete. Шаблоны Event/Native Call/Wait используют текущую native schema. Отдельного сохраняемого JS-графа нет.
 
-Native roundtrip и browser probe проверяют отдельные части. Диагностическая копия подставляет только временные классы продукта и runtime. Техническая схема Rete не является native snapshot. Из первой попытки сохранён лог инициализации JCEF в remote-режиме и сообщение о выключенном sandbox в Java-процессе. Параметры sandbox и перечень notices открыты перед продуктовой упаковкой. Сразу после выхода EXE диагностический запрос видел четыре процесса из каталога пробы. При повторном запросе они завершились, точное время завершения не измерено. Для полного сквозного пути требуются DTO портов и соединений и команда из JavaScript, проходящая через JVM и текущий private IPC в `EditorWorkspace::Execute`. Координат в `GraphDefinition` сейчас нет. Хранение координат и их Undo/Redo нужно согласовать в узком редакторском контракте вместе с миграцией старых проектов.
+Layout принадлежит EditorDocument, runtime GraphDefinition сохраняет семантический контракт. Отсутствующий layout v0 использует устойчивую сетку; архивный блок `graph_layout.version=1` хранит явные позиции. Неизвестные версии/узлы, дубликаты и недопустимые координаты отклоняются. MoveGraphNode проходит штатные native Undo/Redo, dirty и persistence.
+
+В штатном EXE прошли browser/native authoring, React DOM, FileEditor close/reopen с disposal browser/query и отдельный HWND. Production Bridge test сохранил IDs/координаты при Save/Open во втором native-процессе. CSP и request handler запрещают внешние ресурсы, popup и OS protocol execution; JS Bridge ограничен allowlist, nonce, bound DocumentKey и generation/revision. Проверены отказ file/HTTPS/loopback fetch, eval и Bridge open. Полные результаты: [F-II.0b](FII0B_GRAPH_ROUNDTRIP.md).
+
+**Блокер:** jpackage launcher на Windows не создаёт CEF sandbox до JVM. Закреплённый SettingsHelper обнаруживает отсутствие `jcef.sandbox.ptr` и выключает sandbox. Обычный Graph FileEditor поэтому показывает Unavailable; только изолированный `--smoke` допускает локальную unsandboxed квалификацию с явным LIMIT. Нужен native launcher с настоящим sandbox info в основном EXE, совместимой CEF sandbox library и проверкой Windows renderer mitigations. Фиктивный указатель не используется. [CEF sandbox setup](https://chromiumembedded.github.io/cef/sandbox_setup).
+
+Реальные mouse/keyboard gestures и Escape во время drag пока NOT RUN. Передача preferred focus JCEF реализована и проверена на уровне FileEditor API. До устранения sandbox F-II.1 закрыт.
 
 ## B. Code Space, LSP и Rider
 
@@ -41,13 +47,8 @@ Native roundtrip и browser probe проверяют отдельные част
 - Локальные файлы браузера, npm lock и исходники диагностического расширения находятся в `Temp/U/fii0/rete` и `Temp/U/fii0`. Бандл собран через `esbuild probe.js --bundle --minify --legal-comments=linked --outfile=bundle.js`. Диагностический запуск использует копию app image, отдельный проверенный JBR и временные классы `PlatformStartup.java` / `FiiBrowserProbe.java`, собранные Microsoft JDK 21 с classpath штатного продукта. В копии JAR эти классы подключаются при старте, `EPIDEMIC_FII0_RETE_PAGE` указывает на локальный `rete/index.html`, запуск выполняется с `--smoke`. HTML содержит CSP с SHA-256 скрипта и `connect-src 'none'`.
 - LSP проверен через `python Temp/U/fii0/lsp_probe.py` с локально установленным csharp-ls и SDK 10. Временная CMake-цель `FiiTurretProbe` линкуется с имеющимся Debug managed bridge и принимает hostfxr.dll и каталоги двух DLL.
 
-## Следующая компактная задача F-II.0b
+## Решение на выходе F-II.0b
 
-Открыть сохранённый Graph на копии проекта с тремя узлами и реальной связью. Добавить одну команду `ConnectPorts` из Graph tab, подтверждать результат новым native snapshot и проверить Undo/Redo, Save/Open в другом процессе. Один gestural move потребует отдельно согласованного хранения layout. Изолировать пробу за capability.
+**BLOCKED: Windows CEF sandbox в launcher.** Native Graph roundtrip PASS. [Результаты и оставшиеся проверки](FII0B_GRAPH_ROUNDTRIP.md).
 
-| Участок | Точные файлы и проверка |
-|---|---|
-| Native snapshot, guard и EditRequest | `tools/editor-ui-host/backend.cpp`, `Game/Editor/include/Epidemic/Game/Editor/editor_commands.h`, `Game/Editor/src/editor_commands.cpp`. Порты и рёбра с обоими IDs, expected generation/revision, проверка типов, отказ неверных endpoints. CTest `EpidemicRuntimeGraphTests`, `EpidemicGraphSerializationTests`, `EpidemicEditorCoreTests`, `EpidemicEditorWriteProject`, `EpidemicEditorReadPlayProject`. |
-| JVM и браузер | `tools/editor-ui-host/java/epidemic/editor/Bridge.java`, `tools/editor-ui-host/java-intellij/epidemic/editor/platform/PlatformSession.java`, `PanelEditorProvider.java`. Малый JCEF adapter, owned Disposable на FileEditor и строковые ID для JavaScript. `tools/editor-ui-host/tests/test_protocol.py` проверяет границы фрейма, дополнительные тесты проверят несовместимую версию DTO и stale revision. |
-| Release и лицензии | `tools/editor-ui-host/Resolve-Runtime.ps1`, `Build-Standalone.ps1`, `standalone/dependencies.lock.json` и notices при изменении состава. Публичный JBR с проверяемым checksum. Повтор упаковки, запуск без CDN, закрытие tab и shutdown. |
-| Ручная приёмка | Graph tab в самостоятельном HWND, перенос обратно, мышь и клавиатурный фокус. До подтверждения эти сценарии остаются NOT RUN. |
+[Контракт Code Space / managed](FII_CODESPACE_MANAGED_CONTRACT.md) закрепляет задачи F-II.2. LSP, Rider и C# Play сейчас не реализованы. F-II.1 подготовлен, реализация не начата до PASS F-II.0b.

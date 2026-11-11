@@ -18,12 +18,20 @@ using DocumentData = std::variant<composition::SceneCompositionDefinition, comp:
                                   runtime::graph::GraphDefinition>;
 enum class DocumentKind { Scene, Prefab, Graph };
 
+// Editor-only metadata. Runtime GraphDefinition remains the semantic authority.
+struct GraphNodePosition {
+    std::uint64_t node = 0;
+    double x = 0, y = 0;
+    bool operator==(const GraphNodePosition &) const = default;
+};
+
 struct EditorDocument {
     runtime::AssetId id{};
 
     std::string name;
     std::uint64_t revision = 0;
     DocumentData data;
+    std::vector<GraphNodePosition> graph_layout{};
 
     [[nodiscard]] DocumentKind Kind() const noexcept {
         return static_cast<DocumentKind>(data.index());

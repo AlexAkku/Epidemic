@@ -188,3 +188,6 @@ compile_commands.json
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# Pinned upstream legal text, compressed for source distribution.
+!tools/editor-ui-host/standalone/licenses/CEF-Chromium-credits.html.gz

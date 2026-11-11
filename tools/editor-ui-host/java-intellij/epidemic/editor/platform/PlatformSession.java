@@ -34,6 +34,7 @@ public final class PlatformSession implements Disposable {
     private final FeatureRegistry features=new FeatureRegistry();
     private final Map<String,VirtualFile> documents=new LinkedHashMap<>();
     private final List<DocumentView> views=new ArrayList<>();
+    private final Map<DocumentView,GraphEditor> graphViews=new IdentityHashMap<>();
     private final Map<String,Content> contents=new HashMap<>();
     private final Map<String,ToolWindow> groups=new LinkedHashMap<>();
     private final Map<String,String> targets=new HashMap<>();
@@ -368,6 +369,8 @@ public final class PlatformSession implements Disposable {
     private void refreshDocument(DocumentView view){
         var key=view.file().getUserData(PanelEditorProvider.DOCUMENT);if(key==null)return;
         var doc=resolveDocument(view.file());
+        var graph = graphViews.get(view);
+        if (doc != null && graph != null && !graph.identity().equals(key)) installGraph(view, key);
         view.title().setText(doc==null?"Document missing or stale — refresh/open from Project Explorer":
             doc.name()+" · ID "+Long.toUnsignedString(doc.id())+" · Revision "+doc.revision()+(doc.dirty()?" · Unsaved":""));
         if(doc!=null){
@@ -499,6 +502,8 @@ public final class PlatformSession implements Disposable {
         JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(reader.view(id));
         registerWorkspaceShortcuts(root);
         DocumentView view=new DocumentView(reader,root,file,title);views.add(view);
+        var identity = file.getUserData(PanelEditorProvider.DOCUMENT);
+        if (identity != null && identity.kind() == 2 && supports("graph-authoring")) installGraph(view, identity);
         root.addHierarchyListener(event->{if((event.getChangeFlags()&(HierarchyEvent.PARENT_CHANGED|HierarchyEvent.SHOWING_CHANGED))!=0)edt(()->{
             installCheckedTabClose(file);
             guardFloatingWindow(view);
@@ -506,8 +511,25 @@ public final class PlatformSession implements Disposable {
         edt(()->installCheckedTabClose(file));
         refreshDocument(view);refreshDocumentCommands();return view;
     }
+    private void installGraph(DocumentView view, Bridge.DocumentKey identity) {
+        var old = graphViews.remove(view);
+        if (old != null) com.intellij.openapi.util.Disposer.dispose(old);
+        var graph = new GraphEditor(identity, () -> bridge == null ? null : bridge.latest(),
+            (generation, revision, operation, args) -> bridge.callAt(generation, revision, operation, args));
+        graphViews.put(view, graph);
+        var root = view.component();
+        var center = ((BorderLayout)root.getLayout()).getLayoutComponent(BorderLayout.CENTER);
+        if (center != null) root.remove(center);
+        root.add(graph.component(), BorderLayout.CENTER); root.revalidate(); root.repaint();
+    }
+    JComponent preferredFocus(DocumentView view) {
+        var graph = graphViews.get(view);
+        return graph == null ? view.component() : graph.preferredFocus();
+    }
     public void release(DocumentView view){
         views.remove(view);
+        var graph = graphViews.remove(view);
+        if (graph != null) com.intellij.openapi.util.Disposer.dispose(graph);
         Object shortcuts=view.component().getClientProperty("epidemic.shortcuts");
         if(shortcuts instanceof Disposable lifetime)com.intellij.openapi.util.Disposer.dispose(lifetime);
         view.component().putClientProperty("epidemic.shortcuts",null);
@@ -956,7 +978,7 @@ public final class PlatformSession implements Disposable {
                 bridge.call(6).whenComplete((saved,failure)->edt(()->{
                     if(failure!=null){failure(failure);return;}
                     require(!snapshot.dirty(),"Document Save All did not commit");
-                    record("PASS F0.2 Platform native Scene/Prefab/Graph creation, typed document tabs, same-ID reuse, shared rename/header and Save All");smokeScalarClose();
+                    record("PASS F0.2 Platform native Scene/Prefab/Graph creation, typed document tabs, same-ID reuse, shared rename/header and Save All");smokeGraphAuthoring(doc);
                 }));
             }));return;
         }
@@ -965,6 +987,67 @@ public final class PlatformSession implements Disposable {
             var doc=created.snapshot().documents().stream().filter(d->d.id()==created.snapshot().selection().document()).findFirst().orElseThrow();
             openDocument(doc);awaitDocument(doc,kind,0);
         }));
+    }
+    private void smokeGraphAuthoring(Bridge.Document doc) {
+        String panel = "graph.editor:" + Long.toUnsignedString(doc.id());
+        VirtualFile file = documents.get(panel);
+        GraphEditor graph = graphViews.entrySet().stream().filter(e -> e.getKey().file() == file)
+            .map(Map.Entry::getValue).findFirst().orElseThrow();
+        require(Arrays.stream(FileEditorManager.getInstance(project).getAllEditors(file))
+            .anyMatch(editor -> editor.getPreferredFocusedComponent() == graph.preferredFocus()),
+            "Graph FileEditor doesn't delegate focus to JCEF");
+        record("LIMIT F-II.0b browser qualification uses unsandboxed jpackage launcher; security gate remains OPEN");
+        later(1500, () -> graph.smokeCommand("create", "0", "40", "80")
+            .thenCompose(created -> graph.smokeCommand("create", "1", "340", "80"))
+            .thenCompose(created -> graph.smokeCommand("create", "2", "640", "80"))
+            .whenComplete((created, error) -> edt(() -> {
+                if (error != null) { failure(error); return; }
+                var nativeGraph = snapshot.graphs().stream().filter(g -> g.document() == doc.id()).findFirst().orElseThrow();
+                require(nativeGraph.nodes().size() == 3, "JSQuery didn't create native Graph nodes");
+                var source = nativeGraph.nodes().getFirst();
+                var target = nativeGraph.nodes().get(1);
+                var output = source.ports().stream().filter(p -> p.kind() == 0 && p.direction() == 1).findFirst().orElseThrow();
+                var input = target.ports().stream().filter(p -> p.kind() == 0 && p.direction() == 0).findFirst().orElseThrow();
+                graph.smokeCommand("connect", Long.toUnsignedString(output.id()), Long.toUnsignedString(input.id()))
+                    .thenCompose(connected -> graph.smokeCommand("move", Long.toUnsignedString(source.id()), "123.5", "-45.25"))
+                    .thenCompose(moved -> graph.smokeCommand("undo"))
+                    .thenCompose(undone -> graph.smokeCommand("redo"))
+                    .thenCompose(redone -> graph.smokeCommand("save"))
+                    .whenComplete((saved, problem) -> edt(() -> {
+                        if (problem != null) { failure(problem); return; }
+                        var result = snapshot.graphs().stream().filter(g -> g.document() == doc.id()).findFirst().orElseThrow();
+                        require(result.edges().size() == 1 && result.nodes().getFirst().x() == 123.5 && !snapshot.dirty(),
+                            "Browser command didn't commit native graph/layout/save");
+                        later(1200, () -> graph.source(dom -> edt(() -> {
+                            require(dom.contains("data-testid=\"node\"") && dom.contains("data-testid=\"connection\""), "Rete DOM didn't project native nodes/edge");
+                            record("PASS F-II.0b packaged Rete -> JBCefJSQuery -> Java Bridge -> IPC v4 -> EditorWorkspace::Execute; 3 nodes/edge/layout/Undo/Redo/Save; native DTO rendered in React DOM");
+                            long revision = snapshot.revision();
+                            graph.smokeCommand("open").handle((reply, rejected) -> {
+                                require(rejected != null, "Graph bridge exposed arbitrary operation"); return true;
+                            }).thenCompose(ignored -> graph.smokeSecurity()).whenComplete((security, securityError) -> edt(() -> {
+                                if (securityError != null) { failure(securityError); return; }
+                                require(security.contains("\"denied\":[true,true,true]") && security.contains("\"evalDenied\":true") &&
+                                    snapshot.revision() == revision, "Graph CSP/bridge denial failed: " + security);
+                                record("PASS F-II.0b Graph CSP denies file/HTTPS/loopback fetch and eval; bridge rejects non-allowlisted open; revision unchanged");
+                                smokeGraphLifecycle(doc, file, graph);
+                            }));
+                        })));
+                    }));
+            })));
+    }
+    private void smokeGraphLifecycle(Bridge.Document doc, VirtualFile file, GraphEditor old) {
+        FileEditorManager.getInstance(project).closeFile(file);
+        waitFor(old::released, 0, () -> {
+            openDocument(doc);
+            waitFor(() -> graphViews.entrySet().stream().anyMatch(e -> e.getKey().file() == file && e.getValue() != old), 0, () -> {
+                inFloatingEditor(file, window -> {
+                    require(NativeViewport.windowHandle(window) != 0, "Graph has no Windows HWND");
+                    record("PASS F-II.0b Graph FileEditor close/reopen disposed browser/query and created a fresh view; independent HWND=" + NativeViewport.windowHandle(window));
+                    smokeWindowClose(window, Messages.NO);
+                    waitFor(() -> !window.isDisplayable() && ready(), 0, this::smokeScalarClose);
+                });
+            });
+        });
     }
     private void awaitDocument(Bridge.Document doc,int kind,int attempts){
         String id=new Bridge.DocumentKey(bridge.latest().generation(),snapshot.project(),doc.kind(),doc.id()).panel()+":"+Long.toUnsignedString(doc.id());
@@ -1262,5 +1345,5 @@ public final class PlatformSession implements Disposable {
             expectedDisconnect=false;reconnect();
         })));
     }
-    @Override public void dispose(){disposed=true;ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();views.clear();}
+    @Override public void dispose(){disposed=true;ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();for(var graph:graphViews.values())com.intellij.openapi.util.Disposer.dispose(graph);graphViews.clear();views.clear();}
 }

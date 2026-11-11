@@ -45,3 +45,8 @@ ctest --test-dir Temp/b/managed -C Debug -R '^EpidemicManaged(Bridge|Contract)Te
 python tools/editor-ui-host/tests/test_protocol.py Temp/b/ui-host/Release/EpidemicEditorBackend.exe
 python tools/editor-ui-host/tests/test_catalog.py
 ```
+
+
+## Отправная точка реализации F-II.0b
+
+Локальный `5324262` поверх замороженного F-I `ce06956`. Штатная сборка теперь использует JBR/JCEF; старые vanilla-измерения выше остаются baseline. [Текущая квалификация](FII0B_GRAPH_ROUNDTRIP.md).

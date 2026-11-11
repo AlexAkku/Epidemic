@@ -598,6 +598,40 @@ class Backend {
         }
     }
 
+    void GraphEdit(const std::vector<std::string> &args, std::uint64_t revision) {
+        namespace graph = rt::graph;
+        if (args.size() < 2) throw std::runtime_error("ui.graph_arguments");
+        const auto document = Asset(Numeric(args[1]));
+        const auto snapshot = workspace_->Project()->Snapshot();
+        const auto *doc = snapshot->Find(document);
+        if (!doc || doc->Kind() != ed::DocumentKind::Graph)
+            throw std::runtime_error("ui.graph_document");
+        std::vector<ed::Command> commands;
+        if (args[0] == "create" && args.size() == 5) {
+            // Schema-owned operation templates, IDs allocated by the native owner.
+            const auto template_graph = ex::Graph();
+            const auto index = Numeric(args[2]);
+            if (index > 2) throw std::runtime_error("ui.graph_template");
+            auto node = template_graph.nodes.at(static_cast<std::size_t>(index));
+            const auto nonce = DocumentNonce();
+            node.id = Id::FromString("graph.node." + nonce);
+            for (std::size_t i = 0; i < node.ports.size(); ++i)
+                node.ports[i].id = Id::FromString("graph.port." + nonce + "." + std::to_string(i));
+            commands.push_back(ed::AddGraphNode{document, node});
+            commands.push_back(ed::MoveGraphNode{document, node.id, Real(args[3]), Real(args[4])});
+        } else if (args[0] == "connect" && args.size() == 4) {
+            commands.push_back(ed::ConnectPorts{document,
+                {Id::FromString("graph.edge." + DocumentNonce()), Id{Numeric(args[2])}, Id{Numeric(args[3])}}});
+        } else if (args[0] == "move" && args.size() == 5) {
+            commands.push_back(ed::MoveGraphNode{document, Id{Numeric(args[2])}, Real(args[3]), Real(args[4])});
+        } else if (args[0] == "delete" && args.size() == 3) {
+            commands.push_back(ed::DeleteGraphNode{document, Id{Numeric(args[2])}});
+        } else if (args[0] == "disconnect" && args.size() == 3) {
+            commands.push_back(ed::DisconnectPorts{document, Id{Numeric(args[2])}});
+        } else throw std::runtime_error("ui.graph_arguments");
+        Require(workspace_->Execute(std::move(commands), revision));
+    }
+
     void Snapshot(Wire &out) const {
         const auto *project = workspace_->Project();
         out.Number<1>(project ? 1 : 0);
@@ -942,6 +976,34 @@ class Backend {
         if (folder)
             for (const auto &path : content_folders_)
                 out.Text(path);
+        out.Number<2>(1); // Graph DTO schema version, independent of IPC envelope.
+        out.Number<4>(std::count_if(snapshot->definition.documents.begin(), snapshot->definition.documents.end(),
+            [](const auto &doc) { return doc.Kind() == ed::DocumentKind::Graph; }));
+        for (const auto &doc : snapshot->definition.documents) {
+            const auto *graph = std::get_if<rt::graph::GraphDefinition>(&doc.data);
+            if (!graph) continue;
+            out.Number<8>(doc.id.Raw());
+            out.Number<4>(graph->nodes.size());
+            for (std::size_t index = 0; index < graph->nodes.size(); ++index) {
+                const auto &node = graph->nodes[index];
+                out.Number<8>(node.id.Raw()); out.Number<8>(node.type_id.Raw()); out.Text(node.name);
+                const auto position = std::find_if(doc.graph_layout.begin(), doc.graph_layout.end(),
+                    [&](const auto &p) { return p.node == node.id.Raw(); });
+                const double x = position == doc.graph_layout.end() ? 40.0 + 280.0 * static_cast<double>(index % 4) : position->x;
+                const double y = position == doc.graph_layout.end() ? 80.0 + 240.0 * std::floor(static_cast<double>(index) / 4.0) : position->y;
+                out.Number<8>(std::bit_cast<std::uint64_t>(x)); out.Number<8>(std::bit_cast<std::uint64_t>(y));
+                out.Number<4>(node.ports.size());
+                for (const auto &port : node.ports) {
+                    out.Number<8>(port.id.Raw()); out.Text(port.name);
+                    out.Number<1>(static_cast<unsigned>(port.kind)); out.Number<1>(static_cast<unsigned>(port.direction));
+                    out.Number<8>(port.type_id.Raw());
+                }
+            }
+            out.Number<4>(graph->connections.size());
+            for (const auto &edge : graph->connections) {
+                out.Number<8>(edge.id.Raw()); out.Number<8>(edge.output_port.Raw()); out.Number<8>(edge.input_port.Raw());
+            }
+        }
     }
 
   public:
@@ -1188,6 +1250,12 @@ class Backend {
             case 36:
                 preview = AssetPreview(args);
                 break;
+            case 38:
+                CheckWrite({generation, revision});
+                if (workspace_->Session() && workspace_->Session()->IsPlaying())
+                    throw std::runtime_error("ui.playing_readonly");
+                GraphEdit(args, revision);
+                break;
             case 37: {
                 CheckWrite({generation, revision});
                 const auto *folder = workspace_->Folder();
@@ -1225,7 +1293,7 @@ class Backend {
         out.Number<8>(generation_);
         out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
                  "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
-                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview,content-folders");
+                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview,content-folders,graph-authoring");
         out.Text(error);
         if (operation == 36) {
             out.Number<4>(preview.width);

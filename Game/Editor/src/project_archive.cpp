@@ -396,6 +396,33 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
             }
 
         });
+        // Missing layout is v0: preserve semantic data and use deterministic grid
+        // positions until the first move. v1 stores only explicit positions.
+        bool have_layout = kind == 2;
+        if (io.reader) {
+            const auto present = io.reader->IsNull("graph_layout");
+            if (!present) Require(present.GetError().code == "serialization.field_missing");
+            have_layout = present && !present.Value();
+        }
+        if (have_layout) {
+            Require(kind == 2);
+            io.Object("graph_layout", [&] {
+                std::uint64_t version = 1;
+                io.U("version", version);
+                Require(version == 1);
+                std::set<std::uint64_t> seen;
+                const auto &graph = std::get<runtime::graph::GraphDefinition>(doc.data);
+                io.Array("positions", doc.graph_layout, runtime::graph::kMaxNodes, [&](auto &position) {
+                    io.U("node", position.node);
+                    io.D("x", position.x);
+                    io.D("y", position.y);
+                    Require(std::abs(position.x) <= 1000000 && std::abs(position.y) <= 1000000 &&
+                            seen.insert(position.node).second &&
+                            std::any_of(graph.nodes.begin(), graph.nodes.end(),
+                                        [&](const auto &node) { return node.id.Raw() == position.node; }));
+                });
+            });
+        } else Require(doc.graph_layout.empty());
     });
     io.Array("identities", project.used_ids, 65536, [&](auto &value) {
         io.U("document", value.first);

@@ -22,7 +22,7 @@ public final class PanelEditorProvider implements FileEditorProvider, DumbAware 
         final PlatformSession session;final VirtualFile file;final PlatformSession.DocumentView view;
         Editor(PlatformSession session,VirtualFile file){this.session=session;this.file=file;view=session.documentView(file);}
         public JComponent getComponent(){return view.component();}
-        public JComponent getPreferredFocusedComponent(){return view.component();}
+        public JComponent getPreferredFocusedComponent(){return session.preferredFocus(view);}
         public String getName(){return file.getName();}
         public void setState(FileEditorState state){}
         public boolean isModified(){return session.documentModified(file);}
