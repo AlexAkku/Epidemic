@@ -28,6 +28,7 @@ public final class UiPanels {
     public void assetPreview(AssetDetails.PreviewLoader loader){previewLoader=loader;}
     private Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField;
     private final List<ScalarInspector> inspectors=new ArrayList<>();
+    private final List<GraphTools> graphTools=new ArrayList<>();
     private BiConsumer<String,Long> assetCommand=(action,id)->{};
     public void assetCommands(BiConsumer<String,Long> action){assetCommand=action;}
     public record HierarchyEdit(long generation,long revision,String action,long document,long node,String argument) {}
@@ -56,6 +57,9 @@ public final class UiPanels {
         gesturesAvailable=available;
         gestureCommand=action;
     }
+    private BooleanSupplier graphAvailable=()->false;
+    private Function<GestureEdit,java.util.concurrent.CompletableFuture<Bridge.Reply>> graphCommand=edit->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("Graph unavailable"));
+    public void graphCommands(BooleanSupplier available,Function<GestureEdit,java.util.concurrent.CompletableFuture<Bridge.Reply>> action){graphAvailable=available;graphCommand=action;}
     private long generation;
     private boolean interactive;
     private boolean documentCommandsEnabled;
@@ -84,9 +88,12 @@ public final class UiPanels {
         for(var inspector:inspectors)inspector.refresh(generation,snapshot,ready);
         authoringControls.forEach(Runnable::run);
     }
-    public java.util.concurrent.CompletableFuture<Void> flushDrafts(){return java.util.concurrent.CompletableFuture.allOf(inspectors.stream().map(ScalarInspector::flush).toArray(java.util.concurrent.CompletableFuture[]::new));}
-    public void cancelDrafts(long document){if(snapshot!=null&&snapshot.selection().document()==document)inspectors.forEach(ScalarInspector::cancelDrafts);}
-    public boolean hasDraft(long document){return inspectors.stream().anyMatch(inspector->inspector.hasDraft(document));}
+    public java.util.concurrent.CompletableFuture<Void> flushDrafts(){
+        var future=java.util.concurrent.CompletableFuture.allOf(inspectors.stream().map(ScalarInspector::flush).toArray(java.util.concurrent.CompletableFuture[]::new));
+        for(var graph:graphTools)future=future.thenCompose(ignored->graph.flushDraft());return future;
+    }
+    public void cancelDrafts(long document){if(snapshot!=null&&snapshot.selection().document()==document)inspectors.forEach(ScalarInspector::cancelDrafts);graphTools.forEach(g->g.cancelDrafts(document));}
+    public boolean hasDraft(long document){return inspectors.stream().anyMatch(inspector->inspector.hasDraft(document))||graphTools.stream().anyMatch(g->g.hasDraft(document));}
     public void documentCommandsEnabled(boolean enabled) {
         documentCommandsEnabled=enabled;documentButtons.forEach(button->button.setEnabled(enabled));
     }
@@ -129,6 +136,9 @@ public final class UiPanels {
     private void structure(Consumer<Bridge.Snapshot> reader) { structureReaders.add(reader); reader.accept(snapshot); }
     private JComponent create(String id) {
         String base = id.contains(":") ? id.substring(0, id.indexOf(':')) : id;
+        if (Set.of("graph.palette","graph.inspector","graph.references","graph.variables").contains(base)) {
+            var panel=new GraphTools(base,graphAvailable,()->generation,graphCommand);graphTools.add(panel);observe(panel::refresh);return panel;
+        }
         if (base.equals("project.explorer")) return explorer();
         if (base.equals("scene.hierarchy")) return hierarchy();
         if (base.equals("scene.systems")) return systems();
@@ -145,7 +155,21 @@ public final class UiPanels {
             state.setEditable(false);state.setLineWrap(true);state.setWrapStyleWord(true);panel.add(state);return panel;
         }
         if (base.equals("console") || base.equals("problems") || base.equals("build.output")) {
-            JTextArea view = new JTextArea(); view.setEditable(false); view.setDocument((base.equals("problems")?problems:console).getDocument()); return new JScrollPane(view);
+            JTextArea view = new JTextArea();view.setName(base+".output"); view.setEditable(false); view.setDocument((base.equals("problems")?problems:console).getDocument());
+            if(!base.equals("problems"))return new JScrollPane(view);
+            var panel=new JPanel(new BorderLayout());panel.add(new JScrollPane(view));
+            var jump=Theme.button("Go to Graph diagnostic node",()->{
+                if(snapshot==null)return;
+                for(var graph:snapshot.graphs()){
+                    var match=java.util.regex.Pattern.compile("node=(\\d+)").matcher(graph.report());
+                    if(!graph.report().startsWith("OK")&&match.find()){
+                        graphCommand.apply(new GestureEdit(generation,snapshot.revision(),38,List.of("select",Long.toUnsignedString(graph.document()),match.group(1))));
+                        snapshot.documents().stream().filter(d->d.id()==graph.document()).findFirst().ifPresent(openDocument);break;
+                    }
+                }
+            });
+            jump.setEnabled(false);observe(s->jump.setEnabled(s!=null&&graphAvailable.getAsBoolean()&&s.graphs().stream().anyMatch(g->!g.report().startsWith("OK")&&g.report().contains("node="))));
+            panel.add(jump,BorderLayout.SOUTH);return panel;
         }
         if (base.equals("type.registry") || base.equals("inspector") || base.equals("prefab.editor") || base.equals("graph.inspector")) {
             JPanel panel = Theme.island(new BorderLayout(6, 6));

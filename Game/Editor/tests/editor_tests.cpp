@@ -59,7 +59,7 @@ void GraphLayoutMigration() {
     }
     rt::GraphDefinitionSerializer codec{types};
     const auto graph_bytes = Take(rt::EncodeDocument(Take(rt::SerializeToDocument(codec, graph, *services.archives))));
-    const auto archive = [&](std::uint64_t layout_version) {
+    const auto archive = [&](std::uint64_t layout_version, std::uint64_t authoring_version=0) {
         auto writer = services.archives->CreateWriter();
         Take(writer->WriteUInt64("id", Id("layout.project").Raw()));
         Take(writer->WriteUInt64("entry", 0));
@@ -83,6 +83,14 @@ void GraphLayoutMigration() {
             Take(writer->EndArray());
             Take(writer->EndObject());
         }
+        if(authoring_version){
+            Take(writer->BeginObject("graph_authoring"));Take(writer->WriteUInt64("version",authoring_version));
+            Take(writer->BeginArray("nodes",1));Take(writer->BeginArrayElement(0));
+            Take(writer->WriteUInt64("node",graph.nodes.front().id.Raw()));Take(writer->WriteInt64("preview_default",42));
+            Take(writer->WriteString("comment","Comment"));Take(writer->WriteString("group","Group"));
+            Take(writer->WriteBool("bookmark",true));Take(writer->WriteBool("breakpoint",true));
+            Take(writer->EndArrayElement());Take(writer->EndArray());Take(writer->EndObject());
+        }
         Take(writer->EndArrayElement());
         Take(writer->EndArray());
         Take(writer->BeginArray("identities", 0));
@@ -101,6 +109,13 @@ void GraphLayoutMigration() {
           "v1 coordinates preserved");
     const auto future = ed::detail::ReadProject(archive(2), schema);
     Check(!future && future.GetError().HasCode("editor.invalid_archive"), "unknown layout version rejected");
+    Check(old.definition.documents.front().graph_settings.empty(),"v0 authoring metadata migration");
+    auto settings=Take(ed::detail::ReadProject(archive(1,1),schema));
+    const auto persisted=Take(ed::detail::ReadProject(Take(ed::detail::WriteProject(settings,schema)),schema));
+    Check(settings.definition.documents.front().graph_settings==persisted.definition.documents.front().graph_settings &&
+          persisted.definition.documents.front().graph_settings.front().preview_default==42,"v1 authoring metadata roundtrip");
+    const auto future_settings=ed::detail::ReadProject(archive(1,2),schema);
+    Check(!future_settings&&future_settings.GetError().HasCode("editor.invalid_archive"),"unknown authoring version rejected");
 }
 
 void Documents() {

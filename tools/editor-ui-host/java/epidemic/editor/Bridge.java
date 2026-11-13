@@ -48,11 +48,12 @@ public final class Bridge implements AutoCloseable {
     public record SceneItem(long document,long id,double left,double top,double right,double bottom,double x,double y,double rotation) {}
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
     public record GraphPort(long id, String name, int kind, int direction, long type) {}
-    public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports) {
+    public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports, long previewDefault, String comment, String group, int markers) {
         public GraphNode { ports = List.copyOf(ports); }
     }
     public record GraphEdge(long id, long output, long input) {}
-    public record Graph(long document, List<GraphNode> nodes, List<GraphEdge> edges) {
+    public record GraphTemplate(String name,String category,long type,int operation) {}
+    public record Graph(long document, List<GraphNode> nodes, List<GraphEdge> edges,List<GraphTemplate> catalogue,String report) {
         public Graph { nodes = List.copyOf(nodes); edges = List.copyOf(edges); }
     }
     public record Snapshot(long revision, long assetRevision, long selectionRevision, int flags,
@@ -314,9 +315,12 @@ public final class Bridge implements AutoCloseable {
                 for(int n=count(in);n>0;--n)folders.add(text(in));
             List<Graph> graphs = new ArrayList<>();
             if (capabilities.contains("graph-authoring")) {
-                if (in.readUnsignedShort() != 1) throw new IOException("ui.graph_dto_version");
+                if (in.readUnsignedShort() != 2) throw new IOException("ui.graph_dto_version");
+                List<GraphTemplate> catalogue = new ArrayList<>();
+                for(int t=count(in);t>0;--t) catalogue.add(new GraphTemplate(text(in),text(in),in.readLong(),in.readUnsignedByte()));
+                catalogue=List.copyOf(catalogue);
                 for (int g = count(in); g > 0; --g) {
-                    long document = in.readLong();
+                    long document = in.readLong(); String graphReport=text(in);
                     List<GraphNode> graphNodes = new ArrayList<>();
                     for (int n = count(in); n > 0; --n) {
                         long graphNodeId = in.readLong(), type = in.readLong();
@@ -324,6 +328,8 @@ public final class Bridge implements AutoCloseable {
                         double x = in.readDouble(), y = in.readDouble();
                         if (!Double.isFinite(x) || !Double.isFinite(y) || Math.abs(x) > 1000000 || Math.abs(y) > 1000000)
                             throw new IOException("ui.graph_position");
+                        long previewDefault=in.readLong(); String comment=text(in), group=text(in);int markers=in.readUnsignedByte();
+                        if(markers>3||comment.length()>1024||group.length()>128)throw new IOException("ui.graph_metadata");
                         List<GraphPort> ports = new ArrayList<>();
                         for (int p = count(in); p > 0; --p) {
                             long port = in.readLong(); String label = text(in);
@@ -332,12 +338,12 @@ public final class Bridge implements AutoCloseable {
                             if (kind > 2 || direction > 1) throw new IOException("ui.graph_port");
                             ports.add(new GraphPort(port, label, kind, direction, portType));
                         }
-                        graphNodes.add(new GraphNode(graphNodeId, type, name, x, y, ports));
+                        graphNodes.add(new GraphNode(graphNodeId, type, name, x, y, ports,previewDefault,comment,group,markers));
                     }
                     List<GraphEdge> edges = new ArrayList<>();
                     for (int e = count(in); e > 0; --e)
                         edges.add(new GraphEdge(in.readLong(), in.readLong(), in.readLong()));
-                    graphs.add(new Graph(document, graphNodes, edges));
+                    graphs.add(new Graph(document, graphNodes, edges,catalogue,graphReport));
                 }
             }
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,

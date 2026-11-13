@@ -4,104 +4,298 @@ import { ConnectionPlugin, Presets as Connections } from 'rete-connection-plugin
 import { ReactPlugin, Presets as Rendering } from 'rete-react-plugin';
 import { createRoot } from 'react-dom/client';
 
-// This is a projection. Every committed mutation is published by the native owner.
+// Rete is a transient projection. Only native snapshots and history are authoritative.
+const canvas = document.getElementById('graph');
+const status = document.getElementById('status');
+const problem = document.getElementById('problem');
+const menu = document.getElementById('context');
+const mini = document.getElementById('minimap');
 const editor = new NodeEditor();
-const area = new AreaPlugin(document.getElementById('graph'));
+const area = new AreaPlugin(canvas);
 const renderer = new ReactPlugin({ createRoot });
 renderer.addPreset(Rendering.classic.setup());
 const connections = new ConnectionPlugin();
 connections.addPreset(Connections.classic.setup());
 editor.use(area); area.use(connections); area.use(renderer);
-let snapshot, rendering = false, pending = false, cancelledGesture = false, dragging, positions = new Map();
-const canvas = document.getElementById('graph');
-let queue = Promise.resolve();
-const status = document.getElementById('status');
+let snapshot, rendering = false, pending = false, pendingAction = '', cancelledGesture = false;
+let gestureNode, dragging, followers = false, previewFrame, box, boxStart, gestureEpoch=0;
+let positions = new Map(), projection = new Map(), selected = new Set(), queue = Promise.resolve();
+let cursor = { x: 80, y: 80 }, minimapBounds, lastNativeSelection = '0', reconnectEdge, connectionGesture=false;
+function note(text) { status.textContent = text; }
 function send(action, ...args) {
     if (!snapshot || rendering || pending || snapshot.readonly) return;
-    pending = true;
-    window.nativeGraph(JSON.stringify({ nonce: window.graphNonce, revision: snapshot.revision,
-        action, args: args.map(String) }));
+    pending = true; pendingAction = action; canvas.style.pointerEvents='none';
+    window.nativeGraph(JSON.stringify({ nonce: window.graphNonce, revision: snapshot.revision, action, args: args.map(String) }));
+}
+const ids = () => [...selected].join(' ');
+function nodeElement(id) { return area.nodeViews.get(id)?.element; }
+function paintSelection() {
+    for (const dto of snapshot?.nodes || []) {
+        const element = nodeElement(dto.id);
+        if (element) { element.classList.toggle('selected', selected.has(dto.id)); element.classList.toggle('invalid', diagnosticNode() === dto.id); }
+    }
+    document.getElementById('selection').textContent = `${selected.size} selected · ${snapshot?.nodes.length || 0} nodes`;
+}
+function select(id, additive = false) {
+    if (!additive && !selected.has(id)) selected.clear();
+    if (additive && selected.has(id)) selected.delete(id); else if (selected.size < 64) selected.add(id);
+    else note('Selection limit: 64 nodes');
+    paintSelection();
+}
+function validate(value) {
+    if (!value || !/^\d{1,20}$/.test(value.revision) || !Array.isArray(value.nodes) || value.nodes.length > 1024 ||
+        !Array.isArray(value.edges) || value.edges.length > 16384 || !Array.isArray(value.catalogue) || value.catalogue.length > 64) throw Error('Invalid Graph snapshot limits');
+    const all = new Set(); let ports = 0;
+    const id = text => { if (typeof text !== 'string' || !/^[1-9]\d{0,19}$/.test(text) || all.has(text)) throw Error('Invalid Graph identity'); all.add(text); };
+    const endpoints = new Set();
+    for (const n of value.nodes) {
+        id(n.id);
+        if (typeof n.name !== 'string' || n.name.length > 1024 || !Number.isFinite(n.x) || !Number.isFinite(n.y) || Math.abs(n.x) > 1e6 || Math.abs(n.y) > 1e6 || !Array.isArray(n.ports)) throw Error('Invalid Graph node');
+        for (const p of n.ports) { id(p.id); endpoints.add(p.id); if (++ports > 8192 || ![0,1,2].includes(p.kind) || ![0,1].includes(p.direction)) throw Error('Invalid Graph port'); }
+    }
+    if(value.selected!=='0'&&!value.nodes.some(n=>n.id===value.selected))throw Error('Invalid Graph selection');
+    for (const e of value.edges) { id(e.id); if (!endpoints.has(e.output) || !endpoints.has(e.input)) throw Error('Missing Graph endpoint'); }
 }
 window.graphSnapshot = value => {
+    try { validate(value); } catch (error) { note(String(error)); return; }
     queue = queue.then(async () => {
-        canvas.style.pointerEvents = 'none';
-        rendering = true; pending = false; dragging = undefined; snapshot = value;
-        status.textContent = value.error || (value.readonly ? 'Read only during Play' : 'Drag ports to connect · Escape cancels · Ctrl+S saves');
-        const previous = editor.getNodes().map(n => n.id).join();
-        await editor.clear(); positions = new Map();
+        const started=performance.now();
+        const conflict=(gestureNode||connectionGesture) && snapshot && (snapshot.revision!==value.revision||value.readonly);
+        if (conflict) {
+            cancelledGesture = true;connections.drop();clearReconnect();note('Graph changed during drag. Preview cancelled.');
+        }
+        canvas.style.pointerEvents = 'none'; rendering = true;
+        const first = !snapshot, action = pendingAction, oldIds = new Set(projection.keys());
+        snapshot = value; pending = false; pendingAction = ''; dragging = undefined;
+        const wantedEdges = new Map(value.edges.map(e => [e.id, e]));
+        for (const edge of editor.getConnections()) if (!wantedEdges.has(edge.id)) await editor.removeConnection(edge.id);
+        const wanted = new Set(value.nodes.map(n => n.id));
+        for (const node of editor.getNodes()) if (!wanted.has(node.id)) { await editor.removeNode(node.id); projection.delete(node.id); selected.delete(node.id); }
         const ports = new Map(), sockets = new Map();
         for (const dto of value.nodes) {
-            const node = new ClassicPreset.Node(dto.name); node.id = dto.id;
-            for (const port of dto.ports) {
-                const type = `${port.kind}:${port.type}`;
-                if (!sockets.has(type)) sockets.set(type, new ClassicPreset.Socket(type));
-                const socket = sockets.get(type);
-                if (port.direction === 0) node.addInput(port.id, new ClassicPreset.Input(socket, port.name));
-                else node.addOutput(port.id, new ClassicPreset.Output(socket, port.name));
-                ports.set(port.id, { node, port });
+            let node = editor.getNode(dto.id);
+            const title = `${dto.markers & 1 ? '[Bookmark] ' : ''}${dto.markers & 2 ? '[Break] ' : ''}${dto.name}${dto.group ? ' · ' + dto.group : ''}`;
+            if (!node) {
+                node = new ClassicPreset.Node(title); node.id = dto.id;
+                for (const p of dto.ports) {
+                    const type = `${p.kind}:${p.type}`;
+                    if (!sockets.has(type)) sockets.set(type, new ClassicPreset.Socket(type));
+                    const socket = sockets.get(type);
+                    if (p.direction === 0) node.addInput(p.id, new ClassicPreset.Input(socket, p.name, p.kind !== 0));
+                    else node.addOutput(p.id, new ClassicPreset.Output(socket, p.name, true));
+                }
+                await editor.addNode(node);
+            } else if (node.label !== title) { node.label = title; await area.update('node', node.id); }
+            for (const p of dto.ports) ports.set(p.id, { node, port: p });
+            const old = projection.get(dto.id);
+            if (!old || old.x !== dto.x || old.y !== dto.y || cancelledGesture) await area.translate(dto.id, {x:dto.x,y:dto.y});
+            const element = nodeElement(dto.id);
+            if (element) {
+                element.dataset.nodeId = dto.id;
+                element.title = `${dto.name}\n${dto.comment || ''}\n${dto.ports.map(p => `${p.direction ? 'Out' : 'In'} ${p.name}: ${p.kind === 0 ? 'i64 data' : p.kind === 1 ? 'control' : 'i64 event'}${p.kind === 0 && !p.direction ? ', one source required' : ''}`).join('\n')}`;
             }
-            await editor.addNode(node);
-            positions.set(node.id, { x: dto.x, y: dto.y });
-            await area.translate(node.id, { x: dto.x, y: dto.y });
+            projection.set(dto.id, dto);
         }
-        for (const dto of value.edges) {
+        for (const dto of value.edges) if (!editor.getConnection(dto.id)) {
             const output = ports.get(dto.output), input = ports.get(dto.input);
-            if (!output || !input) throw new Error('Native edge endpoint missing');
             const edge = new ClassicPreset.Connection(output.node, dto.output, input.node, dto.input);
             edge.id = dto.id; await editor.addConnection(edge);
         }
-        if (!previous && value.nodes.length) await AreaExtensions.zoomAt(area, editor.getNodes());
-        rendering = false; canvas.style.pointerEvents = '';
+        positions = new Map(value.nodes.map(n => [n.id, {x:n.x,y:n.y}]));
+        if (action === 'paste' || action === 'duplicate') selected = new Set(value.nodes.filter(n => !oldIds.has(n.id)).map(n => n.id));
+        else if(value.error)selected=value.selected!=='0'?new Set([value.selected]):new Set();
+        else if (value.selected !== '0' && value.selected !== lastNativeSelection && !selected.has(value.selected)) {
+            selected=new Set([value.selected]);const n=value.nodes.find(n=>n.id===value.selected);const k=area.area.transform.k;
+            if(n&&!first)await area.area.translate(canvas.clientWidth/2-n.x*k,canvas.clientHeight/2-n.y*k);
+        }
+        lastNativeSelection = value.selected;
+        if (first && value.nodes.length) await AreaExtensions.zoomAt(area, editor.getNodes());
+        rendering = false; canvas.style.pointerEvents = ''; paintSelection(); drawMinimap(); showProblem();
+        document.querySelectorAll('[data-command]').forEach(button => button.disabled = value.readonly);
+        note((conflict ? 'Graph changed during drag. Preview cancelled.' : '') || value.error || value.report?.split('\n')[0] || (value.readonly ? 'Read only during Play' : 'Ctrl-click selects · Shift-drag selects a box · Escape cancels'));
+        window.graphMetrics={nodes:value.nodes.length,renderMs:performance.now()-started,
+            heapPeak:Math.max(window.graphMetrics?.heapPeak||0,performance.memory?.usedJSHeapSize||0)};
         document.documentElement.dataset.graphReady = value.revision;
-    }).catch(error => { rendering = false; canvas.style.pointerEvents = ''; status.textContent = String(error); });
+    }).catch(error => { rendering = false; pending = false; canvas.style.pointerEvents = ''; note(String(error)); });
 };
 editor.addPipe(context => {
     if (rendering) return context;
-    if (context.type === 'connectioncreate') {
-        send('connect', context.data.sourceOutput, context.data.targetInput);
+    if(context.type==='connectioncreate'){
+        const old=reconnectEdge;clearReconnect();
+        if(old)send('reconnect',old,context.data.sourceOutput,context.data.targetInput);
+        else send('connect',context.data.sourceOutput,context.data.targetInput);
         return undefined;
     }
-    if (context.type === 'connectionremove') {
-        send('disconnect', context.data.id); return undefined;
+    if(context.type==='connectionremove'){
+        // ClassicFlow removes an edge while picking it up. Keep that local until drop.
+        if(context.data.id===reconnectEdge){const view=area.connectionViews.get(reconnectEdge);if(view)view.element.style.opacity='.25';}
+        return undefined;
     }
-    if (context.type === 'noderemove' || context.type === 'nodecreate') return undefined;
+    if (context.type === 'nodecreate' || context.type === 'noderemove') return undefined;
+    return context;
+});
+function clearReconnect(){
+    if(reconnectEdge){const view=area.connectionViews.get(reconnectEdge);if(view)view.element.style.opacity='';}
+    reconnectEdge=undefined;
+}
+connections.addPipe(context=>{
+    if(context.type==='connectionpick')connectionGesture=true;
+    if(context.type==='connectiondrop'){
+        connectionGesture=false;
+        if(!context.data.created)clearReconnect();
+    }
     return context;
 });
 area.addPipe(context => {
+    if(context.type==='render'&&context.data.type==='socket'){context.data.element.dataset.portId=context.data.key;context.data.element.dataset.portSide=context.data.side;}
+    if (context.type === 'nodepicked' && !rendering) {
+        gestureNode = context.data.id;
+        select(gestureNode, ctrl);
+    }
     if (!rendering && cancelledGesture && context.type === 'nodetranslate') return undefined;
-    if (!rendering && !cancelledGesture && context.type === 'nodetranslated') dragging = { id: context.data.id, ...context.data.position };
+    if (!rendering && !followers && !cancelledGesture && context.type === 'nodetranslated') {
+        dragging = {id:context.data.id,...context.data.position};
+        if (!previewFrame && selected.size > 1) previewFrame = requestAnimationFrame(async () => {
+            previewFrame = undefined;
+            if (!dragging || cancelledGesture || rendering) return;
+            const current = dragging, old = positions.get(current.id); if (!old) return;
+            const epoch=gestureEpoch;followers = true;
+            try { for (const id of selected) if (id !== current.id && positions.has(id)) {
+                if(epoch!==gestureEpoch||cancelledGesture||rendering)break;
+                const p = positions.get(id); await area.translate(id, {x:p.x+current.x-old.x,y:p.y+current.y-old.y});
+            }} finally { followers = false; }
+        });
+    }
+    if (context.type === 'translated' || context.type === 'zoomed') drawMinimap();
     return context;
 });
-// Rete stops bubbling pointerdown on nodes; reset before its drag handler.
-document.addEventListener('pointerdown', () => { cancelledGesture = false; }, true);
+let ctrl = false;
+document.addEventListener('pointerdown', event => {
+    ctrl=event.ctrlKey||event.metaKey;cancelledGesture=false;gestureNode=undefined;
+    if(!connectionGesture){
+        clearReconnect();const socket=event.target.closest('[data-port-id]');
+        if(socket?.dataset.portSide==='input')reconnectEdge=snapshot?.edges.find(e=>e.input===socket.dataset.portId)?.id;
+    }
+},true);
 document.addEventListener('pointerup', () => {
-    if (cancelledGesture) { cancelledGesture = false; dragging = undefined; return; }
-    if (!dragging || rendering) return;
-    const value = dragging; dragging = undefined;
-    const old = positions.get(value.id);
-    if (old && (old.x !== value.x || old.y !== value.y)) send('move', value.id, value.x, value.y);
+    if (previewFrame) cancelAnimationFrame(previewFrame); previewFrame = undefined;
+    if (cancelledGesture) { cancelledGesture = false; dragging = undefined; gestureNode = undefined; return; }
+    if(connectionGesture||reconnectEdge){gestureNode=undefined;return;}
+    const id = gestureNode; gestureNode = undefined;
+    if (!id || rendering || !selected.has(id)) return;
+    const old = positions.get(id), now = area.nodeViews.get(id)?.position;
+    if (!old || !now) return;
+    if (old.x !== now.x || old.y !== now.y) {
+        const dx = now.x-old.x, dy = now.y-old.y;
+        if (selected.size === 1) send('move',id,now.x,now.y);
+        else send('moves',[...selected].map(key => `${key} ${positions.get(key).x+dx} ${positions.get(key).y+dy}`).join('\n'));
+    } else send('select',id);
+    dragging = undefined;
 });
-document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') {
-        cancelledGesture = true; dragging = undefined; connections.drop();
-        // Preserve the live drag owner until pointerup; rebuilding all node views
-        // while a button is held loses Rete's pointer lifecycle.
-        queue = queue.then(async () => {
-            rendering = true;
-            try { for (const [id, position] of positions) await area.translate(id, position); }
-            finally { rendering = false; }
-        });
-        event.preventDefault();
-    }
-    if ((event.ctrlKey || event.metaKey) && ['s', 'z', 'y'].includes(event.key.toLowerCase())) {
-        send(event.key.toLowerCase() === 's' ? 'save' : event.key.toLowerCase() === 'y' || event.shiftKey ? 'redo' : 'undo');
-        event.preventDefault();
-    }
+function cancel() {
+    ++gestureEpoch;cancelledGesture = true; dragging = undefined; connections.drop();connectionGesture=false;clearReconnect(); menu.hidden = true;
+    if(box){box.remove();box=undefined;}
+    if (previewFrame) cancelAnimationFrame(previewFrame); previewFrame = undefined;
+    queue = queue.then(async () => {
+        rendering = true;
+        try { for (const [id,p] of positions) await area.translate(id,p); } finally { rendering = false; }
+    });
+}
+function world(x,y) { const r=canvas.getBoundingClientRect(),t=area.area.transform; return {x:(x-r.left-t.x)/t.k,y:(y-r.top-t.y)/t.k}; }
+canvas.addEventListener('pointermove',event => { cursor=world(event.clientX,event.clientY); });
+canvas.addEventListener('wheel',event=>event.stopPropagation(),{passive:true});
+canvas.addEventListener('pointerdown',event => {
+    if (event.target.closest('[data-node-id]') || event.button!==0) return;
+    if(!event.shiftKey){if(!ctrl){selected.clear();paintSelection();}return;}
+    event.stopImmediatePropagation(); boxStart={x:event.clientX,y:event.clientY};
+    box=document.createElement('div');box.className='marquee';document.body.append(box);
+},true);
+window.addEventListener('pointermove',event => {
+    if (!box) return;
+    Object.assign(box.style,{left:Math.min(boxStart.x,event.clientX)+'px',top:Math.min(boxStart.y,event.clientY)+'px',width:Math.abs(event.clientX-boxStart.x)+'px',height:Math.abs(event.clientY-boxStart.y)+'px'});
 });
-for (const button of document.querySelectorAll('[data-create]'))
-    button.addEventListener('click', () => send('create', button.dataset.create, 80 + (snapshot?.nodes.length || 0) * 40, 100));
-window.graphFit = () => AreaExtensions.zoomAt(area, editor.getNodes());
-window.graphDispose = () => area.destroy();
-window.graphCanvasReady = true;
-
-window.nativeGraph(JSON.stringify({ nonce: window.graphNonce, action: '__ready' }));
+window.addEventListener('pointerup',() => {
+    if (!box) return;const r=box.getBoundingClientRect();selected.clear();
+    for(const n of snapshot.nodes){const b=nodeElement(n.id)?.getBoundingClientRect();if(b&&b.left<r.right&&b.right>r.left&&b.top<r.bottom&&b.bottom>r.top&&selected.size<64)selected.add(n.id);}
+    box.remove();box=undefined;paintSelection();if(selected.size)send('select',[...selected][0]);
+});
+window.addEventListener('blur',()=>{ctrl=false;if(gestureNode||box||connectionGesture)cancel();});
+document.addEventListener('pointercancel',()=>cancel());
+canvas.addEventListener('lostpointercapture',()=>{if(gestureNode)cancel();});
+function diagnosticNode() { return /node=(\d+)/.exec(snapshot?.error || snapshot?.report || '')?.[1]; }
+async function focusView(id) {
+    const p=positions.get(id);if(!p)return;
+    const current=area.area.transform.k, element=nodeElement(id), root=element?.getBoundingClientRect();
+    const title=element?.querySelector('[data-testid=title]')?.getBoundingClientRect()||root;
+    const ox=root&&title?(title.left-root.left+title.width/2)/current:100;
+    const oy=root&&title?(title.top-root.top+title.height/2)/current:20;
+    const k=Math.max(0.75,current);
+    await area.area.zoom(k);
+    await area.area.translate(canvas.clientWidth/2-(p.x+ox)*k,canvas.clientHeight/2-(p.y+oy)*k);
+}
+function focusNode(id) {
+    if(!positions.has(id))return;
+    selected=new Set([id]);paintSelection();
+    void focusView(id).then(()=>send('select',id));
+}
+function showProblem() {
+    problem.replaceChildren();const text=snapshot.error || (!snapshot.report?.startsWith('OK')?snapshot.report:'');
+    problem.hidden=!text;if(!text)return;
+    const label=document.createElement('span');label.textContent=text;problem.append(label);
+    const id=diagnosticNode();if(id){const jump=document.createElement('button');jump.textContent='Go to node';jump.onclick=()=>focusNode(id);problem.append(jump);}
+}
+function action(name) {
+    if(name==='fit'){void AreaExtensions.zoomAt(area,editor.getNodes());return;}
+    if(name==='reset'){void area.area.zoom(1).then(()=>area.area.translate(40,40));return;}
+    if(name==='bookmark'){const nodes=snapshot.nodes.filter(n=>n.markers&1);const index=nodes.findIndex(n=>selected.has(n.id));if(nodes.length)focusNode(nodes[(index+1)%nodes.length].id);return;}
+    if(name==='paste'){send('paste',cursor.x,cursor.y);return;}
+    if(name==='delete'){if(selected.size)send('deletebulk',ids());return;}
+    if(name==='copy'||name==='duplicate'){if(selected.size)send(name,ids());return;}
+    if(name==='group'){if(selected.size)send('group',ids(),`Group ${new Set(snapshot.nodes.map(n=>n.group).filter(Boolean)).size+1}`);return;}
+    send(name);
+}
+for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>action(b.dataset.action);
+for(const b of document.querySelectorAll('[data-command]'))b.onclick=()=>action(b.dataset.command);
+canvas.addEventListener('contextmenu',event=>{
+    event.preventDefault();cursor=world(event.clientX,event.clientY);menu.replaceChildren();
+    const add=(label,callback,enabled=true)=>{const b=document.createElement('button');b.textContent=label;b.disabled=!enabled;b.onclick=()=>{menu.hidden=true;callback();};menu.append(b);};
+    for(let i=0;i<(snapshot?.catalogue.length||0);++i){const r=snapshot.catalogue[i];add(`Add ${r.name}`,()=>send('create',i,cursor.x,cursor.y),!snapshot.readonly&&!pending);}
+    for(const name of ['copy','paste','duplicate','delete','group','fit','reset','compile','run'])add(name[0].toUpperCase()+name.slice(1),()=>action(name),['fit','reset'].includes(name)||(!snapshot.readonly&&!pending));
+    add('Select Group',()=>{const group=projection.get([...selected][0])?.group;if(group){selected=new Set(snapshot.nodes.filter(n=>n.group===group).slice(0,64).map(n=>n.id));paintSelection();if(selected.size)send('select',[...selected][0]);}},selected.size>0);
+    for(const edge of snapshot?.edges||[]){
+        const output=snapshot.nodes.find(n=>n.ports.some(p=>p.id===edge.output));
+        const input=snapshot.nodes.find(n=>n.ports.some(p=>p.id===edge.input));
+        if(selected.has(output?.id)||selected.has(input?.id))add(`Disconnect ${output?.name} to ${input?.name}`,()=>{connections.drop();clearReconnect();send('disconnect',edge.id);},!snapshot.readonly&&!pending);
+    }
+    Object.assign(menu.style,{left:Math.max(4,Math.min(event.clientX,innerWidth-210))+'px',top:Math.max(4,Math.min(event.clientY,innerHeight-400))+'px'});menu.hidden=false;
+});
+document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target))menu.hidden=true;});
+document.addEventListener('keydown',event=>{
+    ctrl=event.ctrlKey||event.metaKey;
+    if(event.key==='Escape'){cancel();if(box){box.remove();box=undefined;}event.preventDefault();}
+    if(event.key==='Delete'){action('delete');event.preventDefault();}
+    if(!ctrl)return;
+    const key=event.key.toLowerCase();
+    if(key==='a'){selected=new Set(snapshot.nodes.slice(0,64).map(n=>n.id));paintSelection();event.preventDefault();return;}
+    const map={s:'save',z:event.shiftKey?'redo':'undo',y:'redo',c:'copy',v:'paste',d:'duplicate'};
+    if(map[key]){action(map[key]);event.preventDefault();}
+});
+document.addEventListener('keyup',event=>{ctrl=event.ctrlKey||event.metaKey;});
+function drawMinimap() {
+    if(!snapshot||!mini)return;const ctx=mini.getContext('2d');ctx.clearRect(0,0,mini.width,mini.height);
+    if(!snapshot.nodes.length)return;
+    const xs=snapshot.nodes.map(n=>n.x),ys=snapshot.nodes.map(n=>n.y);
+    const left=Math.min(...xs)-50,top=Math.min(...ys)-50,w=Math.max(...xs)-left+250,h=Math.max(...ys)-top+220;
+    minimapBounds={left,top,w,h};ctx.fillStyle='#a7a1d1';
+    for(const n of snapshot.nodes)ctx.fillRect((n.x-left)/w*mini.width,(n.y-top)/h*mini.height,Math.max(3,150/w*mini.width),Math.max(3,80/h*mini.height));
+}
+mini.onclick=e=>{if(!minimapBounds)return;const r=mini.getBoundingClientRect(),b=minimapBounds,t=area.area.transform;
+    const x=b.left+(e.clientX-r.left)/r.width*b.w,y=b.top+(e.clientY-r.top)/r.height*b.h;
+    void area.area.translate(canvas.clientWidth/2-x*t.k,canvas.clientHeight/2-y*t.k);
+};
+window.graphFit=()=>AreaExtensions.zoomAt(area,editor.getNodes());
+window.graphFocus=focusView;
+window.graphGestureState=()=>({connection:connectionGesture,reconnect:reconnectEdge||''});
+window.graphDispose=()=>{if(previewFrame)cancelAnimationFrame(previewFrame);area.destroy();};
+window.graphCanvasReady=true;
+window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__ready'}));

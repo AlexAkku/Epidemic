@@ -21,6 +21,7 @@ try {
     New-Item -ItemType Directory -Force "$output/graph","$output/licenses/rete" | Out-Null
     & node.exe node_modules/esbuild/bin/esbuild canvas.js --bundle --minify --legal-comments=linked "--outfile=$output/graph/canvas.js"
     if($LASTEXITCODE){throw 'Graph canvas compilation failed'}
+    Copy-Item "$PSScriptRoot/graph-web/graph.html","$PSScriptRoot/graph-web/graph.css" "$output/graph" -Force
     Copy-Item package.json,package-lock.json,canvas.js "$output/licenses/rete" -Force
     # Keep the full unmodified upstream texts, including transitive dependencies.
     foreach($manifest in Get-ChildItem node_modules -Recurse -Filter package.json){

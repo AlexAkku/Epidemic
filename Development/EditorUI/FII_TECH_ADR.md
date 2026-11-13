@@ -53,3 +53,7 @@ Layout принадлежит EditorDocument, runtime GraphDefinition сохра
 **PASS: native Windows launcher, настоящий CEF sandbox и native Graph roundtrip.** [Квалификация и подготовка F-II.1](FII0B_GRAPH_ROUNDTRIP.md).
 
 [Контракт Code Space / managed](FII_CODESPACE_MANAGED_CONTRACT.md) закрепляет задачи F-II.2. LSP, Rider и C# Play сейчас не реализованы. F-II.1 READY; реализация не начата. Его расширенные Graph authoring/compile/VM и performance проверки остаются отдельным gate.
+
+## D. F-II.1: принятое решение
+
+Батч от `8aca4a9`: существующий Rete/React preset сохранён без новых frameworks или rete-engine. Selection/menu/minimap — transient проекция; native bounded clipboard и EditRequest формируют единую историю. Graph DTO v2 содержит catalogue/settings/diagnostics; optional graph_authoring v1 мигрирует независимо от прежнего graph_layout v1. Native VM preview использует GraphScheduler с изолированным Time/Simulation; gameplay NativeCall без owner явно unavailable, реальные domain bindings не подменяются. Inspector участвует в Save/close/selection draft pipeline. JCEF size/depth/rate и HTML encoding проверены; реальный CEF sandbox не менялся. [Квалификация, memory samples и ограничения](FII1_GRAPH_AUTHORING.md). F-II.1 manual gate NOT RUN; F-II.2 не начат.

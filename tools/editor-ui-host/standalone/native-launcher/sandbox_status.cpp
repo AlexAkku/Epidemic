@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <TlHelp32.h>
+#include <Psapi.h>
 #include <winternl.h>
 #include <array>
 #include <cstdint>
@@ -57,7 +58,7 @@ std::string InspectSandbox() {
     bool first = true;
     for (const auto pid : owned) {
         if (pid == GetCurrentProcessId()) continue;
-        Handle process{OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid)};
+        Handle process{OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, FALSE, pid)};
         if (!process.value) continue;
         if (_wcsicmp(Image(process.value).c_str(), own_image.c_str()) != 0) continue;
         const auto command = CommandLine(process.value);
@@ -76,12 +77,16 @@ std::string InspectSandbox() {
         BOOL job = FALSE; IsProcessInJob(process.value, nullptr, &job);
         PROCESS_MITIGATION_SYSTEM_CALL_DISABLE_POLICY win32k{};
         const bool policy = GetProcessMitigationPolicy(process.value, ProcessSystemCallDisablePolicy, &win32k, sizeof(win32k)) != FALSE;
+        PROCESS_MEMORY_COUNTERS_EX memory{};memory.cb=sizeof(memory);
+        const bool memory_valid=GetProcessMemoryInfo(process.value,reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&memory),sizeof(memory))!=FALSE;
         if (!first) result << ',';
         first = false;
         result << "{\"pid\":" << pid << ",\"renderer\":" << (renderer ? "true" : "false")
                << ",\"restricted\":" << (IsTokenRestricted(token.value) ? "true" : "false")
                << ",\"integrity\":" << integrity << ",\"appContainer\":" << app_container
                << ",\"job\":" << (job ? "true" : "false")
+               << ",\"memoryValid\":" << (memory_valid ? "true" : "false")
+               << ",\"peakWorkingSet\":" << memory.PeakWorkingSetSize << ",\"privateBytes\":" << memory.PrivateUsage
                << ",\"win32kDisabled\":" << (policy && win32k.DisallowWin32kSystemCalls ? "true" : "false") << '}';
     }
     result << "]}"; return result.str();

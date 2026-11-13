@@ -25,4 +25,20 @@
 
 Технологические EditorFactory/LSP/managed пробы из [baseline](FII_BASELINE.md) не выданы за продуктовый Code Space или C# Play. Их окончательные задачи — [F-II.2](FII_CODESPACE_MANAGED_CONTRACT.md).
 
-[Точный результат и команды](FII0B_GRAPH_ROUNDTRIP.md). F-II.1 подготовлен, реализация и gate пока NOT RUN.
+[Точный результат и команды](FII0B_GRAPH_ROUNDTRIP.md). F-II.1 реализован; автоматическая функциональная квалификация PASS, manual gate NOT RUN.
+
+## F-II.1
+
+| Проверка | Статус | Основание |
+|---|---|---|
+| Native authoring / metadata / atomic fragment / 50-node history | PASS | Production Bridge, typed rejections, точные IDs/positions/settings во втором процессе |
+| Compile / native VM / Scheduler | PASS | Math13, overflow Node ID, Branch/Repeat/Wait result7/time6 |
+| Graph Inspector / Save / invalid input / Undo | PASS | Настоящее Swing поле, pending draft flush, invalid Save reject, EDT future ordering |
+| 64-node JCEF drag/Escape/Undo | PASS input APIs | Сохраняются относительные позиции; физическая мышь — ручная приёмка |
+| JCEF100/500 / HTML/depth/size/CSP / lifecycle | PASS | Реальный DOM, kernel renderer peak + CDP heap, UI disposal/reopen/HWND/shutdown |
+| CTest / architecture / IPC / catalog | PASS | 19/19 и 16 framing cases; свежие затронутые Editor consumers |
+| Static | KNOWN DIAGNOSTICS: Verify-Changed Fast проверил 61 TU; общий результат FAIL из-за предупреждений в неизменённом коде. Два новых unchecked-optional-access исправлены; повтор backend с теми же checks не содержит diagnostics на добавленных/изменённых строках. Sandbox metrics TU чистый PASS. Сохраняются signed-bitwise Scene, exception/unsafe constructors Composition/Editor, ThumbnailCache parameters, narrowing в тестах и float-loop/switch diagnostics native_viewport. Подавлений и ослабления checks нет | Checks не ослаблялись; классификация в отчёте |
+| 2000-node render | NOT RUN / native limit1024 | Безопасный reject PASS, лимит не повышался |
+| Ручной Windows input/visual acceptance | NOT RUN | Без Computer Use; [инструкция](FII1_MANUAL_QA.md) |
+
+[Отчёт F-II.1](FII1_GRAPH_AUTHORING.md).

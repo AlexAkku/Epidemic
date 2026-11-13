@@ -23,4 +23,4 @@ target_compile_definitions(EpidemicEditor PRIVATE UNICODE _UNICODE NOMINMAX WIN3
 target_compile_options(EpidemicEditor PRIVATE /W4 /WX /permissive- /utf-8 /guard:cf /EHsc $<$<CONFIG:Release>:/O2>)
 target_link_options(EpidemicEditor PRIVATE ${CEF_LINKER_FLAGS} /guard:cf /DYNAMICBASE /HIGHENTROPYVA /NXCOMPAT
     /MANIFEST:EMBED "/MANIFESTINPUT:${CMAKE_CURRENT_SOURCE_DIR}/../../editor-host.manifest")
-target_link_libraries(EpidemicEditor PRIVATE "${CEF_SDK}/Release/cef_sandbox.lib" ${CEF_SANDBOX_STANDARD_LIBS} ${CEF_STANDARD_LIBS})
+target_link_libraries(EpidemicEditor PRIVATE "${CEF_SDK}/Release/cef_sandbox.lib" ${CEF_SANDBOX_STANDARD_LIBS} ${CEF_STANDARD_LIBS} psapi)

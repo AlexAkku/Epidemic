@@ -1,4 +1,7 @@
 #include "demo_game.h"
+#include "graph_authoring.h"
+#include "Epidemic/Runtime/Support/graph_scheduler.h"
+#include <sstream>
 #include "Epidemic/Game/Editor/editor_workspace.h"
 #include "Epidemic/Game/Editor/editor_inspector.h"
 #include "Epidemic/Game/Editor/content_browser.h"
@@ -105,6 +108,13 @@ template <class T> void Require(const T &value) {
         throw std::runtime_error(value.GetError().code);
 }
 
+class PreviewClock final : public rt::simulation::ISimulationClock {
+    std::shared_ptr<rt::IGameClock> clock_;
+  public:
+    explicit PreviewClock(std::shared_ptr<rt::IGameClock> clock) : clock_(std::move(clock)) {}
+    rt::simulation::SimulationTime Now() const override {return clock_->Now();}
+};
+
 struct Node {
     std::uint64_t document = 0, element = 0, parent = 0;
     ed::UiElement kind = ed::UiElement::Document;
@@ -115,6 +125,11 @@ struct Node {
 
 class Backend {
     ex::Schema schema_;
+    std::vector<ed::graph_ui::Recipe> graph_recipes_ = ed::graph_ui::Catalogue(schema_.View());
+    std::optional<ed::EditorDocument> graph_clipboard_;
+    std::string graph_report_;
+    std::uint64_t graph_report_document_ = 0, graph_report_revision_ = 0;
+
     std::unique_ptr<ed::EditorWorkspace> workspace_;
     std::uint64_t generation_ =
         Id::FromString(std::to_string(GetCurrentProcessId()) + "." +
@@ -530,6 +545,7 @@ class Backend {
 
     void Reset() {
         drag_.Cancel();
+        graph_clipboard_.reset(); graph_report_.clear(); graph_report_document_=0; graph_report_revision_=0;
         projected_source_.reset();
         scene_projections_.clear();
         thumbnails_.Clear();
@@ -598,38 +614,204 @@ class Backend {
         }
     }
 
+    static std::vector<std::string> GraphWords(std::string_view text, std::size_t maximum) {
+        if (text.size() > 16384) throw std::runtime_error("ui.graph_fragment_limit");
+        std::istringstream stream{std::string(text)};
+        std::vector<std::string> words;
+        for (std::string word; stream >> word;) {
+            if (words.size() >= maximum) throw std::runtime_error("ui.graph_fragment_limit");
+            words.push_back(std::move(word));
+        }
+        if (words.empty()) throw std::runtime_error("ui.graph_empty_selection");
+        return words;
+    }
+    void CopyGraph(const ed::EditorDocument &doc, std::string_view ids) {
+        const auto words = GraphWords(ids,64);
+        std::set<std::uint64_t> selected;
+        const auto &graph = std::get<rt::graph::GraphDefinition>(doc.data);
+        for (const auto &word : words) {
+            const auto id = Numeric(word);
+            if (!selected.insert(id).second || std::none_of(graph.nodes.begin(),graph.nodes.end(),[&](const auto &n){return n.id.Raw() == id;}))
+                throw std::runtime_error("ui.graph_node");
+        }
+        auto copy = doc;
+        auto &fragment = std::get<rt::graph::GraphDefinition>(copy.data);
+        std::erase_if(fragment.nodes,[&](const auto &n){return !selected.contains(n.id.Raw());});
+        std::set<std::uint64_t> ports;
+        for (const auto &n : fragment.nodes) for (const auto &port : n.ports) ports.insert(port.id.Raw());
+        std::erase_if(fragment.connections,[&](const auto &e){return !ports.contains(e.input_port.Raw()) || !ports.contains(e.output_port.Raw());});
+        // Resolve implicit v0 grid before filtering, preserving actual source positions.
+        copy.graph_layout.clear(); copy.graph_settings.clear();
+        for (std::size_t i=0;i<graph.nodes.size();++i) if(selected.contains(graph.nodes[i].id.Raw())) {
+            copy.graph_layout.push_back(ed::graph_ui::Position(doc,i));
+            copy.graph_settings.push_back(ed::graph_ui::Settings(doc,graph.nodes[i].id.Raw()));
+        }
+        if (fragment.connections.size() > 128 || fragment.connections.size()+fragment.nodes.size()*3>256) throw std::runtime_error("ui.graph_fragment_limit");
+        graph_clipboard_ = std::move(copy);
+    }
+    std::vector<ed::Command> PasteGraph(rt::AssetId document, double x, double y) {
+        if (!graph_clipboard_) throw std::runtime_error("ui.graph_clipboard_empty");
+        const auto &source = *graph_clipboard_;
+        const auto &graph = std::get<rt::graph::GraphDefinition>(source.data);
+        std::vector<ed::Command> commands;
+        std::map<std::uint64_t,Id> ports;
+        const auto origin = source.graph_layout.front();
+        for (std::size_t i=0;i<graph.nodes.size();++i) {
+            auto node = graph.nodes[i]; const auto old = node.id.Raw();
+            const auto nonce = DocumentNonce(); node.id = Id::FromString("graph.node."+nonce);
+            for (std::size_t j=0;j<node.ports.size();++j) {
+                const auto id = Id::FromString("graph.port."+nonce+"."+std::to_string(j));
+                ports.emplace(node.ports[j].id.Raw(),id); node.ports[j].id = id;
+            }
+            commands.push_back(ed::AddGraphNode{document,node});
+            const auto position = ed::graph_ui::Position(source,i);
+            commands.push_back(ed::MoveGraphNode{document,node.id,x+position.x-origin.x,y+position.y-origin.y});
+            auto settings = ed::graph_ui::Settings(source,old); settings.node = node.id.Raw();
+            commands.push_back(ed::SetGraphNodeSettings{document,node.id,node.name,std::move(settings)});
+        }
+        for (const auto &edge : graph.connections)
+            commands.push_back(ed::ConnectPorts{document,{Id::FromString("graph.edge."+DocumentNonce()),ports.at(edge.output_port.Raw()),ports.at(edge.input_port.Raw())}});
+        return commands;
+    }
+    void PreviewGraph(const ed::EditorDocument &doc, bool execute) {
+        namespace g = rt::graph;
+        const auto &definition = std::get<g::GraphDefinition>(doc.data);
+        graph_report_.clear(); graph_report_document_=doc.id.Raw(); graph_report_revision_=workspace_->Project()->Revision();
+        std::vector<g::NodeBinding> bindings;
+        for (const auto &[type,op] : schema_.View().operations) {
+            if (op == g::Operation::NativeCall) {
+                const auto used=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return n.type_id==type;});
+                if (used!=definition.nodes.end()) {graph_report_="ui.graph.native_preview_requires_play node="+std::to_string(used->id.Raw());return;}
+            } else bindings.push_back({type,op,{}});
+        }
+        const auto program = g::CompileGraph(definition,bindings);
+        if (!program) {graph_report_=program.GetError().code+" "+program.GetError().context;return;}
+        if (!execute) {graph_report_="OK compiled native VM; instructions="+std::to_string(program.Value()->Instructions().size());return;}
+        const auto recipes=ed::graph_ui::Catalogue(schema_.View());
+        const auto event=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &node){
+            return std::any_of(recipes.begin(),recipes.end(),[&](const auto &r){return r.node.type_id==node.type_id&&r.operation==g::Operation::EventEntry;});
+        });
+        const bool entry=std::any_of(definition.nodes.begin(),definition.nodes.end(),[&](const auto &node){
+            return std::any_of(recipes.begin(),recipes.end(),[&](const auto &r){return r.node.type_id==node.type_id&&r.operation==g::Operation::Entry;});
+        });
+        auto instance=event!=definition.nodes.end()&&!entry ? g::GraphInstance::CreateForEvent(program.Value(),event->ports.front().id,ed::graph_ui::Settings(doc,event->id.Raw()).preview_default) : g::GraphInstance::Create(program.Value());
+        if(!instance){graph_report_=instance.GetError().code;return;}
+        for(const auto &node:definition.nodes){
+            const auto recipe=std::find_if(recipes.begin(),recipes.end(),[&](const auto &r){return r.node.type_id==node.type_id;});
+            if(recipe!=recipes.end()&&recipe->operation==g::Operation::Input)
+                Require(instance.Value()->SetInput(node.ports.front().id,ed::graph_ui::Settings(doc,node.id.Raw()).preview_default));
+        }
+        // Reuse the engine scheduler and Time authority in an isolated headless preview.
+        // Only GraphTask acknowledges Wait after its scheduled game-time deadline.
+        auto time=rt::CreateTimeServices();Require(time);
+        rt::simulation::SimulationDependencies dependencies;dependencies.clock=std::make_shared<PreviewClock>(time.Value().clock);
+        auto simulation=rt::simulation::CreateSimulationServices({},dependencies);Require(simulation);
+        simulation.Value().scheduler->SetBudget({1,256});
+        rt::GraphScheduler scheduler{time.Value().clock,simulation.Value(),rt::SimulationZoneId{1}};
+        auto task=scheduler.Submit(std::move(instance.Value()),{{256,64},{}});Require(task);
+        std::size_t instructions=0,steps=0;
+        for(;steps<256&&instructions<4096;++steps){
+            Require(scheduler.Prepare());const auto tick=simulation.Value().runtime->Tick();Require(tick);
+
+            const auto &last=task.Value()->LastReport();if(!last)throw std::runtime_error("ui.graph.preview_not_scheduled");
+            instructions+=last->instructions;
+            if(last->status==g::ExecutionStatus::Completed||last->status==g::ExecutionStatus::Failed)break;
+            const auto due=task.Value()->NextWake();const auto now=time.Value().clock->Now();
+            if(due&&*due>now)Require(time.Value().runtime->Skip(rt::GameDuration{due->ticks-now.ticks}));
+        }
+        const auto &final=task.Value()->LastReport();
+        if(!final)throw std::runtime_error("ui.graph.preview_not_scheduled");
+        const auto &report=*final;
+        graph_report_="OK native VM "+std::string(report.status==g::ExecutionStatus::Completed?"Completed":"Preview budget reached")+" instructions="+std::to_string(instructions)+" game_ticks="+std::to_string(time.Value().clock->Now().ticks);
+        for(const auto &node:definition.nodes)for(const auto &port:node.ports)if(port.kind==g::PortKind::Data){
+            const auto value=task.Value()->ReadValue(port.id);
+            if(value)graph_report_+="\nnode="+std::to_string(node.id.Raw())+" "+port.name+"="+std::to_string(value.Value());
+        }
+        if(report.status==g::ExecutionStatus::Failed&&report.diagnostic)
+            graph_report_=report.diagnostic->error.code+" node="+std::to_string(report.diagnostic->node.Raw());
+        if(task.Value()->NextWake())Require(scheduler.Cancel(*task.Value()));
+    }
+
     void GraphEdit(const std::vector<std::string> &args, std::uint64_t revision) {
         namespace graph = rt::graph;
         if (args.size() < 2) throw std::runtime_error("ui.graph_arguments");
         const auto document = Asset(Numeric(args[1]));
         const auto snapshot = workspace_->Project()->Snapshot();
         const auto *doc = snapshot->Find(document);
-        if (!doc || doc->Kind() != ed::DocumentKind::Graph)
-            throw std::runtime_error("ui.graph_document");
+        if (!doc || doc->Kind() != ed::DocumentKind::Graph) throw std::runtime_error("ui.graph_document");
         std::vector<ed::Command> commands;
         if (args[0] == "create" && args.size() == 5) {
-            // Schema-owned operation templates, IDs allocated by the native owner.
-            const auto template_graph = ex::Graph();
+            const auto recipes = ed::graph_ui::Catalogue(schema_.View());
             const auto index = Numeric(args[2]);
-            if (index > 2) throw std::runtime_error("ui.graph_template");
-            auto node = template_graph.nodes.at(static_cast<std::size_t>(index));
-            const auto nonce = DocumentNonce();
-            node.id = Id::FromString("graph.node." + nonce);
-            for (std::size_t i = 0; i < node.ports.size(); ++i)
-                node.ports[i].id = Id::FromString("graph.port." + nonce + "." + std::to_string(i));
-            commands.push_back(ed::AddGraphNode{document, node});
-            commands.push_back(ed::MoveGraphNode{document, node.id, Real(args[3]), Real(args[4])});
+            if (index >= recipes.size()) throw std::runtime_error("ui.graph_template");
+            auto node = recipes[static_cast<std::size_t>(index)].node;
+            const auto nonce = DocumentNonce(); node.id = Id::FromString("graph.node." + nonce);
+            for (std::size_t i=0;i<node.ports.size();++i) node.ports[i].id=Id::FromString("graph.port."+nonce+"."+std::to_string(i));
+            commands.push_back(ed::AddGraphNode{document,node});
+            commands.push_back(ed::MoveGraphNode{document,node.id,Real(args[3]),Real(args[4])});
         } else if (args[0] == "connect" && args.size() == 4) {
-            commands.push_back(ed::ConnectPorts{document,
-                {Id::FromString("graph.edge." + DocumentNonce()), Id{Numeric(args[2])}, Id{Numeric(args[3])}}});
+            commands.push_back(ed::ConnectPorts{document,{Id::FromString("graph.edge."+DocumentNonce()),Id{Numeric(args[2])},Id{Numeric(args[3])}}});
+        } else if(args[0]=="reconnect" && args.size()==5){
+            commands.push_back(ed::DisconnectPorts{document,Id{Numeric(args[2])}});
+            commands.push_back(ed::ConnectPorts{document,{Id::FromString("graph.edge."+DocumentNonce()),Id{Numeric(args[3])},Id{Numeric(args[4])}}});
         } else if (args[0] == "move" && args.size() == 5) {
-            commands.push_back(ed::MoveGraphNode{document, Id{Numeric(args[2])}, Real(args[3]), Real(args[4])});
-        } else if (args[0] == "delete" && args.size() == 3) {
-            commands.push_back(ed::DeleteGraphNode{document, Id{Numeric(args[2])}});
-        } else if (args[0] == "disconnect" && args.size() == 3) {
-            commands.push_back(ed::DisconnectPorts{document, Id{Numeric(args[2])}});
+            commands.push_back(ed::MoveGraphNode{document,Id{Numeric(args[2])},Real(args[3]),Real(args[4])});
+        } else if (args[0] == "moves" && args.size() == 3) {
+            const auto words=GraphWords(args[2],192); std::set<std::uint64_t> seen;
+            if(words.size()%3) throw std::runtime_error("ui.graph_arguments");
+            for(std::size_t i=0;i<words.size();i+=3) {
+                const auto id=Numeric(words[i]); if(!seen.insert(id).second) throw std::runtime_error("ui.graph_node");
+                commands.push_back(ed::MoveGraphNode{document,Id{id},Real(words[i+1]),Real(words[i+2])});
+            }
+        } else if ((args[0]=="delete" || args[0]=="disconnect") && args.size()==3) {
+            if(args[0]=="delete") commands.push_back(ed::DeleteGraphNode{document,Id{Numeric(args[2])}});
+            else commands.push_back(ed::DisconnectPorts{document,Id{Numeric(args[2])}});
+        } else if (args[0]=="deletebulk" && args.size()==3) {
+            for(const auto &word:GraphWords(args[2],64)) commands.push_back(ed::DeleteGraphNode{document,Id{Numeric(word)}});
+        } else if (args[0]=="settings" && args.size()==8) {
+            const auto id=Numeric(args[2]); const auto flags=Numeric(args[7]);
+            if(flags>3) throw std::runtime_error("ui.graph_flags");
+            const auto value=ed::EditorWorkspace::ParseValue(ed::comp::PropertyKind::Integer,args[4]); Require(value);
+            commands.push_back(ed::SetGraphNodeSettings{document,Id{id},args[3],{id,std::get<std::int64_t>(value.Value()),args[5],args[6],(flags&1u)!=0,(flags&2u)!=0}});
+        } else if (args[0]=="group" && args.size()==4) {
+            const auto &graph=std::get<graph::GraphDefinition>(doc->data);
+            for(const auto &word:GraphWords(args[2],64)) {
+                const auto id=Numeric(word); const auto n=std::find_if(graph.nodes.begin(),graph.nodes.end(),[&](const auto &node){return node.id.Raw()==id;});
+                if(n==graph.nodes.end()) throw std::runtime_error("ui.graph_node");
+                auto settings=ed::graph_ui::Settings(*doc,id); settings.group=args[3];
+                commands.push_back(ed::SetGraphNodeSettings{document,n->id,n->name,std::move(settings)});
+            }
+        } else if(args[0]=="copy" && args.size()==3) {CopyGraph(*doc,args[2]);return;
+        } else if(args[0]=="paste" && args.size()==4) {commands=PasteGraph(document,Real(args[2]),Real(args[3]));
+        } else if(args[0]=="duplicate" && args.size()==3) {
+            CopyGraph(*doc,args[2]);
+            if(!graph_clipboard_)throw std::runtime_error("ui.graph_clipboard_empty");
+            if(graph_clipboard_->graph_layout.empty())throw std::runtime_error("ui.graph_clipboard_empty");
+            const auto origin=graph_clipboard_->graph_layout.front(); commands=PasteGraph(document,origin.x+40,origin.y+40);
+        } else if((args[0]=="compile" || args[0]=="run") && args.size()==2) {PreviewGraph(*doc,args[0]=="run");if(!graph_report_.starts_with("OK")) throw std::runtime_error(graph_report_);return;
+        } else if(args[0]=="select" && args.size()==3) {if(!workspace_->Select({document,ed::UiElement::GraphNode,Numeric(args[2])})) throw std::runtime_error("ui.graph_node"); return;
+        } else if(args[0]=="uses" && args.size()==2) {
+            graph_report_document_=document.Raw();graph_report_revision_=revision;graph_report_="OK Scene system references";
+            for(const auto &sys:snapshot->definition.systems) if(sys.graph==document) graph_report_+="\nScene="+std::to_string(sys.scene.Raw())+" System="+std::to_string(sys.id.Raw());
+            return;
         } else throw std::runtime_error("ui.graph_arguments");
-        Require(workspace_->Execute(std::move(commands), revision));
+        const auto edited=workspace_->Execute(std::move(commands),revision);
+        if(!edited){
+            graph_report_document_=document.Raw();graph_report_revision_=workspace_->Project()->Revision();
+            graph_report_=edited.GetError().code+" "+edited.GetError().context;
+            if(args[0]=="connect"||args[0]=="reconnect"){
+                const auto input=Numeric(args[args[0]=="connect"?3:4]);const auto &graph=std::get<rt::graph::GraphDefinition>(doc->data);
+                for(const auto &n:graph.nodes)if(std::any_of(n.ports.begin(),n.ports.end(),[&](const auto &p){return p.id.Raw()==input;}))graph_report_+=" node="+std::to_string(n.id.Raw());
+            }else if(args[0]=="settings"||args[0]=="move"||args[0]=="delete")graph_report_+=" node="+args[2];
+            throw std::runtime_error(graph_report_);
+        }
+        if(args[0]=="create"||args[0]=="paste"||args[0]=="duplicate") {
+            const auto *updated=workspace_->Project()->Snapshot()->Find(document);
+            const auto &nodes=std::get<graph::GraphDefinition>(updated->data).nodes;
+            if(!nodes.empty())(void)workspace_->Select({document,ed::UiElement::GraphNode,nodes.back().id.Raw()});
+        } else if(args[0]=="move"||args[0]=="moves") {
+            const auto words=GraphWords(args[2],192);(void)workspace_->Select({document,ed::UiElement::GraphNode,Numeric(words.front())});
+        }
     }
 
     void Snapshot(Wire &out) const {
@@ -976,13 +1158,17 @@ class Backend {
         if (folder)
             for (const auto &path : content_folders_)
                 out.Text(path);
-        out.Number<2>(1); // Graph DTO schema version, independent of IPC envelope.
+        out.Number<2>(2); // Graph DTO schema version, independent of IPC envelope.
+        const auto &recipes=graph_recipes_;
+        out.Number<4>(recipes.size());
+        for(const auto &recipe:recipes) {out.Text(recipe.name);out.Text(recipe.category);out.Number<8>(recipe.node.type_id.Raw());out.Number<1>(static_cast<unsigned>(recipe.operation));}
         out.Number<4>(std::count_if(snapshot->definition.documents.begin(), snapshot->definition.documents.end(),
             [](const auto &doc) { return doc.Kind() == ed::DocumentKind::Graph; }));
         for (const auto &doc : snapshot->definition.documents) {
             const auto *graph = std::get_if<rt::graph::GraphDefinition>(&doc.data);
             if (!graph) continue;
             out.Number<8>(doc.id.Raw());
+            out.Text(graph_report_document_==doc.id.Raw() && graph_report_revision_==workspace_->Project()->Revision() ? graph_report_ : "");
             out.Number<4>(graph->nodes.size());
             for (std::size_t index = 0; index < graph->nodes.size(); ++index) {
                 const auto &node = graph->nodes[index];
@@ -992,6 +1178,9 @@ class Backend {
                 const double x = position == doc.graph_layout.end() ? 40.0 + 280.0 * static_cast<double>(index % 4) : position->x;
                 const double y = position == doc.graph_layout.end() ? 80.0 + 240.0 * std::floor(static_cast<double>(index) / 4.0) : position->y;
                 out.Number<8>(std::bit_cast<std::uint64_t>(x)); out.Number<8>(std::bit_cast<std::uint64_t>(y));
+                const auto settings=ed::graph_ui::Settings(doc,node.id.Raw());
+                out.Number<8>(std::bit_cast<std::uint64_t>(settings.preview_default));out.Text(settings.comment);out.Text(settings.group);
+                out.Number<1>((settings.bookmark ? 1u : 0u) | (settings.breakpoint ? 2u : 0u));
                 out.Number<4>(node.ports.size());
                 for (const auto &port : node.ports) {
                     out.Number<8>(port.id.Raw()); out.Text(port.name);

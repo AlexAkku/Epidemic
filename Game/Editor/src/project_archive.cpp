@@ -423,6 +423,27 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
                 });
             });
         } else Require(doc.graph_layout.empty());
+        bool have_settings = kind == 2;
+        if (io.reader) {
+            const auto present = io.reader->IsNull("graph_authoring");
+            if (!present) Require(present.GetError().code == "serialization.field_missing");
+            have_settings = present && !present.Value();
+        }
+        if (have_settings) {
+            Require(kind == 2);
+            io.Object("graph_authoring", [&] {
+                std::uint64_t version = 1; io.U("version", version); Require(version == 1);
+                std::set<std::uint64_t> seen;
+                const auto &graph = std::get<runtime::graph::GraphDefinition>(doc.data);
+                io.Array("nodes", doc.graph_settings, runtime::graph::kMaxNodes, [&](auto &value) {
+                    io.U("node", value.node); io.I("preview_default", value.preview_default);
+                    io.S("comment", value.comment); io.S("group", value.group);
+                    io.B("bookmark", value.bookmark); io.B("breakpoint", value.breakpoint);
+                    Require(value.comment.size() <= 1024 && value.group.size() <= 128 && seen.insert(value.node).second &&
+                        std::any_of(graph.nodes.begin(), graph.nodes.end(), [&](const auto &n) { return n.id.Raw() == value.node; }));
+                });
+            });
+        } else Require(doc.graph_settings.empty());
     });
     io.Array("identities", project.used_ids, 65536, [&](auto &value) {
         io.U("document", value.first);

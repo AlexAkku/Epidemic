@@ -54,3 +54,7 @@ python tools/editor-ui-host/tests/test_catalog.py
 ## Закрытие F-II.0b
 
 Батч native sandbox launcher начат от `7402924`. F-II.0b PASS: штатный distribution EXE использует собственный CEF sandbox launcher и JBR/JCEF. Повторены Graph/IPC/catalog, 19 адресных CTest/архитектура, standalone Release smoke, startup lock/restart и changed-TU static checks. Адресный Windows ввод проверен без полного CU. [Текущая квалификация, ограничения и вход F-II.1](FII0B_GRAPH_ROUNDTRIP.md).
+
+## Отправная точка F-II.1
+
+`8aca4a9` — завершённый native sandbox launcher F-II.0b. Дальнейшая реализация и фактические проверки: [F-II.1](FII1_GRAPH_AUTHORING.md). Ручная приёмка ожидает владельца; Computer Use в этом батче не применялся.

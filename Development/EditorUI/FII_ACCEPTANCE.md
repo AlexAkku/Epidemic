@@ -16,6 +16,10 @@
 | Адресные 19 CTest/архитектура, IPC/catalog, два launcher TU static analysis, startup lock regression | PASS |
 | Code Space и managed lifecycle | PASS по окончательным контрактам F-II.2; LSP/Rider/C# Play не реализованы |
 
-Полный U/Computer Use прогон не выполнялся. Нагрузочные 500/2000 nodes и расширенное редактирование/compile/VM составляют F-II.1 и пока NOT RUN. Исторические анализаторные предупреждения остаются backlog.
+Полный U/Computer Use прогон не выполнялся. На выходе F-II.0 нагрузочные 500/2000 nodes и расширенное редактирование/compile/VM оставались NOT RUN; текущая квалификация F-II.1 приведена ниже. Исторические анализаторные предупреждения остаются backlog.
 
 [Отчёт и подготовленный вход F-II.1](FII0B_GRAPH_ROUNDTRIP.md) · [Контракты F-II.2](FII_CODESPACE_MANAGED_CONTRACT.md).
+
+## F-II.1
+
+Реализация завершена; функциональная автоматическая квалификация PASS. **F-II.1-GATE ожидает ручную приёмку владельца (NOT RUN)**. [Результат, static diagnostics и ограничения](FII1_GRAPH_AUTHORING.md) · [Пошаговая инструкция](FII1_MANUAL_QA.md). Полный Computer Use не запускался; 2000-node render не заявляется. NativeCall preview требует gameplay scope; C#/Variables остаются F-II.2/3.

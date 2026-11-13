@@ -117,7 +117,11 @@ struct Schema {
                 components,
                 {{Id("event.type"), graph::Operation::EventEntry},
                  {Id("native.type"), graph::Operation::NativeCall},
-                 {Id("wait.type"), graph::Operation::Wait}}};
+                 {Id("wait.type"), graph::Operation::Wait},
+                 {Id("input.type"), graph::Operation::Input}, {Id("output.type"), graph::Operation::Output},
+                 {Id("add.type"), graph::Operation::Add}, {Id("multiply.type"), graph::Operation::Multiply},
+                 {Id("entry.type"), graph::Operation::Entry}, {Id("sequence.type"), graph::Operation::Sequence},
+                 {Id("branch.type"), graph::Operation::Branch}, {Id("repeat.type"), graph::Operation::Repeat}}};
 
     }
 
@@ -179,7 +183,11 @@ inline ed::PlayOptions Options(Schema &schema) {
         return std::vector<gc::NodeBinding>{{Id("event.type"), graph::Operation::EventEntry, {}},
                                             {Id("native.type"), graph::Operation::NativeCall,
                                              std::move(damage)},
-                                            {Id("wait.type"), graph::Operation::Wait, {}}};
+                                            {Id("wait.type"), graph::Operation::Wait, {}},
+                                            {Id("input.type"), graph::Operation::Input, {}}, {Id("output.type"), graph::Operation::Output, {}},
+                                            {Id("add.type"), graph::Operation::Add, {}}, {Id("multiply.type"), graph::Operation::Multiply, {}},
+                                            {Id("entry.type"), graph::Operation::Entry, {}}, {Id("sequence.type"), graph::Operation::Sequence, {}},
+                                            {Id("branch.type"), graph::Operation::Branch, {}}, {Id("repeat.type"), graph::Operation::Repeat, {}}};
 
     };
 

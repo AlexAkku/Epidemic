@@ -216,13 +216,13 @@ public final class PlatformSession implements Disposable {
             if(current==null||!current.capabilities().contains("asset-preview"))
                 return CompletableFuture.failedFuture(new IOException("ui.preview_unavailable"));
             return participant.assetPreview(current.generation(),id,key,divisor);
-        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));return result;}
+        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));result.graphCommands(()->supports("graph-authoring"),this::sceneGesture);return result;}
     private CompletableFuture<Bridge.Reply> sceneGesture(UiPanels.GestureEdit edit){
-        if(!supports(switch(edit.operation()){case 33->"scene-resources";case 34->"scene-systems";default->"scene-gestures";})||snapshot.playing())
+        if(!supports(switch(edit.operation()){case 33->"scene-resources";case 34->"scene-systems";case 38->"graph-authoring";default->"scene-gestures";})||snapshot.playing())
             return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
         var future=bridge.callAt(edit.generation(),edit.revision(),edit.operation(),edit.arguments().toArray(String[]::new));
         if(!Set.of("move","cancel").contains(edit.arguments().getFirst()))
-            future.whenComplete((reply,error)->{if(error!=null)edt(()->documentFailure(error));});
+            future.whenComplete((reply,error)->{if(error!=null)edt(()->{if(edit.operation()==38)reportProblem(error.getMessage());else documentFailure(error);});});
         return future;
     }
     private void componentEdit(UiPanels.ComponentEdit edit){
@@ -270,7 +270,7 @@ public final class PlatformSession implements Disposable {
         var next=pendingSelection;pendingSelection=null;
         if(next.equals(snapshot.selection()))return;
         selecting=true;Bridge participant=bridge;
-        participant.call(9,Integer.toString(next.kind()),Long.toUnsignedString(next.document()),Long.toUnsignedString(next.element()),Long.toUnsignedString(next.component()),Long.toUnsignedString(next.part())).whenComplete((reply,error)->edt(()->{
+        (tools!=null&&tools.hasDraft(snapshot.selection().document())?tools.flushDrafts():CompletableFuture.<Void>completedFuture(null)).thenCompose(ignored->participant.call(9,Integer.toString(next.kind()),Long.toUnsignedString(next.document()),Long.toUnsignedString(next.element()),Long.toUnsignedString(next.component()),Long.toUnsignedString(next.part()))).whenComplete((reply,error)->edt(()->{
             if(bridge!=participant)return;selecting=false;if(error!=null)documentFailure(error);flushSelection();
         }));
     }
@@ -515,12 +515,21 @@ public final class PlatformSession implements Disposable {
         var old = graphViews.remove(view);
         if (old != null) com.intellij.openapi.util.Disposer.dispose(old);
         var graph = new GraphEditor(identity, () -> bridge == null ? null : bridge.latest(),
-            (generation, revision, operation, args) -> bridge.callAt(generation, revision, operation, args));
+            this::graphCommand);
         graphViews.put(view, graph);
         var root = view.component();
         var center = ((BorderLayout)root.getLayout()).getLayoutComponent(BorderLayout.CENTER);
         if (center != null) root.remove(center);
         root.add(graph.component(), BorderLayout.CENTER); root.revalidate(); root.repaint();
+    }
+    private CompletableFuture<Bridge.Reply> graphCommand(long generation,long revision,int operation,String... args){
+        var current=bridge.latest();
+        if(current==null||current.snapshot()==null||current.generation()!=generation||current.snapshot().revision()!=revision)return CompletableFuture.failedFuture(new IOException("ui.stale_revision"));
+        if(operation==6)return saveProject();
+        boolean draft=tools!=null&&tools.hasDraft(current.snapshot().selection().document());
+        var flushed=draft?tools.flushDrafts():CompletableFuture.<Void>completedFuture(null);
+        var response=flushed.thenCompose(ignored->bridge.callAt(generation,draft?bridge.latest().snapshot().revision():revision,operation,args));
+        response.whenComplete((reply,error)->{if(error!=null&&!smoke)edt(()->reportProblem(error.getMessage()));});return response;
     }
     JComponent preferredFocus(DocumentView view) {
         var graph = graphViews.get(view);
@@ -1040,16 +1049,104 @@ public final class PlatformSession implements Disposable {
                                 require(security.contains("\"denied\":[true,true,true]") && security.contains("\"evalDenied\":true") &&
                                     snapshot.revision() == revision, "Graph CSP/bridge denial failed: " + security);
                                 record("PASS F-II.0b Graph CSP denies file/HTTPS/loopback fetch and eval; bridge rejects non-allowlisted open; revision unchanged");
-                                graph.smokeDragCancel().thenCompose(ignored -> graph.smokeCommand("save"))
+                                graph.smokeConnectionCancel().thenCompose(ignored->graph.smokeDragCancel()).thenCompose(ignored -> graph.smokeCommand("save"))
                                     .whenComplete((dragSaved, dragError) -> edt(() -> {
                                         if (dragError != null) { failure(dragError); return; }
-                                        record("PASS F-II.0b JCEF input: held drag/Escape/release has zero native edits; next drag commits exactly one; Save");
-                                        smokeGraphLifecycle(doc, file, graph);
+                                        record("PASS F-II.0b JCEF input: existing-edge pickup/Escape preserves connection; held node drag/Escape/release has zero native edits; next drag commits exactly one; Save");
+                                        smokeFii1Graph(doc,file,graph);
                                     }));
                             }));
                         })));
                     }));
             })));
+    }
+    private Bridge.Graph nativeGraph(long document){return bridge.latest().snapshot().graphs().stream().filter(g->g.document()==document).findFirst().orElseThrow();}
+    private CompletableFuture<Void> growGraph(GraphEditor graph,long document,int target){
+        var state=nativeGraph(document);if(state.nodes().size()>=target)return CompletableFuture.completedFuture(null);
+        var type=state.catalogue().stream().filter(t->t.operation()==0).findFirst().orElseThrow();
+        var inputs=state.nodes().stream().filter(n->n.type()==type.type()).toList();
+        if(inputs.isEmpty())return graph.smokeCommand("create",Integer.toString(state.catalogue().indexOf(type)),"40","400").thenCompose(ignored->growGraph(graph,document,target));
+        int count=Math.min(64,Math.min(inputs.size(),target-state.nodes().size()));
+        String ids=String.join(" ",inputs.subList(0,count).stream().map(n->Long.toUnsignedString(n.id())).toList());
+        return graph.smokeCommand("copy",ids).thenCompose(ignored->graph.smokeCommand("paste","40","400")).thenCompose(ignored->growGraph(graph,document,target));
+    }
+    private CompletableFuture<Void> arrangeGraph(GraphEditor graph,long document,int start){
+        var nodes=nativeGraph(document).nodes();if(start>=nodes.size())return CompletableFuture.completedFuture(null);
+        StringBuilder moves=new StringBuilder();int end=Math.min(start+64,nodes.size());
+        for(int i=start;i<end;++i)moves.append(Long.toUnsignedString(nodes.get(i).id())).append(' ').append((i%20)*260).append(' ').append((i/20)*240).append('\n');
+        return graph.smokeCommand("moves",moves.toString()).thenCompose(ignored->arrangeGraph(graph,document,end));
+    }
+    private CompletableFuture<Void> graphProfile(GraphEditor graph,long document,int count){
+        long start=System.nanoTime();
+        return growGraph(graph,document,count).thenCompose(ignored->arrangeGraph(graph,document,0))
+            .thenCompose(ignored->graph.smokeCanvasReport(count,0)).thenAccept(report->{
+                var state=com.google.gson.JsonParser.parseString(report).getAsJsonObject();
+                require(!state.get("injected").getAsBoolean()&&state.get("images").getAsInt()==0,"Graph HTML injection: "+report);
+                var memory=com.google.gson.JsonParser.parseString(epidemic.launcher.NativeLauncher.security()).getAsJsonObject();
+                long peak=0;int renderers=0;for(var item:memory.getAsJsonArray("processes")){
+                    var process=item.getAsJsonObject();if(!process.get("renderer").getAsBoolean())continue;
+                    require(process.get("memoryValid").getAsBoolean()&&process.get("peakWorkingSet").getAsLong()>0,"Renderer memory not observed");
+                    ++renderers;peak+=process.get("peakWorkingSet").getAsLong();
+                }
+                require(renderers>0,"No renderer memory profile");
+                record("PASS F-II.1 JCEF native projection nodes="+count+" roundtrip_ms="+(System.nanoTime()-start)/1_000_000+" renderer_peak_working_set_bytes="+peak+" JS="+state.get("metrics"));
+            }).thenCompose(ignored->graph.smokeHeap()).thenAccept(heap->record("INFO F-II.1 CDP Runtime.getHeapUsage nodes="+count+" "+heap));
+    }
+    private CompletableFuture<Void> smokeGraphInspectorDraft(GraphEditor graph,long document){
+        var input=nativeGraph(document).nodes().get(3);var result=new CompletableFuture<Void>();
+        graph.smokeCommand("select",Long.toUnsignedString(input.id())).whenComplete((reply,error)->edt(()->{
+            if(error!=null){result.completeExceptionally(error);return;}
+            later(200,()->{
+                var field=(JTextField)named(tools.view("graph.inspector"),"graph.preview-default");
+                require(field!=null&&field.isEnabled(),"No real Graph Inspector input control");field.setText("9");
+                saveProject().whenComplete((saved,saveError)->edt(()->{
+                    if(saveError!=null){result.completeExceptionally(saveError);return;}
+                    require(!snapshot.dirty()&&nativeGraph(document).nodes().get(3).previewDefault()==9,"Save ignored uncommitted Graph Inspector draft");
+                    long revision=snapshot.revision();field.setText("not-an-integer");
+                    saveProject().whenComplete((invalid,invalidError)->edt(()->{
+                        require(invalidError!=null&&snapshot.revision()==revision&&nativeGraph(document).nodes().get(3).previewDefault()==9,"Invalid Graph Inspector input reached Save");
+                        tools.cancelDrafts(document);
+                        graph.smokeCommand("undo").whenComplete((undone,undoError)->edt(()->{
+                            if(undoError!=null)result.completeExceptionally(undoError);
+                            else {require(nativeGraph(document).nodes().get(3).previewDefault()==7,"Graph Inspector draft didn't use native Undo");record("PASS F-II.1 Node Inspector draft flushed before Save; invalid draft blocked Save; native Undo restored Input default");result.complete(null);}
+                        }));
+                    }));
+                }));
+            });
+        }));return result;
+    }
+    private void smokeFii1Graph(Bridge.Document doc,VirtualFile file,GraphEditor graph){
+        long document=doc.id();
+        graphProfile(graph,document,100).thenCompose(ignored->{
+            var before=List.copyOf(nativeGraph(document).nodes());
+            return graph.smokeSelectAll().thenCompose(nothing->graph.smokeDragCancel()).thenCompose(nothing->{
+                var after=nativeGraph(document).nodes();double dx=after.getFirst().x()-before.getFirst().x(),dy=after.getFirst().y()-before.getFirst().y();
+                require(dx!=0&&dy!=0,"Group drag missed selected nodes");
+                for(int i=0;i<64;++i)require(Math.abs(after.get(i).x()-before.get(i).x()-dx)<0.000001&&Math.abs(after.get(i).y()-before.get(i).y()-dy)<0.000001,"Group drag lost relative positions");
+                return graph.smokeCommand("undo").thenAccept(reply->{require(nativeGraph(document).nodes().equals(before),"64-node UI drag wasn't one Undo");record("PASS F-II.1 64-node JCEF group drag/Escape rollback; relative positions preserved; one native Undo");});
+            });
+        }).thenCompose(ignored->{
+            var input=nativeGraph(document).nodes().stream().filter(n->nativeGraph(document).catalogue().stream().anyMatch(t->t.operation()==0&&t.type()==n.type())).findFirst().orElseThrow();
+            return graph.smokeCommand("settings",Long.toUnsignedString(input.id()),"<img src=x onerror=window.graphInjected=1>","7","</script><script>window.graphInjected=1</script>","Group <b>text</b>","3");
+        }).thenCompose(ignored->graph.smokeCanvasReport(100,0)).thenCompose(report->{
+            var state=com.google.gson.JsonParser.parseString(report).getAsJsonObject();require(state.get("literal").getAsBoolean()&&!state.get("injected").getAsBoolean()&&state.get("images").getAsInt()==0,"Native text was not HTML encoded: "+report);
+            return smokeGraphInspectorDraft(graph,document).thenCompose(ignored->graphProfile(graph,document,500));
+        }).thenCompose(ignored->{
+            long revision=snapshot.revision();
+            return graph.smokePayload("[".repeat(12)+"]".repeat(12)).handle((reply,error)->{
+                require(error!=null&&error.toString().contains("ui.graph_depth_limit")&&snapshot.revision()==revision,"Deep JSON reached native owner");return true;
+            });
+        }).thenCompose(ignored->graph.smokePayload(" ".repeat(65537)).handle((reply,error)->{
+            require(error!=null&&error.toString().contains("ui.graph_message_limit"),"Oversized JSON reached native owner");return true;
+        })).thenCompose(ignored->graph.smokeOversizedSnapshot()).thenCompose(report->{
+            var state=com.google.gson.JsonParser.parseString(report).getAsJsonObject();
+            require(state.get("before").getAsInt()==500&&state.get("after").getAsInt()==500&&state.get("status").getAsString().contains("Invalid Graph snapshot limits"),"2000-node snapshot was not safely rejected");
+            return graph.smokeCommand("save");
+        }).whenComplete((result,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            record("PASS F-II.1 native HTML text encoding, JSON depth/size guards; 2000 nodes rejected under unchanged native 1024-node limit; no mutation");
+            smokeGraphLifecycle(doc,file,graph);
+        }));
     }
     private void smokeGraphLifecycle(Bridge.Document doc, VirtualFile file, GraphEditor old) {
         FileEditorManager.getInstance(project).closeFile(file);
@@ -1232,8 +1329,8 @@ public final class PlatformSession implements Disposable {
             queueImport(bridge,bridge.latest().generation(),external.toString(),"f1-import.png").whenComplete((reply,error)->edt(()->{
                 if(error!=null){failure(error);return;}
                 var problem=contents.get("problems");
-                var scroll=(JScrollPane)tools.view("problems");
-                var text=(JTextArea)scroll.getViewport().getView();
+                var problemView=(JTextArea)named(tools.view("problems"),"problems.output");
+                var text=problemView;
                 require(problem!=null&&problem.getManager().getSelectedContent()==problem&&
                     text.getText().contains("Import rejected: f1-import.png"),"Import conflict was not presented in Problems");
                 var settings=com.intellij.ide.ui.UISettings.getInstance();

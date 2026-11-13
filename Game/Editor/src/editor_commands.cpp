@@ -285,7 +285,8 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
         } else if constexpr (std::is_same_v<C, AddGraphNode> ||
                              std::is_same_v<C, DeleteGraphNode> ||
                              std::is_same_v<C, ConnectPorts> ||
-                             std::is_same_v<C, DisconnectPorts> || std::is_same_v<C, MoveGraphNode>) {
+                             std::is_same_v<C, DisconnectPorts> || std::is_same_v<C, MoveGraphNode> ||
+                             std::is_same_v<C, SetGraphNodeSettings>) {
             auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc->data);
             if (!graph)
                 return false;
@@ -302,6 +303,16 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                 if (position) *position = value;
                 else doc->graph_layout.push_back(value);
                 return true;
+            } else if constexpr (std::is_same_v<C, SetGraphNodeSettings>) {
+                auto *node = Find(graph->nodes, [&](const auto &n) { return n.id == command.node; });
+                if (!node || command.settings.node != command.node.Raw() || command.name.empty() ||
+                    command.name.size() > 1024 || command.settings.comment.size() > 1024 || command.settings.group.size() > 128)
+                    return false;
+                node->name = command.name;
+                auto *settings = Find(doc->graph_settings, [&](const auto &n) { return n.node == command.node.Raw(); });
+                if (settings) *settings = command.settings;
+                else doc->graph_settings.push_back(command.settings);
+                return true;
             } else if constexpr (std::is_same_v<C, ConnectPorts>) {
                 graph->connections.push_back(command.connection);
                 return true;
@@ -315,6 +326,7 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                     return false;
                 const auto ports = node->ports;
                 std::erase_if(doc->graph_layout, [&](const auto &p) { return p.node == command.node.Raw(); });
+                std::erase_if(doc->graph_settings, [&](const auto &p) { return p.node == command.node.Raw(); });
                 Erase(graph->connections, [&](const auto &edge) {
                     return std::any_of(ports.begin(), ports.end(), [&](const auto &port) {
                         return port.id == edge.input_port || port.id == edge.output_port;

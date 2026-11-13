@@ -25,6 +25,14 @@ struct GraphNodePosition {
     bool operator==(const GraphNodePosition &) const = default;
 };
 
+struct GraphNodeSettings {
+    std::uint64_t node = 0;
+    std::int64_t preview_default = 0; // Input node values for editor-only VM preview.
+    std::string comment, group;
+    bool bookmark = false, breakpoint = false; // Debug activation belongs to F-II.4.
+    bool operator==(const GraphNodeSettings &) const = default;
+};
+
 struct EditorDocument {
     runtime::AssetId id{};
 
@@ -32,6 +40,7 @@ struct EditorDocument {
     std::uint64_t revision = 0;
     DocumentData data;
     std::vector<GraphNodePosition> graph_layout{};
+    std::vector<GraphNodeSettings> graph_settings{};
 
     [[nodiscard]] DocumentKind Kind() const noexcept {
         return static_cast<DocumentKind>(data.index());

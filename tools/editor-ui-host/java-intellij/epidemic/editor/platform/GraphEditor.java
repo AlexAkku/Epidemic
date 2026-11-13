@@ -35,10 +35,12 @@ final class GraphEditor implements Disposable {
     private JBCefJSQuery query;
     private javax.swing.Timer timer;
     private boolean disposed, pending;
+    private long rateStart; private int rateCount;
     private long published = -1;
     private int publishedFlags = -1;
     private String publishedDiagnostic = "";
     private String diagnostic = "";
+    private long diagnosticRevision=-1;
     private CompletableFuture<Bridge.Reply> smokeResult;
     private CompletableFuture<String> smokeReport;
     private final CompletableFuture<Void> readiness = new CompletableFuture<>();
@@ -90,8 +92,10 @@ final class GraphEditor implements Disposable {
                 }
             }, browser.getCefBrowser());
             query.addHandler(payload -> {
-                if (payload.length() > 4096 || disposed) return null;
-                ApplicationManager.getApplication().invokeLater(() -> request(payload));
+                if (disposed) return null;
+                // Do not retain oversized text on the EDT; still publish a typed rejection.
+                String bounded=payload.length()>65536?null:payload;
+                ApplicationManager.getApplication().invokeLater(() -> request(bounded));
                 return null;
             });
             String script;
@@ -102,12 +106,14 @@ final class GraphEditor implements Disposable {
                 + query.inject("payload") + "};";
             script = bootstrap + script;
             String sha = Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(script.getBytes(StandardCharsets.UTF_8)));
-            String html = "<!doctype html><html><head><meta charset='utf-8'>"
-                + "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'sha256-" + sha
-                + "'; style-src 'unsafe-inline'; img-src 'none'; connect-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'\">"
-                + "<style>html,body{height:100%;margin:0;background:#25262a;color:#eee;font:13px sans-serif}nav{height:36px;display:flex;align-items:center;gap:8px;padding:0 10px}button{background:#444;color:white;border:1px solid #666;padding:4px 10px}#graph{height:calc(100% - 36px)}#status{font-size:12px}</style></head>"
-                + "<body><nav><button data-create='0'>Event</button><button data-create='1'>Native Call</button><button data-create='2'>Wait</button><span id='status'>Loading native graph…</span></nav><div id='graph'></div><script>"
-                + script + "</script></body></html>";
+            String html, style;
+            try (var stream = Objects.requireNonNull(GraphEditor.class.getResourceAsStream("/graph/graph.html"))) {
+                html = new String(stream.readAllBytes(),StandardCharsets.UTF_8);
+            }
+            try (var stream = Objects.requireNonNull(GraphEditor.class.getResourceAsStream("/graph/graph.css"))) {
+                style = new String(stream.readAllBytes(),StandardCharsets.UTF_8);
+            }
+            html = html.replace("%HASH%",sha).replace("%STYLE%",style).replace("%SCRIPT%",script);
             component.add(browser.getComponent());
             browser.loadHTML(html, origin);
             timer = new javax.swing.Timer(300, event -> refresh());
@@ -120,10 +126,24 @@ final class GraphEditor implements Disposable {
     JComponent component() { return component; }
     JComponent preferredFocus() { return browser == null || browser.isDisposed() ? component : browser.getComponent(); }
     Bridge.DocumentKey identity() { return key; }
+    private long currentRevision(){var reply=latest.get();return reply==null||reply.snapshot()==null?-1:reply.snapshot().revision();}
+    private static void checkJson(String payload) {
+        if (payload == null || payload.length()>65536) throw new IllegalArgumentException("ui.graph_message_limit");
+        int depth=0;boolean string=false,escape=false;
+        for(int i=0;i<payload.length();++i){char c=payload.charAt(i);
+            if(string){if(escape)escape=false;else if(c=='\\')escape=true;else if(c=='"')string=false;}
+            else if(c=='"')string=true;
+            else if(c=='{'||c=='['){if(++depth>6)throw new IllegalArgumentException("ui.graph_depth_limit");}
+            else if(c=='}'||c==']')--depth;
+        }
+    }
     private void request(String payload) {
         if (Boolean.getBoolean("epidemic.ui.platform.smoke")) LOG.info("Graph query url=" + (browser == null ? "null" : browser.getCefBrowser().getURL()) + " pending=" + pending);
         if (disposed || pending || browser == null || !origin.equals(browser.getCefBrowser().getURL())) return;
         try {
+            checkJson(payload);
+            long now=System.nanoTime();if(now-rateStart>1_000_000_000L){rateStart=now;rateCount=0;}
+            if(++rateCount>60)throw new IllegalArgumentException("ui.graph_rate_limit");
             JsonObject message = JsonParser.parseString(payload).getAsJsonObject();
             if (!nonce.equals(message.get("nonce").getAsString())) throw new IllegalArgumentException("ui.graph_nonce");
             if ("__ready".equals(message.get("action").getAsString())) {
@@ -140,15 +160,17 @@ final class GraphEditor implements Disposable {
             if (reply.snapshot().playing()) throw new IllegalArgumentException("ui.playing_readonly");
             String action = message.get("action").getAsString();
             var values = message.getAsJsonArray("args");
-            int expected = switch (action) { case "create", "move" -> 3; case "connect" -> 2;
-                case "delete", "disconnect" -> 1; case "save", "undo", "redo" -> 0;
+            int expected = switch (action) { case "create", "move", "reconnect" -> 3; case "connect" -> 2;
+                case "delete", "disconnect", "moves", "deletebulk", "copy", "duplicate", "select" -> 1;
+                case "paste", "group" -> 2; case "settings" -> 6;
+                case "save", "undo", "redo", "compile", "run", "uses" -> 0;
                 default -> throw new IllegalArgumentException("ui.graph_action"); };
             if (values.size() != expected) throw new IllegalArgumentException("ui.graph_arguments");
             int operation = switch (action) { case "save" -> 6; case "undo" -> 7; case "redo" -> 8; default -> 38; };
             List<String> args = new ArrayList<>();
             if (operation == 38) { args.add(action); args.add(Long.toUnsignedString(key.id())); }
             for (JsonElement value : values) {
-                if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isString() || value.getAsString().length() > 64)
+                if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isString() || value.getAsString().length() > 16384)
                     throw new IllegalArgumentException("ui.graph_argument");
                 args.add(value.getAsString());
             }
@@ -160,12 +182,13 @@ final class GraphEditor implements Disposable {
                         if (error != null) smokeResult.completeExceptionally(error);
                         else smokeResult.complete(result);
                     }
-                    diagnostic = error == null ? result.error() : error.getMessage();
+                    diagnostic = error == null ? result.error() : error.toString();
+                    diagnosticRevision=currentRevision();
                     published = -1; refresh();
                 }));
         } catch (RuntimeException error) {
             if (smokeResult != null && !smokeResult.isDone()) smokeResult.completeExceptionally(error);
-            diagnostic = error.getMessage(); published = -1; refresh();
+            diagnostic = error.getMessage();diagnosticRevision=currentRevision(); published = -1; refresh();
         }
     }
     void refresh() {
@@ -173,14 +196,25 @@ final class GraphEditor implements Disposable {
         var reply = latest.get();
         if (reply == null || key.resolve(reply.generation(), reply.snapshot()).isEmpty()) return;
         var snapshot = reply.snapshot();
+        if(diagnosticRevision!=snapshot.revision())diagnostic="";
         var graph = snapshot.graphs().stream().filter(g -> g.document() == key.id()).findFirst().orElse(null);
         if (graph == null) return;
         JsonObject dto = new JsonObject(); dto.addProperty("revision", Long.toUnsignedString(snapshot.revision()));
         dto.addProperty("readonly", snapshot.playing()); dto.addProperty("error", diagnostic);
+        dto.addProperty("schemaRevision","1");dto.addProperty("report",graph.report());
+        dto.addProperty("selected",snapshot.selection().document()==key.id() && snapshot.selection().kind()==3 ? Long.toUnsignedString(snapshot.selection().element()) : "0");
+        JsonArray catalogue=new JsonArray();
+        for(var recipe:graph.catalogue()){
+            JsonObject r=new JsonObject();r.addProperty("name",recipe.name());r.addProperty("category",recipe.category());
+            r.addProperty("type",Long.toUnsignedString(recipe.type()));r.addProperty("operation",recipe.operation());catalogue.add(r);
+        }
+        dto.add("catalogue",catalogue);
         JsonArray nodes = new JsonArray(), edges = new JsonArray();
         for (var node : graph.nodes()) {
             JsonObject n = new JsonObject(); n.addProperty("id", Long.toUnsignedString(node.id()));
             n.addProperty("name", node.name()); n.addProperty("x", node.x()); n.addProperty("y", node.y());
+            n.addProperty("type",Long.toUnsignedString(node.type()));n.addProperty("previewDefault",Long.toString(node.previewDefault()));
+            n.addProperty("comment",node.comment());n.addProperty("group",node.group());n.addProperty("markers",node.markers());
             JsonArray ports = new JsonArray();
             for (var port : node.ports()) {
                 JsonObject p = new JsonObject(); p.addProperty("id", Long.toUnsignedString(port.id()));
@@ -194,15 +228,10 @@ final class GraphEditor implements Disposable {
             e.addProperty("output", Long.toUnsignedString(edge.output())); e.addProperty("input", Long.toUnsignedString(edge.input())); edges.add(e);
         }
         dto.add("nodes", nodes); dto.add("edges", edges);
-        // The first ready handshake can arrive after the first refresh. Keep the
-        // probe in JS so no host-side polling state can lose initial publication.
-        String revision = JSON.toJson(Long.toUnsignedString(snapshot.revision()));
-        String js = "if(window.graphCanvasReady && document.documentElement.dataset.graphReady!==" + revision
-            + " && !window.graphPublishing){window.graphPublishing=true;window.graphSnapshot(" + JSON.toJson(dto)
-            + ");setTimeout(()=>window.graphPublishing=false,500);} ";
-        if (published != snapshot.revision() || publishedFlags != snapshot.flags() || !publishedDiagnostic.equals(diagnostic)) js = "document.documentElement.dataset.graphReady='';" + js;
-        browser.getCefBrowser().executeJavaScript(js, origin, 0);
-        published = snapshot.revision(); publishedFlags = snapshot.flags(); publishedDiagnostic = diagnostic;
+        String version = diagnostic+graph.report()+snapshot.selectionRevision();
+        if (published==snapshot.revision() && publishedFlags==snapshot.flags() && publishedDiagnostic.equals(version)) return;
+        browser.getCefBrowser().executeJavaScript("window.graphSnapshot("+JSON.toJson(dto)+");",origin,0);
+        published=snapshot.revision();publishedFlags=snapshot.flags();publishedDiagnostic=version;
     }
     // Programmatic qualification uses the same browser JSQuery and command guard.
     CompletableFuture<Bridge.Reply> smokeCommand(String action, String... args) {
@@ -226,6 +255,69 @@ final class GraphEditor implements Disposable {
         browser.getCefBrowser().executeJavaScript(js, origin, 0);
         return smokeReport.orTimeout(10, java.util.concurrent.TimeUnit.SECONDS);
     }
+    private void smokeEscapeKeys(){
+        var input=browser.getCefBrowser().getUIComponent();
+        for(int kind:new int[]{java.awt.event.KeyEvent.KEY_PRESSED,java.awt.event.KeyEvent.KEY_RELEASED}){
+            var event=new java.awt.event.KeyEvent(input,kind,System.currentTimeMillis(),0,java.awt.event.KeyEvent.VK_ESCAPE,(char)27);
+            try{var raw=java.awt.event.KeyEvent.class.getDeclaredField("rawCode");raw.setAccessible(true);raw.setLong(event,27);
+                var scan=java.awt.event.KeyEvent.class.getDeclaredField("scancode");scan.setAccessible(true);scan.setLong(event,1);
+            }catch(ReflectiveOperationException error){throw new java.util.concurrent.CompletionException(error);}
+            browser.getCefBrowser().sendKeyEvent(event);
+        }
+    }
+    private CompletableFuture<JsonObject> smokeSocket(String port){
+        smokeReport=new CompletableFuture<>();
+        browser.getCefBrowser().executeJavaScript("{const e=document.querySelector('[data-port-id=\""+port+"\"]');const r=e?.getBoundingClientRect();window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({x:r?.left+r?.width/2,y:r?.top+r?.height/2,gesture:window.graphGestureState()})}));}",origin,0);
+        return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS).thenApply(value->JsonParser.parseString(value).getAsJsonObject());
+    }
+    CompletableFuture<Void> smokeConnectionCancel(){
+        var state=latest.get().snapshot();var graph=state.graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow();
+        var edge=graph.edges().getFirst();var node=graph.nodes().stream().filter(n->n.ports().stream().anyMatch(p->p.id()==edge.input())).findFirst().orElseThrow();
+        browser.getCefBrowser().executeJavaScript("window.graphFocus("+JSON.toJson(Long.toUnsignedString(node.id()))+");",origin,0);
+        return pause(300).thenCompose(ignored->smokeSocket(Long.toUnsignedString(edge.input()))).thenCompose(bounds->{
+            int x=(int)bounds.get("x").getAsDouble(),y=(int)bounds.get("y").getAsDouble();browser.getCefBrowser().setFocus(true);
+            mouse(java.awt.event.MouseEvent.MOUSE_MOVED,x,y,false);mouse(java.awt.event.MouseEvent.MOUSE_PRESSED,x,y,true);
+            return pause(150).thenCompose(ignored->smokeSocket(Long.toUnsignedString(edge.input()))).thenCompose(picked->{
+                if(!picked.getAsJsonObject("gesture").get("connection").getAsBoolean()||!picked.getAsJsonObject("gesture").get("reconnect").getAsString().equals(Long.toUnsignedString(edge.id())))throw new IllegalStateException("Existing edge pickup missed: "+picked);
+                if(latest.get().snapshot().revision()!=state.revision())throw new IllegalStateException("Picking existing edge committed a disconnect");
+                smokeEscapeKeys();mouse(java.awt.event.MouseEvent.MOUSE_RELEASED,x,y,false);return pause(200);
+            });
+        }).thenRun(()->{var now=latest.get().snapshot();var current=now.graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow();
+            if(now.revision()!=state.revision()||!current.edges().equals(graph.edges()))throw new IllegalStateException("Escape lost existing edge");
+        });
+    }
+    CompletableFuture<Void> smokeSelectAll(){
+        if(!Boolean.getBoolean("epidemic.ui.platform.smoke"))throw new IllegalStateException("Qualification only");
+        browser.getCefBrowser().executeJavaScript("document.dispatchEvent(new KeyboardEvent('keydown',{key:'a',ctrlKey:true,bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{key:'Control',ctrlKey:false,bubbles:true}));",origin,0);
+        return pause(150);
+    }
+    CompletableFuture<String> smokeHeap() {
+        if(!Boolean.getBoolean("epidemic.ui.platform.smoke"))throw new IllegalStateException("Qualification only");
+        var tools=new org.cef.browser.CefDevToolsClient(browser.getCefBrowser());
+        return tools.executeDevToolsMethod("Runtime.getHeapUsage").orTimeout(10,java.util.concurrent.TimeUnit.SECONDS)
+            .whenComplete((result,error)->tools.close());
+    }
+    CompletableFuture<Bridge.Reply> smokePayload(String raw) {
+        if(!Boolean.getBoolean("epidemic.ui.platform.smoke"))throw new IllegalStateException("Qualification only");
+        smokeResult=new CompletableFuture<>();
+        browser.getCefBrowser().executeJavaScript("window.nativeGraph("+JSON.toJson(raw)+");",origin,0);
+        return smokeResult.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS);
+    }
+    CompletableFuture<String> smokeCanvasReport(int expected,int attempt) {
+        smokeReport=new CompletableFuture<>();
+        browser.getCefBrowser().executeJavaScript("window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({count:document.querySelectorAll('[data-testid=node]').length,injected:!!window.graphInjected,images:document.querySelectorAll('img').length,literal:document.body.textContent.includes('<img src=x'),revision:document.documentElement.dataset.graphReady,metrics:window.graphMetrics})}));",origin,0);
+        return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS).thenCompose(value->{
+            var state=JsonParser.parseString(value).getAsJsonObject();
+            if(state.get("count").getAsInt()==expected&&state.has("metrics")&&state.getAsJsonObject("metrics").get("nodes").getAsInt()==expected&&state.get("revision").getAsString().equals(Long.toUnsignedString(latest.get().snapshot().revision())))return CompletableFuture.completedFuture(value);
+            if(attempt>=150)return CompletableFuture.failedFuture(new IllegalStateException("Rete projection timeout: "+value));
+            return pause(200).thenCompose(ignored->smokeCanvasReport(expected,attempt+1));
+        });
+    }
+    CompletableFuture<String> smokeOversizedSnapshot() {
+        smokeReport=new CompletableFuture<>();
+        browser.getCefBrowser().executeJavaScript("{const before=document.querySelectorAll('[data-testid=node]').length;window.graphSnapshot({revision:'1',nodes:Array(2000).fill({}),edges:[],catalogue:[]});window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({before,after:document.querySelectorAll('[data-testid=node]').length,status:document.getElementById('status').textContent})}));}",origin,0);
+        return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS);
+    }
     private CompletableFuture<Void> pause(int milliseconds) {
         var result = new CompletableFuture<Void>();
         var delay = new javax.swing.Timer(milliseconds, event -> {
@@ -237,40 +329,32 @@ final class GraphEditor implements Disposable {
     private CompletableFuture<JsonObject> smokeNodeBounds() {
         smokeReport = new CompletableFuture<>();
         browser.getCefBrowser().executeJavaScript(
-            "{const r=document.querySelector('[data-testid=node]').getBoundingClientRect();"
-            + "window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({x:r.left+r.width*.3,y:r.top+Math.min(10,r.height*.07),width:r.width,height:r.height,keys:window.__qualificationKeys})}));}", origin, 0);
+            "{const n=document.querySelector('[data-testid=node]');const r=(n.querySelector('[data-testid=title]')||n).getBoundingClientRect();"
+            + "window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({x:r.left+r.width/2,y:r.top+r.height/2,width:r.width,height:r.height,keys:window.__qualificationKeys})}));}", origin, 0);
         return smokeReport.orTimeout(10, java.util.concurrent.TimeUnit.SECONDS).thenApply(value -> JsonParser.parseString(value).getAsJsonObject());
     }
     private void mouse(int event, int x, int y, boolean down) {
         var input = browser.getCefBrowser().getUIComponent();
-        int button = event == java.awt.event.MouseEvent.MOUSE_DRAGGED ? java.awt.event.MouseEvent.NOBUTTON : java.awt.event.MouseEvent.BUTTON1;
+        int button = (event == java.awt.event.MouseEvent.MOUSE_DRAGGED || event == java.awt.event.MouseEvent.MOUSE_MOVED) ? java.awt.event.MouseEvent.NOBUTTON : java.awt.event.MouseEvent.BUTTON1;
         browser.getCefBrowser().sendMouseEvent(new java.awt.event.MouseEvent(input, event, System.currentTimeMillis(),
             down ? java.awt.event.InputEvent.BUTTON1_DOWN_MASK : 0, x, y, 1, false, button));
     }
     CompletableFuture<Void> smokeDragCancel() {
         if (!Boolean.getBoolean("epidemic.ui.platform.smoke")) throw new IllegalStateException("Qualification only");
-        browser.getCefBrowser().executeJavaScript("window.graphFit();window.__qualificationKeys=[];document.addEventListener('keydown',e=>window.__qualificationKeys.push(e.key),true);", origin, 0);
+        browser.getCefBrowser().executeJavaScript("window.graphFocus("+JSON.toJson(Long.toUnsignedString(latest.get().snapshot().graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow().nodes().getFirst().id()))+");window.__qualificationKeys=[];document.addEventListener('keydown',e=>window.__qualificationKeys.push(e.key),true);", origin, 0);
         com.intellij.openapi.wm.IdeFocusManager.getGlobalInstance().requestFocus(browser.getComponent(), true);
         long revision = latest.get().snapshot().revision();
         return pause(350).thenCompose(ignored -> smokeNodeBounds()).thenCompose(bounds -> {
             int x = (int)bounds.get("x").getAsDouble(), y = (int)bounds.get("y").getAsDouble();
             browser.getCefBrowser().setFocus(true);
+            mouse(java.awt.event.MouseEvent.MOUSE_MOVED, x, y, false);
             mouse(java.awt.event.MouseEvent.MOUSE_PRESSED, x, y, true);
             mouse(java.awt.event.MouseEvent.MOUSE_DRAGGED, x + 24, y + 24, true);
             return pause(150).thenCompose(ignored -> smokeNodeBounds()).thenCompose(moved -> {
                 if (Math.abs(moved.get("x").getAsDouble() - bounds.get("x").getAsDouble()) < 1)
-                    throw new IllegalStateException("Input missed the node drag preview");
-                var input = browser.getCefBrowser().getUIComponent();
-                // Pinned JCEF Windows reads AWT rawCode/scancode, not getKeyCode().
-                for (int kind : new int[]{java.awt.event.KeyEvent.KEY_PRESSED, java.awt.event.KeyEvent.KEY_RELEASED}) {
-                    var event = new java.awt.event.KeyEvent(input, kind, System.currentTimeMillis(), 0,
-                        java.awt.event.KeyEvent.VK_ESCAPE, (char)27);
-                    try {
-                        var raw = java.awt.event.KeyEvent.class.getDeclaredField("rawCode"); raw.setAccessible(true); raw.setLong(event, 27);
-                        var scan = java.awt.event.KeyEvent.class.getDeclaredField("scancode"); scan.setAccessible(true); scan.setLong(event, 1);
-                    } catch (ReflectiveOperationException error) { throw new java.util.concurrent.CompletionException(error); }
-                    browser.getCefBrowser().sendKeyEvent(event);
-                }
+                    throw new IllegalStateException("Input missed the node drag preview: "+bounds+" -> "+moved);
+                // Pinned JCEF Windows consumes AWT rawCode/scancode.
+                smokeEscapeKeys();
                 return pause(150);
             }).thenCompose(ignored -> {
                 mouse(java.awt.event.MouseEvent.MOUSE_RELEASED, x + 24, y + 24, false);
@@ -288,6 +372,7 @@ final class GraphEditor implements Disposable {
             });
         }).thenCompose(bounds -> {
             int x = (int)bounds.get("x").getAsDouble(), y = (int)bounds.get("y").getAsDouble();
+            mouse(java.awt.event.MouseEvent.MOUSE_MOVED, x, y, false);
             mouse(java.awt.event.MouseEvent.MOUSE_PRESSED, x, y, true);
             mouse(java.awt.event.MouseEvent.MOUSE_DRAGGED, x + 32, y + 32, true);
             return pause(150).thenCompose(ignored -> {
