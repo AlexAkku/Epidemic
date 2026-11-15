@@ -24,7 +24,7 @@ void Check(bool value, const char *message) {
 }
 
 template <typename T> void ErrorIs(const foundation::Result<T> &value, std::string_view code) {
-    Check(!value && value.GetError().HasCode(code), "unexpected control graph error");
+    if(value||!value.GetError().HasCode(code))throw std::runtime_error("expected "+std::string(code)+", got "+(value?"success":value.GetError().code));
 }
 
 PortDefinition Data(std::string_view name, PortDirection direction) {
@@ -396,10 +396,42 @@ void IterationValueScope() {
           "zero Repeat runs done continuation without body");
 }
 
+class ReferenceResolver final : public IReferenceResolver {
+  public:
+    mutable bool live=true;
+    foundation::Result<bool> Resolve(const GraphReference &r) const override {return foundation::Result<bool>::Success(live&&r.placement==Id("placement.a"));}
+};
+void References() {
+    auto resolver=std::make_shared<ReferenceResolver>();
+    GraphReference reference{ReferenceKind::SceneEntity,AssetId::FromString("scene"),Id("placement.a"),{}, {},{}, {}};
+    const auto check=ReferenceCheckType(kEntityReferenceType);
+    GraphDefinition graph{AssetId::FromString("refs"),"References",{
+        {Id("entry"),Id("entry.type"),"Entry",{Control("next",PortDirection::Output)}},
+        {Id("ref"),kReferenceNodeType,"Entity",{{Id("reference"),"reference",PortKind::Data,PortDirection::Output,kEntityReferenceType}},reference},
+        {Id("valid"),check,"Valid",{{Id("target"),"target",PortKind::Data,PortDirection::Input,kEntityReferenceType},Data("valid.out",PortDirection::Output)}},
+        {Id("out"),Id("output.type"),"Output",{Control("in",PortDirection::Input),Data("result",PortDirection::Input)}}
+    },{{Id("flow"),Id("next"),Id("in")},{Id("link"),Id("reference"),Id("target")},{Id("result.link"),Id("valid.out"),Id("result")}}};
+    std::vector<NodeBinding> bindings{{Id("entry.type"),Operation::Entry,{}},{kReferenceNodeType,Operation::Reference,{},resolver},{check,Operation::ReferenceValid,{}},{Id("output.type"),Operation::Output,{}}};
+    const auto program=CompileGraph(graph,bindings);Check(program.HasValue(),"typed reference compile");
+    auto instance=GraphInstance::Create(program.Value()).Value();
+    Check(instance->ReadReference(Id("reference")).Value()==reference,"IR retains stable reference payload");
+    ErrorIs(instance->ReadValue(Id("reference")),"graph.vm.value_unavailable");
+    Check(instance->Run().status==ExecutionStatus::Completed&&instance->ReadValue(Id("result")).Value()==1,"native reference resolver");
+    resolver->live=false;
+    auto missing=GraphInstance::Create(program.Value()).Value();
+    Check(missing->Run().status==ExecutionStatus::Completed&&missing->ReadValue(Id("result")).Value()==0,"missing reference is typed null");
+    auto cancelled=GraphInstance::Create(program.Value()).Value();cancelled->Cancel();ErrorIs(cancelled->ReadReference(Id("reference")),"graph.vm.cancelled");
+    graph.nodes[2].ports[0].type_id=kPrefabReferenceType;
+    ErrorIs(CompileGraph(graph,bindings),"graph.connection_type");
+    graph.nodes[2].ports[0].type_id=kEntityReferenceType;graph.nodes[1].reference->document={};
+    ErrorIs(CompileGraph(graph,bindings),"graph.invalid_reference");
+}
+
 } // namespace
 
 int main() {
     try {
+        References();
         ControlFlow();
         InvalidControl();
         EventsAndLoops();

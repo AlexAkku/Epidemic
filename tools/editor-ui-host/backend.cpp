@@ -213,6 +213,9 @@ class Backend {
     std::optional<ed::EditorDocument> graph_clipboard_;
     std::string graph_report_;
     std::uint64_t graph_report_document_ = 0, graph_report_revision_ = 0;
+    struct ReferencePreview { ed::ReferenceCandidate candidate; std::string reason; };
+    std::vector<ReferencePreview> reference_preview_;
+    std::uint64_t reference_preview_revision_ = 0;
 
     std::unique_ptr<ed::EditorWorkspace> workspace_;
     std::uint64_t generation_ =
@@ -630,7 +633,7 @@ class Backend {
     void Reset() {
         StopScripts();workspace_.reset();Require(schema_.components.RegisterDescriptions({}));
         drag_.Cancel();
-        graph_clipboard_.reset(); graph_report_.clear(); graph_report_document_=0; graph_report_revision_=0;
+        reference_preview_.clear();reference_preview_revision_=0;graph_clipboard_.reset(); graph_report_.clear(); graph_report_document_=0; graph_report_revision_=0;
         projected_source_.reset();
         scene_projections_.clear();
         thumbnails_.Clear();
@@ -771,7 +774,7 @@ class Backend {
                 for(const auto &descriptor:workspace_->Project()->Snapshot()->definition.user_schemas)for(const auto &operation:descriptor.operations)
                     if(Id::FromString(operation.id)==type){if(!preview_worker)preview_worker=std::make_shared<ed::scripts::SharedWorker>(WorkerPath(),ScriptPath(descriptor.assembly),descriptor.fingerprint,++script_generation_);bindings.push_back({type,op,std::make_shared<ed::scripts::Factory>(preview_worker,operation.id,descriptor.component.name)});managed=true;}
                 if (!managed&&used!=definition.nodes.end()) {graph_report_="ui.graph.native_preview_requires_play node="+std::to_string(used->id.Raw());return;}
-            } else bindings.push_back({type,op,{}});
+            } else bindings.push_back({type,op,{},op==g::Operation::Reference?std::make_shared<ed::graph_ui::SnapshotReferenceResolver>(workspace_->Project()->Snapshot()):nullptr});
         }
         const auto program = g::CompileGraph(definition,bindings);
         if (!program) {graph_report_=program.GetError().code+" "+program.GetError().context;return;}
@@ -901,6 +904,77 @@ class Backend {
         } else if(args[0]=="move"||args[0]=="moves") {
             const auto words=GraphWords(args[2],192);(void)workspace_->Select({document,ed::UiElement::GraphNode,Numeric(words.front())});
         }
+    }
+
+    std::string ReferenceRejection(const ed::ProjectDefinition &project, rt::AssetId document,
+                                   const rt::graph::GraphReference &reference, Id target) const {
+        namespace g=rt::graph;
+        const auto scope=ed::CheckGraphReferenceScope(project,document,reference);
+        if(!scope)return scope.GetError().code;
+        const auto description=ed::DescribeGraphReference(project,reference);
+        if(!description.available)return description.reason;
+        if(!target.IsValid())return {};
+        const auto doc=std::find_if(project.documents.begin(),project.documents.end(),[&](const auto &d){return d.id==document;});
+        if(doc==project.documents.end()||doc->Kind()!=ed::DocumentKind::Graph)return "ui.graph_document";
+        const auto &graph=std::get<g::GraphDefinition>(doc->data);
+        for(const auto &node:graph.nodes)for(const auto &port:node.ports)if(port.id==target) {
+            if(port.kind!=g::PortKind::Data||port.direction!=g::PortDirection::Input)return "graph.reference_input_required";
+            if(port.type_id!=g::ReferenceValueType(reference))return "graph.connection_type";
+            if(std::any_of(graph.connections.begin(),graph.connections.end(),[&](const auto &e){return e.input_port==target;}))return "graph.data_input_connected";
+            return {};
+        }
+        return "graph.missing_port";
+    }
+    void GraphReferenceEdit(const std::vector<std::string> &args,std::uint64_t revision) {
+        namespace g=rt::graph;
+        if(args.size()<2)throw std::runtime_error("ui.reference_arguments");
+        const auto document=Asset(Numeric(args[1]));
+        const auto snapshot=workspace_->Project()->Snapshot();
+        const auto *doc=snapshot->Find(document);
+        if(!doc||doc->Kind()!=ed::DocumentKind::Graph)throw std::runtime_error("ui.graph_document");
+        if(args[0]=="probe"&&args.size()==5) {
+            reference_preview_.clear();reference_preview_revision_=revision;
+            for(auto &candidate:ed::GraphReferenceCandidates(snapshot->definition,Asset(Numeric(args[2])),Id{Numeric(args[3])})) {
+                auto reason=ReferenceRejection(snapshot->definition,document,candidate.value,Id{Numeric(args[4])});
+                if(candidate.value.kind==g::ReferenceKind::Component)if(const auto *type=schema_.components.Find(epidemic::gameplay::TypeId{candidate.value.component.Raw()}))candidate.label="Get "+type->name+" · "+candidate.label;
+                reference_preview_.push_back({std::move(candidate),std::move(reason)});
+            }
+            return;
+        }
+        if((args[0]=="jump"||args[0]=="uses")&&args.size()==3) {
+            const auto &graph=std::get<g::GraphDefinition>(doc->data);
+            const auto found=std::find_if(graph.nodes.begin(),graph.nodes.end(),[&](const auto &n){return n.id.Raw()==Numeric(args[2]);});
+            if(found==graph.nodes.end())throw std::runtime_error("graph.invalid_reference");
+            const auto reference=found->reference;
+            if(!reference.has_value())throw std::runtime_error("graph.invalid_reference");
+            const auto &r=reference.value();
+            if(args[0]=="jump") {
+                if(!ed::DescribeGraphReference(snapshot->definition,r).available)throw std::runtime_error("editor.reference_missing");
+                const auto selection=r.kind==g::ReferenceKind::PrefabDefinition?ed::UiSelection{r.document,ed::UiElement::Document,0}:ed::UiSelection{r.document,r.placement.IsValid()?ed::UiElement::SceneNode:ed::UiElement::PrefabNode,r.placement.IsValid()?r.placement.Raw():r.entity.Raw()};
+                if(!workspace_->Select(selection))throw std::runtime_error("ui.reference_selection");
+            } else {
+                graph_report_.clear();graph_report_document_=document.Raw();graph_report_revision_=revision;
+                for(const auto &d:snapshot->definition.documents)if(const auto *other=std::get_if<g::GraphDefinition>(&d.data))
+                    for(const auto &node:other->nodes)if(node.reference==found->reference)graph_report_+=d.name+" node="+std::to_string(node.id.Raw())+"\n";
+            }
+            return;
+        }
+        if(args[0]!="drop"||args.size()!=6)throw std::runtime_error("ui.reference_arguments");
+        const auto payload=GraphWords(args[2],7);
+        if(payload.size()!=7)throw std::runtime_error("ui.reference_arguments");
+        const auto kind=Numeric(payload[0]);
+        if(kind>static_cast<unsigned>(g::ReferenceKind::Component))throw std::runtime_error("graph.invalid_reference");
+        g::GraphReference reference{static_cast<g::ReferenceKind>(kind),Asset(Numeric(payload[1])),Id{Numeric(payload[2])},Asset(Numeric(payload[3])),Id{Numeric(payload[4])},Id{Numeric(payload[5])},Id{Numeric(payload[6])}};
+        const Id target{Numeric(args[3])};
+        const auto rejection=ReferenceRejection(snapshot->definition,document,reference,target);
+        if(!rejection.empty())throw std::runtime_error(rejection);
+        const auto nonce=DocumentNonce();
+        const auto id=Id::FromString("graph.reference."+nonce),port=Id::FromString("graph.reference.port."+nonce);
+        g::NodeDefinition node{id,g::kReferenceNodeType,"Reference",{{port,"reference",g::PortKind::Data,g::PortDirection::Output,g::ReferenceValueType(reference)}},reference};
+        std::vector<ed::Command> edits{ed::AddGraphNode{document,node},ed::MoveGraphNode{document,id,Real(args[4]),Real(args[5])}};
+        if(target.IsValid())edits.push_back(ed::ConnectPorts{document,{Id::FromString("graph.reference.edge."+nonce),port,target}});
+        Require(workspace_->Execute(std::move(edits),revision));
+        (void)workspace_->Select({document,ed::UiElement::GraphNode,id.Raw()});
     }
 
     void Snapshot(Wire &out) const {
@@ -1247,7 +1321,7 @@ class Backend {
         if (folder)
             for (const auto &path : content_folders_)
                 out.Text(path);
-        out.Number<2>(3); // Graph DTO schema version, independent of IPC envelope.
+        out.Number<2>(4); // Graph DTO schema version, independent of IPC envelope.
         const auto recipes=Recipes();
         out.Number<4>(recipes.size());
         for(const auto &recipe:recipes) {
@@ -1275,6 +1349,12 @@ class Backend {
                 const auto settings=ed::graph_ui::Settings(doc,node.id.Raw());
                 out.Number<8>(std::bit_cast<std::uint64_t>(settings.preview_default));out.Text(settings.comment);out.Text(settings.group);
                 out.Number<1>((settings.bookmark ? 1u : 0u) | (settings.breakpoint ? 2u : 0u));
+                out.Number<1>(node.reference.has_value());
+                if(node.reference) {
+                    WriteReference(out,*node.reference);
+                    const auto description=ed::DescribeGraphReference(snapshot->definition,*node.reference);
+                    out.Number<1>(description.available);out.Text(description.label);out.Text(description.reason);
+                }
                 out.Number<4>(node.ports.size());
                 for (const auto &port : node.ports) {
                     out.Number<8>(port.id.Raw()); out.Text(port.name);
@@ -1287,6 +1367,14 @@ class Backend {
                 out.Number<8>(edge.id.Raw()); out.Number<8>(edge.output_port.Raw()); out.Number<8>(edge.input_port.Raw());
             }
         }
+        out.Number<4>(reference_preview_revision_==workspace_->Project()->Revision()?reference_preview_.size():0);
+        if(reference_preview_revision_==workspace_->Project()->Revision())for(const auto &reference_view:reference_preview_) {
+            WriteReference(out,reference_view.candidate.value);out.Text(reference_view.candidate.label);out.Text(reference_view.reason);
+        }
+    }
+    static void WriteReference(Wire &out,const rt::graph::GraphReference &r) {
+        out.Number<1>(static_cast<unsigned>(r.kind));out.Number<8>(r.document.Raw());out.Number<8>(r.placement.Raw());
+        out.Number<8>(r.prefab.Raw());out.Number<8>(r.entity.Raw());out.Number<8>(r.component.Raw());out.Number<8>(r.part.Raw());
     }
 
   public:
@@ -1582,6 +1670,11 @@ class Backend {
             case 36:
                 preview = AssetPreview(args);
                 break;
+            case 40:
+                CheckWrite({generation,revision});
+                if(workspace_->Session()&&workspace_->Session()->IsPlaying())throw std::runtime_error("ui.playing_readonly");
+                GraphReferenceEdit(args,revision);
+                break;
             case 39:
                 CheckWrite({generation,revision});
                 if(workspace_->Session()&&workspace_->Session()->IsPlaying())throw std::runtime_error("ui.playing_readonly");
@@ -1633,7 +1726,7 @@ class Backend {
         out.Number<8>(generation_);
         out.Text("snapshot,open,new-folder,rename-document,save,undo,redo,selection,close,clone-"
                  "folder,play,stop,create-document,scalar-inspector,discard-document,prefab-"
-                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview,content-folders,graph-authoring");
+                 "default-components,asset-pipeline,scene-hierarchy,component-authoring,scene-gestures,scene-resources,scene-systems,document-lifecycle,asset-preview,content-folders,graph-authoring,graph-scene-references");
         out.Text(error);
         if (operation == 36) {
             out.Number<4>(preview.width);

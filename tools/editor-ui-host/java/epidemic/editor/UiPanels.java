@@ -13,6 +13,8 @@ import javax.swing.tree.*;
 
 /** Shared immutable snapshot reader and persistent UI views; no editable game model. */
 public final class UiPanels {
+    private GraphSceneDragCoordinator referenceDrag;
+    public void referenceDrag(GraphSceneDragCoordinator value){referenceDrag=value;}
     private final Catalog catalog;
     private final FeatureRegistry features;
     private final Consumer<Bridge.Document> openDocument;
@@ -310,7 +312,7 @@ public final class UiPanels {
                     @Override public void keyPressed(KeyEvent e){if(e.getKeyCode()==KeyEvent.VK_ESCAPE){mouse.cancel();e.consume();}}
                 });
                 viewport.addFocusListener(new FocusAdapter(){@Override public void focusLost(FocusEvent e){mouse.cancel();}});
-                viewport.addHierarchyListener(e->{if(!viewport.isShowing())mouse.cancel();});
+                viewport.addHierarchyListener(e->{if(!viewport.isShowing()){mouse.cancel();if(referenceDrag!=null)referenceDrag.cancelFor(viewport);}});
                 viewport.addComponentListener(new ComponentAdapter(){@Override public void componentResized(ComponentEvent e){mouse.cancel();}});
                 for(int index=0;index<toolButtons.size();index++){
                     int mode=index;
@@ -361,6 +363,11 @@ public final class UiPanels {
         SceneInput(String panel,NativeViewport viewport,JCheckBox snap){this.panel=panel;this.viewport=viewport;this.snap=snap;}
         @Override public void mousePressed(MouseEvent e){
             viewport.requestFocusInWindow();
+            if(referenceDrag!=null&&e.isAltDown()&&SwingUtilities.isLeftMouseButton(e)&&canEditHierarchy()) {
+                long picked=viewport.pick(e.getX(),e.getY());
+                if(picked!=0)referenceDrag.startScene(viewport,sceneDocument(panel,snapshot),picked,e);
+                e.consume();return;
+            }
             if(SwingUtilities.isMiddleMouseButton(e)&&active==null)pan=e.getPoint();
             if(!SwingUtilities.isLeftMouseButton(e)||snapshot==null||snapshot.playing()||!interactive)return;
             long document=sceneDocument(panel,snapshot);
@@ -755,12 +762,17 @@ public final class UiPanels {
         if(!GraphicsEnvironment.isHeadless()){
             tree.setDragEnabled(true);
             tree.setDropMode(DropMode.ON_OR_INSERT);
+            final boolean[] referenceSource={false};
+            final Runnable clearReference=()->tree.setToolTipText(null);
+            tree.addMouseListener(new MouseAdapter(){@Override public void mousePressed(MouseEvent e){referenceSource[0]=e.isAltDown();}});
+            tree.addHierarchyListener(e->{if(!tree.isShowing()&&referenceDrag!=null)referenceDrag.cancelFor(tree);});
             tree.setTransferHandler(new TransferHandler(){
                 private final DataFlavor flavor=localFlavor(HierarchyEdit.class,"Scene hierarchy");
-                @Override public int getSourceActions(JComponent component){return MOVE;}
+                @Override public int getSourceActions(JComponent component){return referenceSource[0]?COPY:MOVE;}
                 @Override protected Transferable createTransferable(JComponent component){
-                    var source=hierarchyTarget(tree.getSelectionPath());
+                    var source=referenceSource[0]?UiPanels.this.referenceTarget(tree.getSelectionPath()):hierarchyTarget(tree.getSelectionPath());
                     if(!canEditHierarchy()||source==null||source.element()==0)return null;
+                    if(referenceSource[0]&&referenceDrag!=null)return referenceDrag.sceneTransfer(tree,source.document(),source.element());
                     var move=new HierarchyEdit(generation,snapshot.revision(),"parent",source.document(),source.element(),null);
                     return new Transferable(){
                         public DataFlavor[] getTransferDataFlavors(){return new DataFlavor[]{flavor};}
@@ -793,10 +805,23 @@ public final class UiPanels {
                         return new HierarchyEdit(edit.generation(),edit.revision(),"order",edit.document(),edit.node(),unsigned(target.element())+":"+unsigned(before));
                     }catch(UnsupportedFlavorException|java.io.IOException error){return null;}
                 }
-                @Override public boolean canImport(TransferSupport support){return drop(support)!=null;}
+                private Bridge.Selection referenceTarget(TransferSupport support){return support.isDrop()?UiPanels.this.referenceTarget(((JTree.DropLocation)support.getDropLocation()).getPath()):null;}
+                @Override public boolean canImport(TransferSupport support){
+                    if(referenceDrag!=null&&referenceDrag.fromGraph(support.getTransferable())) {
+                        var target=referenceTarget(support);if(target==null)return false;
+                        support.setDropAction(COPY);
+                        return referenceDrag.hoverScene(support.getTransferable(),target.document(),target.element(),(valid,reason)->tree.setToolTipText(reason),clearReference);
+                    }
+                    return drop(support)!=null;
+                }
                 @Override public boolean importData(TransferSupport support){
+                    if(referenceDrag!=null&&referenceDrag.fromGraph(support.getTransferable())) {
+                        var target=referenceTarget(support);if(target==null)return false;
+                        referenceDrag.dropScene(support.getTransferable(),target.document(),target.element(),tree);return true;
+                    }
                     var edit=drop(support);if(edit==null)return false;hierarchyCommand.accept(edit);return true;
                 }
+                @Override protected void exportDone(JComponent source,Transferable data,int action){if(referenceDrag!=null&&data!=null)referenceDrag.sourceDone(data);}
             });
         }
         return new JScrollPane(tree);
@@ -903,8 +928,23 @@ public final class UiPanels {
         });
     }
     private void installSceneDrop(String panel,NativeViewport viewport){
+        final Runnable clearReference=()->{viewport.referenceHover(0);viewport.setCursor(Cursor.getDefaultCursor());};
         new DropTarget(viewport,DnDConstants.ACTION_COPY,new DropTargetAdapter(){
+            private void hover(DropTargetDragEvent e){
+                if(referenceDrag==null||!referenceDrag.fromGraph(e.getTransferable())){e.acceptDrag(DnDConstants.ACTION_COPY);return;}
+                long picked=viewport.pick(e.getLocation().x,e.getLocation().y);
+                boolean valid=referenceDrag.hoverScene(e.getTransferable(),sceneDocument(panel,snapshot),picked,(ok,reason)->{viewport.referenceHover(ok?picked:0);viewport.setCursor(Cursor.getPredefinedCursor(ok?Cursor.CROSSHAIR_CURSOR:Cursor.DEFAULT_CURSOR));},clearReference);
+                if(valid)e.acceptDrag(DnDConstants.ACTION_COPY);else e.rejectDrag();
+            }
+            @Override public void dragEnter(DropTargetDragEvent e){hover(e);}
+            @Override public void dragOver(DropTargetDragEvent e){hover(e);}
+            @Override public void dragExit(DropTargetEvent e){viewport.referenceHover(0);viewport.setCursor(Cursor.getDefaultCursor());}
             @Override public void drop(DropTargetDropEvent event){
+                if(referenceDrag!=null&&referenceDrag.fromGraph(event.getTransferable())) {
+                    long picked=viewport.pick(event.getLocation().x,event.getLocation().y);
+                    if(picked==0){event.rejectDrop();referenceDrag.cancel();return;}
+                    event.acceptDrop(DnDConstants.ACTION_COPY);referenceDrag.dropScene(event.getTransferable(),sceneDocument(panel,snapshot),picked,viewport);event.dropComplete(true);return;
+                }
                 if(!canPlaceResource()||!event.isDataFlavorSupported(RESOURCE_FLAVOR)){event.rejectDrop();return;}
                 try {
                     event.acceptDrop(DnDConstants.ACTION_COPY);
@@ -1065,6 +1105,13 @@ public final class UiPanels {
         if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return null;
         if(node.getUserObject() instanceof Bridge.Node row&&row.kind()==1)return row.selection();
         if(node.getUserObject() instanceof DocRow row&&row.document().kind()==0)return new Bridge.Selection(0,row.document().id(),0);
+        return null;
+    }
+    private Bridge.Selection referenceTarget(TreePath path){
+        if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return null;
+        if(node.getUserObject() instanceof Bridge.Node row&&(row.kind()==1||row.kind()==2))return row.selection();
+        if(node.getUserObject() instanceof DocRow row&&row.document().kind()==1&&snapshot!=null)
+            return snapshot.nodes().stream().filter(n->n.document()==row.document().id()&&n.kind()==2&&n.parent()==0).map(Bridge.Node::selection).findFirst().orElse(null);
         return null;
     }
     private static String unsigned(long id){return Long.toUnsignedString(id);}

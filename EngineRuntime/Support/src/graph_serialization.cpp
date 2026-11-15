@@ -57,6 +57,19 @@ void WriteDefinition(const graph::GraphDefinition &definition, IArchiveWriter &w
         Need(writer.WriteUInt64("id", node.id.Raw()));
         Need(writer.WriteUInt64("type_id", node.type_id.Raw()));
         Need(writer.WriteString("name", node.name));
+        if (node.reference) {
+            const auto &r = *node.reference;
+            Need(writer.BeginObject("reference"));
+            Need(writer.WriteUInt64("version", 1));
+            Need(writer.WriteUInt64("kind", static_cast<std::uint64_t>(r.kind)));
+            Need(writer.WriteUInt64("document", r.document.Raw()));
+            Need(writer.WriteUInt64("placement", r.placement.Raw()));
+            Need(writer.WriteUInt64("prefab", r.prefab.Raw()));
+            Need(writer.WriteUInt64("entity", r.entity.Raw()));
+            Need(writer.WriteUInt64("component", r.component.Raw()));
+            Need(writer.WriteUInt64("part", r.part.Raw()));
+            Need(writer.EndObject());
+        }
         Need(writer.BeginArray("ports", node.ports.size()));
         for (std::size_t port_index = 0; port_index < node.ports.size(); ++port_index) {
             const auto &port = node.ports[port_index];
@@ -102,6 +115,24 @@ graph::GraphDefinition ReadDefinition(IArchiveReader &reader) {
         node.id = ReadId(reader, "id");
         node.type_id = ReadId(reader, "type_id");
         node.name = ReadLabel(reader);
+        const auto reference = reader.IsNull("reference");
+        if (!reference) Require(reference.GetError().code == "serialization.field_missing", "graph.reference_archive");
+        if (reference && !reference.Value()) {
+            Need(reader.BeginObject("reference"));
+            Require(Take(reader.ReadUInt64("version")) == 1, "graph.reference_version");
+            const auto kind = Take(reader.ReadUInt64("kind"));
+            Require(kind <= static_cast<std::uint64_t>(graph::ReferenceKind::Component), "graph.invalid_reference");
+            graph::GraphReference r;
+            r.kind = static_cast<graph::ReferenceKind>(kind);
+            r.document = AssetId{ReadId(reader, "document")};
+            r.placement = ReadId(reader, "placement");
+            r.prefab = AssetId{ReadId(reader, "prefab")};
+            r.entity = ReadId(reader, "entity");
+            r.component = ReadId(reader, "component");
+            r.part = ReadId(reader, "part");
+            node.reference = r;
+            Need(reader.EndObject());
+        }
         const auto port_count = Take(reader.BeginArray("ports"));
         Require(port_count <= graph::kMaxPorts - total_ports, "graph.limit_exceeded");
         total_ports += port_count;

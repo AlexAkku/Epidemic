@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,6 +21,53 @@ inline constexpr std::size_t kMaxLabelBytes = 1024;
 enum class PortKind : std::uint8_t { Data, Control, Event };
 
 enum class PortDirection : std::uint8_t { Input, Output };
+
+// Stable authoring identity only. Live handles, revisions and drag sessions never
+// enter a GraphDefinition. Component identity includes its named part.
+enum class ReferenceKind : std::uint8_t { SceneEntity, PrefabInstance, PrefabDefinition, Component };
+struct GraphReference {
+    ReferenceKind kind = ReferenceKind::SceneEntity;
+    AssetId document{};
+    ElementId placement{};
+    AssetId prefab{};
+    ElementId entity{};
+    TypeId component{};
+    ElementId part{};
+    [[nodiscard]] bool operator==(const GraphReference &) const = default;
+};
+inline constexpr TypeId kReferenceNodeType = TypeId::FromString("epidemic.graph.reference");
+inline constexpr TypeId kEntityReferenceType = TypeId::FromString("epidemic.graph.reference.entity");
+inline constexpr TypeId kInstanceReferenceType = TypeId::FromString("epidemic.graph.reference.instance");
+inline constexpr TypeId kPrefabReferenceType = TypeId::FromString("epidemic.graph.reference.prefab");
+[[nodiscard]] inline TypeId ComponentReferenceType(TypeId component) {
+    return TypeId::FromString("epidemic.graph.reference.component." + std::to_string(component.Raw()));
+}
+[[nodiscard]] inline TypeId ReferenceCheckType(TypeId value) {
+    return TypeId::FromString("epidemic.graph.reference.valid." + std::to_string(value.Raw()));
+}
+[[nodiscard]] inline TypeId ReferenceValueType(const GraphReference &reference) {
+    switch (reference.kind) {
+    case ReferenceKind::SceneEntity: return kEntityReferenceType;
+    case ReferenceKind::PrefabInstance: return kInstanceReferenceType;
+    case ReferenceKind::PrefabDefinition: return kPrefabReferenceType;
+    case ReferenceKind::Component: return ComponentReferenceType(reference.component);
+    }
+    return {};
+}
+[[nodiscard]] inline bool ValidReferenceIdentity(const GraphReference &r) {
+    if (!r.document.IsValid() || r.kind > ReferenceKind::Component) return false;
+    if (r.kind == ReferenceKind::PrefabDefinition)
+        return r.prefab == r.document && !r.placement.IsValid() && !r.entity.IsValid() && !r.component.IsValid() && !r.part.IsValid();
+    if (r.kind != ReferenceKind::Component && (r.component.IsValid() || r.part.IsValid())) return false;
+    if (r.kind == ReferenceKind::Component && !r.component.IsValid()) return false;
+    // A prefab-owned Entity/Component has no scene placement. A bare Scene node
+    // has no prefab identity. Scene instances carry all three stable IDs.
+    if (r.prefab.IsValid()) {
+        if (r.prefab == r.document && !r.placement.IsValid()) return r.entity.IsValid() && r.kind != ReferenceKind::PrefabInstance;
+        return r.placement.IsValid() && r.entity.IsValid();
+    }
+    return r.kind == ReferenceKind::SceneEntity && r.placement.IsValid() && !r.entity.IsValid();
+}
 
 struct PortDefinition {
     ElementId id{};
@@ -39,6 +87,7 @@ struct NodeDefinition {
 
     std::string name;
     std::vector<PortDefinition> ports;
+    std::optional<GraphReference> reference{};
     [[nodiscard]] bool operator==(const NodeDefinition &) const = default;
 };
 

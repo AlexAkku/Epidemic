@@ -44,12 +44,12 @@ public final class GraphTests {
         try(var b=new Bridge(executable,work,state->{},Runnable::run)){
             b.connect().get(20,TimeUnit.SECONDS);call(b,3,root.toString(),"F-II.1 native authoring");
             fragment=document(b,"Фрагмент <script>never executed</script>");
-            require(graph(b,fragment).catalogue().size()==11,"Catalogue not derived from full native schema");
+            require(graph(b,fragment).catalogue().stream().filter(t->t.operation()<=10).count()==11&&graph(b,fragment).catalogue().stream().anyMatch(t->t.name().equals("Is Entity Valid")),"Catalogue not derived from full native schema");
             var input=create(b,fragment,"Input");var add=create(b,fragment,"Add");settings(b,fragment,input,"7");
             link(b,fragment,input,"value",add,"left");
             reject(b,"graph.duplicate_connection","connect",id(fragment),port(input,"value"),port(add,"left"));
             reject(b,"graph.connection_direction","connect",id(fragment),port(input,"value"),port(add,"result"));
-            reject(b,"ui.graph_template","create",id(fragment),"11","0","0");
+            reject(b,"ui.graph_template","create",id(fragment),""+graph(b,fragment).catalogue().size(),"0","0");
             var originalEdge=graph(b,fragment).edges().getFirst();
             long reconnectRevision=b.latest().snapshot().revision();
             reject(b,"graph.connection_direction","reconnect",id(fragment),id(originalEdge.id()),port(input,"value"),port(add,"result"));

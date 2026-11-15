@@ -45,6 +45,10 @@ foundation::Result<void> ValidateGraph(const GraphDefinition &definition,
     };
 
     for (const auto &node : definition.nodes) {
+        if (node.reference && (!ValidReferenceIdentity(*node.reference) || node.type_id != kReferenceNodeType))
+            return Failure("graph.invalid_reference");
+        if (node.type_id == kReferenceNodeType && !node.reference)
+            return Failure("graph.invalid_reference");
         if (auto added = add_id(node.id); !added)
             return added;
         if (!node.type_id.IsValid() || !types.contains(node.type_id))

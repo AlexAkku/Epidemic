@@ -24,7 +24,17 @@ enum class Operation : std::uint8_t {
     Sequence,
     Branch,
     EventEntry,
-    Repeat
+    Repeat,
+    Reference,
+    ReferenceValid
+};
+
+// Resolution stays in the native host's scope. The VM never converts a reference
+// to an i64 or caches a volatile entity handle across a yield/Stop.
+class IReferenceResolver {
+  public:
+    virtual ~IReferenceResolver() = default;
+    [[nodiscard]] virtual foundation::Result<bool> Resolve(const GraphReference &reference) const = 0;
 };
 
 class INativeInvocation {
@@ -46,6 +56,7 @@ struct NodeBinding {
 
     Operation operation = Operation::Input;
     std::shared_ptr<const INativeCallableFactory> native;
+    std::shared_ptr<const IReferenceResolver> references{};
 };
 
 struct Instruction {
@@ -93,12 +104,17 @@ class CompiledGraph final {
         ElementId node;
         std::shared_ptr<const INativeCallableFactory> factory;
     };
+    struct ReferenceSite {
+        GraphReference value;
+        std::shared_ptr<const IReferenceResolver> resolver;
+    };
 
     AssetId asset_{};
 
     std::vector<Instruction> instructions_;
     std::vector<Slot> slots_;
     std::vector<NativeSite> native_sites_;
+    std::vector<ReferenceSite> references_;
     std::shared_ptr<const detail::FlowProgram> flow_;
     friend foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &,
                                                              std::span<const NodeBinding>);

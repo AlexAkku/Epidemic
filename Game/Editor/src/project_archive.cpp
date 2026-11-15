@@ -314,6 +314,11 @@ void Scene(IO &io, composition::SceneCompositionDefinition &scene) {
 
 std::vector<runtime::graph::TypeId> Types(const ProjectSchema &schema) {
     std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type};
+    types.push_back(runtime::graph::kReferenceNodeType);
+    for (const auto &reference : ReferenceTypes(schema)) {
+        types.push_back(reference.type);
+        types.push_back(runtime::graph::ReferenceCheckType(reference.type));
+    }
 
     for (const auto &[type, ignored] : schema.operations) {
         (void)ignored;
@@ -368,6 +373,11 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
     auto graph_types=Types(schema);
     for(const auto &type:project.definition.user_schemas)for(const auto &op:type.operations)
         graph_types.push_back(runtime::graph::TypeId::FromString(op.id));
+    for(const auto &type:project.definition.user_schemas) {
+        const auto reference=runtime::graph::ComponentReferenceType(runtime::graph::TypeId::FromString(type.component.name));
+        graph_types.push_back(reference);
+        graph_types.push_back(runtime::graph::ReferenceCheckType(reference));
+    }
     runtime::GraphDefinitionSerializer graph_codec{graph_types};
 
     io.Array("documents", project.definition.documents, 64, [&](auto &doc) {

@@ -65,3 +65,7 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 ## E. F-II.2: реализованный профиль
 
 Реальный Platform Editor/VFS без собственного Swing text editor; native described registry и project schema v1; Graph DTO v3, worker RPC v2 поверх managed ABI v1. Один worker на Play, scope/field/type/generation validation, Job Object/timeout, native live field authority. Выполнение сохранённого поколения при непроверенных/изменённых источниках явно обозначается. SDK и Rider внешние; user/project editor choices machine-local. Offline LSP fallback выбран по §5.3 спецификации: LSP candidate не включён до собственной квалификации. Schema v1 отвергает несовместимые поля/defaults; операции i64→i64. [Отчёт](FII2_SCHEMA_CODESPACE.md), [ручной gate](FII2_MANUAL_QA.md). F-II.3 требует отдельного typed-reference контракта и настоящего cross-HWND DnD; i64 токены нельзя выдавать за готовую реализацию ссылок.
+
+## F-II.3 — текущий implementation batch
+
+Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.

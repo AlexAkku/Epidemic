@@ -2,6 +2,7 @@
 #include "graph_flow.h"
 
 #include <exception>
+#include <algorithm>
 #include <limits>
 
 namespace epidemic::runtime::graph {
@@ -173,6 +174,26 @@ foundation::Result<std::int64_t> GraphInstance::ReadValue(ElementId port) const 
     return foundation::Result<std::int64_t>::Failure(Error("graph.vm.unknown_port"));
 }
 
+foundation::Result<GraphReference> GraphInstance::ReadReference(ElementId port) const {
+    if (cancelled_) return foundation::Result<GraphReference>::Failure(Error("graph.vm.cancelled"));
+    for (const auto &slot : program_->slots_) if (slot.port == port) {
+        const auto found = std::find_if(program_->instructions_.begin(), program_->instructions_.end(), [&](const auto &i) { return i.destination == slot.index; });
+        if (found != program_->instructions_.end() && found->operation == Operation::Reference)
+            return foundation::Result<GraphReference>::Success(program_->references_.at(found->callable).value);
+    }
+    return foundation::Result<GraphReference>::Failure(Error("graph.vm.not_reference"));
+}
+
+foundation::Result<bool> GraphInstance::ResolveReference(std::uint32_t instruction) const {
+    if (cancelled_) return foundation::Result<bool>::Failure(Error("graph.vm.cancelled"));
+    const auto &step = program_->instructions_.at(instruction);
+    if (step.operation != Operation::Reference) return foundation::Result<bool>::Failure(Error("graph.vm.not_reference"));
+    const auto &site = program_->references_.at(step.callable);
+    if (!site.resolver) return foundation::Result<bool>::Failure(Error("graph.reference.resolver_required"));
+    try { return site.resolver->Resolve(site.value); }
+    catch (...) { return foundation::Result<bool>::Failure(Error("graph.reference.resolver_exception")); }
+}
+
 foundation::Result<void> GraphInstance::ResumeWait() {
     if (running_ || cancelled_ || failure_ || !wait_)
         return foundation::Result<void>::Failure(Error("graph.vm.invalid_wait_resume"));
@@ -316,6 +337,8 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
             case Operation::EventEntry:
             case Operation::Repeat:
             case Operation::Branch:
+            case Operation::Reference:
+            case Operation::ReferenceValid:
                 return fail(Error("graph.vm.invalid_instruction"));
             }
 

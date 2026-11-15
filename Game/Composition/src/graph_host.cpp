@@ -60,6 +60,21 @@ class Factory final : public runtime::graph::INativeCallableFactory {
     DomainOperation invoke_;
 };
 
+class ReferenceResolver final : public runtime::graph::IReferenceResolver {
+  public:
+    ReferenceResolver(std::weak_ptr<GraphScope> scope, gameplay::runtime_bridge::RuntimeBridgeService &bridge,
+                      decltype(NodeBinding::references) resolve) : scope_(std::move(scope)),bridge_(bridge),resolve_(std::move(resolve)) {}
+    foundation::Result<bool> Resolve(const runtime::graph::GraphReference &value) const override {
+        const auto scope=scope_.lock();
+        if(!scope||!scope->IsAlive())return foundation::Result<bool>::Failure(Expired());
+        return resolve_({*scope,bridge_},value);
+    }
+  private:
+    std::weak_ptr<GraphScope> scope_;
+    gameplay::runtime_bridge::RuntimeBridgeService &bridge_;
+    decltype(NodeBinding::references) resolve_;
+};
+
 foundation::Result<runtime::graph::CompiledGraphPtr> CompileDefinition(
     const std::weak_ptr<GraphScope> &scope, gameplay::runtime_bridge::RuntimeBridgeService &bridge,
     const runtime::graph::GraphDefinition &definition, std::span<const NodeBinding> bindings) {
@@ -72,7 +87,8 @@ foundation::Result<runtime::graph::CompiledGraphPtr> CompileDefinition(
                                           "only native operations have callbacks"));
         native.push_back(
             {binding.type, binding.operation,
-             binding.invoke ? std::make_shared<Factory>(scope, bridge, binding.invoke) : nullptr});
+             binding.invoke ? std::make_shared<Factory>(scope, bridge, binding.invoke) : nullptr,
+             binding.references ? std::make_shared<ReferenceResolver>(scope,bridge,binding.references) : nullptr});
     }
 
     return runtime::graph::CompileGraph(definition, native);

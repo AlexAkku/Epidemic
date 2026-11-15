@@ -30,6 +30,10 @@ final class GraphEditor implements Disposable {
     private final Bridge.DocumentKey key;
     private final Supplier<Bridge.Reply> latest;
     private final Commands commands;
+    private final epidemic.editor.GraphSceneDragCoordinator referenceDrag;
+    private java.awt.dnd.DropTarget referenceDrop;
+    private CompletableFuture<epidemic.editor.GraphSceneDragCoordinator.GraphHit> referenceHit;
+    private boolean referenceAllowed;
     private final JPanel component = new JPanel(new BorderLayout());
     private JBCefBrowser browser;
     private JBCefJSQuery query;
@@ -45,8 +49,8 @@ final class GraphEditor implements Disposable {
     private CompletableFuture<String> smokeReport;
     private final CompletableFuture<Void> readiness = new CompletableFuture<>();
 
-    GraphEditor(Bridge.DocumentKey key, Supplier<Bridge.Reply> latest, Commands commands) {
-        this.key = key; this.latest = latest; this.commands = commands;
+    GraphEditor(Bridge.DocumentKey key, Supplier<Bridge.Reply> latest, Commands commands,epidemic.editor.GraphSceneDragCoordinator referenceDrag) {
+        this.key = key; this.latest = latest; this.commands = commands;this.referenceDrag=referenceDrag;
         try {
             if (!JBCefApp.isSupported()) throw new IllegalStateException("JBR with JCEF is required");
             if (!epidemic.launcher.NativeLauncher.available())
@@ -115,6 +119,25 @@ final class GraphEditor implements Disposable {
             }
             html = html.replace("%HASH%",sha).replace("%STYLE%",style).replace("%SCRIPT%",script);
             component.add(browser.getComponent());
+            final Runnable clearReference=()->{referenceAllowed=false;referenceFeedback("");};
+            referenceDrop=new java.awt.dnd.DropTarget(browser.getCefBrowser().getUIComponent(),java.awt.dnd.DnDConstants.ACTION_COPY,new java.awt.dnd.DropTargetAdapter(){
+                @Override public void dragEnter(java.awt.dnd.DropTargetDragEvent e){dragOver(e);}
+                @Override public void dragOver(java.awt.dnd.DropTargetDragEvent e){
+                    if(!referenceDrag.fromScene(e.getTransferable())){e.rejectDrag();return;}
+                    if(referenceHit==null||referenceHit.isDone()) {
+                        var transfer=e.getTransferable();
+                        referenceHit(e.getLocation()).thenAccept(hit->referenceDrag.hoverGraph(transfer,hit,(valid,reason)->{referenceAllowed=valid;referenceFeedback(reason);},clearReference));
+                    }
+                    if(referenceAllowed)e.acceptDrag(java.awt.dnd.DnDConstants.ACTION_COPY);else e.rejectDrag();
+                }
+                @Override public void dragExit(java.awt.dnd.DropTargetEvent e){referenceAllowed=false;referenceFeedback("");}
+                @Override public void drop(java.awt.dnd.DropTargetDropEvent e){
+                    if(!referenceDrag.fromScene(e.getTransferable())){e.rejectDrop();return;}
+                    e.acceptDrop(java.awt.dnd.DnDConstants.ACTION_COPY);
+                    referenceDrag.dropGraph(e.getTransferable(),referenceHit(e.getLocation()),browser.getCefBrowser().getUIComponent());
+                    e.dropComplete(true);referenceFeedback("");
+                }
+            });
             browser.loadHTML(html, origin);
             timer = new javax.swing.Timer(300, event -> refresh());
             timer.start();
@@ -124,6 +147,16 @@ final class GraphEditor implements Disposable {
         }
     }
     JComponent component() { return component; }
+    private void referenceFeedback(String value) {
+        if(!disposed&&browser!=null&&!browser.isDisposed())browser.getCefBrowser().executeJavaScript("window.graphReferenceFeedback?.("+JSON.toJson(value)+");",origin,0);
+    }
+    private CompletableFuture<epidemic.editor.GraphSceneDragCoordinator.GraphHit> referenceHit(java.awt.Point point) {
+        if(referenceHit!=null&&!referenceHit.isDone())referenceHit.completeExceptionally(new java.util.concurrent.CancellationException());
+        referenceHit=new CompletableFuture<>();
+        var ui=browser.getCefBrowser().getUIComponent();
+        browser.getCefBrowser().executeJavaScript("window.graphReferenceHit("+point.x+","+point.y+","+ui.getWidth()+","+ui.getHeight()+");",origin,0);
+        return referenceHit.orTimeout(3,java.util.concurrent.TimeUnit.SECONDS);
+    }
     JComponent preferredFocus() { return browser == null || browser.isDisposed() ? component : browser.getComponent(); }
     Bridge.DocumentKey identity() { return key; }
     private long currentRevision(){var reply=latest.get();return reply==null||reply.snapshot()==null?-1:reply.snapshot().revision();}
@@ -160,6 +193,20 @@ final class GraphEditor implements Disposable {
             if (reply.snapshot().playing()) throw new IllegalArgumentException("ui.playing_readonly");
             String action = message.get("action").getAsString();
             var values = message.getAsJsonArray("args");
+            if(action.equals("reference-hit")) {
+                if(referenceHit==null||referenceHit.isDone()||values.size()!=3)throw new IllegalArgumentException("ui.reference_session");
+                long port=Long.parseUnsignedLong(values.get(0).getAsString());
+                double x=Double.parseDouble(values.get(1).getAsString()),y=Double.parseDouble(values.get(2).getAsString());
+                if(!Double.isFinite(x)||!Double.isFinite(y)||Math.abs(x)>1000000||Math.abs(y)>1000000)throw new IllegalArgumentException("ui.reference_position");
+                referenceHit.complete(new epidemic.editor.GraphSceneDragCoordinator.GraphHit(key.id(),port,x,y));return;
+            }
+            if(action.equals("reference-start")) {
+                if(values.size()!=3)throw new IllegalArgumentException("ui.reference_arguments");
+                long port=Long.parseUnsignedLong(values.get(0).getAsString());
+                var graph=reply.snapshot().graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow();
+                var node=graph.nodes().stream().filter(n->n.ports().stream().anyMatch(p->p.id()==port&&p.kind()==0&&p.direction()==0)).findFirst().orElseThrow();
+                referenceDrag.startGraph(browser.getCefBrowser().getUIComponent(),new epidemic.editor.GraphSceneDragCoordinator.GraphHit(key.id(),port,node.x()-260,node.y()));return;
+            }
             int expected = switch (action) { case "create", "move", "reconnect" -> 3; case "connect" -> 2;
                 case "delete", "disconnect", "moves", "deletebulk", "copy", "duplicate", "select" -> 1;
                 case "paste", "group" -> 2; case "settings" -> 6;
@@ -221,6 +268,8 @@ final class GraphEditor implements Disposable {
                 p.addProperty("name", port.name()); p.addProperty("kind", port.kind()); p.addProperty("direction", port.direction());
                 p.addProperty("type", Long.toUnsignedString(port.type())); ports.add(p);
             }
+            n.addProperty("reference",node.reference()!=null);n.addProperty("referenceAvailable",node.referenceAvailable());
+            n.addProperty("referenceLabel",node.referenceLabel());n.addProperty("referenceReason",node.referenceReason());
             n.add("ports", ports); nodes.add(n);
         }
         for (var edge : graph.edges()) {
@@ -385,9 +434,21 @@ final class GraphEditor implements Disposable {
         });
     }
     void source(java.util.function.Consumer<String> callback) { browser.getCefBrowser().getSource(callback::accept); }
+    CompletableFuture<epidemic.editor.GraphSceneDragCoordinator.GraphHit> smokeReferenceHit(long port) {
+        return smokeSocket(Long.toUnsignedString(port)).thenCompose(bounds->referenceHit(new java.awt.Point((int)bounds.get("x").getAsDouble(),(int)bounds.get("y").getAsDouble())));
+    }
+    CompletableFuture<String> smokeReferenceReport() {
+        if(!Boolean.getBoolean("epidemic.ui.platform.smoke"))throw new IllegalStateException("Qualification only");
+        smokeReport=new CompletableFuture<>();
+        browser.getCefBrowser().executeJavaScript("window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({missing:document.body.textContent.includes('Missing Reference'),nodes:document.querySelectorAll('[data-testid=node]').length})}));",origin,0);
+        return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS);
+    }
     boolean released() { return browser != null && browser.isDisposed() && query.isDisposed(); }
     @Override public void dispose() {
         disposed = true;
+        referenceDrag.cancel();
+        if(referenceDrop!=null)referenceDrop.setComponent(null);
+        if(referenceHit!=null)referenceHit.completeExceptionally(new java.util.concurrent.CancellationException("Graph closed"));
         readiness.completeExceptionally(new java.util.concurrent.CancellationException("Graph FileEditor closed"));
         if (timer != null) timer.stop();
         // Disposer releases the query and browser children on tab/window close.

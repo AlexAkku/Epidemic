@@ -33,3 +33,7 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 Реализован scalar/unary authoring profile от `451ba62`: native persisted schema, C# build/registration/invocation, один generation worker, real Code Space и external-editor workflow. Полный CTest 161/161, IPC/catalog и managed ABI PASS. Реальный production SDK pipeline и close/reopen Editor проверены standalone smoke; обнаруженная owner race исправлена без удаления теста. Новые static diagnostics исправлены; общий анализ сохраняет прежние предупреждения. [Подробности](FII2_SCHEMA_CODESPACE.md).
 
 **F-II.2 manual acceptance NOT RUN. Gate не объявлен PASS по одним автоматическим тестам.** По последнему указанию владельца разработка продолжается до F-II.3 без промежуточной остановки; это не заменяет визуальную приёмку. [Инструкция F-II.2](FII2_MANUAL_QA.md).
+
+## F-II.3 — текущий implementation batch
+
+Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.

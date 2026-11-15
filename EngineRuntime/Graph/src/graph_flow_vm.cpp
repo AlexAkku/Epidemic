@@ -130,7 +130,11 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
         }
 
         if (work.kind == Kind::Evaluate) {
-            if (step.operation == Operation::Add || step.operation == Operation::Multiply) {
+            if (step.operation == Operation::Reference) {
+                work_.pop_back();
+                continue;
+            }
+            if (step.operation == Operation::Add || step.operation == Operation::Multiply || step.operation == Operation::ReferenceValid) {
                 if (cache_[work.node] == epoch_) {
                     work_.pop_back();
                     continue;
@@ -149,6 +153,14 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
         }
 
         if (work.kind == Kind::Finish) {
+            if (step.operation == Operation::ReferenceValid) {
+                const auto resolved = owner_.ResolveReference(node.data[0]);
+                if (!resolved) return Fail(resolved.GetError(), report);
+                values[work.node] = resolved.Value() ? 1 : 0;
+                cache_[work.node] = epoch_;
+                work_.pop_back();
+                continue;
+            }
             const auto &a = values[node.data[0]];
             const auto &b = values[node.data[1]];
             if (!a || !b)

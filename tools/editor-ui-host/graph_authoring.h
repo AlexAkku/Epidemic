@@ -24,6 +24,8 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
             case g::Operation::Sequence: return "Sequence";
             case g::Operation::Branch: return "Branch";
             case g::Operation::Repeat: return "Repeat";
+            case g::Operation::Reference:
+            case g::Operation::ReferenceValid: return {};
             }
             return {};
         }();
@@ -55,8 +57,24 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
         if (op == g::Operation::Repeat) { port("body",K::Control,D::Output); port("done",K::Control,D::Output); }
         result.push_back(std::move(r));
     }
+    for(const auto &reference:ReferenceTypes(schema)) {
+        const auto type=g::ReferenceCheckType(reference.type);
+        Recipe r{"Is "+reference.name+" Valid","References",g::Operation::ReferenceValid,{{},type,"Is "+reference.name+" Valid",{}}};
+        r.node.ports={{foundation::StringId::FromString(std::to_string(type.Raw())+".reference"),"reference",g::PortKind::Data,g::PortDirection::Input,reference.type},
+                     {foundation::StringId::FromString(std::to_string(type.Raw())+".valid"),"valid",g::PortKind::Data,g::PortDirection::Output,g::kI64Type}};
+        result.push_back(std::move(r));
+    }
     return result;
 }
+class SnapshotReferenceResolver final : public g::IReferenceResolver {
+  public:
+    explicit SnapshotReferenceResolver(std::shared_ptr<const ProjectSnapshot> snapshot):snapshot_(std::move(snapshot)){}
+    foundation::Result<bool> Resolve(const g::GraphReference &r) const override {
+        return foundation::Result<bool>::Success(DescribeGraphReference(snapshot_->definition,r).available);
+    }
+  private:
+    std::shared_ptr<const ProjectSnapshot> snapshot_;
+};
 inline std::vector<Recipe> Catalogue(const ProjectSchema &schema,const ProjectDefinition &project) {
     auto result=Catalogue(schema);
     for(const auto &type:project.user_schemas)for(const auto &op:type.operations) {

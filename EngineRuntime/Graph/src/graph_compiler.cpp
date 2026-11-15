@@ -47,6 +47,8 @@ Shape Expected(Operation operation) {
     case Operation::EventEntry:
     case Operation::Repeat:
     case Operation::Branch:
+    case Operation::Reference:
+    case Operation::ReferenceValid:
         return {0, 0}; // Unused catalog bindings are valid in a data-only graph.
 
     }

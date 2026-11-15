@@ -93,8 +93,23 @@ struct ProjectSchema {
     comp::ComponentRegistry *user_components = nullptr;
 };
 
+struct ReferenceTypeInfo { runtime::graph::TypeId type; std::string name; };
+inline auto ReferenceTypes(const ProjectSchema &schema) {
+    namespace g = runtime::graph;
+    std::vector<ReferenceTypeInfo> types{{g::kEntityReferenceType,"Entity"},{g::kInstanceReferenceType,"Prefab Instance"},{g::kPrefabReferenceType,"Prefab Definition"}};
+    for (const auto &component : schema.components.Types()) types.push_back({g::ComponentReferenceType(g::TypeId{component.id.Raw()}),component.name});
+    return types;
+}
+struct ReferenceDescription { bool available = false; std::string label, reason; };
+struct ReferenceCandidate { runtime::graph::GraphReference value; std::string label; };
+[[nodiscard]] std::vector<ReferenceCandidate> GraphReferenceCandidates(const ProjectDefinition &, runtime::AssetId document, runtime::graph::ElementId element);
+[[nodiscard]] ReferenceDescription DescribeGraphReference(const ProjectDefinition &, const runtime::graph::GraphReference &);
+[[nodiscard]] foundation::Result<void> CheckGraphReferenceScope(const ProjectDefinition &, runtime::AssetId graph, const runtime::graph::GraphReference &);
+
 inline auto EffectiveOperations(const ProjectDefinition &project, const ProjectSchema &schema) {
     auto operations = schema.operations;
+    operations.emplace_back(runtime::graph::kReferenceNodeType,runtime::graph::Operation::Reference);
+    for (const auto &reference : ReferenceTypes(schema)) operations.emplace_back(runtime::graph::ReferenceCheckType(reference.type),runtime::graph::Operation::ReferenceValid);
     for (const auto &type : project.user_schemas)
         for (const auto &op : type.operations)
             operations.emplace_back(runtime::graph::TypeId::FromString(op.id),runtime::graph::Operation::NativeCall);

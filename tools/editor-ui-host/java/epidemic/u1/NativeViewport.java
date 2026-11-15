@@ -39,6 +39,8 @@ public final class NativeViewport extends Canvas {
         return scenePointer(surface,x/getWidth(),y/getHeight());
     }
     public long pick(double x,double y){return input(0,x,y,0);}
+    private long referenceHover;
+    public void referenceHover(long entity){edt();referenceHover=entity;appliedSelection=-1;}
     public void pan(double x,double y){input(1,x,y,0);}
     public void zoom(double x,double y,double steps){input(2,x,y,steps);}
     public void fit(){input(3,0,0,0);}
@@ -102,7 +104,7 @@ public final class NativeViewport extends Canvas {
                 bounds[at]=item.left();bounds[at+1]=item.top();bounds[at+2]=item.right();
                 bounds[at+3]=item.bottom();bounds[at+4]=item.x();bounds[at+5]=item.y();bounds[at+6]=item.rotation();
             }
-            if(!sceneItems(surface,document,selected,ids,bounds))throw new IllegalStateException("Native Scene bounds rejected");
+            if(!sceneItems(surface,document,referenceHover!=0?referenceHover:selected,ids,bounds))throw new IllegalStateException("Native Scene bounds rejected");
             itemsSurface=surface;appliedDocument=document;appliedSelection=selected;appliedItems=items;appliedTool=-1;
             sceneInput(surface,5,0,0,grid?1:0);
         }

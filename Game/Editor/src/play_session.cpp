@@ -71,6 +71,7 @@ void Archetypes(const comp::PrefabNode &node, const ProjectSchema &schema,
 }
 
 struct PlayRuntime {
+    std::shared_ptr<const int> reference_lifetime = std::make_shared<const int>(0);
     std::shared_ptr<const ProjectSnapshot> source;
     std::unique_ptr<ImageResourceLoader> image_loader;
     runtime::ResourceServices images;
@@ -94,6 +95,30 @@ struct PlayRuntime {
     std::unordered_map<runtime::SceneNodeId, std::shared_ptr<const comp::PrefabInstance>> instances;
     std::vector<std::unique_ptr<comp::SystemInstance>> systems;
 
+    foundation::Result<bool> Resolve(const composition::OperationContext &operation_context, const runtime::graph::GraphReference &r) const {
+        using Result=foundation::Result<bool>;
+        if(!DescribeGraphReference(source->definition,r).available)return Result::Success(false);
+        if(r.kind==runtime::graph::ReferenceKind::PrefabDefinition)return Result::Success(true);
+        const comp::PrefabInstance *instance=nullptr;
+        if(r.document==r.prefab) {
+            for(const auto &[placement,value]:instances) {
+                (void)placement;
+                if(value->Definition()->id!=r.prefab.value)continue;
+                for(const auto &object:value->Objects())if(object.scope->SameTarget(operation_context.scope))instance=value.get();
+            }
+            if(!instance)return Result::Failure(Error("editor.reference_scope"));
+        } else {
+            if(r.document!=source->definition.entry_scene)return Result::Failure(Error("editor.reference_scope"));
+            if(!r.prefab.IsValid())return Result::Success(scene.nodes.contains(runtime::SceneNodeId{r.placement.Raw()}));
+            const auto at=instances.find(runtime::SceneNodeId{r.placement.Raw()});
+            if(at!=instances.end()&&at->second->Definition()->id==r.prefab.value)instance=at->second.get();
+        }
+        const auto *object=instance?instance->Find(r.entity):nullptr;
+        if(!object||!object->scope->IsPresent())return Result::Success(false);
+        if(r.kind==runtime::graph::ReferenceKind::Component)return Result::Success(components.Find(object->entity,gameplay::TypeId{r.component.Raw()},gameplay::entities::EntityPartId{r.part.Raw()}).has_value());
+        return Result::Success(true);
+    }
+
     explicit PlayRuntime(
         const ProjectSchema &schema,
         std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> representation)
@@ -104,6 +129,7 @@ struct PlayRuntime {
     }
 
     ~PlayRuntime() {
+        reference_lifetime.reset();
         if (images.manager)
             for (const auto &lease : image_leases)
                 (void)images.manager->Release(lease);
@@ -223,6 +249,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             (void)operation;
             known_types.push_back(type);
         }
+        for(const auto &reference:ReferenceTypes(schema))known_types.push_back(reference.type);
 
         auto session = std::unique_ptr<PlaySession>(
             new PlaySession(std::make_unique<Impl>(schema, std::move(options.backend))));
@@ -239,6 +266,18 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
         for (const auto &doc : state.source->definition.documents)
             if (const auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc.data)) {
                 auto bindings = options.bindings(state.context, doc.id);
+                const auto weak=std::weak_ptr<const int>(state.reference_lifetime);
+                auto *runtime=&state;
+                for(const auto &[type,operation]:EffectiveOperations(state.source->definition,schema)) {
+                    if(operation!=runtime::graph::Operation::Reference&&operation!=runtime::graph::Operation::ReferenceValid)continue;
+                    composition::NodeBinding binding{type,operation,{}};
+                    if(operation==runtime::graph::Operation::Reference)binding.references=[weak,runtime](const auto &context,const auto &value) {
+                        if(weak.expired())return foundation::Result<bool>::Failure(Error("editor.play_inactive_or_busy"));
+                        return runtime->Resolve(context,value);
+                    };
+                    std::erase_if(bindings,[&](const auto &b){return b.type==type;});
+                    bindings.push_back(std::move(binding));
+                }
                 const auto effective=EffectiveOperations(state.source->definition,schema);
                 for (const auto &binding : bindings) {
                     const auto expected =

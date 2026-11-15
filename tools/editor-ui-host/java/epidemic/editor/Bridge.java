@@ -48,9 +48,13 @@ public final class Bridge implements AutoCloseable {
     public record SceneItem(long document,long id,double left,double top,double right,double bottom,double x,double y,double rotation) {}
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
     public record GraphPort(long id, String name, int kind, int direction, long type) {}
-    public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports, long previewDefault, String comment, String group, int markers) {
+    public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports, long previewDefault, String comment, String group, int markers,GraphReference reference,boolean referenceAvailable,String referenceLabel,String referenceReason) {
         public GraphNode { ports = List.copyOf(ports); }
     }
+    public record GraphReference(int kind,long document,long placement,long prefab,long entity,long component,long part) {
+        public String[] arguments(){return new String[]{""+kind,Long.toUnsignedString(document),Long.toUnsignedString(placement),Long.toUnsignedString(prefab),Long.toUnsignedString(entity),Long.toUnsignedString(component),Long.toUnsignedString(part)};}
+    }
+    public record ReferenceCandidate(GraphReference value,String label,String reason) {}
     public record GraphEdge(long id, long output, long input) {}
     public record GraphTemplate(String name,String category,long type,int operation,String source,int line) {
         public GraphTemplate(String name,String category,long type,int operation){this(name,category,type,operation,"",1);}
@@ -60,12 +64,12 @@ public final class Bridge implements AutoCloseable {
     }
     public record Snapshot(long revision, long assetRevision, long selectionRevision, int flags,
         int storage, long project, long entry, String path, String title, Selection selection,
-        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState,List<ComponentType> componentTypes,List<SceneItem> sceneItems,List<SystemItem> systems,List<String> contentFolders,List<Graph> graphs) {
+        List<Document> documents, List<Node> nodes, List<Asset> assets, List<Field> fields,AssetState assetState,List<ComponentType> componentTypes,List<SceneItem> sceneItems,List<SystemItem> systems,List<String> contentFolders,List<Graph> graphs,List<ReferenceCandidate> referenceCandidates) {
         public Snapshot {
             documents = List.copyOf(documents); nodes = List.copyOf(nodes); assets = List.copyOf(assets);
-            fields=List.copyOf(fields); contentFolders=List.copyOf(contentFolders); graphs=List.copyOf(graphs);
+            fields=List.copyOf(fields); contentFolders=List.copyOf(contentFolders); graphs=List.copyOf(graphs);referenceCandidates=List.copyOf(referenceCandidates);
         }
-        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty(),List.of(),List.of(),List.of(),List.of(),List.of());}
+        public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets,List<Field> fields){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,fields,AssetState.empty(),List.of(),List.of(),List.of(),List.of(),List.of(),List.of());}
         public Snapshot(long revision,long assetRevision,long selectionRevision,int flags,int storage,long project,long entry,String path,String title,Selection selection,List<Document> documents,List<Node> nodes,List<Asset> assets){this(revision,assetRevision,selectionRevision,flags,storage,project,entry,path,title,selection,documents,nodes,assets,List.of());}
         public boolean dirty() { return (flags & 1) != 0; }
         public boolean canUndo() { return (flags & 2) != 0; }
@@ -317,7 +321,7 @@ public final class Bridge implements AutoCloseable {
                 for(int n=count(in);n>0;--n)folders.add(text(in));
             List<Graph> graphs = new ArrayList<>();
             if (capabilities.contains("graph-authoring")) {
-                if (in.readUnsignedShort() != 3) throw new IOException("ui.graph_dto_version");
+                if (in.readUnsignedShort() != 4) throw new IOException("ui.graph_dto_version");
                 List<GraphTemplate> catalogue = new ArrayList<>();
                 for(int t=count(in);t>0;--t) catalogue.add(new GraphTemplate(text(in),text(in),in.readLong(),in.readUnsignedByte(),text(in),in.readInt()));
                 catalogue=List.copyOf(catalogue);
@@ -332,6 +336,8 @@ public final class Bridge implements AutoCloseable {
                             throw new IOException("ui.graph_position");
                         long previewDefault=in.readLong(); String comment=text(in), group=text(in);int markers=in.readUnsignedByte();
                         if(markers>3||comment.length()>1024||group.length()>128)throw new IOException("ui.graph_metadata");
+                        GraphReference reference=null;boolean referenceAvailable=false;String referenceLabel="",referenceReason="";
+                        if(in.readBoolean()){reference=reference(in);referenceAvailable=in.readBoolean();referenceLabel=text(in);referenceReason=text(in);}
                         List<GraphPort> ports = new ArrayList<>();
                         for (int p = count(in); p > 0; --p) {
                             long port = in.readLong(); String label = text(in);
@@ -340,7 +346,7 @@ public final class Bridge implements AutoCloseable {
                             if (kind > 2 || direction > 1) throw new IOException("ui.graph_port");
                             ports.add(new GraphPort(port, label, kind, direction, portType));
                         }
-                        graphNodes.add(new GraphNode(graphNodeId, type, name, x, y, ports,previewDefault,comment,group,markers));
+                        graphNodes.add(new GraphNode(graphNodeId, type, name, x, y, ports,previewDefault,comment,group,markers,reference,referenceAvailable,referenceLabel,referenceReason));
                     }
                     List<GraphEdge> edges = new ArrayList<>();
                     for (int e = count(in); e > 0; --e)
@@ -348,11 +354,17 @@ public final class Bridge implements AutoCloseable {
                     graphs.add(new Graph(document, graphNodes, edges,catalogue,graphReport));
                 }
             }
+            List<ReferenceCandidate> referenceCandidates=new ArrayList<>();
+            if(capabilities.contains("graph-scene-references"))for(int n=count(in);n>0;--n)referenceCandidates.add(new ReferenceCandidate(reference(in),text(in),text(in)));
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,
-                                    title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems),folders,graphs);
+                                    title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems),folders,graphs,referenceCandidates);
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
         return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start, null);
+    }
+    private static GraphReference reference(DataInputStream in)throws IOException {
+        int kind=in.readUnsignedByte();if(kind>3)throw new IOException("ui.reference_kind");
+        return new GraphReference(kind,in.readLong(),in.readLong(),in.readLong(),in.readLong(),in.readLong(),in.readLong());
     }
     public CompletableFuture<Void> shutdown() {
         stopping = true;

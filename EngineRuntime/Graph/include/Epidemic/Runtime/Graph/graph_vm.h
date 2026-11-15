@@ -53,6 +53,7 @@ class GraphInstance final {
     [[nodiscard]] foundation::Result<void> SetInput(ElementId port, std::int64_t value);
     // Read a node's output port, or the input port of a builtin Output node.
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(ElementId port) const;
+    [[nodiscard]] foundation::Result<GraphReference> ReadReference(ElementId port) const;
     [[nodiscard]] ExecutionReport Run(ExecutionBudget budget = {});
     // Only the host scheduler acknowledges a due wait. Run alone cannot skip it.
     [[nodiscard]] foundation::Result<void> ResumeWait();
@@ -77,6 +78,7 @@ class GraphInstance final {
                                                                 std::int64_t value);
     [[nodiscard]] static bool Arithmetic(Operation operation, std::int64_t left, std::int64_t right,
                                          std::int64_t &value);
+    [[nodiscard]] foundation::Result<bool> ResolveReference(std::uint32_t instruction) const;
     explicit GraphInstance(CompiledGraphPtr program);
     CompiledGraphPtr program_;
     std::vector<std::optional<std::int64_t>> values_;

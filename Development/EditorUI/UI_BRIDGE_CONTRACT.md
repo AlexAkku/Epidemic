@@ -168,3 +168,7 @@ SceneView and returns stable SceneNodeIds. No runtime handles cross IPC.
 ### F-II.2: user schema и source navigation
 
 Envelope v4 сохранён. Graph DTO **v3**: каждый template после name/category/type/operation содержит source UTF-8 и line u32 (для native recipes source пустой). Все views используют один snapshot. Private operation **39** принимает один относительный путь к bounded `.schema` внутри текущего проекта; native проверяет version/shape/limits/identity и выполняет RegisterUserSchema через существующий EditRequest. Schema-export version 1; unknown version/trailing data/invalid fields отвергаются. Source text и произвольные SDK/filesystem команды не передаются в JS Bridge. Внутренний native↔managed worker RPC v2 не меняет C ABI v1; project/assembly/hash/generation и typed field validation не подменяются UI-идентичностью.
+
+### F-II.3 Graph/Scene references
+
+Envelope v4 unchanged; Graph DTO v4 adds native reference identity/availability/label/reason and transient native probe candidates. Command 40: `probe(graph,document,element,port)`, `drop(graph,payload,port,x,y)`, `jump/uses(graph,node)`. Payload is seven bounded stable IDs (kind/document/placement/prefab/entity/component/part); the original IPC argument cap remains. Native generation/global revision validates both source and Graph; one Execute publishes node/layout/optional edge. JVM-local drag nonce grants no authority to write; native validation repeats at Drop.

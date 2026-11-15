@@ -60,3 +60,7 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 | Static | 73 TU checked; new diagnostics corrected, existing-code warnings remain FAIL/backlog |
 | Physical multiwindow/Rider/visual qualification | MANUAL NOT RUN |
 | LSP | NOT SHIPPED; specification offline fallback, not claimed PASS |
+
+## F-II.3 — текущий implementation batch
+
+Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.

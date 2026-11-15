@@ -17,7 +17,10 @@ struct Shape {
 std::optional<Shape> Expected(Operation operation) {
     switch (operation) {
     case Operation::Input:
+    case Operation::Reference:
         return Shape{0, 1, 0, 0};
+    case Operation::ReferenceValid:
+        return Shape{1, 1, 0, 0};
 
     case Operation::Add:
     case Operation::Multiply:
@@ -102,7 +105,8 @@ bool FlowCompiler::UsesFlow(const GraphDefinition &definition,
     for (const auto &binding : bindings)
         if (binding.operation == Operation::Entry || binding.operation == Operation::Sequence ||
             binding.operation == Operation::Branch || binding.operation == Operation::EventEntry ||
-            binding.operation == Operation::Repeat)
+            binding.operation == Operation::Repeat || binding.operation == Operation::Reference ||
+            binding.operation == Operation::ReferenceValid)
             control_types.insert(binding.node_type);
     for (const auto &node : definition.nodes)
         if (control_types.contains(node.type_id))
@@ -117,10 +121,15 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
 
     for (const auto &binding : bindings) {
         if (!binding.node_type.IsValid() || !catalog.emplace(binding.node_type, &binding).second ||
-            static_cast<unsigned>(binding.operation) > static_cast<unsigned>(Operation::Repeat) ||
+            static_cast<unsigned>(binding.operation) > static_cast<unsigned>(Operation::ReferenceValid) ||
             ((binding.operation == Operation::NativeCall) != static_cast<bool>(binding.native)))
             return Reject("graph.compile.invalid_binding");
         types.push_back(binding.node_type);
+    }
+    for (const auto &node : definition.nodes) {
+        const auto found = catalog.find(node.type_id);
+        if (found != catalog.end() && (found->second->operation == Operation::Reference || found->second->operation == Operation::ReferenceValid))
+            for (const auto &port : node.ports) if (port.kind == PortKind::Data) types.push_back(port.type_id);
     }
 
     if (const auto valid = ValidateGraph(definition, types); !valid)
@@ -154,7 +163,9 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
                     return Reject("graph.flow.unsupported_event", node.id);
                 p.events.push_back(port.id);
             } else if (port.kind == PortKind::Data) {
-                if (port.type_id != kI64Type)
+                const bool reference_port = binding.operation == Operation::Reference ||
+                    (binding.operation == Operation::ReferenceValid && port.direction == PortDirection::Input);
+                if (reference_port ? port.type_id == kI64Type : port.type_id != kI64Type)
                     return Reject("graph.compile.unsupported_type", node.id);
                 (port.direction == PortDirection::Input ? p.data_in : p.data_out)
                     .push_back(port.id);
@@ -182,6 +193,16 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         if (binding.operation == Operation::NativeCall) {
             instruction.callable = static_cast<std::uint32_t>(program->native_sites_.size());
             program->native_sites_.push_back({node.id, binding.native});
+        }
+        if (binding.operation == Operation::Reference) {
+            if (!node.reference || p.data_out.empty() || node.ports.front().type_id != ReferenceValueType(*node.reference))
+                return Reject("graph.reference_shape", node.id);
+            instruction.callable = static_cast<std::uint32_t>(program->references_.size());
+            program->references_.push_back({*node.reference, binding.references});
+        } else if (node.reference) return Reject("graph.reference_shape", node.id);
+        if (binding.operation == Operation::ReferenceValid) {
+            const auto input = std::find_if(node.ports.begin(), node.ports.end(), [](const auto &p) { return p.kind == PortKind::Data && p.direction == PortDirection::Input; });
+            if (input == node.ports.end() || node.type_id != ReferenceCheckType(input->type_id)) return Reject("graph.reference_shape", node.id);
         }
 
         program->instructions_.push_back(instruction);

@@ -21,6 +21,7 @@ struct NodeBinding {
 
     runtime::graph::Operation operation = runtime::graph::Operation::Input;
     DomainOperation invoke{};
+    std::function<foundation::Result<bool>(const OperationContext &, const runtime::graph::GraphReference &)> references{};
 
 };
 

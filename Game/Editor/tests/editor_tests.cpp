@@ -403,6 +403,38 @@ std::int64_t HealthOf(ed::PlaySession &session, const ComponentsFixture &types) 
     return Take(session.Context()->components.Read<std::int64_t>(*component, types.points));
 }
 
+void GraphSceneReferences() {
+    for(bool component : {false,true}) {
+        Fixture f;ComponentsFixture types;
+        auto definition=Project(f,types);
+        auto &scene=std::get<gc::SceneCompositionDefinition>(definition.documents[0].data);
+        auto second=scene.scene.nodes.front();second.id=SceneNodeId{43};scene.scene.nodes.push_back(second);
+        scene.placements.push_back({second.id,scene.placements.front().prefab,{}});
+        auto &graph=std::get<graph::GraphDefinition>(definition.documents[2].data);
+        graph::GraphReference reference{component?graph::ReferenceKind::Component:graph::ReferenceKind::SceneEntity,scene.asset_id,Id("43"),scene.placements.front().prefab,Id("enemy"),{}, {}};
+        reference.placement=graph::ElementId{43};
+        if(component)reference.component=graph::TypeId{types.health.Raw()};
+        const auto valueType=graph::ReferenceValueType(reference);
+        graph.nodes.push_back({Id("reference"),graph::kReferenceNodeType,"Reference",{{Id("ref.out"),"reference",graph::PortKind::Data,graph::PortDirection::Output,valueType}},reference});
+        graph.nodes.push_back({Id("ref.check"),graph::ReferenceCheckType(valueType),"Is Valid",{{Id("ref.in"),"reference",graph::PortKind::Data,graph::PortDirection::Input,valueType},{Id("ref.valid"),"valid",graph::PortKind::Data,graph::PortDirection::Output,graph::kI64Type}}});
+        for(auto &edge:graph.connections)if(edge.input_port==Id("before.arg"))edge.output_port=Id("ref.valid");
+        graph.connections.push_back({Id("ref.edge"),Id("ref.out"),Id("ref.in")});
+        auto project=Take(ed::EditorProject::Create("Temp/editor-tests/references.epidemic",definition,Schema(f,types)));
+        const auto source=project->Snapshot();auto session=Take(project->Play(Options(types)));
+        Take(session->Send(SceneNodeId{42},{Id("hit"),1}));Take(session->Tick());Take(session->Tick(GameDuration{1}));
+        Check(HealthOf(*session,types)==98,"native Play resolves explicit second placement/component");
+        if(component) {
+            const auto *object=session->Instance(SceneNodeId{43})->Find(Id("enemy"));
+            const auto handle=session->Context()->components.Find(object->entity,types.health);
+            Check(handle.has_value(),"target component exists");Take(session->Context()->components.Remove(*handle));
+        } else Take(session->Context()->prefabs.Destroy(*session->Instance(SceneNodeId{43})));
+        Take(session->Tick(GameDuration{1}));
+        Take(session->Send(SceneNodeId{42},{Id("hit"),1}));Take(session->Tick());Take(session->Tick(GameDuration{1}));
+        Check(HealthOf(*session,types)==98,"runtime reference observes removal instead of cached authoring/volatile handle");
+        Take(session->Stop());Check(project->Snapshot()==source,"Stop cannot persist runtime reference state");
+    }
+}
+
 void Play() {
     Fixture f;
     ComponentsFixture types;
@@ -577,6 +609,7 @@ int main(int argc, char **argv) {
             Commands();
             Persistence();
             DocumentDiscard();
+            GraphSceneReferences();
             Play();
             PlacementDiagnostic();
         } else if (argc == 2 && std::string_view{argv[1]} == "p04-write")

@@ -214,10 +214,11 @@ ValidatePreparedProject(const ProjectDefinition &definition, const ProjectSchema
 
     for (const auto &[type, operation] : EffectiveOperations(definition,schema)) {
         if (!type.IsValid() || !operation_types.insert(type.Raw()).second ||
-            operation > runtime::graph::Operation::Repeat)
+            operation > runtime::graph::Operation::ReferenceValid)
             return Result::Failure(Error("editor.operation_schema"));
         types.push_back(type);
     }
+    for (const auto &reference : ReferenceTypes(schema)) types.push_back(reference.type);
 
     References references{definition, schema};
 
@@ -264,6 +265,10 @@ ValidatePreparedProject(const ProjectDefinition &definition, const ProjectSchema
             const auto valid = runtime::graph::ValidateGraph(graph, types);
             if (!valid)
                 return Result::Failure(valid.GetError());
+            for (const auto &node : graph.nodes) if (node.reference) {
+                const auto scope = CheckGraphReferenceScope(definition,document.id,*node.reference);
+                if (!scope) return Result::Failure(scope.GetError());
+            }
         } else if (document.Kind() == DocumentKind::Prefab) {
             const auto &prefab = std::get<comp::PrefabDefinition>(document.data);
             if (prefab.id != document.id.value)

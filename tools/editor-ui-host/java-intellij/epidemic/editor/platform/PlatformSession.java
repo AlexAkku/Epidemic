@@ -87,7 +87,9 @@ public final class PlatformSession implements Disposable {
             edt(()->close(true));return false;
         }
     };
+    private final epidemic.editor.GraphSceneDragCoordinator referenceDrag;
     public PlatformSession(Project project){this.project=project;
+        referenceDrag=new epidemic.editor.GraphSceneDragCoordinator(()->bridge==null?null:bridge.latest(),this::graphCommand,value->{var bar=WindowManager.getInstance().getStatusBar(project);if(bar!=null)bar.setInfo(value);});
         scripts=new ScriptWorkspace(project,()->snapshot==null?null:Path.of(snapshot.path()).getParent(),(schema,root)->{
             if(!ready()||snapshot.playing()||!Path.of(snapshot.path()).getParent().equals(root))return CompletableFuture.failedFuture(new IOException("script.session_changed_or_playing"));
             Bridge participant=bridge;long projectId=snapshot.project();
@@ -221,9 +223,10 @@ public final class PlatformSession implements Disposable {
         }
         if(state.service()==Bridge.Service.Ready){startAssetPolling();if(snapshot!=null&&snapshot.selection().kind()==6&&!context.equals("Asset"))context("Asset");else if(snapshot!=null&&snapshot.selection().kind()!=6&&context.equals("Asset"))context(Catalog.context(selectedPanel));flushSelection();}
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
+        if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -530,7 +533,7 @@ public final class PlatformSession implements Disposable {
         var old = graphViews.remove(view);
         if (old != null) com.intellij.openapi.util.Disposer.dispose(old);
         var graph = new GraphEditor(identity, () -> bridge == null ? null : bridge.latest(),
-            this::graphCommand);
+            this::graphCommand,referenceDrag);
         graphViews.put(view, graph);
         var root = view.component();
         var center = ((BorderLayout)root.getLayout()).getLayoutComponent(BorderLayout.CENTER);
@@ -542,10 +545,12 @@ public final class PlatformSession implements Disposable {
         var current=bridge.latest();
         if(current==null||current.snapshot()==null||current.generation()!=generation||current.snapshot().revision()!=revision)return CompletableFuture.failedFuture(new IOException("ui.stale_revision"));
         if(operation==6)return saveProject();
-        boolean draft=tools!=null&&tools.hasDraft(current.snapshot().selection().document());
+        boolean draft=operation!=40&&tools!=null&&tools.hasDraft(current.snapshot().selection().document());
         var flushed=draft?tools.flushDrafts():CompletableFuture.<Void>completedFuture(null);
         var response=flushed.thenCompose(ignored->bridge.callAt(generation,draft?bridge.latest().snapshot().revision():revision,operation,args));
-        response.whenComplete((reply,error)->{if(error!=null&&!smoke)edt(()->reportProblem(error.getMessage()));});return response;
+        response.whenComplete((reply,error)->{if(error!=null&&!smoke)edt(()->reportProblem(error.getMessage()));
+            if(error==null&&operation==40&&args.length>0&&args[0].equals("jump"))edt(()->reply.snapshot().documents().stream().filter(d->d.id()==reply.snapshot().selection().document()).findFirst().ifPresent(this::openDocument));
+        });return response;
     }
     JComponent preferredFocus(DocumentView view) {
         var graph = graphViews.get(view);
@@ -1183,7 +1188,9 @@ public final class PlatformSession implements Disposable {
         }).whenComplete((result,error)->edt(()->{
             if(error!=null){failure(error);return;}
             record("PASS F-II.1 native HTML text encoding, JSON depth/size guards; 2000 nodes rejected under unchanged native 1024-node limit; no mutation");
-            smokeGraphLifecycle(doc,file,graph);
+            smokeGraphReferences(doc,graph).whenComplete((ignored,problem)->edt(()->{
+                if(problem!=null){failure(problem);return;}smokeGraphLifecycle(doc,file,graph);
+            }));
         }));
     }
     private void smokeGraphLifecycle(Bridge.Document doc, VirtualFile file, GraphEditor old) {
@@ -1199,6 +1206,41 @@ public final class PlatformSession implements Disposable {
                 });
             });
         });
+    }
+    private CompletableFuture<Void> smokeGraphReferences(Bridge.Document document,GraphEditor graph) {
+        var completion=new CompletableFuture<Void>();long scene=snapshot.entry();
+        bridge.call(29,"create",Long.toUnsignedString(scene),"0").thenCompose(created->{
+            long entity=created.snapshot().selection().element();
+            int index=-1;var catalogue=nativeGraph(document.id()).catalogue();for(int i=0;i<catalogue.size();++i)if(catalogue.get(i).name().equals("Is Entity Valid"))index=i;
+            return graph.smokeCommand("create",""+index,"160","80").thenApply(reply->entity);
+        }).whenComplete((entity,error)->edt(()->{
+            if(error!=null){completion.completeExceptionally(error);return;}
+            var check=nativeGraph(document.id()).nodes().getLast();long input=check.ports().stream().filter(p->p.direction()==0).findFirst().orElseThrow().id();
+            later(800,()->graph.smokeReferenceHit(input).whenComplete((hit,hitError)->edt(()->{
+                if(hitError!=null){completion.completeExceptionally(hitError);return;}
+                require(hit.document()==document.id()&&hit.port()==input&&Double.isFinite(hit.x()),"JCEF/AWT reference hit lost native port identity");
+                long revision=snapshot.revision();
+                require(graph.component().isShowing(),"Reference smoke source Graph is not showing");
+                var token=referenceDrag.graphTransfer(graph.component(),hit);
+                referenceDrag.dropScene(token,scene,entity,graph.component());
+                waitFor(()->snapshot.revision()==revision+1,0,()->{
+                    var reference=nativeGraph(document.id()).nodes().getLast();
+                    require(reference.reference()!=null&&reference.reference().placement()==entity&&reference.referenceAvailable(),"Graph/Scene coordinator did not publish native reference");
+                    bridge.call(29,"delete",Long.toUnsignedString(scene),Long.toUnsignedString(entity)).whenComplete((deleted,deleteError)->edt(()->{
+                        if(deleteError!=null){completion.completeExceptionally(deleteError);return;}
+                        later(800,()->graph.smokeReferenceReport().whenComplete((report,reportError)->edt(()->{
+                            if(reportError!=null){completion.completeExceptionally(reportError);return;}
+                            require(com.google.gson.JsonParser.parseString(report).getAsJsonObject().get("missing").getAsBoolean(),"Rete did not render Missing Reference");
+                            bridge.call(7).thenCompose(restored->bridge.call(6)).whenComplete((saved,saveError)->edt(()->{
+                                if(saveError!=null){completion.completeExceptionally(saveError);return;}
+                                require(nativeGraph(document.id()).nodes().getLast().referenceAvailable()&&referenceDrag.activeSessions()==0,"Restore/lifetime cleanup failed");
+                                record("PASS F-II.3 actual JCEF/AWT hit coordinates, native probe/coordinator transaction, typed DTO projection, Missing/Restore rendering; physical OLE pointer transfer/DPI remain manual NOT RUN");completion.complete(null);
+                            }));
+                        })));
+                    }));
+                });
+            })));
+        }));return completion;
     }
     private void awaitDocument(Bridge.Document doc,int kind,int attempts){
         String id=new Bridge.DocumentKey(bridge.latest().generation(),snapshot.project(),doc.kind(),doc.id()).panel()+":"+Long.toUnsignedString(doc.id());
@@ -1496,5 +1538,5 @@ public final class PlatformSession implements Disposable {
             expectedDisconnect=false;reconnect();
         })));
     }
-    @Override public void dispose(){disposed=true;scripts.close();ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();for(var graph:graphViews.values())com.intellij.openapi.util.Disposer.dispose(graph);graphViews.clear();views.clear();}
+    @Override public void dispose(){disposed=true;referenceDrag.close();scripts.close();ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();for(var graph:graphViews.values())com.intellij.openapi.util.Disposer.dispose(graph);graphViews.clear();views.clear();}
 }

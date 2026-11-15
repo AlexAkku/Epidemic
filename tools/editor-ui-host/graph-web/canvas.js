@@ -44,7 +44,7 @@ function select(id, additive = false) {
 }
 function validate(value) {
     if (!value || !/^\d{1,20}$/.test(value.revision) || !Array.isArray(value.nodes) || value.nodes.length > 1024 ||
-        !Array.isArray(value.edges) || value.edges.length > 16384 || !Array.isArray(value.catalogue) || value.catalogue.length > 64) throw Error('Invalid Graph snapshot limits');
+        !Array.isArray(value.edges) || value.edges.length > 16384 || !Array.isArray(value.catalogue) || value.catalogue.length > 256) throw Error('Invalid Graph snapshot limits');
     const all = new Set(); let ports = 0;
     const id = text => { if (typeof text !== 'string' || !/^[1-9]\d{0,19}$/.test(text) || all.has(text)) throw Error('Invalid Graph identity'); all.add(text); };
     const endpoints = new Set();
@@ -74,7 +74,7 @@ window.graphSnapshot = value => {
         const ports = new Map(), sockets = new Map();
         for (const dto of value.nodes) {
             let node = editor.getNode(dto.id);
-            const title = `${dto.markers & 1 ? '[Bookmark] ' : ''}${dto.markers & 2 ? '[Break] ' : ''}${dto.name}${dto.group ? ' · ' + dto.group : ''}`;
+            const title = `${dto.markers & 1 ? '[Bookmark] ' : ''}${dto.markers & 2 ? '[Break] ' : ''}${dto.reference ? (dto.referenceAvailable ? '[Ref] ' : '[Missing Reference] ') + dto.referenceLabel : dto.name}${dto.group ? ' · ' + dto.group : ''}`;
             if (!node) {
                 node = new ClassicPreset.Node(title); node.id = dto.id;
                 for (const p of dto.ports) {
@@ -92,7 +92,8 @@ window.graphSnapshot = value => {
             const element = nodeElement(dto.id);
             if (element) {
                 element.dataset.nodeId = dto.id;
-                element.title = `${dto.name}\n${dto.comment || ''}\n${dto.ports.map(p => `${p.direction ? 'Out' : 'In'} ${p.name}: ${p.kind === 0 ? 'i64 data' : p.kind === 1 ? 'control' : 'i64 event'}${p.kind === 0 && !p.direction ? ', one source required' : ''}`).join('\n')}`;
+                element.classList.toggle('missing-reference',!!dto.reference&&!dto.referenceAvailable);
+                element.title = `${dto.name}\n${dto.comment || ''}\n${dto.ports.map(p => `${p.direction ? 'Out' : 'In'} ${p.name}: ${p.kind === 0 ? ('data ['+p.type+']') : p.kind === 1 ? 'control' : 'i64 event'}${p.kind === 0 && !p.direction ? ', one source required' : ''}`).join('\n')}`;
             }
             projection.set(dto.id, dto);
         }
@@ -171,6 +172,11 @@ area.addPipe(context => {
 });
 let ctrl = false;
 document.addEventListener('pointerdown', event => {
+    const refSocket=event.target.closest('[data-port-id]');
+    if(event.altKey&&event.button===0&&refSocket?.dataset.portSide==='input'&&!snapshot?.readonly){
+        event.preventDefault();event.stopImmediatePropagation();cancel();
+        window.nativeGraph(JSON.stringify({nonce:window.graphNonce,revision:snapshot.revision,action:'reference-start',args:[refSocket.dataset.portId,'0','0']}));return;
+    }
     ctrl=event.ctrlKey||event.metaKey;cancelledGesture=false;gestureNode=undefined;
     if(!connectionGesture){
         clearReconnect();const socket=event.target.closest('[data-port-id]');
@@ -299,3 +305,14 @@ window.graphGestureState=()=>({connection:connectionGesture,reconnect:reconnectE
 window.graphDispose=()=>{if(previewFrame)cancelAnimationFrame(previewFrame);area.destroy();};
 window.graphCanvasReady=true;
 window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__ready'}));
+
+// Coordinates cross the AWT/JCEF boundary normalized to the actual CSS viewport;
+// each HWND keeps its own DPI transform. No saved/window identity enters a ref.
+window.graphReferenceHit=(awtX,awtY,width,height)=>{
+    const x=awtX*innerWidth/width,y=awtY*innerHeight/height;
+    const socket=document.elementFromPoint(x,y)?.closest('[data-port-id]');
+    const port=socket?.dataset.portSide==='input'?socket.dataset.portId:'0';
+    const rect=canvas.getBoundingClientRect(),t=area.area.transform;
+    window.nativeGraph(JSON.stringify({nonce:window.graphNonce,revision:snapshot.revision,action:'reference-hit',args:[port,String((x-rect.left-t.x)/t.k),String((y-rect.top-t.y)/t.k)]}));
+};
+window.graphReferenceFeedback=text=>note(text||'Alt-drag reference input ↔ Scene / Hierarchy · Escape cancels');
