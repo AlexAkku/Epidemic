@@ -1,9 +1,67 @@
 #include "Epidemic/GameFramework/Integration/components.h"
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <unordered_set>
 
 namespace epidemic::gameplay::composition {
+foundation::Result<void> ComponentRegistry::RegisterDescriptions(std::span<const DescribedComponent> schemas) {
+    if(!IsFrozen())return foundation::Result<void>::Failure(Error("component.registry_not_frozen"));
+    using Object = std::unordered_map<std::uint64_t, PropertyValue>;
+    auto staged = types_;
+    auto descriptions = descriptions_;
+    std::unordered_set<std::uint64_t> seen;
+    if (schemas.size() > 64) return foundation::Result<void>::Failure(Error("component.schema_limit"));
+    for (const auto &schema : schemas) {
+        const auto id = TypeId::FromString(schema.name);
+        if (schema.name.empty() || schema.name.size() > 256 || schema.version != 1 || schema.fields.empty() || schema.fields.size() > 64 || !seen.insert(id.Raw()).second)
+            return foundation::Result<void>::Failure(Error("component.invalid_schema"));
+        if (const auto old = descriptions.find(id.Raw()); old != descriptions.end()) {
+            bool equal = old->second.version == schema.version && old->second.fields.size() == schema.fields.size();
+            for (std::size_t index = 0; equal && index < schema.fields.size(); ++index)
+                equal = old->second.fields[index].name == schema.fields[index].name && old->second.fields[index].initial == schema.fields[index].initial;
+            if (!equal) return foundation::Result<void>::Failure(Error("component.migration_required"));
+            continue;
+        }
+        if (staged.contains(id.Raw())) return foundation::Result<void>::Failure(Error("component.duplicate_type"));
+        auto descriptor = std::make_shared<Descriptor>();
+        descriptor->info = {id,schema.name,{}};
+        Object defaults;
+        for (const auto &field : schema.fields) {
+            const auto key = PropertyId::FromString(field.name);
+            if (field.name.empty() || field.name.size() > 256 || defaults.contains(key.Raw()))
+                return foundation::Result<void>::Failure(Error("component.duplicate_property"));
+            const auto validate = [kind=field.initial.index()](const PropertyValue &value) {
+                bool valid=value.index()==kind;
+                if(const auto *number=std::get_if<double>(&value))valid=valid&&std::isfinite(*number);
+                if(const auto *text=std::get_if<std::string>(&value))valid=valid&&text->size()<=16384;
+                return valid ? foundation::Result<void>::Success() : foundation::Result<void>::Failure(Error("component.property_type"));
+            };
+            auto valid=validate(field.initial);if(!valid)return valid;
+            defaults.emplace(key.Raw(),field.initial);
+            descriptor->info.properties.push_back({key,field.name,static_cast<PropertyKind>(field.initial.index())});
+            descriptor->properties.emplace(key.Raw(),Property{validate,
+                [key](const void *object){return static_cast<const Object *>(object)->at(key.Raw());},
+                [key,validate](void *object,const PropertyValue &value){auto result=validate(value);if(result)static_cast<Object *>(object)->at(key.Raw())=value;return result;}});
+        }
+        descriptor->create=[initial=std::make_shared<const Object>(std::move(defaults))]{return std::static_pointer_cast<void>(std::make_shared<Object>(*initial));};
+        descriptions.emplace(id.Raw(),schema);staged.emplace(id.Raw(),std::move(descriptor));
+    }
+    std::unordered_set<std::uint64_t> retained;
+    for(const auto &schema:schemas)retained.insert(TypeId::FromString(schema.name).Raw());
+    for(auto it=descriptions.begin();it!=descriptions.end();)if(!retained.contains(it->first)){staged.erase(it->first);it=descriptions.erase(it);}else ++it;
+    types_.swap(staged);descriptions_.swap(descriptions);
+    return foundation::Result<void>::Success();
+}
+
+foundation::Result<std::shared_ptr<ComponentRegistry>> ComponentRegistry::WithDescriptions(std::span<const DescribedComponent> schemas) const {
+    using Result=foundation::Result<std::shared_ptr<ComponentRegistry>>;
+    if(!IsFrozen())return Result::Failure(Error("component.registry_not_frozen"));
+    auto staged=std::make_shared<ComponentRegistry>();staged->types_=types_;staged->descriptions_=descriptions_;staged->Freeze();
+    auto valid=staged->RegisterDescriptions(schemas);if(!valid)return Result::Failure(valid.GetError());
+    return Result::Success(std::move(staged));
+}
+
 std::vector<ComponentTypeInfo> ComponentRegistry::Types() const {
     std::vector<ComponentTypeInfo> result;
     result.reserve(types_.size());

@@ -29,6 +29,15 @@ public final class UiPanels {
     private Function<ScalarInspector.Edit,java.util.concurrent.CompletableFuture<Bridge.Reply>> editField;
     private final List<ScalarInspector> inspectors=new ArrayList<>();
     private final List<GraphTools> graphTools=new ArrayList<>();
+    private Supplier<List<java.nio.file.Path>> sourceFiles=List::of;
+    private BiConsumer<java.nio.file.Path,Boolean> openSource=(path,with)->{};
+    private Runnable newSource=()->{};
+    private final List<Runnable> sourceRefreshers=new ArrayList<>();
+    public void sourceCommands(Supplier<List<java.nio.file.Path>> files,BiConsumer<java.nio.file.Path,Boolean> open,Runnable create){sourceFiles=files;openSource=open;newSource=create;}
+    public void refreshSources(){sourceRefreshers.forEach(Runnable::run);}
+
+    private Consumer<Bridge.GraphTemplate> sourceNavigator=template->{};
+    public void sourceNavigator(Consumer<Bridge.GraphTemplate> action){sourceNavigator=action;graphTools.forEach(g->g.sourceNavigator(action));}
     private BiConsumer<String,Long> assetCommand=(action,id)->{};
     public void assetCommands(BiConsumer<String,Long> action){assetCommand=action;}
     public record HierarchyEdit(long generation,long revision,String action,long document,long node,String argument) {}
@@ -137,7 +146,13 @@ public final class UiPanels {
     private JComponent create(String id) {
         String base = id.contains(":") ? id.substring(0, id.indexOf(':')) : id;
         if (Set.of("graph.palette","graph.inspector","graph.references","graph.variables").contains(base)) {
-            var panel=new GraphTools(base,graphAvailable,()->generation,graphCommand);graphTools.add(panel);observe(panel::refresh);return panel;
+            var panel=new GraphTools(base,graphAvailable,()->generation,graphCommand);panel.sourceNavigator(sourceNavigator);graphTools.add(panel);observe(panel::refresh);return panel;
+        }
+        if(base.equals("type.registry")) {
+            var model=new DefaultListModel<Bridge.ComponentType>();var list=new JList<Bridge.ComponentType>(model);
+            list.setCellRenderer(new DefaultListCellRenderer(){{putClientProperty("html.disable",true);}public Component getListCellRendererComponent(JList<?> owner,Object value,int index,boolean selected,boolean focus){return super.getListCellRendererComponent(owner,value instanceof Bridge.ComponentType type?type.name()+" · "+Long.toUnsignedString(type.id()):value,index,selected,focus);}});
+            observe(state->{var types=state==null?List.<Bridge.ComponentType>of():state.componentTypes();if(Collections.list(model.elements()).equals(types))return;var selected=list.getSelectedValue();model.clear();types.forEach(model::addElement);if(selected!=null)for(int i=0;i<model.size();i++)if(model.get(i).id()==selected.id())list.setSelectedIndex(i);});
+            var root=new JPanel(new BorderLayout(6,6));root.add(new JLabel("Native component schemas · add through Inspector"),BorderLayout.NORTH);root.add(new JScrollPane(list));return root;
         }
         if (base.equals("project.explorer")) return explorer();
         if (base.equals("scene.hierarchy")) return hierarchy();
@@ -419,7 +434,8 @@ public final class UiPanels {
         CardLayout cards=new CardLayout();JPanel browser=new JPanel(cards);browser.add(new JScrollPane(tree),"Tree");browser.add(new JScrollPane(list),"List");
         mode.addActionListener(e->{boolean grid=mode.getSelectedItem().equals("Grid");list.setLayoutOrientation(grid?JList.HORIZONTAL_WRAP:JList.VERTICAL);list.setVisibleRowCount(grid?-1:0);list.setFixedCellWidth(grid?220:-1);list.setFixedCellHeight(grid?64:-1);cards.show(browser,mode.getSelectedItem().equals("Tree")?"Tree":"List");});
         list.addListSelectionListener(e->{if(refreshing||e.getValueIsAdjusting())return;Object row=list.getSelectedValue();if(row instanceof AssetRow asset)select.accept(new Bridge.Selection(6,0,asset.asset().id()));else if(row instanceof DocRow doc)select.accept(new Bridge.Selection(0,doc.document().id(),0));});
-        list.addMouseListener(new MouseAdapter(){@Override public void mouseClicked(MouseEvent e){if(e.getClickCount()==2&&list.getSelectedValue() instanceof DocRow row)openDocument.accept(row.document());}});
+        list.addMouseListener(new MouseAdapter(){@Override public void mouseClicked(MouseEvent e){if(e.getClickCount()==2){if(list.getSelectedValue() instanceof DocRow row)openDocument.accept(row.document());else if(list.getSelectedValue() instanceof SourceRow row)openSource.accept(row.path(),false);}}});
+        list.addMouseListener(new MouseAdapter(){public void mousePressed(MouseEvent event){popup(event);}public void mouseReleased(MouseEvent event){popup(event);}private void popup(MouseEvent event){if(!event.isPopupTrigger())return;int index=list.locationToIndex(event.getPoint());if(index<0||!list.getCellBounds(index,index).contains(event.getPoint())||!(listing.get(index) instanceof SourceRow source))return;list.setSelectedIndex(index);var menu=new JPopupMenu();menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));menu.show(list,event.getX(),event.getY());}});
         panel.add(header, BorderLayout.NORTH); panel.add(browser);
         JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
         JButton importButton=Theme.button("Import…",importPicker);assetButtons.add(importButton);buttons.add(importButton);
@@ -477,12 +493,13 @@ public final class UiPanels {
         Set<String> shownFolders=new HashSet<>();
         Runnable rebuild = () -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode(snapshot == null ? "Choose a project" : snapshot.title());
-            DefaultMutableTreeNode docs = new DefaultMutableTreeNode("Documents"), assets = new DefaultMutableTreeNode(new FolderRow("")); root.add(docs); root.add(assets); root.add(new DefaultMutableTreeNode("Scripts"));if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service data, read-only]"));
+            DefaultMutableTreeNode docs = new DefaultMutableTreeNode("Documents"), assets = new DefaultMutableTreeNode(new FolderRow("")); root.add(docs); root.add(assets); var scripts=new DefaultMutableTreeNode("Scripts");root.add(scripts);if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service data, read-only]"));
             String filter = search.getText().toLowerCase(Locale.ROOT);
             breadcrumb.setText("Content · "+(snapshot==null?0:snapshot.assets().size())+" shown / "+(snapshot==null?0:snapshot.assetState().totalAssets())+" total · max 1000 filtered; Enter to search");
             Map<String,DefaultMutableTreeNode> folders=new LinkedHashMap<>();
             folders.put("",assets);
             if (snapshot != null) {
+                for(var file:sourceFiles.get())if(file.toString().toLowerCase(Locale.ROOT).contains(filter))scripts.add(new DefaultMutableTreeNode(new SourceRow(file)));
                 for (Bridge.Document doc : snapshot.documents()) if (doc.name().toLowerCase(Locale.ROOT).contains(filter)) docs.add(new DefaultMutableTreeNode(new DocRow(doc)));
                 for(String folder:snapshot.contentFolders())
                     if(folder.toLowerCase(Locale.ROOT).contains(filter))contentFolder(folders,folder);
@@ -505,7 +522,7 @@ public final class UiPanels {
             try{
                 tree.setModel(new DefaultTreeModel(root));tree.expandRow(0);
                 listing.clear();
-                for(var rows=root.depthFirstEnumeration();rows.hasMoreElements();){var item=(DefaultMutableTreeNode)rows.nextElement();if(item.getUserObject() instanceof DocRow||item.getUserObject() instanceof AssetRow)listing.addElement(item.getUserObject());}
+                for(var rows=root.depthFirstEnumeration();rows.hasMoreElements();){var item=(DefaultMutableTreeNode)rows.nextElement();if(item.getUserObject() instanceof DocRow||item.getUserObject() instanceof AssetRow||item.getUserObject() instanceof SourceRow)listing.addElement(item.getUserObject());}
                 if(snapshot!=null)for(var nodes=root.depthFirstEnumeration();nodes.hasMoreElements();){
                     var node=(DefaultMutableTreeNode)nodes.nextElement();TreePath path=new TreePath(node.getPath());
                     if(expanded.contains(treeKey(path))||expanded.isEmpty()&&node==docs)tree.expandPath(path);
@@ -526,9 +543,11 @@ public final class UiPanels {
                 if(listScroll!=null&&list.getParent() instanceof JViewport viewport)viewport.setViewPosition(listScroll);
             }finally{refreshing=wasRefreshing;}
         };
+        sourceRefreshers.add(rebuild);
         structure(value -> rebuild.run()); search.addActionListener(event -> {assetCommand.accept("Search:"+search.getText(),0L);rebuild.run();});internal.addActionListener(event->rebuild.run());
         observe(value->{
             if(value==null){updateAssetActions.run();return;}
+            if(selectedRow.get() instanceof SourceRow){updateAssetActions.run();return;}
             int selectedIndex=-1;
             for(int i=0;i<listing.size();i++){Object row=listing.get(i);if(row instanceof DocRow doc&&doc.document().id()==value.selection().document() || row instanceof AssetRow asset&&value.selection().kind()==6&&asset.asset().id()==value.selection().element()){selectedIndex=i;break;}}
             list.setSelectedIndex(selectedIndex);
@@ -554,11 +573,12 @@ public final class UiPanels {
             @Override public void mousePressed(MouseEvent event){folderMenu(event);}
             @Override public void mouseReleased(MouseEvent event){folderMenu(event);}
             private void folderMenu(MouseEvent event){
-                if(!event.isPopupTrigger()||newContentFolder==null||!interactive||snapshot==null||
-                    snapshot.storage()!=2||snapshot.playing())return;
+                if(!event.isPopupTrigger()||!interactive||snapshot==null)return;
                 var path=tree.getPathForLocation(event.getX(),event.getY());
-                if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node)||
-                    !(node.getUserObject() instanceof FolderRow folder))return;
+                if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return;
+                if(node.getUserObject() instanceof SourceRow source){tree.setSelectionPath(path);var menu=new JPopupMenu();menuItem(menu,"Open C#",()->openSource.accept(source.path(),false));menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));menu.show(tree,event.getX(),event.getY());return;}
+                if(node.getUserObject().equals("Scripts")){var menu=new JPopupMenu();menuItem(menu,"New C# Class…",newSource);menu.show(tree,event.getX(),event.getY());return;}
+                if(newContentFolder==null||snapshot.storage()!=2||snapshot.playing()||!(node.getUserObject() instanceof FolderRow folder))return;
                 var menu=new JPopupMenu();
                 menuItem(menu,"New Folder…",()->newContentFolder.accept(folder.path()));
                 menu.show(tree,event.getX(),event.getY());
@@ -568,10 +588,11 @@ public final class UiPanels {
             Object selected = tree.getLastSelectedPathComponent();
             if (selected instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof DocRow row) {
                 openDocument.accept(row.document());
-            }
+            }else if(selected instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof SourceRow source)openSource.accept(source.path(),false);
         } });
         return panel;
     }
+    private record SourceRow(java.nio.file.Path path){public String toString(){return path.getFileName().toString();}}
     private record FolderRow(String path){
         @Override public String toString(){return path.isEmpty()?"Content":path.substring(path.lastIndexOf('/')+1);}
     }
@@ -1051,7 +1072,7 @@ public final class UiPanels {
         var item=new JMenuItem(label);item.addActionListener(e->action.run());menu.add(item);
     }
     private static int choose(Component parent,String title,List<String> labels){
-        var picker=new JComboBox<>(labels.toArray(String[]::new));
+        var picker=new JComboBox<>(labels.toArray(String[]::new));picker.setRenderer(new DefaultListCellRenderer(){{putClientProperty("html.disable",true);}});
         return JOptionPane.showConfirmDialog(parent,picker,title,JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION?picker.getSelectedIndex():-1;
     }
     private static String nodeKey(Bridge.Node row){return row.document()+":"+row.id()+":"+row.kind()+":"+row.component()+":"+row.part();}

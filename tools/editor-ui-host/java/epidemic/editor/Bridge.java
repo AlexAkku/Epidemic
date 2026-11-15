@@ -52,7 +52,9 @@ public final class Bridge implements AutoCloseable {
         public GraphNode { ports = List.copyOf(ports); }
     }
     public record GraphEdge(long id, long output, long input) {}
-    public record GraphTemplate(String name,String category,long type,int operation) {}
+    public record GraphTemplate(String name,String category,long type,int operation,String source,int line) {
+        public GraphTemplate(String name,String category,long type,int operation){this(name,category,type,operation,"",1);}
+    }
     public record Graph(long document, List<GraphNode> nodes, List<GraphEdge> edges,List<GraphTemplate> catalogue,String report) {
         public Graph { nodes = List.copyOf(nodes); edges = List.copyOf(edges); }
     }
@@ -315,9 +317,9 @@ public final class Bridge implements AutoCloseable {
                 for(int n=count(in);n>0;--n)folders.add(text(in));
             List<Graph> graphs = new ArrayList<>();
             if (capabilities.contains("graph-authoring")) {
-                if (in.readUnsignedShort() != 2) throw new IOException("ui.graph_dto_version");
+                if (in.readUnsignedShort() != 3) throw new IOException("ui.graph_dto_version");
                 List<GraphTemplate> catalogue = new ArrayList<>();
-                for(int t=count(in);t>0;--t) catalogue.add(new GraphTemplate(text(in),text(in),in.readLong(),in.readUnsignedByte()));
+                for(int t=count(in);t>0;--t) catalogue.add(new GraphTemplate(text(in),text(in),in.readLong(),in.readUnsignedByte(),text(in),in.readInt()));
                 catalogue=List.copyOf(catalogue);
                 for (int g = count(in); g > 0; --g) {
                     long document = in.readLong(); String graphReport=text(in);

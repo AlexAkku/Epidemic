@@ -163,3 +163,8 @@ Mutations carry the project generation and expected revision. Inspector edits
 also carry selection revision and keep using operation 16, including native
 local transform fields. Native viewport input maps client coordinates through
 SceneView and returns stable SceneNodeIds. No runtime handles cross IPC.
+
+
+### F-II.2: user schema и source navigation
+
+Envelope v4 сохранён. Graph DTO **v3**: каждый template после name/category/type/operation содержит source UTF-8 и line u32 (для native recipes source пустой). Все views используют один snapshot. Private operation **39** принимает один относительный путь к bounded `.schema` внутри текущего проекта; native проверяет version/shape/limits/identity и выполняет RegisterUserSchema через существующий EditRequest. Schema-export version 1; unknown version/trailing data/invalid fields отвергаются. Source text и произвольные SDK/filesystem команды не передаются в JS Bridge. Внутренний native↔managed worker RPC v2 не меняет C ABI v1; project/assembly/hash/generation и typed field validation не подменяются UI-идентичностью.

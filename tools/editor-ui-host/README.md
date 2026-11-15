@@ -99,3 +99,10 @@ On Windows the product uses the upstream loopback TCP directory-lock transport a
 `-NativeReady` reuses the requested native configuration. Rebuild normally after C++ changes. `-NoPackage -Smoke` checks bootstrap without validating jpackage; `-Configuration Debug -NoPackage` is for development. JAWT loads from the selected runtime explicitly. Surfaces stay on EDT and release before peer destruction.
 
 Captures combine own-window Swing prints and retained GPU frames. They do not prove mouse dragging, occlusion, IME, physical DPI or absence of flicker. Actual statuses: `Development/EditorUI/UI_QA_MATRIX.md`. Notices/POMs live under product `licenses`; jlink retains runtime legal files. See `standalone/README.md` for composition limits.
+
+
+## F-II.2 Code Space / C#
+
+The optional managed authoring profile targets .NET 10; tested SDK: 10.0.402. `Build-Standalone.ps1` packages the repository-owned ScriptApi/ScriptWorker when the SDK is available; `-ManagedOff` omits them. The C++ build has no new .NET linkage. `dotnet publish` artifacts go under `.ai/managed-build`, never the source tree. There are no NuGet package dependencies; the worker build uses local SDK packs and cleared package sources.
+
+Use File → New C# Class, Build → Build & Register C#, or Scripts in Project Explorer. The built-in view is an IntelliJ Platform Editor; Rider is optional. Build is explicit/trusted, runs in the background and does not import project Directory.Build targets. Incompatible schema changes retain the last registered data; no hot type patch is performed during Play. [Implementation/limits](../../Development/EditorUI/FII2_SCHEMA_CODESPACE.md) · [Manual QA](../../Development/EditorUI/FII2_MANUAL_QA.md).

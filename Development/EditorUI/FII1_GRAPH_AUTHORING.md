@@ -2,7 +2,7 @@
 
 Дата: 13 ноября 2026. Отправная точка: `8aca4a9` (F-II.0b). Push не выполнялся.
 
-**Реализация F-II.1 завершена. Функциональная автоматическая квалификация PASS. Ручная приёмка NOT RUN; F-II.1-GATE ожидает владельца.** F-II.2 не начат.
+**F-II.1-GATE PASS.** Автоматическая квалификация завершена; владелец подтвердил ручную приёмку 2026-11-14. F-II.2 начат от `451ba62`.
 
 ## Что работает
 
@@ -30,7 +30,7 @@
 | Security | PASS; CSP/file/HTTPS/loopback/eval, forbidden Bridge action, depth/size, literal HTML injection, invalid/2000-node snapshot без native mutation |
 | Web UI detector | PASS; mechanical impeccable detect — пустой список. Визуальная проверка не заявляется |
 | Static analysis | KNOWN DIAGNOSTICS: Verify-Changed Fast проверил 61 TU; общий результат FAIL из-за предупреждений в неизменённом коде. Два новых unchecked-optional-access исправлены; повтор backend с теми же checks не содержит diagnostics на добавленных/изменённых строках. Sandbox metrics TU чистый PASS. Сохраняются signed-bitwise Scene, exception/unsafe constructors Composition/Editor, ThumbnailCache parameters, narrowing в тестах и float-loop/switch diagnostics native_viewport. Подавлений и ослабления checks нет |
-| Computer Use / ручной прогон | NOT RUN в F-II.1; инструкция подготовлена для владельца |
+| Computer Use / ручной прогон | Computer Use NOT RUN; ручная приёмка владельцем PASS 2026-11-14 |
 
 Временные команды/журналы: Run-Quiet `fii1-bridge-final`, `fii1-regressions`, `fii1-release-final`, `fii1-static`; успешные ShortOutput логи очищаются штатным wrapper. Runtime smoke: `Temp/U/distribution/EpidemicEditor/app/smoke-state/log/platform-status.log`.
 
@@ -49,4 +49,7 @@ Native workloads 100/500/1024 прошли. Лимит core **1024** не пов
 
 Штатный дистрибутив: `Temp/U/distribution/EpidemicEditor/EpidemicEditor.exe`. JBR/JCEF, SDK SHA512, Maven/npm locks, offline packaging и notices сохранены; новых сетевых frontend dependencies нет.
 
-[Пошаговая ручная инструкция](FII1_MANUAL_QA.md). После подтверждения владельцем можно фиксировать F-II.1-GATE и переходить к F-II.2. До этого manual gate остаётся NOT RUN. Контракты Code Space / managed из F-II.0b сохраняются.
+[Пошаговая ручная инструкция](FII1_MANUAL_QA.md). Владелец подтвердил приёмку 2026-11-14; F-II.1-GATE PASS. Контракты Code Space / managed из F-II.0b сохраняются.
+
+
+F-II.1-GATE **PASS**: владелец подтвердил ручную приёмку 2026-11-14 («Проверил, всё работает»). Исходная реализация `451ba62`; ранее зафиксированные ограничения производительности и исторические static diagnostics сохраняются. F-II.2 начинается от этого коммита.

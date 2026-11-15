@@ -219,7 +219,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             required.insert(dependency.asset_id.Raw());
         std::vector<runtime::graph::TypeId> known_types{runtime::graph::kI64Type};
 
-        for (const auto &[type, operation] : schema.operations) {
+        for (const auto &[type, operation] : EffectiveOperations(snapshot->definition,schema)) {
             (void)operation;
             known_types.push_back(type);
         }
@@ -239,11 +239,12 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
         for (const auto &doc : state.source->definition.documents)
             if (const auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc.data)) {
                 auto bindings = options.bindings(state.context, doc.id);
+                const auto effective=EffectiveOperations(state.source->definition,schema);
                 for (const auto &binding : bindings) {
                     const auto expected =
-                        std::find_if(schema.operations.begin(), schema.operations.end(),
+                        std::find_if(effective.begin(), effective.end(),
                                      [&](const auto &item) { return item.first == binding.type; });
-                    if (expected == schema.operations.end() ||
+                    if (expected == effective.end() ||
                         expected->second != binding.operation)
                         throw Failure{Error("editor.play_binding")};
 

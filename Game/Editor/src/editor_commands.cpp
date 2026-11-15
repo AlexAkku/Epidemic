@@ -86,7 +86,10 @@ IdSet Ids(const ProjectDefinition &definition) {
 }
 
 template <class C> bool Apply(ProjectDefinition &project, const C &command) {
-    if constexpr (std::is_same_v<C, CreateDocument>) {
+    if constexpr (std::is_same_v<C, RegisterUserSchema>) {
+        project.user_schemas = command.schemas;
+        return true;
+    } else if constexpr (std::is_same_v<C, CreateDocument>) {
         if (Find(project.documents, [&](const auto &doc) { return doc.id == command.document.id; }))
             return false;
         project.documents.push_back(command.document);
@@ -529,6 +532,8 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
     const auto persistable = detail::ValidateForPersistence(candidate, used, schema_);
     if (!persistable)
         return Result::Failure(persistable.GetError());
+    const auto installed=InstallUserSchemas(candidate,schema_);
+    if(!installed)return Result::Failure(installed.GetError());
     auto document_revision = next_document_;
     for (auto &doc : candidate.documents)
         if (changed.contains(doc.id.Raw()) && !discarded.contains(doc.id.Raw()))
@@ -539,6 +544,7 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
                          candidate.entry_scene == saved_snapshot_->definition.entry_scene &&
                          candidate.systems == saved_snapshot_->definition.systems &&
                          candidate.prefab_links == saved_snapshot_->definition.prefab_links &&
+                         candidate.user_schemas == saved_snapshot_->definition.user_schemas &&
                          candidate.documents.size() == saved_documents_.size();
     if (at_save_point)
         for (const auto &doc : candidate.documents) {
@@ -568,6 +574,7 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
 foundation::Result<void> EditorProject::Undo() {
     if (undo_.empty())
         return foundation::Result<void>::Failure(Error("editor.no_undo"));
+    const auto installed=InstallUserSchemas(undo_.back()->definition,schema_);if(!installed)return installed;
     redo_.push_back(current_);
     current_ = undo_.back();
     undo_.pop_back();
@@ -578,6 +585,7 @@ foundation::Result<void> EditorProject::Undo() {
 foundation::Result<void> EditorProject::Redo() {
     if (redo_.empty())
         return foundation::Result<void>::Failure(Error("editor.no_redo"));
+    const auto installed=InstallUserSchemas(redo_.back()->definition,schema_);if(!installed)return installed;
     undo_.push_back(current_);
     current_ = redo_.back();
     redo_.pop_back();

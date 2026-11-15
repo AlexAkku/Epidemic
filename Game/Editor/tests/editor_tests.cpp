@@ -3,6 +3,8 @@
 #include "../../Composition/tests/user_components.h"
 #include <fstream>
 #include <array>
+#include <limits>
+#include <algorithm>
 #include "../src/project_archive.h"
 #include "Epidemic/Runtime/Serialization/serialization_services.h"
 #include "Epidemic/Runtime/Support/graph_serialization.h"
@@ -528,9 +530,48 @@ void PlacementDiagnostic() {
 #include "stabilization_cases.h"
 #include "p04_spike.h"
 
+void UserSchemas() {
+    std::filesystem::create_directories("Temp/editor-tests");
+    Fixture fixture;ComponentsFixture components;auto schema=Schema(fixture,components);schema.user_components=&components.registry;
+    auto project=Take(ed::EditorProject::Create("Temp/editor-tests/user-schema.epidemic",Project(fixture,components),schema));
+    ed::UserSchema type;type.component={"qa.Turret",1,{{"Damage",std::int64_t{25}},{"Range",150.0},{"Enabled",true},{"Label",std::string{"Turret"}}}};
+    type.assembly=".epidemic/scripts/v1/GameScripts.dll";type.fingerprint=std::string(64,'a');
+    type.operations.push_back({"qa.Turret.ApplyDamage.v1","Turret.ApplyDamage","Turret","ApplyDamage","Scripts/Turret.cs",1});
+    Take(project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{type}}}}));
+    const auto component=epidemic::gameplay::TypeId::FromString(type.component.name);const auto prefab=AssetId::FromString("editor.prefab");
+    Take(project->Execute({project->Revision(),{ed::SetComponent{prefab,Id("enemy"),{component,{},{},{}}}}}));
+    Take(project->Execute({project->Revision(),{ed::SetProperty{prefab,Id("enemy"),component,{}, {Id("Damage"),std::int64_t{37},{}}}}}));
+    Take(project->Undo());Take(project->Redo());
+    std::vector<ed::Command> typed_edits{
+        ed::SetProperty{prefab,Id("enemy"),component,{}, {Id("Range"),17.25,{}}},
+        ed::SetProperty{prefab,Id("enemy"),component,{}, {Id("Enabled"),false,{}}},
+        ed::SetProperty{prefab,Id("enemy"),component,{}, {Id("Label"),std::string{"Башня (v2)"},{}}}};
+    Take(project->Execute({project->Revision(),std::move(typed_edits)}));
+    Take(project->Undo());Take(project->Redo());
+    const auto with_values=project->Snapshot();
+    Check(!project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{}}}})&&project->Snapshot()==with_values,"referenced user type cannot disappear or lose data");
+    auto invalid=type;invalid.component.fields[0].initial=std::string{"incompatible"};
+    const auto before=project->Snapshot();
+    Check(!project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{invalid}}}})&&project->Snapshot()==before,"incompatible schema is atomic");
+    auto duplicate=type;duplicate.component.name="qa.Other";
+    Check(!project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{type,duplicate}}}}),"duplicate operation rejected");
+    auto nan=type;nan.component.name="qa.NonFinite";nan.operations.clear();nan.component.fields[1].initial=std::numeric_limits<double>::quiet_NaN();
+    Check(!project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{nan}}}}),"NaN user default rejected");
+    Take(project->Save());
+    Fixture other;ComponentsFixture other_components;auto reopened_schema=Schema(other,other_components);reopened_schema.user_components=&other_components.registry;
+    auto reopened=Take(ed::EditorProject::Open(project->File(),reopened_schema));
+    Check(reopened->Snapshot()->definition.user_schemas.size()==1&&other_components.registry.Find(component),"persisted descriptors install without loading managed code");
+    const auto &node=std::get<comp::PrefabDefinition>(reopened->Snapshot()->Find(prefab)->data).root;
+    const auto found=std::find_if(node.components.begin(),node.components.end(),[&](const auto &entry){return entry.type==component;});
+    Check(found!=node.components.end()&&std::get<std::int64_t>(found->properties.front().value)==37,"typed user values persist with Undo/Redo");
+    const auto value=[&](std::string_view key)->const comp::PropertyValue&{const auto property=std::find_if(found->properties.begin(),found->properties.end(),[&](const auto &field){return field.property==Id(key);});if(property==found->properties.end())throw std::runtime_error("user field missing");return property->value;};
+    Check(std::get<double>(value("Range"))==17.25&&!std::get<bool>(value("Enabled"))&&std::get<std::string>(value("Label"))=="Башня (v2)","real/bool/string user fields persist exactly");
+}
+
 int main(int argc, char **argv) {
     try {
         if (argc == 1) {
+            UserSchemas();
             GraphLayoutMigration();
             Documents();
             Commands();

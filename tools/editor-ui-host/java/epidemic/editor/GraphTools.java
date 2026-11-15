@@ -28,6 +28,9 @@ public final class GraphTools extends JPanel {
     private boolean refreshing, draft, busy;
     private CompletableFuture<Bridge.Reply> active;
     private long draftRevision;
+    private Consumer<Bridge.GraphTemplate> sourceNavigator=template->{};
+    public void sourceNavigator(Consumer<Bridge.GraphTemplate> action){sourceNavigator=action;}
+    private JButton sourceButton;
     private String fieldError="";
     public GraphTools(String kind,BooleanSupplier available,LongSupplier generation,Function<UiPanels.GestureEdit,CompletableFuture<Bridge.Reply>> command) {
         super(new BorderLayout(6,6));this.kind=kind;this.available=available;this.generation=generation;this.command=command;
@@ -45,6 +48,7 @@ public final class GraphTools extends JPanel {
         } else if(kind.equals("graph.inspector")) {
             var form=new JPanel();form.setLayout(new BoxLayout(form,BoxLayout.Y_AXIS));
             field(form,"Name",name);field(form,"Preview Input default (i64)",value);field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
+            sourceButton=Theme.button("Open C# Source",()->{if(selected!=null&&graph!=null)graph.catalogue().stream().filter(type->type.type()==selected.type()&&!type.source().isEmpty()).findFirst().ifPresent(sourceNavigator);});form.add(sourceButton);
             form.add(bookmark);form.add(breakpoint);form.add(apply);form.add(new JScrollPane(list));add(new JScrollPane(form));
             name.addActionListener(e->apply());value.addActionListener(e->apply());group.addActionListener(e->apply());
             var edits=new DocumentListener(){private void changed(){if(!refreshing&&snapshot!=null){if(!draft)draftRevision=snapshot.revision();draft=true;fieldError="";caption.setText("Pending input · Apply/Enter or Save; Escape cancels");}}public void insertUpdate(DocumentEvent e){changed();}public void removeUpdate(DocumentEvent e){changed();}public void changedUpdate(DocumentEvent e){changed();}};
@@ -100,7 +104,7 @@ public final class GraphTools extends JPanel {
         visible.clear();rows.clear();if(graph==null){create.setEnabled(false);return;}
         String query=search.getText().toLowerCase(Locale.ROOT);
         for(var recipe:graph.catalogue())if((recipe.category()+" "+recipe.name()).toLowerCase(Locale.ROOT).contains(query)){visible.add(recipe);rows.addElement(recipe.category()+" / "+recipe.name());}
-        for(String unavailable:List.of("Variables / Get, Set — F-II.2 backend required","Advanced / Entity, C# — F-II.2/5"))if(unavailable.toLowerCase(Locale.ROOT).contains(query))rows.addElement(unavailable);
+        for(String unavailable:List.of("Variables / Get, Set — F-II.2 backend required","Advanced / Entity — F-II.3"))if(unavailable.toLowerCase(Locale.ROOT).contains(query))rows.addElement(unavailable);
         if(old!=null)for(int i=0;i<visible.size();++i)if(visible.get(i).type()==old)list.setSelectedIndex(i);
         create.setEnabled(canEdit()&&list.getSelectedIndex()>=0&&list.getSelectedIndex()<visible.size());
     }
@@ -120,6 +124,7 @@ public final class GraphTools extends JPanel {
             if(previous==null||selected==null||previous.id()!=selected.id()||(!draft&&!Objects.equals(previous,selected)))load();
             caption.setText(selected==null?"Select a node in Graph Canvas":"Node "+Long.toUnsignedString(selected.id())+" · "+graph.catalogue().stream().filter(t->t.type()==selected.type()).map(Bridge.GraphTemplate::name).findFirst().orElse("Unknown"));
             if(!fieldError.isEmpty())caption.setText(fieldError);else if(draft)caption.setText("Pending input · Apply/Enter or Save; Escape cancels");
+            sourceButton.setEnabled(selected!=null&&graph!=null&&graph.catalogue().stream().anyMatch(type->type.type()==selected.type()&&!type.source().isEmpty()));
             apply.setEnabled(canEdit()&&selected!=null);for(var c:List.of(name,value,comment,group,bookmark,breakpoint))c.setEnabled(canEdit()&&selected!=null);
             value.setEnabled(canEdit()&&selected!=null&&graph.catalogue().stream().anyMatch(t->t.type()==selected.type()&&(t.operation()==0||t.operation()==9)));
         }else {

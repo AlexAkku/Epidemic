@@ -64,6 +64,17 @@ struct PrefabLink {
     bool operator==(const PrefabLink &) const = default;
 };
 
+struct UserOperation {
+    std::string id, name, type, method, source;
+    std::uint64_t line = 1;
+    bool operator==(const UserOperation &) const = default;
+};
+struct UserSchema {
+    std::string assembly, fingerprint;
+    comp::DescribedComponent component;
+    std::vector<UserOperation> operations;
+    bool operator==(const UserSchema &) const = default;
+};
 struct ProjectDefinition {
     foundation::StringId id{};
 
@@ -72,13 +83,25 @@ struct ProjectDefinition {
     std::vector<EditorDocument> documents;
     std::vector<ProjectSystem> systems{};
     std::vector<PrefabLink> prefab_links{};
+    std::vector<UserSchema> user_schemas{};
 };
 
 struct ProjectSchema {
     gameplay::entities::EntityService &entities;
     const comp::ComponentRegistry &components;
     std::vector<std::pair<runtime::graph::TypeId, runtime::graph::Operation>> operations;
+    comp::ComponentRegistry *user_components = nullptr;
 };
+
+inline auto EffectiveOperations(const ProjectDefinition &project, const ProjectSchema &schema) {
+    auto operations = schema.operations;
+    for (const auto &type : project.user_schemas)
+        for (const auto &op : type.operations)
+            operations.emplace_back(runtime::graph::TypeId::FromString(op.id),runtime::graph::Operation::NativeCall);
+    return operations;
+}
+
+[[nodiscard]] foundation::Result<void> InstallUserSchemas(const ProjectDefinition &project,const ProjectSchema &schema);
 
 struct ProjectSnapshot {
     ProjectDefinition definition;

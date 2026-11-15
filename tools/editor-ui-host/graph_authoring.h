@@ -57,6 +57,17 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
     }
     return result;
 }
+inline std::vector<Recipe> Catalogue(const ProjectSchema &schema,const ProjectDefinition &project) {
+    auto result=Catalogue(schema);
+    for(const auto &type:project.user_schemas)for(const auto &op:type.operations) {
+        Recipe recipe{op.name,"C#",g::Operation::NativeCall,{{},g::TypeId::FromString(op.id),op.name,{}}};
+        using K=g::PortKind;using D=g::PortDirection;
+        for(const auto &[name,kind,direction]:std::array{std::tuple{"argument",K::Data,D::Input},std::tuple{"result",K::Data,D::Output},std::tuple{"in",K::Control,D::Input},std::tuple{"next",K::Control,D::Output}})
+            recipe.node.ports.push_back({foundation::StringId::FromString(op.id+"."+name),name,kind,direction,kind==K::Data?g::kI64Type:g::TypeId{}});
+        result.push_back(std::move(recipe));
+    }
+    return result;
+}
 inline GraphNodeSettings Settings(const EditorDocument &doc, std::uint64_t node) {
     const auto found = std::find_if(doc.graph_settings.begin(),doc.graph_settings.end(),[&](const auto &s){return s.node == node;});
     return found == doc.graph_settings.end() ? GraphNodeSettings{node,0,{},{},false,false} : *found;

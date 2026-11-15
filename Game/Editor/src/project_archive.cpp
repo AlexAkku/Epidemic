@@ -355,7 +355,20 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
             io.Id("parent",link.parent);
             io.Id("target",link.target);
         });
-    runtime::GraphDefinitionSerializer graph_codec{Types(schema)};
+    bool have_user = !project.definition.user_schemas.empty();
+    if (io.reader) { const auto present=io.reader->IsNull("user_schemas");
+        if(!present) Require(present.GetError().code=="serialization.field_missing");
+        have_user=present&&!present.Value(); }
+    if(have_user) io.Array("user_schemas",project.definition.user_schemas,64,[&](auto &type){
+        io.S("assembly",type.assembly);io.S("fingerprint",type.fingerprint);
+        io.S("name",type.component.name);io.U("version",type.component.version);
+        io.Array("fields",type.component.fields,64,[&](auto &field){io.S("name",field.name);io.Object("initial",[&]{Property(io,field.initial);});});
+        io.Array("operations",type.operations,64,[&](auto &op){io.S("id",op.id);io.S("name",op.name);io.S("type",op.type);io.S("method",op.method);io.S("source",op.source);io.U("line",op.line);});
+    });
+    auto graph_types=Types(schema);
+    for(const auto &type:project.definition.user_schemas)for(const auto &op:type.operations)
+        graph_types.push_back(runtime::graph::TypeId::FromString(op.id));
+    runtime::GraphDefinitionSerializer graph_codec{graph_types};
 
     io.Array("documents", project.definition.documents, 64, [&](auto &doc) {
         io.Id("id", doc.id);

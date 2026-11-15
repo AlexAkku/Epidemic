@@ -39,6 +39,24 @@
 | CTest / architecture / IPC / catalog | PASS | 19/19 и 16 framing cases; свежие затронутые Editor consumers |
 | Static | KNOWN DIAGNOSTICS: Verify-Changed Fast проверил 61 TU; общий результат FAIL из-за предупреждений в неизменённом коде. Два новых unchecked-optional-access исправлены; повтор backend с теми же checks не содержит diagnostics на добавленных/изменённых строках. Sandbox metrics TU чистый PASS. Сохраняются signed-bitwise Scene, exception/unsafe constructors Composition/Editor, ThumbnailCache parameters, narrowing в тестах и float-loop/switch diagnostics native_viewport. Подавлений и ослабления checks нет | Checks не ослаблялись; классификация в отчёте |
 | 2000-node render | NOT RUN / native limit1024 | Безопасный reject PASS, лимит не повышался |
-| Ручной Windows input/visual acceptance | NOT RUN | Без Computer Use; [инструкция](FII1_MANUAL_QA.md) |
+| Ручной Windows input/visual acceptance | PASS · владелец 2026-11-14 | Без Computer Use; [инструкция](FII1_MANUAL_QA.md) |
 
 [Отчёт F-II.1](FII1_GRAPH_AUTHORING.md).
+
+
+F-II.1-GATE **PASS**: владелец подтвердил ручную приёмку 2026-11-14 («Проверил, всё работает»). Исходная реализация `451ba62`; ранее зафиксированные ограничения производительности и исторические static diagnostics сохраняются. F-II.2 начинается от этого коммита.
+
+
+## F-II.2
+
+| Проверка | Результат |
+|---|---|
+| Full Debug/native-only CTest, public headers, architecture | PASS 161/161 |
+| Scalar metadata + native commands + Undo/Redo + fresh-process Save/Open | PASS; i64/double/bool/string |
+| Production Code Space build/register; SDK errors; failed last-good; Directory.Build.targets | PASS standalone smoke |
+| Source Save/external conflict/Reload/reopen/Editor disposal | PASS; owner-lifetime race regression retained |
+| C# through native VM and Play/Send/Tick; two methods, one worker, Stop and retired handles | PASS automated |
+| IPC v4/catalog and existing managed ABI tests | PASS |
+| Static | 73 TU checked; new diagnostics corrected, existing-code warnings remain FAIL/backlog |
+| Physical multiwindow/Rider/visual qualification | MANUAL NOT RUN |
+| LSP | NOT SHIPPED; specification offline fallback, not claimed PASS |

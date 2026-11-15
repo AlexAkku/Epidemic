@@ -45,6 +45,7 @@ public final class PlatformSession implements Disposable {
     private final RecentProjects recent=new RecentProjects(profile);
     private final boolean smoke=Boolean.getBoolean("epidemic.ui.platform.smoke");
     private final long started=System.nanoTime();
+    private ScriptWorkspace scripts;
     private Bridge bridge;
     private Bridge.Snapshot snapshot;
     private Bridge.Service service=Bridge.Service.Unavailable;
@@ -86,7 +87,19 @@ public final class PlatformSession implements Disposable {
             edt(()->close(true));return false;
         }
     };
-    public PlatformSession(Project project){this.project=project;}
+    public PlatformSession(Project project){this.project=project;
+        scripts=new ScriptWorkspace(project,()->snapshot==null?null:Path.of(snapshot.path()).getParent(),(schema,root)->{
+            if(!ready()||snapshot.playing()||!Path.of(snapshot.path()).getParent().equals(root))return CompletableFuture.failedFuture(new IOException("script.session_changed_or_playing"));
+            Bridge participant=bridge;long projectId=snapshot.project();
+            var flushes=new ArrayList<CompletableFuture<Void>>();if(tools!=null)flushes.add(tools.flushDrafts());for(var view:views)flushes.add(view.reader().flushDrafts());
+            return CompletableFuture.allOf(flushes.toArray(CompletableFuture[]::new)).thenCompose(ignored->{
+                var current=participant.latest();
+                if(bridge!=participant||current==null||current.snapshot()==null||current.snapshot().project()!=projectId||current.snapshot().playing())return CompletableFuture.failedFuture(new IOException("script.session_changed_or_playing"));
+                return participant.callAt(current.generation(),current.snapshot().revision(),39,schema);
+            });
+        },this::reportProblem,()->snapshot);
+        scripts.filesChanged(()->{if(tools!=null)tools.refreshSources();for(var view:views)view.reader().refreshSources();});
+    }
     public boolean isDisposed(){return disposed;}
     public void activateWindow(){edt(()->{
         Window target=opened?WindowManager.getInstance().getFrame(project):launcher;
@@ -131,6 +144,7 @@ public final class PlatformSession implements Disposable {
         project.getMessageBus().connect(this).subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER,new FileEditorManagerListener(){
             @Override public void selectionChanged(FileEditorManagerEvent event){
                 VirtualFile file=event.getNewFile();String id=file==null?null:file.getUserData(PanelEditorProvider.PANEL);
+                if(file!=null&&file.getUserData(ScriptWorkspace.OWNER)!=null){selectedPanel="code.space";context("Code");}
                 if(id!=null&&!Objects.equals(file,event.getOldFile())){
                     selectedPanel=id;context(Catalog.context(id));selectDocument(file);
                 }
@@ -216,8 +230,9 @@ public final class PlatformSession implements Disposable {
             if(current==null||!current.capabilities().contains("asset-preview"))
                 return CompletableFuture.failedFuture(new IOException("ui.preview_unavailable"));
             return participant.assetPreview(current.generation(),id,key,divisor);
-        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));result.graphCommands(()->supports("graph-authoring"),this::sceneGesture);return result;}
+        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));result.graphCommands(()->supports("graph-authoring"),this::sceneGesture);result.sourceCommands(scripts::sourceFiles,(path,with)->scripts.open(path,1,with),scripts::newClass);result.sourceNavigator(template->scripts.open(Path.of(snapshot.path()).getParent().resolve(template.source()),template.line(),false));return result;}
     private CompletableFuture<Bridge.Reply> sceneGesture(UiPanels.GestureEdit edit){
+        if(edit.operation()==38&&!edit.arguments().isEmpty()&&edit.arguments().getFirst().equals("run")&&!allowScriptExecution())return CompletableFuture.failedFuture(new IOException("script.execution_cancelled"));
         if(!supports(switch(edit.operation()){case 33->"scene-resources";case 34->"scene-systems";case 38->"graph-authoring";default->"scene-gestures";})||snapshot.playing())
             return CompletableFuture.failedFuture(new IOException("ui.readonly_or_busy"));
         var future=bridge.callAt(edit.generation(),edit.revision(),edit.operation(),edit.arguments().toArray(String[]::new));
@@ -262,7 +277,7 @@ public final class PlatformSession implements Disposable {
         if(bridge!=participant||snapshot==null||snapshot.project()!=projectId||service==Bridge.Service.Error){result.completeExceptionally(new IOException("ui.session_changed"));return;}
         if(service==Bridge.Service.Loading){if(readyActions.size()>=32)result.completeExceptionally(new IOException("ui.queue_full"));else readyActions.addLast(()->saveReady(participant,projectId,result));return;}
         service=Bridge.Service.Loading;refreshDocumentCommands();
-        participant.call(6).whenComplete((reply,error)->edt(()->{if(error!=null)result.completeExceptionally(error);else result.complete(reply);}));
+        participant.call(6).whenComplete((reply,error)->edt(()->{if(error!=null)result.completeExceptionally(error);else {try{scripts.saveAll();result.complete(reply);}catch(Exception sourceError){result.completeExceptionally(sourceError);}}}));
     }
     private void select(Bridge.Selection selection){pendingSelection=selection;flushSelection();}
     private void flushSelection(){
@@ -499,7 +514,7 @@ public final class PlatformSession implements Disposable {
         ActionToolbar toolbar=ActionManager.getInstance().createActionToolbar("Epidemic.Document.Toolbar",commands,true);toolbar.setTargetComponent(root);
         JPanel header=new JPanel(new BorderLayout());
         if(!Boolean.getBoolean("epidemic.ui.standalone"))header.add(toolbar.getComponent(),BorderLayout.NORTH);
-        JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(reader.view(id));
+        JLabel title=new JLabel();if(file.getUserData(PanelEditorProvider.DOCUMENT)!=null)header.add(title,BorderLayout.SOUTH);root.add(header,BorderLayout.NORTH);root.add(id.equals("code.space")?scripts.panel():reader.view(id));
         registerWorkspaceShortcuts(root);
         DocumentView view=new DocumentView(reader,root,file,title);views.add(view);
         var identity = file.getUserData(PanelEditorProvider.DOCUMENT);
@@ -523,6 +538,7 @@ public final class PlatformSession implements Disposable {
         root.add(graph.component(), BorderLayout.CENTER); root.revalidate(); root.repaint();
     }
     private CompletableFuture<Bridge.Reply> graphCommand(long generation,long revision,int operation,String... args){
+        if(operation==38&&args.length>0&&args[0].equals("run")&&!allowScriptExecution())return CompletableFuture.failedFuture(new IOException("script.execution_cancelled"));
         var current=bridge.latest();
         if(current==null||current.snapshot()==null||current.generation()!=generation||current.snapshot().revision()!=revision)return CompletableFuture.failedFuture(new IOException("ui.stale_revision"));
         if(operation==6)return saveProject();
@@ -536,6 +552,7 @@ public final class PlatformSession implements Disposable {
         return graph == null ? view.component() : graph.preferredFocus();
     }
     public void release(DocumentView view){
+        scripts.releasePanel(view.component());
         views.remove(view);
         var graph = graphViews.remove(view);
         if (graph != null) com.intellij.openapi.util.Disposer.dispose(graph);
@@ -684,8 +701,11 @@ public final class PlatformSession implements Disposable {
     private boolean ready(){return opened&&!closing&&pendingDocumentCloses.isEmpty()&&bridge!=null&&service==Bridge.Service.Ready&&snapshot!=null;}
     private boolean supports(String capability){return ready()&&bridge.latest()!=null&&bridge.latest().capabilities().contains(capability);}
     private boolean canClone(){return supports("clone-folder")&&snapshot.storage()==2&&!snapshot.dirty();}
+    private boolean allowScriptExecution(){
+        return snapshot==null||snapshot.graphs().stream().flatMap(g->g.catalogue().stream()).noneMatch(t->t.category().equals("C#"))||scripts.trustExecution();
+    }
     private void playback(boolean play){
-        if(!supports(play?"play":"stop"))return;
+        if(!supports(play?"play":"stop")||(play&&!allowScriptExecution()))return;
         features.dispatch(playFeature,true,()->command(play?13:14));
     }
     private void togglePlayback(){if(supports("play")&&supports("stop"))playback(!snapshot.playing());}
@@ -849,6 +869,11 @@ public final class PlatformSession implements Disposable {
         for(int kind=0;kind<3;kind++){
             final int type=kind;sub.get("File").add(action("New "+new String[]{"Scene","Prefab","Graph"}[kind]+"…",()->newDocument(type),()->supports("create-document")&&!snapshot.playing()));
         }
+        sub.get("File").add(action("New C# Class…",()->{open("code.space");scripts.newClass();},()->opened));
+        sub.get("File").add(action("Open C# / Open With…",()->{open("code.space");scripts.choose();},()->opened));
+        sub.get("Build").add(action("Build & Register C#…",scripts::build,()->ready()&&!snapshot.playing()));
+        sub.get("Build").add(action("Cancel C# Build",scripts::cancel,()->opened));
+        sub.get("Tools").add(action("Code Space Preferences…",scripts::preferences,()->opened));
         sub.get("Edit").add(undoAction);sub.get("Edit").add(redoAction);
         sub.get("Edit").add(action("Rename selected document…",this::renameDocument,()->supports("rename-document")&&!snapshot.playing()&&snapshot.documents().stream().anyMatch(d->d.id()==snapshot.selection().document())));
         for(Catalog.Panel panel:catalog.panels())sub.get("View").add(action(panel.label(),()->open(panel.id()),()->opened));
@@ -890,7 +915,11 @@ public final class PlatformSession implements Disposable {
             group.remove(action,manager);
     }
     private static boolean editableTextFocus(){
-        return KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof javax.swing.text.JTextComponent text&&text.isEditable();
+        return com.intellij.ide.DataManager.getInstance().getDataContext(KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner()).getData(CommonDataKeys.EDITOR)!=null || KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner() instanceof javax.swing.text.JTextComponent text&&text.isEditable();
+    }
+    void sourceShortcuts(JComponent target,Disposable lifetime){
+        saveAction.registerCustomShortcutSet(CustomShortcutSet.fromString("control S"),target,lifetime);
+        saveAllAction.registerCustomShortcutSet(CustomShortcutSet.fromString("control shift S"),target,lifetime);
     }
     private void registerWorkspaceShortcuts(JComponent target){
         if(target.getClientProperty("epidemic.shortcuts")!=null)return;
@@ -913,6 +942,7 @@ public final class PlatformSession implements Disposable {
         if(closing)return;
         if(activeSave!=null&&!activeSave.isDone()&&service!=Bridge.Service.Error){activeSave.whenComplete((reply,error)->{if(error==null)edt(()->close(exit));});return;}
         if(service==Bridge.Service.Loading||!pendingDocumentCloses.isEmpty()){if(readyActions.size()<32)readyActions.addLast(()->close(exit));return;}
+        if(!scripts.closeSources())return;
         if(service==Bridge.Service.Error){
             if(Messages.showYesNoDialog(project,"The backend is disconnected. Unsaved native edits cannot be saved. Close this session and keep the last committed project?","Disconnected Project",Messages.getWarningIcon())!=Messages.YES){return;}
             if(bridge!=null)bridge.close();bridge=null;closedUi(exit);return;
@@ -929,7 +959,7 @@ public final class PlatformSession implements Disposable {
             closing=false;if(error!=null){failure(error);return;}closedUi(exit);
         }));
     }
-    private void closedUi(boolean exit){opened=false;snapshot=null;pickerImport=null;loggedContentRevision=0;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
+    private void closedUi(boolean exit){scripts.cancel();opened=false;snapshot=null;pickerImport=null;loggedContentRevision=0;pendingSelection=null;selecting=false;readyActions.clear();pendingDocumentCloses.clear();if(tools!=null){tools.refresh(null);tools.sessionState(0,false);}var manager=(com.intellij.openapi.fileEditor.impl.FileEditorManagerImpl)FileEditorManager.getInstance(project);for(VirtualFile file:documents.values())manager.closeFile(file,true,true);documents.clear();for(ToolWindow tool:groups.values())tool.hide(null);if(exit)finish();else{WindowManager.getInstance().getFrame(project).setVisible(false);launcher();}}
     private void exit(){if(opened){close(true);return;}finish();}
     private void finish(){if(bridge==null){exitApplication();return;}bridge.shutdown().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}if(smoke)require(NativeViewport.metrics()[0]==0,"Project close leaked native surfaces");record("PASS Platform native shutdown; surfaces="+NativeViewport.metrics()[0]);exitApplication();}));}
     private void exitApplication(){
@@ -971,7 +1001,15 @@ public final class PlatformSession implements Disposable {
                 JComponent form=InspectorForms.form(schema,features);form.setSize(520,720);layout(form);
                 try{BufferedImage image=new BufferedImage(520,720,BufferedImage.TYPE_INT_RGB);Graphics2D graphics=image.createGraphics();form.printAll(graphics);graphics.dispose();Path folder=output.resolve("schemas");Files.createDirectories(folder);ImageIO.write(image,"png",folder.resolve(schema.id()+".png").toFile());}catch(IOException e){throw new UncheckedIOException(e);}
             }
-            savePanels().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}record("PASS Platform U2-U7 shell smoke: actual ToolWindowManager/FileEditorProvider/ActionManager, shared native project, 46 panels captured; 77 form diagnostic prints; navigation left authoring clean");smokeDocuments(0);}));return;
+            try{scripts.smoke().thenCompose(ignored->{record("PASS F-II.2 Platform C# Editor/Document, Unicode Save, fingerprint auto-save guard, dirty conflict preservation, explicit reload, reopen, bounded Editor release");try{return scripts.smokeBuild();}catch(Exception error){return CompletableFuture.<Bridge.Reply>failedFuture(error);}}).whenComplete((built,buildError)->edt(()->{
+                if(buildError!=null){failure(buildError);return;}
+                record("PASS F-II.2 production Build & Register, native type without Editor rebuild, SDK file:line diagnostics, failed-build last-good preservation, Directory.Build.targets not executed");
+                bridge.call(7).whenComplete((undone,undoError)->edt(()->{
+                    if(undoError!=null){failure(undoError);return;}
+                    require(snapshot.componentTypes().stream().noneMatch(type->type.name().equals("user.SdkSmoke")),"Registry Undo retained a removed user type");
+                    savePanels().whenComplete((v,e)->edt(()->{if(e!=null){failure(e);return;}record("PASS Platform U2-U7 shell smoke: actual ToolWindowManager/FileEditorProvider/ActionManager, shared native project, 46 panels captured; 77 form diagnostic prints; navigation left authoring clean");smokeDocuments(0);}));
+                }));
+            }));}catch(Exception error){failure(error);}return;
         }
         String id=ids.get(index);open(id);later(350,()->{capture("ui-platform-"+id.replace('.','-'));screens(index+1);});
     }
@@ -1458,5 +1496,5 @@ public final class PlatformSession implements Disposable {
             expectedDisconnect=false;reconnect();
         })));
     }
-    @Override public void dispose(){disposed=true;ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();for(var graph:graphViews.values())com.intellij.openapi.util.Disposer.dispose(graph);graphViews.clear();views.clear();}
+    @Override public void dispose(){disposed=true;scripts.close();ProjectManager.getInstance().removeProjectManagerListener(closeGuard);if(bridge!=null)bridge.close();if(launcher!=null)launcher.dispose();if(menu!=null){ActionManager actions=ActionManager.getInstance();((DefaultActionGroup)actions.getAction("MainMenu")).remove(menu);actions.unregisterAction("Epidemic.MainMenu");}io.shutdownNow();for(var entry:List.copyOf(floatingGuards.entrySet())){entry.getKey().removeWindowListener(entry.getValue().guard());entry.getValue().originals().forEach(entry.getKey()::addWindowListener);}floatingGuards.clear();for(var graph:graphViews.values())com.intellij.openapi.util.Disposer.dispose(graph);graphViews.clear();views.clear();}
 }

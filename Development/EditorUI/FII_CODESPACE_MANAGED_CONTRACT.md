@@ -31,3 +31,8 @@
 6. Turret V1 → Play/Invoke → Stop → пересборка V2 → новый Play; отказ старых handles, ошибки build/worker, отсутствие зависших процессов и DLL locks; C++ only регрессия.
 
 F-II.0b не реализует эти пункты. Выбор отдельного worker является окончательным lifecycle-контрактом для F-II.2; его IPC и executable будут реализованы и квалифицированы в том этапе.
+
+
+## Реализация F-II.2
+
+Code Space, native scalar schema и generation worker реализованы от `451ba62`. [Результат и ограничения](FII2_SCHEMA_CODESPACE.md), [ручная проверка](FII2_MANUAL_QA.md). Для первого поставляемого профиля выбрано явно разрешённое §5.3 ТЗ offline fallback: LSP4IJ/csharp-ls не включены в дистрибутив, соответствующие пункты прежней последовательности не отмечаются PASS. Rider остаётся внешним приложением. Worker RPC v2 размещает штатный managed ABI v1; native ComponentStore/Graph VM/Scheduler остаются владельцами данных и исполнения. Assembly/hash и handles закреплены за поколением; один worker обслуживает разные операции/объекты. Schema v1 не делает неявной миграции несовместимых полей/defaults.

@@ -34,6 +34,18 @@ struct ComponentTypeInfo {
     std::vector<PropertyInfo> properties;
 };
 
+struct DescribedProperty {
+    std::string name;
+    PropertyValue initial;
+    bool operator==(const DescribedProperty &) const = default;
+};
+struct DescribedComponent {
+    std::string name;
+    std::uint64_t version = 1;
+    std::vector<DescribedProperty> fields;
+    bool operator==(const DescribedComponent &) const = default;
+};
+
 class ComponentRegistry final {
   public:
     class Prepared final {
@@ -139,6 +151,12 @@ class ComponentRegistry final {
         return Result::Success(id);
     }
 
+    // Atomically replace the declarative generation. Frozen native descriptors are never replaced.
+    // Re-registering an identical descriptor is idempotent; migration is explicit.
+    [[nodiscard]] foundation::Result<void> RegisterDescriptions(std::span<const DescribedComponent> schemas);
+
+    [[nodiscard]] foundation::Result<std::shared_ptr<ComponentRegistry>> WithDescriptions(std::span<const DescribedComponent> schemas) const;
+
     void Freeze() noexcept {
         names_.Freeze();
     }
@@ -177,6 +195,7 @@ class ComponentRegistry final {
 
     StableTypeRegistry<TypeId> names_;
     std::unordered_map<std::uint64_t, std::shared_ptr<Descriptor>> types_;
+    std::unordered_map<std::uint64_t, DescribedComponent> descriptions_;
     friend class ComponentStore;
 };
 

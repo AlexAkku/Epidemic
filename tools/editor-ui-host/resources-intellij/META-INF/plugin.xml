@@ -8,6 +8,8 @@
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="epidemic.editor.platform.PlatformSession"/>
         <fileEditorProvider implementation="epidemic.editor.platform.PanelEditorProvider"/>
+        <fileEditorProvider implementation="epidemic.editor.platform.ScriptEditorProvider"/>
+        <fileDocumentSynchronizationVetoer implementation="epidemic.editor.platform.ScriptSaveGuard"/>
         <virtualFilePreCloseCheck implementation="epidemic.editor.platform.DocumentCloseCheck"/>
         <postStartupActivity implementation="epidemic.editor.platform.PlatformStartup"/>
     </extensions>

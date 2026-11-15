@@ -2,6 +2,10 @@
 #include "Epidemic/Game/Editor/editor_project.h"
 
 namespace epidemic::game::editor {
+struct RegisterUserSchema {
+    runtime::AssetId document{}; // Existing project identity; registry metadata is project-owned.
+    std::vector<UserSchema> schemas;
+};
 struct CreateDocument {
     EditorDocument document;
 };
@@ -190,7 +194,7 @@ struct SetParameterOverride {
 };
 
 using Command =
-    std::variant<CreateDocument, DeleteDocument, DuplicateDocument, DiscardDocument, RenameDocument, SetEntryScene, EditSystem, EditPrefabLink,
+    std::variant<RegisterUserSchema, CreateDocument, DeleteDocument, DuplicateDocument, DiscardDocument, RenameDocument, SetEntryScene, EditSystem, EditPrefabLink,
                  AddEntity, DeleteEntity, ReparentPrefabNode, SetComponent, DeleteComponent, SetProperty, SetBehavior,
                  DeleteBehavior, AddGraphNode, DeleteGraphNode, ConnectPorts, DisconnectPorts, MoveGraphNode, SetGraphNodeSettings,
                  AddSceneNode, DeleteSceneNode, SetSceneParent, RenameSceneNode, OrderSceneNode, SetSceneTransform, PlacePrefab,

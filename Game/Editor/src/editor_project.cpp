@@ -18,7 +18,7 @@ const EditorDocument *Find(const ProjectDefinition &definition, runtime::AssetId
 class References final : public comp::IGraphBehaviorHost {
   public:
     References(const ProjectDefinition &definition, const ProjectSchema &schema)
-        : definition_(definition), schema_(schema) {
+        : definition_(definition), schema_(schema), operations_(EffectiveOperations(definition,schema)) {
     }
 
     foundation::Result<void>
@@ -30,9 +30,9 @@ class References final : public comp::IGraphBehaviorHost {
         const auto has_port = [&](foundation::StringId id, runtime::graph::Operation operation) {
             for (const auto &node : graph.nodes) {
                 const auto binding =
-                    std::find_if(schema_.operations.begin(), schema_.operations.end(),
+                    std::find_if(operations_.begin(), operations_.end(),
                                  [&](const auto &item) { return item.first == node.type_id; });
-                if (binding != schema_.operations.end() && binding->second == operation)
+                if (binding != operations_.end() && binding->second == operation)
                     for (const auto &port : node.ports)
                         if (port.id == id &&
                             (operation == runtime::graph::Operation::EventEntry
@@ -71,6 +71,7 @@ class References final : public comp::IGraphBehaviorHost {
   private:
     const ProjectDefinition &definition_;
     const ProjectSchema &schema_;
+    std::vector<std::pair<runtime::graph::TypeId,runtime::graph::Operation>> operations_;
 };
 
 void Dependencies(const comp::PrefabNode &node,
@@ -190,19 +191,28 @@ MaterializePrefab(const ProjectDefinition &definition, runtime::AssetId prefab,
 }
 
 foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>
-ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema) {
+ValidatePreparedProject(const ProjectDefinition &definition, const ProjectSchema &schema) {
     using Result = foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>;
     if (!definition.id.IsValid() || definition.documents.size() > 64 || definition.systems.size() > 128 ||
         definition.prefab_links.size() > 256 ||
         !schema.entities.IsFrozen() || !schema.components.IsFrozen())
         return Result::Failure(Error("editor.invalid_project"));
+    std::set<std::string> user_operations;
+    const auto relative=[](std::string path,std::string_view prefix){std::replace(path.begin(),path.end(),'\\','/');return path.starts_with(prefix)&&path.find("../")==std::string::npos&&path.find(":")==std::string::npos;};
+    for(const auto &type:definition.user_schemas){
+        if(!definition.user_schemas.empty()&&(type.assembly!=definition.user_schemas.front().assembly||type.fingerprint!=definition.user_schemas.front().fingerprint))return Result::Failure(Error("editor.user_generation_mismatch"));
+        if(!relative(type.assembly,".epidemic/scripts/")||type.assembly.size()>1024||type.fingerprint.size()!=64||!std::all_of(type.fingerprint.begin(),type.fingerprint.end(),[](char c){return (c>='0'&&c<='9')||(c>='a'&&c<='f');}))return Result::Failure(Error("editor.user_schema_identity"));
+        for(const auto &op:type.operations)
+            if(op.id.empty()||op.id.size()>256||op.name.empty()||op.type.empty()||op.method.empty()||op.source.size()>1024||!relative(op.source,"Scripts/")||op.line==0||op.line>10000000||!user_operations.insert(op.id).second)
+                return Result::Failure(Error("editor.user_operation"));
+    }
     std::unordered_set<std::uint64_t> ids;
     std::unordered_set<std::uint64_t> operation_types;
-    if (schema.operations.size() > 256)
+    if (EffectiveOperations(definition,schema).size() > 256)
         return Result::Failure(Error("editor.operation_schema"));
     std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type};
 
-    for (const auto &[type, operation] : schema.operations) {
+    for (const auto &[type, operation] : EffectiveOperations(definition,schema)) {
         if (!type.IsValid() || !operation_types.insert(type.Raw()).second ||
             operation > runtime::graph::Operation::Repeat)
             return Result::Failure(Error("editor.operation_schema"));
@@ -337,6 +347,24 @@ ValidateProject(const ProjectDefinition &definition, const ProjectSchema &schema
     return Result::Success(assets.Value().catalog);
 }
 
+foundation::Result<void> InstallUserSchemas(const ProjectDefinition &project,const ProjectSchema &schema) {
+    if(!schema.user_components||schema.user_components!=&schema.components)
+        return project.user_schemas.empty()?foundation::Result<void>::Success():foundation::Result<void>::Failure(Error("editor.user_registry_unavailable"));
+    std::vector<comp::DescribedComponent> descriptions;for(const auto &type:project.user_schemas)descriptions.push_back(type.component);
+    return schema.user_components->RegisterDescriptions(descriptions);
+}
+
+foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>
+ValidateProject(const ProjectDefinition &definition,const ProjectSchema &schema) {
+    using Result=foundation::Result<std::shared_ptr<const runtime::IAssetCatalog>>;
+    if(!schema.entities.IsFrozen()||!schema.components.IsFrozen())return Result::Failure(Error("editor.invalid_project"));
+    if(!definition.user_schemas.empty()&&(!schema.user_components||schema.user_components!=&schema.components))return Result::Failure(Error("editor.user_registry_unavailable"));
+    std::vector<comp::DescribedComponent> descriptions;for(const auto &type:definition.user_schemas)descriptions.push_back(type.component);
+    auto staged=schema.components.WithDescriptions(descriptions);if(!staged)return Result::Failure(staged.GetError());
+    ProjectSchema candidate{schema.entities,*staged.Value(),schema.operations,nullptr};
+    return ValidatePreparedProject(definition,candidate);
+}
+
 foundation::Result<std::unique_ptr<EditorProject>>
 EditorProject::Create(std::filesystem::path file, ProjectDefinition definition,
                       const ProjectSchema &schema) {
@@ -363,6 +391,7 @@ EditorProject::Create(std::filesystem::path file, ProjectDefinition definition,
     const auto persistable = detail::ValidateForPersistence(definition, project->used_ids_, schema);
     if (!persistable)
         return Result::Failure(persistable.GetError());
+    const auto installed=InstallUserSchemas(definition,schema);if(!installed)return Result::Failure(installed.GetError());
     project->current_ = std::make_shared<const ProjectSnapshot>(
         ProjectSnapshot{std::move(definition), valid.Value(), 1});
     return Result::Success(std::move(project));

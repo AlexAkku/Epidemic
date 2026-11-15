@@ -9,7 +9,8 @@ param(
     [switch]$NoPackage,
     [switch]$SideBySide,
     [switch]$Run,
-    [switch]$Smoke
+    [switch]$Smoke,
+    [switch]$ManagedOff
 )
 $ErrorActionPreference='Stop'
 $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..'))
@@ -51,6 +52,13 @@ if($LASTEXITCODE){throw 'JCEF/Chromium attribution assembly failed'}
 $retiredNative=Join-Path $productRoot 'native/EpidemicEditorDesktop.exe'
 if(Test-Path -LiteralPath $retiredNative){Remove-Item -LiteralPath $retiredNative -Force}
 Copy-Item "$build/$Configuration/EpidemicEditorBackend.exe","$build/$Configuration/EpidemicUiViewport.dll" "$productRoot/native" -Force
+$managedOutput=Join-Path $productRoot 'native/managed'
+if(Test-Path -LiteralPath $managedOutput){Remove-Item -LiteralPath $managedOutput -Recurse -Force}
+if(-not $ManagedOff -and (Get-Command dotnet -ErrorAction SilentlyContinue)){
+    & dotnet publish "$PSScriptRoot/managed/Epidemic.ScriptWorker/Epidemic.ScriptWorker.csproj" -c Release -o $managedOutput --artifacts-path "$root/.ai/managed-build" --no-self-contained --nologo
+    if($LASTEXITCODE){throw 'Script worker build failed'}
+}
+
 $sources=@(Get-ChildItem "$PSScriptRoot/java" -Recurse -Filter '*.java' | Where-Object Name -notin @('EditorApp.java','DockSpace.java','DockLayout.java','UiTests.java','AssetTests.java','IslandsTabsUI.java') | ForEach-Object FullName)
 $sources+=@(Get-ChildItem "$PSScriptRoot/java-intellij","$PSScriptRoot/standalone/java","$PSScriptRoot/standalone/upstream" -Recurse -Filter '*.java' | ForEach-Object FullName)
 & "$jdk/bin/javac.exe" --release 21 -encoding UTF-8 -Xlint:deprecation -classpath "$productRoot/lib/*" -d $classes $sources

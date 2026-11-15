@@ -1,5 +1,7 @@
 #include "demo_game.h"
 #include "graph_authoring.h"
+#include "script_worker.h"
+#include <fstream>
 #include "Epidemic/Runtime/Support/graph_scheduler.h"
 #include <sstream>
 #include "Epidemic/Game/Editor/editor_workspace.h"
@@ -24,6 +26,7 @@
 #include <set>
 #include <unordered_map>
 #include <Windows.h>
+#include <TlHelp32.h>
 
 namespace {
 namespace ed = epidemic::game::editor;
@@ -125,7 +128,88 @@ struct Node {
 
 class Backend {
     ex::Schema schema_;
-    std::vector<ed::graph_ui::Recipe> graph_recipes_ = ed::graph_ui::Catalogue(schema_.View());
+    std::vector<ed::graph_ui::Recipe> Recipes() const {
+        return workspace_&&workspace_->Project()?ed::graph_ui::Catalogue(const_cast<ex::Schema &>(schema_).View(),workspace_->Project()->Snapshot()->definition):ed::graph_ui::Catalogue(const_cast<ex::Schema &>(schema_).View());
+    }
+    std::filesystem::path ScriptPath(const std::string &relative) const {
+        const auto root=std::filesystem::weakly_canonical(workspace_->Folder()?workspace_->Folder()->Root():workspace_->Project()->File().parent_path());
+        const auto path=std::filesystem::weakly_canonical(root/Path(relative));
+        const auto rel=path.lexically_relative(root);
+        if(relative.empty()||rel.empty()||rel.is_absolute()||*rel.begin()==L"..")throw std::runtime_error("script.path_outside_project");
+        return path;
+    }
+    std::filesystem::path WorkerPath() const {
+        wchar_t path[32768];const auto count=GetModuleFileNameW(nullptr,path,32768);
+        if(!count||count==32768)throw std::runtime_error("script.worker_path");
+        return std::filesystem::path(path).parent_path()/L"managed/Epidemic.ScriptWorker.dll";
+    }
+    std::weak_ptr<ed::scripts::SharedWorker> active_script_worker_;
+    void StopScripts(){if(auto worker=active_script_worker_.lock())worker->Stop();active_script_worker_.reset();}
+    std::uint64_t script_generation_=0;
+    ed::PlayOptions ScriptPlayOptions() {
+        const auto play_generation=++script_generation_;
+        auto options=ex::Options(schema_);auto original=std::make_shared<const decltype(options.bindings)>(options.bindings);
+        auto descriptors=std::make_shared<const std::vector<ed::UserSchema>>(workspace_->Project()->Snapshot()->definition.user_schemas);
+        auto shared=descriptors->empty()?std::shared_ptr<ed::scripts::SharedWorker>{}:std::make_shared<ed::scripts::SharedWorker>(WorkerPath(),ScriptPath(descriptors->front().assembly),descriptors->front().fingerprint,play_generation);
+        active_script_worker_=shared;
+        options.bindings=[original,descriptors,shared](ed::PlayContext &context,rt::AssetId graph){
+            auto bindings=(*original)(context,graph);
+            for(const auto &type:*descriptors)for(const auto &operation:type.operations){
+                bindings.push_back({Id::FromString(operation.id),rt::graph::Operation::NativeCall,
+                    [shared,type=std::shared_ptr<const ed::UserSchema>(descriptors,&type),operation=std::shared_ptr<const ed::UserOperation>(descriptors,&operation),runtime=&context](const epidemic::game::composition::OperationContext &call,std::int64_t argument){
+                        using Result=epidemic::foundation::Result<std::int64_t>;
+                        try {
+                            if(!call.scope.IsAlive())throw std::runtime_error("script.stale_scope");
+                            const auto handle=call.scope.Handle();const auto key=std::to_string(handle.slot)+":"+std::to_string(handle.generation)+":"+std::to_string(call.scope.SystemId().Raw())+":"+std::to_string(call.scope.Part().Raw());
+                            ed::scripts::Worker::Fields fields;
+                            const auto entity=runtime->entities.Resolve(handle);
+                            const auto component=entity?runtime->components.Find(entity->id,epidemic::gameplay::TypeId::FromString(type->component.name),call.scope.Part()):std::nullopt;
+                            if(entity&&!component)throw std::runtime_error("script.component_missing");
+                            if(component)for(const auto &field:type->component.fields){auto value=runtime->components.ReadProperty(*component,Id::FromString(field.name));Require(value);fields.emplace_back(field.name,value.Value());}
+                            auto result=shared->Invoke(operation->id,type->component.name,key,argument,fields);
+                            if(!result)return result;
+                            if(component){std::vector<ed::comp::PropertyAssignment> assignments;for(const auto &[name,value]:fields)assignments.push_back({Id::FromString(name),value});
+                                Require(ValidateScriptResponse(*type,assignments));
+                                for(const auto &assignment:assignments)Require(runtime->components.WriteProperty(*component,assignment));}
+                            return result;
+                        }catch(const std::exception &error){return Result::Failure(epidemic::foundation::Error::Create("script.runtime",error.what()));}
+                    }});
+            }
+            return bindings;
+        };return options;
+    }
+    static epidemic::foundation::Result<void> ValidateScriptResponse(const ed::UserSchema &type,const std::vector<ed::comp::PropertyAssignment> &fields){
+        // Validate the complete response before publishing native live fields.
+        if(fields.size()!=type.component.fields.size())return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create("script.field_count","managed response"));
+        std::set<std::uint64_t> ids;
+        for(const auto &field:fields){const auto found=std::find_if(type.component.fields.begin(),type.component.fields.end(),[&](const auto &entry){return Id::FromString(entry.name)==field.property;});
+            if(found==type.component.fields.end()||!ids.insert(field.property.Raw()).second||found->initial.index()!=field.value.index())return epidemic::foundation::Result<void>::Failure(epidemic::foundation::Error::Create("script.field_type","managed response"));}
+        return epidemic::foundation::Result<void>::Success();
+    }
+    void RegisterScripts(const std::vector<std::string> &args,std::uint64_t revision) {
+        if(args.size()!=1)throw std::runtime_error("script.arguments");
+        const auto path=ScriptPath(args[0]);
+        if(path.extension()!=L".schema"||std::filesystem::file_size(path)>MaxString)throw std::runtime_error("script.schema_limit");
+        std::ifstream file(path,std::ios::binary);Bytes data((std::istreambuf_iterator<char>(file)),{});Reader input{data};
+        if(input.Number(2)!=1)throw std::runtime_error("script.schema_version");
+        const auto assembly=input.Text(),fingerprint=input.Text();
+        (void)ScriptPath(assembly);
+        if(fingerprint.size()!=64||!std::all_of(fingerprint.begin(),fingerprint.end(),[](char ch){return (ch>='0'&&ch<='9')||(ch>='a'&&ch<='f');}))throw std::runtime_error("script.fingerprint");
+        const auto count=input.Number(4);if(count>64)throw std::runtime_error("script.type_limit");
+        std::vector<ed::UserSchema> schemas;
+        for(std::uint64_t i=0;i<count;++i){
+            ed::UserSchema type;type.assembly=assembly;type.fingerprint=fingerprint;
+            type.component.name=input.Text();type.component.version=input.Number(8);
+            const auto fields=input.Number(4);if(fields>64)throw std::runtime_error("script.field_limit");
+            for(std::uint64_t j=0;j<fields;++j){auto name=input.Text();const auto kind=input.Number(1);const auto value=input.Text();if(kind>3)throw std::runtime_error("script.field_type");
+                auto parsed=ed::EditorWorkspace::ParseValue(static_cast<ed::comp::PropertyKind>(kind),value);Require(parsed);type.component.fields.push_back({std::move(name),std::move(parsed.Value())});}
+            const auto methods=input.Number(4);if(methods>64)throw std::runtime_error("script.method_limit");
+            for(std::uint64_t j=0;j<methods;++j){ed::UserOperation operation;operation.id=input.Text();operation.name=input.Text();operation.type=input.Text();operation.method=input.Text();operation.source=input.Text();operation.line=input.Number(8);type.operations.push_back(std::move(operation));}
+            schemas.push_back(std::move(type));
+        }
+        if(input.position!=data.size())throw std::runtime_error("script.trailing_data");
+        Require(workspace_->Execute({ed::RegisterUserSchema{{},std::move(schemas)}},revision));
+    }
     std::optional<ed::EditorDocument> graph_clipboard_;
     std::string graph_report_;
     std::uint64_t graph_report_document_ = 0, graph_report_revision_ = 0;
@@ -544,6 +628,7 @@ class Backend {
     }
 
     void Reset() {
+        StopScripts();workspace_.reset();Require(schema_.components.RegisterDescriptions({}));
         drag_.Cancel();
         graph_clipboard_.reset(); graph_report_.clear(); graph_report_document_=0; graph_report_revision_=0;
         projected_source_.reset();
@@ -554,7 +639,7 @@ class Backend {
         content_folders_.clear();
         workspace_.reset();
         workspace_ = std::make_unique<ed::EditorWorkspace>(schema_.View(),
-                                                           [this] { return ex::Options(schema_); });
+                                                           [this] { return ScriptPlayOptions(); });
         ++generation_;
         ++selection_revision_;
     }
@@ -678,16 +763,20 @@ class Backend {
         const auto &definition = std::get<g::GraphDefinition>(doc.data);
         graph_report_.clear(); graph_report_document_=doc.id.Raw(); graph_report_revision_=workspace_->Project()->Revision();
         std::vector<g::NodeBinding> bindings;
-        for (const auto &[type,op] : schema_.View().operations) {
+        std::shared_ptr<ed::scripts::SharedWorker> preview_worker;
+        for (const auto &[type,op] : ed::EffectiveOperations(workspace_->Project()->Snapshot()->definition,schema_.View())) {
             if (op == g::Operation::NativeCall) {
                 const auto used=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return n.type_id==type;});
-                if (used!=definition.nodes.end()) {graph_report_="ui.graph.native_preview_requires_play node="+std::to_string(used->id.Raw());return;}
+                bool managed=false;
+                for(const auto &descriptor:workspace_->Project()->Snapshot()->definition.user_schemas)for(const auto &operation:descriptor.operations)
+                    if(Id::FromString(operation.id)==type){if(!preview_worker)preview_worker=std::make_shared<ed::scripts::SharedWorker>(WorkerPath(),ScriptPath(descriptor.assembly),descriptor.fingerprint,++script_generation_);bindings.push_back({type,op,std::make_shared<ed::scripts::Factory>(preview_worker,operation.id,descriptor.component.name)});managed=true;}
+                if (!managed&&used!=definition.nodes.end()) {graph_report_="ui.graph.native_preview_requires_play node="+std::to_string(used->id.Raw());return;}
             } else bindings.push_back({type,op,{}});
         }
         const auto program = g::CompileGraph(definition,bindings);
         if (!program) {graph_report_=program.GetError().code+" "+program.GetError().context;return;}
         if (!execute) {graph_report_="OK compiled native VM; instructions="+std::to_string(program.Value()->Instructions().size());return;}
-        const auto recipes=ed::graph_ui::Catalogue(schema_.View());
+        const auto recipes=Recipes();
         const auto event=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &node){
             return std::any_of(recipes.begin(),recipes.end(),[&](const auto &r){return r.node.type_id==node.type_id&&r.operation==g::Operation::EventEntry;});
         });
@@ -741,7 +830,7 @@ class Backend {
         if (!doc || doc->Kind() != ed::DocumentKind::Graph) throw std::runtime_error("ui.graph_document");
         std::vector<ed::Command> commands;
         if (args[0] == "create" && args.size() == 5) {
-            const auto recipes = ed::graph_ui::Catalogue(schema_.View());
+            const auto recipes = Recipes();
             const auto index = Numeric(args[2]);
             if (index >= recipes.size()) throw std::runtime_error("ui.graph_template");
             auto node = recipes[static_cast<std::size_t>(index)].node;
@@ -1158,10 +1247,15 @@ class Backend {
         if (folder)
             for (const auto &path : content_folders_)
                 out.Text(path);
-        out.Number<2>(2); // Graph DTO schema version, independent of IPC envelope.
-        const auto &recipes=graph_recipes_;
+        out.Number<2>(3); // Graph DTO schema version, independent of IPC envelope.
+        const auto recipes=Recipes();
         out.Number<4>(recipes.size());
-        for(const auto &recipe:recipes) {out.Text(recipe.name);out.Text(recipe.category);out.Number<8>(recipe.node.type_id.Raw());out.Number<1>(static_cast<unsigned>(recipe.operation));}
+        for(const auto &recipe:recipes) {
+            out.Text(recipe.name);out.Text(recipe.category);out.Number<8>(recipe.node.type_id.Raw());out.Number<1>(static_cast<unsigned>(recipe.operation));
+            std::string source;std::uint64_t line=1;
+            for(const auto &type:snapshot->definition.user_schemas)for(const auto &operation:type.operations)if(Id::FromString(operation.id)==recipe.node.type_id){source=operation.source;line=operation.line;}
+            out.Text(source);out.Number<4>(line);
+        }
         out.Number<4>(std::count_if(snapshot->definition.documents.begin(), snapshot->definition.documents.end(),
             [](const auto &doc) { return doc.Kind() == ed::DocumentKind::Graph; }));
         for (const auto &doc : snapshot->definition.documents) {
@@ -1198,6 +1292,55 @@ class Backend {
   public:
     Backend() {
         Reset();
+    }
+
+    void ScriptLifecycleSmoke(const std::filesystem::path &file) {
+        Require(workspace_->OpenFolder(file.parent_path()));
+        const auto snapshot=workspace_->Project()->Snapshot();
+        if(snapshot->definition.user_schemas.empty())throw std::runtime_error("script.smoke_no_schema");
+        const auto &type=snapshot->definition.user_schemas.front();
+        if(type.operations.empty())throw std::runtime_error("script.smoke_no_operation");
+        const auto catalogue=Recipes();
+        const auto recipe=[&](std::string_view name){const auto found=std::find_if(catalogue.begin(),catalogue.end(),[&](const auto &entry){return entry.name==name;});if(found==catalogue.end())throw std::runtime_error("script.smoke_recipe");return found->node;};
+        auto event=recipe("Event"),call=recipe(type.operations.front().name),output=recipe("Output");
+        event.id=Id::FromString("script.smoke.event");call.id=Id::FromString("script.smoke.call");output.id=Id::FromString("script.smoke.output");
+        const auto port=[](const auto &node,std::string_view name){const auto found=std::find_if(node.ports.begin(),node.ports.end(),[&](const auto &p){return p.name==name;});if(found==node.ports.end())throw std::runtime_error("script.smoke_port");return found->id;};
+        rt::graph::GraphDefinition graph;graph.asset_id=rt::AssetId::FromString("script.smoke.graph."+DocumentNonce());graph.nodes={event,call,output};
+        graph.connections={{Id::FromString("smoke.link1"),port(event,"payload"),port(call,"argument")},{Id::FromString("smoke.link2"),port(event,"next"),port(call,"in")},{Id::FromString("smoke.link3"),port(call,"result"),port(output,"value")},{Id::FromString("smoke.link4"),port(call,"next"),port(output,"in")}};
+        if(type.operations.size()>1){
+            auto second=recipe(type.operations[1].name);second.id=Id::FromString("script.smoke.second");graph.nodes.push_back(second);
+            graph.connections[3].input_port=port(second,"in");
+            graph.connections[2].output_port=port(second,"result");
+            graph.connections.push_back({Id::FromString("smoke.link5"),port(event,"payload"),port(second,"argument")});
+            graph.connections.push_back({Id::FromString("smoke.link6"),port(second,"next"),port(output,"in")});
+        }
+        const auto prefab_id=Id::FromString("script.smoke.prefab."+DocumentNonce()),root=Id::FromString("script.smoke.root");
+        ed::comp::PrefabDefinition prefab{prefab_id,{}, {root,schema_.enemy,{{epidemic::gameplay::TypeId::FromString(type.component.name),{},{},{}}},{{Id::FromString("smoke.behavior"),graph.asset_id.value,{{port(event,"event"),port(event,"event")}},{}}},{}}};
+        rt::SceneNodeSnapshot placement;placement.id=NewSceneNode();
+        const auto scene=snapshot->definition.entry_scene;
+        Require(workspace_->Execute({ed::CreateDocument{{graph.asset_id,"Script runtime smoke",0,graph}},ed::CreateDocument{{rt::AssetId{prefab_id},"Script runtime target",0,prefab}},ed::AddSceneNode{scene,placement},ed::PlacePrefab{scene,{placement.id,rt::AssetId{prefab_id},{}}}},workspace_->Project()->Revision()));
+        const auto owned_workers=[](){
+            HANDLE processes=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);if(processes==INVALID_HANDLE_VALUE)throw std::runtime_error("script.smoke_process_snapshot");
+            PROCESSENTRY32W entry{};entry.dwSize=sizeof(entry);unsigned count=0;
+            for(BOOL more=Process32FirstW(processes,&entry);more;more=Process32NextW(processes,&entry))if(entry.th32ParentProcessID==GetCurrentProcessId()&&std::wstring_view(entry.szExeFile)==L"dotnet.exe")++count;
+            CloseHandle(processes);return count;
+        };
+        std::optional<ed::comp::PropertyValue> expected;
+        for(unsigned iteration=0;iteration<3;++iteration){
+            Require(workspace_->Play());
+            const auto before=workspace_->Session()->ReadComponentProperty(placement.id,root,epidemic::gameplay::TypeId::FromString(type.component.name),{},Id::FromString("Health"));Require(before);
+            Require(workspace_->Send(placement.id,{port(event,"event"),7}));Require(workspace_->Tick({}));
+            if(owned_workers()!=1)throw std::runtime_error("script.smoke_worker_per_generation");
+            const auto after=workspace_->Session()->ReadComponentProperty(placement.id,root,epidemic::gameplay::TypeId::FromString(type.component.name),{},Id::FromString("Health"));Require(after);
+            if(after.Value()==before.Value())throw std::runtime_error("script.smoke_native_target_unchanged");
+            if(expected&&*expected!=after.Value())throw std::runtime_error("script.smoke_generation_state_leak");expected=after.Value();
+            const auto activations=workspace_->Activations();if(activations.empty()||!activations.back()->IsFinished())throw std::runtime_error("script.smoke_activation");
+            const auto report=activations.back()->Report();if(!report||report->status!=rt::graph::ExecutionStatus::Completed)throw std::runtime_error("script.smoke_runtime_diagnostic");
+            auto old=active_script_worker_.lock();Require(workspace_->Stop());StopScripts();
+            if(owned_workers()!=0)throw std::runtime_error("script.smoke_orphan_worker");
+            if(old){ed::scripts::Worker::Fields fields;if(old->Invoke(type.operations.front().id,type.component.name,"retired",1,fields))throw std::runtime_error("script.smoke_old_handle_accepted");}
+        }
+        std::cout<<"PASS C# native Play/Send/Tick target mutation, three fresh Play/Stop generations, terminal activations; no authoring Save\n";
     }
 
     bool Request(const Bytes &bytes) {
@@ -1352,7 +1495,7 @@ class Backend {
                 Require(workspace_->Play());
                 break;
             case 14:
-                Require(workspace_->Stop());
+                Require(workspace_->Stop());StopScripts();
                 break;
             case 15:
                 if (args.size() == 3 && args[0] != "1")
@@ -1439,6 +1582,11 @@ class Backend {
             case 36:
                 preview = AssetPreview(args);
                 break;
+            case 39:
+                CheckWrite({generation,revision});
+                if(workspace_->Session()&&workspace_->Session()->IsPlaying())throw std::runtime_error("ui.playing_readonly");
+                RegisterScripts(args,revision);
+                break;
             case 38:
                 CheckWrite({generation, revision});
                 if (workspace_->Session() && workspace_->Session()->IsPlaying())
@@ -1469,6 +1617,9 @@ class Backend {
             }
         } catch (const std::exception &failure) {
             error = failure.what();
+        }
+        if(auto worker=active_script_worker_.lock();worker&&worker->Failed()&&workspace_->Session()&&workspace_->Session()->IsPlaying()){
+            const auto stopped=workspace_->Stop();StopScripts();if(error.empty())error=stopped?"script.worker_failed_play_stopped":stopped.GetError().code;
         }
         if (workspace_->Selection() != previous_selection &&
             selection_revision_ == previous_selection_revision)
@@ -1503,11 +1654,13 @@ class Backend {
 };
 } // namespace
 
-int main() {
+int wmain(int argc,wchar_t **argv) {
     _setmode(_fileno(stdin), _O_BINARY);
     _setmode(_fileno(stdout), _O_BINARY);
     try {
         Backend backend;
+        if(argc==3&&std::wstring_view(argv[1])==L"--script-lifecycle-smoke"){backend.ScriptLifecycleSmoke(std::filesystem::path(argv[2]));return 0;}
+        if(argc!=1)throw std::runtime_error("ui.arguments");
         for (;;) {
             std::array<std::uint8_t, 4> prefix{};
             std::cin.read(reinterpret_cast<char *>(prefix.data()), 4);

@@ -56,4 +56,12 @@ Layout принадлежит EditorDocument, runtime GraphDefinition сохра
 
 ## D. F-II.1: принятое решение
 
-Батч от `8aca4a9`: существующий Rete/React preset сохранён без новых frameworks или rete-engine. Selection/menu/minimap — transient проекция; native bounded clipboard и EditRequest формируют единую историю. Graph DTO v2 содержит catalogue/settings/diagnostics; optional graph_authoring v1 мигрирует независимо от прежнего graph_layout v1. Native VM preview использует GraphScheduler с изолированным Time/Simulation; gameplay NativeCall без owner явно unavailable, реальные domain bindings не подменяются. Inspector участвует в Save/close/selection draft pipeline. JCEF size/depth/rate и HTML encoding проверены; реальный CEF sandbox не менялся. [Квалификация, memory samples и ограничения](FII1_GRAPH_AUTHORING.md). F-II.1 manual gate NOT RUN; F-II.2 не начат.
+Батч от `8aca4a9`: существующий Rete/React preset сохранён без новых frameworks или rete-engine. Selection/menu/minimap — transient проекция; native bounded clipboard и EditRequest формируют единую историю. Graph DTO v2 содержит catalogue/settings/diagnostics; optional graph_authoring v1 мигрирует независимо от прежнего graph_layout v1. Native VM preview использует GraphScheduler с изолированным Time/Simulation; gameplay NativeCall без owner явно unavailable, реальные domain bindings не подменяются. Inspector участвует в Save/close/selection draft pipeline. JCEF size/depth/rate и HTML encoding проверены; реальный CEF sandbox не менялся. [Квалификация, memory samples и ограничения](FII1_GRAPH_AUTHORING.md). F-II.1-GATE PASS по ручной приёмке 2026-11-14; реализация F-II.2 от `451ba62`.
+
+
+F-II.1-GATE **PASS**: владелец подтвердил ручную приёмку 2026-11-14 («Проверил, всё работает»). Исходная реализация `451ba62`; ранее зафиксированные ограничения производительности и исторические static diagnostics сохраняются. F-II.2 начинается от этого коммита.
+
+
+## E. F-II.2: реализованный профиль
+
+Реальный Platform Editor/VFS без собственного Swing text editor; native described registry и project schema v1; Graph DTO v3, worker RPC v2 поверх managed ABI v1. Один worker на Play, scope/field/type/generation validation, Job Object/timeout, native live field authority. Выполнение сохранённого поколения при непроверенных/изменённых источниках явно обозначается. SDK и Rider внешние; user/project editor choices machine-local. Offline LSP fallback выбран по §5.3 спецификации: LSP candidate не включён до собственной квалификации. Schema v1 отвергает несовместимые поля/defaults; операции i64→i64. [Отчёт](FII2_SCHEMA_CODESPACE.md), [ручной gate](FII2_MANUAL_QA.md). F-II.3 требует отдельного typed-reference контракта и настоящего cross-HWND DnD; i64 токены нельзя выдавать за готовую реализацию ссылок.

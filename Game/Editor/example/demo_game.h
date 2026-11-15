@@ -121,7 +121,7 @@ struct Schema {
                  {Id("input.type"), graph::Operation::Input}, {Id("output.type"), graph::Operation::Output},
                  {Id("add.type"), graph::Operation::Add}, {Id("multiply.type"), graph::Operation::Multiply},
                  {Id("entry.type"), graph::Operation::Entry}, {Id("sequence.type"), graph::Operation::Sequence},
-                 {Id("branch.type"), graph::Operation::Branch}, {Id("repeat.type"), graph::Operation::Repeat}}};
+                 {Id("branch.type"), graph::Operation::Branch}, {Id("repeat.type"), graph::Operation::Repeat}}, &components};
 
     }
 
