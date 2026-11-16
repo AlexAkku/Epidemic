@@ -162,6 +162,7 @@ GraphTask::ExecuteStep(const RuntimeBudget &budget) {
         budget.max_items == 0 ? std::numeric_limits<std::uint32_t>::max() : budget.max_items;
     granted.instructions = std::min<std::size_t>(granted.instructions, limit);
     report_ = instance_->Run(granted);
+    ++execution_serial_;
     const auto state = State(report_->status);
     terminal_ = state != simulation::SimulationJobState::PartiallyComplete;
     if (!terminal_) {

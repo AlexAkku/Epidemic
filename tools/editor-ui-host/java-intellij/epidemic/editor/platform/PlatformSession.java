@@ -213,7 +213,7 @@ public final class PlatformSession implements Disposable {
                 else tools.problem(state.diagnostic());
             }
         }
-        if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null)tools.refresh(snapshot,rejected);for(var view:List.copyOf(views)){view.reader().refresh(snapshot,rejected);refreshDocument(view);}refreshDocumentCommands();
+        if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null){tools.refresh(snapshot,rejected);tools.runtime(state.reply().runtime());}for(var view:List.copyOf(views)){view.reader().refresh(snapshot,rejected);view.reader().runtime(state.reply().runtime());refreshDocument(view);}refreshDocumentCommands();
             JFrame frame=WindowManager.getInstance().getFrame(project);if(frame!=null)frame.setTitle("Epidemic — "+snapshot.title()+" · "+snapshot.path()+(snapshot.dirty()?" · Unsaved":"")+(service==Bridge.Service.Loading?" · Working…":service==Bridge.Service.Error?" · Disconnected — read-only":""));
         }
         if(snapshot!=null && tools!=null && snapshot.assetState().revision()!=loggedContentRevision){
@@ -224,12 +224,12 @@ public final class PlatformSession implements Disposable {
             }
             loggedContentRevision=snapshot.assetState().revision();
         }
-        if(state.service()==Bridge.Service.Ready){startAssetPolling();if(snapshot!=null&&snapshot.selection().kind()==6&&!context.equals("Asset"))context("Asset");else if(snapshot!=null&&snapshot.selection().kind()!=6&&context.equals("Asset"))context(Catalog.context(selectedPanel));flushSelection();}
+        if(state.service()==Bridge.Service.Ready){startAssetPolling();startRuntimePolling();if(snapshot!=null&&snapshot.selection().kind()==6&&!context.equals("Asset"))context("Asset");else if(snapshot!=null&&snapshot.selection().kind()!=6&&context.equals("Asset"))context(Catalog.context(selectedPanel));flushSelection();}
         if(state.service()==Bridge.Service.Ready&&!readyActions.isEmpty()){var next=readyActions.removeFirst();edt(next);}
         if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -743,6 +743,25 @@ public final class PlatformSession implements Disposable {
         }catch(IOException|RuntimeException error){failure(error);}
     }
     private void command(int operation,String...args){if(!ready())return;bridge.call(operation,args).whenComplete((r,e)->{if(e!=null)edt(()->failure(e));});}
+
+    private javax.swing.Timer runtimePoll;private boolean runtimePolling;
+    private void startRuntimePolling(){
+        if(runtimePoll!=null)return;
+        // Display cadence only: opcode42 reads immutable state. It never sends a delta or Tick.
+        runtimePoll=new javax.swing.Timer(100,event->{
+            if(smoke||!ready()||runtimePolling||!supports("runtime-session"))return;
+            runtimePolling=true;Bridge participant=bridge;
+            participant.call(42).whenComplete((reply,error)->edt(()->{runtimePolling=false;if(bridge==participant&&error!=null&&service!=Bridge.Service.Error)documentFailure(error);}));
+        });runtimePoll.start();com.intellij.openapi.util.Disposer.register(this,()->runtimePoll.stop());
+    }
+    private CompletableFuture<Bridge.Reply> runtimeCommand(String action,String[] arguments){
+        if(!ready()||!supports("runtime-session"))return CompletableFuture.failedFuture(new IOException("runtime.unavailable"));
+        if(action.equals("play")){if(!allowScriptExecution())return CompletableFuture.failedFuture(new IOException("script.execution_cancelled"));return bridge.call(13);}
+        if(action.equals("stop"))return bridge.call(14);
+        var args=new ArrayList<String>();args.add(action);args.add(action.equals("scene")?arguments[0]:Long.toUnsignedString(bridge.latest().runtime().session()));
+        if(!action.equals("scene"))args.addAll(Arrays.asList(arguments));
+        return bridge.call(41,args.toArray(String[]::new));
+    }
     private void startAssetPolling(){
         if(assetPoll!=null)return;
         assetPoll=new javax.swing.Timer(500,event->{
@@ -879,7 +898,7 @@ public final class PlatformSession implements Disposable {
         playAction=action("Play",()->playback(true),()->supports("play")&&supports("stop")&&!snapshot.playing());
         stopAction=action("Stop",()->playback(false),()->supports("stop")&&snapshot.playing());
         playToggleAction=action("Play / Stop",this::togglePlayback,()->supports("play")&&supports("stop"));
-        playAction.getTemplatePresentation().setDescription("Start an isolated Play session. Game View preview is not connected yet.");
+        playAction.getTemplatePresentation().setDescription("Start the native Runtime session and live Game View.");
         sub.get("File").add(saveAction);sub.get("File").add(saveAllAction);sub.get("File").add(action("Clone Saved Project…",this::cloneProject,this::canClone));sub.get("File").add(action("Close Project",()->close(false),()->opened));
         for(int kind=0;kind<3;kind++){
             final int type=kind;sub.get("File").add(action("New "+new String[]{"Scene","Prefab","Graph"}[kind]+"…",()->newDocument(type),()->supports("create-document")&&!snapshot.playing()));

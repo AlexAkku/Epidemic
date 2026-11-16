@@ -96,6 +96,9 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
             return report;
         }
 
+        if(owner_.debug_gate_&&!owner_.debug_gate_(step)) {
+            report.status=ExecutionStatus::BudgetExhausted;report.diagnostic=Diagnostic("graph.vm.debug_pause");return report;
+        }
         ++report.instructions;
         if (work.kind == Kind::Clear) {
             values[work.node].reset();

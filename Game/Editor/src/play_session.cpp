@@ -4,6 +4,10 @@
 #include <algorithm>
 #include <exception>
 #include <deque>
+#include <atomic>
+#include <sstream>
+#include <cmath>
+#include "Epidemic/Diagnostics/profiling.h"
 #include "Epidemic/Game/Editor/image_resource.h"
 #include "Epidemic/Runtime/Resources/resource_services.h"
 
@@ -80,7 +84,7 @@ struct PlayRuntime {
     std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend;
     gameplay::entities::EntityService entities;
     gameplay::runtime_bridge::RuntimeBridgeService bridge;
-    runtime::TimeServices time = Take(runtime::CreateTimeServices());
+    runtime::TimeServices time = Take(runtime::CreateTimeServices({.game_ticks_per_real_second=60}));
     runtime::simulation::SimulationServices simulation = Simulation(time);
     runtime::GraphScheduler scheduler{time.clock, simulation, runtime::SimulationZoneId{1}};
 
@@ -151,6 +155,11 @@ struct PlaySession::Impl {
         std::shared_ptr<PlayActivation> handle;
     };
 
+    PlaySession *owner=nullptr;
+    struct DebugStat { std::uint64_t graph=0,instructions=0,calls=0,serial=0;std::string state="Started"; };
+    std::map<std::uint64_t,DebugStat> stats;
+    const comp::ComponentRegistry *registry=nullptr;
+    decltype(PlayOptions::fixed_update) fixed_update;
     std::unique_ptr<PlayRuntime> runtime;
     std::vector<Live> live;
     std::deque<std::shared_ptr<PlayActivation>> completed;
@@ -184,8 +193,8 @@ struct PlaySession::Impl {
                 std::any_of(live.begin(), live.end(),
                             [&](const auto &item) { return item.execution == execution; }))
                 continue;
-            live.push_back(
-                {execution, std::shared_ptr<PlayActivation>(new PlayActivation(next_id++))});
+            live.push_back({execution, std::shared_ptr<PlayActivation>(new PlayActivation(execution->Id()))});
+            stats[execution->Id()].graph=execution->Asset().Raw();
         }
 
     }
@@ -193,13 +202,18 @@ struct PlaySession::Impl {
     void Refresh() {
         for (auto at = live.begin(); at != live.end();) {
             auto report = at->execution->Report();
-            if (report)
+            if (report) {
+                auto &stat=stats[at->handle->Id()];const auto *task=at->execution->Task();
+                const auto serial=task?task->ExecutionSerial():0;
+                if(serial!=stat.serial){stat.instructions+=report->instructions;stat.calls+=report->native_calls;stat.serial=serial;}
+                const auto status=report->status==runtime::graph::ExecutionStatus::Completed?"Completed":report->status==runtime::graph::ExecutionStatus::Cancelled?"Canceled":report->status==runtime::graph::ExecutionStatus::Failed?"Failed":report->status==runtime::graph::ExecutionStatus::Waiting?"Waiting":"Active";
+                if(stat.state!=status){stat.state=status;if(owner)owner->Trace(status,at->handle->Id(),stat.graph,report->diagnostic?report->diagnostic->node.Raw():0,report->diagnostic?report->diagnostic->error.code+" "+report->diagnostic->error.context:"",report->status==runtime::graph::ExecutionStatus::Failed?2:0);}
                 at->handle->report_ = std::move(report);
+            }
             if (at->execution->IsFinished()) {
                 at->handle->finished_ = true;
                 completed.push_back(at->handle);
-                if (completed.size() > PlaySession::kCompletedActivationRetention)
-                    completed.pop_front();
+                if (completed.size() > PlaySession::kCompletedActivationRetention) {stats.erase(completed.front()->Id());if(owner)owner->debug_nodes_.erase(completed.front()->Id());completed.pop_front();}
                 at = live.erase(at); // Finished Editor handles never retain a VM/callable/context.
             } else
                 ++at;
@@ -210,6 +224,7 @@ struct PlaySession::Impl {
 };
 
 PlaySession::PlaySession(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {
+    static std::atomic_uint64_t sequence{0};session_id_=++sequence;impl_->owner=this;
 }
 
 PlaySession::~PlaySession() {
@@ -234,6 +249,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
     if (!snapshot || !options.backend || !options.bindings)
         return Result::Failure(Error("editor.play_options"));
     try {
+        if(options.scene.IsValid()&&options.scene!=snapshot->definition.entry_scene){auto selected=std::make_shared<ProjectSnapshot>(*snapshot);selected->definition.entry_scene=options.scene;snapshot=std::move(selected);}
         const auto assets = Take(ValidateProject(snapshot->definition, schema));
         const auto *entry = snapshot->Find(snapshot->definition.entry_scene);
         if (!entry || entry->Kind() != DocumentKind::Scene)
@@ -255,6 +271,12 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             new PlaySession(std::make_unique<Impl>(schema, std::move(options.backend))));
         auto &state = *session->impl_->runtime;
         state.source = std::move(snapshot);
+        session->impl_->registry=&schema.components;session->impl_->fixed_update=std::move(options.fixed_update);
+        state.host.SetInstanceObserver([owner=session.get()](runtime::graph::GraphInstance &vm,const composition::GraphScope &,std::uint64_t activation){
+            const auto graph=vm.Program().Asset().Raw();owner->Trace("Started",activation,graph);
+            vm.SetDebugGate([owner,activation,graph](const runtime::graph::Instruction &instruction){return owner->DebugGate(activation,graph,instruction);});
+        });
+        for(const auto &doc:state.source->definition.documents)for(const auto &setting:doc.graph_settings)if(setting.breakpoint)session->breakpoints_.insert({doc.id.Raw(),setting.node});
         std::unordered_set<std::uint64_t> registered;
         for (const auto &doc : state.source->definition.documents)
             if (const auto *prefab = std::get_if<comp::PrefabDefinition>(&doc.data))
@@ -295,9 +317,19 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
                     (void)Take(state.host.RegisterGraphDeferred(*graph, bindings, known_types));
             }
 
-        for (const auto &doc : state.source->definition.documents)
-            if (doc.Kind() == DocumentKind::Prefab)
-                (void)Take(state.prefabs.Register(Take(MaterializePrefab(state.source->definition,doc.id))));
+        const auto fill_inputs=[&](comp::GraphBehaviorDefinition &behavior){
+            const auto *doc=state.source->Find(runtime::AssetId{behavior.graph});const auto *graph=doc?std::get_if<runtime::graph::GraphDefinition>(&doc->data):nullptr;if(!graph)return;
+            const auto operations=EffectiveOperations(state.source->definition,schema);
+            for(const auto &node:graph->nodes)if(std::any_of(operations.begin(),operations.end(),[&](const auto &op){return op.first==node.type_id&&op.second==runtime::graph::Operation::Input;}))for(const auto &port:node.ports){
+                if(std::any_of(behavior.inputs.begin(),behavior.inputs.end(),[&](const auto &v){return v.port==port.id;}))continue;
+                const auto setting=std::find_if(doc->graph_settings.begin(),doc->graph_settings.end(),[&](const auto &v){return v.node==node.id.Raw();});behavior.inputs.push_back({port.id,setting==doc->graph_settings.end()?0:setting->preview_default});
+            }
+        };
+        for (const auto &doc : state.source->definition.documents)if(doc.Kind()==DocumentKind::Prefab){
+            auto prefab=Take(MaterializePrefab(state.source->definition,doc.id));
+            const auto configure=[&](auto &self,comp::PrefabNode &node)->void{for(auto &b:node.behaviors)fill_inputs(b);for(auto &c:node.components)for(auto &b:c.behaviors)fill_inputs(b);for(auto &child:node.children)self(self,child);};configure(configure,prefab.root);
+            (void)Take(state.prefabs.Register(prefab));
+        }
         for (const auto &system : state.source->definition.systems) {
             if (!system.enabled || (system.scene.IsValid() && system.scene != entry->id))
                 continue;
@@ -307,7 +339,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
                 gameplay::GameplayObjectId::FromString("editor.system.owner." +
                     std::to_string(scene_scope ? entry->id.Raw() : state.source->definition.id.Raw())),
                 system.id));
-            auto behavior = Take(DefaultGraphBehavior(state.source->definition,schema,system.graph,system.id));
+            auto behavior = Take(DefaultGraphBehavior(state.source->definition,schema,system.graph,system.id));fill_inputs(behavior);
             (void)Take(state.behaviors.Attach(instance->Scope(),behavior));
             state.systems.push_back(std::move(instance));
         }
@@ -322,6 +354,22 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             state.instances.emplace(placement.node, std::move(instance));
         }
 
+        session->Trace("Running");
+        if(options.start_events) {
+            for(const auto &[placement,instance]:state.instances){(void)placement;
+                for(const auto &object:instance->Objects()) {
+                    const auto find=[&](const auto &self,const comp::PrefabNode &node)->const comp::PrefabNode*{if(node.id==object.id)return &node;for(const auto &child:node.children)if(auto found=self(self,child))return found;return nullptr;};
+                    const auto *node=find(find,instance->Definition()->root);
+                    if(node){std::vector<const comp::GraphBehaviorDefinition*> definitions;for(const auto &b:node->behaviors)definitions.push_back(&b);for(const auto &c:node->components)for(const auto &b:c.behaviors)definitions.push_back(&b);
+                        for(const auto &slot:object.behaviors)for(const auto *b:definitions)if(b->id==slot.definition)for(const auto &route:b->events)(void)Take(state.behaviors.Send(slot.handle,{route.event,0}));}
+
+                }
+            }
+            std::size_t index=0;for(const auto &system:state.source->definition.systems)if(system.enabled&&(!system.scene.IsValid()||system.scene==entry->id)){
+                auto behavior=Take(DefaultGraphBehavior(state.source->definition,schema,system.graph,system.id));for(const auto &route:behavior.events)(void)Take(state.behaviors.SendTo(*state.systems.at(index)->Scope(),{route.event,0}));++index;
+            }
+        }
+        session->impl_->Capture();session->impl_->Refresh();
         return Result::Success(std::move(session));
     } catch (const Failure &failure) {
         return Result::Failure(failure.error);
@@ -474,7 +522,8 @@ foundation::Result<std::size_t> PlaySession::Send(runtime::SceneNodeId placement
 }
 
 foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
-    if (!IsPlaying() || ticking_)
+    EPIDEMIC_PROFILE_SCOPE("Editor.Play.Tick");
+    if (!IsPlaying() || ticking_ || (phase_==PlayPhase::Paused&&!debug_step_) || phase_==PlayPhase::Failed)
         return foundation::Result<void>::Failure(Error("editor.play_inactive_or_busy"));
 
     struct Guard {
@@ -492,6 +541,7 @@ foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
         impl_->Refresh();
         auto &state = *impl_->runtime;
         Take(state.time.runtime->Skip(advance));
+        if(advance.ticks>0&&impl_->fixed_update)Take(impl_->fixed_update(state.context,advance,input_x_,input_y_));
         state.components.Synchronize();
         state.behaviors.Synchronize();
         Take(composition::SynchronizeSceneEntities(state.scene, state.entities));
@@ -500,13 +550,12 @@ foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
         Take(composition::SynchronizeSceneEntities(state.scene, state.entities));
         impl_->Capture();
         impl_->Refresh();
-        if (!tick.failures.empty())
-            return foundation::Result<void>::Failure(Error("editor.play_execution_failed"));
+        if (!tick.failures.empty()){phase_=PlayPhase::Failed;Trace("Failed",0,0,0,"editor.play_execution_failed",2);return foundation::Result<void>::Failure(Error("editor.play_execution_failed"));}
         return foundation::Result<void>::Success();
     } catch (const Failure &failure) {
-        impl_->Refresh();
+        impl_->Refresh();phase_=PlayPhase::Failed;Trace("Failed",0,0,0,failure.error.code,2);
         return foundation::Result<void>::Failure(failure.error);
-    }
+    } catch(const std::exception &error){phase_=PlayPhase::Failed;Trace("Failed",0,0,0,error.what(),2);return foundation::Result<void>::Failure(Error("editor.play_exception"));}
 
 }
 
@@ -516,6 +565,7 @@ foundation::Result<void> PlaySession::Stop() {
     if (!IsPlaying())
         return foundation::Result<void>::Success();
 
+    auto final_snapshot=RuntimeSnapshot();phase_=PlayPhase::Stopping;Trace("Stopping");
     struct Guard {
         bool &flag;
 
@@ -551,8 +601,111 @@ foundation::Result<void> PlaySession::Stop() {
     impl_->Refresh();
     if (!cancelled)
         return cancelled;
-    impl_->runtime.reset();
+    stopped_snapshot_=std::move(final_snapshot);for(auto &activation:stopped_snapshot_.activations){const auto stat=impl_->stats.find(activation.id);if(stat!=impl_->stats.end())activation.state=stat->second.state;}
+    impl_->runtime.reset();phase_=PlayPhase::Stopped;input_x_=input_y_=0;accumulator_=0;Trace("Stopped");
+    stopped_snapshot_.entities.clear();
     return foundation::Result<void>::Success();
+}
+
+
+void PlaySession::Trace(std::string state,std::uint64_t activation,std::uint64_t graph,std::uint64_t node,std::string detail,std::uint8_t severity) {
+    if(detail.size()>2048)detail.resize(2048);
+    const auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    const auto tick=IsPlaying()?static_cast<std::uint64_t>(impl_->runtime->time.clock->Now().ticks):stopped_snapshot_.tick;
+    trace_.push_back({++trace_sequence_,static_cast<std::uint64_t>(stamp),tick,activation,graph,node,std::move(state),std::move(detail),severity});
+    if(trace_.size()>256)trace_.pop_front();
+}
+bool PlaySession::DebugGate(std::uint64_t activation,std::uint64_t graph,const runtime::graph::Instruction &step) {
+    if(debug_step_) {
+        if(step_activation_&&step_activation_!=activation)return false;
+        if(!step_activation_)step_activation_=activation;
+        if(step_node_&&step_node_!=step.node.Raw()){debug_step_=false;blocked_activation_=activation;blocked_node_=step.node.Raw();return false;}
+        step_node_=step.node.Raw();
+    } else {
+        if(phase_==PlayPhase::Paused)return false;
+        if(debug_nodes_[activation]!=step.node.Raw()&&breakpoints_.contains({graph,step.node.Raw()})){
+            blocked_activation_=activation;blocked_node_=step.node.Raw();phase_=PlayPhase::Paused;accumulator_=0;
+            Trace("Breakpoint",activation,graph,step.node.Raw());return false;
+        }
+    }
+    if(debug_nodes_[activation]!=step.node.Raw()){
+        debug_nodes_[activation]=step.node.Raw();
+        Trace("Node",activation,graph,step.node.Raw(),"operation="+std::to_string(static_cast<unsigned>(step.operation)));
+    }
+    return true;
+}
+foundation::Result<void> PlaySession::Pause(){
+    if(!IsPlaying()||phase_==PlayPhase::Failed)return foundation::Result<void>::Failure(Error("editor.play_inactive"));
+    phase_=PlayPhase::Paused;accumulator_=0;input_x_=input_y_=0;Trace("Paused");return foundation::Result<void>::Success();
+}
+foundation::Result<void> PlaySession::Resume(){
+    if(!IsPlaying()||phase_==PlayPhase::Failed)return foundation::Result<void>::Failure(Error("editor.play_inactive"));
+    if(blocked_activation_)debug_nodes_[blocked_activation_]=blocked_node_;
+    blocked_activation_=blocked_node_=0;debug_step_=false;accumulator_=0;phase_=PlayPhase::Running;Trace("Running");return foundation::Result<void>::Success();
+}
+foundation::Result<void> PlaySession::StepTick(){
+    if(!IsPlaying()||phase_!=PlayPhase::Paused)return foundation::Result<void>::Failure(Error("editor.play_step_requires_pause"));
+    if(blocked_activation_)debug_nodes_[blocked_activation_]=blocked_node_;
+    phase_=PlayPhase::Running;auto result=Tick({1});if(phase_!=PlayPhase::Failed)phase_=PlayPhase::Paused;accumulator_=0;Trace("StepTick");return result;
+}
+foundation::Result<void> PlaySession::StepToNode(std::uint64_t activation){
+    if(!IsPlaying()||phase_!=PlayPhase::Paused)return foundation::Result<void>::Failure(Error("editor.play_step_requires_pause"));
+    impl_->Capture();if(impl_->live.empty())return foundation::Result<void>::Failure(Error("editor.play_no_activation"));
+    debug_step_=true;step_activation_=activation;step_node_=0;++graph_steps_;
+    auto result=Tick({});debug_step_=false;if(phase_!=PlayPhase::Failed)phase_=PlayPhase::Paused;Trace("StepToNode",step_activation_,0,step_node_);return result;
+}
+foundation::Result<void> PlaySession::Pump(std::chrono::nanoseconds elapsed){
+    if(!IsPlaying()||phase_!=PlayPhase::Running){accumulator_=0;return foundation::Result<void>::Success();}
+    const auto nanos=std::clamp<std::int64_t>(elapsed.count(),0,250000000);
+    accumulator_+=nanos*static_cast<std::int64_t>(kFixedTicksPerSecond);
+    unsigned count=0;
+    while(accumulator_>=1000000000&&phase_==PlayPhase::Running&&count<8){accumulator_-=1000000000;++count;auto result=Tick({1});if(!result)return result;}
+    if(accumulator_>=1000000000){dropped_ticks_+=static_cast<std::uint64_t>(accumulator_/1000000000);accumulator_%=1000000000;}
+    return foundation::Result<void>::Success();
+}
+foundation::Result<void> PlaySession::SetInput(double x,double y){
+    if(!IsPlaying()||!std::isfinite(x)||!std::isfinite(y)||std::abs(x)>1||std::abs(y)>1)return foundation::Result<void>::Failure(Error("editor.play_input"));
+    input_x_=x;input_y_=y;return foundation::Result<void>::Success();
+}
+void PlaySession::SetBreakpoint(runtime::AssetId graph,runtime::graph::ElementId node,bool enabled){
+    if(enabled&&breakpoints_.size()<1024)breakpoints_.insert({graph.Raw(),node.Raw()});else if(!enabled)breakpoints_.erase({graph.Raw(),node.Raw()});
+}
+PlayRuntimeSnapshot PlaySession::RuntimeSnapshot() const {
+    auto out=IsPlaying()?PlayRuntimeSnapshot{}:stopped_snapshot_;out.session=session_id_;out.phase=phase_;out.graph_steps=graph_steps_;out.dropped_ticks=dropped_ticks_;out.trace.assign(trace_.begin(),trace_.end());
+    if(!IsPlaying()||ticking_)return out;
+    const auto &state=*impl_->runtime;out.scene=state.source->definition.entry_scene.Raw();out.tick=static_cast<std::uint64_t>(state.time.clock->Now().ticks);
+    std::size_t field_count=0;
+    for(const auto &[placement,instance]:state.instances)for(const auto &object:instance->Objects()){
+        if(!object.scope->IsPresent())continue;++out.total_entities;if(out.entities.size()>=1000)continue;
+        auto world=state.context.WorldTransform(object.handle);if(!world)continue;
+        PlayEntity entity{placement.Raw(),object.id.Raw(),"Entity",world.Value(),{},64,.5f,.5f,{}};
+        if(object.id==instance->Definition()->root.id){auto sprite=ReadSprite(placement);if(sprite){entity.sprite=sprite.Value().cooked_key;entity.ppu=sprite.Value().pixels_per_unit;entity.pivot_x=sprite.Value().pivot_x;entity.pivot_y=sprite.Value().pivot_y;}}
+        if(const auto *doc=state.source->Find(state.source->definition.entry_scene)){
+            const auto &scene=std::get<composition::SceneCompositionDefinition>(doc->data);auto name=scene.node_names.find(placement.Raw());if(name!=scene.node_names.end())entity.name=name->second;
+        }
+        for(const auto &component:object.components)if(const auto *info=impl_->registry->Find(component.type))for(const auto &property:info->properties){
+            if(field_count++>=4096)break;
+            auto value=state.components.ReadProperty(component,property.id);std::string text="Unavailable";
+            if(value)text=std::visit([](const auto &v){using T=std::decay_t<decltype(v)>;if constexpr(std::is_same_v<T,std::string>)return v.substr(0,1024);else if constexpr(std::is_same_v<T,bool>)return std::string(v?"true":"false");else return std::to_string(v);},value.Value());
+            entity.fields.push_back({info->name,property.name,text,component.type.Raw(),component.part.Raw()});
+        }
+        out.entities.push_back(std::move(entity));
+    }
+    out.activations.clear();out.total_activations=impl_->live.size();
+    std::vector<std::uint64_t> order;for(const auto &live:impl_->live)order.push_back(live.handle->Id());for(auto it=impl_->completed.rbegin();it!=impl_->completed.rend();++it)order.push_back((*it)->Id());
+    for(const auto id:order){const auto &stat=impl_->stats.at(id);
+        if(out.activations.size()>=64)break;
+        PlayDebugActivation activation{id,stat.graph,0,stat.instructions,stat.calls,-1,stat.state,{}};
+        const auto at=debug_nodes_.find(id);if(at!=debug_nodes_.end())activation.node=at->second;
+        if(blocked_activation_==id)activation.node=blocked_node_;
+        for(const auto &live:impl_->live)if(live.handle->Id()==id)if(const auto *task=live.execution->Task()){
+            if(task->NextWake())activation.wake=task->NextWake()->ticks;
+            const auto *doc=state.source->Find(runtime::AssetId{foundation::StringId{stat.graph}});const auto *graph=doc?std::get_if<runtime::graph::GraphDefinition>(&doc->data):nullptr;
+            if(graph)for(const auto &node:graph->nodes)for(const auto &port:node.ports)if(port.kind==runtime::graph::PortKind::Data&&activation.values.size()<64){auto value=task->ReadValue(port.id);activation.values.push_back({port.id.Raw(),port.type_id==runtime::graph::kI64Type?"i64":"reference",value?std::to_string(value.Value()):"Unavailable"});}
+        }
+        out.activations.push_back(std::move(activation));
+    }
+    return out;
 }
 
 } // namespace epidemic::game::editor

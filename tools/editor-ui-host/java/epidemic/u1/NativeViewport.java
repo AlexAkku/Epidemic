@@ -21,6 +21,9 @@ public final class NativeViewport extends Canvas {
     private long document,selected,appliedDocument,appliedSelection,itemsSurface;
     private int tool,appliedTool=-1;
     private boolean grid=true;
+    private java.util.List<String> labels=java.util.List.of(),appliedLabels=java.util.List.of();
+    public void projectLabels(java.util.List<String> value){edt();labels=java.util.List.copyOf(value);}
+    public void presentationRate(int fps){edt();presenter.setDelay(Math.max(1,1000/Math.max(1,Math.min(120,fps))));}
     private java.util.List<epidemic.editor.Bridge.SceneItem> items=java.util.List.of(),appliedItems=java.util.List.of();
     public void projectItems(long document,long selected,java.util.List<epidemic.editor.Bridge.SceneItem> items){
         edt();
@@ -28,7 +31,7 @@ public final class NativeViewport extends Canvas {
     }
     public void projectScene(String root,java.util.List<epidemic.editor.Bridge.Sprite> sprites){edt();sceneRoot=root;this.sprites=java.util.List.copyOf(sprites);}
     private static native String scene(long surface,String root,String[] keys,float[] geometry);
-    private static native boolean sceneItems(long surface,long document,long selected,long[] ids,double[] bounds);
+    private static native boolean sceneItems(long surface,long document,long selected,long[] ids,double[] bounds,String[] labels);
     private static native long sceneInput(long surface,int operation,double x,double y,double delta);
     private static native double[] scenePointer(long surface,double x,double y);
     public void tool(int value){edt();tool=value;}
@@ -94,7 +97,7 @@ public final class NativeViewport extends Canvas {
         String[] parts = result.split(" ");
         surface = Long.parseLong(parts[1]);
         root = Long.parseLong(parts[3]);
-        if(document!=0&&(itemsSurface!=surface||appliedDocument!=document||appliedSelection!=selected||!appliedItems.equals(items))){
+        if(document!=0&&(itemsSurface!=surface||appliedDocument!=document||appliedSelection!=selected||!appliedItems.equals(items)||!appliedLabels.equals(labels))){
             long[] ids=new long[items.size()];
             double[] bounds=new double[items.size()*7];
             for(int i=0;i<items.size();i++){
@@ -104,8 +107,8 @@ public final class NativeViewport extends Canvas {
                 bounds[at]=item.left();bounds[at+1]=item.top();bounds[at+2]=item.right();
                 bounds[at+3]=item.bottom();bounds[at+4]=item.x();bounds[at+5]=item.y();bounds[at+6]=item.rotation();
             }
-            if(!sceneItems(surface,document,referenceHover!=0?referenceHover:selected,ids,bounds))throw new IllegalStateException("Native Scene bounds rejected");
-            itemsSurface=surface;appliedDocument=document;appliedSelection=selected;appliedItems=items;appliedTool=-1;
+            if(!sceneItems(surface,document,referenceHover!=0?referenceHover:selected,ids,bounds,labels.size()==items.size()?labels.toArray(String[]::new):new String[0]))throw new IllegalStateException("Native Scene bounds rejected");
+            appliedLabels=labels;itemsSurface=surface;appliedDocument=document;appliedSelection=selected;appliedItems=items;appliedTool=-1;
             sceneInput(surface,5,0,0,grid?1:0);
         }
         if(document!=0&&appliedTool!=tool){sceneInput(surface,4,0,0,tool);appliedTool=tool;}

@@ -14,6 +14,12 @@ import javax.swing.tree.*;
 /** Shared immutable snapshot reader and persistent UI views; no editable game model. */
 public final class UiPanels {
     private GraphSceneDragCoordinator referenceDrag;
+    private Bridge.RuntimeSession runtime=Bridge.RuntimeSession.empty();
+    private final List<java.util.function.Consumer<Bridge.RuntimeSession>> runtimeReaders=new ArrayList<>();
+    private java.util.function.BiFunction<String,String[],java.util.concurrent.CompletableFuture<Bridge.Reply>> runtimeCommand=(action,args)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("runtime.unavailable"));
+    public void runtimeCommands(java.util.function.BiFunction<String,String[],java.util.concurrent.CompletableFuture<Bridge.Reply>> command){runtimeCommand=command;}
+    public void runtime(Bridge.RuntimeSession frame){runtime=frame;runtimeReaders.forEach(reader->reader.accept(frame));}
+
     public void referenceDrag(GraphSceneDragCoordinator value){referenceDrag=value;}
     private final Catalog catalog;
     private final FeatureRegistry features;
@@ -154,6 +160,11 @@ public final class UiPanels {
     private void structure(Consumer<Bridge.Snapshot> reader) { structureReaders.add(reader); reader.accept(snapshot); }
     private JComponent create(String id) {
         String base = id.contains(":") ? id.substring(0, id.indexOf(':')) : id;
+        if(Set.of("game.runtime.inspector","game.session").contains(base)){var inspector=new RuntimeInspector();runtimeReaders.add(inspector::refresh);inspector.refresh(runtime);return inspector;}
+        if(base.equals("game.controls")){var controls=new RuntimeGameView((action,args)->runtimeCommand.apply(action,args),false);observe(value->controls.refresh(value,runtime));runtimeReaders.add(frame->controls.refresh(snapshot,frame));return controls;}
+        if(base.equals("game.view")){
+            var game=new RuntimeGameView((action,args)->runtimeCommand.apply(action,args));nativeViews.put(id,game.viewport());observe(value->game.refresh(value,runtime));runtimeReaders.add(frame->game.refresh(snapshot,frame));return game;
+        }
         if (Set.of("graph.palette","graph.inspector","graph.references","graph.variables").contains(base)) {
             var panel=new GraphTools(base,graphAvailable,()->generation,graphCommand);panel.sourceNavigator(sourceNavigator);graphTools.add(panel);observe(panel::refresh);return panel;
         }

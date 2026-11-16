@@ -279,6 +279,11 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
             return report;
         }
 
+        if(debug_gate_&&!debug_gate_(step)) {
+            report.status=ExecutionStatus::BudgetExhausted;
+            report.diagnostic=ExecutionDiagnostic{program_->Asset(),step.node,instruction_,Error("graph.vm.debug_pause")};
+            return report;
+        }
         ++report.instructions;
         if (step.operation == Operation::Input) {
             if (!values_[step.destination])

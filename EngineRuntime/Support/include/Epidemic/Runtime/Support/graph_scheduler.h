@@ -62,6 +62,7 @@ class GraphTask final : public simulation::ISimulationJob {
     }
 
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(graph::ElementId port) const;
+    [[nodiscard]] std::uint64_t ExecutionSerial() const noexcept { return execution_serial_; }
 
   private:
     void RequestOwnerCancellation() noexcept;
@@ -89,6 +90,7 @@ class GraphTask final : public simulation::ISimulationJob {
     bool running_ = false;
     bool terminal_ = false;
     bool owner_cancel_ = false;
+    std::uint64_t execution_serial_ = 0;
     friend class GraphScheduler;
     friend class GraphActivationOwner;
 };

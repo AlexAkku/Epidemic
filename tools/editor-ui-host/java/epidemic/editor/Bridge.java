@@ -76,9 +76,37 @@ public final class Bridge implements AutoCloseable {
         public boolean canRedo() { return (flags & 4) != 0; }
         public boolean playing() { return (flags & 8) != 0; }
     }
-    public record Reply(long generation, String error, Set<String> capabilities, Snapshot snapshot,
-                        long latencyNanos, BufferedImage preview) { }
+
+    public record RuntimeField(long type,long part,String component,String name,String value) {}
+    public record RuntimeEntity(long placement,long node,String name,double x,double y,double sx,double sy,double rotation,String sprite,double ppu,double pivotX,double pivotY,List<RuntimeField> fields) {public RuntimeEntity {fields=List.copyOf(fields);}public String toString(){return name+" / "+Long.toUnsignedString(placement);}}
+    public record RuntimeValue(long port,String type,String value) {}
+    public record RuntimeActivation(long id,long graph,long node,long instructions,long nativeCalls,long wake,String state,List<RuntimeValue> values){public RuntimeActivation {values=List.copyOf(values);}public String toString(){return "Activation "+Long.toUnsignedString(id)+" · "+state+" · node="+Long.toUnsignedString(node);}}
+    public record RuntimeTrace(long sequence,long timestamp,long tick,long activation,long graph,long node,int severity,String state,String detail){}
+    public record RuntimeMetric(String name,String source,String unit,double value){public boolean available(){return value>=0&&Double.isFinite(value);}}
+    public record RuntimeSession(long session,long scene,long configuredScene,long tick,long graphSteps,long droppedTicks,int phase,long entityCount,long activationCount,List<RuntimeEntity> entities,List<RuntimeActivation> activations,List<RuntimeTrace> trace,List<RuntimeMetric> metrics){
+        public RuntimeSession{entities=List.copyOf(entities);activations=List.copyOf(activations);trace=List.copyOf(trace);metrics=List.copyOf(metrics);}
+        public static RuntimeSession empty(){return new RuntimeSession(0,0,0,0,0,0,0,0,0,List.of(),List.of(),List.of(),List.of());}
+        public boolean live(){return phase==2||phase==3||phase==5;}
+        public String state(){return new String[]{"Stopped","Starting","Running","Paused","Stopping","Failed"}[phase];}
+    }
+    public record Reply(long generation,String error,Set<String> capabilities,Snapshot snapshot,long latencyNanos,BufferedImage preview,RuntimeSession runtime){
+        public Reply(long generation,String error,Set<String> capabilities,Snapshot snapshot,long latencyNanos,BufferedImage preview){this(generation,error,capabilities,snapshot,latencyNanos,preview,RuntimeSession.empty());}
+    }
+
     public record State(Service service, Reply reply, String diagnostic) { }
+
+    private static int runtimeCount(DataInputStream in,int limit)throws IOException {int n=count(in);if(n>limit)throw new IOException("runtime.limit");return n;}
+    private static double runtimeNumber(DataInputStream in)throws IOException {double value=in.readDouble();if(!Double.isFinite(value))throw new IOException("runtime.finite");return value;}
+    private static RuntimeSession runtime(DataInputStream in)throws IOException {
+        if(in.readUnsignedShort()!=1)throw new IOException("runtime.version");
+        long session=in.readLong(),scene=in.readLong(),configured=in.readLong(),tick=in.readLong(),steps=in.readLong(),dropped=in.readLong();int phase=in.readUnsignedByte();if(phase>5)throw new IOException("runtime.phase");long entities=in.readLong(),activations=in.readLong();
+        List<RuntimeEntity> objects=new ArrayList<>();int fields=0;
+        for(int n=runtimeCount(in,1000);n>0;--n){long placement=in.readLong(),node=in.readLong();String name=text(in);double x=runtimeNumber(in),y=runtimeNumber(in),sx=runtimeNumber(in),sy=runtimeNumber(in),rotation=runtimeNumber(in);String sprite=text(in);double ppu=runtimeNumber(in),pivotX=runtimeNumber(in),pivotY=runtimeNumber(in);List<RuntimeField> properties=new ArrayList<>();int count=runtimeCount(in,4096);fields+=count;if(fields>4096)throw new IOException("runtime.field_limit");for(int f=count;f>0;--f)properties.add(new RuntimeField(in.readLong(),in.readLong(),text(in),text(in),text(in)));objects.add(new RuntimeEntity(placement,node,name,x,y,sx,sy,rotation,sprite,ppu,pivotX,pivotY,properties));}
+        List<RuntimeActivation> active=new ArrayList<>();for(int n=runtimeCount(in,64);n>0;--n){long id=in.readLong(),graph=in.readLong(),node=in.readLong(),instructions=in.readLong(),calls=in.readLong(),wake=in.readLong();String state=text(in);List<RuntimeValue> values=new ArrayList<>();for(int v=runtimeCount(in,64);v>0;--v)values.add(new RuntimeValue(in.readLong(),text(in),text(in)));active.add(new RuntimeActivation(id,graph,node,instructions,calls,wake,state,values));}
+        List<RuntimeTrace> trace=new ArrayList<>();for(int n=runtimeCount(in,256);n>0;--n){long sequence=in.readLong(),stamp=in.readLong(),at=in.readLong(),activation=in.readLong(),graph=in.readLong(),node=in.readLong();int severity=in.readUnsignedByte();if(severity>2)throw new IOException("runtime.severity");trace.add(new RuntimeTrace(sequence,stamp,at,activation,graph,node,severity,text(in),text(in)));}
+        List<RuntimeMetric> metrics=new ArrayList<>();for(int n=runtimeCount(in,64);n>0;--n)metrics.add(new RuntimeMetric(text(in),text(in),text(in),runtimeNumber(in)));
+        return new RuntimeSession(session,scene,configured,tick,steps,dropped,phase,entities,activations,objects,active,trace,metrics);
+    }
     private static final int MAGIC = 0x45505549, LIMIT = 16 * 1024 * 1024;
     private static final int PREVIEW_EDGE = 4096;
     private final ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
@@ -134,7 +162,7 @@ public final class Bridge implements AutoCloseable {
     }
     public CompletableFuture<Reply> callAt(long expectedGeneration, long expectedRevision, int operation, String... args) {
         return enqueue(() -> exchange(operation, expectedGeneration, expectedRevision, List.of(args)),
-            operation==26||operation==32&&args.length>0&&args[0].equals("move"),
+            operation==26||operation==42||operation==41&&args.length>0&&args[0].equals("input")||operation==32&&args.length>0&&args[0].equals("move"),
             false, operation==18&&args.length==3?args[2]:null);
     }
     public CompletableFuture<BufferedImage> assetPreview(long expectedGeneration, long asset, String key, int divisor) {
@@ -259,6 +287,12 @@ public final class Bridge implements AutoCloseable {
         Set<String> capabilities = Set.copyOf(Arrays.asList(text(in).split(",")));
         String error = text(in);
         if ((status == 0) != error.isEmpty()) throw new IOException("ui.invalid_result");
+        if(operation==42){
+            var runtime=runtime(in);if(in.available()!=0)throw new IOException("ui.trailing_response");
+            var previous=latest;var snapshot=previous==null||previous.generation()!=serverGeneration?null:previous.snapshot();
+            if(previous!=null&&runtime.session()!=0&&runtime.session()<previous.runtime().session())throw new RequestRejected("runtime.stale_snapshot");
+            return new Reply(serverGeneration,error,capabilities,snapshot,System.nanoTime()-start,null,runtime);
+        }
         if(operation==36){
             int width=in.readInt(),height=in.readInt();
             if(width<0||height<0||width>PREVIEW_EDGE||height>PREVIEW_EDGE||
@@ -272,7 +306,7 @@ public final class Bridge implements AutoCloseable {
             }
             return new Reply(serverGeneration,error,capabilities,null,System.nanoTime()-start,preview);
         }
-        Snapshot snapshot = null;
+        Snapshot snapshot = null;RuntimeSession runtime=RuntimeSession.empty();
         if (in.readBoolean()) {
             long rev = in.readLong(), assetsRev = in.readLong(), selectionRev = in.readLong();
             int flags = in.readUnsignedByte(), storage = in.readUnsignedByte();
@@ -357,11 +391,12 @@ public final class Bridge implements AutoCloseable {
             }
             List<ReferenceCandidate> referenceCandidates=new ArrayList<>();
             if(capabilities.contains("graph-scene-references"))for(int n=count(in);n>0;--n)referenceCandidates.add(new ReferenceCandidate(reference(in),text(in),text(in)));
+            if(capabilities.contains("runtime-session"))runtime=runtime(in);
             snapshot = new Snapshot(rev, assetsRev, selectionRev, flags, storage, project, entry, path,
                                     title, selection, documents, nodes, assets,fields,assetState,List.copyOf(types),List.copyOf(items),List.copyOf(systems),folders,graphs,referenceCandidates);
         }
         if (in.available() != 0) throw new IOException("ui.trailing_response");
-        return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start, null);
+        return new Reply(serverGeneration, error, capabilities, snapshot, System.nanoTime() - start, null,runtime);
     }
     private static GraphReference reference(DataInputStream in)throws IOException {
         int kind=in.readUnsignedByte();if(kind>3)throw new IOException("ui.reference_kind");

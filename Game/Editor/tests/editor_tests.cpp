@@ -435,6 +435,30 @@ void GraphSceneReferences() {
     }
 }
 
+
+void RuntimeControls() {
+    Fixture f;ComponentsFixture types;auto project=Take(ed::EditorProject::Create("Temp/editor-tests/runtime.epidemic",Project(f,types),Schema(f,types)));
+    auto source=project->Snapshot();auto session=Take(project->Play(Options(types)));
+    Take(session->Send(SceneNodeId{42},{Id("hit"),7}));Take(session->Pump(std::chrono::milliseconds{17}));
+    Check(HealthOf(*session,types)==93&&session->RuntimeSnapshot().tick==1,"native fixed pump executes damage without UI tick");
+    Take(session->Pause());auto tick=session->RuntimeSnapshot().tick;Take(session->Pump(std::chrono::seconds{2}));Check(session->RuntimeSnapshot().tick==tick,"Pause freezes Runtime clock");
+    Take(session->StepToNode());Check(session->RuntimeSnapshot().tick==tick,"StepToNode cannot advance Wait time");
+    for(unsigned i=0;i<7;++i){auto before=session->RuntimeSnapshot().tick;Take(session->StepTick());Check(session->RuntimeSnapshot().tick==before+1,"StepTick is exactly one Runtime tick");}
+    Check(HealthOf(*session,types)==86,"second damage follows native Wait deadline");
+    const auto view=session->RuntimeSnapshot();Check(!view.trace.empty()&&!view.entities.empty()&&view.activations.back().native_calls==2,"immutable runtime fields and native trace counters");
+    Take(session->Stop());Check(session->RuntimeSnapshot().phase==ed::PlayPhase::Stopped&&session->RuntimeSnapshot().tick==8,"Stop retains tagged history");
+    Check(project->Snapshot()==source,"Runtime snapshot and damage never mutate authoring");
+    auto second=Take(project->Play(Options(types)));Take(second->Pause());
+    // Use the actual fixture graph identity rather than a title/display label.
+    const auto graph=std::get<graph::GraphDefinition>(source->definition.documents.back().data).asset_id;
+    second->SetBreakpoint(graph,Id("before"),true);Take(second->Send(SceneNodeId{42},{Id("hit"),7}));Take(second->Resume());Take(second->Pump(std::chrono::milliseconds{17}));
+    Check(second->Phase()==ed::PlayPhase::Paused&&HealthOf(*second,types)==100,"breakpoint yields before native side effect");
+    const auto paused_tick=second->RuntimeSnapshot().tick;
+    for(unsigned i=0;i<16&&HealthOf(*second,types)==100;++i)Take(second->StepToNode());
+    Check(HealthOf(*second,types)==93&&second->RuntimeSnapshot().tick==paused_tick,"bounded node stepping executes once without advancing time");
+    Take(second->Stop());Take(second->Stop());Check(!second->Context(),"Stop from breakpoint is idempotent and releases Runtime");
+}
+
 void Play() {
     Fixture f;
     ComponentsFixture types;
@@ -631,6 +655,7 @@ int main(int argc, char **argv) {
             Persistence();
             DocumentDiscard();
             GraphSceneReferences();
+            RuntimeControls();
             Play();
             PlacementDiagnostic();
         } else if (argc == 2 && std::string_view{argv[1]} == "p04-write")

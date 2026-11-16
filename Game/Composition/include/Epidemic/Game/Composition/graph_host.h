@@ -39,6 +39,8 @@ using BoundGraphPtr = std::shared_ptr<const BoundGraph>;
 
 class GraphActivation final : public gameplay::composition::IGraphActivation {
   public:
+    [[nodiscard]] std::uint64_t Id() const noexcept { return id_; }
+    [[nodiscard]] runtime::AssetId Asset() const noexcept { return asset_; }
     void RequestCancel() noexcept override;
     [[nodiscard]] bool IsFinished() const noexcept override;
 
@@ -51,6 +53,8 @@ class GraphActivation final : public gameplay::composition::IGraphActivation {
     }
 
   private:
+    std::uint64_t id_ = 0;
+    runtime::AssetId asset_{};
     runtime::GraphActivationOwner owner_;
     std::shared_ptr<runtime::GraphTask> task_;
     std::unique_ptr<runtime::graph::GraphInstance> pending_;
@@ -99,6 +103,8 @@ class GraphExecutionHost final : public gameplay::composition::IGraphBehaviorHos
     // Cancel every scope's work and finalize reports before destroying a host.
     // Externally synchronized; never called from inside a native callback.
     [[nodiscard]] foundation::Result<void> CancelAll();
+    using InstanceObserver=std::function<void(runtime::graph::GraphInstance &,const GraphScope &,std::uint64_t)>;
+    void SetInstanceObserver(InstanceObserver observer) { observer_=std::move(observer); }
 
   private:
     struct Active {
@@ -119,6 +125,8 @@ class GraphExecutionHost final : public gameplay::composition::IGraphBehaviorHos
     };
 
     std::unordered_map<std::uint64_t, Asset> assets_;
+    InstanceObserver observer_;
+    std::uint64_t next_activation_id_ = 1;
 };
 
 } // namespace epidemic::game::composition

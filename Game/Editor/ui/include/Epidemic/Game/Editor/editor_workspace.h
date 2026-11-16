@@ -154,6 +154,7 @@ class EditorWorkspace final {
     [[nodiscard]] const PlaySession *Session() const noexcept {
         return session_.get();
     }
+    [[nodiscard]] PlaySession *Session() noexcept { return session_.get(); }
 
     [[nodiscard]] std::vector<std::shared_ptr<const PlayActivation>> Activations() const;
 

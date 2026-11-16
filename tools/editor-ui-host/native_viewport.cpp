@@ -66,6 +66,7 @@ struct View {
     epidemic::game::editor::SceneView camera;
     epidemic::runtime::SceneNodeId selected{};
     bool editing_scene = false;
+    std::map<std::uint64_t,std::wstring> labels;
     bool show_grid = true;
     epidemic::game::editor::GizmoTool tool = epidemic::game::editor::GizmoTool::Move;
 };
@@ -180,6 +181,9 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
                     const float r = static_cast<float>(std::clamp(b.right, -1.0, static_cast<double>(size.x) + 1.0));
                     const float t = static_cast<float>(std::clamp(b.top, -1.0, static_cast<double>(size.y) + 1.0));
                     const float d = static_cast<float>(std::clamp(b.bottom, -1.0, static_cast<double>(size.y) + 1.0));
+                    if(const auto label=view.labels.find(item.id.Raw());label!=view.labels.end()){
+                        view.renderer->Rect(l,t,r-l,d-t,0x273746);view.renderer->Text(label->second,l,std::max(0.0f,t-22),14,0xf0f0f4,std::max(200.0f,r-l));
+                    }
                     const auto color = item.id == view.selected ? 0x78bbffu : 0x687787u;
                     view.renderer->Line(l,t,r,t,color);
                     view.renderer->Line(r,t,r,d,color);
@@ -386,7 +390,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_scene(
 
 extern "C" JNIEXPORT jboolean JNICALL Java_epidemic_u1_NativeViewport_sceneItems(
     JNIEnv *env, jclass, jlong surface, jlong document, jlong selection, jlongArray ids,
-    jdoubleArray bounds) noexcept {
+    jdoubleArray bounds,jobjectArray labels) noexcept {
     try {
         CheckThread();
         auto &view = Views().at(surface);
@@ -402,8 +406,11 @@ extern "C" JNIEXPORT jboolean JNICALL Java_epidemic_u1_NativeViewport_sceneItems
         namespace ed = epidemic::game::editor;
         namespace rt = epidemic::runtime;
         std::vector<ed::SceneViewItem> items;
+        const auto label_count=labels?env->GetArrayLength(labels):0;if(label_count!=0&&label_count!=size)return JNI_FALSE;
+        view.labels.clear();
         items.reserve(keys.size());
         for (std::size_t index = 0; index < keys.size(); ++index) {
+            if(label_count){auto label=static_cast<jstring>(env->GetObjectArrayElement(labels,static_cast<jsize>(index)));if(!label)return JNI_FALSE;const auto length=env->GetStringLength(label);if(length>1024){env->DeleteLocalRef(label);return JNI_FALSE;}const auto *text=env->GetStringChars(label,nullptr);if(!text){env->DeleteLocalRef(label);return JNI_FALSE;}view.labels.emplace(static_cast<std::uint64_t>(keys[index]),std::wstring(reinterpret_cast<const wchar_t*>(text),static_cast<std::size_t>(length)));env->ReleaseStringChars(label,text);env->DeleteLocalRef(label);}
             const auto *value = values.data() + index * 7;
             if (!std::all_of(value, value + 7, [](double v) { return std::isfinite(v); }) ||
                 value[0] > value[2] || value[1] > value[3] ||

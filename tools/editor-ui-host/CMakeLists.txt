@@ -16,7 +16,7 @@ if(MSVC)
     set_property(TARGET EpidemicEditorBackend APPEND PROPERTY LINK_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/editor-host.manifest")
 endif()
-target_link_libraries(EpidemicEditorBackend PRIVATE EpidemicEditorUi)
+target_link_libraries(EpidemicEditorBackend PRIVATE EpidemicEditorUi EpidemicDiagnostics psapi)
 target_include_directories(EpidemicEditorBackend PRIVATE "${ENGINE_ROOT}/Game/Editor/example")
 target_compile_definitions(EpidemicEditorBackend PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 epidemic_configure_target(EpidemicEditorBackend)

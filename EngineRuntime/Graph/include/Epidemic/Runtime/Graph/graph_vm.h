@@ -3,6 +3,7 @@
 #include "Epidemic/Runtime/Graph/graph_compiler.h"
 #include "Epidemic/Runtime/Foundation/runtime_time.h"
 #include <optional>
+#include <functional>
 
 namespace epidemic::runtime::graph {
 struct ExecutionBudget {
@@ -55,6 +56,9 @@ class GraphInstance final {
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(ElementId port) const;
     [[nodiscard]] foundation::Result<GraphReference> ReadReference(ElementId port) const;
     [[nodiscard]] ExecutionReport Run(ExecutionBudget budget = {});
+    // Optional cooperative debugger. Returning false yields before this work item;
+    // no instruction, native effect or wait is replayed by resuming it.
+    void SetDebugGate(std::function<bool(const Instruction &)> gate) { debug_gate_=std::move(gate); }
     // Only the host scheduler acknowledges a due wait. Run alone cannot skip it.
     [[nodiscard]] foundation::Result<void> ResumeWait();
     void Cancel() noexcept;
@@ -87,6 +91,7 @@ class GraphInstance final {
     bool started_ = false;
     bool running_ = false;
     bool cancelled_ = false;
+    std::function<bool(const Instruction &)> debug_gate_;
 
     struct PendingWait {
         GameDuration duration{};

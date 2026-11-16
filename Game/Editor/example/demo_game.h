@@ -155,6 +155,20 @@ inline graph::PortDefinition Port(std::string_view name, graph::PortKind kind,
 inline ed::PlayOptions Options(Schema &schema) {
     ed::PlayOptions options;
     options.backend = std::make_unique<Backend>();
+    options.fixed_update=[movement=schema.movement,speed=schema.speed,enabled=schema.enabled](ed::PlayContext &context,runtime::GameDuration delta,double x,double y){
+        using Result=foundation::Result<void>;
+        if(x==0&&y==0)return Result::Success();
+        for(const auto &entity:context.entities.AllEntities()){
+            auto component=context.components.Find(entity.id,movement);if(!component)continue;
+            const auto active=context.components.Read<bool>(*component,enabled);const auto rate=context.components.Read<double>(*component,speed);if(!active||!rate||!active.Value())continue;
+            auto world=context.WorldTransform(context.entities.HandleOf(entity.id));if(!world)continue;
+            const double distance=rate.Value()*static_cast<double>(delta.ticks)/static_cast<double>(ed::PlaySession::kFixedTicksPerSecond);
+            world.Value().position.x+=static_cast<float>(x*distance);world.Value().position.y+=static_cast<float>(y*distance);
+            auto changed=context.SetWorldTransform(context.entities.HandleOf(entity.id),world.Value());if(!changed)return changed;
+        }
+        return Result::Success();
+    };
+
     options.bindings = [&](ed::PlayContext &context, AssetId) {
         gc::DomainOperation damage = [store = &context.components, health = schema.health,
                                       points = schema.points](const gc::OperationContext &operation,
