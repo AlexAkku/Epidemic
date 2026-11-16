@@ -1,6 +1,6 @@
 # Ручная проверка F-II.3
 
-Использовать `Temp/U/verification-images/94a7464f6d3c4a4cb254cf759e194094/EpidemicEditor/EpidemicEditor.exe`, сначала максимизированное окно. Сохранить проект перед тестом. F-II.2 также ожидает ручной приёмки по FII2_MANUAL_QA.md.
+Использовать свежий EXE из [последнего отчёта](FII_REVIEW_FIXES.md), сначала максимизированное окно. F-II.2 принят владельцем 2026-11-16; пункты1–21 адресного повтора также приняты. Сейчас нужны только короткий повтор UI и пункт22 из [адресной инструкции](FII_REVIEW_MANUAL_QA.md). Ниже сохранён функциональный набор для дальнейших регрессий.
 
 1. Создать Prefab с компонентами Health/Movement и два placements одного Prefab в Scene. Открыть Graph и Scene одновременно, затем вынести Scene в независимое Windows-окно.
 2. В Palette добавить Is Entity Valid. Alt+drag его input reference к первому placement в Scene или Hierarchy. Допустимая цель подсвечивается после native probe. Отпустить: один reference node и link; Scene count не меняется. Undo убирает оба, Redo возвращает.

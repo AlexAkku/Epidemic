@@ -24,4 +24,4 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 
 Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и текущий Graph DTO v5 подключены к одному project-scoped Windows OLE DnD coordinator. DTO v5 добавляет optional i64 input literal; IPC envelope остаётся v4. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
 
-Исправления по ручному прогону 2026-11-16: [отчёт](FII_REVIEW_FIXES.md), [адресная проверка](FII_REVIEW_MANUAL_QA.md). F-II.2 schema/defaults/Remove и новые Graph interactions требуют повтора владельцем.
+Исправления по ручному прогону 2026-11-16: [отчёт](FII_REVIEW_FIXES.md), [адресная проверка](FII_REVIEW_MANUAL_QA.md). Владелец подтвердил пункты 1–21, включая schema/defaults/Remove и новые Graph interactions. F-II.2-GATE PASS в заявленном профиле. Для F-II.3 остаются короткий повтор исправлений компоновки и результат пункта 22. F-II.4 NOT STARTED; [подготовлен порядок входа](FII4_ENTRY.md).

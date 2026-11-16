@@ -66,3 +66,5 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 ## F-II.3 — текущий implementation batch
 
 Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
+
+Обновление 2026-11-16: владелец принял пункты 1–21 адресного прогона. F-II.2-GATE PASS (offline scalar/unary, Rider принят с исключением). Функциональные 17/19/20 сохранить для последующих регрессий. После замечаний UI проверены стабильные docking bounds, Inspector 220 px, caption controls максимизированного окна и закрываемая диагностика без resize canvas. Итоговый F-II.3-GATE ожидает короткого повтора UI и результата пункта 22; физические конфигурации DPI отдельно владельцем не перечислены. Текущий Graph DTO v5, envelope IPC v4. F-II.4 не начат.

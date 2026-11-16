@@ -10,7 +10,7 @@ Scene Entity без Prefab: document=Scene, placement=SceneNodeId. Instance/Enti
 
 Reference и Is Reference Valid — настоящие операции native compiler/IR/VM с отдельными типами портов, включая точный Component type. Ссылка не преобразуется в i64; только результат Is Valid равен 0/1. Runtime resolver проверяет существующий live PrefabInstance/ComponentStore в текущей Play-сессии и scope. После удаления runtime-цели используется Missing, не cached handle. Авторские ссылки переживают rename/reparent/delete/Undo; отсутствие цели не удаляет payload.
 
-IPC envelope v4 сохранён, Graph DTO v4. Команда 40: probe/drop/jump/uses. Drop несёт bounded stable-ID payload в одном аргументе и остаётся в прежнем общем лимите IPC. Probe не изменяет revision. Drop повторно проверяет target/scope/type/occupied input и выполняет AddGraphNode + MoveGraphNode + optional ConnectPorts одним EditorWorkspace::Execute.
+IPC envelope v4 сохранён, Graph DTO v5. Команда 40: probe/drop/jump/uses. Drop несёт bounded stable-ID payload в одном аргументе и остаётся в прежнем общем лимите IPC. Probe не изменяет revision. Drop повторно проверяет target/scope/type/occupied input и выполняет AddGraphNode + MoveGraphNode + optional ConnectPorts одним EditorWorkspace::Execute.
 
 ## UI
 
@@ -26,6 +26,6 @@ PASS: native Graph VM typed reference/resolver regression; native Bridge roundtr
 
 Runtime Play regression PASS: удаление настоящего Entity/Component второй placement наблюдается resolver без изменения authoring snapshot. Адресный standalone JCEF smoke PASS: AWT/CSS hit, native probe/transaction, DTO/DOM Missing и Restore; прежние Source/Graph/lifecycle smoke также PASS. Полный Debug CTest **161/161 PASS**, public headers, IPC adversarial/catalog и managed bridge/contract/architecture PASS. Native Release build PASS. Static проверил восемь изменённых TU прежними clang-analyzer/bugprone checks; новая optional-access диагностика исправлена, повтор backend не содержит новых диагностик. Общий static FAIL сохраняется на прежних Scene signed-bitwise, Composition/Editor aggregate move/exception и ThumbnailCache parameters; подавлений/ослаблений нет. Финальный свежий standalone Release smoke **PASS**; SDK/Graph/GraphScene roundtrip на backend именно из этого образа **PASS**. Проверенный EXE: `Temp/U/verification-images/94a7464f6d3c4a4cb254cf759e194094/EpidemicEditor/EpidemicEditor.exe`. Во время smoke исправлены отмена drag от собственного Loading probe и от обновлений посторонних скрытых деревьев; регрессии сохранены. Тесты актуализированы по native-командам и исходному непустому графу; проверки не отключались.
 
-**F-II.3-GATE: PENDING manual qualification.** Реальный OLE pointer capture между HWND, физические Escape/capture loss, DPI 100/150 и второй монитор — NOT RUN без Computer Use. Автотесты не выдаются за ручную DnD-приёмку.
+**F-II.3-GATE: PENDING итогового подтверждения.** Владелец принял пункты1–21 адресного прогона 2026-11-16; 17/19/20 сохраняются для регрессий. Замечания компоновки устранены и проверены standalone smoke. Остались короткий визуальный повтор этих изменений и результат пункта22. Конфигурации DPI/мониторов отдельно владельцем не перечислены; повторный Computer Use прогон не выполнялся. F-II.4 не начат; [подготовлен порядок входа](FII4_ENTRY.md).
 
 [Ручная проверка](FII3_MANUAL_QA.md).

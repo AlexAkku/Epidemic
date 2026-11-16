@@ -67,12 +67,18 @@ public final class GraphTools extends JPanel {
                 });
             }
         } else if(kind.equals("graph.inspector")) {
-            var form=new JPanel();form.setLayout(new BoxLayout(form,BoxLayout.Y_AXIS));
+            var form=new InspectorForm();form.setLayout(new BoxLayout(form,BoxLayout.Y_AXIS));
             field(form,"Name",name);field(form,"Preview Input default (i64)",value);field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
             sourceButton=Theme.button("Open C# Source",()->{if(selected!=null&&graph!=null)graph.catalogue().stream().filter(type->type.type()==selected.type()&&!type.source().isEmpty()).findFirst().ifPresent(sourceNavigator);});form.add(sourceButton);
             referenceJump=Theme.button("Jump to Reference Target",()->reference("jump"));form.add(referenceJump);
             referenceUses=Theme.button("Find Target References",()->reference("uses"));form.add(referenceUses);
-            form.add(bookmark);form.add(breakpoint);form.add(apply);form.add(new JScrollPane(list));add(new JScrollPane(form));
+            sourceButton.setName("graph.open-source");referenceJump.setName("graph.jump-reference");referenceUses.setName("graph.find-references");apply.setName("graph.apply");
+            form.add(bookmark);form.add(breakpoint);form.add(apply);form.add(new JScrollPane(list));
+            for(var child:form.getComponents())if(child instanceof JComponent c){
+                c.setAlignmentX(LEFT_ALIGNMENT);c.setMinimumSize(new Dimension(0,c.getMinimumSize().height));
+                if(c instanceof AbstractButton button){button.setToolTipText(button.getText());c.setMaximumSize(new Dimension(Integer.MAX_VALUE,c.getPreferredSize().height));}
+            }
+            add(new JScrollPane(form,JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,JScrollPane.HORIZONTAL_SCROLLBAR_NEVER));
             name.addActionListener(e->apply());value.addActionListener(e->apply());group.addActionListener(e->apply());
             var edits=new DocumentListener(){private void changed(){if(!refreshing&&snapshot!=null){if(!draft)draftRevision=snapshot.revision();draft=true;fieldError="";caption.setText("Pending input · Apply/Enter or Save; Escape cancels");}}public void insertUpdate(DocumentEvent e){changed();}public void removeUpdate(DocumentEvent e){changed();}public void changedUpdate(DocumentEvent e){changed();}};
             for(var field:List.of(name,value,group))field.getDocument().addDocumentListener(edits);comment.getDocument().addDocumentListener(edits);
@@ -89,6 +95,13 @@ public final class GraphTools extends JPanel {
     private static void field(JPanel target,String label,JComponent component) {
         var row=new JPanel(new BorderLayout(4,4));var caption=new JLabel(label);caption.setLabelFor(component);
         row.add(caption,BorderLayout.NORTH);row.add(component);row.setMaximumSize(new Dimension(Integer.MAX_VALUE,component instanceof JScrollPane?100:60));target.add(row);
+    }
+    private static final class InspectorForm extends JPanel implements Scrollable {
+        public Dimension getPreferredScrollableViewportSize(){return new Dimension(280,320);}
+        public int getScrollableUnitIncrement(Rectangle r,int orientation,int direction){return 20;}
+        public int getScrollableBlockIncrement(Rectangle r,int orientation,int direction){return Math.max(20,r.height-20);}
+        public boolean getScrollableTracksViewportWidth(){return true;}
+        public boolean getScrollableTracksViewportHeight(){return false;}
     }
     private boolean canEdit(){return !busy&&available.getAsBoolean()&&graph!=null&&snapshot!=null&&!snapshot.playing();}
     private void reference(String action){
@@ -152,7 +165,7 @@ public final class GraphTools extends JPanel {
         if(kind.equals("graph.palette")){palette();return;}
         if(kind.equals("graph.inspector")) {
             if(previous==null||selected==null||previous.id()!=selected.id()||(!draft&&!Objects.equals(previous,selected)))load();
-            caption.setText(selected==null?"Select a node in Graph Canvas":"Node "+Long.toUnsignedString(selected.id())+" · "+graph.catalogue().stream().filter(t->t.type()==selected.type()).map(Bridge.GraphTemplate::name).findFirst().orElse("Unknown"));
+            caption.setText(selected==null?"Select a node in Graph Canvas":selected.name());
             if(!fieldError.isEmpty())caption.setText(fieldError);else if(draft)caption.setText("Pending input · Apply/Enter or Save; Escape cancels");
             sourceButton.setEnabled(selected!=null&&graph!=null&&graph.catalogue().stream().anyMatch(type->type.type()==selected.type()&&!type.source().isEmpty()));
             referenceJump.setEnabled(canEdit()&&selected!=null&&selected.reference()!=null&&selected.referenceAvailable());

@@ -30,6 +30,22 @@ Graph Ctrl+C/V/X/D маршрутизируются к браузеру и nativ
 - PASS: свежий standalone Release, воспроизводимая offline-упаковка с hash/license checks и полный штатный smoke (188.43 s). Физический cross-HWND DnD, второй монитор и DPI не заявляются автоматически проверенными.
 - PASS: GraphTests, GraphSceneTests и ScriptTests повторно на native backend именно из свежего дистрибутива (24.57 s): Graph literals/history/fresh-process persistence, typed references/coordinator/100 cancel cycles и реальный C# SDK/VM/defaults/Remove roundtrip.
 
-EXE для проверки: `Temp/U/verification-images/724bdd048b1d45c784ab02537097add6/EpidemicEditor/EpidemicEditor.exe`. Сборка расположена отдельно от пользовательского экземпляра; обычный повторный запуск активирует прежний editor process, поэтому перед проверкой новой сборки нужно штатно закрыть старый.
+EXE для проверки: `Temp/U/verification-images/c50b7725ff2d44f29996dadf9b7d4a7a/EpidemicEditor/EpidemicEditor.exe`. Сборка расположена отдельно от пользовательского экземпляра; обычный повторный запуск активирует прежний editor process, поэтому перед проверкой новой сборки нужно штатно закрыть старый.
 
-F-II.0 / F-II.0b: PASS. F-II.1: прежняя основа принята владельцем, новые изменения ожидают адресного повторного прогона. F-II.2: большинство визуальных сценариев приняты владельцем; schema/Remove/shortcuts требуют повтора после исправлений. Rider принят владельцем без установленного Rider; реальный запуск Rider не заявляется. F-II.3: текущие native/coordinator/JCEF проверки PASS; физические пункты 37–48 ещё не приняты, гейт не закрыт. F-II.4 не начат.
+Текущий статус: F-II.0/0b и F-II.1 PASS; F-II.2-GATE PASS в принятом offline scalar/unary профиле, Rider принят с исключением без запуска. Владелец принял пункты1–21; окончательный F-II.3-GATE ожидает короткого повтора UI и результата пункта22. F-II.4 NOT STARTED, подготовлен только порядок входа.
+
+## Последний батч: стабилизация компоновки, 2026-11-16
+
+Отправная точка этого батча — `0156236`. Владелец принял пункты 1–21 адресного прогона; F-II.1 и F-II.2 приняты в заявленном профиле. Замечания 17/21 исправлены:
+
+- Dock-панели получают стабильные layout hints, независимые от выбранного объекта/длины подписи. При переключении контекста новые вкладки добавляются до удаления старых: группа не опустошается и не перестраивает splitter. Ручное изменение разделителей и resize окна сохраняются.
+- Graph Inspector использует форму, следующую ширине viewport. Все поля/кнопки выровнены слева, действия могут сужаться вместе с панелью, вертикальная прокрутка сохраняет доступ к нижним элементам.
+- Explorer/Hierarchy показывают имена документов, типы операций Graph, имена компонентов и пути ресурсов без сырых IDs/generation. Внутренние identities, Selection, архив и native commands не изменены. Диагностическая identity reference остаётся в Inspector для проверки ссылок.
+- Диагностика Graph находится в непрозрачном overlay над прежней областью canvas и закрывается крестиком. Закрытие не стирает native ошибку; новая диагностика/следующий Compile может показать её вновь. Canvas сохраняет размер и координаты.
+- Кнопки окна перенесены из списка действий toolbar в закреплённую правую область header. Они следуют размеру окна; обработчики Minimize/Maximize-Restore/Close и dirty-close guard сохранены.
+
+Проверки: адресный standalone smoke **PASS (136.74 s)**, включая неизменность bounds при Scene→Graph→Scene, все четыре действия Inspector при ширине220 px, caption controls у правого края максимизированного окна, invalid inline Save и dismiss overlay без изменения canvas. Прежние Graph/SDK/Scene/lifecycle проверки в этом прогоне прошли, shutdown `surfaces=0`. Снимок максимизированного окна просмотрен без Computer Use. IPC v4 adversarial16 cases, каталог и managed architecture **PASS**. Свежая standalone Release упаковка с полным штатным smoke PASS (199.23 s), без fatal diagnostics, surfaces=0. Диагностический detector: [].
+
+Пункты 17,19,20 сохраняются в последующих регрессиях. Результат пункта22 ещё не сообщён, поэтому окончательный F-II.3-GATE остаётся PENDING. Для визуального повтора нужны только стабильность размеров при выборе, узкий Inspector, подписи, overlay ошибки и положение кнопок окна. [Порядок входа в F-II.4](FII4_ENTRY.md) подготовлен; **F-II.4 NOT STARTED**, runtime-код этого шага не добавлялся.
+
+GraphTests, GraphSceneTests и ScriptTests на backend именно из финального дистрибутива — **PASS (23.73 s)**. Native C++ код в этом батче не изменялся; прежний полный CTest161/161 остаётся baseline, новый полный CTest не заявляется. Новая автоматическая проверка ошибок Graph сравнивает bounds до/после invalid Save и после dismiss; проверки native history, CSP, sandbox и disposal сохранены.

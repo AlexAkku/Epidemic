@@ -11,6 +11,7 @@ const problem = document.getElementById('problem');
 const menu = document.getElementById('context');
 const mini = document.getElementById('minimap');
 const inlineDrafts=new Map();
+let dismissedProblem='';
 const editor = new NodeEditor();
 const area = new AreaPlugin(canvas);
 const renderer = new ReactPlugin({ createRoot });
@@ -25,6 +26,7 @@ let cursor = { x: 80, y: 80 }, minimapBounds, lastNativeSelection = '0', reconne
 function note(text) { status.textContent = text; }
 function send(action, ...args) {
     if (!snapshot || rendering || pending || snapshot.readonly) return;
+    if(action==='compile'||action==='run')dismissedProblem='';
     pending = true; pendingAction = action; canvas.style.pointerEvents='none';
     window.nativeGraph(JSON.stringify({ nonce: window.graphNonce, revision: ((action==='literal'||action==='inputvalue')?inlineDrafts.get(String(args[0]))?.revision:undefined)??snapshot.revision, action, args: args.map(String) }));
 }
@@ -265,10 +267,15 @@ function focusNode(id) {
 }
 function showProblem() {
     problem.replaceChildren();const text=snapshot.error || (!snapshot.report?.startsWith('OK')?snapshot.report:'');
-    problem.hidden=!text;if(!text)return;
-    const label=document.createElement('span');label.textContent=text;problem.append(label);
-    const id=diagnosticNode();if(id){const jump=document.createElement('button');jump.textContent='Go to node';jump.onclick=()=>focusNode(id);problem.append(jump);}
+    const key=`${snapshot.revision}:${text}`;problem.hidden=!text||dismissedProblem===key;if(problem.hidden)return;
+    const content=document.createElement('div');content.className='problem-content';content.textContent=text;problem.append(content);
+    const id=diagnosticNode();if(id){const jump=document.createElement('button');jump.textContent='Go to node';jump.onclick=()=>focusNode(id);content.append(jump);}
+    const close=document.createElement('button');close.className='problem-close';close.title='Dismiss diagnostic';close.setAttribute('aria-label','Dismiss diagnostic');
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 16 16');svg.setAttribute('aria-hidden','true');
+    const path=document.createElementNS(svg.namespaceURI,'path');path.setAttribute('d','M4 4L12 12M12 4L4 12');path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width','1.5');svg.append(path);close.append(svg);
+    close.onclick=()=>{dismissedProblem=key;problem.hidden=true;};problem.append(close);
 }
+for(const event of ['pointerdown','pointerup'])problem.addEventListener(event,e=>e.stopPropagation());
 function action(name) {
     if(name==='delete'&&reconnectEdge){const edge=reconnectEdge;connections.drop();clearReconnect();send('disconnect',edge);return;}
     if(name==='fit'){void AreaExtensions.zoomAt(area,editor.getNodes());return;}

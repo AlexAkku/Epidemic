@@ -411,6 +411,7 @@ public final class PlatformSession implements Disposable {
         tool.getComponent().putClientProperty(com.intellij.openapi.wm.impl.content.ToolWindowContentUi.HIDE_ID_LABEL,"true");
         com.intellij.openapi.wm.impl.content.ToolWindowContentUi.setAllowTabsReordering(tool,true);
         tool.setStripeTitle(id.replace("Epidemic ",""));
+        tool.getComponent().setMinimumSize(new Dimension(0,0));
         tool.setContentUiType(ToolWindowContentUiType.TABBED,null);tool.setSplitMode(split,null);groups.put(id,tool);return tool;
     }
     private void workspace(Bridge.Snapshot value){
@@ -479,12 +480,14 @@ public final class PlatformSession implements Disposable {
         context=value;
         for(ToolWindow window:List.of(primary,secondary)){
             String anchor=window==primary?"dock.center.right.primary":"dock.center.right.secondary";
+            // Keep the group populated throughout a context switch. Removing its
+            // last tab first makes Platform collapse and rebuild the splitter.
+            catalog.panels().stream().filter(p->p.anchor().equals(anchor)&&p.context().equals(value)&&p.initial()).sorted(Comparator.comparingInt(Catalog.Panel::order)).forEach(p->add(p.id(),window));
             for(Content content:window.getContentManager().getContents()){
                 String id=contents.entrySet().stream().filter(e->e.getValue()==content).map(Map.Entry::getKey).findFirst().orElse("");
                 // A user-moved Window-mode group is preserved by IntelliJ; do not steal its contents.
                 if(window.getType()==ToolWindowType.DOCKED&&catalog.contains(id)&&catalog.panel(id).context().equals(value)==false)window.getContentManager().removeContent(content,false);
             }
-            catalog.panels().stream().filter(p->p.anchor().equals(anchor)&&p.context().equals(value)&&p.initial()).sorted(Comparator.comparingInt(Catalog.Panel::order)).forEach(p->add(p.id(),window));
             Content previous=selectedContextTabs.get(value+":"+window.getId());
             if(previous!=null&&previous.getManager()==window.getContentManager())window.getContentManager().setSelectedContent(previous);
             else if(window.getContentManager().getContentCount()>0)window.getContentManager().setSelectedContent(window.getContentManager().getContent(0));
@@ -513,7 +516,7 @@ public final class PlatformSession implements Disposable {
     }
     public DocumentView documentView(VirtualFile file){
         String id=file.getUserData(PanelEditorProvider.PANEL);
-        UiPanels reader=reader();reader.refresh(snapshot);JPanel root=new JPanel(new BorderLayout());
+        UiPanels reader=reader();reader.refresh(snapshot);JPanel root=new JPanel(new BorderLayout());root.setMinimumSize(new Dimension(0,0));root.setPreferredSize(new Dimension(640,480));
         DefaultActionGroup commands=new DefaultActionGroup();commands.add(saveAction);
         commands.add(undoAction);commands.add(redoAction);
         commands.addSeparator();commands.add(playAction);commands.add(stopAction);commands.add(action("Build · F9",()->{},()->false));
@@ -915,22 +918,44 @@ public final class PlatformSession implements Disposable {
             removeToolbarAction(actions,"MainToolbarLeft","main.toolbar.Project");
             removeToolbarAction(actions,"MainToolbarRight","NewUiRunWidget");
             removeToolbarAction(actions,"MainToolbarRight","ExecutionTargetsToolbarGroup");
-            if(actions.getAction("MainToolbarRight") instanceof DefaultActionGroup right){
-                right.addSeparator();right.add(windowControl("Minimize",0));right.add(windowControl("Maximize / Restore",1));right.add(windowControl("Close Window",2));
-            }
+            later(100,this::installWindowControls);
             com.intellij.ide.ui.UISettings.getInstance().fireUISettingsChanged();
         }
         else mainMenu.add(menu);
         registerWorkspaceShortcuts(WindowManager.getInstance().getFrame(project).getRootPane());
         for(Content content:contents.values())registerWorkspaceShortcuts(content.getComponent());
     }
-    private AnAction windowControl(String text,int kind){
+    private JPanel windowControls;
+    private static com.intellij.openapi.wm.impl.customFrameDecorations.header.CustomHeader frameHeader(Container parent){
+        for(var child:parent.getComponents()){
+            if(child instanceof com.intellij.openapi.wm.impl.customFrameDecorations.header.CustomHeader header)return header;
+            if(child instanceof Container container){var header=frameHeader(container);if(header!=null)return header;}
+        }return null;
+    }
+    private void installWindowControls(){
+        JFrame frame=WindowManager.getInstance().getFrame(project);if(frame==null||windowControls!=null)return;
+        var header=frameHeader(frame.getRootPane());if(header==null)return;
+        var layer=frame.getLayeredPane();windowControls=new JPanel(new GridLayout(1,3));windowControls.setName("epidemic.window.controls");
+        windowControls.setBackground(header.getBackground());
+        windowControls.add(windowControl("Minimize",0));windowControls.add(windowControl("Maximize / Restore",1));windowControls.add(windowControl("Close Window",2));
+        layer.add(windowControls,JLayeredPane.PALETTE_LAYER);
+        Runnable place=()->{
+            var origin=SwingUtilities.convertPoint(header,0,0,layer);var insets=layer.getInsets();
+            int width=com.intellij.util.ui.JBUI.scale(138);
+            windowControls.setBounds(Math.max(0,layer.getWidth()-insets.right-width),origin.y,width,header.getHeight());windowControls.revalidate();windowControls.repaint();
+        };
+        ComponentAdapter resize=new ComponentAdapter(){public void componentResized(ComponentEvent e){place.run();}public void componentShown(ComponentEvent e){place.run();}};
+        layer.addComponentListener(resize);header.addComponentListener(resize);place.run();
+        com.intellij.openapi.util.Disposer.register(this,()->{layer.removeComponentListener(resize);header.removeComponentListener(resize);layer.remove(windowControls);});
+    }
+    private JButton windowControl(String text,int kind){
         javax.swing.Icon icon=new javax.swing.Icon(){public int getIconWidth(){return 16;}public int getIconHeight(){return 16;}public void paintIcon(Component c,Graphics g,int x,int y){g.setColor(c.getForeground());if(kind==0)g.drawLine(x+3,y+11,x+12,y+11);else if(kind==1)g.drawRect(x+3,y+3,9,9);else{g.drawLine(x+3,y+3,x+12,y+12);g.drawLine(x+12,y+3,x+3,y+12);}}};
-        return new AnAction(text,text,icon){public void actionPerformed(AnActionEvent e){var frame=WindowManager.getInstance().getFrame(project);if(frame==null)return;
+        JButton button=new JButton(icon);button.setName("window."+kind);button.setToolTipText(text);button.getAccessibleContext().setAccessibleName(text);button.setFocusable(false);button.setBorderPainted(false);button.setContentAreaFilled(false);
+        button.addActionListener(e->{var frame=WindowManager.getInstance().getFrame(project);if(frame==null)return;
             if(kind==0)frame.setExtendedState(frame.getExtendedState()|Frame.ICONIFIED);
             else if(kind==1)frame.setExtendedState((frame.getExtendedState()&Frame.MAXIMIZED_BOTH)!=0?Frame.NORMAL:Frame.MAXIMIZED_BOTH);
             else frame.dispatchEvent(new WindowEvent(frame,WindowEvent.WINDOW_CLOSING));
-        }};
+        });return button;
     }
     private static void removeToolbarAction(ActionManager manager,String groupId,String actionId){
         var action=manager.getAction(actionId);
@@ -1002,6 +1027,32 @@ public final class PlatformSession implements Disposable {
     private NativeViewport viewport(){for(DocumentView view:views)for(NativeViewport nativeView:view.reader().nativeViews().values())if(nativeView.isShowing())return nativeView;return null;}
     private void capture(String name){try{JFrame frame=WindowManager.getInstance().getFrame(project);BufferedImage image=new BufferedImage(frame.getWidth(),frame.getHeight(),BufferedImage.TYPE_INT_RGB);Graphics2D graphics=image.createGraphics();frame.printAll(graphics);NativeViewport viewport=viewport();if(viewport!=null){Path gpu=output.resolve(name+"-gpu.png");viewport.captureTo(gpu.toString());Point point=SwingUtilities.convertPoint(viewport,0,0,frame);graphics.drawImage(ImageIO.read(gpu.toFile()),point.x,point.y,viewport.getWidth(),viewport.getHeight(),null);}graphics.dispose();ImageIO.write(image,"png",output.resolve(name+".png").toFile());record("INFO own-window diagnostic print/GPU capture="+name+".png");}catch(IOException e){throw new UncheckedIOException(e);}}
     private void verify(){
+        context("Scene");later(200,()->{
+            JFrame frame=WindowManager.getInstance().getFrame(project);
+            Rectangle left=navigation.getComponent().getBounds(),right=primary.getComponent().getBounds(),lower=secondary.getComponent().getBounds();
+            context("Graph");later(200,()->{
+                require(left.equals(navigation.getComponent().getBounds())&&right.equals(primary.getComponent().getBounds())&&lower.equals(secondary.getComponent().getBounds()),"Context changed user docking bounds");
+                var inspector=tools.view("graph.inspector");var size=inspector.getSize();
+                inspector.setSize(220,500);layout(inspector);
+                for(String id:List.of("graph.open-source","graph.jump-reference","graph.find-references","graph.apply")){
+                    var button=named(inspector,id);require(button!=null,"Missing Inspector action "+id);
+                    var viewport=(JViewport)SwingUtilities.getAncestorOfClass(JViewport.class,button);require(viewport!=null,"Inspector action outside scrolling form");
+                    var bounds=SwingUtilities.convertRectangle(button.getParent(),button.getBounds(),viewport.getView());
+                    require(bounds.x>=0&&bounds.width>0&&bounds.x+bounds.width<=viewport.getExtentSize().width,"Inspector action clipped horizontally: "+id+" "+bounds+" viewport="+viewport.getExtentSize());
+                }
+                inspector.setSize(size);frame.validate();context("Scene");later(200,()->{
+                    require(right.equals(primary.getComponent().getBounds())&&lower.equals(secondary.getComponent().getBounds()),"Returning context changed user docking bounds");
+                    var original=frame.getBounds();frame.setExtendedState(Frame.MAXIMIZED_BOTH);later(300,()->{
+                        require(windowControls!=null&&windowControls.isShowing(),"No standalone caption controls");
+                        var layer=frame.getLayeredPane();require(Math.abs(windowControls.getX()+windowControls.getWidth()-(layer.getWidth()-layer.getInsets().right))<=1,"Caption controls are not at the right edge");
+                        capture("fii-review-layout-maximized");record("PASS review context preserves dock bounds; Inspector actions fit 220px; caption controls anchored to maximized edge");
+                        frame.setExtendedState(Frame.NORMAL);frame.setBounds(original);later(300,this::verifyReady);
+                    });
+                });
+            });
+        });
+    }
+    private void verifyReady(){
         require(navigation.getContentManager().getContentCount()==2,"Navigation tabs not grouped");
         require(contents.get("prefab.editor").getManager()==primary.getContentManager()&&primary.getAnchor()==ToolWindowAnchor.RIGHT,"Prefab not on right");
         require(FileEditorManager.getInstance(project).getOpenFiles().length==4,"Missing four Platform documents");

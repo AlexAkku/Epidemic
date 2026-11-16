@@ -141,7 +141,12 @@ public final class UiPanels {
         }
         finally { refreshing = false; }
     }
-    public JComponent view(String id) { return cache.computeIfAbsent(id, this::create); }
+    public JComponent view(String id) { return cache.computeIfAbsent(id, key->{
+        var panel=create(key);
+        // Docking geometry belongs to the user's splitters, not the current selection.
+        panel.setMinimumSize(new Dimension(0,0));panel.setPreferredSize(new Dimension(280,320));
+        return panel;
+    }); }
     private void observe(Consumer<Bridge.Snapshot> reader) {
         readers.add(reader);boolean previous=refreshing;refreshing=true;
         try{reader.accept(snapshot);}finally{refreshing=previous;}
@@ -623,8 +628,19 @@ public final class UiPanels {
         }
         return parent;
     }
-    private record AssetRow(Bridge.Asset asset){@Override public String toString(){return asset.path()+" ["+Long.toUnsignedString(asset.id())+"] g"+asset.generation()+(asset.trashed()?" · Trash":!asset.present()?" · Missing":"");}}
-    private record DocRow(Bridge.Document document) { @Override public String toString() { return document.name() + " [" + Long.toUnsignedString(document.id()) + "]"; } }
+    private record AssetRow(Bridge.Asset asset){@Override public String toString(){return asset.path()+(asset.trashed()?" · Trash":!asset.present()?" · Missing":"");}}
+    private record DocRow(Bridge.Document document) { @Override public String toString() { String type=switch(document.kind()){case 0->"Scene";case 1->"Prefab";case 2->"Graph";default->"Document";};return document.name().equals(type)?type:document.name()+" · "+type; } }
+    private String nodeLabel(Bridge.Node row){
+        if(row.kind()==3&&snapshot!=null)for(var graph:snapshot.graphs())if(graph.document()==row.document())
+            for(var node:graph.nodes())if(node.id()==row.id()){
+                String type=graph.catalogue().stream().filter(r->r.type()==node.type()).map(Bridge.GraphTemplate::name).findFirst().orElse("Graph");
+                return node.name().equals(type)?type:node.name()+" · "+type;
+            }
+        if(row.kind()==2&&row.label().equals("Prefab entity "+unsigned(row.id())))
+            return row.parent()==0&&snapshot!=null?snapshot.documents().stream().filter(d->d.id()==row.document()).map(Bridge.Document::name).findFirst().orElse("Entity"):"Entity";
+        if(row.kind()==1){String prefix="Entity "+unsigned(row.id());if(row.label().startsWith(prefix))return "Entity"+row.label().substring(prefix.length());}
+        return row.kind()==3?"Graph":row.label();
+    }
     private static String treeKey(TreePath path){
         StringBuilder key=new StringBuilder();Object[] parts=path.getPath();
         for(int i=1;i<parts.length;i++){
@@ -685,7 +701,7 @@ public final class UiPanels {
         tree.setCellRenderer(new DefaultTreeCellRenderer() {
             @Override public Component getTreeCellRendererComponent(JTree owner, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean focus) {
                 Component result = super.getTreeCellRendererComponent(owner, value, selected, expanded, leaf, row, focus);
-                if (value instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof Bridge.Node data) setText(data.label());
+                if (value instanceof DefaultMutableTreeNode node && node.getUserObject() instanceof Bridge.Node data) setText(nodeLabel(data));
                 return result;
             }
         });
