@@ -23,12 +23,19 @@ public final class ScriptTests {
             bridge.connect().get(30,TimeUnit.SECONDS);call(bridge,3,project.toString(),"F-II.2 native C#");file=bridge.latest().snapshot().path();
             Path scripts=project.resolve("Scripts");Files.createDirectories(scripts);Files.writeString(scripts.resolve("Turret.cs"),source(1),StandardCharsets.UTF_8);
             String api=managed.resolve("Epidemic.ScriptApi.dll").toString().replace("&","&amp;");Path csproj=scripts.resolve("GameScripts.csproj");Files.writeString(csproj,"<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup><ItemGroup><Reference Include=\"Epidemic.ScriptApi\"><HintPath>"+api+"</HintPath></Reference></ItemGroup></Project>");Files.writeString(project.resolve("NuGet.Config"),"<configuration><packageSources><clear/></packageSources></configuration>");
-            long typeId=0;
+            long typeId=0,prefabId=0,rootId=0;
             for(int version=1;version<=2;version++){
-                Files.writeString(scripts.resolve("Turret.cs"),source(version),StandardCharsets.UTF_8);Path generation=project.resolve(".epidemic/scripts/v"+version);Files.createDirectories(generation);
+                Files.writeString(scripts.resolve("Turret.cs"),source(version).replace("=150;","="+(150+25*(version-1))+";"),StandardCharsets.UTF_8);Path generation=project.resolve(".epidemic/scripts/v"+version);Files.createDirectories(generation);
                 run(project,dotnet.toString(),"build",csproj.toString(),"-c","Release","-o",generation.toString(),"--nologo","-p:UseSharedCompilation=false","-nr:false","-p:ImportDirectoryBuildProps=false","-p:ImportDirectoryBuildTargets=false");
                 Path schema=generation.resolve("types.schema"),assembly=generation.resolve("GameScripts.dll");run(project,dotnet.toString(),managed.resolve("Epidemic.ScriptWorker.dll").toString(),"schema",assembly.toString(),schema.toString(),project.relativize(assembly).toString(),project.toString());
                 call(bridge,39,project.relativize(schema).toString());var type=bridge.latest().snapshot().componentTypes().stream().filter(t->t.name().equals("qa.Turret")).findFirst().orElseThrow();if(version==1)typeId=type.id();else check(typeId==type.id(),"Type ID changed after rebuild");
+                if(version==1){call(bridge,15,"1","Live Schema Prefab");prefabId=bridge.latest().snapshot().selection().document();rootId=bridge.latest().snapshot().nodes().stream().filter(n->n.document()==bridge.latest().snapshot().selection().document()&&n.kind()==2).findFirst().orElseThrow().id();call(bridge,9,"2",id(prefabId),id(rootId));call(bridge,30,id(bridge.latest().snapshot().selectionRevision()),"add",id(typeId));}
+                call(bridge,9,"2",id(prefabId),id(rootId));
+                final long owner=prefabId,componentType=typeId;
+                check(bridge.latest().snapshot().nodes().stream().anyMatch(n->n.document()==owner&&n.kind()==5&&n.component()==componentType),"Rebuild detached persisted component");
+                var range=bridge.latest().snapshot().fields().stream().filter(f->f.name().endsWith(" / Range")||f.name().equals("Range")).findFirst().orElseThrow();
+                check(Double.parseDouble(range.value())==150+25*(version-1),"Updated default not projected into unchanged Prefab");
+                if(version==2){call(bridge,30,id(bridge.latest().snapshot().selectionRevision()),"remove",id(typeId)+" 0");check(bridge.latest().snapshot().nodes().stream().noneMatch(n->n.document()==owner&&n.kind()==5&&n.component()==componentType),"Root Remove Component failed");call(bridge,7);}
                 call(bridge,15,"2","Managed V"+version);long document=bridge.latest().snapshot().selection().document();
                 var entry=node(bridge,document,"Entry");var input=node(bridge,document,"Input");var invoke=node(bridge,document,"Turret.ApplyDamage");var output=node(bridge,document,"Output");
                 call(bridge,38,"settings",id(document),id(input.id()),input.name(),"7","","","0");connect(bridge,document,entry,"next",invoke,"in");connect(bridge,document,input,"value",invoke,"argument");connect(bridge,document,invoke,"next",output,"in");connect(bridge,document,invoke,"result",output,"value");

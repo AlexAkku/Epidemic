@@ -47,6 +47,10 @@ public final class GraphTests {
             require(graph(b,fragment).catalogue().stream().filter(t->t.operation()<=10).count()==11&&graph(b,fragment).catalogue().stream().anyMatch(t->t.name().equals("Is Entity Valid")),"Catalogue not derived from full native schema");
             var input=create(b,fragment,"Input");var add=create(b,fragment,"Add");settings(b,fragment,input,"7");
             link(b,fragment,input,"value",add,"left");
+            call(b,38,"literal",id(fragment),port(add,"right"),"6");
+            require(graph(b,fragment).nodes().stream().filter(n->n.id()==add.id()).findFirst().orElseThrow().ports().stream().filter(p->p.name().equals("right")).findFirst().orElseThrow().defaultValue()==6,"Native inline literal lost");
+            call(b,7);require(graph(b,fragment).nodes().stream().filter(n->n.id()==add.id()).findFirst().orElseThrow().ports().stream().filter(p->p.name().equals("right")).findFirst().orElseThrow().defaultValue()==0,"Literal Undo failed");call(b,8);
+
             reject(b,"graph.duplicate_connection","connect",id(fragment),port(input,"value"),port(add,"left"));
             reject(b,"graph.connection_direction","connect",id(fragment),port(input,"value"),port(add,"result"));
             reject(b,"ui.graph_template","create",id(fragment),""+graph(b,fragment).catalogue().size(),"0","0");
@@ -103,6 +107,7 @@ public final class GraphTests {
     }
     public static void main(String[] args) throws Exception {
         Path executable = Path.of(args[0]).toAbsolutePath();
+        Files.createDirectories(Path.of(args[1]));
         Path work = Files.createTempDirectory(Path.of(args[1]), "graph-native-");
         Path project = work.resolve("проект Graph");
         long document, generation;

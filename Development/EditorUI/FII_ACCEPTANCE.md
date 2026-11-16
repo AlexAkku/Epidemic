@@ -37,3 +37,11 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 ## F-II.3 — текущий implementation batch
 
 Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
+
+## Ручной прогон владельца 2026-11-16
+
+F-II.0/0b запуск и существующий owner подтверждены; исчезновение caption buttons после активации требует повтора исправленного toolbar. F-II.1 основные arithmetic/control/selection/history/persistence сценарии подтверждены; новые inline/menu/clipboard/Palette DnD изменения ожидают адресного повторного прогона.
+
+F-II.2: source editing, автосохранение, внешний VS Code sync/Open With, native C# invocation и Source navigation, multi-window документы подтверждены. Автосохранение принято как целевое поведение. Rider принят владельцем без установленного Rider; это исключение приёмки, а не доказанный запуск Rider. Schema/defaults/rebuild, Remove Component и Ctrl+Y исправляются по найденным ошибкам и требуют повторной приёмки; F-II.2-GATE пока не PASS.
+
+F-II.3: физические пункты37–48 владелец ещё не прошёл; native automation не заменяет их. F-II.4 не начат. [Отчёт исправлений](FII_REVIEW_FIXES.md) · [Новый адресный прогон](FII_REVIEW_MANUAL_QA.md).

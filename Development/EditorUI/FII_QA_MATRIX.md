@@ -61,6 +61,8 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 | Physical multiwindow/Rider/visual qualification | MANUAL NOT RUN |
 | LSP | NOT SHIPPED; specification offline fallback, not claimed PASS |
 
+Уточнение по ручному прогону 2026-11-16: VS Code/Open With и автосохранение приняты владельцем. Rider принят с исключением без установленного приложения. Schema defaults, Remove Component, Graph inline/menu/clipboard и новые shortcuts ожидают адресного повтора после исправлений; [инструкция](FII_REVIEW_MANUAL_QA.md). Это не общий F-II.2-GATE PASS.
+
 ## F-II.3 — текущий implementation batch
 
 Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.

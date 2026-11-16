@@ -57,6 +57,7 @@ struct NodeBinding {
     Operation operation = Operation::Input;
     std::shared_ptr<const INativeCallableFactory> native;
     std::shared_ptr<const IReferenceResolver> references{};
+    std::optional<std::int64_t> constant_input{}; // Compiler-lowered literal, not a managed ABI argument.
 };
 
 struct Instruction {
@@ -98,6 +99,7 @@ class CompiledGraph final {
 
         std::uint32_t index = 0;
         bool input = false;
+        std::optional<std::int64_t> initial{};
     };
 
     struct NativeSite {

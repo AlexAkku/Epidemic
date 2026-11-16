@@ -55,6 +55,7 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
         if (op == g::Operation::Sequence) { port("first",K::Control,D::Output); port("second",K::Control,D::Output); }
         if (op == g::Operation::Branch) { port("true",K::Control,D::Output); port("false",K::Control,D::Output); }
         if (op == g::Operation::Repeat) { port("body",K::Control,D::Output); port("done",K::Control,D::Output); }
+        if(op==g::Operation::Add||op==g::Operation::Multiply)for(auto &p:r.node.ports)if(p.kind==K::Data&&p.direction==D::Input)p.default_value=op==g::Operation::Multiply?1:0;
         result.push_back(std::move(r));
     }
     for(const auto &reference:ReferenceTypes(schema)) {

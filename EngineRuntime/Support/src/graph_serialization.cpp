@@ -79,6 +79,7 @@ void WriteDefinition(const graph::GraphDefinition &definition, IArchiveWriter &w
             Need(writer.WriteUInt64("kind", static_cast<std::uint64_t>(port.kind)));
             Need(writer.WriteUInt64("direction", static_cast<std::uint64_t>(port.direction)));
             Need(writer.WriteUInt64("type_id", port.type_id.Raw()));
+            if(port.default_value)Need(writer.WriteInt64("literal",*port.default_value));
             Need(writer.EndArrayElement());
         }
 
@@ -151,6 +152,9 @@ graph::GraphDefinition ReadDefinition(IArchiveReader &reader) {
             port.kind = static_cast<graph::PortKind>(kind);
             port.direction = static_cast<graph::PortDirection>(direction);
             port.type_id = ReadId(reader, "type_id");
+            const auto literal=reader.IsNull("literal");
+            if(!literal)Require(literal.GetError().code=="serialization.field_missing","graph.literal_archive");
+            if(literal&&!literal.Value())port.default_value=Take(reader.ReadInt64("literal"));
             node.ports.push_back(std::move(port));
             Need(reader.EndArrayElement());
         }

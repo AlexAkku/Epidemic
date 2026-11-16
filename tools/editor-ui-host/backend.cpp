@@ -442,15 +442,20 @@ class Backend {
             recipe.type = epidemic::gameplay::TypeId{Numeric(args[2])};
             auto defaults = schema_.components.Defaults(recipe.type);
             Require(defaults);
-            for (auto &property : defaults.Value())
+            const auto &schemas=workspace_->Project()->Snapshot()->definition.user_schemas;
+            const bool dynamic=std::any_of(schemas.begin(),schemas.end(),[&](const auto &s){return epidemic::gameplay::TypeId::FromString(s.component.name)==recipe.type;});
+            if(!dynamic)for (auto &property : defaults.Value())
                 recipe.properties.push_back({property.property, std::move(property.value), {}});
             auto commands = ed::ComponentCommands(*workspace_->Project()->Snapshot(), selection, recipe);
             Require(commands);
             Require(workspace_->Execute(std::move(commands).Value(), revision));
             (void)workspace_->Select({selection.document, ed::UiElement::PrefabComponent, selection.element, recipe.type, recipe.part});
-        } else if (args[1] == "remove" && args.size() == 2 && selection.kind == ed::UiElement::PrefabComponent) {
-            Require(workspace_->Execute({ed::DeleteComponent{selection.document, node, selection.component, selection.part}}, revision));
-            (void)workspace_->Select({selection.document, ed::UiElement::PrefabNode, selection.element});
+        } else if (args[1] == "remove" && (args.size() == 2 || args.size()==3) &&
+                   (selection.kind == ed::UiElement::PrefabComponent || selection.kind==ed::UiElement::PrefabNode)) {
+            auto type=selection.component;auto part=selection.part;
+            if(args.size()==3){auto identity=GraphWords(args[2],2);if(identity.size()!=2)throw std::runtime_error("ui.component_identity");type=epidemic::gameplay::TypeId{Numeric(identity[0])};part=epidemic::gameplay::entities::EntityPartId{Numeric(identity[1])};}
+            Require(workspace_->Execute({ed::DeleteComponent{selection.document,node,type,part}},revision));
+            (void)workspace_->Select({selection.document,ed::UiElement::PrefabNode,selection.element});
         } else if (args[1] == "graph" && args.size() == 3 &&
                    (selection.kind == ed::UiElement::PrefabNode || selection.kind == ed::UiElement::PrefabComponent)) {
             const auto graph = Asset(Numeric(args[2]));
@@ -860,6 +865,13 @@ class Backend {
             else commands.push_back(ed::DisconnectPorts{document,Id{Numeric(args[2])}});
         } else if (args[0]=="deletebulk" && args.size()==3) {
             for(const auto &word:GraphWords(args[2],64)) commands.push_back(ed::DeleteGraphNode{document,Id{Numeric(word)}});
+        } else if ((args[0]=="literal"||args[0]=="inputvalue") && args.size()==4) {
+            const auto value=ed::EditorWorkspace::ParseValue(ed::comp::PropertyKind::Integer,args[3]);Require(value);
+            const auto number=std::get<std::int64_t>(value.Value());
+            if(args[0]=="literal")commands.push_back(ed::SetGraphPortDefault{document,Id{Numeric(args[2])},number});
+            else {auto node=std::find_if(std::get<graph::GraphDefinition>(doc->data).nodes.begin(),std::get<graph::GraphDefinition>(doc->data).nodes.end(),[&](const auto &n){return n.id.Raw()==Numeric(args[2]);});
+                if(node==std::get<graph::GraphDefinition>(doc->data).nodes.end())throw std::runtime_error("ui.graph_node");
+                auto settings=ed::graph_ui::Settings(*doc,node->id.Raw());settings.preview_default=number;commands.push_back(ed::SetGraphNodeSettings{document,node->id,node->name,settings});}
         } else if (args[0]=="settings" && args.size()==8) {
             const auto id=Numeric(args[2]); const auto flags=Numeric(args[7]);
             if(flags>3) throw std::runtime_error("ui.graph_flags");
@@ -873,6 +885,8 @@ class Backend {
                 auto settings=ed::graph_ui::Settings(*doc,id); settings.group=args[3];
                 commands.push_back(ed::SetGraphNodeSettings{document,n->id,n->name,std::move(settings)});
             }
+        } else if(args[0]=="cut" && args.size()==3) {
+            CopyGraph(*doc,args[2]);for(const auto &word:GraphWords(args[2],64))commands.push_back(ed::DeleteGraphNode{document,Id{Numeric(word)}});
         } else if(args[0]=="copy" && args.size()==3) {CopyGraph(*doc,args[2]);return;
         } else if(args[0]=="paste" && args.size()==4) {commands=PasteGraph(document,Real(args[2]),Real(args[3]));
         } else if(args[0]=="duplicate" && args.size()==3) {
@@ -1321,7 +1335,7 @@ class Backend {
         if (folder)
             for (const auto &path : content_folders_)
                 out.Text(path);
-        out.Number<2>(4); // Graph DTO schema version, independent of IPC envelope.
+        out.Number<2>(5); // Graph DTO schema version, independent of IPC envelope.
         const auto recipes=Recipes();
         out.Number<4>(recipes.size());
         for(const auto &recipe:recipes) {
@@ -1359,7 +1373,7 @@ class Backend {
                 for (const auto &port : node.ports) {
                     out.Number<8>(port.id.Raw()); out.Text(port.name);
                     out.Number<1>(static_cast<unsigned>(port.kind)); out.Number<1>(static_cast<unsigned>(port.direction));
-                    out.Number<8>(port.type_id.Raw());
+                    out.Number<8>(port.type_id.Raw());out.Number<1>(port.default_value.has_value());if(port.default_value)out.Number<8>(std::bit_cast<std::uint64_t>(*port.default_value));
                 }
             }
             out.Number<4>(graph->connections.size());

@@ -4,6 +4,8 @@
 #include <array>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
 
 namespace epidemic::runtime::graph {
 namespace {
@@ -70,6 +72,30 @@ struct NodeInfo {
 
 foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definition,
                                                   std::span<const NodeBinding> bindings) {
+    bool literals=false;
+    for(const auto &node:definition.nodes)for(const auto &port:node.ports)literals=literals||port.default_value.has_value();
+    if(literals) {
+        std::vector<TypeId> known{kI64Type};for(const auto &binding:bindings)known.push_back(binding.node_type);
+        for(const auto &node:definition.nodes){if(node.reference)known.push_back(ReferenceValueType(*node.reference));
+            const auto binding=std::find_if(bindings.begin(),bindings.end(),[&](const auto &b){return b.node_type==node.type_id;});
+            if(binding!=bindings.end()&&binding->operation==Operation::ReferenceValid)for(const auto &port:node.ports)if(port.kind==PortKind::Data)known.push_back(port.type_id);
+        }
+        const auto valid=ValidateGraph(definition,known);if(!valid)return foundation::Result<CompiledGraphPtr>::Failure(valid.GetError());
+        auto lowered=definition;std::vector<NodeBinding> extended(bindings.begin(),bindings.end());
+        std::vector<NodeDefinition> constants;
+        std::unordered_set<ElementId> ids;for(const auto &n:definition.nodes){ids.insert(n.id);for(const auto &p:n.ports)ids.insert(p.id);}for(const auto &e:definition.connections)ids.insert(e.id);
+        const auto fresh=[&](std::string key){auto id=ElementId::FromString(key);while(ids.contains(id)){key+='x';id=ElementId::FromString(key);}ids.insert(id);return id;};
+        for(auto &node:lowered.nodes)for(auto &port:node.ports)if(port.default_value) {
+            const auto value=*port.default_value;port.default_value.reset();
+            if(std::any_of(definition.connections.begin(),definition.connections.end(),[&](const auto &e){return e.input_port==port.id;}))continue;
+            const auto id=fresh("literal.node."+std::to_string(port.id.Raw())),out=fresh("literal.port."+std::to_string(port.id.Raw())),edge=fresh("literal.edge."+std::to_string(port.id.Raw()));
+            const auto type=TypeId::FromString("literal.type."+std::to_string(id.Raw()));
+            constants.push_back({id,type,"Literal",{{out,"value",PortKind::Data,PortDirection::Output,kI64Type}}});
+            extended.push_back({type,Operation::Input,{},{},value});lowered.connections.push_back({edge,out,port.id});
+        }
+        lowered.nodes.insert(lowered.nodes.end(),constants.begin(),constants.end());
+        return CompileGraph(lowered,extended);
+    }
     if (detail::FlowCompiler::UsesFlow(definition, bindings))
         return detail::FlowCompiler::Compile(definition, bindings);
     std::unordered_map<TypeId, const NodeBinding *> catalog;
@@ -160,7 +186,7 @@ foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definit
     program->slots_.reserve(nodes.size());
     for (std::size_t index = 0; index < nodes.size(); ++index)
         program->slots_.push_back({nodes[index].exposed_port, static_cast<std::uint32_t>(index),
-                                   nodes[index].binding->operation == Operation::Input});
+                                   nodes[index].binding->operation == Operation::Input,nodes[index].binding->constant_input});
     while (!ready.empty()) {
         const auto index = ready.top();
         ready.pop();

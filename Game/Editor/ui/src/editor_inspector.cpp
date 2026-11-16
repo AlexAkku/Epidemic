@@ -79,6 +79,10 @@ void Properties(std::vector<InspectorEntry> &rows, const comp::ComponentRegistry
 
         row.editable = editable;
         row.source = "factory default unavailable";
+        if(const auto *description=registry.Description(component.type)) {
+            const auto field=std::find_if(description->fields.begin(),description->fields.end(),[&](const auto &f){return comp::PropertyId::FromString(f.name)==property.id;});
+            if(field!=description->fields.end()){row.value=field->initial;row.source="schema default";}
+        }
         if (!editable)
             row.readonly_reason = "Effective authoring value; choose Edit Instance Override or "
                                   "open its Prefab definition";

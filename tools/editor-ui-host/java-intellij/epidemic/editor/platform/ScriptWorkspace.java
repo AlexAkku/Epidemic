@@ -89,6 +89,34 @@ public final class ScriptWorkspace implements AutoCloseable {
     void editorReleased(VirtualFile file,Object token){ui(()->{var source=sources.get(file);if(source!=token)return;if(FileEditorManager.getInstance(project).getAllEditors(file).length==0&&source!=null&&!FileDocumentManager.getInstance().isDocumentUnsaved(source.document())){sources.remove(file);file.putUserData(OWNER,null);}});}
     public void refresh(){files.clear();try{Path base=root.get();if(base!=null&&Files.isDirectory(base.resolve("Scripts")))try(var paths=Files.walk(base.resolve("Scripts"),12)){paths.filter(p->p.toString().endsWith(".cs")&&!p.toString().contains(File.separator+"obj"+File.separator)).sorted().limit(512).forEach(files::addElement);}}catch(Exception error){fail(error);}filesChanged.run();}
     static String template(String name){return "using Epidemic.ScriptApi;\n\n[ScriptComponent(\"user."+name+"\")]\npublic sealed class "+name+"\n{\n    [ScriptField] public long Damage { get; set; } = 25;\n    [ScriptField] public double Range { get; set; } = 150.0;\n    [ScriptField] public double FireRate { get; set; } = 2.0;\n    [ScriptField] public long Health { get; set; } = 100;\n    [ScriptField] public bool Enabled { get; set; } = true;\n    [ScriptField] public string Label { get; set; } = \""+name+"\";\n\n    [GraphOperation(\"user."+name+".ApplyDamage.i64.v1\")]\n    public long ApplyDamage(long amount)\n    {\n        Health = checked(Health - amount);\n        return Health;\n    }\n}\n";}
+    private Path fileClipboard;private boolean cutFile;
+    public void fileAction(String action,Path selected){try{
+        if(action.equals("copy")||action.equals("cut")){fileClipboard=checked(selected);cutFile=action.equals("cut");status(cutFile?"Source cut; choose Paste in Scripts":"Source copied; choose Paste in Scripts");return;}
+        Path source=action.equals("paste")?fileClipboard:checked(selected);if(source==null){status("Copy or cut a C# source first");return;}
+        source=checked(source);VirtualFile file=LocalFileSystem.getInstance().refreshAndFindFileByNioFile(source);if(file==null)throw new IOException("Source missing");
+        var known=sources.get(file);if(known!=null)save(known);
+        if(action.equals("delete")){
+            if(JOptionPane.showConfirmDialog(null,"Delete "+file.getName()+"? Registered component data is retained until an explicit valid rebuild.","Delete C# Source",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
+            closeEverywhere(file);com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project,()->{try{file.delete(this);}catch(IOException error){throw new java.io.UncheckedIOException(error);}});
+        }else{
+            boolean moving=action.equals("rename")||(action.equals("paste")&&cutFile);
+            String suggested=moving?file.getName():file.getNameWithoutExtension()+"Copy.cs";
+            String name=JOptionPane.showInputDialog(null,"Destination filename in Scripts (no overwrite)",suggested);if(name==null)return;
+            if(!name.endsWith(".cs")||name.equals(".cs")||name.chars().anyMatch(c->"\\/:*?\"<>|".indexOf(c)>=0))throw new IOException("Use a .cs filename without path separators");
+            Path folder=action.equals("paste")?(selected==null?root.get().toRealPath().resolve("Scripts"):checked(selected).getParent()):source.getParent();
+            if(!folder.toRealPath().startsWith(root.get().toRealPath().resolve("Scripts")))throw new IOException("Destination outside Scripts");
+            Path destination=folder.resolve(name).normalize();if(Files.exists(destination))throw new IOException("Destination already exists: "+name);
+            VirtualFile destinationFolder=LocalFileSystem.getInstance().refreshAndFindFileByNioFile(folder);if(destinationFolder==null)throw new IOException("Destination folder missing");
+            if(moving)closeEverywhere(file);
+            com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(project,()->{try{
+                if(moving&&file.getParent().equals(destinationFolder))file.rename(this,name);
+                else {VirtualFile created=file.copy(this,destinationFolder,name);if(moving){try{file.delete(this);}catch(IOException failure){created.delete(this);throw failure;}}}
+            }catch(IOException error){throw new java.io.UncheckedIOException(error);}});
+            if(moving){sources.remove(file);if(cutFile){fileClipboard=null;cutFile=false;}}
+            open(destination,1,false);
+        }
+        refresh();status("Sources changed · Rebuild Required");
+    }catch(Exception error){fail(error);}}
     public void newClass(){String name=JOptionPane.showInputDialog(null,"Class name (a C# identifier)","New C# Class",JOptionPane.PLAIN_MESSAGE);if(name==null)return;
         try{if(!name.matches("[\\p{L}_][\\p{L}\\p{N}_]{0,63}"))throw new IOException("Enter a C# class identifier");Path base=root.get().toRealPath();Path folder=base.resolve("Scripts");Files.createDirectories(folder);if(!folder.toRealPath().equals(base.resolve("Scripts")))throw new IOException("Scripts points outside project");Path file=folder.resolve(name+".cs");Files.writeString(file,template(name),StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW);refresh();open(file,1,false);}catch(Exception error){fail(error);}}
     public void choose(){var picker=new JFileChooser(root.get()==null?null:root.get().resolve("Scripts").toFile());picker.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("C# source","cs"));if(picker.showOpenDialog(null)==JFileChooser.APPROVE_OPTION)open(picker.getSelectedFile().toPath(),1,false);}

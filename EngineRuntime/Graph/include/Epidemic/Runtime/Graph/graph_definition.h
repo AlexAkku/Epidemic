@@ -77,6 +77,7 @@ struct PortDefinition {
     PortDirection direction = PortDirection::Input;
     TypeId type_id{}; // Control is a payload-free signal; Data/Event require a known type.
 
+    std::optional<std::int64_t> default_value{}; // Persisted i64 input literal; a connection takes precedence.
     [[nodiscard]] bool operator==(const PortDefinition &) const = default;
 };
 

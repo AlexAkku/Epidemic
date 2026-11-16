@@ -367,6 +367,8 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
     if(have_user) io.Array("user_schemas",project.definition.user_schemas,64,[&](auto &type){
         io.S("assembly",type.assembly);io.S("fingerprint",type.fingerprint);
         io.S("name",type.component.name);io.U("version",type.component.version);
+        bool have_policy=true;if(io.reader){const auto present=io.reader->IsNull("inherit_defaults");if(!present)Require(present.GetError().code=="serialization.field_missing");have_policy=present&&!present.Value();}
+        if(have_policy)io.B("inherit_defaults",type.inherit_defaults);else type.inherit_defaults=false;
         io.Array("fields",type.component.fields,64,[&](auto &field){io.S("name",field.name);io.Object("initial",[&]{Property(io,field.initial);});});
         io.Array("operations",type.operations,64,[&](auto &op){io.S("id",op.id);io.S("name",op.name);io.S("type",op.type);io.S("method",op.method);io.S("source",op.source);io.U("line",op.line);});
     });

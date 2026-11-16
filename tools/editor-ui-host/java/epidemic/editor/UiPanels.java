@@ -34,6 +34,8 @@ public final class UiPanels {
     private Supplier<List<java.nio.file.Path>> sourceFiles=List::of;
     private BiConsumer<java.nio.file.Path,Boolean> openSource=(path,with)->{};
     private Runnable newSource=()->{};
+    private BiConsumer<String,java.nio.file.Path> sourceFileAction=(action,path)->{};
+    public void sourceFileActions(BiConsumer<String,java.nio.file.Path> action){sourceFileAction=action;}
     private final List<Runnable> sourceRefreshers=new ArrayList<>();
     public void sourceCommands(Supplier<List<java.nio.file.Path>> files,BiConsumer<java.nio.file.Path,Boolean> open,Runnable create){sourceFiles=files;openSource=open;newSource=create;}
     public void refreshSources(){sourceRefreshers.forEach(Runnable::run);}
@@ -437,12 +439,14 @@ public final class UiPanels {
             tree.setDragEnabled(true);
             list.setDragEnabled(true);
         }
+        sourceKeys(tree,()->tree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode n?n.getUserObject():null);
+        sourceKeys(list,list::getSelectedValue);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         CardLayout cards=new CardLayout();JPanel browser=new JPanel(cards);browser.add(new JScrollPane(tree),"Tree");browser.add(new JScrollPane(list),"List");
         mode.addActionListener(e->{boolean grid=mode.getSelectedItem().equals("Grid");list.setLayoutOrientation(grid?JList.HORIZONTAL_WRAP:JList.VERTICAL);list.setVisibleRowCount(grid?-1:0);list.setFixedCellWidth(grid?220:-1);list.setFixedCellHeight(grid?64:-1);cards.show(browser,mode.getSelectedItem().equals("Tree")?"Tree":"List");});
         list.addListSelectionListener(e->{if(refreshing||e.getValueIsAdjusting())return;Object row=list.getSelectedValue();if(row instanceof AssetRow asset)select.accept(new Bridge.Selection(6,0,asset.asset().id()));else if(row instanceof DocRow doc)select.accept(new Bridge.Selection(0,doc.document().id(),0));});
         list.addMouseListener(new MouseAdapter(){@Override public void mouseClicked(MouseEvent e){if(e.getClickCount()==2){if(list.getSelectedValue() instanceof DocRow row)openDocument.accept(row.document());else if(list.getSelectedValue() instanceof SourceRow row)openSource.accept(row.path(),false);}}});
-        list.addMouseListener(new MouseAdapter(){public void mousePressed(MouseEvent event){popup(event);}public void mouseReleased(MouseEvent event){popup(event);}private void popup(MouseEvent event){if(!event.isPopupTrigger())return;int index=list.locationToIndex(event.getPoint());if(index<0||!list.getCellBounds(index,index).contains(event.getPoint())||!(listing.get(index) instanceof SourceRow source))return;list.setSelectedIndex(index);var menu=new JPopupMenu();menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));menu.show(list,event.getX(),event.getY());}});
+        list.addMouseListener(new MouseAdapter(){public void mousePressed(MouseEvent event){popup(event);}public void mouseReleased(MouseEvent event){popup(event);}private void popup(MouseEvent event){if(!event.isPopupTrigger())return;int index=list.locationToIndex(event.getPoint());if(index<0||!list.getCellBounds(index,index).contains(event.getPoint())||!(listing.get(index) instanceof SourceRow source))return;list.setSelectedIndex(index);var menu=new JPopupMenu();menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));for(String action:List.of("copy","cut","duplicate","rename","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1),()->sourceFileAction.accept(action,source.path()));menu.show(list,event.getX(),event.getY());}});
         panel.add(header, BorderLayout.NORTH); panel.add(browser);
         JPanel buttons = new JPanel(new GridLayout(0, 2, 4, 4));
         JButton importButton=Theme.button("Import…",importPicker);assetButtons.add(importButton);buttons.add(importButton);
@@ -583,8 +587,8 @@ public final class UiPanels {
                 if(!event.isPopupTrigger()||!interactive||snapshot==null)return;
                 var path=tree.getPathForLocation(event.getX(),event.getY());
                 if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return;
-                if(node.getUserObject() instanceof SourceRow source){tree.setSelectionPath(path);var menu=new JPopupMenu();menuItem(menu,"Open C#",()->openSource.accept(source.path(),false));menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));menu.show(tree,event.getX(),event.getY());return;}
-                if(node.getUserObject().equals("Scripts")){var menu=new JPopupMenu();menuItem(menu,"New C# Class…",newSource);menu.show(tree,event.getX(),event.getY());return;}
+                if(node.getUserObject() instanceof SourceRow source){tree.setSelectionPath(path);var menu=new JPopupMenu();menuItem(menu,"Open C#",()->openSource.accept(source.path(),false));menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));for(String action:List.of("copy","cut","duplicate","rename","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1),()->sourceFileAction.accept(action,source.path()));menu.show(tree,event.getX(),event.getY());return;}
+                if(node.getUserObject().equals("Scripts")){var menu=new JPopupMenu();menuItem(menu,"New C# Class…",newSource);menuItem(menu,"Paste C# Source…",()->sourceFileAction.accept("paste",null));menu.show(tree,event.getX(),event.getY());return;}
                 if(newContentFolder==null||snapshot.storage()!=2||snapshot.playing()||!(node.getUserObject() instanceof FolderRow folder))return;
                 var menu=new JPopupMenu();
                 menuItem(menu,"New Folder…",()->newContentFolder.accept(folder.path()));
@@ -1059,7 +1063,7 @@ public final class UiPanels {
             int kind=snapshot==null?0:snapshot.selection().kind();
             toolbar.setVisible(kind==2||kind==5);
             add.setEnabled(canEditComponent()&&kind==2&&!availableComponents(snapshot).isEmpty());
-            remove.setEnabled(canEditComponent()&&kind==5);
+            remove.setEnabled(canEditComponent()&&(kind==5||(kind==2&&snapshot.nodes().stream().anyMatch(n->n.kind()==5&&n.document()==snapshot.selection().document()&&n.parent()==snapshot.selection().element()))));
             graph.setEnabled(canEditComponent()&&(kind==2||kind==5)&&snapshot.documents().stream().anyMatch(doc->doc.kind()==2));
             child.setEnabled(canEditComponent()&&kind==2);
             deleteChild.setEnabled(canEditComponent()&&kind==2&&snapshot.nodes().stream().anyMatch(node->
@@ -1076,11 +1080,16 @@ public final class UiPanels {
             if(chosen>=0)componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"add",unsigned(types.get(chosen).id())));
         });
         remove.addActionListener(e->{
-            if(!canEditComponent()||snapshot.selection().kind()!=5)return;
-            var base=snapshot;
-            long token=generation;
-            if(JOptionPane.showConfirmDialog(toolbar,"Remove the selected component from its Prefab definition?","Remove Component",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION)
-                componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"remove",null));
+            if(!canEditComponent())return;
+            var base=snapshot;long token=generation;
+            String target=null;
+            if(base.selection().kind()==2){
+                var components=base.nodes().stream().filter(n->n.kind()==5&&n.document()==base.selection().document()&&n.parent()==base.selection().element()).toList();
+                int choice=choose(toolbar,"Remove Component",components.stream().map(Bridge.Node::label).toList());
+                if(choice<0)return;var selected=components.get(choice).selection();target=unsigned(selected.component())+" "+unsigned(selected.part());
+            }else if(base.selection().kind()!=5)return;
+            if(JOptionPane.showConfirmDialog(toolbar,"Remove this component from its Prefab definition?","Remove Component",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION)
+                componentCommand.accept(new ComponentEdit(token,base.revision(),base.selectionRevision(),"remove",target));
         });
         graph.addActionListener(e->{
             if(!canEditComponent())return;
@@ -1113,6 +1122,16 @@ public final class UiPanels {
         if(node.getUserObject() instanceof DocRow row&&row.document().kind()==1&&snapshot!=null)
             return snapshot.nodes().stream().filter(n->n.document()==row.document().id()&&n.kind()==2&&n.parent()==0).map(Bridge.Node::selection).findFirst().orElse(null);
         return null;
+    }
+    private void sourceKeys(JComponent component,Supplier<Object> selected){
+        for(String[] binding:new String[][]{{"control C","copy"},{"control X","cut"},{"control V","paste"},{"control D","duplicate"},{"DELETE","delete"}}){
+            var key=KeyStroke.getKeyStroke(binding[0]);Object previous=component.getInputMap().get(key);var old=previous==null?null:component.getActionMap().get(previous);String name="source."+binding[1];
+            component.getInputMap().put(key,name);component.getActionMap().put(name,new AbstractAction(){public void actionPerformed(ActionEvent e){Object row=selected.get();
+                if(row instanceof SourceRow source)sourceFileAction.accept(binding[1],source.path());
+                else if(binding[1].equals("paste")&&"Scripts".equals(row))sourceFileAction.accept("paste",null);
+                else if(old!=null)old.actionPerformed(e);
+            }});
+        }
     }
     private static String unsigned(long id){return Long.toUnsignedString(id);}
     private static void menuItem(JPopupMenu menu,String label,Runnable action){

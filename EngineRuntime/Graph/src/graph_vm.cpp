@@ -78,6 +78,7 @@ struct RunningGuard {
 
 GraphInstance::GraphInstance(CompiledGraphPtr program)
     : program_(std::move(program)), values_(program_->RegisterCount()) {
+    for(const auto &slot:program_->slots_)if(slot.initial)values_[slot.index]=slot.initial;
     if (program_->flow_)
         flow_ = std::make_unique<detail::FlowInstance>(*this);
 }

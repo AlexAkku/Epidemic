@@ -10,6 +10,7 @@ const status = document.getElementById('status');
 const problem = document.getElementById('problem');
 const menu = document.getElementById('context');
 const mini = document.getElementById('minimap');
+const inlineDrafts=new Map();
 const editor = new NodeEditor();
 const area = new AreaPlugin(canvas);
 const renderer = new ReactPlugin({ createRoot });
@@ -25,7 +26,7 @@ function note(text) { status.textContent = text; }
 function send(action, ...args) {
     if (!snapshot || rendering || pending || snapshot.readonly) return;
     pending = true; pendingAction = action; canvas.style.pointerEvents='none';
-    window.nativeGraph(JSON.stringify({ nonce: window.graphNonce, revision: snapshot.revision, action, args: args.map(String) }));
+    window.nativeGraph(JSON.stringify({ nonce: window.graphNonce, revision: ((action==='literal'||action==='inputvalue')?inlineDrafts.get(String(args[0]))?.revision:undefined)??snapshot.revision, action, args: args.map(String) }));
 }
 const ids = () => [...selected].join(' ');
 function nodeElement(id) { return area.nodeViews.get(id)?.element; }
@@ -70,6 +71,7 @@ window.graphSnapshot = value => {
         const wantedEdges = new Map(value.edges.map(e => [e.id, e]));
         for (const edge of editor.getConnections()) if (!wantedEdges.has(edge.id)) await editor.removeConnection(edge.id);
         const wanted = new Set(value.nodes.map(n => n.id));
+        for(const [id] of inlineDrafts)if(!value.nodes.some(n=>n.id===id||n.ports.some(p=>p.id===id)))inlineDrafts.delete(id);
         for (const node of editor.getNodes()) if (!wanted.has(node.id)) { await editor.removeNode(node.id); projection.delete(node.id); selected.delete(node.id); }
         const ports = new Map(), sockets = new Map();
         for (const dto of value.nodes) {
@@ -107,11 +109,13 @@ window.graphSnapshot = value => {
         else if(value.error)selected=value.selected!=='0'?new Set([value.selected]):new Set();
         else if (value.selected !== '0' && value.selected !== lastNativeSelection && !selected.has(value.selected)) {
             selected=new Set([value.selected]);const n=value.nodes.find(n=>n.id===value.selected);const k=area.area.transform.k;
-            if(n&&!first)await area.area.translate(canvas.clientWidth/2-n.x*k,canvas.clientHeight/2-n.y*k);
+            if(n&&!first&&!resumeSocket)await area.area.translate(canvas.clientWidth/2-n.x*k,canvas.clientHeight/2-n.y*k);
         }
         lastNativeSelection = value.selected;
         if (first && value.nodes.length) await AreaExtensions.zoomAt(area, editor.getNodes());
-        rendering = false; canvas.style.pointerEvents = ''; paintSelection(); drawMinimap(); showProblem();
+        rendering = false; canvas.style.pointerEvents = ''; paintSelection(); drawMinimap(); showProblem();renderLiterals();
+        if(resumeSocket){const resume=resumeSocket;resumeSocket=undefined;const element=document.querySelector(`[data-port-id="${resume.key}"][data-port-side="${resume.side}"]`);if(element){const r=element.getBoundingClientRect();await connections.pick(new PointerEvent('pointerdown',{clientX:r.left+r.width/2,clientY:r.top+r.height/2}),'down');if(resume.edge)reconnectEdge=resume.edge;}}
+
         document.querySelectorAll('[data-command]').forEach(button => button.disabled = value.readonly);
         note((conflict ? 'Graph changed during drag. Preview cancelled.' : '') || value.error || value.report?.split('\n')[0] || (value.readonly ? 'Read only during Play' : 'Ctrl-click selects · Shift-drag selects a box · Escape cancels'));
         window.graphMetrics={nodes:value.nodes.length,renderMs:performance.now()-started,
@@ -140,7 +144,7 @@ function clearReconnect(){
     reconnectEdge=undefined;
 }
 connections.addPipe(context=>{
-    if(context.type==='connectionpick')connectionGesture=true;
+    if(context.type==='connectionpick'){connectionGesture=true;connectionOrigin=context.data.socket;}
     if(context.type==='connectiondrop'){
         connectionGesture=false;
         if(!context.data.created)clearReconnect();
@@ -148,6 +152,7 @@ connections.addPipe(context=>{
     return context;
 });
 area.addPipe(context => {
+    if(context.type==='render'&&context.data.type==='node')requestAnimationFrame(renderLiterals);
     if(context.type==='render'&&context.data.type==='socket'){context.data.element.dataset.portId=context.data.key;context.data.element.dataset.portSide=context.data.side;}
     if (context.type === 'nodepicked' && !rendering) {
         gestureNode = context.data.id;
@@ -170,6 +175,12 @@ area.addPipe(context => {
     if (context.type === 'translated' || context.type === 'zoomed') drawMinimap();
     return context;
 });
+let connectionOrigin, resumeSocket;
+let contextDuringConnection=false;
+// Keep the Rete capture alive: its generic pointer-up handler otherwise drops
+// the preview before Windows dispatches the right-click contextmenu event.
+document.addEventListener('pointerdown',event=>{if(event.button===2&&connectionGesture){contextDuringConnection=true;event.preventDefault();event.stopImmediatePropagation();canvas.dispatchEvent(new MouseEvent('contextmenu',{clientX:event.clientX,clientY:event.clientY,bubbles:true,cancelable:true}));}},true);
+document.addEventListener('pointerup',event=>{if(event.button===2&&contextDuringConnection){contextDuringConnection=false;event.preventDefault();event.stopImmediatePropagation();}},true);
 let ctrl = false;
 document.addEventListener('pointerdown', event => {
     const refSocket=event.target.closest('[data-port-id]');
@@ -199,6 +210,7 @@ document.addEventListener('pointerup', () => {
     dragging = undefined;
 });
 function cancel() {
+    resumeSocket=undefined;contextDuringConnection=false;
     ++gestureEpoch;cancelledGesture = true; dragging = undefined; connections.drop();connectionGesture=false;clearReconnect(); menu.hidden = true;
     if(box){box.remove();box=undefined;}
     if (previewFrame) cancelAnimationFrame(previewFrame); previewFrame = undefined;
@@ -230,15 +242,22 @@ document.addEventListener('pointercancel',()=>cancel());
 canvas.addEventListener('lostpointercapture',()=>{if(gestureNode)cancel();});
 function diagnosticNode() { return /node=(\d+)/.exec(snapshot?.error || snapshot?.report || '')?.[1]; }
 async function focusView(id) {
-    const p=positions.get(id);if(!p)return;
-    const current=area.area.transform.k, element=nodeElement(id), root=element?.getBoundingClientRect();
-    const title=element?.querySelector('[data-testid=title]')?.getBoundingClientRect()||root;
-    const ox=root&&title?(title.left-root.left+title.width/2)/current:100;
-    const oy=root&&title?(title.top-root.top+title.height/2)/current:20;
-    const k=Math.max(0.75,current);
+    if(!positions.has(id))return {focused:false,id,reason:'missing position'};
+    const current=area.area.transform.k,element=nodeElement(id);
+    const root=element?.getBoundingClientRect(),node=element?.querySelector('[data-testid=node]')?.getBoundingClientRect()||root;
+    if(!root||!node)return {focused:false,id,reason:'missing DOM'};
+    const width=Math.max(1,node.width/current),height=Math.max(1,node.height/current);
+    // A narrow document region must still expose both sockets. Centering only
+    // the title at a fixed minimum zoom could put the input outside the HWND.
+    const k=Math.min(Math.max(0.75,current),Math.max(0.05,(canvas.clientWidth-48)/width),Math.max(0.05,(canvas.clientHeight-48)/height));
     await area.area.zoom(k);
-    await area.area.translate(canvas.clientWidth/2-(p.x+ox)*k,canvas.clientHeight/2-(p.y+oy)*k);
+    const bounds=(element.querySelector('[data-testid=node]')||element).getBoundingClientRect(),view=canvas.getBoundingClientRect();
+    const transform=area.area.transform;
+    await area.area.translate(transform.x+view.left+view.width/2-bounds.left-bounds.width/2,
+        transform.y+view.top+view.height/2-bounds.top-bounds.height/2);
+    return {focused:true,id,bounds:(element.querySelector('[data-testid=node]')||element).getBoundingClientRect().toJSON()};
 }
+
 function focusNode(id) {
     if(!positions.has(id))return;
     selected=new Set([id]);paintSelection();
@@ -251,22 +270,29 @@ function showProblem() {
     const id=diagnosticNode();if(id){const jump=document.createElement('button');jump.textContent='Go to node';jump.onclick=()=>focusNode(id);problem.append(jump);}
 }
 function action(name) {
+    if(name==='delete'&&reconnectEdge){const edge=reconnectEdge;connections.drop();clearReconnect();send('disconnect',edge);return;}
     if(name==='fit'){void AreaExtensions.zoomAt(area,editor.getNodes());return;}
     if(name==='reset'){void area.area.zoom(1).then(()=>area.area.translate(40,40));return;}
     if(name==='bookmark'){const nodes=snapshot.nodes.filter(n=>n.markers&1);const index=nodes.findIndex(n=>selected.has(n.id));if(nodes.length)focusNode(nodes[(index+1)%nodes.length].id);return;}
     if(name==='paste'){send('paste',cursor.x,cursor.y);return;}
     if(name==='delete'){if(selected.size)send('deletebulk',ids());return;}
-    if(name==='copy'||name==='duplicate'){if(selected.size)send(name,ids());return;}
+    if(name==='copy'||name==='cut'||name==='duplicate'){if(selected.size)send(name,ids());return;}
     if(name==='group'){if(selected.size)send('group',ids(),`Group ${new Set(snapshot.nodes.map(n=>n.group).filter(Boolean)).size+1}`);return;}
     send(name);
 }
 for(const b of document.querySelectorAll('[data-action]'))b.onclick=()=>action(b.dataset.action);
 for(const b of document.querySelectorAll('[data-command]'))b.onclick=()=>action(b.dataset.command);
 canvas.addEventListener('contextmenu',event=>{
-    event.preventDefault();cursor=world(event.clientX,event.clientY);menu.replaceChildren();
+    event.preventDefault();event.stopPropagation();cursor=world(event.clientX,event.clientY);menu.replaceChildren();
     const add=(label,callback,enabled=true)=>{const b=document.createElement('button');b.textContent=label;b.disabled=!enabled;b.onclick=()=>{menu.hidden=true;callback();};menu.append(b);};
-    for(let i=0;i<(snapshot?.catalogue.length||0);++i){const r=snapshot.catalogue[i];add(`Add ${r.name}`,()=>send('create',i,cursor.x,cursor.y),!snapshot.readonly&&!pending);}
-    for(const name of ['copy','paste','duplicate','delete','group','fit','reset','compile','run'])add(name[0].toUpperCase()+name.slice(1),()=>action(name),['fit','reset'].includes(name)||(!snapshot.readonly&&!pending));
+    const root=document.createElement('details');root.open=connectionGesture;const summary=document.createElement('summary');summary.textContent='Add';root.append(summary);menu.append(root);
+    const categories=new Map();
+    for(let i=0;i<(snapshot?.catalogue.length||0);++i){const r=snapshot.catalogue[i];
+        let group=categories.get(r.category);if(!group){group=document.createElement('details');const title=document.createElement('summary');title.textContent=r.category;group.append(title);categories.set(r.category,group);root.append(group);}
+        const button=document.createElement('button');button.textContent=r.name;button.disabled=snapshot.readonly||pending;
+        button.onclick=()=>{menu.hidden=true;if(connectionGesture&&connectionOrigin)resumeSocket={...connectionOrigin,edge:reconnectEdge};connections.drop();send('create',i,cursor.x,cursor.y);};group.append(button);
+    }
+    for(const name of ['copy','cut','paste','duplicate','delete','group','fit','reset','compile','run'])add(name[0].toUpperCase()+name.slice(1),()=>action(name),['fit','reset'].includes(name)||(!snapshot.readonly&&!pending));
     add('Select Group',()=>{const group=projection.get([...selected][0])?.group;if(group){selected=new Set(snapshot.nodes.filter(n=>n.group===group).slice(0,64).map(n=>n.id));paintSelection();if(selected.size)send('select',[...selected][0]);}},selected.size>0);
     for(const edge of snapshot?.edges||[]){
         const output=snapshot.nodes.find(n=>n.ports.some(p=>p.id===edge.output));
@@ -275,16 +301,19 @@ canvas.addEventListener('contextmenu',event=>{
     }
     Object.assign(menu.style,{left:Math.max(4,Math.min(event.clientX,innerWidth-210))+'px',top:Math.max(4,Math.min(event.clientY,innerHeight-400))+'px'});menu.hidden=false;
 });
-document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target))menu.hidden=true;});
+document.addEventListener('pointerdown',e=>{if(e.button===0&&!menu.contains(e.target))menu.hidden=true;},true);
+menu.addEventListener('pointerdown',e=>e.stopPropagation());
+menu.addEventListener('pointerup',e=>e.stopPropagation());
 document.addEventListener('keydown',event=>{
+    if(event.target instanceof Element&&event.target.closest('input,textarea,[contenteditable=true]'))return;
     ctrl=event.ctrlKey||event.metaKey;
     if(event.key==='Escape'){cancel();if(box){box.remove();box=undefined;}event.preventDefault();}
     if(event.key==='Delete'){action('delete');event.preventDefault();}
     if(!ctrl)return;
     const key=event.key.toLowerCase();
     if(key==='a'){selected=new Set(snapshot.nodes.slice(0,64).map(n=>n.id));paintSelection();event.preventDefault();return;}
-    const map={s:'save',z:event.shiftKey?'redo':'undo',y:'redo',c:'copy',v:'paste',d:'duplicate'};
-    if(map[key]){action(map[key]);event.preventDefault();}
+    const map={x:'cut',s:'save',z:event.shiftKey?'redo':'undo',y:'redo',c:'copy',v:'paste',d:'duplicate'};
+    if(map[key]){window.graphAction(map[key]);event.preventDefault();}
 });
 document.addEventListener('keyup',event=>{ctrl=event.ctrlKey||event.metaKey;});
 function drawMinimap() {
@@ -301,7 +330,7 @@ mini.onclick=e=>{if(!minimapBounds)return;const r=mini.getBoundingClientRect(),b
 };
 window.graphFit=()=>AreaExtensions.zoomAt(area,editor.getNodes());
 window.graphFocus=focusView;
-window.graphGestureState=()=>({connection:connectionGesture,reconnect:reconnectEdge||''});
+window.graphGestureState=()=>({connection:connectionGesture,reconnect:reconnectEdge||'',busy:rendering||pending});
 window.graphDispose=()=>{if(previewFrame)cancelAnimationFrame(previewFrame);area.destroy();};
 window.graphCanvasReady=true;
 window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__ready'}));
@@ -316,3 +345,25 @@ window.graphReferenceHit=(awtX,awtY,width,height)=>{
     window.nativeGraph(JSON.stringify({nonce:window.graphNonce,revision:snapshot.revision,action:'reference-hit',args:[port,String((x-rect.left-t.x)/t.k),String((y-rect.top-t.y)/t.k)]}));
 };
 window.graphReferenceFeedback=text=>note(text||'Alt-drag reference input ↔ Scene / Hierarchy · Escape cancels');
+
+window.graphAction=(name,attempt=0)=>{if(rendering||pending){if(attempt<120)setTimeout(()=>window.graphAction(name,attempt+1),16);else note('Graph is still busy; retry the command.');return;}const active=document.activeElement;if(active?.matches('input,textarea,[contenteditable=true]')){if(['copy','cut','paste'].includes(name))window.nativeGraph(JSON.stringify({nonce:window.graphNonce,revision:snapshot.revision,action:'text-shortcut',args:[name]}));else if(name==='delete')document.execCommand('delete');return;}action(name);};
+function renderLiterals(){
+    for(const dto of snapshot?.nodes||[]){const element=nodeElement(dto.id);if(!element)continue;
+        const recipe=snapshot.catalogue.find(r=>r.type===dto.type);
+        const fields=[];
+        if(recipe?.operation===0)fields.push({id:dto.id,label:'Value',value:dto.previewDefault,action:'inputvalue'});
+        for(const port of dto.ports)if(port.defaultValue!==undefined&&!snapshot.edges.some(e=>e.input===port.id))fields.push({id:port.id,label:port.name,value:port.defaultValue,action:'literal'});
+        for(const field of fields){const draft=inlineDrafts.get(field.id);if(draft){try{if(/^[-+]?\d+$/.test(draft.value)&&BigInt(draft.value).toString()===String(field.value))inlineDrafts.delete(field.id);}catch{}}}
+        let panel=element.querySelector('.node-literals');if(!panel){panel=document.createElement('div');panel.className='node-literals';(element.querySelector('[data-testid=node]')||element).append(panel);}
+        const signature=JSON.stringify([snapshot.readonly,fields.map(f=>[f.id,String(f.value)])]);
+        if(panel.contains(document.activeElement)){for(const field of fields){const input=[...panel.querySelectorAll('input')].find(e=>e.dataset.literalId===field.id);if(input)input.dataset.nativeValue=String(field.value);}continue;}if(panel.dataset.signature===signature)continue;panel.dataset.signature=signature;panel.replaceChildren();
+        for(const field of fields){const label=document.createElement('label');label.textContent=field.label;const input=document.createElement('input');input.type='text';input.inputMode='numeric';input.value=inlineDrafts.get(field.id)?.value??String(field.value);input.dataset.nativeValue=String(field.value);input.dataset.literalId=field.id;input.setAttribute('aria-label',field.label+' integer literal');input.disabled=snapshot.readonly;
+            for(const event of ['pointerdown','pointerup','click','dblclick'])input.addEventListener(event,e=>e.stopPropagation());
+            input.oninput=()=>inlineDrafts.set(field.id,{...field,value:input.value,revision:inlineDrafts.get(field.id)?.revision??snapshot.revision});
+            input.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){inlineDrafts.delete(field.id);input.value=input.dataset.nativeValue;input.blur();}else if(e.key==='Enter'){input.blur();}});
+            input.onchange=()=>{if(input.value!==input.dataset.nativeValue)send(field.action,field.id,input.value);};label.append(input);panel.append(label);
+        }
+    }
+}
+
+window.graphFlushInline=()=>window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'flush-inline',args:[...inlineDrafts.values()].map(f=>[f.action,f.id,String(f.value),f.revision])}));

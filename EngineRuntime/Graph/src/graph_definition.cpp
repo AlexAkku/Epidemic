@@ -56,6 +56,7 @@ foundation::Result<void> ValidateGraph(const GraphDefinition &definition,
         if (node.name.size() > kMaxLabelBytes || node.ports.size() > kMaxPorts - ports.size())
             return Failure("graph.limit_exceeded");
         for (const auto &port : node.ports) {
+            if(port.default_value && (port.kind!=PortKind::Data || port.direction!=PortDirection::Input || port.type_id!=TypeId::FromString("epidemic.graph.i64")))return Failure("graph.literal_type");
             if (auto added = add_id(port.id); !added)
                 return added;
             if (port.name.size() > kMaxLabelBytes)

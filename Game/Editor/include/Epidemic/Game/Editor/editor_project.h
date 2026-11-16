@@ -73,6 +73,7 @@ struct UserSchema {
     std::string assembly, fingerprint;
     comp::DescribedComponent component;
     std::vector<UserOperation> operations;
+    bool inherit_defaults = true; // Absent in legacy archives: convert copied defaults once.
     bool operator==(const UserSchema &) const = default;
 };
 struct ProjectDefinition {

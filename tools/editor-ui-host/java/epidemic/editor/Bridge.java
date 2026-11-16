@@ -47,7 +47,7 @@ public final class Bridge implements AutoCloseable {
     public record ComponentType(long id,String name) {}
     public record SceneItem(long document,long id,double left,double top,double right,double bottom,double x,double y,double rotation) {}
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
-    public record GraphPort(long id, String name, int kind, int direction, long type) {}
+    public record GraphPort(long id, String name, int kind, int direction, long type,Long defaultValue) {}
     public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports, long previewDefault, String comment, String group, int markers,GraphReference reference,boolean referenceAvailable,String referenceLabel,String referenceReason) {
         public GraphNode { ports = List.copyOf(ports); }
     }
@@ -321,7 +321,7 @@ public final class Bridge implements AutoCloseable {
                 for(int n=count(in);n>0;--n)folders.add(text(in));
             List<Graph> graphs = new ArrayList<>();
             if (capabilities.contains("graph-authoring")) {
-                if (in.readUnsignedShort() != 4) throw new IOException("ui.graph_dto_version");
+                if (in.readUnsignedShort() != 5) throw new IOException("ui.graph_dto_version");
                 List<GraphTemplate> catalogue = new ArrayList<>();
                 for(int t=count(in);t>0;--t) catalogue.add(new GraphTemplate(text(in),text(in),in.readLong(),in.readUnsignedByte(),text(in),in.readInt()));
                 catalogue=List.copyOf(catalogue);
@@ -344,7 +344,8 @@ public final class Bridge implements AutoCloseable {
                             int kind = in.readUnsignedByte(), direction = in.readUnsignedByte();
                             long portType = in.readLong();
                             if (kind > 2 || direction > 1) throw new IOException("ui.graph_port");
-                            ports.add(new GraphPort(port, label, kind, direction, portType));
+                            Long defaultValue=in.readBoolean()?in.readLong():null;
+                            ports.add(new GraphPort(port, label, kind, direction, portType,defaultValue));
                         }
                         graphNodes.add(new GraphNode(graphNodeId, type, name, x, y, ports,previewDefault,comment,group,markers,reference,referenceAvailable,referenceLabel,referenceReason));
                     }

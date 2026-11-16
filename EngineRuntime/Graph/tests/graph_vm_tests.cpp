@@ -400,10 +400,22 @@ void WaitAndCancellation() {
     ErrorIs(self->ReadValue(Id("native.out")), "graph.vm.value_unavailable");
 }
 
+void Literals() {
+    auto graph=Example();graph.nodes[2].ports[1].default_value=6;
+    auto before=graph;auto connected=GraphInstance::Create(CompileGraph(graph,Bindings()).Value()).Value();Inputs(*connected,{2,3});
+    Check(connected->Run().status==ExecutionStatus::Completed&&connected->ReadValue(Id("result.in")).Value()==16,"connection overrides saved literal");
+    std::erase_if(graph.connections,[](const auto &e){return e.input_port==Id("sum.b");});
+    auto instance=GraphInstance::Create(CompileGraph(graph,Bindings()).Value()).Value();Inputs(*instance,{2,3});
+    Check(instance->Run().status==ExecutionStatus::Completed&&instance->ReadValue(Id("result.in")).Value()==25,"unconnected input literal lowered by native VM");
+    Check(before.nodes==graph.nodes,"compiler does not mutate literal authoring");
+    graph.nodes[0].ports[0].default_value=1;ErrorIs(CompileGraph(graph,Bindings()),"graph.literal_type");
+}
+
 } // namespace
 
 int main() {
     try {
+        Literals();
         CompileFailures();
         InstancesAndBudgets();
         Failures();

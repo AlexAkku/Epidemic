@@ -87,7 +87,24 @@ IdSet Ids(const ProjectDefinition &definition) {
 
 template <class C> bool Apply(ProjectDefinition &project, const C &command) {
     if constexpr (std::is_same_v<C, RegisterUserSchema>) {
+        for (const auto &old : project.user_schemas) {
+            if(old.inherit_defaults)continue;
+            const auto next=std::find_if(command.schemas.begin(),command.schemas.end(),[&](const auto &v){return v.component.name==old.component.name;});
+            if(next==command.schemas.end())continue;
+            for(auto &doc:project.documents)if(auto *prefab=std::get_if<comp::PrefabDefinition>(&doc.data)) {
+                const auto migrate=[&](auto &self,comp::PrefabNode &node)->void {
+                    for(auto &component:node.components)if(component.type==gameplay::TypeId::FromString(old.component.name))
+                        std::erase_if(component.properties,[&](const auto &property){
+                            const auto previous=std::find_if(old.component.fields.begin(),old.component.fields.end(),[&](const auto &f){return comp::PropertyId::FromString(f.name)==property.property;});
+                            const auto updated=std::find_if(next->component.fields.begin(),next->component.fields.end(),[&](const auto &f){return comp::PropertyId::FromString(f.name)==property.property;});
+                            return !property.parameter.IsValid()&&previous!=old.component.fields.end()&&updated!=next->component.fields.end()&&property.value==previous->initial;
+                        });
+                    for(auto &child:node.children)self(self,child);
+                };migrate(migrate,prefab->root);
+            }
+        }
         project.user_schemas = command.schemas;
+        for(auto &schema:project.user_schemas)schema.inherit_defaults=true;
         return true;
     } else if constexpr (std::is_same_v<C, CreateDocument>) {
         if (Find(project.documents, [&](const auto &doc) { return doc.id == command.document.id; }))
@@ -289,11 +306,13 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                              std::is_same_v<C, DeleteGraphNode> ||
                              std::is_same_v<C, ConnectPorts> ||
                              std::is_same_v<C, DisconnectPorts> || std::is_same_v<C, MoveGraphNode> ||
-                             std::is_same_v<C, SetGraphNodeSettings>) {
+                             std::is_same_v<C, SetGraphNodeSettings> || std::is_same_v<C, SetGraphPortDefault>) {
             auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc->data);
             if (!graph)
                 return false;
-            if constexpr (std::is_same_v<C, AddGraphNode>) {
+            if constexpr (std::is_same_v<C, SetGraphPortDefault>) {
+                for(auto &node:graph->nodes)for(auto &port:node.ports)if(port.id==command.port){port.default_value=command.value;return true;}return false;
+            } else if constexpr (std::is_same_v<C, AddGraphNode>) {
                 graph->nodes.push_back(command.node);
                 return true;
             } else if constexpr (std::is_same_v<C, MoveGraphNode>) {
@@ -306,7 +325,7 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                 if (position) *position = value;
                 else doc->graph_layout.push_back(value);
                 return true;
-            } else if constexpr (std::is_same_v<C, SetGraphNodeSettings>) {
+            } else if constexpr (std::is_same_v<C, SetGraphNodeSettings> || std::is_same_v<C, SetGraphPortDefault>) {
                 auto *node = Find(graph->nodes, [&](const auto &n) { return n.id == command.node; });
                 if (!node || command.settings.node != command.node.Raw() || command.name.empty() ||
                     command.name.size() > 1024 || command.settings.comment.size() > 1024 || command.settings.group.size() > 128)
@@ -464,6 +483,15 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
     std::set<std::uint64_t> changed;
     std::set<std::uint64_t> discarded;
     for (const auto &command : request.commands) {
+        if(const auto *registration=std::get_if<RegisterUserSchema>(&command))
+            for(const auto &old:candidate.user_schemas) {
+                const auto next=std::find_if(registration->schemas.begin(),registration->schemas.end(),[&](const auto &v){return v.component.name==old.component.name;});
+                if(next==registration->schemas.end())continue;
+                for(const auto &field:old.component.fields) {
+                    const auto match=std::find_if(next->component.fields.begin(),next->component.fields.end(),[&](const auto &f){return f.name==field.name;});
+                    if(match==next->component.fields.end()||match->initial.index()!=field.initial.index())return Result::Failure(Error("component.migration_required"));
+                }
+            }
         const auto *discard = std::get_if<DiscardDocument>(&command);
         auto allowed_restored_ids = IdSet{};
         bool applied = false;
@@ -504,7 +532,9 @@ foundation::Result<EditReceipt> EditorProject::Execute(const EditRequest &reques
         std::visit(
             [&](const auto &value) {
                 using C = std::decay_t<decltype(value)>;
-                if constexpr (std::is_same_v<C, CreateDocument>)
+                if constexpr (std::is_same_v<C, RegisterUserSchema>) {
+                    for(const auto &doc:candidate.documents)if(doc.Kind()==DocumentKind::Prefab)changed.insert(doc.id.Raw());
+                } else if constexpr (std::is_same_v<C, CreateDocument>)
                     changed.insert(value.document.id.Raw());
                 else if constexpr (std::is_same_v<C, DuplicateDocument>)
                     changed.insert(value.copy.Raw());

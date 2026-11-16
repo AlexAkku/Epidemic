@@ -6,6 +6,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import javax.swing.tree.*;
+import java.awt.datatransfer.*;
 /** Persistent Tool Window controls. Every edit is sent to the native workspace. */
 public final class GraphTools extends JPanel {
     private final String kind;
@@ -21,6 +23,10 @@ public final class GraphTools extends JPanel {
     private final JCheckBox bookmark=new JCheckBox("Bookmark"), breakpoint=new JCheckBox("Breakpoint marker (F-II.4)");
     private final DefaultListModel<String> rows=new DefaultListModel<>();
     private final JList<String> list=new JList<>(rows);
+    public record PaletteDrag(long generation,long revision,long project,long type) {}
+    public static final DataFlavor PALETTE_FLAVOR=new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType+";class="+PaletteDrag.class.getName(),"Graph recipe");
+    private final JTree paletteTree=new JTree(new DefaultMutableTreeNode("Nodes"));
+    private String paletteSignature="";
     private final List<Bridge.GraphTemplate> visible=new ArrayList<>();
     private final JButton apply=Theme.button("Apply",this::apply), create=Theme.button("Add Node",this::create);
     private final JTextArea report=new JTextArea();
@@ -40,12 +46,26 @@ public final class GraphTools extends JPanel {
         if(kind.equals("graph.palette")) {
             var body=new JPanel(new BorderLayout(6,6));search.setToolTipText("Search operation or category");
             search.getAccessibleContext().setAccessibleName("Search Graph Palette");body.add(search,BorderLayout.NORTH);
-            body.add(new JScrollPane(list),BorderLayout.CENTER);body.add(create,BorderLayout.SOUTH);add(body);
+            paletteTree.setRootVisible(false);paletteTree.setShowsRootHandles(true);
+            paletteTree.setCellRenderer(new DefaultTreeCellRenderer(){public Component getTreeCellRendererComponent(JTree tree,Object value,boolean selected,boolean expanded,boolean leaf,int row,boolean focus){
+                var cell=super.getTreeCellRendererComponent(tree,value,selected,expanded,leaf,row,focus);putClientProperty("html.disable",true);
+                Object item=((DefaultMutableTreeNode)value).getUserObject();setText(item instanceof Bridge.GraphTemplate recipe?recipe.name():item.toString());return cell;}});
+            body.add(new JScrollPane(paletteTree),BorderLayout.CENTER);body.add(create,BorderLayout.SOUTH);add(body);
             search.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){palette();}public void removeUpdate(DocumentEvent e){palette();}public void changedUpdate(DocumentEvent e){palette();}});
-            list.setCellRenderer(new DefaultListCellRenderer(){public Component getListCellRendererComponent(JList<?> l,Object v,int index,boolean chosen,boolean focus){
-                var cell=super.getListCellRendererComponent(l,v,index,chosen,focus);cell.setEnabled(index<visible.size());return cell;}});
-            list.addListSelectionListener(e->create.setEnabled(canEdit()&&list.getSelectedIndex()>=0&&list.getSelectedIndex()<visible.size()));
-            list.addMouseListener(new java.awt.event.MouseAdapter(){public void mouseClicked(java.awt.event.MouseEvent e){if(e.getClickCount()==2)create();}});
+            paletteTree.addTreeSelectionListener(e->create.setEnabled(canEdit()&&selectedRecipe()!=null));
+            paletteTree.addMouseListener(new java.awt.event.MouseAdapter(){public void mouseClicked(java.awt.event.MouseEvent e){if(e.getClickCount()==2&&selectedRecipe()!=null)create();}});
+            if(!GraphicsEnvironment.isHeadless()){
+                paletteTree.setDragEnabled(true);paletteTree.setTransferHandler(new TransferHandler(){
+                    public int getSourceActions(JComponent c){return COPY;}
+                    protected Transferable createTransferable(JComponent c){var recipe=selectedRecipe();if(!canEdit()||recipe==null)return null;
+                        var drag=new PaletteDrag(generation.getAsLong(),snapshot.revision(),snapshot.project(),recipe.type());return new Transferable(){
+                            public DataFlavor[] getTransferDataFlavors(){return new DataFlavor[]{PALETTE_FLAVOR};}
+                            public boolean isDataFlavorSupported(DataFlavor f){return PALETTE_FLAVOR.equals(f);}
+                            public Object getTransferData(DataFlavor f)throws UnsupportedFlavorException{if(!isDataFlavorSupported(f))throw new UnsupportedFlavorException(f);return drag;}
+                        };
+                    }
+                });
+            }
         } else if(kind.equals("graph.inspector")) {
             var form=new JPanel();form.setLayout(new BoxLayout(form,BoxLayout.Y_AXIS));
             field(form,"Name",name);field(form,"Preview Input default (i64)",value);field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
@@ -92,8 +112,8 @@ public final class GraphTools extends JPanel {
         }));
         return delivered;
     }
-    private void create(){int index=list.getSelectedIndex();if(!canEdit()||index<0||index>=visible.size())return;
-        send("create",Integer.toString(graph.catalogue().indexOf(visible.get(index))),Integer.toString(80+(graph.nodes().size()%8)*260),Integer.toString(80+(graph.nodes().size()/8)*240));}
+    private Bridge.GraphTemplate selectedRecipe(){return paletteTree.getLastSelectedPathComponent() instanceof DefaultMutableTreeNode n&&n.getUserObject() instanceof Bridge.GraphTemplate r?r:null;}
+    private void create(){var recipe=selectedRecipe();if(!canEdit()||recipe==null)return;send("create",Integer.toString(graph.catalogue().indexOf(recipe)),Integer.toString(80+(graph.nodes().size()%8)*260),Integer.toString(80+(graph.nodes().size()/8)*240));}
     private void apply(){flushDraft();}
     public boolean hasDraft(long document){return (draft||busy)&&graph!=null&&graph.document()==document;}
     public void cancelDrafts(long document){if(hasDraft(document)&&!busy)load();}
@@ -107,13 +127,16 @@ public final class GraphTools extends JPanel {
         return send("settings",Long.toUnsignedString(selected.id()),name.getText(),value.getText(),comment.getText(),group.getText(),Integer.toString((bookmark.isSelected()?1:0)|(breakpoint.isSelected()?2:0))).thenApply(reply->null);
     }
     private void palette(){
-        Long old=list.getSelectedIndex()>=0&&list.getSelectedIndex()<visible.size()?visible.get(list.getSelectedIndex()).type():null;
-        visible.clear();rows.clear();if(graph==null){create.setEnabled(false);return;}
-        String query=search.getText().toLowerCase(Locale.ROOT);
-        for(var recipe:graph.catalogue())if((recipe.category()+" "+recipe.name()).toLowerCase(Locale.ROOT).contains(query)){visible.add(recipe);rows.addElement(recipe.category()+" / "+recipe.name());}
-
-        if(old!=null)for(int i=0;i<visible.size();++i)if(visible.get(i).type()==old)list.setSelectedIndex(i);
-        create.setEnabled(canEdit()&&list.getSelectedIndex()>=0&&list.getSelectedIndex()<visible.size());
+        if(graph==null){paletteSignature="";paletteTree.setModel(new DefaultTreeModel(new DefaultMutableTreeNode("Nodes")));create.setEnabled(false);return;}
+        String query=search.getText().toLowerCase(Locale.ROOT),signature=graph.catalogue().toString()+query;
+        if(!signature.equals(paletteSignature)){
+            var expanded=new HashSet<String>();for(int i=0;i<paletteTree.getRowCount();++i)if(paletteTree.isExpanded(i))expanded.add(paletteTree.getPathForRow(i).getLastPathComponent().toString());
+            var root=new DefaultMutableTreeNode("Nodes");var groups=new LinkedHashMap<String,DefaultMutableTreeNode>();
+            for(var recipe:graph.catalogue())if((recipe.category()+" "+recipe.name()).toLowerCase(Locale.ROOT).contains(query))groups.computeIfAbsent(recipe.category(),key->{var node=new DefaultMutableTreeNode(key);root.add(node);return node;}).add(new DefaultMutableTreeNode(recipe));
+            paletteTree.setModel(new DefaultTreeModel(root));for(int i=0;i<paletteTree.getRowCount();++i)if(!query.isEmpty()||expanded.contains(paletteTree.getPathForRow(i).getLastPathComponent().toString()))paletteTree.expandRow(i);
+            paletteSignature=signature;
+        }
+        create.setEnabled(canEdit()&&selectedRecipe()!=null);
     }
     private void load(){
         draft=false;fieldError="";refreshing=true;try{

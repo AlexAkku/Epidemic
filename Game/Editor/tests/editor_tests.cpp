@@ -585,6 +585,17 @@ void UserSchemas() {
     auto invalid=type;invalid.component.fields[0].initial=std::string{"incompatible"};
     const auto before=project->Snapshot();
     Check(!project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{invalid}}}})&&project->Snapshot()==before,"incompatible schema is atomic");
+    auto updated=type;updated.component.fields[0].initial=std::int64_t{50};updated.component.fields.push_back({"Heat",std::int64_t{2}});
+    Take(project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{updated}}}}));
+    Check(components.registry.Find(component)->properties.size()==5,"compatible field addition updates registry");
+    Check(std::get<std::int64_t>(Take(components.registry.Defaults(component))[0].value)==50,"default update reaches current descriptor");
+    Take(project->Undo());Check(components.registry.Find(component)->properties.size()==4,"schema Undo restores descriptor");Take(project->Redo());
+    Take(project->Execute({project->Revision(),{ed::SetProperty{prefab,Id("enemy"),component,{}, {Id("Heat"),std::int64_t{2},{}}}}}));
+    auto second_update=updated;second_update.component.fields.back().initial=std::int64_t{4};
+    Take(project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{second_update}}}}));
+    const auto &authored=std::get<comp::PrefabDefinition>(project->Snapshot()->Find(prefab)->data).root.components.back().properties;
+    Check(std::any_of(authored.begin(),authored.end(),[](const auto &p){return p.property==Id("Heat")&&std::get<std::int64_t>(p.value)==2;}),"explicit value equal to old default survives later default change");
+    type=second_update;
     auto duplicate=type;duplicate.component.name="qa.Other";
     Check(!project->Execute({project->Revision(),{ed::RegisterUserSchema{{},{type,duplicate}}}}),"duplicate operation rejected");
     auto nan=type;nan.component.name="qa.NonFinite";nan.operations.clear();nan.component.fields[1].initial=std::numeric_limits<double>::quiet_NaN();
@@ -598,6 +609,16 @@ void UserSchemas() {
     Check(found!=node.components.end()&&std::get<std::int64_t>(found->properties.front().value)==37,"typed user values persist with Undo/Redo");
     const auto value=[&](std::string_view key)->const comp::PropertyValue&{const auto property=std::find_if(found->properties.begin(),found->properties.end(),[&](const auto &field){return field.property==Id(key);});if(property==found->properties.end())throw std::runtime_error("user field missing");return property->value;};
     Check(std::get<double>(value("Range"))==17.25&&!std::get<bool>(value("Enabled"))&&std::get<std::string>(value("Label"))=="Башня (v2)","real/bool/string user fields persist exactly");
+    auto legacy=project->Snapshot()->definition;legacy.user_schemas.front().inherit_defaults=false;
+    auto &legacy_component=std::get<comp::PrefabDefinition>(legacy.documents[1].data).root.components.back();
+    for(auto &p:legacy_component.properties)if(p.property==Id("Range"))p.value=150.0;
+    auto old=Take(ed::EditorProject::Create("Temp/editor-tests/legacy-schema.epidemic",std::move(legacy),schema));
+    auto migration=type;migration.component.fields[1].initial=175.0;
+    Take(old->Execute({old->Revision(),{ed::RegisterUserSchema{{},{migration}}}}));
+    const auto &migrated=std::get<comp::PrefabDefinition>(old->Snapshot()->Find(prefab)->data).root.components.back();
+    Check(std::none_of(migrated.properties.begin(),migrated.properties.end(),[](const auto &p){return p.property==Id("Range");})&&old->Snapshot()->definition.user_schemas.front().inherit_defaults,"legacy copied default becomes inherited once");
+    Take(old->Undo());Check(!old->Snapshot()->definition.user_schemas.front().inherit_defaults,"Undo restores legacy policy and values");
+
 }
 
 int main(int argc, char **argv) {

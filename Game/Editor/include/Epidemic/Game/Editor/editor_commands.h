@@ -121,6 +121,8 @@ struct MoveGraphNode {
     double x = 0, y = 0;
 };
 
+struct SetGraphPortDefault { runtime::AssetId document; runtime::graph::ElementId port; std::int64_t value; };
+
 struct SetGraphNodeSettings {
     runtime::AssetId document;
     runtime::graph::ElementId node;
@@ -196,7 +198,7 @@ struct SetParameterOverride {
 using Command =
     std::variant<RegisterUserSchema, CreateDocument, DeleteDocument, DuplicateDocument, DiscardDocument, RenameDocument, SetEntryScene, EditSystem, EditPrefabLink,
                  AddEntity, DeleteEntity, ReparentPrefabNode, SetComponent, DeleteComponent, SetProperty, SetBehavior,
-                 DeleteBehavior, AddGraphNode, DeleteGraphNode, ConnectPorts, DisconnectPorts, MoveGraphNode, SetGraphNodeSettings,
+                 DeleteBehavior, AddGraphNode, DeleteGraphNode, ConnectPorts, DisconnectPorts, MoveGraphNode, SetGraphNodeSettings, SetGraphPortDefault,
                  AddSceneNode, DeleteSceneNode, SetSceneParent, RenameSceneNode, OrderSceneNode, SetSceneTransform, PlacePrefab,
                  SetPrefabParameter, SetComponentOverride, SetParameterOverride>;
 

@@ -108,6 +108,8 @@ public final class PlatformSession implements Disposable {
         if(target==null)return;
         if(target instanceof Frame frame)frame.setExtendedState(frame.getExtendedState()&~Frame.ICONIFIED);
         target.setVisible(true);target.toFront();target.requestFocus();
+        if(target instanceof JFrame frame){frame.getRootPane().revalidate();frame.getRootPane().repaint();}
+
     });}
     private void edt(Runnable action){ApplicationManager.getApplication().invokeLater(()->{if(!disposed&&!project.isDisposed())try{action.run();}catch(Throwable error){failure(error);}});}
     private void record(String message){
@@ -174,6 +176,7 @@ public final class PlatformSession implements Disposable {
         JPanel recents=new JPanel(new BorderLayout(8,8));recents.add(new JLabel("Recent Projects — last 10 successful opens"),BorderLayout.NORTH);recents.add(new JScrollPane(list));
         JPanel buttons=new JPanel();JButton open=new JButton("Open"),remove=new JButton("Remove from List");buttons.add(open);buttons.add(remove);recents.add(buttons,BorderLayout.SOUTH);
         open.addActionListener(event->{var entry=list.getSelectedValue();if(entry!=null)connect(2,entry.path());});
+        list.addMouseListener(new MouseAdapter(){public void mouseClicked(MouseEvent e){if(SwingUtilities.isLeftMouseButton(e)&&e.getClickCount()==2&&list.locationToIndex(e.getPoint())>=0)open.doClick();}});
         remove.addActionListener(event->{var entry=list.getSelectedValue();if(entry!=null)CompletableFuture.runAsync(()->{try{recent.remove(entry);}catch(IOException error){throw new UncheckedIOException(error);}},io).whenComplete((v,e)->edt(()->{if(e!=null)failure(e);refreshRecent();}));});
         root.add(recents);launcherStatus=new JLabel("Choose or create a game project");root.add(launcherStatus,BorderLayout.SOUTH);
         launcher.setContentPane(root);launcher.setSize(1050,540);launcher.setLocationRelativeTo(null);launcher.setVisible(true);refreshRecent();
@@ -226,7 +229,7 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -272,6 +275,7 @@ public final class PlatformSession implements Disposable {
         long projectId=snapshot==null?0:snapshot.project();
         List<CompletableFuture<Void>> flushes=new ArrayList<>();if(tools!=null)flushes.add(tools.flushDrafts());
         for(var view:views)flushes.add(view.reader().flushDrafts());
+        for(var graph:graphViews.values())flushes.add(graph.flushLiterals());
         CompletableFuture.allOf(flushes.toArray(CompletableFuture[]::new)).whenComplete((v,error)->edt(()->{
             if(error!=null)result.completeExceptionally(error);else saveReady(participant,projectId,result);
         }));return result;
@@ -534,6 +538,9 @@ public final class PlatformSession implements Disposable {
         if (old != null) com.intellij.openapi.util.Disposer.dispose(old);
         var graph = new GraphEditor(identity, () -> bridge == null ? null : bridge.latest(),
             this::graphCommand,referenceDrag);
+        for(var binding:new String[][]{{"control C","copy"},{"control V","paste"},{"control X","cut"},{"control D","duplicate"},{"DELETE","delete"}}){
+            final String action=binding[1];new AnAction(){public void actionPerformed(AnActionEvent e){graph.shortcut(action);}}.registerCustomShortcutSet(CustomShortcutSet.fromString(binding[0]),graph.component(),graph);
+        }
         graphViews.put(view, graph);
         var root = view.component();
         var center = ((BorderLayout)root.getLayout()).getLayoutComponent(BorderLayout.CENTER);
@@ -908,11 +915,22 @@ public final class PlatformSession implements Disposable {
             removeToolbarAction(actions,"MainToolbarLeft","main.toolbar.Project");
             removeToolbarAction(actions,"MainToolbarRight","NewUiRunWidget");
             removeToolbarAction(actions,"MainToolbarRight","ExecutionTargetsToolbarGroup");
+            if(actions.getAction("MainToolbarRight") instanceof DefaultActionGroup right){
+                right.addSeparator();right.add(windowControl("Minimize",0));right.add(windowControl("Maximize / Restore",1));right.add(windowControl("Close Window",2));
+            }
             com.intellij.ide.ui.UISettings.getInstance().fireUISettingsChanged();
         }
         else mainMenu.add(menu);
         registerWorkspaceShortcuts(WindowManager.getInstance().getFrame(project).getRootPane());
         for(Content content:contents.values())registerWorkspaceShortcuts(content.getComponent());
+    }
+    private AnAction windowControl(String text,int kind){
+        javax.swing.Icon icon=new javax.swing.Icon(){public int getIconWidth(){return 16;}public int getIconHeight(){return 16;}public void paintIcon(Component c,Graphics g,int x,int y){g.setColor(c.getForeground());if(kind==0)g.drawLine(x+3,y+11,x+12,y+11);else if(kind==1)g.drawRect(x+3,y+3,9,9);else{g.drawLine(x+3,y+3,x+12,y+12);g.drawLine(x+12,y+3,x+3,y+12);}}};
+        return new AnAction(text,text,icon){public void actionPerformed(AnActionEvent e){var frame=WindowManager.getInstance().getFrame(project);if(frame==null)return;
+            if(kind==0)frame.setExtendedState(frame.getExtendedState()|Frame.ICONIFIED);
+            else if(kind==1)frame.setExtendedState((frame.getExtendedState()&Frame.MAXIMIZED_BOTH)!=0?Frame.NORMAL:Frame.MAXIMIZED_BOTH);
+            else frame.dispatchEvent(new WindowEvent(frame,WindowEvent.WINDOW_CLOSING));
+        }};
     }
     private static void removeToolbarAction(ActionManager manager,String groupId,String actionId){
         var action=manager.getAction(actionId);
@@ -925,6 +943,9 @@ public final class PlatformSession implements Disposable {
     void sourceShortcuts(JComponent target,Disposable lifetime){
         saveAction.registerCustomShortcutSet(CustomShortcutSet.fromString("control S"),target,lifetime);
         saveAllAction.registerCustomShortcutSet(CustomShortcutSet.fromString("control shift S"),target,lifetime);
+        var actions=ActionManager.getInstance();
+        if(actions.getAction("$Redo")!=null)actions.getAction("$Redo").registerCustomShortcutSet(CustomShortcutSet.fromString("control Y","control shift Z"),target,lifetime);
+        if(actions.getAction("EditorDeleteLine")!=null)actions.getAction("EditorDeleteLine").registerCustomShortcutSet(CustomShortcutSet.fromString("control DELETE"),target,lifetime);
     }
     private void registerWorkspaceShortcuts(JComponent target){
         if(target.getClientProperty("epidemic.shortcuts")!=null)return;
@@ -1188,7 +1209,7 @@ public final class PlatformSession implements Disposable {
         }).whenComplete((result,error)->edt(()->{
             if(error!=null){failure(error);return;}
             record("PASS F-II.1 native HTML text encoding, JSON depth/size guards; 2000 nodes rejected under unchanged native 1024-node limit; no mutation");
-            smokeGraphReferences(doc,graph).whenComplete((ignored,problem)->edt(()->{
+            graph.smokeReviewInteractions().thenCompose(ignored->{record("PASS review Graph Input inline draft/Save, invalid Save rejection, Escape, grouped Add menu and outside click");return graph.smokeClipboardAndConnection();}).thenCompose(ignored->{record("PASS review Graph shortcut copy/paste/cut with atomic Undo; picked edge Delete/Undo via actual JCEF input");return graph.smokeAddDuringConnection();}).thenCompose(ignored->{record("PASS review Graph Add during connection resumes original socket; Escape/Undo preserves topology");return smokeGraphReferences(doc,graph);}).whenComplete((ignored,problem)->edt(()->{
                 if(problem!=null){failure(problem);return;}smokeGraphLifecycle(doc,file,graph);
             }));
         }));

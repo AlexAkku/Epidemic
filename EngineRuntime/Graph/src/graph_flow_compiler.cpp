@@ -208,7 +208,7 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         program->instructions_.push_back(instruction);
         if (!p.data_out.empty())
             program->slots_.push_back(
-                {p.data_out[0], index, binding.operation == Operation::Input});
+                {p.data_out[0], index, binding.operation == Operation::Input,binding.constant_input});
         if (binding.operation == Operation::Output)
             program->slots_.push_back({p.data_in[0], index, false});
         flow->nodes[i].next.resize(p.control_out.size(), kNoNode);
