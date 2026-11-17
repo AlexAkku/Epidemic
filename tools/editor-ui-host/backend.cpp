@@ -145,12 +145,19 @@ class RuntimeProfiles final : public epidemic::diagnostics::IProfileCollector {
     }
     std::pair<double,double> Percentiles() const {std::scoped_lock lock(mutex_);if(ticks_.empty())return {-1,-1};std::vector<double> sorted(ticks_.begin(),ticks_.end());std::sort(sorted.begin(),sorted.end());return {sorted[(sorted.size()-1)/2],sorted[(sorted.size()-1)*95/100]};}
     auto Previous() const {return previous_;}
+    void Clear(){std::scoped_lock lock(mutex_);ticks_.clear();}
 };
 class Backend {
     ex::Schema schema_;
     rt::AssetId play_scene_{};
     std::shared_ptr<RuntimeProfiles> profiles_=std::make_shared<RuntimeProfiles>(epidemic::diagnostics::GetProfileCollector());
     bool play_start_events_=true;
+    std::uint64_t last_pumped_session_=0,start_failure_sequence_=0,start_failure_stamp_=0;
+    std::string start_failure_;
+    void StartPlay(){
+        start_failure_.clear();if(!workspace_->Session()||!workspace_->Session()->IsPlaying())profiles_->Clear();
+        auto result=workspace_->Play();if(!result){start_failure_=result.GetError().code+" "+result.GetError().context;++start_failure_sequence_;if(const auto *old=workspace_->Session()){const auto frame=old->RuntimeSnapshot();if(!frame.trace.empty())start_failure_sequence_=std::max(start_failure_sequence_,frame.trace.back().sequence+1);}start_failure_stamp_=static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());}Require(result);
+    }
     std::vector<ed::graph_ui::Recipe> Recipes() const {
         return workspace_&&workspace_->Project()?ed::graph_ui::Catalogue(const_cast<ex::Schema &>(schema_).View(),workspace_->Project()->Snapshot()->definition):ed::graph_ui::Catalogue(const_cast<ex::Schema &>(schema_).View());
     }
@@ -669,7 +676,7 @@ class Backend {
         asset_query_.clear();
         refresh_content_folders_ = {};
         content_folders_.clear();
-        workspace_.reset();
+        workspace_.reset();play_scene_={};start_failure_.clear();last_pumped_session_=0;
         workspace_ = std::make_unique<ed::EditorWorkspace>(schema_.View(),
                                                            [this] { return ScriptPlayOptions(); });
         ++generation_;
@@ -1413,38 +1420,51 @@ class Backend {
     }
 
     void RuntimeWire(Wire &out) const {
-        const auto *session=workspace_->Session();const auto view=session?session->RuntimeSnapshot():ed::PlayRuntimeSnapshot{};
+        const auto *session=workspace_->Session();auto view=session?session->RuntimeSnapshot():ed::PlayRuntimeSnapshot{};
+        if((!session||!session->IsPlaying())&&!start_failure_.empty()){view.phase=ed::PlayPhase::Failed;view.trace.push_back({start_failure_sequence_,start_failure_stamp_,0,0,0,0,0,"Failed",start_failure_,2});}
         out.Number<2>(1);out.Number<8>(view.session);out.Number<8>(view.scene);out.Number<8>(play_scene_.IsValid()?play_scene_.Raw():workspace_->Project()?workspace_->Project()->Snapshot()->definition.entry_scene.Raw():0);out.Number<8>(view.tick);out.Number<8>(view.graph_steps);out.Number<8>(view.dropped_ticks);out.Number<1>(static_cast<unsigned>(view.phase));out.Number<8>(view.total_entities);out.Number<8>(view.total_activations);
         const auto number=[&](double value){out.Number<8>(std::bit_cast<std::uint64_t>(value));};
         out.Number<4>(view.entities.size());
-        for(const auto &e:view.entities){out.Number<8>(e.placement);out.Number<8>(e.node);out.Text(e.name);number(e.world.position.x);number(e.world.position.y);number(e.world.scale.x);number(e.world.scale.y);number(2*std::atan2(e.world.rotation.z,e.world.rotation.w));out.Text(e.sprite);number(e.ppu);number(e.pivot_x);number(e.pivot_y);
+        for(const auto &e:view.entities){out.Number<8>(e.placement);out.Number<8>(e.node);out.Number<8>(e.runtime_high);out.Number<8>(e.runtime_low);out.Text(e.name);number(e.world.position.x);number(e.world.position.y);number(e.world.scale.x);number(e.world.scale.y);number(2*std::atan2(e.world.rotation.z,e.world.rotation.w));out.Text(e.sprite);number(e.ppu);number(e.pivot_x);number(e.pivot_y);
             out.Number<4>(e.fields.size());for(const auto &f:e.fields){out.Number<8>(f.type);out.Number<8>(f.part);out.Text(f.component);out.Text(f.name);out.Text(f.value);}}
         out.Number<4>(view.activations.size());for(const auto &a:view.activations){out.Number<8>(a.id);out.Number<8>(a.graph);out.Number<8>(a.node);out.Number<8>(a.instructions);out.Number<8>(a.native_calls);out.Number<8>(std::bit_cast<std::uint64_t>(a.wake));out.Text(a.state);out.Number<4>(a.values.size());for(const auto &v:a.values){out.Number<8>(v.port);out.Text(v.type);out.Text(v.value);}}
-        out.Number<4>(view.trace.size());for(const auto &t:view.trace){out.Number<8>(t.sequence);out.Number<8>(t.timestamp_ms);out.Number<8>(t.tick);out.Number<8>(t.activation);out.Number<8>(t.graph);out.Number<8>(t.node);out.Number<1>(t.severity);out.Text(t.state);out.Text(t.detail);}
+        out.Number<4>(view.trace.size());for(const auto &t:view.trace){out.Number<8>(t.sequence);out.Number<8>(t.timestamp_ms);out.Number<8>(t.tick);out.Number<8>(t.activation);out.Number<8>(t.graph);out.Number<8>(t.node);out.Number<8>(t.entity);out.Number<1>(t.severity);out.Text(t.state);out.Text(t.detail);}
+        out.Number<4>(view.breakpoints.size());for(const auto &[graph,node]:view.breakpoints){out.Number<8>(graph);out.Number<8>(node);}
+        number(view.input.x);number(view.input.y);number(view.input.pointer_x);number(view.input.pointer_y);out.Number<1>(view.input.pointer_down);
         const auto percentiles=profiles_->Percentiles();PROCESS_MEMORY_COUNTERS_EX memory{};memory.cb=sizeof(memory);const bool known=GetProcessMemoryInfo(GetCurrentProcess(),reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memory),sizeof(memory))!=FALSE;
+        FILETIME creation_time{},exit_time{},kernel_time{},user_time{};const bool cpu_known=GetProcessTimes(GetCurrentProcess(),&creation_time,&exit_time,&kernel_time,&user_time)!=FALSE;
+        const auto cpu_millis=[](const FILETIME &value){const auto ticks=(static_cast<std::uint64_t>(value.dwHighDateTime)<<32u)|static_cast<std::uint64_t>(value.dwLowDateTime);return static_cast<double>(ticks)/10000.0;};
         struct Metric{const char *name,*source,*unit;double value;};
-        const Metric metrics[]={{"Fixed tick rate","C++ Runtime.Time","Hz",60},{"Tick p50","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.first},{"Tick p95","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.second},{"Backend working set","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.WorkingSetSize):-1},{"Backend private bytes","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.PrivateUsage):-1},{"Live entities","Runtime EntityService","entities",static_cast<double>(view.total_entities)},{"Retained/live activations","Runtime GraphExecutionHost","activations",static_cast<double>(view.total_activations)},{"Import queue busy","EditorWorkspace.AssetJobsBusy","bool",workspace_->AssetJobsBusy()?1.0:0.0},{"GPU duration","Auditor GPU provider unavailable in this backend","ms",-1},{"Allocations","Auditor allocation provider unavailable in this profile","allocations",-1}};
+        const Metric metrics[]={{"Backend CPU total","Windows GetProcessTimes / cumulative process CPU","ms",cpu_known?cpu_millis(kernel_time)+cpu_millis(user_time):-1},{"Fixed tick rate","C++ Runtime.Time","Hz",60},{"Tick p50","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.first},{"Tick p95","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.second},{"Backend working set","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.WorkingSetSize):-1},{"Backend private bytes","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.PrivateUsage):-1},{"Live entities","Runtime EntityService","entities",static_cast<double>(view.total_entities)},{"Live graph activations","Runtime GraphExecutionHost","activations",static_cast<double>(view.total_activations)},{"Import queue busy","EditorWorkspace.AssetJobsBusy","bool",workspace_->AssetJobsBusy()?1.0:0.0},{"GPU duration","Auditor GPU provider unavailable in this backend","ms",-1},{"Allocations","Auditor allocation provider unavailable in this profile","allocations",-1}};
         out.Number<4>(std::size(metrics));for(const auto &m:metrics){out.Text(m.name);out.Text(m.source);out.Text(m.unit);number(m.value);}
     }
     void RuntimeCommand(const std::vector<std::string> &args){
         if(args.size()<2)throw std::runtime_error("runtime.arguments");
         const auto &action=args[0];auto *session=workspace_->Session();
+        if(action=="play"){
+            if(args.size()!=2||(session?session->Id():0)!=Numeric(args[1]))throw std::runtime_error("runtime.stale_session");StartPlay();return;
+        }
+        if(action=="stop"){
+            if(args.size()!=2||(session?session->Id():0)!=Numeric(args[1]))throw std::runtime_error("runtime.stale_session");Require(workspace_->Stop());StopScripts();start_failure_.clear();return;
+        }
         if(action=="scene"){
+            if(args.size()!=3||(session?session->Id():0)!=Numeric(args[1]))throw std::runtime_error("runtime.stale_session");
             if(session&&session->IsPlaying())throw std::runtime_error("ui.playing_readonly");
-            const auto scene=Asset(Numeric(args[1]));const auto *doc=workspace_->Project()?workspace_->Project()->Snapshot()->Find(scene):nullptr;
+            const auto scene=Asset(Numeric(args[2]));const auto *doc=workspace_->Project()?workspace_->Project()->Snapshot()->Find(scene):nullptr;
             if(!doc||doc->Kind()!=ed::DocumentKind::Scene)throw std::runtime_error("runtime.scene");play_scene_=scene;return;
         }
-        if(!session||session->RuntimeSnapshot().session!=Numeric(args[1]))throw std::runtime_error("runtime.stale_session");
+        if(!session||session->Id()!=Numeric(args[1]))throw std::runtime_error("runtime.stale_session");
         if(action=="pause"&&args.size()==2)Require(session->Pause());
         else if(action=="resume"&&args.size()==2)Require(session->Resume());
         else if(action=="step"&&args.size()==2)Require(session->StepTick());
         else if(action=="step-node"&&args.size()==3)Require(session->StepToNode(Numeric(args[2])));
         else if(action=="input"&&args.size()==4)Require(session->SetInput(Real(args[2]),Real(args[3])));
+        else if(action=="pointer"&&args.size()==5){if(args[4]!="0"&&args[4]!="1")throw std::runtime_error("runtime.pointer");Require(session->SetPointer(Real(args[2]),Real(args[3]),args[4]=="1"));}
         else if(action=="breakpoint"&&args.size()==5){
             const auto graph=Asset(Numeric(args[2]));const auto *doc=workspace_->Project()->Snapshot()->Find(graph);const auto *g=doc?std::get_if<rt::graph::GraphDefinition>(&doc->data):nullptr;const auto node=Id{Numeric(args[3])};
-            if(!g||std::none_of(g->nodes.begin(),g->nodes.end(),[&](const auto &n){return n.id==node;})||(args[4]!="0"&&args[4]!="1"))throw std::runtime_error("runtime.breakpoint");session->SetBreakpoint(graph,node,args[4]=="1");
+            if(!session->IsPlaying()||!g||std::none_of(g->nodes.begin(),g->nodes.end(),[&](const auto &n){return n.id==node;})||(args[4]!="0"&&args[4]!="1"))throw std::runtime_error("runtime.breakpoint");if(args[4]=="1"&&session->RuntimeSnapshot().breakpoints.size()>=1024)throw std::runtime_error("runtime.breakpoint_limit");session->SetBreakpoint(graph,node,args[4]=="1");
         }
-        else if(action=="restart"&&args.size()==2){Require(workspace_->Stop());StopScripts();Require(workspace_->Play());}
+        else if(action=="restart"&&args.size()==2){Require(workspace_->Stop());StopScripts();StartPlay();}
         else throw std::runtime_error("runtime.command");
     }
     static void WriteReference(Wire &out,const rt::graph::GraphReference &r) {
@@ -1455,7 +1475,12 @@ class Backend {
   public:
     Backend() { epidemic::diagnostics::SetProfileCollector(profiles_);Reset(); }
     ~Backend(){epidemic::diagnostics::SetProfileCollector(profiles_->Previous());}
-    void Pump(std::chrono::nanoseconds elapsed){if(auto *session=workspace_->Session();session&&session->IsPlaying()){auto result=session->Pump(elapsed);if(!result){ /* The Failed snapshot retains the native diagnostic; only Stop tears down. */ }}}
+    void Pump(std::chrono::nanoseconds elapsed){
+        if(auto *session=workspace_->Session();session&&session->IsPlaying()){
+            if(last_pumped_session_!=session->Id()){last_pumped_session_=session->Id();return;}
+            const auto result=session->Pump(elapsed);if(!result){ /* Native Failed state and trace are retained until Stop. */ }
+        }else last_pumped_session_=0;
+    }
 
 
     void ScriptLifecycleSmoke(const std::filesystem::path &file) {
@@ -1657,10 +1682,10 @@ class Backend {
                 Require(workspace_->CloneFolder(Path(args.at(0))));
                 break;
             case 13:
-                Require(workspace_->Play());
+                StartPlay();
                 break;
             case 14:
-                Require(workspace_->Stop());StopScripts();
+                Require(workspace_->Stop());StopScripts();start_failure_.clear();
                 break;
             case 15:
                 if (args.size() == 3 && args[0] != "1")
@@ -1844,7 +1869,8 @@ int wmain(int argc,wchar_t **argv) {
             DWORD available=0;if(!PeekNamedPipe(input,nullptr,0,nullptr,&available,nullptr)){if(GetLastError()!=ERROR_BROKEN_PIPE)return 1;return pending.empty()?0:pending.size()<4?1:2;}
             if(available){std::array<std::uint8_t,65536> chunk{};DWORD read=0;if(!ReadFile(input,chunk.data(),std::min<DWORD>(available,static_cast<DWORD>(chunk.size())),&read,nullptr))return 1;pending.insert(pending.end(),chunk.begin(),chunk.begin()+read);}
             bool served=false;
-            while(pending.size()>=4){Reader length{std::span<const std::uint8_t>(pending).first(4)};const auto size=length.Number(4);if(size==0||size>MaxFrame)return 2;if(pending.size()<size+4)break;
+            unsigned requests=0;
+            while(pending.size()>=4&&requests++<4){Reader length{std::span<const std::uint8_t>(pending).first(4)};const auto size=length.Number(4);if(size==0||size>MaxFrame)return 2;if(pending.size()<size+4)break;
                 if(!backend.Request(std::span<const std::uint8_t>(pending).subspan(4,static_cast<std::size_t>(size))))return 0;
                 pending.erase(pending.begin(),pending.begin()+static_cast<std::ptrdiff_t>(size+4));served=true;
             }

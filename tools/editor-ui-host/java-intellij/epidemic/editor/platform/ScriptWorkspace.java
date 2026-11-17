@@ -39,6 +39,7 @@ public final class ScriptWorkspace implements AutoCloseable {
     private volatile boolean cancelled,closed;
     private volatile long epoch;
     private volatile boolean building;
+    public boolean buildActive(){return building;}
     private VirtualFile reloadAllowed;
     private Path trustedRoot,builtRoot;
     private boolean rebuildRequired=true;

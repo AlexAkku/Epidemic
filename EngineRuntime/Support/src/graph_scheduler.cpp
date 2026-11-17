@@ -89,6 +89,8 @@ GraphTask::GraphTask(std::unique_ptr<graph::GraphInstance> instance,
       options_(options), due_(now) {
 }
 
+foundation::Result<graph::GraphReference> GraphTask::ReadReference(graph::ElementId port) const {return instance_->ReadReference(port);}
+
 foundation::Result<std::int64_t> GraphTask::ReadValue(graph::ElementId port) const {
     return instance_->ReadValue(port);
 }

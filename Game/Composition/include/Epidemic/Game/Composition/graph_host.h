@@ -41,6 +41,7 @@ class GraphActivation final : public gameplay::composition::IGraphActivation {
   public:
     [[nodiscard]] std::uint64_t Id() const noexcept { return id_; }
     [[nodiscard]] runtime::AssetId Asset() const noexcept { return asset_; }
+    [[nodiscard]] std::shared_ptr<const GraphScope> Scope() const noexcept { return scope_.lock(); }
     void RequestCancel() noexcept override;
     [[nodiscard]] bool IsFinished() const noexcept override;
 
@@ -55,6 +56,7 @@ class GraphActivation final : public gameplay::composition::IGraphActivation {
   private:
     std::uint64_t id_ = 0;
     runtime::AssetId asset_{};
+    std::weak_ptr<GraphScope> scope_;
     runtime::GraphActivationOwner owner_;
     std::shared_ptr<runtime::GraphTask> task_;
     std::unique_ptr<runtime::graph::GraphInstance> pending_;

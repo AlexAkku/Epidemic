@@ -2,6 +2,7 @@
 #include "Epidemic/GameFramework/Integration/system_instance.h"
 #include <unordered_set>
 #include <algorithm>
+#include <charconv>
 #include <exception>
 #include <deque>
 #include <atomic>
@@ -50,6 +51,11 @@ class Clock final : public runtime::simulation::ISimulationClock {
   private:
     std::shared_ptr<runtime::IGameClock> clock_;
 };
+
+// Keep diagnostic/display limits on a UTF-8 codepoint boundary. Authoring is untouched.
+std::string BoundedUtf8(std::string_view value,std::size_t limit){
+    auto end=std::min(value.size(),limit);if(end<value.size())while(end>0&&(static_cast<unsigned char>(value[end])&0xc0u)==0x80u)--end;return std::string{value.substr(0,end)};
+}
 
 runtime::simulation::SimulationServices Simulation(const runtime::TimeServices &time) {
     runtime::simulation::SimulationDependencies dependencies;
@@ -156,7 +162,7 @@ struct PlaySession::Impl {
     };
 
     PlaySession *owner=nullptr;
-    struct DebugStat { std::uint64_t graph=0,instructions=0,calls=0,serial=0;std::string state="Started"; };
+    struct DebugStat { std::uint64_t graph=0,instructions=0,calls=0,serial=0;std::string state="Started";std::vector<PlayDebugValue> values; };
     std::map<std::uint64_t,DebugStat> stats;
     const comp::ComponentRegistry *registry=nullptr;
     decltype(PlayOptions::fixed_update) fixed_update;
@@ -205,15 +211,27 @@ struct PlaySession::Impl {
             if (report) {
                 auto &stat=stats[at->handle->Id()];const auto *task=at->execution->Task();
                 const auto serial=task?task->ExecutionSerial():0;
-                if(serial!=stat.serial){stat.instructions+=report->instructions;stat.calls+=report->native_calls;stat.serial=serial;}
+
                 const auto status=report->status==runtime::graph::ExecutionStatus::Completed?"Completed":report->status==runtime::graph::ExecutionStatus::Cancelled?"Canceled":report->status==runtime::graph::ExecutionStatus::Failed?"Failed":report->status==runtime::graph::ExecutionStatus::Waiting?"Waiting":"Active";
+                if(serial!=stat.serial||stat.state!=status){
+                    if(serial!=stat.serial){stat.instructions+=report->instructions;stat.calls+=report->native_calls;stat.serial=serial;}stat.values.clear();
+                    const auto *doc=runtime->source->Find(runtime::AssetId{foundation::StringId{stat.graph}});const auto *graph=doc?std::get_if<runtime::graph::GraphDefinition>(&doc->data):nullptr;
+                    if(graph&&task)for(const auto &node:graph->nodes)for(const auto &port:node.ports)if(port.kind==runtime::graph::PortKind::Data&&stat.values.size()<64){
+                        auto source=port.id;const auto edge=std::find_if(graph->connections.begin(),graph->connections.end(),[&](const auto &e){return e.input_port==port.id;});if(edge!=graph->connections.end())source=edge->output_port;
+                        std::string value="Unavailable",type=port.type_id==runtime::graph::kI64Type?"i64":"reference";
+                        if(type=="i64"){auto read=task->ReadValue(source);if(read)value=std::to_string(read.Value());else if(port.default_value&&edge==graph->connections.end())value="constant "+std::to_string(*port.default_value);}
+                        else{auto read=task->ReadReference(source);if(read){const auto &r=read.Value();const auto scope=at->execution->Scope();auto valid=scope?runtime->Resolve({*scope,runtime->bridge},r):foundation::Result<bool>::Success(false);value=std::string(valid&&valid.Value()?"Live ":"Missing ")+"document="+std::to_string(r.document.Raw())+" placement="+std::to_string(r.placement.Raw())+" entity="+std::to_string(r.entity.Raw())+" component="+std::to_string(r.component.Raw())+" part="+std::to_string(r.part.Raw());}}
+                        stat.values.push_back({port.id.Raw(),type,std::move(value)});
+                    }
+                }
                 if(stat.state!=status){stat.state=status;if(owner)owner->Trace(status,at->handle->Id(),stat.graph,report->diagnostic?report->diagnostic->node.Raw():0,report->diagnostic?report->diagnostic->error.code+" "+report->diagnostic->error.context:"",report->status==runtime::graph::ExecutionStatus::Failed?2:0);}
+                if(report->status==runtime::graph::ExecutionStatus::Failed&&owner&&(owner->phase_==PlayPhase::Running||owner->phase_==PlayPhase::Paused)){owner->phase_=PlayPhase::Failed;owner->input_={};owner->accumulator_=0;}
                 at->handle->report_ = std::move(report);
             }
             if (at->execution->IsFinished()) {
                 at->handle->finished_ = true;
                 completed.push_back(at->handle);
-                if (completed.size() > PlaySession::kCompletedActivationRetention) {stats.erase(completed.front()->Id());if(owner)owner->debug_nodes_.erase(completed.front()->Id());completed.pop_front();}
+                if (completed.size() > PlaySession::kCompletedActivationRetention) {stats.erase(completed.front()->Id());if(owner){owner->debug_nodes_.erase(completed.front()->Id());owner->activation_entities_.erase(completed.front()->Id());}completed.pop_front();}
                 at = live.erase(at); // Finished Editor handles never retain a VM/callable/context.
             } else
                 ++at;
@@ -224,7 +242,7 @@ struct PlaySession::Impl {
 };
 
 PlaySession::PlaySession(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {
-    static std::atomic_uint64_t sequence{0};session_id_=++sequence;impl_->owner=this;
+    static std::atomic_uint64_t sequence{0};session_id_=++sequence;impl_->owner=this;Trace("Starting");
 }
 
 PlaySession::~PlaySession() {
@@ -272,7 +290,9 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
         auto &state = *session->impl_->runtime;
         state.source = std::move(snapshot);
         session->impl_->registry=&schema.components;session->impl_->fixed_update=std::move(options.fixed_update);
-        state.host.SetInstanceObserver([owner=session.get()](runtime::graph::GraphInstance &vm,const composition::GraphScope &,std::uint64_t activation){
+        state.host.SetInstanceObserver([owner=session.get()](runtime::graph::GraphInstance &vm,const composition::GraphScope &scope,std::uint64_t activation){
+            const auto entity=gameplay::entities::EntityService::FromGameplayObjectRef(scope.Object());
+            for(const auto &[placement,instance]:owner->impl_->runtime->instances)for(const auto &object:instance->Objects())if(object.entity==entity)owner->activation_entities_[activation]=placement.Raw();
             const auto graph=vm.Program().Asset().Raw();owner->Trace("Started",activation,graph);
             vm.SetDebugGate([owner,activation,graph](const runtime::graph::Instruction &instruction){return owner->DebugGate(activation,graph,instruction);});
         });
@@ -354,7 +374,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             state.instances.emplace(placement.node, std::move(instance));
         }
 
-        session->Trace("Running");
+        session->phase_=PlayPhase::Running;session->Trace("Running");
         if(options.start_events) {
             for(const auto &[placement,instance]:state.instances){(void)placement;
                 for(const auto &object:instance->Objects()) {
@@ -541,7 +561,7 @@ foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
         impl_->Refresh();
         auto &state = *impl_->runtime;
         Take(state.time.runtime->Skip(advance));
-        if(advance.ticks>0&&impl_->fixed_update)Take(impl_->fixed_update(state.context,advance,input_x_,input_y_));
+        if(advance.ticks>0&&impl_->fixed_update)Take(impl_->fixed_update(state.context,advance,input_));
         state.components.Synchronize();
         state.behaviors.Synchronize();
         Take(composition::SynchronizeSceneEntities(state.scene, state.entities));
@@ -601,18 +621,18 @@ foundation::Result<void> PlaySession::Stop() {
     impl_->Refresh();
     if (!cancelled)
         return cancelled;
-    stopped_snapshot_=std::move(final_snapshot);for(auto &activation:stopped_snapshot_.activations){const auto stat=impl_->stats.find(activation.id);if(stat!=impl_->stats.end())activation.state=stat->second.state;}
-    impl_->runtime.reset();phase_=PlayPhase::Stopped;input_x_=input_y_=0;accumulator_=0;Trace("Stopped");
-    stopped_snapshot_.entities.clear();
+    stopped_snapshot_=std::move(final_snapshot);for(auto &activation:stopped_snapshot_.activations){const auto stat=impl_->stats.find(activation.id);if(stat!=impl_->stats.end()){activation.state=stat->second.state;activation.values=stat->second.values;}}
+    impl_->runtime.reset();phase_=PlayPhase::Stopped;input_={};accumulator_=0;Trace("Stopped");
+    stopped_snapshot_.entities.clear();stopped_snapshot_.total_entities=0;stopped_snapshot_.total_activations=0;
     return foundation::Result<void>::Success();
 }
 
 
 void PlaySession::Trace(std::string state,std::uint64_t activation,std::uint64_t graph,std::uint64_t node,std::string detail,std::uint8_t severity) {
-    if(detail.size()>2048)detail.resize(2048);
+    detail=BoundedUtf8(std::move(detail),2048);
     const auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     const auto tick=IsPlaying()?static_cast<std::uint64_t>(impl_->runtime->time.clock->Now().ticks):stopped_snapshot_.tick;
-    trace_.push_back({++trace_sequence_,static_cast<std::uint64_t>(stamp),tick,activation,graph,node,std::move(state),std::move(detail),severity});
+    trace_.push_back({++trace_sequence_,static_cast<std::uint64_t>(stamp),tick,activation,graph,node,activation_entities_.contains(activation)?activation_entities_.at(activation):0,std::move(state),std::move(detail),severity});
     if(trace_.size()>256)trace_.pop_front();
 }
 bool PlaySession::DebugGate(std::uint64_t activation,std::uint64_t graph,const runtime::graph::Instruction &step) {
@@ -632,11 +652,18 @@ bool PlaySession::DebugGate(std::uint64_t activation,std::uint64_t graph,const r
         debug_nodes_[activation]=step.node.Raw();
         Trace("Node",activation,graph,step.node.Raw(),"operation="+std::to_string(static_cast<unsigned>(step.operation)));
     }
+    if(step.operation==runtime::graph::Operation::Branch){
+        const auto *doc=impl_->runtime->source->Find(runtime::AssetId{foundation::StringId{graph}});const auto *definition=doc?std::get_if<runtime::graph::GraphDefinition>(&doc->data):nullptr;
+        if(definition)for(const auto &node:definition->nodes)if(node.id==step.node)for(const auto &port:node.ports)if(port.kind==runtime::graph::PortKind::Data&&port.direction==runtime::graph::PortDirection::Input){
+            const auto edge=std::find_if(definition->connections.begin(),definition->connections.end(),[&](const auto &e){return e.input_port==port.id;});
+            for(const auto &execution:impl_->runtime->host.Activations())if(execution->Id()==activation)if(const auto *task=execution->Task()){const auto condition=edge==definition->connections.end()?foundation::Result<std::int64_t>::Success(port.default_value.value_or(0)):task->ReadValue(edge->output_port);if(condition)Trace("Branch",activation,graph,step.node.Raw(),condition.Value()!=0?"true":"false");}
+        }
+    }
     return true;
 }
 foundation::Result<void> PlaySession::Pause(){
     if(!IsPlaying()||phase_==PlayPhase::Failed)return foundation::Result<void>::Failure(Error("editor.play_inactive"));
-    phase_=PlayPhase::Paused;accumulator_=0;input_x_=input_y_=0;Trace("Paused");return foundation::Result<void>::Success();
+    phase_=PlayPhase::Paused;accumulator_=0;input_={};Trace("Paused");return foundation::Result<void>::Success();
 }
 foundation::Result<void> PlaySession::Resume(){
     if(!IsPlaying()||phase_==PlayPhase::Failed)return foundation::Result<void>::Failure(Error("editor.play_inactive"));
@@ -665,20 +692,24 @@ foundation::Result<void> PlaySession::Pump(std::chrono::nanoseconds elapsed){
 }
 foundation::Result<void> PlaySession::SetInput(double x,double y){
     if(!IsPlaying()||!std::isfinite(x)||!std::isfinite(y)||std::abs(x)>1||std::abs(y)>1)return foundation::Result<void>::Failure(Error("editor.play_input"));
-    input_x_=x;input_y_=y;return foundation::Result<void>::Success();
+    input_.x=x;input_.y=y;return foundation::Result<void>::Success();
+}
+foundation::Result<void> PlaySession::SetPointer(double x,double y,bool pressed){
+    if(!IsPlaying()||!std::isfinite(x)||!std::isfinite(y)||std::abs(x)>1e6||std::abs(y)>1e6)return foundation::Result<void>::Failure(Error("editor.play_pointer"));
+    input_.pointer_x=x;input_.pointer_y=y;input_.pointer_down=pressed;return foundation::Result<void>::Success();
 }
 void PlaySession::SetBreakpoint(runtime::AssetId graph,runtime::graph::ElementId node,bool enabled){
     if(enabled&&breakpoints_.size()<1024)breakpoints_.insert({graph.Raw(),node.Raw()});else if(!enabled)breakpoints_.erase({graph.Raw(),node.Raw()});
 }
 PlayRuntimeSnapshot PlaySession::RuntimeSnapshot() const {
-    auto out=IsPlaying()?PlayRuntimeSnapshot{}:stopped_snapshot_;out.session=session_id_;out.phase=phase_;out.graph_steps=graph_steps_;out.dropped_ticks=dropped_ticks_;out.trace.assign(trace_.begin(),trace_.end());
+    auto out=IsPlaying()?PlayRuntimeSnapshot{}:stopped_snapshot_;out.session=session_id_;out.phase=phase_;out.graph_steps=graph_steps_;out.dropped_ticks=dropped_ticks_;out.trace.assign(trace_.begin(),trace_.end());out.breakpoints.assign(breakpoints_.begin(),breakpoints_.end());out.input=input_;
     if(!IsPlaying()||ticking_)return out;
     const auto &state=*impl_->runtime;out.scene=state.source->definition.entry_scene.Raw();out.tick=static_cast<std::uint64_t>(state.time.clock->Now().ticks);
     std::size_t field_count=0;
     for(const auto &[placement,instance]:state.instances)for(const auto &object:instance->Objects()){
         if(!object.scope->IsPresent())continue;++out.total_entities;if(out.entities.size()>=1000)continue;
         auto world=state.context.WorldTransform(object.handle);if(!world)continue;
-        PlayEntity entity{placement.Raw(),object.id.Raw(),"Entity",world.Value(),{},64,.5f,.5f,{}};
+        PlayEntity entity{placement.Raw(),object.id.Raw(),object.entity.High(),object.entity.Low(),"Entity",world.Value(),{},64,.5f,.5f,{}};
         if(object.id==instance->Definition()->root.id){auto sprite=ReadSprite(placement);if(sprite){entity.sprite=sprite.Value().cooked_key;entity.ppu=sprite.Value().pixels_per_unit;entity.pivot_x=sprite.Value().pivot_x;entity.pivot_y=sprite.Value().pivot_y;}}
         if(const auto *doc=state.source->Find(state.source->definition.entry_scene)){
             const auto &scene=std::get<composition::SceneCompositionDefinition>(doc->data);auto name=scene.node_names.find(placement.Raw());if(name!=scene.node_names.end())entity.name=name->second;
@@ -686,7 +717,7 @@ PlayRuntimeSnapshot PlaySession::RuntimeSnapshot() const {
         for(const auto &component:object.components)if(const auto *info=impl_->registry->Find(component.type))for(const auto &property:info->properties){
             if(field_count++>=4096)break;
             auto value=state.components.ReadProperty(component,property.id);std::string text="Unavailable";
-            if(value)text=std::visit([](const auto &v){using T=std::decay_t<decltype(v)>;if constexpr(std::is_same_v<T,std::string>)return v.substr(0,1024);else if constexpr(std::is_same_v<T,bool>)return std::string(v?"true":"false");else return std::to_string(v);},value.Value());
+            if(value)text=std::visit([](const auto &v){using T=std::decay_t<decltype(v)>;if constexpr(std::is_same_v<T,std::string>)return BoundedUtf8(v,1024);else if constexpr(std::is_same_v<T,bool>)return std::string(v?"true":"false");else if constexpr(std::is_floating_point_v<T>){char text[64]{};const auto converted=std::to_chars(text,text+sizeof(text),v,std::chars_format::general);return converted.ec==std::errc{}?std::string(text,converted.ptr):std::string("Unavailable");}else return std::to_string(v);},value.Value());
             entity.fields.push_back({info->name,property.name,text,component.type.Raw(),component.part.Raw()});
         }
         out.entities.push_back(std::move(entity));
@@ -695,13 +726,11 @@ PlayRuntimeSnapshot PlaySession::RuntimeSnapshot() const {
     std::vector<std::uint64_t> order;for(const auto &live:impl_->live)order.push_back(live.handle->Id());for(auto it=impl_->completed.rbegin();it!=impl_->completed.rend();++it)order.push_back((*it)->Id());
     for(const auto id:order){const auto &stat=impl_->stats.at(id);
         if(out.activations.size()>=64)break;
-        PlayDebugActivation activation{id,stat.graph,0,stat.instructions,stat.calls,-1,stat.state,{}};
+        PlayDebugActivation activation{id,stat.graph,0,stat.instructions,stat.calls,-1,stat.state,stat.values};
         const auto at=debug_nodes_.find(id);if(at!=debug_nodes_.end())activation.node=at->second;
         if(blocked_activation_==id)activation.node=blocked_node_;
         for(const auto &live:impl_->live)if(live.handle->Id()==id)if(const auto *task=live.execution->Task()){
             if(task->NextWake())activation.wake=task->NextWake()->ticks;
-            const auto *doc=state.source->Find(runtime::AssetId{foundation::StringId{stat.graph}});const auto *graph=doc?std::get_if<runtime::graph::GraphDefinition>(&doc->data):nullptr;
-            if(graph)for(const auto &node:graph->nodes)for(const auto &port:node.ports)if(port.kind==runtime::graph::PortKind::Data&&activation.values.size()<64){auto value=task->ReadValue(port.id);activation.values.push_back({port.id.Raw(),port.type_id==runtime::graph::kI64Type?"i64":"reference",value?std::to_string(value.Value()):"Unavailable"});}
         }
         out.activations.push_back(std::move(activation));
     }

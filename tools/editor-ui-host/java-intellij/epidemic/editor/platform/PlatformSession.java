@@ -202,6 +202,7 @@ public final class PlatformSession implements Disposable {
         if(bridge==null){bridge=new Bridge(Path.of(System.getProperty("epidemic.ui.backend")),output,this::state,this::edt);bridge.connect().thenCompose(reply->bridge.call(operation,args)).whenComplete((reply,error)->edt(()->{if(error!=null)failure(error);else workspace(reply.snapshot());}));}
         else bridge.call(operation,args).whenComplete((reply,error)->edt(()->{if(error!=null)failure(error);else workspace(reply.snapshot());}));
     }
+    private String loggedGraphDiagnostic="";
     private void state(Bridge.State state){
         service=state.service();
         boolean rejected=service==Bridge.Service.Ready&&!state.diagnostic().isEmpty();
@@ -216,6 +217,7 @@ public final class PlatformSession implements Disposable {
         if(state.reply()!=null&&state.reply().snapshot()!=null){snapshot=state.reply().snapshot();if(tools!=null){tools.refresh(snapshot,rejected);tools.runtime(state.reply().runtime());}for(var view:List.copyOf(views)){view.reader().refresh(snapshot,rejected);view.reader().runtime(state.reply().runtime());refreshDocument(view);}refreshDocumentCommands();
             JFrame frame=WindowManager.getInstance().getFrame(project);if(frame!=null)frame.setTitle("Epidemic — "+snapshot.title()+" · "+snapshot.path()+(snapshot.dirty()?" · Unsaved":"")+(service==Bridge.Service.Loading?" · Working…":service==Bridge.Service.Error?" · Disconnected — read-only":""));
         }
+        if(snapshot!=null&&tools!=null&&state.reply()!=null&&state.service()==Bridge.Service.Ready){String diagnostic="";for(var graph:snapshot.graphs())if(!graph.report().isEmpty()&&!graph.report().startsWith("OK")){diagnostic=state.reply().generation()+":"+snapshot.revision()+":"+graph.document()+":"+graph.report();if(!diagnostic.equals(loggedGraphDiagnostic))tools.problem((graph.report().contains("native_preview_requires_play")?"Warning: ":"")+"Graph [graph="+Long.toUnsignedString(graph.document())+"] "+graph.report());break;}loggedGraphDiagnostic=diagnostic;}
         if(snapshot!=null && tools!=null && snapshot.assetState().revision()!=loggedContentRevision){
             var events=snapshot.assetState().events();int count=(int)Math.min(events.size(),Math.max(0,snapshot.assetState().revision()-loggedContentRevision));
             for(var event:events.subList(events.size()-count,events.size())){
@@ -229,14 +231,26 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
             if(current==null||!current.capabilities().contains("asset-preview"))
                 return CompletableFuture.failedFuture(new IOException("ui.preview_unavailable"));
             return participant.assetPreview(current.generation(),id,key,divisor);
-        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));result.graphCommands(()->supports("graph-authoring"),this::sceneGesture);result.sourceCommands(scripts::sourceFiles,(path,with)->scripts.open(path,1,with),scripts::newClass);result.sourceNavigator(template->scripts.open(Path.of(snapshot.path()).getParent().resolve(template.source()),template.line(),false));return result;}
+        });result.hierarchyCommands(()->supports("scene-hierarchy"),this::hierarchyEdit);result.componentCommands(()->supports("component-authoring"),this::componentEdit);result.sceneGestures(()->supports("scene-gestures"),this::sceneGesture);result.sceneResources(()->supports("scene-resources"));result.systemsCommands(()->supports("scene-systems"));result.graphCommands(()->supports("graph-authoring"),this::sceneGesture);result.sourceCommands(scripts::sourceFiles,(path,with)->scripts.open(path,1,with),scripts::newClass);result.sourceNavigator(template->scripts.open(Path.of(snapshot.path()).getParent().resolve(template.source()),template.line(),false));if(bridge!=null&&bridge.latest()!=null)result.runtime(bridge.latest().runtime());return result;}
+    private void runtimeNavigate(epidemic.editor.RuntimeLogView.Link link){
+        if(snapshot==null)return;
+        if(!link.source().isEmpty()){
+            Path root=Path.of(snapshot.path()).getParent().toAbsolutePath().normalize();Path source=root.resolve(link.source()).normalize();
+            if(source.startsWith(root.resolve("Scripts"))&&source.toString().endsWith(".cs"))scripts.open(source,Math.max(1,link.line()),false);return;
+        }
+        long document=link.graph()!=0?link.graph():link.scene();
+        if(link.asset()!=0){select(new Bridge.Selection(6,0,link.asset()));return;}
+        if(document==0)return;
+        select(new Bridge.Selection(link.graph()!=0?(link.node()!=0?3:0):1,document,link.graph()!=0?link.node():link.entity()));
+        snapshot.documents().stream().filter(d->d.id()==document).findFirst().ifPresent(this::openDocument);
+    }
     private CompletableFuture<Bridge.Reply> sceneGesture(UiPanels.GestureEdit edit){
         if(edit.operation()==38&&!edit.arguments().isEmpty()&&edit.arguments().getFirst().equals("run")&&!allowScriptExecution())return CompletableFuture.failedFuture(new IOException("script.execution_cancelled"));
         if(!supports(switch(edit.operation()){case 33->"scene-resources";case 34->"scene-systems";case 38->"graph-authoring";default->"scene-gestures";})||snapshot.playing())
@@ -750,17 +764,16 @@ public final class PlatformSession implements Disposable {
         // Display cadence only: opcode42 reads immutable state. It never sends a delta or Tick.
         runtimePoll=new javax.swing.Timer(100,event->{
             if(smoke||!ready()||runtimePolling||!supports("runtime-session"))return;
+            runtimePoll.setDelay(bridge.latest().runtime().live()?100:500);
             runtimePolling=true;Bridge participant=bridge;
             participant.call(42).whenComplete((reply,error)->edt(()->{runtimePolling=false;if(bridge==participant&&error!=null&&service!=Bridge.Service.Error)documentFailure(error);}));
         });runtimePoll.start();com.intellij.openapi.util.Disposer.register(this,()->runtimePoll.stop());
     }
-    private CompletableFuture<Bridge.Reply> runtimeCommand(String action,String[] arguments){
-        if(!ready()||!supports("runtime-session"))return CompletableFuture.failedFuture(new IOException("runtime.unavailable"));
-        if(action.equals("play")){if(!allowScriptExecution())return CompletableFuture.failedFuture(new IOException("script.execution_cancelled"));return bridge.call(13);}
-        if(action.equals("stop"))return bridge.call(14);
-        var args=new ArrayList<String>();args.add(action);args.add(action.equals("scene")?arguments[0]:Long.toUnsignedString(bridge.latest().runtime().session()));
-        if(!action.equals("scene"))args.addAll(Arrays.asList(arguments));
-        return bridge.call(41,args.toArray(String[]::new));
+    private CompletableFuture<Bridge.Reply> runtimeCommand(long connection,long generation,long session,String action,String[] arguments){
+        if(!ready()||!supports("runtime-session")||bridge.latest().runtime().connection()!=connection||bridge.latest().generation()!=generation)return CompletableFuture.failedFuture(new IOException("runtime.stale_view"));
+        if(action.equals("play")&&!allowScriptExecution())return CompletableFuture.failedFuture(new IOException("script.execution_cancelled"));
+        var args=new ArrayList<String>();args.add(action);args.add(Long.toUnsignedString(session));args.addAll(Arrays.asList(arguments));
+        return bridge.runtimeCommand(connection,generation,args);
     }
     private void startAssetPolling(){
         if(assetPoll!=null)return;
@@ -1285,9 +1298,13 @@ public final class PlatformSession implements Disposable {
         }));
     }
     private void smokeGraphLifecycle(Bridge.Document doc, VirtualFile file, GraphEditor old) {
+        bridge.call(6).whenComplete((saved,error)->edt(()->{if(error!=null){failure(error);return;}smokeSavedGraphLifecycle(doc,file,old);}));
+    }
+    private void smokeSavedGraphLifecycle(Bridge.Document doc, VirtualFile file, GraphEditor old) {
+        record("INFO Graph lifecycle close saved FileEditor");
         FileEditorManager.getInstance(project).closeFile(file);
-        waitFor(old::released, 0, () -> {
-            openDocument(doc);
+        waitFor(()->old.released()&&FileEditorManager.getInstance(project).getAllEditors(file).length==0, 0, () -> {
+            record("INFO Graph lifecycle disposed browser and closed all file editors");openDocument(doc);
             waitFor(() -> graphViews.entrySet().stream().anyMatch(e -> e.getKey().file() == file && e.getValue() != old), 0, () -> {
                 inFloatingEditor(file, window -> {
                     require(NativeViewport.windowHandle(window) != 0, "Graph has no Windows HWND");
@@ -1500,10 +1517,9 @@ public final class PlatformSession implements Disposable {
             queueImport(bridge,bridge.latest().generation(),external.toString(),"f1-import.png").whenComplete((reply,error)->edt(()->{
                 if(error!=null){failure(error);return;}
                 var problem=contents.get("problems");
-                var problemView=(JTextArea)named(tools.view("problems"),"problems.output");
-                var text=problemView;
+                var problemView=(JTable)named(tools.view("problems"),"problems.output");
                 require(problem!=null&&problem.getManager().getSelectedContent()==problem&&
-                    text.getText().contains("Import rejected: f1-import.png"),"Import conflict was not presented in Problems");
+                    java.util.stream.IntStream.range(0,problemView.getRowCount()).anyMatch(row->String.valueOf(problemView.getValueAt(row,7)).contains("Import rejected: f1-import.png"))&&java.util.stream.IntStream.range(0,problemView.getRowCount()).noneMatch(row->String.valueOf(problemView.getValueAt(row,3)).equals("Info")),"Import conflict was not presented in Problems");
                 var settings=com.intellij.ide.ui.UISettings.getInstance();
                 require(!Boolean.getBoolean("epidemic.ui.standalone")||
                     settings.getMainMenuDisplayMode()==com.intellij.ide.ui.MainMenuDisplayMode.MERGED_WITH_MAIN_TOOLBAR,
@@ -1511,14 +1527,15 @@ public final class PlatformSession implements Disposable {
                 saveProject().whenComplete((saved,saveError)->edt(()->{
                     if(saveError!=null){failure(saveError);return;}
                     record("PASS F1 Explorer button retained asset ID; duplicate destination opened Problems; merged toolbar mode retained");
-                    smokePickerCancel(text);
+                    smokePickerCancel(problemView);
                 }));
             })));
     }
-    private void smokePickerCancel(JTextArea problems){
-        var console=(JTextArea)((JScrollPane)tools.view("console")).getViewport().getView();
-        require(console.getText().contains("editor.asset_imported")&&!problems.getText().contains("editor.asset_imported")&&
-            !problems.getText().contains("editor.asset_queued"),"Routine asset activity leaked into Problems");
+    private boolean logContains(JTable table,String value){return java.util.stream.IntStream.range(0,table.getRowCount()).anyMatch(row->String.valueOf(table.getValueAt(row,7)).contains(value));}
+    private void smokePickerCancel(JTable problems){
+        var console=(JTable)named(tools.view("console"),"console.output");
+        require(logContains(console,"editor.asset_imported")&&!logContains(problems,"editor.asset_imported")&&
+            !logContains(problems,"editor.asset_queued"),"Routine asset activity leaked into Problems");
         var batch=new PickerImport(bridge,bridge.latest().generation(),List.of(
             new LightVirtualFile("picker-first.png"),new LightVirtualFile("picker-unsent.png")),"");
         pickerImport=batch;
@@ -1609,7 +1626,57 @@ public final class PlatformSession implements Disposable {
             if(reply.snapshot().playing()||reply.snapshot().project()!=identity||reply.snapshot().revision()!=revision||reply.snapshot().dirty()){
                 failure(new IllegalStateException("Stop changed authoring identity/savepoint"));return;
             }
-            record("PASS F0 native Play/Stop lifecycle; authoring identity/revision/savepoint retained");recoverSmoke();
+            record("PASS F0 native Play/Stop lifecycle; authoring identity/revision/savepoint retained");smokeRuntimeOverlay();
+        }));
+    }
+    private CompletableFuture<Bridge.GraphNode> runtimeSmokeNode(long document,String name,String x,String y){
+        var graph=bridge.latest().snapshot().graphs().stream().filter(g->g.document()==document).findFirst().orElseThrow();int recipe=java.util.stream.IntStream.range(0,graph.catalogue().size()).filter(i->graph.catalogue().get(i).name().equals(name)).findFirst().orElseThrow();
+        return bridge.call(38,"create",Long.toUnsignedString(document),Integer.toString(recipe),x,y).thenApply(reply->reply.snapshot().graphs().stream().filter(g->g.document()==document).findFirst().orElseThrow().nodes().getLast());
+    }
+    private CompletableFuture<Bridge.Reply> runtimeSmokeLink(long document,Bridge.GraphNode source,String output,Bridge.GraphNode target,String input){
+        return bridge.call(38,"connect",Long.toUnsignedString(document),Long.toUnsignedString(source.ports().stream().filter(p->p.name().equals(output)).findFirst().orElseThrow().id()),Long.toUnsignedString(target.ports().stream().filter(p->p.name().equals(input)).findFirst().orElseThrow().id()));
+    }
+    private void smokeRuntimeOverlay(){
+        long[] ids=new long[3];var nodes=new Bridge.GraphNode[6];
+        CompletableFuture<Bridge.Reply> setup=CompletableFuture.completedFuture(bridge.latest());
+        for(var system:bridge.latest().snapshot().systems())if(system.enabled())setup=setup.thenCompose(reply->bridge.call(34,"enabled",Long.toUnsignedString(system.id()),"0"));
+        setup.thenCompose(reply->bridge.call(15,"0","F4 native Runtime scene")).thenCompose(reply->{ids[0]=reply.snapshot().selection().document();return bridge.call(15,"1","F4 Health target","registered-components");})
+        .thenCompose(reply->{ids[1]=reply.snapshot().selection().document();return bridge.call(15,"2","F4 Damage Wait Damage");})
+        .thenCompose(reply->{ids[2]=reply.snapshot().selection().document();return runtimeSmokeNode(ids[2],"Event","40","140");})
+        .thenCompose(node->{nodes[0]=node;return runtimeSmokeNode(ids[2],"Input","40","340");})
+        .thenCompose(node->{nodes[1]=node;return runtimeSmokeNode(ids[2],"Input","250","340");})
+        .thenCompose(node->{nodes[2]=node;return runtimeSmokeNode(ids[2],"Native Call","250","140");})
+        .thenCompose(node->{nodes[3]=node;return runtimeSmokeNode(ids[2],"Wait","460","140");})
+        .thenCompose(node->{nodes[4]=node;return runtimeSmokeNode(ids[2],"Native Call","670","140");})
+        .thenCompose(node->{nodes[5]=node;return bridge.call(38,"inputvalue",Long.toUnsignedString(ids[2]),Long.toUnsignedString(nodes[1].id()),"7");})
+        .thenCompose(reply->bridge.call(38,"inputvalue",Long.toUnsignedString(ids[2]),Long.toUnsignedString(nodes[2].id()),"120"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[0],"next",nodes[3],"in"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[1],"value",nodes[3],"argument"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[3],"next",nodes[4],"in"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[3],"result",nodes[4],"value"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[2],"value",nodes[4],"ticks"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[4],"next",nodes[5],"in"))
+        .thenCompose(reply->runtimeSmokeLink(ids[2],nodes[4],"result",nodes[5],"argument"))
+        .thenCompose(reply->{long root=reply.snapshot().nodes().stream().filter(n->n.document()==ids[1]&&n.kind()==2).findFirst().orElseThrow().id();return bridge.call(9,"2",Long.toUnsignedString(ids[1]),Long.toUnsignedString(root));})
+        .thenCompose(reply->bridge.call(30,Long.toUnsignedString(reply.snapshot().selectionRevision()),"graph",Long.toUnsignedString(ids[2])))
+        .thenCompose(reply->bridge.call(33,"place",Long.toUnsignedString(ids[0]),Long.toUnsignedString(ids[1]),"0","0"))
+        .thenCompose(reply->bridge.call(41,"scene",Long.toUnsignedString(reply.runtime().session()),Long.toUnsignedString(ids[0])))
+        .thenCompose(reply->bridge.call(6)).whenComplete((saved,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            var document=snapshot.documents().stream().filter(d->d.id()==ids[2]).findFirst().orElseThrow();openDocument(document);
+            waitFor(()->graphViews.entrySet().stream().anyMatch(e->e.getKey().file()==documents.get("graph.editor:"+Long.toUnsignedString(ids[2])))&&ready(),0,()->{
+                var graph=graphViews.entrySet().stream().filter(e->e.getKey().file()==documents.get("graph.editor:"+Long.toUnsignedString(ids[2]))).findFirst().orElseThrow().getValue();
+                graph.smokeCanvasReport(6,0).thenCompose(ignored->bridge.call(13)).thenCompose(reply->bridge.call(41,"pause",Long.toUnsignedString(reply.runtime().session())))
+                .thenCompose(paused->bridge.call(41,"step",Long.toUnsignedString(paused.runtime().session())).thenApply(step->{require(step.runtime().tick()==paused.runtime().tick()+1&&step.runtime().entities().stream().flatMap(e->e.fields().stream()).anyMatch(f->f.name().equals("points")&&f.value().equals("93")),"F4 Platform native Health/Step mismatch");return step;}))
+                .whenComplete((reply,failed)->edt(()->{
+                    if(failed!=null){failure(failed);return;}graph.refresh();
+                    later(200,()->graph.smokeRuntimeReport().whenComplete((report,reportError)->edt(()->{
+                        if(reportError!=null){failure(reportError);return;}
+                        require(report.get("session").getAsString().equals(Long.toUnsignedString(reply.runtime().session()))&&report.get("tick").getAsString().equals(Long.toUnsignedString(reply.runtime().tick()))&&report.get("readonly").getAsBoolean()&&report.get("active").getAsInt()>0,"JCEF runtime highlight/session/tick/readonly mismatch: "+report);
+                        bridge.call(14).whenComplete((stopped,stopError)->edt(()->{if(stopError!=null){failure(stopError);return;}record("PASS F-II.4 actual native Health93/Wait/Step and JCEF active node highlight; matching session/tick; read-only Graph; safe Stop");recoverSmoke();}));
+                    })));
+                }));
+            });
         }));
     }
     private void smokeCloseAllViews(){

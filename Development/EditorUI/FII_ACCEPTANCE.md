@@ -61,3 +61,12 @@ F-II.3: физические пункты37–48 владелец ещё не п
 ## F-II.3-GATE PASS — подтверждение владельца 2026-11-16
 
 Владелец подтвердил все исправления UI и пункт22 (Save, полное закрытие, новый процесс, Play/Stop и завершение). **F-II.3-GATE PASS.** Принятые ограничения Rider и исторические static diagnostics сохраняются; 17/19/20 остаются в регрессиях. F-II.4 разрешён к реализации с единственным C++ Runtime authority и двумя проверочными прогонами — промежуточным и финальным. Computer Use и push запрещены.
+
+
+## F-II.4 — code complete, ручной gate ожидается (17 ноября 2026)
+
+Full clean C++ build, architecture self-test и public headers PASS; полный CTest161/161 PASS после актуализации failure-сценариев без удаления проверок. Standalone Release/JCEF smoke и packaged Runtime/Graph/Scene/C#/IPC/architecture/catalog регрессии PASS. Реальные GPU Sprite pixels, native Health100→93→86/Wait/Pause/Step/Restart/Stop, активная нода настоящего JCEF,200 окон и late-open Console history подтверждены автоматически. Java управляет/отображает, не исполняет игру и не задаёт её время.
+
+Deep analysis77 TU/154 checks не назван PASS: inherited diagnostics остаются backlog, новый narrowing исправлен и проходит адресный повтор. Подробности и measured budgets в [FII4_REPORT](FII4_REPORT.md).
+
+**F-II.4-GATE PENDING MANUAL**: владелец ещё не подтвердил физические кадры/фокус/DPI/мониторы и performance budgets. Инструкция начинается с10 комбинированных регрессий прежних стадий, затем сквозной F-II.4: [FII4_MANUAL_QA](FII4_MANUAL_QA.md). F-II.5 не начат. Без push.

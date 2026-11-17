@@ -201,7 +201,7 @@ final class GraphEditor implements Disposable {
             if (!nonce.equals(message.get("nonce").getAsString())) throw new IllegalArgumentException("ui.graph_nonce");
             if(pending&&!"flush-inline".equals(message.get("action").getAsString()))return;
             if ("__ready".equals(message.get("action").getAsString())) {
-                readiness.complete(null); published = -1; refresh(); return;
+                readiness.complete(null); published = -1; runtimeVersion="";refresh(); return;
             }
             if (Boolean.getBoolean("epidemic.ui.platform.smoke") && "__report".equals(message.get("action").getAsString()) && smokeReport != null) {
                 smokeReport.complete(message.get("result").getAsString()); return;
@@ -282,6 +282,9 @@ final class GraphEditor implements Disposable {
         if(diagnosticRevision!=snapshot.revision())diagnostic="";
         var graph = snapshot.graphs().stream().filter(g -> g.document() == key.id()).findFirst().orElse(null);
         if (graph == null) return;
+        refreshRuntime(reply.runtime());
+        String version = diagnostic+graph.report()+snapshot.selectionRevision();
+        if (published==snapshot.revision() && publishedFlags==snapshot.flags() && publishedDiagnostic.equals(version)) return;
         JsonObject dto = new JsonObject(); dto.addProperty("revision", Long.toUnsignedString(snapshot.revision()));
         dto.addProperty("readonly", snapshot.playing()); dto.addProperty("error", diagnostic);
         dto.addProperty("schemaRevision","1");dto.addProperty("report",graph.report());
@@ -313,11 +316,22 @@ final class GraphEditor implements Disposable {
             e.addProperty("output", Long.toUnsignedString(edge.output())); e.addProperty("input", Long.toUnsignedString(edge.input())); edges.add(e);
         }
         dto.add("nodes", nodes); dto.add("edges", edges);
-        String version = diagnostic+graph.report()+snapshot.selectionRevision();
-        if (published==snapshot.revision() && publishedFlags==snapshot.flags() && publishedDiagnostic.equals(version)) return;
         browser.getCefBrowser().executeJavaScript("window.graphSnapshot("+JSON.toJson(dto)+");",origin,0);
         published=snapshot.revision();publishedFlags=snapshot.flags();publishedDiagnostic=version;
     }
+
+    private String runtimeVersion="";
+    private void refreshRuntime(Bridge.RuntimeSession runtime){
+        String version=runtime.connection()+":"+runtime.session()+":"+runtime.tick()+":"+runtime.graphSteps()+":"+runtime.phase()+":"+runtime.breakpoints().hashCode();
+        if(version.equals(runtimeVersion))return;runtimeVersion=version;
+        JsonObject dto=new JsonObject();dto.addProperty("session",Long.toUnsignedString(runtime.session()));dto.addProperty("connection",Long.toUnsignedString(runtime.connection()));dto.addProperty("generation",Long.toUnsignedString(runtime.generation()));dto.addProperty("tick",Long.toUnsignedString(runtime.tick()));dto.addProperty("phase",runtime.state());
+        JsonArray nodes=new JsonArray();for(var activation:runtime.activations())if(activation.graph()==key.id()){
+            JsonObject node=new JsonObject();node.addProperty("node",Long.toUnsignedString(activation.node()));node.addProperty("activation",Long.toUnsignedString(activation.id()));node.addProperty("state",activation.state());node.addProperty("instructions",activation.instructions());node.addProperty("nativeCalls",activation.nativeCalls());
+            JsonArray values=new JsonArray();for(var value:activation.values()){JsonObject port=new JsonObject();port.addProperty("port",Long.toUnsignedString(value.port()));port.addProperty("type",value.type());port.addProperty("value",value.value());values.add(port);}node.add("values",values);nodes.add(node);
+        }dto.add("nodes",nodes);JsonArray breakpoints=new JsonArray();for(var point:runtime.breakpoints())if(point.graph()==key.id())breakpoints.add(Long.toUnsignedString(point.node()));dto.add("breakpoints",breakpoints);
+        browser.getCefBrowser().executeJavaScript("window.graphRuntime?.("+JSON.toJson(dto)+");",origin,0);
+    }
+    CompletableFuture<JsonObject> smokeRuntimeReport(){return smokeDom("return {session:document.getElementById('runtime-state').dataset.session||'',tick:document.getElementById('runtime-state').dataset.tick||'',active:document.querySelectorAll('.runtime-active').length,readonly:document.querySelector('[data-command=compile]').disabled};");}
     // Programmatic qualification uses the same browser JSQuery and command guard.
     CompletableFuture<Bridge.Reply> smokeCommand(String action, String... args) {
         if (!Boolean.getBoolean("epidemic.ui.platform.smoke")) throw new IllegalStateException("Qualification only");
@@ -389,6 +403,7 @@ final class GraphEditor implements Disposable {
         return smokeResult.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS);
     }
     CompletableFuture<String> smokeCanvasReport(int expected,int attempt) {
+        if(!readiness.isDone())return readiness.orTimeout(20,java.util.concurrent.TimeUnit.SECONDS).thenCompose(ignored->smokeCanvasReport(expected,attempt));
         smokeReport=new CompletableFuture<>();
         browser.getCefBrowser().executeJavaScript("window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify({count:document.querySelectorAll('[data-testid=node]').length,injected:!!window.graphInjected,images:document.querySelectorAll('img').length,literal:document.body.textContent.includes('<img src=x'),revision:document.documentElement.dataset.graphReady,ready:!window.graphGestureState().busy,metrics:window.graphMetrics})}));",origin,0);
         return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS).thenCompose(value->{

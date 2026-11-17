@@ -62,6 +62,7 @@ class GraphTask final : public simulation::ISimulationJob {
     }
 
     [[nodiscard]] foundation::Result<std::int64_t> ReadValue(graph::ElementId port) const;
+    [[nodiscard]] foundation::Result<graph::GraphReference> ReadReference(graph::ElementId port) const;
     [[nodiscard]] std::uint64_t ExecutionSerial() const noexcept { return execution_serial_; }
 
   private:

@@ -16,9 +16,13 @@ public final class UiPanels {
     private GraphSceneDragCoordinator referenceDrag;
     private Bridge.RuntimeSession runtime=Bridge.RuntimeSession.empty();
     private final List<java.util.function.Consumer<Bridge.RuntimeSession>> runtimeReaders=new ArrayList<>();
-    private java.util.function.BiFunction<String,String[],java.util.concurrent.CompletableFuture<Bridge.Reply>> runtimeCommand=(action,args)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("runtime.unavailable"));
-    public void runtimeCommands(java.util.function.BiFunction<String,String[],java.util.concurrent.CompletableFuture<Bridge.Reply>> command){runtimeCommand=command;}
-    public void runtime(Bridge.RuntimeSession frame){runtime=frame;runtimeReaders.forEach(reader->reader.accept(frame));}
+    @FunctionalInterface public interface RuntimeCommand { java.util.concurrent.CompletableFuture<Bridge.Reply> execute(long connection,long generation,long session,String action,String[] arguments); }
+    private RuntimeCommand runtimeCommand=(connection,generation,session,action,args)->java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("runtime.unavailable"));
+    private java.util.function.BooleanSupplier runtimeBuild=()->false;
+    public void runtimeBuild(java.util.function.BooleanSupplier source){runtimeBuild=source;}
+    public void runtimeCommands(RuntimeCommand command){runtimeCommand=command;}
+    private final Deque<Bridge.RuntimeSession> runtimeHistory=new ArrayDeque<>();
+    public void runtime(Bridge.RuntimeSession frame){if(runtime.session()!=0&&!runtime.trace().isEmpty()&&(runtime.session()!=frame.session()||runtime.connection()!=frame.connection()||runtime.generation()!=frame.generation())){runtimeHistory.addLast(runtime.eventsOnly());if(runtimeHistory.size()>4)runtimeHistory.removeFirst();}runtime=frame;runtimeReaders.forEach(reader->reader.accept(frame));}
 
     public void referenceDrag(GraphSceneDragCoordinator value){referenceDrag=value;}
     private final Catalog catalog;
@@ -90,6 +94,11 @@ public final class UiPanels {
     private final List<Consumer<Bridge.Snapshot>> readers = new ArrayList<>();
     private final List<Consumer<Bridge.Snapshot>> structureReaders = new ArrayList<>();
     private final JTextArea console = new JTextArea(), problems = new JTextArea();
+    private Consumer<RuntimeLogView.Link> runtimeNavigation=link->{};
+    private final List<RuntimeLogView> runtimeLogs=new ArrayList<>();
+    private final Deque<RuntimeLogView.Entry> logHistory=new ArrayDeque<>();
+    public void runtimeNavigation(Consumer<RuntimeLogView.Link> action){runtimeNavigation=action;}
+    private void history(String text,int severity){var entry=RuntimeLogView.authoringEntry(text,severity,snapshot,runtime);logHistory.addLast(entry);if(logHistory.size()>512)logHistory.removeFirst();runtimeLogs.forEach(view->view.replay(entry));}
     private Bridge.Snapshot snapshot;
     private boolean refreshing;
     public UiPanels(Catalog catalog, FeatureRegistry features, Consumer<Bridge.Document> open,
@@ -119,11 +128,10 @@ public final class UiPanels {
     public NativeViewport nativeView(String id) { return nativeViews.get(id); }
     public Map<String,NativeViewport> nativeViews() { return Map.copyOf(nativeViews); }
     public void log(String text) {
-        append(console,text);
+        append(console,text);history(text,0);
     }
     public void problem(String text) {
-        append(problems,text);
-        log(text);
+        append(problems,text);append(console,text);history(text,text.toLowerCase(Locale.ROOT).contains("warning")||text.startsWith("WARN")?1:2);
     }
     private static void append(JTextArea output,String text) {
         output.append(text + "\n");
@@ -161,9 +169,9 @@ public final class UiPanels {
     private JComponent create(String id) {
         String base = id.contains(":") ? id.substring(0, id.indexOf(':')) : id;
         if(Set.of("game.runtime.inspector","game.session").contains(base)){var inspector=new RuntimeInspector();runtimeReaders.add(inspector::refresh);inspector.refresh(runtime);return inspector;}
-        if(base.equals("game.controls")){var controls=new RuntimeGameView((action,args)->runtimeCommand.apply(action,args),false);observe(value->controls.refresh(value,runtime));runtimeReaders.add(frame->controls.refresh(snapshot,frame));return controls;}
+        if(base.equals("game.controls")){var controls=new RuntimeGameView((c,g,s,a,args)->runtimeCommand.execute(c,g,s,a,args),false);observe(value->controls.refresh(value,runtime));runtimeReaders.add(frame->controls.refresh(snapshot,frame));return controls;}
         if(base.equals("game.view")){
-            var game=new RuntimeGameView((action,args)->runtimeCommand.apply(action,args));nativeViews.put(id,game.viewport());observe(value->game.refresh(value,runtime));runtimeReaders.add(frame->game.refresh(snapshot,frame));return game;
+            var game=new RuntimeGameView((c,g,s,a,args)->runtimeCommand.execute(c,g,s,a,args));nativeViews.put(id,game.viewport());observe(value->game.refresh(value,runtime));runtimeReaders.add(frame->game.refresh(snapshot,frame));return game;
         }
         if (Set.of("graph.palette","graph.inspector","graph.references","graph.variables").contains(base)) {
             var panel=new GraphTools(base,graphAvailable,()->generation,graphCommand);panel.sourceNavigator(sourceNavigator);graphTools.add(panel);observe(panel::refresh);return panel;
@@ -189,22 +197,11 @@ public final class UiPanels {
             observe(value->{StringBuilder rows=new StringBuilder("Native import queue: bounded to 128; one worker.\n");if(value!=null){rows.append((value.flags()&64)!=0?"Import queue: busy\n":"Import queue: idle\n");rows.append((value.flags()&32)!=0?"Content watch: on\n":"Content watch: off\n");long completed=value.assetState().events().stream().filter(e->e.job()>0&&e.kind()!=0).count();rows.append("Observed terminal import outcomes (last 64 events): ").append(completed).append("\n");}if(value!=null)for(var event:value.assetState().events())rows.append("Job ").append(event.job()).append(" · ").append(event.source()).append(" · ").append(new String[]{"Importing","Updated","Missing","Failed","Recovered","Cancelled"}[event.kind()]).append(" · ").append(event.diagnostic()).append('\n');if(!state.getText().contentEquals(rows)){int caret=state.getCaretPosition();state.setText(rows.toString());state.setCaretPosition(Math.min(caret,state.getDocument().getLength()));}});
             state.setEditable(false);state.setLineWrap(true);state.setWrapStyleWord(true);panel.add(state);return panel;
         }
-        if (base.equals("console") || base.equals("problems") || base.equals("build.output")) {
-            JTextArea view = new JTextArea();view.setName(base+".output"); view.setEditable(false); view.setDocument((base.equals("problems")?problems:console).getDocument());
-            if(!base.equals("problems"))return new JScrollPane(view);
-            var panel=new JPanel(new BorderLayout());panel.add(new JScrollPane(view));
-            var jump=Theme.button("Go to Graph diagnostic node",()->{
-                if(snapshot==null)return;
-                for(var graph:snapshot.graphs()){
-                    var match=java.util.regex.Pattern.compile("node=(\\d+)").matcher(graph.report());
-                    if(!graph.report().startsWith("OK")&&match.find()){
-                        graphCommand.apply(new GestureEdit(generation,snapshot.revision(),38,List.of("select",Long.toUnsignedString(graph.document()),match.group(1))));
-                        snapshot.documents().stream().filter(d->d.id()==graph.document()).findFirst().ifPresent(openDocument);break;
-                    }
-                }
-            });
-            jump.setEnabled(false);observe(s->jump.setEnabled(s!=null&&graphAvailable.getAsBoolean()&&s.graphs().stream().anyMatch(g->!g.report().startsWith("OK")&&g.report().contains("node="))));
-            panel.add(jump,BorderLayout.SOUTH);return panel;
+        if(base.equals("graph.debugger")){var debugger=new RuntimeDebugger((c,g,s,a,args)->runtimeCommand.execute(c,g,s,a,args),link->runtimeNavigation.accept(link));debugger.seedHistory(runtimeHistory,snapshot);observe(value->debugger.refresh(runtime,value));runtimeReaders.add(frame->debugger.refresh(frame,snapshot));return debugger;}
+        if(base.equals("profiler")){var profiler=new RuntimeProfiler(()->List.copyOf(nativeViews.values()),()->runtimeBuild.getAsBoolean());runtimeReaders.add(profiler::refresh);profiler.refresh(runtime);return profiler;}
+        if(Set.of("console","problems","build.output").contains(base)){
+            var view=new RuntimeLogView(base.equals("problems"),link->runtimeNavigation.accept(link));
+            for(var frame:runtimeHistory)view.refresh(frame,snapshot);view.refresh(runtime,snapshot);for(var row:logHistory)view.replay(row);runtimeLogs.add(view);runtimeReaders.add(frame->view.refresh(frame,snapshot));return view;
         }
         if (base.equals("type.registry") || base.equals("inspector") || base.equals("prefab.editor") || base.equals("graph.inspector")) {
             JPanel panel = Theme.island(new BorderLayout(6, 6));

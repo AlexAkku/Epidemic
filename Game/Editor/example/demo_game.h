@@ -155,13 +155,16 @@ inline graph::PortDefinition Port(std::string_view name, graph::PortKind kind,
 inline ed::PlayOptions Options(Schema &schema) {
     ed::PlayOptions options;
     options.backend = std::make_unique<Backend>();
-    options.fixed_update=[movement=schema.movement,speed=schema.speed,enabled=schema.enabled](ed::PlayContext &context,runtime::GameDuration delta,double x,double y){
+    options.fixed_update=[movement=schema.movement,speed=schema.speed,enabled=schema.enabled](ed::PlayContext &context,runtime::GameDuration delta,const ed::PlayInput &input){
         using Result=foundation::Result<void>;
-        if(x==0&&y==0)return Result::Success();
+        if(input.x==0&&input.y==0&&!input.pointer_down)return Result::Success();
         for(const auto &entity:context.entities.AllEntities()){
             auto component=context.components.Find(entity.id,movement);if(!component)continue;
             const auto active=context.components.Read<bool>(*component,enabled);const auto rate=context.components.Read<double>(*component,speed);if(!active||!rate||!active.Value())continue;
             auto world=context.WorldTransform(context.entities.HandleOf(entity.id));if(!world)continue;
+            double x=input.x,y=input.y;
+            if(x==0&&y==0&&input.pointer_down){x=input.pointer_x-world.Value().position.x;y=input.pointer_y-world.Value().position.y;}
+            const auto length=std::hypot(x,y);if(length>1){x/=length;y/=length;}
             const double distance=rate.Value()*static_cast<double>(delta.ticks)/static_cast<double>(ed::PlaySession::kFixedTicksPerSecond);
             world.Value().position.x+=static_cast<float>(x*distance);world.Value().position.y+=static_cast<float>(y*distance);
             auto changed=context.SetWorldTransform(context.entities.HandleOf(entity.id),world.Value());if(!changed)return changed;

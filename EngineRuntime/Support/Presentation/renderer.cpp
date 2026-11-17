@@ -290,8 +290,23 @@ Renderer::Renderer(void *window, std::span<const SpriteEntry> sprites, int atlas
 
 Renderer::~Renderer() {
     frame_.reset();
-    if (swap_)
+    commands_.clear(); // Recorded textures must not outlive the context flush.
+    // Release the bound swapchain surface before the HWND and submit deferred
+    // D3D destruction. The normal Resize path has the same unbind/flush policy.
+    if (canvas_) canvas_->SetTarget(nullptr);
+    if (context_) context_->ClearState();
+    target_.Reset();
+    capturedFrame_.Reset();
+    images_.clear();
+    atlas_.Reset();
+    blur_.Reset();blurTarget_.Reset();contour_.Reset();contourTarget_.Reset();
+    perspective_.Reset();perspectiveTarget_.Reset();
+    brush_.Reset();fonts_.clear();canvas_.Reset();d2dDevice_.Reset();factory_.Reset();
+    if (swap_) {
         static_cast<void>(swap_->SetFullscreenState(FALSE, nullptr));
+        swap_.Reset();
+    }
+    if (context_) context_->Flush();
 }
 
 bool Renderer::IsExclusive() const {

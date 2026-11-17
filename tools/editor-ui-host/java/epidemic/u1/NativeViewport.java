@@ -63,6 +63,10 @@ public final class NativeViewport extends Canvas {
     private static native String release(long surface);
     private static native String capture(long surface, String path);
     public static native long[] metrics();
+    /** Existing surface/process counters without expensive system-wide thread enumeration. */
+    public static native long[] profilerMetrics();
+    private static native double[] frameStats(long surface);
+    public double[] frameStatistics(){edt();return frameStats(surface); }
     public static native long windowHandle(java.awt.Component component);
 
     public NativeViewport() {
@@ -92,11 +96,22 @@ public final class NativeViewport extends Canvas {
         var window = SwingUtilities.getWindowAncestor(this);
         if (window instanceof java.awt.Frame owner &&
             (owner.getExtendedState() & java.awt.Frame.ICONIFIED) != 0) return;
+        long previousSurface=surface,previousRoot=root;
+        if(surface!=0)applyProjection();
         result = frame(surface, this, retainCapture);
         if (!result.startsWith("PASS ")) throw new IllegalStateException(result);
         String[] parts = result.split(" ");
         surface = Long.parseLong(parts[1]);
         root = Long.parseLong(parts[3]);
+        if(previousSurface!=surface||previousRoot!=root){
+            itemsSurface=0;appliedSurface=0;applyProjection();
+            result=frame(surface,this,retainCapture);
+            if(!result.startsWith("PASS "))throw new IllegalStateException(result);
+            ++submittedFrames;
+        }
+        ++submittedFrames;
+    }
+    private void applyProjection(){
         if(document!=0&&(itemsSurface!=surface||appliedDocument!=document||appliedSelection!=selected||!appliedItems.equals(items)||!appliedLabels.equals(labels))){
             long[] ids=new long[items.size()];
             double[] bounds=new double[items.size()*7];
@@ -118,7 +133,6 @@ public final class NativeViewport extends Canvas {
             String reply=scene(surface,sceneRoot,keys,geometry);if(!reply.startsWith("PASS "))throw new IllegalStateException(reply);
             appliedRoot=sceneRoot;appliedSprites=sprites;appliedSurface=surface;
         }
-        ++submittedFrames;
     }
     public long rootWindow() { return root; }
     public String result() { return result; }

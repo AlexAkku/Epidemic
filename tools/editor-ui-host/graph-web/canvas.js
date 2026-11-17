@@ -12,6 +12,7 @@ const menu = document.getElementById('context');
 const mini = document.getElementById('minimap');
 const inlineDrafts=new Map();
 let dismissedProblem='';
+let runtimeFrame;
 const editor = new NodeEditor();
 const area = new AreaPlugin(canvas);
 const renderer = new ReactPlugin({ createRoot });
@@ -99,6 +100,7 @@ window.graphSnapshot = value => {
                 element.classList.toggle('missing-reference',!!dto.reference&&!dto.referenceAvailable);
                 element.title = `${dto.name}\n${dto.comment || ''}\n${dto.ports.map(p => `${p.direction ? 'Out' : 'In'} ${p.name}: ${p.kind === 0 ? ('data ['+p.type+']') : p.kind === 1 ? 'control' : 'i64 event'}${p.kind === 0 && !p.direction ? ', one source required' : ''}`).join('\n')}`;
             }
+            if(element)element.dataset.authoringTitle=element.title;
             projection.set(dto.id, dto);
         }
         for (const dto of value.edges) if (!editor.getConnection(dto.id)) {
@@ -115,7 +117,7 @@ window.graphSnapshot = value => {
         }
         lastNativeSelection = value.selected;
         if (first && value.nodes.length) await AreaExtensions.zoomAt(area, editor.getNodes());
-        rendering = false; canvas.style.pointerEvents = ''; paintSelection(); drawMinimap(); showProblem();renderLiterals();
+        rendering = false; canvas.style.pointerEvents = ''; paintSelection(); drawMinimap(); showProblem();renderLiterals();paintRuntime();
         if(resumeSocket){const resume=resumeSocket;resumeSocket=undefined;const element=document.querySelector(`[data-port-id="${resume.key}"][data-port-side="${resume.side}"]`);if(element){const r=element.getBoundingClientRect();await connections.pick(new PointerEvent('pointerdown',{clientX:r.left+r.width/2,clientY:r.top+r.height/2}),'down');if(resume.edge)reconnectEdge=resume.edge;}}
 
         document.querySelectorAll('[data-command]').forEach(button => button.disabled = value.readonly);
@@ -374,3 +376,19 @@ function renderLiterals(){
 }
 
 window.graphFlushInline=()=>window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'flush-inline',args:[...inlineDrafts.values()].map(f=>[f.action,f.id,String(f.value),f.revision])}));
+
+// A separate read-only projection: it never invokes editor/history/nativeGraph.
+window.graphRuntime=value=>{
+    if(!value||!Array.isArray(value.nodes)||value.nodes.length>64||!Array.isArray(value.breakpoints)||value.breakpoints.length>1024)return;
+    runtimeFrame=value;paintRuntime();
+};
+function paintRuntime(){
+    if(!runtimeFrame)return;const frame=runtimeFrame,badge=document.getElementById('runtime-state');
+    badge.textContent=`${frame.phase} · Tick ${frame.tick}`;badge.title=`Native session ${frame.session} · generation ${frame.generation} · connection ${frame.connection}`;badge.dataset.session=frame.session;badge.dataset.tick=frame.tick;
+    for(const node of snapshot?.nodes||[]){const element=nodeElement(node.id);if(!element)continue;
+        const states=frame.nodes.filter(a=>a.node===node.id),active=states.some(a=>['Started','Active','Waiting'].includes(a.state));
+        element.classList.toggle('runtime-active',active&&frame.phase!=='Stopped');element.classList.toggle('runtime-failed',states.some(a=>a.state==='Failed'));element.classList.toggle('runtime-breakpoint',frame.breakpoints.includes(node.id));
+        const rows=states.map(a=>`Activation ${a.activation}: ${a.state}, instructions=${a.instructions}, native calls=${a.nativeCalls}\n${a.values.map(v=>`${v.port} (${v.type}) = ${v.value}`).join('\n')}`).join('\n');
+        element.title=(element.dataset.authoringTitle||'')+(rows?'\nRuntime session '+frame.session+' / tick '+frame.tick+'\n'+rows.slice(0,4096):'');
+    }
+}

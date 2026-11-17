@@ -6,13 +6,14 @@
 #include <deque>
 
 namespace epidemic::game::editor {
+struct PlayInput { double x=0,y=0,pointer_x=0,pointer_y=0;bool pointer_down=false; };
 enum class PlayPhase : std::uint8_t { Stopped, Starting, Running, Paused, Stopping, Failed };
 struct PlayField { std::string component,name,value; std::uint64_t type=0,part=0; };
-struct PlayEntity { std::uint64_t placement=0,node=0;std::string name;runtime::Transform world{};std::string sprite;float ppu=64,pivot_x=.5f,pivot_y=.5f;std::vector<PlayField> fields; };
-struct PlayTrace { std::uint64_t sequence=0,timestamp_ms=0,tick=0,activation=0,graph=0,node=0;std::string state,detail;std::uint8_t severity=0; };
+struct PlayEntity { std::uint64_t placement=0,node=0,runtime_high=0,runtime_low=0;std::string name;runtime::Transform world{};std::string sprite;float ppu=64,pivot_x=.5f,pivot_y=.5f;std::vector<PlayField> fields; };
+struct PlayTrace { std::uint64_t sequence=0,timestamp_ms=0,tick=0,activation=0,graph=0,node=0,entity=0;std::string state,detail;std::uint8_t severity=0; };
 struct PlayDebugValue { std::uint64_t port=0;std::string type,value; };
 struct PlayDebugActivation { std::uint64_t id=0,graph=0,node=0,instructions=0,native_calls=0;std::int64_t wake=-1;std::string state;std::vector<PlayDebugValue> values; };
-struct PlayRuntimeSnapshot { std::uint64_t session=0,scene=0,tick=0,graph_steps=0,dropped_ticks=0,total_entities=0,total_activations=0;PlayPhase phase=PlayPhase::Stopped;std::vector<PlayEntity> entities;std::vector<PlayDebugActivation> activations;std::vector<PlayTrace> trace; };
+struct PlayRuntimeSnapshot { std::uint64_t session=0,scene=0,tick=0,graph_steps=0,dropped_ticks=0,total_entities=0,total_activations=0;PlayPhase phase=PlayPhase::Stopped;std::vector<PlayEntity> entities;std::vector<PlayDebugActivation> activations;std::vector<PlayTrace> trace;std::vector<std::pair<std::uint64_t,std::uint64_t>> breakpoints;PlayInput input; };
 class PlayActivation final {
   public:
     [[nodiscard]] std::uint64_t Id() const noexcept {
@@ -82,7 +83,7 @@ struct PlayOptions {
     bool start_events = false;
     runtime::AssetId scene{};
     // The game supplies native fixed-update behavior; no UI timer executes it.
-    std::function<foundation::Result<void>(PlayContext &,runtime::GameDuration,double,double)> fixed_update;
+    std::function<foundation::Result<void>(PlayContext &,runtime::GameDuration,const PlayInput &)> fixed_update;
 };
 
 // Detached visual metadata. Pixels remain owned by the session's Resources;
@@ -106,6 +107,7 @@ class PlaySession final {
     PlaySession(const PlaySession &) = delete;
     PlaySession &operator=(const PlaySession &) = delete;
     [[nodiscard]] bool IsPlaying() const noexcept;
+    [[nodiscard]] std::uint64_t Id() const noexcept {return session_id_;}
     static constexpr std::size_t kCompletedActivationRetention = 64;
     // Includes all live activations and the last 64 terminal reports. Handles
     // own only Editor report values, survive eviction/Stop/session destruction,
@@ -131,6 +133,7 @@ class PlaySession final {
     [[nodiscard]] foundation::Result<void> StepToNode(std::uint64_t activation=0);
     [[nodiscard]] foundation::Result<void> Pump(std::chrono::nanoseconds elapsed);
     [[nodiscard]] foundation::Result<void> SetInput(double x,double y);
+    [[nodiscard]] foundation::Result<void> SetPointer(double x,double y,bool pressed);
     void SetBreakpoint(runtime::AssetId graph,runtime::graph::ElementId node,bool enabled);
     [[nodiscard]] PlayRuntimeSnapshot RuntimeSnapshot() const;
     [[nodiscard]] PlayPhase Phase() const noexcept { return phase_; }
@@ -144,14 +147,14 @@ class PlaySession final {
           PlayOptions options);
     std::unique_ptr<Impl> impl_;
     bool ticking_ = false;
-    PlayPhase phase_=PlayPhase::Running;
+    PlayPhase phase_=PlayPhase::Starting;
     PlayRuntimeSnapshot stopped_snapshot_;
     std::uint64_t session_id_=0,graph_steps_=0,dropped_ticks_=0;
     std::int64_t accumulator_=0;
-    double input_x_=0,input_y_=0;
+    PlayInput input_;
     bool debug_step_=false;
     std::uint64_t step_activation_=0,step_node_=0,blocked_activation_=0,blocked_node_=0;
-    std::map<std::uint64_t,std::uint64_t> debug_nodes_;
+    std::map<std::uint64_t,std::uint64_t> debug_nodes_,activation_entities_;
     std::set<std::pair<std::uint64_t,std::uint64_t>> breakpoints_;
     std::deque<PlayTrace> trace_;
     std::uint64_t trace_sequence_=0;

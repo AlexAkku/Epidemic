@@ -385,6 +385,10 @@ void ReadDemo(const std::filesystem::path &file, Schema &schema) {
           failure->diagnostic->error.code == "example.damage_range" &&
           failure->diagnostic->asset == AssetId::FromString("example.graph") &&
           failure->diagnostic->node == Id("before"));
+    Check(session->Phase()==ed::PlayPhase::Failed&&!session->Tick());
+    Take(session->Stop());
+    session=Take(project->Play(Options(schema)));
+    Check(value(42,schema.health,schema.points)==comp::PropertyValue{std::int64_t{110}});
     (void)Take(session->Send(SceneNodeId{42}, {Id("hit"), 1}));
     Take(session->Tick());
     const auto waiting = session->Activations().back();

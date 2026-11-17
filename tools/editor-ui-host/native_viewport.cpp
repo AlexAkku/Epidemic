@@ -2,6 +2,8 @@
 #include "native_scene_preview.h"
 #include "Epidemic/Game/Editor/scene_drag.h"
 #include <cmath>
+#include <chrono>
+#include <deque>
 #include <jawt.h>
 #include <jawt_md.h>
 #include <jni.h>
@@ -68,6 +70,10 @@ struct View {
     bool editing_scene = false;
     std::map<std::uint64_t,std::wstring> labels;
     bool show_grid = true;
+    std::chrono::steady_clock::time_point last_present{};
+    std::deque<double> intervals;
+    std::uint64_t presented=0;
+    void Presented(){const auto now=std::chrono::steady_clock::now();if(last_present.time_since_epoch().count()!=0){intervals.push_back(std::chrono::duration<double,std::milli>(now-last_present).count());if(intervals.size()>256)intervals.pop_front();}last_present=now;++presented;}
     epidemic::game::editor::GizmoTool tool = epidemic::game::editor::GizmoTool::Move;
 };
 
@@ -182,7 +188,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
                     const float t = static_cast<float>(std::clamp(b.top, -1.0, static_cast<double>(size.y) + 1.0));
                     const float d = static_cast<float>(std::clamp(b.bottom, -1.0, static_cast<double>(size.y) + 1.0));
                     if(const auto label=view.labels.find(item.id.Raw());label!=view.labels.end()){
-                        view.renderer->Rect(l,t,r-l,d-t,0x273746);view.renderer->Text(label->second,l,std::max(0.0f,t-22),14,0xf0f0f4,std::max(200.0f,r-l));
+                        if(!view.scene||view.scene->TextureCount()==0)view.renderer->Rect(l,t,r-l,d-t,0x273746);view.renderer->Text(label->second,l,std::max(0.0f,t-22),14,0xf0f0f4,std::max(200.0f,r-l));
                     }
                     const auto color = item.id == view.selected ? 0x78bbffu : 0x687787u;
                     view.renderer->Line(l,t,r,t,color);
@@ -206,7 +212,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_epidemic_u1_NativeViewport_frame(
                                                        : view.scene ? L"" : L"U1 / existing D3D11 + D2D Renderer",
                                     20, 20, 16, 0xf0f0f4, size.x - 40);
                 view.renderer->PopTransform();
-                view.renderer->End();
+                view.renderer->End();view.Presented();
             }
             return Reply(env, "PASS " + std::to_string(id) + " " + std::to_string(Number(hwnd)) +
                                   " " + std::to_string(Number(GetAncestor(hwnd, GA_ROOT))));
@@ -268,8 +274,7 @@ Java_epidemic_u1_NativeViewport_capture(JNIEnv *env, jclass, jlong id, jstring p
     }
 }
 
-extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(JNIEnv *env,
-                                                                                jclass) noexcept {
+static jlongArray SurfaceMetrics(JNIEnv *env,bool include_threads) noexcept {
     try {
         CheckThread();
         // Diagnostics do not create an application model or callbacks into Java.
@@ -280,7 +285,7 @@ extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(
         DWORD handles = 0;
         GetProcessHandleCount(GetCurrentProcess(), &handles);
         DWORD threads = 0;
-        const HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+        const HANDLE snapshot = include_threads?CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0):INVALID_HANDLE_VALUE;
         if (snapshot != INVALID_HANDLE_VALUE) {
             THREADENTRY32 entry{};
             entry.dwSize = sizeof(entry);
@@ -307,7 +312,7 @@ extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(
                                  GetGuiResources(GetCurrentProcess(), GR_GDIOBJECTS)),
                              static_cast<jlong>(memory.WorkingSetSize),
                              static_cast<jlong>(memory.PrivateUsage),
-                             static_cast<jlong>(threads),
+                             include_threads?static_cast<jlong>(threads):jlong{-1},
                              static_cast<jlong>(preview_bytes),
                              static_cast<jlong>(preview_textures),
                              static_cast<jlong>(preview_invariants)};
@@ -319,6 +324,9 @@ extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(
         return env->NewLongArray(0); // Explicit failed diagnostic result, no C++ escape.
     }
 }
+
+extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_metrics(JNIEnv *env,jclass) noexcept {return SurfaceMetrics(env,true);}
+extern "C" JNIEXPORT jlongArray JNICALL Java_epidemic_u1_NativeViewport_profilerMetrics(JNIEnv *env,jclass) noexcept {return SurfaceMetrics(env,false);}
 
 extern "C" JNIEXPORT jlong JNICALL
 Java_epidemic_u1_NativeViewport_windowHandle(JNIEnv *env, jclass, jobject component) noexcept {
@@ -494,4 +502,12 @@ extern "C" JNIEXPORT jdoubleArray JNICALL Java_epidemic_u1_NativeViewport_sceneP
     } catch (...) {
         return env->NewDoubleArray(0);
     }
+}
+
+// Existing native surface diagnostics only: this clock never advances simulation.
+extern "C" JNIEXPORT jdoubleArray JNICALL Java_epidemic_u1_NativeViewport_frameStats(JNIEnv *env,jclass,jlong id) noexcept {
+    try{CheckThread();auto it=Views().find(id);if(it==Views().end())return env->NewDoubleArray(0);const auto &view=it->second;auto times=std::vector<double>(view.intervals.begin(),view.intervals.end());std::sort(times.begin(),times.end());
+        const auto p=[&](double q){return times.empty()?-1.0:times[static_cast<std::size_t>(static_cast<double>(times.size()-1)*q)];};RECT rect{};GetClientRect(view.hwnd,&rect);
+        const double data[]={p(.5)>0?1000/p(.5):-1,p(.5),p(.95),static_cast<double>(view.presented),static_cast<double>(rect.right),static_cast<double>(rect.bottom)};auto out=env->NewDoubleArray(6);if(out)env->SetDoubleArrayRegion(out,0,6,data);return out;
+    }catch(...){return env->NewDoubleArray(0);}
 }

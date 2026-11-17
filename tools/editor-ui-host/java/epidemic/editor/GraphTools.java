@@ -20,7 +20,7 @@ public final class GraphTools extends JPanel {
     private final JLabel caption=Theme.label("Open a Graph document",true);
     private final JTextField search=new JTextField(), name=new JTextField(), value=new JTextField(), group=new JTextField();
     private final JTextArea comment=new JTextArea(4,20);
-    private final JCheckBox bookmark=new JCheckBox("Bookmark"), breakpoint=new JCheckBox("Breakpoint marker (F-II.4)");
+    private final JCheckBox bookmark=new JCheckBox("Bookmark"), breakpoint=new JCheckBox("Breakpoint");
     private final DefaultListModel<String> rows=new DefaultListModel<>();
     private final JList<String> list=new JList<>(rows);
     public record PaletteDrag(long generation,long revision,long project,long type) {}
@@ -68,7 +68,7 @@ public final class GraphTools extends JPanel {
             }
         } else if(kind.equals("graph.inspector")) {
             var form=new InspectorForm();form.setLayout(new BoxLayout(form,BoxLayout.Y_AXIS));
-            field(form,"Name",name);field(form,"Preview Input default (i64)",value);field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
+            field(form,"Name",name);field(form,"Input default (i64)",value);field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
             sourceButton=Theme.button("Open C# Source",()->{if(selected!=null&&graph!=null)graph.catalogue().stream().filter(type->type.type()==selected.type()&&!type.source().isEmpty()).findFirst().ifPresent(sourceNavigator);});form.add(sourceButton);
             referenceJump=Theme.button("Jump to Reference Target",()->reference("jump"));form.add(referenceJump);
             referenceUses=Theme.button("Find Target References",()->reference("uses"));form.add(referenceUses);

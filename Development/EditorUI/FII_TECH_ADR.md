@@ -69,3 +69,10 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 ## F-II.3 — текущий implementation batch
 
 Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
+
+
+## F-II.4 — native execution authority (17 ноября 2026)
+
+Непрерывный Play исполняется одним C++ effect owner: PlaySession/Runtime.Time/Scheduler/Graph VM/ComponentStore. Java Bridge отправляет guarded commands и читает immutable bounded snapshots; Swing presenter и polling не продвигают игровое время и не исполняют Graph/C#. Runtime Inspector read-only. Actor transforms/Health/Sprite являются runtime данными, Stop/Restart не сохраняют их в authoring. Native step tick и cooperative step to node различаются по времени и интерфейсу.
+
+Диагностика использует существующий ProfileScope/IProfileCollector SPI с forwarding прежнему collector, current native Renderer/process/resource providers; недоступные GPU/allocations/JCEF OS counters явно Unavailable. Не добавлен второй performance owner. [Подробный контракт](FII4_RUNTIME_CONTRACT.md), [проверки и измеренные бюджеты](FII4_REPORT.md). Функциональные automation PASS; окончательный F-II.4-GATE требует ручного подтверждения.

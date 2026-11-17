@@ -2,6 +2,7 @@
 #include "Epidemic/Game/Editor/play_session.h"
 #include "../../Composition/tests/user_components.h"
 #include <fstream>
+#include <iostream>
 #include <array>
 #include <limits>
 #include <algorithm>
@@ -459,6 +460,22 @@ void RuntimeControls() {
     Take(second->Stop());Take(second->Stop());Check(!second->Context(),"Stop from breakpoint is idempotent and releases Runtime");
 }
 
+void RuntimeLoadBaseline(){
+    using Clock=std::chrono::steady_clock;
+    for(const unsigned count:{10u,100u,1000u}){
+        Fixture fixture;ComponentsFixture types;auto definition=Project(fixture,types);auto &scene=std::get<gc::SceneCompositionDefinition>(definition.documents[0].data);
+        for(unsigned i=1;i<count;++i){SceneNodeSnapshot node;node.id=SceneNodeId{1000+i};scene.scene.nodes.push_back(node);scene.placements.push_back({node.id,definition.documents[1].id,{}});}
+        auto project=Take(ed::EditorProject::Create("Temp/editor-tests/runtime-load.epidemic",definition,Schema(fixture,types)));auto start=Clock::now();auto session=Take(project->Play(Options(types)));const auto load=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
+        Check(session->RuntimeSnapshot().total_entities==count,"native load baseline entity count");
+        const unsigned activation_count=count==10?1u:100u;for(unsigned i=0;i<activation_count;++i)Take(session->Send(i==0?SceneNodeId{42}:SceneNodeId{1000+i},{Id("hit"),7}));
+        std::vector<double> durations;for(unsigned i=0;i<64;++i){start=Clock::now();Take(session->Tick({1}));durations.push_back(std::chrono::duration<double,std::micro>(Clock::now()-start).count());}
+        std::sort(durations.begin(),durations.end());auto frame=session->RuntimeSnapshot();Check(frame.entities.size()==count&&frame.activations.size()<=64&&frame.trace.size()<=256,"native DTO bounds under load");
+        start=Clock::now();Take(session->Stop());const auto stop=std::chrono::duration<double,std::milli>(Clock::now()-start).count();
+        std::cout<<"FII4_BASELINE entities="<<count<<" activations="<<activation_count<<" load_ms="<<load<<" tick_p50_us="<<durations[31]<<" tick_p95_us="<<durations[60]<<" stop_ms="<<stop<<'\n';
+        Check(!session->Context(),"load Stop releases Runtime and preserves authoring");
+    }
+}
+
 void Play() {
     Fixture f;
     ComponentsFixture types;
@@ -656,6 +673,7 @@ int main(int argc, char **argv) {
             DocumentDiscard();
             GraphSceneReferences();
             RuntimeControls();
+            RuntimeLoadBaseline();
             Play();
             PlacementDiagnostic();
         } else if (argc == 2 && std::string_view{argv[1]} == "p04-write")

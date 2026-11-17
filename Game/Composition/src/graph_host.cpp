@@ -299,7 +299,7 @@ GraphExecutionHost::Start(const BoundGraphPtr &program, runtime::graph::ElementI
     }
 
     auto activation = std::make_shared<GraphActivation>();
-    activation->id_=next_activation_id_++;activation->asset_=program->program_->Asset();
+    activation->id_=next_activation_id_++;activation->asset_=program->program_->Asset();activation->scope_=scope;
     if(observer_)observer_(*instance.Value(),*scope,activation->id_);
     std::erase_if(active_, [](const auto &active) { return active.activation->IsFinished(); });
     if (active_.size() >= 1024)

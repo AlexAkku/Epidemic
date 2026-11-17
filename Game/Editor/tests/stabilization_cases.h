@@ -45,17 +45,19 @@ void StabilizationFailures() {
     Check(handles.size() == 1, "Send exposes one activation through Editor API");
     const auto first = handles[0];
     Check(!first->IsFinished() && !first->Report(), "queued activation has no execution report");
-    Take(session->Tick()); // Simulation success is independent from Graph failure.
+    // Queue a bounded burst while Running. A failed graph now puts Play in Failed;
+    // Stop must cancel the rest without ticking the failed session again.
+    for(std::size_t i=0;i<ed::PlaySession::kCompletedActivationRetention+5;++i)
+        Take(session->Send(SceneNodeId{42},{Id("hit"),1}));
+    Take(session->Tick()); // The activation diagnostic and session phase are distinct.
     CheckNativeFailure(first);
     const auto original = first->Report();
     if (!original || !original->diagnostic)
         throw std::runtime_error("diagnostic missing");
-    for (std::size_t i = 0; i < ed::PlaySession::kCompletedActivationRetention + 5; ++i) {
-        Take(session->Send(SceneNodeId{42}, {Id("hit"), 1}));
-        Take(session->Tick());
-    }
-
+    Check(session->Phase()==ed::PlayPhase::Failed&&!session->Tick(),"Failed Play refuses further simulation ticks");
+    Take(session->Stop());
     handles = session->Activations();
+    Check(std::any_of(handles.begin(),handles.end(),[](const auto &handle){return handle->Report()&&handle->Report()->status==graph::ExecutionStatus::Cancelled;}),"Stop from Failed cancels the remaining queued activations");
     Check(handles.size() == ed::PlaySession::kCompletedActivationRetention &&
               handles.front()->Id() > first->Id(),
           "session retains only the last bounded completed reports");
