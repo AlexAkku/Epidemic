@@ -69,4 +69,10 @@ Full clean C++ build, architecture self-test и public headers PASS; полны�
 
 Deep analysis77 TU/154 checks не назван PASS: inherited diagnostics остаются backlog, новый narrowing исправлен и проходит адресный повтор. Подробности и measured budgets в [FII4_REPORT](FII4_REPORT.md).
 
-**F-II.4-GATE PENDING MANUAL**: владелец ещё не подтвердил физические кадры/фокус/DPI/мониторы и performance budgets. Инструкция начинается с10 комбинированных регрессий прежних стадий, затем сквозной F-II.4: [FII4_MANUAL_QA](FII4_MANUAL_QA.md). F-II.5 не начат. Без push.
+**F-II.4-GATE PENDING MANUAL**: владелец ещё не подтвердил физические кадры/фокус/DPI/мониторы и performance budgets. Актуальная совместная инструкция начинается с10 комбинированных регрессий прежних стадий: [FII45_MANUAL_QA](FII45_MANUAL_QA.md). F-II.5 реализован, финальная автоматическая квалификация описана отдельно ниже. Без push.
+
+## F-II.5 — gameplay implementation, ручной gate ожидается
+
+Реализованы три последовательных блока: единый C++ gameplay owner/Schema, native fixed-step механики, managed adapter и пользовательский Arena sample. Публичный IPC v4 и managed C ABI v1 сохранены; private worker RPC v3 делегирует операции тому же owner. Нет второго игрового цикла в Java/C#.
+
+Full native build и CTest162/162 PASS, standalone Release/JCEF smoke PASS; точные packaged/static результаты и ограничения — [FII5_REPORT](FII5_REPORT.md). **F-II.5-GATE PENDING MANUAL**, F-II.4 также PENDING MANUAL, общий F-II-GATE не закрыт. [Контракт](FII5_GAMEPLAY_CONTRACT.md), [пошаговая проверка](FII45_MANUAL_QA.md). F-III не начат.

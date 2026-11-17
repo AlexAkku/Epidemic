@@ -23,6 +23,7 @@ template <class T> T Take(foundation::Result<T> result) {
 
 struct Health {
     std::int64_t points = 100;
+    std::int64_t maximum = 100;
 };
 
 struct Movement {
@@ -101,7 +102,7 @@ struct Schema {
         health = Take(components.Register<Health>("editor.example.health"));
         points = Take(components.RegisterProperty(health, "points", &Health::points, &ValidHealth));
         movement = Take(components.Register<Movement>("editor.example.movement"));
-        speed = Take(components.RegisterProperty(movement, "speed", &Movement::speed));
+        speed = Take(components.RegisterProperty(movement, "speed", &Movement::speed, &ValidWeight));
         enabled = Take(components.RegisterProperty(movement, "enabled", &Movement::enabled));
         label = Take(components.RegisterProperty(movement, "label", &Movement::label));
         tuning = Take(components.Register<Tuning>("editor.example.tuning"));
@@ -109,11 +110,13 @@ struct Schema {
         weight = Take(components.RegisterProperty(tuning, "weight", &Tuning::weight, &ValidWeight));
         active = Take(components.RegisterProperty(tuning, "active", &Tuning::active));
         title = Take(components.RegisterProperty(tuning, "title", &Tuning::title));
+        Take(components.RegisterProperty(health, "maximum", &Health::maximum, &ValidHealth));
+        Take(gc::arena::Register(components));
         components.Freeze();
     }
 
     ed::ProjectSchema View() {
-        return {entities,
+        ed::ProjectSchema view{entities,
                 components,
                 {{Id("event.type"), graph::Operation::EventEntry},
                  {Id("native.type"), graph::Operation::NativeCall},
@@ -122,6 +125,8 @@ struct Schema {
                  {Id("add.type"), graph::Operation::Add}, {Id("multiply.type"), graph::Operation::Multiply},
                  {Id("entry.type"), graph::Operation::Entry}, {Id("sequence.type"), graph::Operation::Sequence},
                  {Id("branch.type"), graph::Operation::Branch}, {Id("repeat.type"), graph::Operation::Repeat}}, &components};
+        for(const auto &operation:gc::arena::Operations())view.operations.push_back({Id(operation.id),operation.kind});
+        return view;
 
     }
 
@@ -159,6 +164,7 @@ inline ed::PlayOptions Options(Schema &schema) {
         using Result=foundation::Result<void>;
         if(input.x==0&&input.y==0&&!input.pointer_down)return Result::Success();
         for(const auto &entity:context.entities.AllEntities()){
+            if(context.components.Find(entity.id,gameplay::TypeId::FromString("gameplay.motion2d")))continue;
             auto component=context.components.Find(entity.id,movement);if(!component)continue;
             const auto active=context.components.Read<bool>(*component,enabled);const auto rate=context.components.Read<double>(*component,speed);if(!active||!rate||!active.Value())continue;
             auto world=context.WorldTransform(context.entities.HandleOf(entity.id));if(!world)continue;
@@ -173,7 +179,7 @@ inline ed::PlayOptions Options(Schema &schema) {
     };
 
     options.bindings = [&](ed::PlayContext &context, AssetId) {
-        gc::DomainOperation damage = [store = &context.components, health = schema.health,
+        gc::DomainOperation damage = [runtime=&context,store = &context.components, health = schema.health,
                                       points = schema.points](const gc::OperationContext &operation,
                                                               std::int64_t amount) {
             using Result = foundation::Result<std::int64_t>;
@@ -190,14 +196,10 @@ inline ed::PlayOptions Options(Schema &schema) {
                 return Result::Failure(
                     foundation::Error::Create("example.damage_range",
                                               "Damage must be between zero and current Health"));
-            const auto changed =
-                store->WriteProperty(*component, {points, current.Value() - amount});
-            if (!changed)
-                return Result::Failure(changed.GetError());
-            return Result::Success(amount);
+            return runtime->gameplay->Execute("gameplay.health.damage.v1",operation.scope.Handle(),amount);
         };
 
-        return std::vector<gc::NodeBinding>{{Id("event.type"), graph::Operation::EventEntry, {}},
+        std::vector<gc::NodeBinding> bindings{{Id("event.type"), graph::Operation::EventEntry, {}},
                                             {Id("native.type"), graph::Operation::NativeCall,
                                              std::move(damage)},
                                             {Id("wait.type"), graph::Operation::Wait, {}},
@@ -205,6 +207,14 @@ inline ed::PlayOptions Options(Schema &schema) {
                                             {Id("add.type"), graph::Operation::Add, {}}, {Id("multiply.type"), graph::Operation::Multiply, {}},
                                             {Id("entry.type"), graph::Operation::Entry, {}}, {Id("sequence.type"), graph::Operation::Sequence, {}},
                                             {Id("branch.type"), graph::Operation::Branch, {}}, {Id("repeat.type"), graph::Operation::Repeat, {}}};
+        for(const auto &operation:gc::arena::Operations()){
+            if(operation.kind==graph::Operation::EventEntry){bindings.push_back({Id(operation.id),operation.kind,{}});continue;}
+            bindings.push_back({Id(operation.id),graph::Operation::NativeCall,
+            [runtime=&context,id=operation.id](const gc::OperationContext &call,std::int64_t value){
+                if(!runtime->gameplay||!call.scope.IsAlive())return foundation::Result<std::int64_t>::Failure(foundation::Error::Create("gameplay.stale_scope","Play required"));
+                return runtime->gameplay->Execute(id,call.scope.Handle(),value);
+            }});}
+        return bindings;
 
     };
 

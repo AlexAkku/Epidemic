@@ -87,6 +87,48 @@ struct PlayRuntime {
     runtime::ResourceServices images;
     std::vector<runtime::ResourceLease> image_leases;
     std::unordered_map<runtime::SceneNodeId, PlaySprite> sprites;
+    std::unordered_map<runtime::AssetId, PlaySprite> prefab_sprites;
+    std::set<std::uint64_t> pinned_prefabs;
+
+    PlaySprite PinSprite(PlaySprite sprite) {
+        if (sprite.cooked_key.empty())
+            throw Failure{Error("editor.play_sprite_source")};
+        if (sprite.prefab.IsValid() && pinned_prefabs.contains(sprite.prefab.Raw())) {
+            auto cached = prefab_sprites.at(sprite.prefab);
+            cached.placement = sprite.placement;
+            return cached;
+        }
+        const auto id = Take(image_loader->Register(sprite.cooked_key));
+        const auto lease =
+            Take(images.manager->RequestLease({id, image_loader->GetResourceType()}));
+        try {
+            image_leases.push_back(lease);
+        } catch (...) {
+            (void)images.manager->Release(lease);
+            throw;
+        }
+
+        Take(images.manager->ProcessPendingLoads());
+        const auto image = std::dynamic_pointer_cast<const ImagePayload>(
+            images.manager->GetPayload(lease.resource));
+        if (!image)
+            throw Failure{Error("editor.play_sprite_payload")};
+
+        if (sprite.region_id == 0) {
+            sprite.width = image->image.width;
+            sprite.height = image->image.height;
+        }
+
+        if (sprite.width == 0 || sprite.height == 0 || sprite.x > image->image.width ||
+            sprite.width > image->image.width - sprite.x || sprite.y > image->image.height ||
+            sprite.height > image->image.height - sprite.y)
+            throw Failure{Error("editor.play_sprite_region")};
+
+        if (sprite.prefab.IsValid())
+            pinned_prefabs.insert(sprite.prefab.Raw());
+        return sprite;
+    }
+
     std::unique_ptr<gameplay::runtime_bridge::IRuntimeBridgeBackend> backend;
     gameplay::entities::EntityService entities;
     gameplay::runtime_bridge::RuntimeBridgeService bridge;
@@ -102,6 +144,9 @@ struct PlayRuntime {
     comp::PrefabComposer prefabs;
     PlayContext context;
     composition::SceneCompositionInstance scene;
+    std::unique_ptr<composition::arena::Gameplay> gameplay_owner;
+    std::uint64_t spawn_serial=0;
+
     std::unordered_map<runtime::SceneNodeId, std::shared_ptr<const comp::PrefabInstance>> instances;
     std::vector<std::unique_ptr<comp::SystemInstance>> systems;
 
@@ -305,6 +350,41 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
         const auto &definition = std::get<composition::SceneCompositionDefinition>(entry->data);
         state.scene = Take(composition::CreateSceneComposition(definition));
         state.context.scene = &state.scene;
+        state.gameplay_owner=std::make_unique<composition::arena::Gameplay>(composition::arena::Gameplay::Services{
+            state.entities,state.components,state.scene,
+            [&state,owner=session.get()](runtime::AssetId prefab,const runtime::Transform &world)->foundation::Result<gameplay::entities::EntityHandle>{
+                using Spawn=foundation::Result<gameplay::entities::EntityHandle>;
+                if(state.instances.size()>=1000||!state.prefabs.Find(prefab.value))return Spawn::Failure(Error("gameplay.prefab_unavailable_or_limit"));
+                std::optional<PlaySprite> visual;if(auto sprite=state.prefab_sprites.find(prefab);sprite!=state.prefab_sprites.end())visual=state.PinSprite(sprite->second);
+                auto instance=state.prefabs.Spawn(prefab.value);if(!instance)return Spawn::Failure(instance.GetError());
+                const auto *root=instance.Value()->Find(instance.Value()->Definition()->root.id);
+                auto node=state.scene.scene.nodes->CreateNode();if(!node){(void)state.prefabs.Destroy(*instance.Value());return Spawn::Failure(node.GetError());}
+                auto placement=runtime::SceneNodeId{foundation::StringId::FromString("runtime.spawn."+std::to_string(owner->Id())+"."+std::to_string(++state.spawn_serial)).Raw()};
+                auto bound=composition::BindSceneEntity(state.scene,state.entities,root->handle,node.Value());
+                auto moved=bound?composition::SetEntityWorldTransform(state.scene,state.entities,root->handle,world):bound;
+                if(!moved){(void)state.prefabs.Destroy(*instance.Value());(void)state.scene.scene.nodes->DestroyNode(node.Value());return Spawn::Failure(moved.GetError());}
+                state.scene.nodes.emplace(placement,node.Value());
+                auto handle=root->handle;state.instances.emplace(placement,std::move(instance.Value()));
+                if(visual){visual->placement=placement;state.prefab_sprites.insert_or_assign(prefab,*visual);state.sprites.emplace(placement,std::move(*visual));}
+                return Spawn::Success(handle);
+            },
+            [&state](gameplay::entities::EntityHandle entity){
+                for(auto it=state.instances.begin();it!=state.instances.end();++it)for(const auto &object:it->second->Objects())if(object.handle==entity){
+                    auto result=state.prefabs.Destroy(*it->second);if(!result)return result;
+                    for(const auto &part:it->second->Objects())state.scene.entities.erase(part.entity);
+                    const auto node=state.scene.nodes.find(it->first);if(node!=state.scene.nodes.end()){auto removed=state.scene.scene.nodes->DestroyNode(node->second);if(!removed)return removed;state.scene.nodes.erase(node);}
+                    state.sprites.erase(it->first);state.instances.erase(it);return foundation::Result<void>::Success();
+                }
+                return foundation::Result<void>::Failure(Error("gameplay.stale_entity"));
+            },
+            [owner=session.get(),&state](const composition::arena::Event &event){
+                std::uint64_t placement=0;for(const auto &[id,instance]:state.instances)for(const auto &object:instance->Objects())if(object.handle==event.subject)placement=id.Raw();
+                owner->Trace(event.name,0,0,0,std::to_string(event.value));if(!owner->trace_.empty())owner->trace_.back().entity=placement;
+                for(const auto &operation:composition::arena::Operations())if(operation.kind==runtime::graph::Operation::EventEntry&&operation.name==event.name)
+                    for(const auto &[id,instance]:state.instances){(void)id;for(const auto &object:instance->Objects())if(object.handle==event.subject&&object.scope->IsAlive())
+                        (void)Take(state.behaviors.SendTo(*object.scope,{foundation::StringId::FromString(operation.id),event.value}));}
+            }});
+        state.context.gameplay=state.gameplay_owner.get();
         for (const auto &doc : state.source->definition.documents)
             if (const auto *graph = std::get_if<runtime::graph::GraphDefinition>(&doc.data)) {
                 auto bindings = options.bindings(state.context, doc.id);
@@ -381,12 +461,12 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
                     const auto find=[&](const auto &self,const comp::PrefabNode &node)->const comp::PrefabNode*{if(node.id==object.id)return &node;for(const auto &child:node.children)if(auto found=self(self,child))return found;return nullptr;};
                     const auto *node=find(find,instance->Definition()->root);
                     if(node){std::vector<const comp::GraphBehaviorDefinition*> definitions;for(const auto &b:node->behaviors)definitions.push_back(&b);for(const auto &c:node->components)for(const auto &b:c.behaviors)definitions.push_back(&b);
-                        for(const auto &slot:object.behaviors)for(const auto *b:definitions)if(b->id==slot.definition)for(const auto &route:b->events)(void)Take(state.behaviors.Send(slot.handle,{route.event,0}));}
+                        for(const auto &slot:object.behaviors)for(const auto *b:definitions)if(b->id==slot.definition)for(const auto &route:b->events)if(std::none_of(composition::arena::Operations().begin(),composition::arena::Operations().end(),[&](const auto &op){return op.kind==runtime::graph::Operation::EventEntry&&foundation::StringId::FromString(op.id)==route.event;}))(void)Take(state.behaviors.Send(slot.handle,{route.event,0}));}
 
                 }
             }
             std::size_t index=0;for(const auto &system:state.source->definition.systems)if(system.enabled&&(!system.scene.IsValid()||system.scene==entry->id)){
-                auto behavior=Take(DefaultGraphBehavior(state.source->definition,schema,system.graph,system.id));for(const auto &route:behavior.events)(void)Take(state.behaviors.SendTo(*state.systems.at(index)->Scope(),{route.event,0}));++index;
+                auto behavior=Take(DefaultGraphBehavior(state.source->definition,schema,system.graph,system.id));for(const auto &route:behavior.events)if(std::none_of(composition::arena::Operations().begin(),composition::arena::Operations().end(),[&](const auto &op){return op.kind==runtime::graph::Operation::EventEntry&&foundation::StringId::FromString(op.id)==route.event;}))(void)Take(state.behaviors.SendTo(*state.systems.at(index)->Scope(),{route.event,0}));++index;
             }
         }
         session->impl_->Capture();session->impl_->Refresh();
@@ -453,33 +533,9 @@ foundation::Result<void> PlaySession::InstallSprites(const std::filesystem::path
         Take(state.images.loaders->RegisterLoader(*state.image_loader));
         Take(state.images.loaders->Freeze());
         for (auto &sprite : sprites) {
-            const auto id = Take(state.image_loader->Register(sprite.cooked_key));
-            const auto lease = Take(
-                state.images.manager->RequestLease({id, state.image_loader->GetResourceType()}));
-            try {
-                state.image_leases.push_back(lease);
-            } catch (...) {
-                (void)state.images.manager->Release(lease);
-                throw;
-            }
-
-            Take(state.images.manager->ProcessPendingLoads());
-            const auto image = std::dynamic_pointer_cast<const ImagePayload>(
-                state.images.manager->GetPayload(lease.resource));
-            if (!image)
-                throw Failure{Error("editor.play_sprite_payload")};
-
-            if (sprite.region_id == 0) {
-                sprite.width = image->image.width;
-                sprite.height = image->image.height;
-            }
-
-            if (sprite.width == 0 || sprite.height == 0 || sprite.x > image->image.width ||
-                sprite.width > image->image.width - sprite.x || sprite.y > image->image.height ||
-                sprite.height > image->image.height - sprite.y)
-                throw Failure{Error("editor.play_sprite_region")};
-
-            if (!state.sprites.emplace(sprite.placement, std::move(sprite)).second)
+            if(sprite.placement.IsValid())sprite=state.PinSprite(std::move(sprite));
+            if(sprite.prefab.IsValid())state.prefab_sprites.insert_or_assign(sprite.prefab,sprite);
+            if (sprite.placement.IsValid()&&!state.sprites.emplace(sprite.placement, std::move(sprite)).second)
                 throw Failure{Error("editor.play_sprite_duplicate")};
 
         }
@@ -561,12 +617,19 @@ foundation::Result<void> PlaySession::Tick(runtime::GameDuration advance) {
         impl_->Refresh();
         auto &state = *impl_->runtime;
         Take(state.time.runtime->Skip(advance));
+        if(advance.ticks>0)Take(state.gameplay_owner->Begin(static_cast<std::uint64_t>(state.time.clock->Now().ticks),{input_.x,input_.y,input_.attack||input_.pointer_down}));
         if(advance.ticks>0&&impl_->fixed_update)Take(impl_->fixed_update(state.context,advance,input_));
         state.components.Synchronize();
         state.behaviors.Synchronize();
         Take(composition::SynchronizeSceneEntities(state.scene, state.entities));
         (void)Take(state.host.Prepare());
         const auto tick = Take(state.simulation.runtime->Tick());
+        if(advance.ticks>0)Take(state.gameplay_owner->End(phase_!=PlayPhase::Paused));
+        const auto destroyed=Take(state.entities.CommitPendingDestruction());
+        state.components.Synchronize();state.behaviors.Synchronize();
+        for(const auto &entity:destroyed)Take(state.entities.Remove(entity.id));
+        const auto cursor=state.entities.LatestChangeCursor();
+        if(cursor.sequence>4096)state.entities.PruneChangesBefore(cursor.sequence-4096);
         Take(composition::SynchronizeSceneEntities(state.scene, state.entities));
         impl_->Capture();
         impl_->Refresh();
@@ -598,6 +661,7 @@ foundation::Result<void> PlaySession::Stop() {
     ticking_ = true;
     impl_->Capture();
     auto &state = *impl_->runtime;
+    state.gameplay_owner->Cancel();
     for (const auto &entity : state.entities.AllEntities()) {
         if (entity.lifecycle != gameplay::entities::EntityLifecycleState::Alive &&
             entity.lifecycle != gameplay::entities::EntityLifecycleState::Dormant)
@@ -663,7 +727,7 @@ bool PlaySession::DebugGate(std::uint64_t activation,std::uint64_t graph,const r
 }
 foundation::Result<void> PlaySession::Pause(){
     if(!IsPlaying()||phase_==PlayPhase::Failed)return foundation::Result<void>::Failure(Error("editor.play_inactive"));
-    phase_=PlayPhase::Paused;accumulator_=0;input_={};Trace("Paused");return foundation::Result<void>::Success();
+    phase_=PlayPhase::Paused;accumulator_=0;input_={};keys_.clear();Trace("Paused");return foundation::Result<void>::Success();
 }
 foundation::Result<void> PlaySession::Resume(){
     if(!IsPlaying()||phase_==PlayPhase::Failed)return foundation::Result<void>::Failure(Error("editor.play_inactive"));
@@ -684,7 +748,7 @@ foundation::Result<void> PlaySession::StepToNode(std::uint64_t activation){
 foundation::Result<void> PlaySession::Pump(std::chrono::nanoseconds elapsed){
     if(!IsPlaying()||phase_!=PlayPhase::Running){accumulator_=0;return foundation::Result<void>::Success();}
     const auto nanos=std::clamp<std::int64_t>(elapsed.count(),0,250000000);
-    accumulator_+=nanos*static_cast<std::int64_t>(kFixedTicksPerSecond);
+    accumulator_+=static_cast<std::int64_t>(static_cast<double>(nanos)*time_scale_)*static_cast<std::int64_t>(kFixedTicksPerSecond);
     unsigned count=0;
     while(accumulator_>=1000000000&&phase_==PlayPhase::Running&&count<8){accumulator_-=1000000000;++count;auto result=Tick({1});if(!result)return result;}
     if(accumulator_>=1000000000){dropped_ticks_+=static_cast<std::uint64_t>(accumulator_/1000000000);accumulator_%=1000000000;}
@@ -698,6 +762,26 @@ foundation::Result<void> PlaySession::SetPointer(double x,double y,bool pressed)
     if(!IsPlaying()||!std::isfinite(x)||!std::isfinite(y)||std::abs(x)>1e6||std::abs(y)>1e6)return foundation::Result<void>::Failure(Error("editor.play_pointer"));
     input_.pointer_x=x;input_.pointer_y=y;input_.pointer_down=pressed;return foundation::Result<void>::Success();
 }
+foundation::Result<void> PlaySession::SetTimeScale(double scale){
+    if(!IsPlaying()||!std::isfinite(scale)||scale<.1||scale>4)return foundation::Result<void>::Failure(Error("gameplay.time_scale"));
+    time_scale_=scale;accumulator_=0;return foundation::Result<void>::Success();
+}
+foundation::Result<void> PlaySession::SetKey(std::uint16_t key,bool pressed){
+    if(!IsPlaying()||key>255||(key==0&&pressed))return foundation::Result<void>::Failure(Error("gameplay.input_key"));
+    if(!key){keys_.clear();input_={};return foundation::Result<void>::Success();}
+    if(phase_!=PlayPhase::Running&&pressed)return foundation::Result<void>::Success();
+    if(pressed)keys_.insert(key);else keys_.erase(key);
+    auto bindings=composition::arena::InputBindings{};bool custom=false;
+    auto &state=*impl_->runtime;
+    for(const auto &entity:state.entities.AllEntities())if(auto component=state.components.Find(entity.id,gameplay::TypeId::FromString("gameplay.inputbindings"))){
+        const auto read=[&](const char *name,std::int64_t fallback){auto value=state.components.Read<std::int64_t>(*component,foundation::StringId::FromString(name));return value?value.Value():fallback;};
+        bindings={read("left",65),read("right",68),read("up",87),read("down",83),read("attack",32)};custom=true;break;
+    }
+    const auto down=[&](std::int64_t k){return keys_.contains(static_cast<std::uint16_t>(k));};
+    input_.x=(down(bindings.right)||(!custom&&down(39))?1.:0.)-(down(bindings.left)||(!custom&&down(37))?1.:0.);input_.y=(down(bindings.up)||(!custom&&down(38))?1.:0.)-(down(bindings.down)||(!custom&&down(40))?1.:0.);
+    // Attack uses the same sampled input stream as pointer activation.
+    input_.attack=down(bindings.attack);return foundation::Result<void>::Success();
+}
 void PlaySession::SetBreakpoint(runtime::AssetId graph,runtime::graph::ElementId node,bool enabled){
     if(enabled&&breakpoints_.size()<1024)breakpoints_.insert({graph.Raw(),node.Raw()});else if(!enabled)breakpoints_.erase({graph.Raw(),node.Raw()});
 }
@@ -710,6 +794,7 @@ PlayRuntimeSnapshot PlaySession::RuntimeSnapshot() const {
         if(!object.scope->IsPresent())continue;++out.total_entities;if(out.entities.size()>=1000)continue;
         auto world=state.context.WorldTransform(object.handle);if(!world)continue;
         PlayEntity entity{placement.Raw(),object.id.Raw(),object.entity.High(),object.entity.Low(),"Entity",world.Value(),{},64,.5f,.5f,{}};
+        if(const auto *prefab=state.source->Find(runtime::AssetId{instance->Definition()->id}))entity.name=prefab->name;
         if(object.id==instance->Definition()->root.id){auto sprite=ReadSprite(placement);if(sprite){entity.sprite=sprite.Value().cooked_key;entity.ppu=sprite.Value().pixels_per_unit;entity.pivot_x=sprite.Value().pivot_x;entity.pivot_y=sprite.Value().pivot_y;}}
         if(const auto *doc=state.source->Find(state.source->definition.entry_scene)){
             const auto &scene=std::get<composition::SceneCompositionDefinition>(doc->data);auto name=scene.node_names.find(placement.Raw());if(name!=scene.node_names.end())entity.name=name->second;

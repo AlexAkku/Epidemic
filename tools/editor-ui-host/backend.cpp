@@ -1,4 +1,5 @@
 #include "demo_game.h"
+#include "arena_sample.h"
 #include "graph_authoring.h"
 #include "script_worker.h"
 #include <fstream>
@@ -197,7 +198,10 @@ class Backend {
                             const auto component=entity?runtime->components.Find(entity->id,epidemic::gameplay::TypeId::FromString(type->component.name),call.scope.Part()):std::nullopt;
                             if(entity&&!component)throw std::runtime_error("script.component_missing");
                             if(component)for(const auto &field:type->component.fields){auto value=runtime->components.ReadProperty(*component,Id::FromString(field.name));Require(value);fields.emplace_back(field.name,value.Value());}
-                            auto result=shared->Invoke(operation->id,type->component.name,key,argument,fields);
+                            auto result=shared->Invoke(operation->id,type->component.name,key,argument,fields,[runtime,&call](std::string_view id,std::int64_t value){
+                                if(!runtime->gameplay||!call.scope.IsAlive())return Result::Failure(epidemic::foundation::Error::Create("gameplay.stale_scope","Live Entity scope required"));
+                                return runtime->gameplay->Execute(id,call.scope.Handle(),value);
+                            });
                             if(!result)return result;
                             if(component){std::vector<ed::comp::PropertyAssignment> assignments;for(const auto &[name,value]:fields)assignments.push_back({Id::FromString(name),value});
                                 Require(ValidateScriptResponse(*type,assignments));
@@ -1435,7 +1439,7 @@ class Backend {
         FILETIME creation_time{},exit_time{},kernel_time{},user_time{};const bool cpu_known=GetProcessTimes(GetCurrentProcess(),&creation_time,&exit_time,&kernel_time,&user_time)!=FALSE;
         const auto cpu_millis=[](const FILETIME &value){const auto ticks=(static_cast<std::uint64_t>(value.dwHighDateTime)<<32u)|static_cast<std::uint64_t>(value.dwLowDateTime);return static_cast<double>(ticks)/10000.0;};
         struct Metric{const char *name,*source,*unit;double value;};
-        const Metric metrics[]={{"Backend CPU total","Windows GetProcessTimes / cumulative process CPU","ms",cpu_known?cpu_millis(kernel_time)+cpu_millis(user_time):-1},{"Fixed tick rate","C++ Runtime.Time","Hz",60},{"Tick p50","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.first},{"Tick p95","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.second},{"Backend working set","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.WorkingSetSize):-1},{"Backend private bytes","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.PrivateUsage):-1},{"Live entities","Runtime EntityService","entities",static_cast<double>(view.total_entities)},{"Live graph activations","Runtime GraphExecutionHost","activations",static_cast<double>(view.total_activations)},{"Import queue busy","EditorWorkspace.AssetJobsBusy","bool",workspace_->AssetJobsBusy()?1.0:0.0},{"GPU duration","Auditor GPU provider unavailable in this backend","ms",-1},{"Allocations","Auditor allocation provider unavailable in this profile","allocations",-1}};
+        const Metric metrics[]={{"Backend CPU total","Windows GetProcessTimes / cumulative process CPU","ms",cpu_known?cpu_millis(kernel_time)+cpu_millis(user_time):-1},{"Fixed tick rate","C++ Runtime.Time","Hz",60},{"Time scale","C++ PlaySession fixed-clock policy","x",session?session->TimeScale():1},{"Tick p50","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.first},{"Tick p95","Diagnostics.ProfileScope / Editor.Play.Tick (last256)","us",percentiles.second},{"Backend working set","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.WorkingSetSize):-1},{"Backend private bytes","Windows PSAPI / Auditor process metrics","bytes",known?static_cast<double>(memory.PrivateUsage):-1},{"Live entities","Runtime EntityService","entities",static_cast<double>(view.total_entities)},{"Live graph activations","Runtime GraphExecutionHost","activations",static_cast<double>(view.total_activations)},{"Import queue busy","EditorWorkspace.AssetJobsBusy","bool",workspace_->AssetJobsBusy()?1.0:0.0},{"GPU duration","Auditor GPU provider unavailable in this backend","ms",-1},{"Allocations","Auditor allocation provider unavailable in this profile","allocations",-1}};
         out.Number<4>(std::size(metrics));for(const auto &m:metrics){out.Text(m.name);out.Text(m.source);out.Text(m.unit);number(m.value);}
     }
     void RuntimeCommand(const std::vector<std::string> &args){
@@ -1459,6 +1463,9 @@ class Backend {
         else if(action=="step"&&args.size()==2)Require(session->StepTick());
         else if(action=="step-node"&&args.size()==3)Require(session->StepToNode(Numeric(args[2])));
         else if(action=="input"&&args.size()==4)Require(session->SetInput(Real(args[2]),Real(args[3])));
+        else if(action=="key"&&args.size()==4){const auto key=Numeric(args[2]);if(key<1||key>255||(args[3]!="0"&&args[3]!="1"))throw std::runtime_error("runtime.key");Require(session->SetKey(static_cast<std::uint16_t>(key),args[3]=="1"));}
+        else if(action=="input-reset"&&args.size()==2){Require(session->SetKey(0,false));Require(session->SetPointer(0,0,false));}
+        else if(action=="time-scale"&&args.size()==3)Require(session->SetTimeScale(Real(args[2])));
         else if(action=="pointer"&&args.size()==5){if(args[4]!="0"&&args[4]!="1")throw std::runtime_error("runtime.pointer");Require(session->SetPointer(Real(args[2]),Real(args[3]),args[4]=="1"));}
         else if(action=="breakpoint"&&args.size()==5){
             const auto graph=Asset(Numeric(args[2]));const auto *doc=workspace_->Project()->Snapshot()->Find(graph);const auto *g=doc?std::get_if<rt::graph::GraphDefinition>(&doc->data):nullptr;const auto node=Id{Numeric(args[3])};
@@ -1776,6 +1783,16 @@ class Backend {
                 RuntimeCommand(args);break;
             case 42:
                 if(!args.empty())throw std::runtime_error("runtime.arguments");break;
+            case 43: {
+                CheckWrite({generation,revision});
+                if(args.size()!=1||args[0]!="arena"||workspace_->Session()&&workspace_->Session()->IsPlaying())throw std::runtime_error("gameplay.sample_unavailable");
+                auto sample=ex::Arena(schema_);std::vector<ed::Command> edits;
+                for(auto &document:sample.documents){if(workspace_->Project()->Snapshot()->Find(document.id))throw std::runtime_error("gameplay.sample_already_exists");edits.push_back(ed::CreateDocument{std::move(document)});}
+                if(const auto *folder=workspace_->Folder()){Require(folder->CreateContentFolder("FII_Arena"));refresh_content_folders_={};}
+                edits.push_back(ed::SetEntryScene{sample.entry_scene});Require(workspace_->Execute(std::move(edits),revision));
+                play_scene_=sample.entry_scene;
+                (void)workspace_->Select({sample.entry_scene,ed::UiElement::Document,0});++selection_revision_;break;
+            }
             case 40:
                 CheckWrite({generation,revision});
                 if(workspace_->Session()&&workspace_->Session()->IsPlaying())throw std::runtime_error("ui.playing_readonly");

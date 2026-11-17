@@ -1,0 +1,37 @@
+# F-II.5 — native gameplay contract
+
+Implementation starting point: `763dbc3` (F-II.4 recheck). F-II.4 and F-II.5 remain PENDING MANUAL; no manual gate is inferred from builds. Gameplay implementation is complete within the profile below.
+
+Three implementation/checkup boundaries: (1) shared native operations and Schema, (2) fixed-step movement/collision/projectile/waves/input, (3) managed adapter, reproducible Arena sample and final qualification. Implement each batch before its checkup. No Computer Use; no push.
+
+## Ownership and compatibility decision
+
+`Game/Composition/arena::Gameplay` composes the existing Framework EntityService, ComponentStore, PrefabComposer and Runtime Scene. It does not own a second entity collection, transform model, clock, timer thread or VM. Session-only contacts, deadlines and pending destruction are subordinate to PlaySession and canceled at Stop. Runtime Health and currency are exposed component values, not parallel copies of authoring values. The existing broader Combat/Economy services retain their APIs; this small component-based Arena profile does not pretend to implement their advanced reservations/markets/combat profiles.
+
+The descriptor list in native `Operations()` is the single source for Graph Palette and operation identity. Canonical versioned TypeIds are `gameplay.*.v1`. Current VM ABI is i64→i64: units/types are explicit in each descriptor, bools are0/1, coordinates use centiunits, prefab arguments carry the bit pattern of a stable AssetId. This does not turn these scalars into F-II.3 typed Entity references. Operations act on a live generation-checked Entity Graph scope; arbitrary raw runtime handles are not accepted from UI or managed code. Editor/preview execution is unavailable; Graph/Managed require Play. Execution is on the native effect owner thread, maximum256 mutating operations per tick, typed `gameplay.*` failures. Argument serialization reuses VM i64 and existing IPC; no public Engine SDK ABI is replaced.
+
+Components register in the existing Schema before Freeze; Inspector, persisted Prefab assignments and runtime store use its descriptors/validators. New properties are additive defaults, no project format fork. The legacy Native Call retains its narrower validation but delegates damage to the same native gameplay operation.
+
+Game progress is session-only for F-II.5. Editor Save serializes authoring; Stop/Restart discards runtime currency/waves/health. Savegame files, rigid-body impulses, collision response/joints, continuous collision and pathfinding are outside this profile. No external physics dependency is introduced.
+
+## Current verification
+
+First and second native checkups PASS. Final full native build and CTest162/162 PASS, including Arena Graph/Wait, movement/input, collision/projectile/death/waves, Pause/Step/time scale/Stop and1000 spawn/despawn cycles. Standalone Release smoke PASS; final packaged regression results are recorded in [FII5_REPORT](FII5_REPORT.md). Automated success does not close the manual gates.
+
+## Execution, physics and events
+
+Native key input → existing Play clock → Begin (action transitions/movement/waves/deadlines/projectiles) → existing fixed-update and Runtime Scheduler/Graph VM → End (overlap/damage/death/deferred destroy) → EntityService commit/remove and store synchronization → immutable snapshot. Collision events enqueue Graph work for the next scheduler pass. Graph Wait uses the Runtime scheduler; component deadlines use this same GameClock inside fixed-update, with no independent timer thread. Pause clears held keys/accumulator; Step Tick advances one tick regardless of scale. Native Pump supports scale0.1–4 with the existing250ms/8catch-up policy.
+
+Sweep broadphase and AABB/AABB, Circle/Circle, Circle/AABB narrowphase use symmetric masks, triggers, enter/stay/exit and generation-checked owner identity. AABB stays world-axis-aligned; absolute world scale affects extents, Circle uses the largest scale axis. No rigid-body response/CCD is claimed. Projectiles ignore their owner, hit once, expire, and cancel when owner/target disappears. Impact destroys dead targets and awards native currency. Limits:1000 Entity,8192 contacts,512 events,256 mutations per tick; exceeded budgets yield typed failures. Entity records/Scene nodes/jobs are removed on despawn; journal retention4096 bounds history.
+
+InputBindings are persisted component fields containing virtual key codes. Explicit bindings replace fallback WASD/arrows. Focus/blur/Escape release native input; Ctrl/Alt/Meta combinations remain editor/system shortcuts. Named native EventEntry nodes bind through existing GraphBehavior routes; attach/remove supplies subscription lifetime. Startup does not synthesize collision/damage/timer events.
+
+Lethal impact schedules destruction after one subsequent scheduler pass so Died Graph handlers can run. A debugger Pause retains the dying Entity scope until execution resumes; it does not create a new clock. Explicit Destroy and Stop still cancel scoped work. Dead actors cannot move/fire/spawn, duplicate impacts cannot award another kill. The existing runtime metric `Time scale` is authoritative for every Game view.
+
+## Managed and sample
+
+Private worker RPC v3 adds synchronous native subcalls tagged by request/generation, bounded to256 calls and the existing3s deadline. The host chooses the live Entity scope and executes the same Gameplay::Execute used by Graph. ScriptApi.Gameplay owns no health/time/entity state. Preview returns PlayRequired. Public managed C ABI v1 and Editor IPC v4 are unchanged; incompatible workers fail handshake. Completed native side effects are not silently rolled back if managed code subsequently fails.
+
+`Project → Create F-II Arena Sample` uses native command43(`arena`), one Workspace Execute for ordinary persisted documents, native PNG import/assignment, and a C# source. Import callbacks reject project/generation changes; duplicate sample/source creation preserves existing files. The Graph includes a real typed Scene Entity reference, validity Branch, Repeat, Spawn and Runtime Wait. Player/Turret is one Entity; WaveSpawner adds two independent component waves under the same Runtime. Sprite leases for unplaced templates are acquired lazily. Build & Register exposes a C# component that configures native range/cooldown/damage and invokes shared Health/State.
+
+Both manual gates remain pending: [combined guide](FII45_MANUAL_QA.md). Overall F-II-GATE is not implicitly closed.

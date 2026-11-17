@@ -90,6 +90,36 @@ public final class ScriptWorkspace implements AutoCloseable {
     void editorReleased(VirtualFile file,Object token){ui(()->{var source=sources.get(file);if(source!=token)return;if(FileEditorManager.getInstance(project).getAllEditors(file).length==0&&source!=null&&!FileDocumentManager.getInstance().isDocumentUnsaved(source.document())){sources.remove(file);file.putUserData(OWNER,null);}});}
     public void refresh(){files.clear();try{Path base=root.get();if(base!=null&&Files.isDirectory(base.resolve("Scripts")))try(var paths=Files.walk(base.resolve("Scripts"),12)){paths.filter(p->p.toString().endsWith(".cs")&&!p.toString().contains(File.separator+"obj"+File.separator)).sorted().limit(512).forEach(files::addElement);}}catch(Exception error){fail(error);}filesChanged.run();}
     static String template(String name){return "using Epidemic.ScriptApi;\n\n[ScriptComponent(\"user."+name+"\")]\npublic sealed class "+name+"\n{\n    [ScriptField] public long Damage { get; set; } = 25;\n    [ScriptField] public double Range { get; set; } = 150.0;\n    [ScriptField] public double FireRate { get; set; } = 2.0;\n    [ScriptField] public long Health { get; set; } = 100;\n    [ScriptField] public bool Enabled { get; set; } = true;\n    [ScriptField] public string Label { get; set; } = \""+name+"\";\n\n    [GraphOperation(\"user."+name+".ApplyDamage.i64.v1\")]\n    public long ApplyDamage(long amount)\n    {\n        Health = checked(Health - amount);\n        return Health;\n    }\n}\n";}
+    List<Path> installArenaFiles() throws IOException {
+        Path base=root.get().toRealPath(),scripts=base.resolve("Scripts"),images=base.resolve(".epidemic/samples/FII_Arena");
+        Files.createDirectories(scripts);Files.createDirectories(images);
+        if(!scripts.toRealPath().startsWith(base)||!images.toRealPath().startsWith(base))throw new IOException("Arena source path escapes project");
+        Path source=scripts.resolve("ArenaManagedTurret.cs");
+        List<Path> pngs=List.of(images.resolve("Turret.png"),images.resolve("Enemy.png"),images.resolve("Projectile.png"));
+        if(Files.exists(source)||pngs.stream().anyMatch(Files::exists))throw new IOException("Arena source already exists; existing files were preserved");
+        Files.writeString(source,"""
+            using Epidemic.ScriptApi;
+            [ScriptComponent("arena.ManagedTurret")]
+            public sealed class ArenaManagedTurret {
+                [ScriptField] public long Damage {get;set;} = 7;
+                [ScriptField] public double Range {get;set;} = 6;
+                [ScriptField] public double FireRate {get;set;} = 4;
+                [GraphOperation("arena.ManagedTurret.DamageSelf.v1")]
+                public long DamageSelf(long ignored) {
+                    if(!double.IsFinite(Range)||!double.IsFinite(FireRate)||Range<0||FireRate<=0)throw new System.ArgumentOutOfRangeException();
+                    Gameplay.Call("gameplay.turret.range.v1",checked((long)(Range*100)));
+                    Gameplay.Call("gameplay.turret.cooldown.v1",System.Math.Max(1,checked((long)(60/FireRate))));
+                    Gameplay.Call("gameplay.turret.damage.v1",Damage);
+                    Gameplay.ApplyDamage(Damage);
+                    Gameplay.Award(1);
+                    return Gameplay.Health;
+                }
+            }
+            """,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW);
+        int[] colors={0xff4090ff,0xffe54b4b,0xffffcf40};
+        for(int i=0;i<pngs.size();i++){var image=new java.awt.image.BufferedImage(16,16,java.awt.image.BufferedImage.TYPE_INT_ARGB);for(int y=2;y<14;y++)for(int x=2;x<14;x++)image.setRGB(x,y,colors[i]);try(var output=Files.newOutputStream(pngs.get(i),StandardOpenOption.CREATE_NEW)){if(!javax.imageio.ImageIO.write(image,"png",output))throw new IOException("PNG writer unavailable");}}
+        refresh();return pngs;
+    }
     private Path fileClipboard;private boolean cutFile;
     public void fileAction(String action,Path selected){try{
         if(action.equals("copy")||action.equals("cut")){fileClipboard=checked(selected);cutFile=action.equals("cut");status(cutFile?"Source cut; choose Paste in Scripts":"Source copied; choose Paste in Scripts");return;}

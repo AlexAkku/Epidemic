@@ -1,6 +1,7 @@
 #pragma once
 #include "Epidemic/Runtime/Graph/graph_vm.h"
 #include "Epidemic/Game/Editor/editor_project.h"
+#include "Epidemic/Game/Composition/gameplay.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -11,7 +12,8 @@ struct Recipe { std::string name, category; g::Operation operation; g::NodeDefin
 inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
     std::vector<Recipe> result;
     for (const auto &[type, op] : schema.operations) {
-        const auto label = [op]() -> std::string {
+        const auto descriptor=std::find_if(composition::arena::Operations().begin(),composition::arena::Operations().end(),[&](const auto &v){return foundation::StringId::FromString(v.id)==type;});
+        const auto label = descriptor!=composition::arena::Operations().end()?std::string(descriptor->name):[op]() -> std::string {
             switch (op) {
             case g::Operation::EventEntry: return "Event";
             case g::Operation::NativeCall: return "Native Call";
@@ -32,6 +34,7 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
         if (label.empty()) continue;
         Recipe r{label, op == g::Operation::EventEntry ? "Events" : op == g::Operation::Add || op == g::Operation::Multiply ? "Math" : op == g::Operation::NativeCall ? "Native" :
             (op == g::Operation::Input || op == g::Operation::Output || op == g::Operation::Add || op == g::Operation::Multiply) ? "Data" : "Control", op, {{},type,label,{}}};
+        if(descriptor!=composition::arena::Operations().end())r.category=descriptor->category;
         const auto port = [&](std::string name, g::PortKind kind, g::PortDirection direction) {
             r.node.ports.push_back({foundation::StringId::FromString(label+"."+name),name,kind,direction,
                 kind == g::PortKind::Control ? g::TypeId{} : g::kI64Type});

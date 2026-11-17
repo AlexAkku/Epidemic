@@ -76,7 +76,7 @@ class Worker final : public runtime::graph::INativeInvocation {
                 TerminateProcess(process_,1);CloseHandle(process.hThread);throw std::runtime_error("script.process_job");}
             ResumeThread(process.hThread);CloseHandle(process.hThread);CloseHandle(child_error);child_error=nullptr;
             CloseHandle(child_input);child_input=nullptr;CloseHandle(child_output);child_output=nullptr;
-            if(Read(4)!=0x45505343||Read(2)!=2||Read()!=generation_)throw std::runtime_error("script.worker_handshake");
+            if(Read(4)!=0x45505343||Read(2)!=3||Read()!=generation_)throw std::runtime_error("script.worker_handshake");
         }catch(...){if(child_input)CloseHandle(child_input);if(child_output)CloseHandle(child_output);if(child_error)CloseHandle(child_error);Stop();throw;}
     }
     Worker(const Worker&)=delete;Worker&operator=(const Worker&)=delete;
@@ -89,13 +89,21 @@ class Worker final : public runtime::graph::INativeInvocation {
     }
     foundation::Result<std::int64_t> Invoke(std::int64_t argument) override {Fields fields;return InvokeFields(argument,fields);}
     foundation::Result<std::int64_t> InvokeFields(std::int64_t argument,Fields &fields) {return InvokeFor(operation_,"","preview",argument,fields);}
-    foundation::Result<std::int64_t> InvokeFor(const std::string &operation,const std::string &type,const std::string &scope,std::int64_t argument,Fields &fields) {
+    using GameplayCall=std::function<foundation::Result<std::int64_t>(std::string_view,std::int64_t)>;
+    foundation::Result<std::int64_t> InvokeFor(const std::string &operation,const std::string &type,const std::string &scope,std::int64_t argument,Fields &fields,GameplayCall gameplay={}) {
         try {
             if(!process_)throw std::runtime_error("script.invalid_handle");
             deadline_=std::chrono::steady_clock::now()+std::chrono::seconds(3);
             Write(generation_);Write(++request_);Write(static_cast<std::uint64_t>(argument));Text(operation);Text(type);Text(scope);Write<4>(fields.size());
             for(const auto &[name,value]:fields){Text(name);Write<1>(value.index());Text(std::visit([](const auto &v)->std::string{using T=std::decay_t<decltype(v)>;if constexpr(std::is_same_v<T,std::string>)return v;else if constexpr(std::is_same_v<T,bool>)return v?"true":"false";else {char buffer[64];const auto parsed=std::to_chars(buffer,buffer+64,v);if(parsed.ec!=std::errc{})throw std::runtime_error("script.field_encoding");return {buffer,parsed.ptr};}},value));}
-            if(Read()!=generation_||Read()!=request_)throw std::runtime_error("script.stale_handle");
+            auto response=Read();unsigned calls=0;
+            while(response==0x45504750434C5633ULL){
+                if(++calls>256||Read()!=generation_||Read()!=request_)throw std::runtime_error("script.gameplay_budget_or_generation");
+                const auto id=Text();const auto arg=std::bit_cast<std::int64_t>(Read());
+                auto result=gameplay?gameplay(id,arg):foundation::Result<std::int64_t>::Failure(foundation::Error::Create("gameplay.PlayRequired","No live scope"));
+                Write(result?static_cast<std::uint64_t>(result.Value()):0);Text(result?"":result.GetError().code);response=Read();
+            }
+            if(response!=generation_||Read()!=request_)throw std::runtime_error("script.stale_handle");
             const auto value=std::bit_cast<std::int64_t>(Read());const auto error=Text();
             const auto count=Read(4);if(count>64)throw std::runtime_error("script.field_limit");Fields updated;
             for(std::uint64_t i=0;i<count;++i){auto name=Text();const auto kind=Read(1);const auto text=Text();gameplay::composition::PropertyValue field;
@@ -120,8 +128,8 @@ class SharedWorker final {
     void Stop()noexcept{closed_=true;active_.reset();}
     bool Failed()const noexcept{return failed_;}
     std::string Scope(){if(scopes_>=4096)throw std::runtime_error("script.scope_limit");return "preview:"+std::to_string(++scopes_);}
-    foundation::Result<std::int64_t> Invoke(const std::string &operation,const std::string &type,const std::string &scope,std::int64_t argument,Worker::Fields &fields){
-        try{if(closed_||failed_)throw std::runtime_error("script.invalid_handle");if(!active_)active_=std::make_unique<Worker>(worker_,assembly_,hash_,"*",generation_);auto result=active_->InvokeFor(operation,type,scope,argument,fields);if(!result){failed_=true;Stop();}return result;}
+    foundation::Result<std::int64_t> Invoke(const std::string &operation,const std::string &type,const std::string &scope,std::int64_t argument,Worker::Fields &fields,Worker::GameplayCall gameplay={}){
+        try{if(closed_||failed_)throw std::runtime_error("script.invalid_handle");if(!active_)active_=std::make_unique<Worker>(worker_,assembly_,hash_,"*",generation_);auto result=active_->InvokeFor(operation,type,scope,argument,fields,std::move(gameplay));if(!result){failed_=true;Stop();}return result;}
         catch(const std::exception &error){failed_=true;Stop();return foundation::Result<std::int64_t>::Failure(foundation::Error::Create("script.worker_start",error.what()));}
     }
 };

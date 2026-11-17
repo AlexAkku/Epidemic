@@ -99,7 +99,7 @@ static unsafe class Program
             var operations=types.SelectMany(Methods).ToDictionary(m=>m.GetCustomAttribute<GraphOperationAttribute>()!.Id,StringComparer.Ordinal);
             foreach(var method in operations.Values)ValidateMethod(method);
             using var input=Console.OpenStandardInput();using var output=Console.OpenStandardOutput();
-            U(output,0x45505343,4);U(output,2,2);U(output,generation);output.Flush();
+            U(output,0x45505343,4);U(output,3,2);U(output,generation);output.Flush();
             NativeApi api=new(){Size=(uint)sizeof(NativeApi),Version=BridgeExports.Version,InvokeBatch=&NoNative};
             var owners=new Dictionary<string,object>(StringComparer.Ordinal);var sessions=new Dictionary<string,ulong>(StringComparer.Ordinal);
             ulong expected=1;
@@ -122,8 +122,16 @@ static unsafe class Program
                         object instance=owner;ulong created=0;int opened=BridgeRuntime.Open(&api,()=>new ReflectedCallable(instance,selected),&created);
                         if(opened!=0)throw new InvalidDataException("script.abi_open: "+opened);handle=created;sessions.Add(sessionKey,handle);
                     }
-                    uint completed=0;int code=BridgeRuntime.InvokeBatch(handle,&argument,&result,1,&completed);
-                    if(code!=0||completed!=1)throw new InvalidDataException("script.abi_invoke: "+(BridgeStatus)code);
+                    string nativeFailure="";int calls=0;
+                    Gameplay.Dispatch=(operationName,value)=>{
+                        if(++calls>256)throw new InvalidDataException("gameplay.call_budget");
+                        U(output,0x45504750434C5633);U(output,generation);U(output,request);Text(output,operationName);U(output,unchecked((ulong)value));output.Flush();
+                        long answer=unchecked((long)R(input));nativeFailure=ReadText(input);
+                        if(nativeFailure.Length!=0)throw new InvalidDataException(nativeFailure);return answer;
+                    };
+                    uint completed=0;int code;
+                    try{code=BridgeRuntime.InvokeBatch(handle,&argument,&result,1,&completed);}finally{Gameplay.Dispatch=null;}
+                    if(code!=0||completed!=1)throw new InvalidDataException("script.abi_invoke: "+(BridgeStatus)code+" "+nativeFailure);
                 }catch(Exception failure){error="script.exception: "+(failure.InnerException??failure).Message;}
                 using var response=new MemoryStream();U(response,generation);U(response,request);U(response,unchecked((ulong)result));Text(response,error.Length>4096?error[..4096]:error);
                 var updated=error.Length==0&&target!=null?Fields(target).ToArray():[];U(response,(ulong)updated.Length,4);foreach(var field in updated){Text(response,field.Name);Value(response,field.GetValue(owner));}

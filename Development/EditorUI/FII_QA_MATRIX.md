@@ -68,3 +68,22 @@ F-II.1-GATE **PASS**: владелец подтвердил ручную при�
 Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 40 и Graph DTO v4 подключены к одному project-scoped Windows OLE DnD coordinator. [Контракт и фактические проверки](FII3_GRAPH_SCENE.md), [ручная квалификация](FII3_MANUAL_QA.md). F-II.3-GATE ожидает физической межоконной DnD/DPI проверки владельцем; NOT RUN не переименован в PASS.
 
 Обновление 2026-11-16: владелец принял пункты 1–21 адресного прогона. F-II.2-GATE PASS (offline scalar/unary, Rider принят с исключением). Функциональные 17/19/20 сохранить для последующих регрессий. После замечаний UI проверены стабильные docking bounds, Inspector 220 px, caption controls максимизированного окна и закрываемая диагностика без resize canvas. Итоговый F-II.3-GATE ожидает короткого повтора UI и результата пункта 22; физические конфигурации DPI отдельно владельцем не перечислены. Текущий Graph DTO v5, envelope IPC v4. F-II.4 не начат.
+
+## Актуальная квалификация F-II.4 / F-II.5
+
+Исторические записи выше описывают соответствующие проверки, а не текущий gate. Владелец впоследствии подтвердил исправления и пункт22: **F-II.3-GATE PASS**. F-II.4 и F-II.5 реализованы; оба **PENDING MANUAL**.
+
+| Проверка | Фактический результат |
+|---|---|
+| Full native build / public headers / CTest | PASS,162/162 |
+| Shared native gameplay / Graph / C# worker RPC v3 | PASS, настоящий Health owner и новый процесс |
+| Arena fixed tick / Wait / input bindings / Pause / Step / time scale | PASS native |
+| AABB/Circle / mask / trigger / hit once / death / cancellation | PASS native, включая Died breakpoint и teardown |
+|1000 spawn/despawn, Entity records / Scene nodes / jobs | PASS native, memory/handle instrumentation |
+| Standalone Release / JCEF / production Arena PNG import / shutdown | PASS после исправления повторной workspace initialization |
+| Packaged Runtime / Graph↔Scene / Graph / C# | PASS |
+| Packaged HWND/presentation, IPC/catalog/architecture | PASS, Arena в двух HWND; финальный адресный батч164.02s |
+| Static analysis |0 новых позиций;33 inherited +1 toolchain, общий FAIL/backlog |
+| Физический фокус/мониторы/DPI/playable slice | NOT RUN агентом; [совместная инструкция](FII45_MANUAL_QA.md) |
+
+Без Computer Use, без push. F-II-GATE не закрыт автоматически; F-III не начат.

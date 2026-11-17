@@ -1,4 +1,5 @@
 #include "Epidemic/Game/Editor/editor_project.h"
+#include "Epidemic/Game/Composition/gameplay.h"
 #include "project_archive.h"
 #include <algorithm>
 #include <unordered_set>
@@ -100,21 +101,26 @@ DefaultGraphBehavior(const ProjectDefinition &definition, const ProjectSchema &s
     if (!source || !id.IsValid())
         return Result::Failure(Error("editor.graph_reference"));
     foundation::StringId entry;
+    std::vector<comp::GraphEventRoute> routes;
     for (const auto &node : source->nodes) {
         const auto type = std::ranges::find(schema.operations,node.type_id,
             &std::pair<runtime::graph::TypeId,runtime::graph::Operation>::first);
         if (type == schema.operations.end() || type->second != runtime::graph::Operation::EventEntry)
             continue;
+        const bool named=std::any_of(composition::arena::Operations().begin(),composition::arena::Operations().end(),[&](const auto &op){return op.kind==runtime::graph::Operation::EventEntry&&foundation::StringId::FromString(op.id)==node.type_id;});
         for (const auto &port : node.ports)
             if (port.kind == runtime::graph::PortKind::Event &&
                 port.direction == runtime::graph::PortDirection::Input &&
-                port.type_id == runtime::graph::kI64Type &&
+                port.type_id == runtime::graph::kI64Type && !named &&
                 (!entry.IsValid() || port.id.Raw() < entry.Raw()))
                 entry = port.id;
+        for(const auto &operation:composition::arena::Operations())if(operation.kind==runtime::graph::Operation::EventEntry&&foundation::StringId::FromString(operation.id)==node.type_id)
+            for(const auto &port:node.ports)if(port.kind==runtime::graph::PortKind::Event&&port.direction==runtime::graph::PortDirection::Input)routes.push_back({node.type_id,port.id});
     }
-    if (!entry.IsValid())
+    if (!entry.IsValid()&&routes.empty())
         return Result::Failure(Error("editor.graph_event_entry"));
-    return Result::Success({id,graph.value,{{entry,entry}},{}});
+    if(entry.IsValid())routes.push_back({entry,entry});
+    return Result::Success({id,graph.value,std::move(routes),{}});
 }
 
 foundation::Result<comp::PrefabDefinition>

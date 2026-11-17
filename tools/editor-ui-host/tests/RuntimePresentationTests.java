@@ -14,11 +14,15 @@ public final class RuntimePresentationTests {
     private static <T>T edt(Callable<T> action)throws Exception{var task=new FutureTask<T>(action);SwingUtilities.invokeAndWait(task);return task.get();}
     private static Bridge.Reply call(Bridge b,int op,String... args)throws Exception{return b.call(op,args).get(20,TimeUnit.SECONDS);}
     private record WindowView(JFrame frame,RuntimeGameView game) {}
+    private static JComboBox<?> scale(Component root){if(root instanceof JComboBox<?> value&&"runtime.time-scale".equals(value.getName()))return value;if(root instanceof Container owner)for(var child:owner.getComponents()){var found=scale(child);if(found!=null)return found;}return null;}
     private static JFrame show(JComponent component){var frame=new JFrame("F-II.4 owned presentation qualification");frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);frame.add(component);frame.setSize(1100,750);frame.setVisible(true);return frame;}
     private static JTable table(Component root,String name){if(root instanceof JTable value&&name.equals(value.getName()))return value;if(root instanceof Container group)for(var child:group.getComponents()){var value=table(child,name);if(value!=null)return value;}return null;}
     private static void history(UiPanels panel,Bridge.Reply reply)throws Exception{edt(()->{panel.refresh(reply.snapshot());panel.runtime(reply.runtime());return null;});}
     public static void main(String[] args)throws Exception{
         Path work=Path.of(args[1]).toAbsolutePath();Files.createDirectories(work);Path project=Path.of(Files.readString(work.resolve("runtime-project.txt")).trim());List<JFrame> owned=new ArrayList<>();
+        // The real editor keeps its main frame alive between Game windows. Keep
+        // a peer here too: otherwise AWT may retire and replace the original EDT.
+        var host=edt(()->{var owner=new JFrame("Qualification host lifetime");owner.addNotify();return owner;});
         try(var b=new Bridge(Path.of(args[0]).toAbsolutePath(),work.resolve("presentation"),state->{},Runnable::run)){
             b.connect().get(20,TimeUnit.SECONDS);call(b,2,project.toString());call(b,13);call(b,41,"pause",Long.toUnsignedString(b.latest().runtime().session()));
             var command=(UiPanels.RuntimeCommand)(connection,generation,session,action,arguments)->{var payload=new ArrayList<String>();payload.add(action);payload.add(Long.toUnsignedString(session));payload.addAll(List.of(arguments));return b.runtimeCommand(connection,generation,payload);};
@@ -51,6 +55,14 @@ public final class RuntimePresentationTests {
             }
             edt(()->{var console=table(logs.view("console"),"console.output");var sessions=new HashSet<String>();boolean timestamp=false;for(int row=0;row<console.getRowCount();row++){String session=String.valueOf(console.getValueAt(row,1));if(!session.endsWith(" / 0"))sessions.add(session);if(String.valueOf(console.getValueAt(row,7)).equals("F4 authoring history marker")){long time=java.time.Instant.parse(String.valueOf(console.getValueAt(row,0))).toEpochMilli();timestamp=time>=marker[0]&&time<=marker[0]+500&&time<System.currentTimeMillis()-100;}}check(sessions.size()>=2&&timestamp,"Late-open Console lost historical sessions or changed authoring timestamps");var problems=table(logs.view("problems"),"problems.output");check(java.util.stream.IntStream.range(0,problems.getRowCount()).noneMatch(row->String.valueOf(problems.getValueAt(row,3)).equals("Info")),"Late-open Problems contains info logs");return null;});
             System.out.println("PASS F-II.4 two owned HWNDs / one native session; native input/movement/readonly Inspector; real presentation 60/120; 100 Game window disposal cycles");
-        }finally{edt(()->{owned.forEach(Window::dispose);return null;});}
+            call(b,43,"arena");call(b,6);call(b,13);call(b,42);var arena=b.latest();long arenaSession=arena.runtime().session(),arenaTick=arena.runtime().tick();
+            var arenaA=edt(()->{var game=new RuntimeGameView(command);game.refresh(arena.snapshot(),arena.runtime());JFrame arenaWindow=show(game);owned.add(arenaWindow);return new WindowView(arenaWindow,game);});
+            var arenaB=edt(()->{var game=new RuntimeGameView(command);game.refresh(arena.snapshot(),arena.runtime());JFrame arenaWindow=show(game);owned.add(arenaWindow);return new WindowView(arenaWindow,game);});
+            call(b,41,"time-scale",Long.toUnsignedString(arenaSession),"0.5");var scaled=b.latest();edt(()->{for(var view:List.of(arenaA,arenaB)){view.game().refresh(scaled.snapshot(),scaled.runtime());check("Time 0.5x".equals(scale(view.game()).getSelectedItem()),"Detached Game time scale diverged from native owner");}return null;});
+            call(b,41,"key",Long.toUnsignedString(arenaSession),"68","1");Thread.sleep(200);call(b,42);call(b,41,"input-reset",Long.toUnsignedString(arenaSession));var arenaMoved=b.latest();
+            check(arenaMoved.runtime().session()==arenaSession&&arenaMoved.runtime().tick()>arenaTick&&arenaMoved.runtime().entities().stream().anyMatch(e->e.placement()==1&&e.x()>0),"Arena one-session input/native movement");
+            edt(()->{for(var view:List.of(arenaA,arenaB)){view.game().refresh(arenaMoved.snapshot(),arenaMoved.runtime());view.game().viewport().draw();check(view.game().viewport().result().startsWith("PASS"),"Arena native Game draw");view.frame().dispose();owned.remove(view.frame());}return null;});
+            call(b,14);System.out.println("PASS F-II.5 Arena gameplay in two native HWNDs, one session/input clock, teardown");
+        }finally{edt(()->{owned.forEach(Window::dispose);host.dispose();return null;});}
     }
 }

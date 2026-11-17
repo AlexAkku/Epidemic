@@ -9,11 +9,11 @@
 | Rider / Open With | Implemented · принято с исключением | VS Code проверен владельцем; Rider принят им без установленного Rider (2026-11-16). Реальный запуск Rider не заявляется. |
 | Managed bridge | Implemented / Limited | Opt-in C ABI и Graph adapter проходят контракт. Native hostfxr проверен на двух сборках Turret. F-II.2 добавляет native descriptors и один worker на поколение Play, native field roundtrip, Stop/old-handle checks. Scalar/unary профиль; [границы](FII2_SCHEMA_CODESPACE.md). |
 | Native Schema, Play/Stop, Scene Renderer | Implemented | Runtime/authoring доступны по существующим контрактам, Scene использует native viewport. |
-| Graph↔Scene | Implemented · manual pending | F-II.3 native/coordinator/VM regressions; физический DnD/DPI ещё не принят. |
+| Graph↔Scene | Implemented · GATE PASS | F-II.3 принят владельцем после исправлений UI и подтверждения пункта22. |
 | Live Game View / native Play | Implemented, manual gate pending | F-II.4: один C++ Runtime, input/Pause/Step/Restart/Stop, настоящие HWND/Renderer. |
 | Runtime Inspector / Graph Debugger | Implemented, bounded profile | Реальные поля/ports/trace, native breakpoints/Step to Node, readonly overlay. |
 | Console / Problems / Profiler | Implemented / Limited providers | История/фильтры/source links; реальные Diagnostics/process/renderer counters, отсутствующие providers → Unavailable. |
-| Gameplay authoring | Planned | F-II.5 не начат. |
+| Gameplay authoring | Implemented · manual pending | F-II.5: единый native owner, Schema/Graph/C#, движение, collision/projectile/damage/waves, Arena sample. [Контракт](FII5_GAMEPLAY_CONTRACT.md), [отчёт](FII5_REPORT.md). |
 | F-II.0b / вход в F-II.1 | PASS / READY | Настоящий CEF sandbox и native roundtrip квалифицированы. F-II.1 реализован; автоматические функциональные проверки PASS, ручной gate PASS (владелец, 2026-11-14). |
 
 Статус и решения по обязательным пробам приведены в [техническом отчёте](FII_TECH_ADR.md).
@@ -32,4 +32,4 @@ Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 
 Актуальное подтверждение владельца 2026-11-16: **F-II.3-GATE PASS**, включая новые UI-исправления и пункт22. **F-II.4 IN PROGRESS**, основной сценарий Health → Damage → Wait(ticks) → Damage, C++ Runtime владеет временем и исполнением.
 
 
-Актуальный статус17 ноября 2026: F-II.4 code complete; full CTest161/161 и standalone/packaged функциональные регрессии PASS. Deep analysis сохраняет inherited FAIL отдельно от функционального результата. F-II.4-GATE PENDING MANUAL; [отчёт, baseline и бюджеты](FII4_REPORT.md), [ручной прогон с10 ранними регрессиями](FII4_MANUAL_QA.md). F-II.5 не начат.
+Актуальный статус: F-II.4 и F-II.5 code complete, оба GATE PENDING MANUAL. F-II.5: full native CTest162/162 и standalone Release/JCEF smoke PASS. Deep сохраняет inherited FAIL отдельно от функционального результата; packaged результаты и бюджеты в [FII5_REPORT](FII5_REPORT.md). [Совместный ручной прогон с10 ранними регрессиями](FII45_MANUAL_QA.md). F-III не начат.

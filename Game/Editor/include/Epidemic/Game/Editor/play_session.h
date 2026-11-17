@@ -1,12 +1,13 @@
 #pragma once
 #include "Epidemic/Game/Editor/editor_project.h"
+#include "Epidemic/Game/Composition/gameplay.h"
 #include <chrono>
 #include <map>
 #include <set>
 #include <deque>
 
 namespace epidemic::game::editor {
-struct PlayInput { double x=0,y=0,pointer_x=0,pointer_y=0;bool pointer_down=false; };
+struct PlayInput { double x=0,y=0,pointer_x=0,pointer_y=0;bool pointer_down=false,attack=false; };
 enum class PlayPhase : std::uint8_t { Stopped, Starting, Running, Paused, Stopping, Failed };
 struct PlayField { std::string component,name,value; std::uint64_t type=0,part=0; };
 struct PlayEntity { std::uint64_t placement=0,node=0,runtime_high=0,runtime_low=0;std::string name;runtime::Transform world{};std::string sprite;float ppu=64,pivot_x=.5f,pivot_y=.5f;std::vector<PlayField> fields; };
@@ -53,6 +54,7 @@ struct PlayContext {
     comp::PrefabComposer &prefabs;
     gameplay::runtime_bridge::RuntimeBridgeService &bridge;
     composition::SceneCompositionInstance *scene = nullptr;
+    composition::arena::Gameplay *gameplay = nullptr;
 
     [[nodiscard]] foundation::Result<runtime::Transform>
     WorldTransform(gameplay::entities::EntityHandle entity) const {
@@ -98,6 +100,7 @@ struct PlaySprite {
     std::uint32_t x = 0, y = 0, width = 0, height = 0;
     float pivot_x = 0.5f, pivot_y = 0.5f, pixels_per_unit = 64;
     runtime::Transform world{};
+    runtime::AssetId prefab{};
 
 };
 
@@ -134,6 +137,9 @@ class PlaySession final {
     [[nodiscard]] foundation::Result<void> Pump(std::chrono::nanoseconds elapsed);
     [[nodiscard]] foundation::Result<void> SetInput(double x,double y);
     [[nodiscard]] foundation::Result<void> SetPointer(double x,double y,bool pressed);
+    [[nodiscard]] foundation::Result<void> SetKey(std::uint16_t key,bool pressed);
+    [[nodiscard]] foundation::Result<void> SetTimeScale(double scale);
+    [[nodiscard]] double TimeScale() const noexcept {return time_scale_;}
     void SetBreakpoint(runtime::AssetId graph,runtime::graph::ElementId node,bool enabled);
     [[nodiscard]] PlayRuntimeSnapshot RuntimeSnapshot() const;
     [[nodiscard]] PlayPhase Phase() const noexcept { return phase_; }
@@ -152,6 +158,8 @@ class PlaySession final {
     std::uint64_t session_id_=0,graph_steps_=0,dropped_ticks_=0;
     std::int64_t accumulator_=0;
     PlayInput input_;
+    std::set<std::uint16_t> keys_;
+    double time_scale_=1;
     bool debug_step_=false;
     std::uint64_t step_activation_=0,step_node_=0,blocked_activation_=0,blocked_node_=0;
     std::map<std::uint64_t,std::uint64_t> debug_nodes_,activation_entities_;

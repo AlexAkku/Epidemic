@@ -1036,15 +1036,18 @@ VoidResult ProjectFolder::Redo() {
 Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) const {
     using R = Result<std::unique_ptr<PlaySession>>;
     try {
+        const auto selected_scene=options.scene;
         auto session = Take(editor_->Play(std::move(options)));
         std::vector<PlaySprite> sprites;
         const auto snapshot = Snapshot();
-        const auto *entry = snapshot->Find(snapshot->definition.entry_scene);
+        const auto *entry = snapshot->Find(selected_scene.IsValid()?selected_scene:snapshot->definition.entry_scene);
         const auto *scene =
             entry ? std::get_if<composition::SceneCompositionDefinition>(&entry->data) : nullptr;
         if (!scene)
             return R::Failure(Error("editor.play_scene", "Entry Scene missing"));
-        for (const auto &placement : scene->placements) {
+        auto sprite_placements=scene->placements;
+        for(const auto &binding:visuals_->sprites)if(std::none_of(sprite_placements.begin(),sprite_placements.end(),[&](const auto &p){return p.prefab==binding.prefab;}))sprite_placements.push_back({{},binding.prefab,{}});
+        for (const auto &placement : sprite_placements) {
             const auto binding =
                 std::find_if(visuals_->sprites.begin(), visuals_->sprites.end(),
                              [&](const auto &value) { return value.prefab == placement.prefab; });
@@ -1053,10 +1056,14 @@ Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) co
             const auto source =
                 std::find_if(assets_.begin(), assets_.end(),
                              [&](const auto &value) { return value.id == binding->texture; });
+            if(!placement.node.IsValid()&&(source==assets_.end()||source->IsTrashed()||source->cooked_key.empty())){
+                PlaySprite unavailable;unavailable.prefab=placement.prefab;sprites.push_back(std::move(unavailable));continue;
+            }
             Require(source != assets_.end() && !source->IsTrashed() && !source->cooked_key.empty(),
                     "editor.play_sprite_source", "Used Sprite source is unavailable");
             PlaySprite sprite;
             sprite.placement = placement.node;
+            sprite.prefab = placement.prefab;
             sprite.texture = source->id;
             sprite.generation = source->generation;
             sprite.cooked_key = source->cooked_key;
@@ -1068,11 +1075,13 @@ Result<std::unique_ptr<PlaySession>> ProjectFolder::Play(PlayOptions options) co
                 const auto sheet =
                     std::find_if(visuals_->sheets.begin(), visuals_->sheets.end(),
                                  [&](const auto &value) { return value.texture == source->id; });
+                if(sheet==visuals_->sheets.end()&&!placement.node.IsValid()){sprite.cooked_key.clear();sprites.push_back(std::move(sprite));continue;}
                 Require(sheet != visuals_->sheets.end(), "editor.play_sprite_region",
                         "Used sheet is unavailable");
                 const auto region =
                     std::find_if(sheet->regions.begin(), sheet->regions.end(),
                                  [&](const auto &value) { return value.id == sprite.region_id; });
+                if((region==sheet->regions.end()||region->missing)&&!placement.node.IsValid()){sprite.cooked_key.clear();sprites.push_back(std::move(sprite));continue;}
                 Require(region != sheet->regions.end() && !region->missing,
                         "editor.play_sprite_region", "Used region is unavailable");
                 sprite.x = region->x;

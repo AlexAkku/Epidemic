@@ -15,7 +15,7 @@ public final class ScriptTests {
     static String port(Bridge.GraphNode node,String name){return id(node.ports().stream().filter(p->p.name().equals(name)).findFirst().orElseThrow().id());}
     static void connect(Bridge bridge,long doc,Bridge.GraphNode from,String output,Bridge.GraphNode to,String input)throws Exception{call(bridge,38,"connect",id(doc),port(from,output),port(to,input));}
     static void run(Path directory,String...args)throws Exception{Process process=new ProcessBuilder(args).directory(directory.toFile()).redirectErrorStream(true).start();CompletableFuture.delayedExecutor(60,TimeUnit.SECONDS).execute(()->{if(process.isAlive()){process.descendants().forEach(ProcessHandle::destroyForcibly);process.destroyForcibly();}});var log=directory.resolve("test-build.log");try(var output=Files.newOutputStream(log)){process.getInputStream().transferTo(output);}check(process.waitFor(60,TimeUnit.SECONDS)&&process.exitValue()==0,"Build/worker failed; see "+log);}
-    static String source(int version){return "using Epidemic.ScriptApi; [ScriptComponent(\"qa.Turret\")] public sealed class Turret { [ScriptField] public long Health {get;set;}=100; [ScriptField] public double Range {get;set;}=150; [ScriptField] public bool Enabled {get;set;}=true; [ScriptField] public string Label {get;set;}=\"Башня\"; [GraphOperation(\"qa.Turret.Damage.v1\")] public long ApplyDamage(long amount){Health=checked(Health-amount*"+version+");return Health;} [GraphOperation(\"qa.Turret.Heal.v1\")] public long Heal(long amount){Health=checked(Health+amount);return Health;} }";}
+    static String source(int version){return "using Epidemic.ScriptApi; [ScriptComponent(\"qa.Turret\")] public sealed class Turret { [ScriptField] public long Health {get;set;}=100; [ScriptField] public double Range {get;set;}=150; [ScriptField] public bool Enabled {get;set;}=true; [ScriptField] public string Label {get;set;}=\"Башня\"; [GraphOperation(\"qa.Turret.Damage.v1\")] public long ApplyDamage(long amount){Health=checked(Health-amount*"+version+");return Health;} [GraphOperation(\"qa.Turret.Heal.v1\")] public long Heal(long amount){Health=checked(Health+amount);return Health;} [GraphOperation(\"qa.Turret.NativeDamage.v1\")] public long NativeDamage(long amount){return Gameplay.ApplyDamage(amount);} }";}
     public static void main(String[]args)throws Exception{
         Path backend=Path.of(args[0]).toAbsolutePath(),work=Path.of(args[1]).toAbsolutePath();Files.createDirectories(work);Path project=Files.createTempDirectory(work,"FII2 Кириллица ").resolve("Project"),managed=backend.getParent().resolve("managed");
         Path dotnet=Path.of(System.getenv("ProgramFiles"),"dotnet/dotnet.exe");String file;long graphId;
@@ -44,6 +44,19 @@ public final class ScriptTests {
                 call(bridge,6);
             }
             graphId=bridge.latest().snapshot().documents().stream().filter(d->d.name().equals("Managed V2")).findFirst().orElseThrow().id();
+            call(bridge,43,"arena");
+            long arenaPrefab=bridge.latest().snapshot().documents().stream().filter(d->d.name().equals("Arena Player Turret")).findFirst().orElseThrow().id();
+            long arenaRoot=bridge.latest().snapshot().nodes().stream().filter(n->n.document()==arenaPrefab&&n.kind()==2).findFirst().orElseThrow().id();
+            call(bridge,9,"2",id(arenaPrefab),id(arenaRoot));call(bridge,30,id(bridge.latest().snapshot().selectionRevision()),"add",id(typeId));
+            call(bridge,15,"2","Managed Native Gameplay");long nativeGraph=bridge.latest().snapshot().selection().document();
+            var nativeEvent=node(bridge,nativeGraph,"Event");var nativeAmount=node(bridge,nativeGraph,"Input");var nativeCall=node(bridge,nativeGraph,"Turret.NativeDamage");
+            call(bridge,38,"settings",id(nativeGraph),id(nativeAmount.id()),nativeAmount.name(),"7","","","0");
+            connect(bridge,nativeGraph,nativeEvent,"next",nativeCall,"in");connect(bridge,nativeGraph,nativeAmount,"value",nativeCall,"argument");
+            call(bridge,9,"5",id(arenaPrefab),id(arenaRoot),id(typeId),"0");call(bridge,30,id(bridge.latest().snapshot().selectionRevision()),"graph",id(nativeGraph));
+            call(bridge,6);call(bridge,13);
+            for(int i=0;i<100&&bridge.latest().runtime().entities().stream().filter(e->e.placement()==1).flatMap(e->e.fields().stream()).noneMatch(f->f.component().equals("editor.example.health")&&f.name().equals("points")&&f.value().equals("93"));i++){Thread.sleep(20);call(bridge,42);}
+            check(bridge.latest().runtime().entities().stream().filter(e->e.placement()==1).flatMap(e->e.fields().stream()).anyMatch(f->f.component().equals("editor.example.health")&&f.name().equals("points")&&f.value().equals("93")),"C# did not call the native Health owner");
+            call(bridge,14);System.out.println("PASS F-II.5 C# facade -> worker RPC v3 -> same native gameplay Health owner via live Graph scope");
             // Wrong schema version is rejected without replacing the last-good native palette.
             Path broken=project.resolve(".epidemic/scripts/broken.schema");Files.write(broken,new byte[]{0,2});long revision=bridge.latest().snapshot().revision();
             try{call(bridge,39,project.relativize(broken).toString());throw new IllegalStateException("Accepted malformed schema");}catch(ExecutionException expected){check(expected.getCause().getMessage().contains("schema_version"),"Wrong rejection");}
@@ -51,7 +64,8 @@ public final class ScriptTests {
             call(bridge,10);bridge.shutdown().get(20,TimeUnit.SECONDS);
         }
         try(var bridge=new Bridge(backend,work,s->{},Runnable::run)){
-            bridge.connect().get(30,TimeUnit.SECONDS);call(bridge,2,file);check(graph(bridge,graphId).catalogue().stream().anyMatch(t->t.name().equals("Turret.ApplyDamage")),"Reopen lost native operation schema");call(bridge,38,"run",id(graphId));check(graph(bridge,graphId).report().contains("result=86"),"New-process managed roundtrip failed: "+graph(bridge,graphId).report());call(bridge,10);bridge.shutdown().get(20,TimeUnit.SECONDS);
+            bridge.connect().get(30,TimeUnit.SECONDS);call(bridge,2,file);check(graph(bridge,graphId).catalogue().stream().anyMatch(t->t.name().equals("Turret.ApplyDamage")),"Reopen lost native operation schema");call(bridge,38,"run",id(graphId));check(graph(bridge,graphId).report().contains("result=86"),"New-process managed roundtrip failed: "+graph(bridge,graphId).report());
+            call(bridge,13);Thread.sleep(100);call(bridge,42);check(bridge.latest().runtime().entities().stream().filter(e->e.placement()==1).flatMap(e->e.fields().stream()).anyMatch(f->f.component().equals("editor.example.health")&&f.name().equals("points")&&f.value().equals("93")),"Arena C# native Health did not survive Save/Open in new process");call(bridge,14);call(bridge,10);bridge.shutdown().get(20,TimeUnit.SECONDS);
         }
         run(work,backend.toString(),"--script-lifecycle-smoke",file);
         check(Files.readString(work.resolve("test-build.log")).contains("PASS C# native Play/Send/Tick"),"Runtime lifecycle scenario did not run");

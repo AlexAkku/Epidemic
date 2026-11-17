@@ -14,6 +14,7 @@ public final class RuntimeGameView extends JPanel {
     private final NativeViewport viewport=new NativeViewport();
     private final JLabel status=new JLabel("Stopped"),focus=new JLabel("Click Game to control · WASD/arrows · Escape releases input");
     private final JComboBox<Bridge.Document> scenes=new JComboBox<>();
+    private final JComboBox<String> timeScale=new JComboBox<>(new String[]{"Time 1x","Time 0.5x","Time 2x"});
     private final Map<String,JButton> actions=new LinkedHashMap<>();
     private final Set<Integer> keys=new HashSet<>();
     private final UiPanels.RuntimeCommand commands;
@@ -41,7 +42,7 @@ public final class RuntimeGameView extends JPanel {
         scenes.setRenderer(new DefaultListCellRenderer(){{putClientProperty("html.disable",true);}public Component getListCellRendererComponent(JList<?> list,Object item,int index,boolean selected,boolean focused){return super.getListCellRendererComponent(list,item instanceof Bridge.Document doc?doc.name():item,index,selected,focused);}});
         scenes.addActionListener(e->{if(!refreshing&&scenes.getSelectedItem() instanceof Bridge.Document doc)invoke("scene",Long.toUnsignedString(doc.id()));});header.add(scenes,BorderLayout.SOUTH);
         add(header,BorderLayout.NORTH);if(showViewport){
-            var settings=new JPanel(new GridLayout(1,2,4,4));settings.add(resolution);var rates=new JComboBox<String>(new String[]{"Present 60 FPS","Present 120 FPS"});rates.addActionListener(e->viewport.presentationRate(rates.getSelectedIndex()==0?60:120));settings.add(rates);
+            var settings=new JPanel(new GridLayout(1,3,4,4));timeScale.setName("runtime.time-scale");timeScale.addActionListener(e->{if(!refreshing&&runtime.live()&&timeScale.getSelectedItem() instanceof String text)invoke("time-scale",text.substring(5,text.length()-1));});settings.add(timeScale);settings.add(resolution);var rates=new JComboBox<String>(new String[]{"Present 60 FPS","Present 120 FPS"});rates.addActionListener(e->viewport.presentationRate(rates.getSelectedIndex()==0?60:120));settings.add(rates);
             var center=new JPanel(new BorderLayout());center.add(settings,BorderLayout.NORTH);gameHost.add(viewport);center.add(new JScrollPane(gameHost));add(center);
             gameHost.addComponentListener(new ComponentAdapter(){public void componentResized(ComponentEvent e){sizeGame();}});resolution.addActionListener(e->sizeGame());
         }else add(new JLabel("Controls share the native Game session"));add(focus,BorderLayout.SOUTH);viewport.grid(false);viewport.presentationRate(60);
@@ -57,23 +58,23 @@ public final class RuntimeGameView extends JPanel {
     private void invoke(String action,String... args){
         commands.execute(runtime.connection(),runtime.generation(),runtime.session(),action,args).whenComplete((reply,error)->SwingUtilities.invokeLater(()->{if(error!=null)status.setText("Runtime command rejected: "+error.getMessage());}));
     }
-    private void releaseInput(){if(!keys.isEmpty()){keys.clear();if(runtime.live())invoke("input","0","0");}if(pointerDown||pointerSending||pendingPointer!=null){pointerDown=false;pendingPointer=null;if(runtime.live())invoke("pointer","0","0","0");}}
+    private void releaseInput(){keys.clear();pointerDown=false;pendingPointer=null;if(runtime.live())invoke("input-reset");}
     private void key(KeyEvent event,boolean down){
         if(!viewport.hasFocus()||down&&(event.isControlDown()||event.isAltDown()||event.isMetaDown()))return;
         int key=event.getKeyCode();
         if(key==KeyEvent.VK_ESCAPE){releaseInput();viewport.transferFocus();event.consume();return;}
-        if(!Set.of(KeyEvent.VK_W,KeyEvent.VK_A,KeyEvent.VK_S,KeyEvent.VK_D,KeyEvent.VK_LEFT,KeyEvent.VK_RIGHT,KeyEvent.VK_UP,KeyEvent.VK_DOWN).contains(key))return;
+        if(key<1||key>255||!runtime.live()||runtime.phase()!=2)return;
         boolean changed=down?keys.add(key):keys.remove(key);event.consume();
-        if(changed&&runtime.live()){
-            int x=(keys.contains(KeyEvent.VK_D)||keys.contains(KeyEvent.VK_RIGHT)?1:0)-(keys.contains(KeyEvent.VK_A)||keys.contains(KeyEvent.VK_LEFT)?1:0);
-            int y=(keys.contains(KeyEvent.VK_W)||keys.contains(KeyEvent.VK_UP)?1:0)-(keys.contains(KeyEvent.VK_S)||keys.contains(KeyEvent.VK_DOWN)?1:0);
-            invoke("input",""+x,""+y);
-        }
+        if(changed)invoke("key",Integer.toString(key),down?"1":"0");
     }
     public void refresh(Bridge.Snapshot snapshot,Bridge.RuntimeSession next){
         if(snapshot==null)return;
-        long previous=runtime.session();if(runtime.connection()!=next.connection()||runtime.generation()!=next.generation()||previous!=next.session()){keys.clear();pointerDown=false;pendingPointer=null;}runtime=next;refreshing=true;
+        long previous=runtime.session();if(runtime.connection()!=next.connection()||runtime.generation()!=next.generation()||previous!=next.session()||next.phase()!=2){keys.clear();pointerDown=false;pendingPointer=null;}runtime=next;refreshing=true;
         try{
+            double scale=next.metrics().stream().filter(m->m.name().equals("Time scale")).mapToDouble(Bridge.RuntimeMetric::value).findFirst().orElse(1);
+            int scaleIndex=scale==1?0:scale==.5?1:scale==2?2:3;
+            if(timeScale.getItemCount()>3)timeScale.removeItemAt(3);if(scaleIndex==3)timeScale.addItem("Time "+scale+"x");
+            timeScale.setSelectedIndex(scaleIndex);timeScale.setEnabled(next.phase()==2||next.phase()==3);
             List<Bridge.Document> options=snapshot.documents().stream().filter(d->d.kind()==0).toList();
             if(scenes.getItemCount()!=options.size()||!java.util.stream.IntStream.range(0,options.size()).allMatch(i->scenes.getItemAt(i).equals(options.get(i)))){scenes.removeAllItems();options.forEach(scenes::addItem);}
             for(int i=0;i<scenes.getItemCount();i++)if(scenes.getItemAt(i).id()==next.configuredScene())scenes.setSelectedIndex(i);

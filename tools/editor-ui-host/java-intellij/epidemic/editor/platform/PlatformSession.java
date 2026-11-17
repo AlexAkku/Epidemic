@@ -756,6 +756,36 @@ public final class PlatformSession implements Disposable {
             })));
         }catch(IOException|RuntimeException error){failure(error);}
     }
+    private CompletableFuture<Bridge.Reply> installArena(){
+        if(!ready()||snapshot.playing())return CompletableFuture.failedFuture(new IOException("Arena unavailable during Play"));Bridge participant=bridge;
+        long arenaProject=snapshot.project(),arenaGeneration=participant.latest().generation();
+        CompletableFuture<Bridge.Reply> result=new CompletableFuture<>();
+        participant.call(43,"arena").whenComplete((reply,error)->edt(()->{
+            if(error!=null){failure(error);result.completeExceptionally(error);return;}
+            try{
+                checkArenaContext(participant,arenaProject,arenaGeneration);
+                var images=scripts.installArenaFiles();CompletableFuture<Bridge.Reply> imports=CompletableFuture.completedFuture(reply);
+                for(Path image:images)imports=imports.thenCompose(r->{checkArenaContext(participant,arenaProject,arenaGeneration);return participant.call(18,Long.toUnsignedString(participant.latest().snapshot().assetRevision()),image.toString(),"FII_Arena/"+image.getFileName());});
+                imports.thenCompose(r->awaitArenaAssets(participant,arenaProject,arenaGeneration,200)).thenCompose(r->{
+                    CompletableFuture<Bridge.Reply> assigned=CompletableFuture.completedFuture(r);
+                    for(var pair:List.of(new String[]{"Turret.png","Arena Player Turret"},new String[]{"Enemy.png","Arena Enemy"},new String[]{"Projectile.png","Arena Projectile"}))assigned=assigned.thenCompose(previous->{
+                        checkArenaContext(participant,arenaProject,arenaGeneration);var current=participant.latest().snapshot();var asset=current.assets().stream().filter(a->a.path().equals("Content/FII_Arena/"+pair[0])).findFirst().orElseThrow();var prefab=current.documents().stream().filter(d->d.name().equals(pair[1])).findFirst().orElseThrow();
+                        return participant.call(24,Long.toUnsignedString(current.assetRevision()),Long.toUnsignedString(prefab.id()),Long.toUnsignedString(asset.id()));
+                    });return assigned;
+                }).whenComplete((done,failed)->edt(()->{if(failed!=null){failure(failed);result.completeExceptionally(failed);}else {done.snapshot().documents().stream().filter(d->d.name().equals("FII Arena")).findFirst().ifPresent(this::openDocument);open("game.view");result.complete(done);}}));
+            }catch(Exception failed){failure(failed);result.completeExceptionally(failed);}
+        }));
+        return result;
+    }
+    private void checkArenaContext(Bridge participant,long projectId,long generation){if(bridge!=participant||participant.latest()==null||participant.latest().generation()!=generation||participant.latest().snapshot().project()!=projectId)throw new CancellationException("Arena project changed");}
+    private CompletableFuture<Bridge.Reply> awaitArenaAssets(Bridge participant,long projectId,long generation,int remaining){
+        if(bridge!=participant||remaining==0)return CompletableFuture.failedFuture(new IOException("Arena import canceled or timed out"));
+        checkArenaContext(participant,projectId,generation);
+        return participant.call(26).thenCompose(reply->{
+            if(List.of("Turret.png","Enemy.png","Projectile.png").stream().allMatch(name->reply.snapshot().assets().stream().anyMatch(a->a.path().equals("Content/FII_Arena/"+name)&&!a.cookedKey().isEmpty())))return CompletableFuture.completedFuture(reply);
+            return CompletableFuture.runAsync(()->{},CompletableFuture.delayedExecutor(100,TimeUnit.MILLISECONDS,io)).thenCompose(ignored->awaitArenaAssets(participant,projectId,generation,remaining-1));
+        });
+    }
     private void command(int operation,String...args){if(!ready())return;bridge.call(operation,args).whenComplete((r,e)->{if(e!=null)edt(()->failure(e));});}
 
     private javax.swing.Timer runtimePoll;private boolean runtimePolling;
@@ -919,6 +949,7 @@ public final class PlatformSession implements Disposable {
         sub.get("File").add(action("New C# Class…",()->{open("code.space");scripts.newClass();},()->opened));
         sub.get("File").add(action("Open C# / Open With…",()->{open("code.space");scripts.choose();},()->opened));
         sub.get("Build").add(action("Build & Register C#…",scripts::build,()->ready()&&!snapshot.playing()));
+        sub.get("Project").add(action("Create F-II Arena Sample",this::installArena,()->ready()&&snapshot.storage()==2&&!snapshot.playing()));
         sub.get("Build").add(action("Cancel C# Build",scripts::cancel,()->opened));
         sub.get("Tools").add(action("Code Space Preferences…",scripts::preferences,()->opened));
         sub.get("Edit").add(undoAction);sub.get("Edit").add(redoAction);
@@ -1673,10 +1704,22 @@ public final class PlatformSession implements Disposable {
                     later(200,()->graph.smokeRuntimeReport().whenComplete((report,reportError)->edt(()->{
                         if(reportError!=null){failure(reportError);return;}
                         require(report.get("session").getAsString().equals(Long.toUnsignedString(reply.runtime().session()))&&report.get("tick").getAsString().equals(Long.toUnsignedString(reply.runtime().tick()))&&report.get("readonly").getAsBoolean()&&report.get("active").getAsInt()>0,"JCEF runtime highlight/session/tick/readonly mismatch: "+report);
-                        bridge.call(14).whenComplete((stopped,stopError)->edt(()->{if(stopError!=null){failure(stopError);return;}record("PASS F-II.4 actual native Health93/Wait/Step and JCEF active node highlight; matching session/tick; read-only Graph; safe Stop");recoverSmoke();}));
+                        bridge.call(14).whenComplete((stopped,stopError)->edt(()->{if(stopError!=null){failure(stopError);return;}record("PASS F-II.4 actual native Health93/Wait/Step and JCEF active node highlight; matching session/tick; read-only Graph; safe Stop");smokeArena();}));
                     })));
                 }));
             });
+        }));
+    }
+    private void smokeArena(){
+        installArena().thenCompose(reply->bridge.call(6)).thenCompose(reply->bridge.call(13)).whenComplete((started,error)->edt(()->{
+            if(error!=null){failure(error);return;}
+            later(500,()->bridge.call(42).whenComplete((running,failed)->edt(()->{
+                if(failed!=null){failure(failed);return;}
+                try{
+                    var state=running.runtime();if(state.phase()!=2||state.tick()<1||state.entities().stream().noneMatch(e->!e.sprite().isEmpty())||state.trace().stream().noneMatch(e->e.state().equals("ProjectileHit")))throw new IllegalStateException("Arena UI sample did not run native projectile/PNG pipeline: "+state.state());
+                    bridge.call(14).whenComplete((stopped,stopError)->edt(()->{if(stopError!=null){failure(stopError);return;}record("PASS F-II.5 production Arena action, source/PNG generation, native import and Prefab assignment, Graph/Wait/spawn/projectile/collision/Stop");recoverSmoke();}));
+                }catch(Exception failure){failure(failure);}
+            })));
         }));
     }
     private void smokeCloseAllViews(){

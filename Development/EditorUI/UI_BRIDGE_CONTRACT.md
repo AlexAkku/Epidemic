@@ -172,3 +172,7 @@ Envelope v4 сохранён. Graph DTO **v3**: каждый template после
 ### F-II.3 Graph/Scene references
 
 Envelope v4 unchanged; Graph DTO v4 adds native reference identity/availability/label/reason and transient native probe candidates. Command 40: `probe(graph,document,element,port)`, `drop(graph,payload,port,x,y)`, `jump/uses(graph,node)`. Payload is seven bounded stable IDs (kind/document/placement/prefab/entity/component/part); the original IPC argument cap remains. Native generation/global revision validates both source and Graph; one Execute publishes node/layout/optional edge. JVM-local drag nonce grants no authority to write; native validation repeats at Drop.
+
+### F-II.5 Gameplay extension
+
+Envelope v4 unchanged. Command43(`arena`) creates ordinary sample documents via one guarded Workspace Execute; duplicate identities and Play writes are rejected. Command41 adds key(session,vk,down), input-reset(session), time-scale(session,finite0.1..4). Java sends state/control only. Private native/managed worker RPC v3 supports bounded synchronous gameplay subcalls within the existing invocation deadline; scope/generation selected by native host, C ABI v1 unchanged. See FII5_GAMEPLAY_CONTRACT.md.
