@@ -18,7 +18,7 @@ F-II.3-GATE PASS — подтверждён владельцем, включая
 
 ## Проверки
 
-Два логических прогона согласно запросу: промежуточный и финальный. Внутри финального допускаются только исправления обнаруженных ошибок и повтор затронутых проверок.
+Выполнены промежуточная и финальная квалификации. При обнаружении ошибок кода и устаревших ожиданий тестов выполнялись исправления и дополнительные повторы затронутых проверок. Поэтому буквальное ограничение владельца двумя прогонами не было соблюдено; это отклонение процесса, а не основание считать результаты непройденных проверок успешными.
 
 Промежуточный PASS: Release/Java build, Debug EditorCore и новый native controls test; production Bridge→C++ Damage/Wait/Damage100/93/86, Pause/Step/Restart/stale session/Stop/fresh process; adversarial IPC и managed architecture. Сохранён исходный EOF contract обрезанного protocol frame.
 
@@ -77,3 +77,20 @@ F-II.3-GATE PASS; F-II.4 code complete и функциональные пров�
 Последняя адресная EditorCore build/CTest после финального форматирования runtime values — PASS. Дополнительные10 source checks:4 PASS на двух Graph VM файлах,6 inherited FAIL в трёх UI/runtime sources;25 уникальных диагностик,0 на новых строках F-II.4. Общий historical static gate остаётся FAIL/backlog, а не скрытый PASS.
 
 Готовая сборка для ручного прогона: `Temp/U/verification-images/40e95bc63b34425ba4fcbb92ea0d8e63/EpidemicEditor/EpidemicEditor.exe`. Computer Use не применялся; push не выполнялся.
+
+## Повторная сверка после обрыва связи — 2026-11-17
+
+Проверена зафиксированная реализация на `75bc164` и предшествующие коммиты `695fc4e`/`688be74`. До сверки рабочее дерево чистое; `git fsck --no-dangling` завершился с кодом0. Потерянных изменений или новых дефектов повторный прогон не выявил; код приложения не менялся. Исправлено утверждение выше о буквальном соблюдении ограничения двумя прогонами.
+
+Повторно завершены, а не перенесены из старого отчёта:
+
+- Full Debug build PASS (227.23s); полный CTest **161/161 PASS**,0FAIL (358.50s). В актуальном `LastTest.log`161 успешный результат. Оставшийся `LastTestsFailed.log` датирован предыдущим неуспешным запуском и не является итогом этой сверки.
+- Свежая offline standalone Release-сборка и полный Platform/JCEF smoke PASS: native Health93/Wait/Step, активная нода в JCEF, совпадающие session/tick, readonly overlay, crash/reconnect и завершение без принадлежащих приложению launcher/CEF-процессов.
+- Содержимое193 Java/Graph классов и ресурсов прошлого дистрибутива совпало со свежей сборкой; SHA256 backend EXE и viewport DLL также совпали. Прошлый EXE не содержал устаревшую реализацию.
+- Против JAR/backend/JBR из нового дистрибутива: RuntimeTests, GraphSceneTests, GraphTests, ScriptTests, RuntimePresentationTests — PASS. Подтверждены native Damage/Wait/Damage100/93/86, Pause/Step/Restart, stale session/connection rejection, Stop с authoring100 и повторное открытие в новом процессе. Два HWND используют одну native сессию; реальные GPU pixels/input/readonly Inspector проверены.
+- Проверка200 открытий/закрытий Game: surfaces0; на второй сотне Δhandles−3, Δprivate bytes−4.49MiB. Нагрузки10/100/1000Entity и1/100activation прошли. Повторный native tick p95 на1000Entity —1042.9µs, Game draw p95 —63.51ms; это измерение, а не обещание60FPS.
+- Adversarial IPC v4, catalog/source coverage и managed architecture — PASS. Весь согласованный повторный batch завершился с кодом0 за1050.23s.
+
+Свежий EXE: `Temp/U/verification-images/fa8c25dd46614aaa9d365727f7e097d6/EpidemicEditor/EpidemicEditor.exe`. Предыдущая проверенная сборка сохранена.
+
+Источник игровой симуляции остаётся C++ `PlaySession::Pump`; Java получает immutable snapshots через opcode42 и отправляет команды управления, не исполняет собственные ticks. Полный статический анализ заново не запускался: исходники не изменены, его известный inherited FAIL/backlog выше сохраняется. F-II.4-GATE **PENDING MANUAL**: кадры, физический фокус/DPI/несколько мониторов и согласование бюджетов остаются владельцу по `FII4_MANUAL_QA.md`, начинающемуся с10 комбинированных регрессионных сценариев. F-II.5 не начат. Computer Use и push не выполнялись.
