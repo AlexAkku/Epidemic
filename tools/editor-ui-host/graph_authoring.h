@@ -12,6 +12,7 @@ struct Recipe { std::string name, category; g::Operation operation; g::NodeDefin
 inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
     std::vector<Recipe> result;
     for (const auto &[type, op] : schema.operations) {
+        if(std::any_of(g::kNumericRecipes.begin(),g::kNumericRecipes.end(),[&](const auto &v){return g::TypeId::FromString(v.id)==type;}))continue;
         const auto descriptor=std::find_if(composition::arena::Operations().begin(),composition::arena::Operations().end(),[&](const auto &v){return foundation::StringId::FromString(v.id)==type;});
         const auto label = descriptor!=composition::arena::Operations().end()?std::string(descriptor->name):[op]() -> std::string {
             switch (op) {
@@ -28,6 +29,7 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
             case g::Operation::Repeat: return "Repeat";
             case g::Operation::Reference:
             case g::Operation::ReferenceValid: return {};
+            default:return {};
             }
             return {};
         }();
@@ -60,6 +62,27 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
         if (op == g::Operation::Repeat) { port("body",K::Control,D::Output); port("done",K::Control,D::Output); }
         if(op==g::Operation::Add||op==g::Operation::Multiply)for(auto &p:r.node.ports)if(p.kind==K::Data&&p.direction==D::Input)p.default_value=op==g::Operation::Multiply?1:0;
         result.push_back(std::move(r));
+    }
+    for(const auto &numeric:g::kNumericRecipes){
+        const auto type=g::TypeId::FromString(numeric.id);
+        if(std::none_of(schema.operations.begin(),schema.operations.end(),[&](const auto &v){return v.first==type;}))continue;
+        Recipe recipe{std::string(numeric.name),"Math",numeric.operation,{{},type,std::string(numeric.name),{}}};
+        const auto value=numeric.floating?g::kF64Type:g::kI64Type;
+        const auto port=[&](std::string name,g::PortDirection direction,g::TypeId data){
+            recipe.node.ports.push_back({g::ElementId::FromString(std::string(numeric.id)+"."+name),name,g::PortKind::Data,direction,data});
+        };
+        if(numeric.operation==g::Operation::Input)port("value",g::PortDirection::Output,value);
+        else if(numeric.operation==g::Operation::Output){
+            port("value",g::PortDirection::Input,value);
+            recipe.node.ports.push_back({g::ElementId::FromString(std::string(numeric.id)+".in"),"in",g::PortKind::Control,g::PortDirection::Input,{}});
+        }else{
+            const auto input=numeric.operation==g::Operation::ToFloat?g::kI64Type:numeric.operation==g::Operation::ToInteger?g::kF64Type:value;
+            port(g::UnaryMath(numeric.operation)?"value":"left",g::PortDirection::Input,input);
+            if(!g::UnaryMath(numeric.operation))port("right",g::PortDirection::Input,input);
+            port("result",g::PortDirection::Output,value);
+            for(auto &p:recipe.node.ports)if(p.direction==g::PortDirection::Input)p.default_value=0;
+        }
+        result.push_back(std::move(recipe));
     }
     for(const auto &reference:ReferenceTypes(schema)) {
         const auto type=g::ReferenceCheckType(reference.type);

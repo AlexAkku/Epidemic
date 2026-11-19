@@ -12,6 +12,29 @@ public final class Theme {
         WARNING = new Color(0xf1ba6c), BRAND_FROM = new Color(0x7719a6), BRAND_TO = new Color(0xff0000);
     public static final int PANEL_RADIUS = 10, CONTROL_RADIUS = 6, GAP = 6, UNIT = 4;
     private Theme() { }
+    /** Width follows the dock; preferred height includes every wrapped row. */
+    public static JPanel actionRows() {
+        return new JPanel(new FlowLayout(FlowLayout.LEADING,6,4)) {
+            @Override public void setBounds(int x,int y,int width,int height){
+                boolean changed=getWidth()!=width;super.setBounds(x,y,width,height);
+                if(changed)SwingUtilities.invokeLater(this::revalidate);
+            }
+            @Override public Dimension getPreferredSize() {
+                int width=getWidth();
+                if(width<=0&&getParent()!=null)width=getParent().getWidth();
+                if(width<=0)width=240;
+                Insets in=getInsets();int available=Math.max(1,width-in.left-in.right-12);
+                int row=0,height=0,used=0;
+                for(Component child:getComponents())if(child.isVisible()){
+                    Dimension size=child.getPreferredSize();
+                    if(used>0&&used+6+size.width>available){height+=row+4;used=0;row=0;}
+                    used+=(used==0?0:6)+size.width;row=Math.max(row,size.height);
+                }
+                return new Dimension(width,in.top+in.bottom+height+row+8);
+            }
+            @Override public Dimension getMinimumSize(){return new Dimension(0,getPreferredSize().height);}
+        };
+    }
     public static JPanel island(LayoutManager layout) {
         JPanel panel = new JPanel(layout) {
             @Override protected void paintComponent(Graphics graphics) {

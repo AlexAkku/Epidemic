@@ -24,7 +24,16 @@ std::optional<Shape> Expected(Operation operation) {
 
     case Operation::Add:
     case Operation::Multiply:
+    case Operation::Subtract:
+    case Operation::Divide:
+    case Operation::IntegerDivide:
         return Shape{2, 1, 0, 0};
+    case Operation::RoundUp:
+    case Operation::RoundDown:
+    case Operation::RoundNearest:
+    case Operation::ToFloat:
+    case Operation::ToInteger:
+        return Shape{1,1,0,0};
 
     case Operation::Entry:
         return Shape{0, 0, 0, 1};
@@ -117,11 +126,11 @@ bool FlowCompiler::UsesFlow(const GraphDefinition &definition,
 foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition &definition,
                                                            std::span<const NodeBinding> bindings) {
     std::unordered_map<TypeId, const NodeBinding *> catalog;
-    std::vector<TypeId> types{kI64Type};
+    std::vector<TypeId> types{kI64Type,kF64Type};
 
     for (const auto &binding : bindings) {
         if (!binding.node_type.IsValid() || !catalog.emplace(binding.node_type, &binding).second ||
-            static_cast<unsigned>(binding.operation) > static_cast<unsigned>(Operation::ReferenceValid) ||
+            static_cast<unsigned>(binding.operation) > static_cast<unsigned>(Operation::ToInteger) ||
             ((binding.operation == Operation::NativeCall) != static_cast<bool>(binding.native)))
             return Reject("graph.compile.invalid_binding");
         types.push_back(binding.node_type);
@@ -165,7 +174,7 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
             } else if (port.kind == PortKind::Data) {
                 const bool reference_port = binding.operation == Operation::Reference ||
                     (binding.operation == Operation::ReferenceValid && port.direction == PortDirection::Input);
-                if (reference_port ? port.type_id == kI64Type : port.type_id != kI64Type)
+                if (reference_port ? (port.type_id == kI64Type||port.type_id==kF64Type) : (port.type_id != kI64Type&&!(port.type_id==kF64Type&&FloatCapable(binding.operation))))
                     return Reject("graph.compile.unsupported_type", node.id);
                 (port.direction == PortDirection::Input ? p.data_in : p.data_out)
                     .push_back(port.id);
@@ -189,6 +198,15 @@ foundation::Result<CompiledGraphPtr> FlowCompiler::Compile(const GraphDefinition
         if (binding.operation == Operation::EventEntry)
             flow->events.push_back({p.events[0], index});
         Instruction instruction{binding.operation, node.id, index, 0, 0, 0};
+        TypeId numeric{};
+        for(const auto &port:node.ports)if(port.kind==PortKind::Data&&!node.reference&&binding.operation!=Operation::ReferenceValid){
+            const auto expected=binding.operation==Operation::ToFloat?(port.direction==PortDirection::Input?kI64Type:kF64Type):
+                binding.operation==Operation::ToInteger?(port.direction==PortDirection::Input?kF64Type:kI64Type):port.type_id;
+            if(port.type_id!=expected||(numeric.IsValid()&&numeric!=port.type_id&&binding.operation!=Operation::ToFloat&&binding.operation!=Operation::ToInteger))return Reject("graph.compile.unsupported_type",node.id);
+            numeric=port.type_id;
+        }
+        for(const auto &port:node.ports)if(port.kind==PortKind::Data){instruction.value_type=port.type_id;if(port.direction==PortDirection::Output)break;}
+
 
         if (binding.operation == Operation::NativeCall) {
             instruction.callable = static_cast<std::uint32_t>(program->native_sites_.size());

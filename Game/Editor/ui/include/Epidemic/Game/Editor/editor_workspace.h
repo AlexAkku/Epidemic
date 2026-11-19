@@ -72,6 +72,7 @@ class EditorWorkspace final {
     [[nodiscard]] foundation::Result<void> ReimportPng(runtime::AssetId asset);
     [[nodiscard]] foundation::Result<void> AssignPrefabSprite(runtime::AssetId prefab,
                                                               runtime::AssetId texture);
+    [[nodiscard]] foundation::Result<void> AssignPrefabSprite(const PrefabSpriteBinding &binding);
     [[nodiscard]] foundation::Result<void> MoveAsset(runtime::AssetId asset,
                                                      std::string_view relative);
     [[nodiscard]] foundation::Result<void> UndoAssetMove();

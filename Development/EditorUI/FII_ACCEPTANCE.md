@@ -76,3 +76,7 @@ Deep analysis77 TU/154 checks не назван PASS: inherited diagnostics ос
 Реализованы три последовательных блока: единый C++ gameplay owner/Schema, native fixed-step механики, managed adapter и пользовательский Arena sample. Публичный IPC v4 и managed C ABI v1 сохранены; private worker RPC v3 делегирует операции тому же owner. Нет второго игрового цикла в Java/C#.
 
 Full native build и CTest162/162 PASS, standalone Release/JCEF smoke PASS; точные packaged/static результаты и ограничения — [FII5_REPORT](FII5_REPORT.md). **F-II.5-GATE PENDING MANUAL**, F-II.4 также PENDING MANUAL, общий F-II-GATE не закрыт. [Контракт](FII5_GAMEPLAY_CONTRACT.md), [пошаговая проверка](FII45_MANUAL_QA.md). F-III не начат.
+
+## Исправления после ручной регрессии19 ноября2026
+
+Владелец остановил прогон на Compile/Play native Damage Graph. Исправлен compile-only путь без исполнения gameplay; настоящий Health100→93→86 и authoring100 после Stop подтверждены автоматически. Добавлены запрошенные Documents/folders, Prefab/Sprite controls и типизированная math. Подробный старый пункт8, адресный повтор и продолжение с14 приведены в [FII45_REVIEW_QA](FII45_REVIEW_QA.md). Native162/162 и standalone с усиленным Save/Open lifecycle PASS; static inherited FAIL отражён отдельно. [Фактический отчёт](FII45_REVIEW_FIXES.md). Эти проверки не подменяют ручное подтверждение F-II.4/F-II.5; оба gate остаются PENDING MANUAL.

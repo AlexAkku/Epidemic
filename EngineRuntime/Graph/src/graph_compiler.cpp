@@ -36,8 +36,15 @@ Shape Expected(Operation operation) {
     case Operation::Add:
     case Operation::Wait:
     case Operation::Multiply:
+    case Operation::Subtract:
+    case Operation::Divide:
+    case Operation::IntegerDivide:
         return {2, 1};
-
+    case Operation::RoundUp:
+    case Operation::RoundDown:
+    case Operation::RoundNearest:
+    case Operation::ToFloat:
+    case Operation::ToInteger:
     case Operation::NativeCall:
         return {1, 1};
 
@@ -75,7 +82,7 @@ foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definit
     bool literals=false;
     for(const auto &node:definition.nodes)for(const auto &port:node.ports)literals=literals||port.default_value.has_value();
     if(literals) {
-        std::vector<TypeId> known{kI64Type};for(const auto &binding:bindings)known.push_back(binding.node_type);
+        std::vector<TypeId> known{kI64Type,kF64Type};for(const auto &binding:bindings)known.push_back(binding.node_type);
         for(const auto &node:definition.nodes){if(node.reference)known.push_back(ReferenceValueType(*node.reference));
             const auto binding=std::find_if(bindings.begin(),bindings.end(),[&](const auto &b){return b.node_type==node.type_id;});
             if(binding!=bindings.end()&&binding->operation==Operation::ReferenceValid)for(const auto &port:node.ports)if(port.kind==PortKind::Data)known.push_back(port.type_id);
@@ -90,7 +97,7 @@ foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definit
             if(std::any_of(definition.connections.begin(),definition.connections.end(),[&](const auto &e){return e.input_port==port.id;}))continue;
             const auto id=fresh("literal.node."+std::to_string(port.id.Raw())),out=fresh("literal.port."+std::to_string(port.id.Raw())),edge=fresh("literal.edge."+std::to_string(port.id.Raw()));
             const auto type=TypeId::FromString("literal.type."+std::to_string(id.Raw()));
-            constants.push_back({id,type,"Literal",{{out,"value",PortKind::Data,PortDirection::Output,kI64Type}}});
+            constants.push_back({id,type,"Literal",{{out,"value",PortKind::Data,PortDirection::Output,port.type_id}}});
             extended.push_back({type,Operation::Input,{},{},value});lowered.connections.push_back({edge,out,port.id});
         }
         lowered.nodes.insert(lowered.nodes.end(),constants.begin(),constants.end());
@@ -99,7 +106,7 @@ foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definit
     if (detail::FlowCompiler::UsesFlow(definition, bindings))
         return detail::FlowCompiler::Compile(definition, bindings);
     std::unordered_map<TypeId, const NodeBinding *> catalog;
-    std::vector<TypeId> types{kI64Type};
+    std::vector<TypeId> types{kI64Type,kF64Type};
 
     for (const auto &binding : bindings) {
         if (!binding.node_type.IsValid() || !catalog.emplace(binding.node_type, &binding).second)
@@ -127,12 +134,20 @@ foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definit
         NodeInfo info{&node, found->second, {}, {}};
 
         const auto shape = Expected(info.binding->operation);
+        TypeId numeric{};
+        for(const auto &p:node.ports)if(p.kind==PortKind::Data){
+            const auto expected=info.binding->operation==Operation::ToFloat?(p.direction==PortDirection::Input?kI64Type:kF64Type):
+                info.binding->operation==Operation::ToInteger?(p.direction==PortDirection::Input?kF64Type:kI64Type):p.type_id;
+            if(p.type_id!=expected||(numeric.IsValid()&&numeric!=p.type_id&&info.binding->operation!=Operation::ToFloat&&info.binding->operation!=Operation::ToInteger))return Reject("graph.compile.unsupported_type",{node.id,p.id});
+            numeric=p.type_id;
+        }
+
         std::size_t input_count = 0;
         std::size_t output_count = 0;
         for (const auto &port : node.ports) {
             if (port.kind != PortKind::Data)
                 return Reject("graph.compile.unsupported_port", {node.id, port.id});
-            if (port.type_id != kI64Type)
+            if (port.type_id != kI64Type && !(port.type_id==kF64Type&&FloatCapable(info.binding->operation)))
                 return Reject("graph.compile.unsupported_type", {node.id, port.id});
             if (port.direction == PortDirection::Input) {
                 if (input_count < info.inputs.size())
@@ -192,6 +207,7 @@ foundation::Result<CompiledGraphPtr> CompileGraph(const GraphDefinition &definit
         ready.pop();
         const auto &node = nodes[index];
         Instruction instruction{node.binding->operation, node.definition->id, index, 0, 0, 0};
+        for(const auto &port:node.definition->ports)if(port.kind==PortKind::Data){instruction.value_type=port.type_id;if(port.direction==PortDirection::Output)break;}
 
         if (Expected(instruction.operation).inputs > 0)
             instruction.left = port_owner.at(incoming.at(node.inputs[0]));

@@ -120,6 +120,27 @@ public final class ScriptWorkspace implements AutoCloseable {
         for(int i=0;i<pngs.size();i++){var image=new java.awt.image.BufferedImage(16,16,java.awt.image.BufferedImage.TYPE_INT_ARGB);for(int y=2;y<14;y++)for(int x=2;x<14;x++)image.setRGB(x,y,colors[i]);try(var output=Files.newOutputStream(pngs.get(i),StandardOpenOption.CREATE_NEW)){if(!javax.imageio.ImageIO.write(image,"png",output))throw new IOException("PNG writer unavailable");}}
         refresh();return pngs;
     }
+    List<String> projectFolders(){
+        Path base=root.get();if(base==null)return List.of();var result=new ArrayList<String>();
+        try{Files.walkFileTree(base,EnumSet.noneOf(java.nio.file.FileVisitOption.class),8,new java.nio.file.SimpleFileVisitor<Path>(){
+            @Override public java.nio.file.FileVisitResult preVisitDirectory(Path folder,java.nio.file.attribute.BasicFileAttributes attrs){
+                if(folder.equals(base))return java.nio.file.FileVisitResult.CONTINUE;
+                String name=folder.getFileName().toString();
+                if(name.startsWith(".")||name.equals("Content")||name.equals("obj")||name.equals("bin"))return java.nio.file.FileVisitResult.SKIP_SUBTREE;
+                result.add(base.relativize(folder).toString().replace('\\','/'));
+                return result.size()>=256?java.nio.file.FileVisitResult.TERMINATE:java.nio.file.FileVisitResult.CONTINUE;
+            }
+        });}catch(IOException error){return List.of();}return result.stream().sorted().toList();
+    }
+    void createFolder(String parent){try{
+        if(snapshot.get()==null||snapshot.get().playing()||snapshot.get().storage()!=2)return;
+        Path base=root.get().toRealPath(),folder=base.resolve(parent).normalize();
+        if((parent.equals("Documents")||parent.equals("Scripts"))&&!Files.exists(folder))Files.createDirectory(folder);
+        if(!folder.startsWith(base)||parent.startsWith(".")||!folder.toRealPath().startsWith(base))throw new IOException("Folder outside project");
+        String name=JOptionPane.showInputDialog(null,"Folder name","New Folder",JOptionPane.PLAIN_MESSAGE);if(name==null)return;
+        if(name.isBlank()||name.equals(".")||name.equals("..")||name.chars().anyMatch(c->"\\/:*?\"<>|".indexOf(c)>=0))throw new IOException("Enter a single valid folder name");
+        Files.createDirectory(folder.resolve(name));LocalFileSystem.getInstance().refreshAndFindFileByNioFile(folder.resolve(name));refresh();
+    }catch(Exception error){fail(error);}}
     private Path fileClipboard;private boolean cutFile;
     public void fileAction(String action,Path selected){try{
         if(action.equals("copy")||action.equals("cut")){fileClipboard=checked(selected);cutFile=action.equals("cut");status(cutFile?"Source cut; choose Paste in Scripts":"Source copied; choose Paste in Scripts");return;}

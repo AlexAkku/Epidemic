@@ -321,7 +321,7 @@ class Backend {
             node.local_transform.position.y = static_cast<float>(y);
             Require(workspace_->Execute({ed::AddSceneNode{document,node},ed::PlacePrefab{document,{node.id,prefab,{}}}},revision));
             (void)workspace_->Select({document,ed::UiElement::SceneNode,node.id.Raw()});
-        } else if (args.size() == 5 && args[0] == "sprite") {
+        } else if (args.size() == 5 && (args[0] == "sprite" || args[0] == "sprite-fit" || args[0] == "sprite-reset")) {
             if (Numeric(args[1]) != workspace_->AssetRevision())
                 throw std::runtime_error("ui.stale_asset_revision");
             const auto document = Asset(Numeric(args[2]));
@@ -336,7 +336,27 @@ class Backend {
                     throw std::runtime_error("ui.sprite_requires_prefab");
                 prefab = placement->prefab;
             }
-            Require(workspace_->AssignPrefabSprite(prefab,Asset(Numeric(args[4]))));
+            if(args[0]=="sprite") Require(workspace_->AssignPrefabSprite(prefab,Asset(Numeric(args[4]))));
+            else {
+                const auto *folder=workspace_->Folder();if(!folder)throw std::runtime_error("ui.no_project");
+                const auto &bindings=folder->SpriteBindings();
+                const auto found=std::find_if(bindings.begin(),bindings.end(),[&](const auto &v){return v.prefab==prefab;});
+                if(found==bindings.end())throw std::runtime_error("ui.sprite_missing");
+                auto ppu=64.0f;
+                if(args[0]=="sprite-fit") {
+                    const auto &sources=folder->Sources();const auto source=std::find_if(sources.begin(),sources.end(),[&](const auto &v){return v.id==found->texture;});
+                    if(source==sources.end())throw std::runtime_error("ui.sprite_missing");
+                    ed::ImageResourceLoader loader(folder->Root());const auto registered=loader.Register(source->cooked_key);Require(registered);
+                    const auto loaded=loader.Load({registered.Value(),loader.GetResourceType()});Require(loaded);
+                    const auto image=std::dynamic_pointer_cast<const ed::ImagePayload>(loaded.Value().payload);
+                    if(!image)throw std::runtime_error("ui.sprite_missing");
+                    auto width=image->image.width,height=image->image.height;
+                    if(found->region_id)for(const auto &sheet:folder->SpriteSheets())if(sheet.texture==found->texture)
+                        for(const auto &region:sheet.regions)if(region.id==found->region_id){width=region.width;height=region.height;}
+                    ppu=std::max(64.0f,static_cast<float>(std::max(width,height)));
+                }
+                auto binding=*found;binding.pixels_per_unit=ppu;Require(workspace_->AssignPrefabSprite(binding));
+            }
         } else {
             throw std::runtime_error("ui.resource_command");
         }
@@ -801,23 +821,31 @@ class Backend {
             commands.push_back(ed::ConnectPorts{document,{Id::FromString("graph.edge."+DocumentNonce()),ports.at(edge.output_port.Raw()),ports.at(edge.input_port.Raw())}});
         return commands;
     }
+    class CompileOnlyFactory final : public rt::graph::INativeCallableFactory {
+        epidemic::foundation::Result<std::unique_ptr<rt::graph::INativeInvocation>> CreateInvocation() const override {
+            return epidemic::foundation::Result<std::unique_ptr<rt::graph::INativeInvocation>>::Failure(epidemic::foundation::Error::Create("ui.graph.preview_requires_play","Use Play to execute runtime operations"));
+        }
+    };
     void PreviewGraph(const ed::EditorDocument &doc, bool execute) {
         namespace g = rt::graph;
         const auto &definition = std::get<g::GraphDefinition>(doc.data);
         graph_report_.clear(); graph_report_document_=doc.id.Raw(); graph_report_revision_=workspace_->Project()->Revision();
         std::vector<g::NodeBinding> bindings;
         std::shared_ptr<ed::scripts::SharedWorker> preview_worker;
+        bool play_required=false;
         for (const auto &[type,op] : ed::EffectiveOperations(workspace_->Project()->Snapshot()->definition,schema_.View())) {
             if (op == g::Operation::NativeCall) {
+                if(!execute){bindings.push_back({type,op,std::make_shared<CompileOnlyFactory>()});continue;}
                 const auto used=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return n.type_id==type;});
                 bool managed=false;
                 for(const auto &descriptor:workspace_->Project()->Snapshot()->definition.user_schemas)for(const auto &operation:descriptor.operations)
                     if(Id::FromString(operation.id)==type){if(!preview_worker)preview_worker=std::make_shared<ed::scripts::SharedWorker>(WorkerPath(),ScriptPath(descriptor.assembly),descriptor.fingerprint,++script_generation_);bindings.push_back({type,op,std::make_shared<ed::scripts::Factory>(preview_worker,operation.id,descriptor.component.name)});managed=true;}
-                if (!managed&&used!=definition.nodes.end()) {graph_report_="ui.graph.native_preview_requires_play node="+std::to_string(used->id.Raw());return;}
+                if (!managed) {bindings.push_back({type,op,std::make_shared<CompileOnlyFactory>()});play_required=play_required||used!=definition.nodes.end();}
             } else bindings.push_back({type,op,{},op==g::Operation::Reference?std::make_shared<ed::graph_ui::SnapshotReferenceResolver>(workspace_->Project()->Snapshot()):nullptr});
         }
         const auto program = g::CompileGraph(definition,bindings);
         if (!program) {graph_report_=program.GetError().code+" "+program.GetError().context;return;}
+        if(play_required){graph_report_="OK compiled native VM; preview requires a live Entity. Attach Graph to a Prefab and press Play.";return;}
         if (!execute) {graph_report_="OK compiled native VM; instructions="+std::to_string(program.Value()->Instructions().size());return;}
         const auto recipes=Recipes();
         const auto event=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &node){
@@ -857,13 +885,28 @@ class Backend {
         graph_report_="OK native VM "+std::string(report.status==g::ExecutionStatus::Completed?"Completed":"Preview budget reached")+" instructions="+std::to_string(instructions)+" game_ticks="+std::to_string(time.Value().clock->Now().ticks);
         for(const auto &node:definition.nodes)for(const auto &port:node.ports)if(port.kind==g::PortKind::Data){
             const auto value=task.Value()->ReadValue(port.id);
-            if(value)graph_report_+="\nnode="+std::to_string(node.id.Raw())+" "+port.name+"="+std::to_string(value.Value());
+            if(value)graph_report_+="\nnode="+std::to_string(node.id.Raw())+" "+port.name+"="+GraphText(port.type_id,value.Value());
         }
         if(report.status==g::ExecutionStatus::Failed&&report.diagnostic)
             graph_report_=report.diagnostic->error.code+" node="+std::to_string(report.diagnostic->node.Raw());
         if(task.Value()->NextWake())Require(scheduler.Cancel(*task.Value()));
     }
 
+    static std::string GraphText(rt::graph::TypeId type,std::int64_t bits){
+        if(type!=rt::graph::kF64Type)return std::to_string(bits);
+        char text[64]{};const auto converted=std::to_chars(text,text+sizeof(text),std::bit_cast<double>(bits),std::chars_format::general);
+        return converted.ec==std::errc{}?std::string(text,converted.ptr):"Unavailable";
+    }
+    static std::int64_t GraphNumber(const ed::EditorDocument &doc,std::uint64_t address,bool is_port,std::string_view text){
+        const auto &definition=std::get<rt::graph::GraphDefinition>(doc.data);
+        rt::graph::TypeId type=rt::graph::kI64Type;bool found=false;
+        for(const auto &node:definition.nodes)for(const auto &port:node.ports)
+            if((is_port?port.id.Raw():node.id.Raw())==address&&port.kind==rt::graph::PortKind::Data){type=port.type_id;found=true;break;}
+        if(!found&&std::none_of(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return n.id.Raw()==address;}))throw std::runtime_error("ui.graph_numeric_target");
+        if(type==rt::graph::kF64Type)return std::bit_cast<std::int64_t>(Real(text));
+        if(type!=rt::graph::kI64Type&&is_port)throw std::runtime_error("ui.graph_numeric_type");
+        const auto value=ed::EditorWorkspace::ParseValue(ed::comp::PropertyKind::Integer,text);Require(value);return std::get<std::int64_t>(value.Value());
+    }
     void GraphEdit(const std::vector<std::string> &args, std::uint64_t revision) {
         namespace graph = rt::graph;
         if (args.size() < 2) throw std::runtime_error("ui.graph_arguments");
@@ -901,8 +944,7 @@ class Backend {
         } else if (args[0]=="deletebulk" && args.size()==3) {
             for(const auto &word:GraphWords(args[2],64)) commands.push_back(ed::DeleteGraphNode{document,Id{Numeric(word)}});
         } else if ((args[0]=="literal"||args[0]=="inputvalue") && args.size()==4) {
-            const auto value=ed::EditorWorkspace::ParseValue(ed::comp::PropertyKind::Integer,args[3]);Require(value);
-            const auto number=std::get<std::int64_t>(value.Value());
+            const auto number=GraphNumber(*doc,Numeric(args[2]),args[0]=="literal",args[3]);
             if(args[0]=="literal")commands.push_back(ed::SetGraphPortDefault{document,Id{Numeric(args[2])},number});
             else {auto node=std::find_if(std::get<graph::GraphDefinition>(doc->data).nodes.begin(),std::get<graph::GraphDefinition>(doc->data).nodes.end(),[&](const auto &n){return n.id.Raw()==Numeric(args[2]);});
                 if(node==std::get<graph::GraphDefinition>(doc->data).nodes.end())throw std::runtime_error("ui.graph_node");
@@ -910,8 +952,8 @@ class Backend {
         } else if (args[0]=="settings" && args.size()==8) {
             const auto id=Numeric(args[2]); const auto flags=Numeric(args[7]);
             if(flags>3) throw std::runtime_error("ui.graph_flags");
-            const auto value=ed::EditorWorkspace::ParseValue(ed::comp::PropertyKind::Integer,args[4]); Require(value);
-            commands.push_back(ed::SetGraphNodeSettings{document,Id{id},args[3],{id,std::get<std::int64_t>(value.Value()),args[5],args[6],(flags&1u)!=0,(flags&2u)!=0}});
+            const auto number=GraphNumber(*doc,id,false,args[4]);
+            commands.push_back(ed::SetGraphNodeSettings{document,Id{id},args[3],{id,number,args[5],args[6],(flags&1u)!=0,(flags&2u)!=0}});
         } else if (args[0]=="group" && args.size()==4) {
             const auto &graph=std::get<graph::GraphDefinition>(doc->data);
             for(const auto &word:GraphWords(args[2],64)) {
@@ -1617,14 +1659,17 @@ class Backend {
                 const auto kind = Numeric(args.at(0));
                 if (kind > static_cast<unsigned>(ed::UiElement::PrefabLink))
                     throw std::runtime_error("ui.selection_kind");
-                if (!workspace_->Select(
-                        {Asset(Numeric(args.at(1))), static_cast<ed::UiElement>(kind),
-                         Numeric(args.at(2)),
-                         args.size() == 5 ? epidemic::gameplay::TypeId{Numeric(args[3])}
-                                          : epidemic::gameplay::TypeId{},
-                         args.size() == 5
-                             ? epidemic::gameplay::entities::EntityPartId{Numeric(args[4])}
-                             : epidemic::gameplay::entities::EntityPartId{}}))
+                ed::UiSelection selected{Asset(Numeric(args.at(1))),static_cast<ed::UiElement>(kind),Numeric(args.at(2)),
+                    args.size()==5?epidemic::gameplay::TypeId{Numeric(args[3])}:epidemic::gameplay::TypeId{},
+                    args.size()==5?epidemic::gameplay::entities::EntityPartId{Numeric(args[4])}:epidemic::gameplay::entities::EntityPartId{}};
+                if(selected.kind==ed::UiElement::Document) {
+                    const auto *doc=workspace_->Project()->Snapshot()->Find(selected.document);
+                    if(doc&&doc->Kind()==ed::DocumentKind::Prefab) {
+                        const auto &prefab=std::get<epidemic::gameplay::composition::PrefabDefinition>(doc->data);
+                        selected.kind=ed::UiElement::PrefabNode;selected.element=prefab.root.id.Raw();
+                    }
+                }
+                if (!workspace_->Select(selected))
                     throw std::runtime_error("ui.selection_missing");
                 ++selection_revision_;
                 break;

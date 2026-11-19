@@ -4,6 +4,8 @@
 #include <exception>
 #include <algorithm>
 #include <limits>
+#include <bit>
+#include <cmath>
 
 namespace epidemic::runtime::graph {
 namespace {
@@ -91,8 +93,40 @@ foundation::Result<std::int64_t> GraphInstance::InvokeNative(std::uint32_t site,
 }
 
 bool GraphInstance::Arithmetic(Operation operation, std::int64_t left, std::int64_t right,
-                               std::int64_t &value) {
-    return operation == Operation::Add ? Add(left, right, value) : Multiply(left, right, value);
+                               std::int64_t &value, TypeId type) {
+    if(operation==Operation::ToFloat){value=std::bit_cast<std::int64_t>(static_cast<double>(left));return true;}
+    if(operation==Operation::ToInteger){
+        double number=std::bit_cast<double>(left);
+        if(!std::isfinite(number)||number<-9223372036854775808.0||number>=9223372036854775808.0)return false;
+        value=static_cast<std::int64_t>(number);return true;
+    }
+    if(type==kF64Type){
+        const auto a=std::bit_cast<double>(left),b=std::bit_cast<double>(right);double result=0;
+        if(!std::isfinite(a)||(!UnaryMath(operation)&&!std::isfinite(b)))return false;
+        switch(operation){
+        case Operation::Add:result=a+b;break;
+        case Operation::Subtract:result=a-b;break;
+        case Operation::Multiply:result=a*b;break;
+        case Operation::Divide:if(b==0)return false;result=a/b;break;
+        case Operation::IntegerDivide:if(b==0)return false;result=std::trunc(a/b);break;
+        case Operation::RoundUp:result=std::ceil(a);break;
+        case Operation::RoundDown:result=std::floor(a);break;
+        case Operation::RoundNearest:{const auto magnitude=std::abs(a);result=std::copysign(std::floor(magnitude+.4),a);break;}
+        default:return false;
+        }
+        if(!std::isfinite(result))return false;value=std::bit_cast<std::int64_t>(result);return true;
+    }
+    if(operation==Operation::Add)return Add(left,right,value);
+    if(operation==Operation::Multiply)return Multiply(left,right,value);
+    if(operation==Operation::Subtract){
+        if((right>0&&left<std::numeric_limits<std::int64_t>::min()+right)||(right<0&&left>std::numeric_limits<std::int64_t>::max()+right))return false;
+        value=left-right;return true;
+    }
+    if(operation==Operation::Divide||operation==Operation::IntegerDivide){
+        if(right==0||(left==std::numeric_limits<std::int64_t>::min()&&right==-1))return false;
+        value=left/right;return true;
+    }
+    if(UnaryMath(operation)){value=left;return true;}return false;
 }
 
 foundation::Result<std::unique_ptr<GraphInstance>> GraphInstance::Create(CompiledGraphPtr program) {
@@ -151,6 +185,8 @@ foundation::Result<void> GraphInstance::SetInput(ElementId port, std::int64_t va
         return foundation::Result<void>::Failure(Error("graph.vm.inputs_sealed"));
     for (const auto &slot : program_->slots_) {
         if (slot.port == port && slot.input) {
+            const auto instruction=std::find_if(program_->instructions_.begin(),program_->instructions_.end(),[&](const auto &i){return i.destination==slot.index;});
+            if(instruction!=program_->instructions_.end()&&instruction->value_type==kF64Type&&!std::isfinite(std::bit_cast<double>(value)))return foundation::Result<void>::Failure(Error("graph.vm.numeric_range"));
             values_[slot.index] = value;
             return foundation::Result<void>::Success();
         }
@@ -296,13 +332,22 @@ ExecutionReport GraphInstance::Run(ExecutionBudget budget) {
             std::int64_t result = 0;
             switch (step.operation) {
             case Operation::Add:
-            case Operation::Multiply: {
-                const auto &right_value = values_[step.right];
+            case Operation::Multiply:
+            case Operation::Subtract:
+            case Operation::Divide:
+            case Operation::IntegerDivide:
+            case Operation::RoundUp:
+            case Operation::RoundDown:
+            case Operation::RoundNearest:
+            case Operation::ToFloat:
+            case Operation::ToInteger: {
+                const auto right_value = UnaryMath(step.operation)?std::optional<std::int64_t>{0}:values_[step.right];
                 if (!right_value)
                     return fail(Error("graph.vm.value_unavailable"));
-                if (!(step.operation == Operation::Add ? Add(left, *right_value, result)
-                                                       : Multiply(left, *right_value, result)))
-                    return fail(Error("graph.vm.integer_overflow"));
+                if((step.operation==Operation::Divide||step.operation==Operation::IntegerDivide)&&
+                    (step.value_type==kF64Type?std::bit_cast<double>(*right_value)==0:*right_value==0))return fail(Error("graph.vm.divide_by_zero"));
+                if (!Arithmetic(step.operation,left,*right_value,result,step.value_type))
+                    return fail(Error(step.value_type==kF64Type||step.operation==Operation::ToInteger?"graph.vm.numeric_range":"graph.vm.integer_overflow"));
                 break;
             }
 

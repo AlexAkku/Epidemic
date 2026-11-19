@@ -108,6 +108,33 @@ public final class GraphTests {
         }
         System.out.println("PASS F-II.1: catalogue, atomic fragments/50-node moves, settings/history/persistence, typed failures, actual native arithmetic and Entry/Branch/Repeat/Wait scheduler");
     }
+    private static void numeric(Path executable,Path work)throws Exception{
+        Path folder=Files.createTempDirectory(work,"numeric-").resolve("Project");long document;Bridge.Graph saved;
+        try(var b=new Bridge(executable,work,state->{},Runnable::run)){
+            b.connect().get(20,TimeUnit.SECONDS);call(b,3,folder.toString(),"Numeric roundtrip");document=document(b,"Дробная математика");
+            var event=create(b,document,"Event");var input=create(b,document,"Input (f64)");var multiply=create(b,document,"Multiply (f64)");var output=create(b,document,"Output (f64)");
+            call(b,38,"inputvalue",id(document),id(input.id()),"1.25");link(b,document,input,"value",multiply,"left");
+            call(b,38,"literal",id(document),port(multiply,"right"),"2.5");
+            link(b,document,multiply,"result",output,"value");link(b,document,event,"next",output,"in");
+            call(b,38,"compile",id(document));call(b,38,"run",id(document));
+            require(graph(b,document).report().contains("value=3.125"),"Native f64 flow VM arithmetic: "+graph(b,document).report());
+            require(Bridge.inputText(graph(b,document).nodes().stream().filter(n->n.id()==input.id()).findFirst().orElseThrow()).equals("1.25"),"Inline float DTO displayed bits");
+            call(b,38,"literal",id(document),port(multiply,"right"),"3.5");call(b,7);
+            call(b,38,"run",id(document));require(graph(b,document).report().contains("value=3.125"),"Float literal Undo lost exact value");
+            var integer=create(b,document,"Input");reject(b,"graph.connection_type","connect",id(document),port(integer,"value"),port(multiply,"right"));
+            call(b,38,"delete",id(document),id(integer.id()));
+            try{call(b,38,"inputvalue",id(document),id(input.id()),"NaN");throw new IllegalStateException("Accepted NaN");}catch(ExecutionException expected){require(expected.getCause().getMessage().contains("invalid_value"),"Wrong NaN rejection");}
+            call(b,5,id(document),"Числа/Дробная математика");call(b,6);saved=graph(b,document);call(b,10);b.shutdown().get(20,TimeUnit.SECONDS);
+        }
+        try(var b=new Bridge(executable,work,state->{},Runnable::run)){
+            b.connect().get(20,TimeUnit.SECONDS);call(b,2,folder.resolve("Project.epidemicproj").toString());
+            require(graph(b,document).nodes().equals(saved.nodes()),"f64 bits/literals lost on fresh process Open");
+            require(b.latest().snapshot().documents().stream().anyMatch(d->d.id()==document&&d.name().equals("Числа/Дробная математика")),"Document move lost name or stable ID");
+            call(b,38,"run",id(document));require(graph(b,document).report().contains("value=3.125"),"Fresh process f64 roundtrip");
+            call(b,10);b.shutdown().get(20,TimeUnit.SECONDS);
+        }
+        System.out.println("PASS typed f64 native flow/inline/Undo/NaN/mixed rejection, Document move and new-process Save/Open");
+    }
     public static void main(String[] args) throws Exception {
         Path executable = Path.of(args[0]).toAbsolutePath();
         Files.createDirectories(Path.of(args[1]));
@@ -163,6 +190,7 @@ public final class GraphTests {
             call(reopened, 6); call(reopened, 10); reopened.shutdown().get(20, TimeUnit.SECONDS);
         }
         extended(executable,work);
+        numeric(executable,work);
         System.out.println("PASS Graph: 3 native nodes, typed connection/rejection, stale guard, move/node/edge Undo/Redo, IDs/layout Save/Open in second companion");
     }
 }

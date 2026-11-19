@@ -227,6 +227,10 @@ foundation::Result<void> EditorWorkspace::AssignPrefabSprite(runtime::AssetId pr
                           : foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
 }
 
+foundation::Result<void> EditorWorkspace::AssignPrefabSprite(const PrefabSpriteBinding &binding) {
+    return Finish(folder_?folder_->SetPrefabSpriteRegion(binding.prefab,binding.texture,binding.region_id,binding.pivot_x,binding.pivot_y,binding.pixels_per_unit):foundation::Result<void>::Failure(Error("editor.ui.no_folder")));
+}
+
 foundation::Result<void> EditorWorkspace::MoveAsset(runtime::AssetId asset,
                                                     std::string_view relative) {
     return Finish(folder_ ? folder_->MoveSource(asset, relative)

@@ -299,13 +299,13 @@ final class GraphEditor implements Disposable {
         for (var node : graph.nodes()) {
             JsonObject n = new JsonObject(); n.addProperty("id", Long.toUnsignedString(node.id()));
             n.addProperty("name", node.name()); n.addProperty("x", node.x()); n.addProperty("y", node.y());
-            n.addProperty("type",Long.toUnsignedString(node.type()));n.addProperty("previewDefault",Long.toString(node.previewDefault()));
+            n.addProperty("type",Long.toUnsignedString(node.type()));n.addProperty("previewDefault",Bridge.inputText(node));
             n.addProperty("comment",node.comment());n.addProperty("group",node.group());n.addProperty("markers",node.markers());
             JsonArray ports = new JsonArray();
             for (var port : node.ports()) {
                 JsonObject p = new JsonObject(); p.addProperty("id", Long.toUnsignedString(port.id()));
                 p.addProperty("name", port.name()); p.addProperty("kind", port.kind()); p.addProperty("direction", port.direction());
-                p.addProperty("type", Long.toUnsignedString(port.type()));if(port.defaultValue()!=null)p.addProperty("defaultValue",Long.toString(port.defaultValue())); ports.add(p);
+                p.addProperty("type", Long.toUnsignedString(port.type()));if(port.defaultValue()!=null)p.addProperty("defaultValue",Bridge.numericText(port.type(),port.defaultValue())); ports.add(p);
             }
             n.addProperty("reference",node.reference()!=null);n.addProperty("referenceAvailable",node.referenceAvailable());
             n.addProperty("referenceLabel",node.referenceLabel());n.addProperty("referenceReason",node.referenceReason());

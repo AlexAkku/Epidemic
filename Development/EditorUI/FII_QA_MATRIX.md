@@ -87,3 +87,5 @@ Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 
 | Физический фокус/мониторы/DPI/playable slice | NOT RUN агентом; [совместная инструкция](FII45_MANUAL_QA.md) |
 
 Без Computer Use, без push. F-II-GATE не закрыт автоматически; F-III не начат.
+
+19 ноября2026: после ручных замечаний исправлены compile-only native Graph, выбор Prefab root, Sprite Remove/Fit/Reset, Documents/folders, responsive actions и i64/f64 math. Все162 native CTest прошли; после lint-only правок повторный Graph VM PASS. Последний standalone Release/JCEF (336.50s) и packaged (190.77s) PASS, включая реальный busy Save→Graph Open и два HWND. Deep52TU/104checks сохраняет inherited/toolchain FAIL;4 новых позиции исправлены и проходят адресные clang-tidy/cppcheck4/4. Ручные gate остаются PENDING MANUAL. [Отчёт](FII45_REVIEW_FIXES.md), [адресные действия и продолжение](FII45_REVIEW_QA.md).

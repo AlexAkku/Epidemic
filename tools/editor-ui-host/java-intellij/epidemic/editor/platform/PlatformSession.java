@@ -231,7 +231,7 @@ public final class PlatformSession implements Disposable {
         if(state.service()==Bridge.Service.Error||state.service()==Bridge.Service.Unavailable)referenceDrag.cancel();
         if(state.service()==Bridge.Service.Error){if(expectedDisconnect)record("INFO Expected smoke disconnect; immutable snapshot/layout retained");else failure(new IOException(state.diagnostic()));}
     }
-    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
+    private UiPanels reader(){UiPanels result=new UiPanels(catalog,features,this::openDocument,this::select,this::importPicker,this::cancelImports,this::newDocument,this::renameDocument,this::editField);result.assetCommands(this::assetAction);result.documentCommands(this::documentAction);result.contentFolderCommands(this::newContentFolder);result.projectFolderCommands(scripts::projectFolders,scripts::createFolder);result.referenceDrag(referenceDrag);result.sourceFileActions(scripts::fileAction);result.runtimeCommands(this::runtimeCommand);result.runtimeBuild(scripts::buildActive);result.runtimeNavigation(this::runtimeNavigate);
         result.assetPreview((id,key,divisor)->{
             Bridge participant=bridge;
             var current=participant==null?null:participant.latest();
@@ -328,7 +328,17 @@ public final class PlatformSession implements Disposable {
         if(doc!=null&&snapshot.selection().document()!=doc.id())select(new Bridge.Selection(0,doc.id(),0));
     }
     private void openDocument(Bridge.Document document){
-        if(!ready())return;
+        if(!ready()){
+            if(opened&&!closing&&bridge!=null&&snapshot!=null&&(service==Bridge.Service.Loading||!pendingDocumentCloses.isEmpty())){
+                if(readyActions.size()>=32){documentFailure(new IOException("ui.queue_full"));return;}
+                Bridge participant=bridge;long generation=participant.latest().generation(),projectId=snapshot.project();
+                readyActions.addLast(()->{
+                    if(bridge!=participant||snapshot==null||snapshot.project()!=projectId||participant.latest().generation()!=generation)return;
+                    snapshot.documents().stream().filter(doc->doc.id()==document.id()&&doc.kind()==document.kind()).findFirst().ifPresent(this::openDocument);
+                });
+            }
+            return;
+        }
         var key=new Bridge.DocumentKey(bridge.latest().generation(),snapshot.project(),document.kind(),document.id());
         if(key.resolve(bridge.latest().generation(),snapshot).isEmpty())return;
         open(key.panel()+":"+Long.toUnsignedString(key.id()));
@@ -364,6 +374,17 @@ public final class PlatformSession implements Disposable {
             if(Messages.showYesNoDialog(project,"Delete "+selected.name()+"? Its open tabs will close. You can undo the deletion.",
                 "Delete Document",Messages.getWarningIcon())!=Messages.YES)return;
             request=participant.callAt(generation,revision,35,"delete",id);
+        }else if(action.equals("move")){
+            if(snapshot.storage()!=2)return;
+            String old=selected.name();int slash=old.lastIndexOf('/');
+            String folder=Messages.showInputDialog(project,"Destination folder inside Documents (empty = Documents root)","Move Document",Messages.getQuestionIcon(),slash<0?"":old.substring(0,slash),null);
+            if(folder==null)return;
+            try{
+                Path base=Path.of(snapshot.path()).getParent().toRealPath().resolve("Documents");Files.createDirectories(base);Path target=base.resolve(folder).normalize();
+                if(Path.of(folder).isAbsolute()||!target.startsWith(base)||!target.toRealPath().startsWith(base.toRealPath()))throw new IOException("Choose an existing folder inside Documents");
+                String name=old.substring(slash+1);String destination=base.relativize(target).toString().replace('\\','/');
+                request=participant.callAt(generation,revision,5,id,destination.isEmpty()?name:destination+"/"+name);
+            }catch(IOException failure){documentFailure(failure);return;}
         }else{
             boolean duplicate=action.equals("duplicate");
             String title=duplicate?"Duplicate Document":"Rename Document";
@@ -1032,8 +1053,8 @@ public final class PlatformSession implements Disposable {
         saveAction.registerCustomShortcutSet(CustomShortcutSet.fromString("control S"),target,lifetime);
         saveAllAction.registerCustomShortcutSet(CustomShortcutSet.fromString("control shift S"),target,lifetime);
         var actions=ActionManager.getInstance();
-        if(actions.getAction("$Redo")!=null)actions.getAction("$Redo").registerCustomShortcutSet(CustomShortcutSet.fromString("control Y","control shift Z"),target,lifetime);
-        if(actions.getAction("EditorDeleteLine")!=null)actions.getAction("EditorDeleteLine").registerCustomShortcutSet(CustomShortcutSet.fromString("control DELETE"),target,lifetime);
+        if(actions.getAction("$Redo")!=null)com.intellij.openapi.actionSystem.ex.ActionUtil.wrap(actions.getAction("$Redo")).registerCustomShortcutSet(CustomShortcutSet.fromString("control Y","control shift Z"),target,lifetime);
+        if(actions.getAction("EditorDeleteLine")!=null)com.intellij.openapi.actionSystem.ex.ActionUtil.wrap(actions.getAction("EditorDeleteLine")).registerCustomShortcutSet(CustomShortcutSet.fromString("control DELETE"),target,lifetime);
     }
     private void registerWorkspaceShortcuts(JComponent target){
         if(target.getClientProperty("epidemic.shortcuts")!=null)return;
@@ -1335,11 +1356,17 @@ public final class PlatformSession implements Disposable {
         record("INFO Graph lifecycle close saved FileEditor");
         FileEditorManager.getInstance(project).closeFile(file);
         waitFor(()->old.released()&&FileEditorManager.getInstance(project).getAllEditors(file).length==0, 0, () -> {
-            record("INFO Graph lifecycle disposed browser and closed all file editors");openDocument(doc);
+            record("INFO Graph lifecycle disposed browser and closed all file editors");
+            // Exercise a real busy controller deterministically. The Open must
+            // survive Loading while this native Save is awaiting its reply.
+            var savedAgain=new CompletableFuture<Bridge.Reply>();
+            saveReady(bridge,snapshot.project(),savedAgain);
+            savedAgain.whenComplete((reply,error)->{if(error!=null)edt(()->failure(error));});
+            openDocument(doc);
             waitFor(() -> graphViews.entrySet().stream().anyMatch(e -> e.getKey().file() == file && e.getValue() != old), 0, () -> {
                 inFloatingEditor(file, window -> {
                     require(NativeViewport.windowHandle(window) != 0, "Graph has no Windows HWND");
-                    record("PASS F-II.0b Graph FileEditor close/reopen disposed browser/query and created a fresh view; independent HWND=" + NativeViewport.windowHandle(window));
+                    record("PASS F-II.0b Graph FileEditor close/reopen queued behind native Save, disposed browser/query and created a fresh view; independent HWND=" + NativeViewport.windowHandle(window));
                     smokeWindowClose(window, Messages.NO);
                     waitFor(() -> !window.isDisplayable() && ready(), 0, this::smokeScalarClose);
                 });

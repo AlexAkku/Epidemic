@@ -216,11 +216,11 @@ ValidatePreparedProject(const ProjectDefinition &definition, const ProjectSchema
     std::unordered_set<std::uint64_t> operation_types;
     if (EffectiveOperations(definition,schema).size() > 256)
         return Result::Failure(Error("editor.operation_schema"));
-    std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type};
+    std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type,runtime::graph::kF64Type};
 
     for (const auto &[type, operation] : EffectiveOperations(definition,schema)) {
         if (!type.IsValid() || !operation_types.insert(type.Raw()).second ||
-            operation > runtime::graph::Operation::ReferenceValid)
+            operation > runtime::graph::Operation::ToInteger)
             return Result::Failure(Error("editor.operation_schema"));
         types.push_back(type);
     }

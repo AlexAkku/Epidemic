@@ -153,7 +153,7 @@ public final class GraphTools extends JPanel {
     }
     private void load(){
         draft=false;fieldError="";refreshing=true;try{
-            name.setText(selected==null?"":selected.name());value.setText(selected==null?"0":Long.toString(selected.previewDefault()));comment.setText(selected==null?"":selected.comment());group.setText(selected==null?"":selected.group());
+            name.setText(selected==null?"":selected.name());value.setText(selected==null?"0":Bridge.inputText(selected));comment.setText(selected==null?"":selected.comment());group.setText(selected==null?"":selected.group());
             bookmark.setSelected(selected!=null&&(selected.markers()&1)!=0);breakpoint.setSelected(selected!=null&&(selected.markers()&2)!=0);
             rows.clear();if(selected!=null&&selected.reference()!=null){rows.addElement((selected.referenceAvailable()?"Reference: ":"Missing Reference: ")+selected.referenceLabel());rows.addElement(selected.reference().toString());if(!selected.referenceReason().isEmpty())rows.addElement(selected.referenceReason());}if(selected!=null)for(var p:selected.ports())rows.addElement((p.direction()==0?"In":"Out")+" · "+p.name()+" · "+(p.kind()==0?"data type="+Long.toUnsignedString(p.type()):p.kind()==1?"control":"event")+(p.direction()==0&&p.kind()==0?" · single source":""));
         }finally{refreshing=false;}

@@ -34,6 +34,10 @@ public final class UiPanels {
     private final Consumer<Integer> createDocument;
     private BiConsumer<String,Bridge.Document> documentCommand=(action,doc)->{};
     private AssetDetails.PreviewLoader previewLoader;
+    private Supplier<List<String>> projectFolders=List::of;
+    private Consumer<String> newProjectFolder=path->{};
+    public void projectFolderCommands(Supplier<List<String>> folders,Consumer<String> create){projectFolders=folders;newProjectFolder=create;}
+    private record ProjectFolderRow(String path){public String toString(){int slash=path.lastIndexOf('/');return path.substring(slash+1);}}
     private Consumer<String> newContentFolder;
     public void contentFolderCommands(Consumer<String> action){newContentFolder=action;}
     public void documentCommands(BiConsumer<String,Bridge.Document> action){documentCommand=action;}
@@ -493,6 +497,7 @@ public final class UiPanels {
             var button=Theme.button(name,()->{
                 var selected=selectedAsset.get();
                 if(selected!=null)assetCommand.accept(name,selected.id());
+                else if(name.equals("Rename / Move")&&selectedRow.get() instanceof DocRow row)documentCommand.accept("move",row.document());
             });
             button.setName("asset."+name);
             assetEdits.put(name,button);buttons.add(button);
@@ -503,11 +508,11 @@ public final class UiPanels {
             documentActions.setEnabled(interactive&&snapshot!=null&&!snapshot.playing()&&selectedRow.get() instanceof DocRow);
             var selected=selectedAsset.get();
             boolean ready=interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()&&selected!=null;
-            assetEdits.forEach((name,button)->button.setEnabled(ready&&switch(name){
+            assetEdits.forEach((name,button)->button.setEnabled((name.equals("Rename / Move")&&interactive&&snapshot!=null&&snapshot.storage()==2&&!snapshot.playing()&&selectedRow.get() instanceof DocRow)||(ready&&switch(name){
                 case "Restore"->selected.trashed();
                 case "Assign to Prefab"->texture(selected);
                 default->!selected.trashed();
-            }));
+            })));
         };
         authoringControls.add(updateAssetActions);
         mode.addActionListener(event->updateAssetActions.run());
@@ -517,14 +522,24 @@ public final class UiPanels {
         Set<String> shownFolders=new HashSet<>();
         Runnable rebuild = () -> {
             DefaultMutableTreeNode root = new DefaultMutableTreeNode(snapshot == null ? "Choose a project" : snapshot.title());
-            DefaultMutableTreeNode docs = new DefaultMutableTreeNode("Documents"), assets = new DefaultMutableTreeNode(new FolderRow("")); root.add(docs); root.add(assets); var scripts=new DefaultMutableTreeNode("Scripts");root.add(scripts);if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service data, read-only]"));
+            DefaultMutableTreeNode docs = new DefaultMutableTreeNode(new ProjectFolderRow("Documents")), assets = new DefaultMutableTreeNode(new FolderRow("")); root.add(docs); root.add(assets); var scripts=new DefaultMutableTreeNode(new ProjectFolderRow("Scripts"));root.add(scripts);
+            Map<String,DefaultMutableTreeNode> projectDirs=new LinkedHashMap<>();projectDirs.put("",root);projectDirs.put("Documents",docs);projectDirs.put("Scripts",scripts);
+            for(String path:projectFolders.get())projectFolder(projectDirs,path);
+if(internal.isSelected())root.add(new DefaultMutableTreeNode(".epidemic [service data, read-only]"));
             String filter = search.getText().toLowerCase(Locale.ROOT);
             breadcrumb.setText("Content · "+(snapshot==null?0:snapshot.assets().size())+" shown / "+(snapshot==null?0:snapshot.assetState().totalAssets())+" total · max 1000 filtered; Enter to search");
             Map<String,DefaultMutableTreeNode> folders=new LinkedHashMap<>();
             folders.put("",assets);
             if (snapshot != null) {
-                for(var file:sourceFiles.get())if(file.toString().toLowerCase(Locale.ROOT).contains(filter))scripts.add(new DefaultMutableTreeNode(new SourceRow(file)));
-                for (Bridge.Document doc : snapshot.documents()) if (doc.name().toLowerCase(Locale.ROOT).contains(filter)) docs.add(new DefaultMutableTreeNode(new DocRow(doc)));
+                for(var file:sourceFiles.get())if(file.toString().toLowerCase(Locale.ROOT).contains(filter)){
+                    var base=java.nio.file.Path.of(snapshot.path()).getParent();
+                    String parent=base.relativize(file.getParent()).toString().replace('\\','/');
+                    projectFolder(projectDirs,parent).add(new DefaultMutableTreeNode(new SourceRow(file)));
+                }
+                for(Bridge.Document doc:snapshot.documents())if(doc.name().toLowerCase(Locale.ROOT).contains(filter)){
+                    int slash=doc.name().lastIndexOf('/');String parent=slash<0?"Documents":"Documents/"+doc.name().substring(0,slash);
+                    projectFolder(projectDirs,parent).add(new DefaultMutableTreeNode(new DocRow(doc)));
+                }
                 for(String folder:snapshot.contentFolders())
                     if(folder.toLowerCase(Locale.ROOT).contains(filter))contentFolder(folders,folder);
                 for(Bridge.Asset asset:snapshot.assets().stream().filter(a->a.path().toLowerCase(Locale.ROOT).contains(filter))
@@ -601,7 +616,12 @@ public final class UiPanels {
                 var path=tree.getPathForLocation(event.getX(),event.getY());
                 if(path==null||!(path.getLastPathComponent() instanceof DefaultMutableTreeNode node))return;
                 if(node.getUserObject() instanceof SourceRow source){tree.setSelectionPath(path);var menu=new JPopupMenu();menuItem(menu,"Open C#",()->openSource.accept(source.path(),false));menuItem(menu,"Open With…",()->openSource.accept(source.path(),true));for(String action:List.of("copy","cut","duplicate","rename","delete"))menuItem(menu,action.substring(0,1).toUpperCase()+action.substring(1),()->sourceFileAction.accept(action,source.path()));menu.show(tree,event.getX(),event.getY());return;}
-                if(node.getUserObject().equals("Scripts")){var menu=new JPopupMenu();menuItem(menu,"New C# Class…",newSource);menuItem(menu,"Paste C# Source…",()->sourceFileAction.accept("paste",null));menu.show(tree,event.getX(),event.getY());return;}
+                if(node==tree.getModel().getRoot()||node.getUserObject() instanceof ProjectFolderRow){
+                    String directory=node.getUserObject() instanceof ProjectFolderRow row?row.path():"";
+                    var menu=new JPopupMenu();menuItem(menu,"New Folder…",()->newProjectFolder.accept(directory));
+                    if(directory.equals("Scripts")||directory.startsWith("Scripts/")){menuItem(menu,"New C# Class…",newSource);menuItem(menu,"Paste C# Source…",()->sourceFileAction.accept("paste",null));}
+                    menu.show(tree,event.getX(),event.getY());return;
+                }
                 if(newContentFolder==null||snapshot.storage()!=2||snapshot.playing()||!(node.getUserObject() instanceof FolderRow folder))return;
                 var menu=new JPopupMenu();
                 menuItem(menu,"New Folder…",()->newContentFolder.accept(folder.path()));
@@ -615,6 +635,11 @@ public final class UiPanels {
             }else if(selected instanceof DefaultMutableTreeNode node&&node.getUserObject() instanceof SourceRow source)openSource.accept(source.path(),false);
         } });
         return panel;
+    }
+    private static DefaultMutableTreeNode projectFolder(Map<String,DefaultMutableTreeNode> folders,String path){
+        if(folders.containsKey(path))return folders.get(path);
+        int slash=path.lastIndexOf('/');var parent=projectFolder(folders,slash<0?"":path.substring(0,slash));
+        var node=new DefaultMutableTreeNode(new ProjectFolderRow(path));parent.add(node);folders.put(path,node);return node;
     }
     private record SourceRow(java.nio.file.Path path){public String toString(){return path.getFileName().toString();}}
     private record FolderRow(String path){
@@ -1028,9 +1053,21 @@ public final class UiPanels {
         return snapshot.documents().stream().anyMatch(doc->doc.kind()==1&&doc.id()==selection.document())?selection.document():0;
     }
     private JPanel resourceActions(){
-        var panel=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        var panel=Theme.actionRows();
         var sprite=new JButton("Choose Sprite…");
         var definition=new JButton("Open Prefab Definition");
+        var removeSprite=new JButton("Remove Sprite");
+        var fitSprite=new JButton("Fit Sprite to Prefab");
+        var resetSprite=new JButton("Reset Sprite Size");
+        fitSprite.setToolTipText("Preserve aspect ratio and shrink into the Prefab unit bounds");
+        resetSprite.setToolTipText("Restore the original 64 pixels per world unit");
+        for(var button:List.of(removeSprite,fitSprite,resetSprite))panel.add(button);
+        for(var entry:Map.of(removeSprite,"sprite",fitSprite,"sprite-fit",resetSprite,"sprite-reset").entrySet())entry.getKey().addActionListener(e->{
+            if(!canPlaceResource()||snapshot==null)return;
+            var base=snapshot;
+            gestureCommand.apply(new GestureEdit(generation,base.revision(),33,List.of(entry.getValue(),unsigned(base.assetRevision()),
+                unsigned(base.selection().document()),unsigned(base.selection().kind()==1?base.selection().element():0),"0")));
+        });
         var binding=new JLabel();
         panel.add(sprite);panel.add(definition);panel.add(binding);
         Runnable update=()->{
@@ -1038,6 +1075,8 @@ public final class UiPanels {
             panel.setVisible(prefab!=0);
             sprite.setEnabled(prefab!=0&&canPlaceResource()&&snapshot.storage()==2&&snapshot.assets().stream().anyMatch(UiPanels::texture));
             definition.setVisible(prefab!=0&&snapshot.selection().kind()==1);
+            boolean bound=prefab!=0&&snapshot.assetState().references().stream().anyMatch(ref->ref.dependent()==prefab&&ref.origin().equals("prefab.sprite"));
+            for(var button:List.of(removeSprite,fitSprite,resetSprite))button.setEnabled(bound&&canPlaceResource()&&snapshot.storage()==2);
             binding.setText(prefab==0?"":snapshot.assetState().references().stream()
                 .filter(ref->ref.dependent()==prefab&&ref.origin().equals("prefab.sprite")).findFirst()
                 .map(ref->snapshot.assets().stream().filter(asset->asset.id()==ref.source()).findFirst()
@@ -1077,7 +1116,7 @@ public final class UiPanels {
                 node.component()==type.id()&&node.part()==0)).toList();
     }
     private JPanel componentActions(){
-        JPanel toolbar=new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel toolbar=Theme.actionRows();
         JButton add=new JButton("Add Component"),remove=new JButton("Remove Component"),graph=new JButton("Attach Graph…");
         add.setToolTipText("Add a registered component to this Prefab entity. Placements inherit it.");
         remove.setToolTipText("Remove this component from the Prefab definition.");
@@ -1152,7 +1191,7 @@ public final class UiPanels {
             var key=KeyStroke.getKeyStroke(binding[0]);Object previous=component.getInputMap().get(key);var old=previous==null?null:component.getActionMap().get(previous);String name="source."+binding[1];
             component.getInputMap().put(key,name);component.getActionMap().put(name,new AbstractAction(){public void actionPerformed(ActionEvent e){Object row=selected.get();
                 if(row instanceof SourceRow source)sourceFileAction.accept(binding[1],source.path());
-                else if(binding[1].equals("paste")&&"Scripts".equals(row))sourceFileAction.accept("paste",null);
+                else if(binding[1].equals("paste")&&row instanceof ProjectFolderRow folder&&folder.path().equals("Scripts"))sourceFileAction.accept("paste",null);
                 else if(old!=null)old.actionPerformed(e);
             }});
         }

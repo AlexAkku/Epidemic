@@ -313,7 +313,7 @@ void Scene(IO &io, composition::SceneCompositionDefinition &scene) {
 }
 
 std::vector<runtime::graph::TypeId> Types(const ProjectSchema &schema) {
-    std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type};
+    std::vector<runtime::graph::TypeId> types{runtime::graph::kI64Type,runtime::graph::kF64Type};
     types.push_back(runtime::graph::kReferenceNodeType);
     for (const auto &reference : ReferenceTypes(schema)) {
         types.push_back(reference.type);

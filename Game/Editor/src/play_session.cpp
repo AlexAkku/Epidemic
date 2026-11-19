@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <algorithm>
 #include <charconv>
+#include <bit>
 #include <exception>
 #include <deque>
 #include <atomic>
@@ -14,6 +15,11 @@
 
 namespace epidemic::game::editor {
 namespace {
+std::string NumericText(runtime::graph::TypeId type,std::int64_t bits){
+    if(type!=runtime::graph::kF64Type)return std::to_string(bits);
+    char text[64]{};const auto converted=std::to_chars(text,text+sizeof(text),std::bit_cast<double>(bits),std::chars_format::general);
+    return converted.ec==std::errc{}?std::string(text,converted.ptr):"Unavailable";
+}
 struct Failure : std::exception {
     foundation::Error error;
 
@@ -263,8 +269,8 @@ struct PlaySession::Impl {
                     const auto *doc=runtime->source->Find(runtime::AssetId{foundation::StringId{stat.graph}});const auto *graph=doc?std::get_if<runtime::graph::GraphDefinition>(&doc->data):nullptr;
                     if(graph&&task)for(const auto &node:graph->nodes)for(const auto &port:node.ports)if(port.kind==runtime::graph::PortKind::Data&&stat.values.size()<64){
                         auto source=port.id;const auto edge=std::find_if(graph->connections.begin(),graph->connections.end(),[&](const auto &e){return e.input_port==port.id;});if(edge!=graph->connections.end())source=edge->output_port;
-                        std::string value="Unavailable",type=port.type_id==runtime::graph::kI64Type?"i64":"reference";
-                        if(type=="i64"){auto read=task->ReadValue(source);if(read)value=std::to_string(read.Value());else if(port.default_value&&edge==graph->connections.end())value="constant "+std::to_string(*port.default_value);}
+                        std::string value="Unavailable",type=port.type_id==runtime::graph::kI64Type?"i64":port.type_id==runtime::graph::kF64Type?"f64":"reference";
+                        if(type=="i64"||type=="f64"){auto read=task->ReadValue(source);if(read)value=NumericText(port.type_id,read.Value());else if(port.default_value&&edge==graph->connections.end())value="constant "+NumericText(port.type_id,*port.default_value);}
                         else{auto read=task->ReadReference(source);if(read){const auto &r=read.Value();const auto scope=at->execution->Scope();auto valid=scope?runtime->Resolve({*scope,runtime->bridge},r):foundation::Result<bool>::Success(false);value=std::string(valid&&valid.Value()?"Live ":"Missing ")+"document="+std::to_string(r.document.Raw())+" placement="+std::to_string(r.placement.Raw())+" entity="+std::to_string(r.entity.Raw())+" component="+std::to_string(r.component.Raw())+" part="+std::to_string(r.part.Raw());}}
                         stat.values.push_back({port.id.Raw(),type,std::move(value)});
                     }
@@ -322,7 +328,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
 
         for (const auto &dependency : manifest.dependencies)
             required.insert(dependency.asset_id.Raw());
-        std::vector<runtime::graph::TypeId> known_types{runtime::graph::kI64Type};
+        std::vector<runtime::graph::TypeId> known_types{runtime::graph::kI64Type,runtime::graph::kF64Type};
 
         for (const auto &[type, operation] : EffectiveOperations(snapshot->definition,schema)) {
             (void)operation;

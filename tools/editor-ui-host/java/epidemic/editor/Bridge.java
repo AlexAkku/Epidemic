@@ -47,6 +47,10 @@ public final class Bridge implements AutoCloseable {
     public record ComponentType(long id,String name) {}
     public record SceneItem(long document,long id,double left,double top,double right,double bottom,double x,double y,double rotation) {}
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
+    // Native StringId("epidemic.graph.f64"); wire stays an exact signed 64-bit payload.
+    public static final long F64_TYPE=5921324253547672631L;
+    public static String numericText(long type,long bits){return type==F64_TYPE?Double.toString(Double.longBitsToDouble(bits)):Long.toString(bits);}
+    public static String inputText(GraphNode node){return numericText(node.ports().stream().filter(p->p.kind()==0).mapToLong(GraphPort::type).findFirst().orElse(0),node.previewDefault());}
     public record GraphPort(long id, String name, int kind, int direction, long type,Long defaultValue) {}
     public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports, long previewDefault, String comment, String group, int markers,GraphReference reference,boolean referenceAvailable,String referenceLabel,String referenceReason) {
         public GraphNode { ports = List.copyOf(ports); }

@@ -81,7 +81,7 @@ class GraphInstance final {
     [[nodiscard]] foundation::Result<std::int64_t> InvokeNative(std::uint32_t site,
                                                                 std::int64_t value);
     [[nodiscard]] static bool Arithmetic(Operation operation, std::int64_t left, std::int64_t right,
-                                         std::int64_t &value);
+                                         std::int64_t &value, TypeId type = kI64Type);
     [[nodiscard]] foundation::Result<bool> ResolveReference(std::uint32_t instruction) const;
     explicit GraphInstance(CompiledGraphPtr program);
     CompiledGraphPtr program_;

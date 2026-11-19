@@ -1,6 +1,8 @@
 #include "Epidemic/Runtime/Graph/graph_vm.h"
 #include <algorithm>
 #include <array>
+#include <bit>
+#include <cmath>
 #include <cstdio>
 #include <limits>
 #include <stdexcept>
@@ -411,10 +413,46 @@ void Literals() {
     graph.nodes[0].ports[0].default_value=1;ErrorIs(CompileGraph(graph,Bindings()),"graph.literal_type");
 }
 
+void FloatingMath() {
+    const auto run=[](Operation op,const std::array<double,3> &values,bool integer=false){
+        const auto [a,b,expected]=values;
+        const auto unary=UnaryMath(op);
+        GraphDefinition graph{AssetId::FromString("numeric.tests"),"Numeric",{}, {}};
+        auto input=Port("numeric.input",PortDirection::Output);input.type_id=integer||op==Operation::ToFloat?kI64Type:kF64Type;
+        auto left=Port("numeric.left",PortDirection::Input);left.type_id=input.type_id;
+        auto right=Port("numeric.right",PortDirection::Input);right.type_id=integer?kI64Type:kF64Type;right.default_value=integer?static_cast<std::int64_t>(b):std::bit_cast<std::int64_t>(b);
+        auto output=Port("numeric.result",PortDirection::Output);output.type_id=integer||op==Operation::ToInteger?kI64Type:kF64Type;
+        graph.nodes={{Id("numeric.source"),Id("numeric.input.type"),"Input",{input}},
+                     {Id("numeric.math"),Id("numeric.math.type"),"Math",unary?std::vector<PortDefinition>{left,output}:std::vector<PortDefinition>{left,right,output}}};
+        graph.connections={{Id("numeric.edge"),input.id,left.id}};
+        const std::array bindings{NodeBinding{Id("numeric.input.type"),Operation::Input,{}},NodeBinding{Id("numeric.math.type"),op,{}}};
+        auto compiled=CompileGraph(graph,bindings);Check(bool(compiled),"numeric compilation");
+        auto instance=GraphInstance::Create(compiled.Value());Check(bool(instance),"numeric instance");
+        if(input.type_id==kF64Type)ErrorIs(instance.Value()->SetInput(input.id,std::bit_cast<std::int64_t>(std::numeric_limits<double>::quiet_NaN())),"graph.vm.numeric_range");
+        Check(bool(instance.Value()->SetInput(input.id,integer||op==Operation::ToFloat?static_cast<std::int64_t>(a):std::bit_cast<std::int64_t>(a))),"numeric input");
+        auto report=instance.Value()->Run();
+        if(!std::isfinite(expected)){Check(report.status==ExecutionStatus::Failed,"numeric invalid accepted");return;}
+        Check(report.status==ExecutionStatus::Completed,"numeric execution");
+        const auto bits=instance.Value()->ReadValue(output.id);Check(bool(bits),"numeric result");
+        const auto number=output.type_id==kF64Type?std::bit_cast<double>(bits.Value()):static_cast<double>(bits.Value());
+        Check(number==expected,"numeric wrong result");
+        if(!unary&&!integer){graph.nodes[1].ports[1].default_value=std::bit_cast<std::int64_t>(std::numeric_limits<double>::quiet_NaN());ErrorIs(CompileGraph(graph,bindings),"graph.literal_type");graph.nodes[1].ports[1].default_value=std::bit_cast<std::int64_t>(b);graph.nodes[1].ports[0].type_id=kI64Type;Check(!CompileGraph(graph,bindings),"mixed numeric type accepted");}
+    };
+    run(Operation::Subtract,{7,2,5},true);run(Operation::Divide,{-7,2,-3},true);run(Operation::IntegerDivide,{7,2,3},true);run(Operation::Divide,{1,0,INFINITY},true);
+    run(Operation::Add,{1.25,2.5,3.75});run(Operation::Multiply,{1.25,2.5,3.125});
+    run(Operation::Subtract,{1.25,2.5,-1.25});run(Operation::Divide,{7.5,2,3.75});
+    run(Operation::IntegerDivide,{-7.5,2,-3});run(Operation::Divide,{1,0,INFINITY});
+    run(Operation::Multiply,{std::numeric_limits<double>::max(),2,INFINITY});
+    run(Operation::RoundUp,{-1.2,0,-1});run(Operation::RoundDown,{-1.2,0,-2});
+    run(Operation::RoundNearest,{1.5,0,1});run(Operation::RoundNearest,{8.6,0,9});run(Operation::RoundNearest,{-1.6,0,-2});
+    run(Operation::ToFloat,{7,0,7});run(Operation::ToInteger,{-7.9,0,-7});
+}
+
 } // namespace
 
 int main() {
     try {
+        FloatingMath();
         Literals();
         CompileFailures();
         InstancesAndBudgets();

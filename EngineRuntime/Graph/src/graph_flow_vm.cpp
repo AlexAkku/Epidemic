@@ -1,4 +1,5 @@
 #include "graph_flow.h"
+#include <bit>
 #include <algorithm>
 
 namespace epidemic::runtime::graph::detail {
@@ -137,7 +138,7 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
                 work_.pop_back();
                 continue;
             }
-            if (step.operation == Operation::Add || step.operation == Operation::Multiply || step.operation == Operation::ReferenceValid) {
+            if (IsMath(step.operation) || step.operation == Operation::ReferenceValid) {
                 if (cache_[work.node] == epoch_) {
                     work_.pop_back();
                     continue;
@@ -165,12 +166,14 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
                 continue;
             }
             const auto &a = values[node.data[0]];
-            const auto &b = values[node.data[1]];
+            const auto b = UnaryMath(step.operation)?std::optional<std::int64_t>{0}:values[node.data[1]];
             if (!a || !b)
                 return Fail("graph.flow.value_unavailable", report);
             std::int64_t result = 0;
-            if (!GraphInstance::Arithmetic(step.operation, *a, *b, result))
-                return Fail("graph.vm.integer_overflow", report);
+            if((step.operation==Operation::Divide||step.operation==Operation::IntegerDivide)&&
+                (step.value_type==kF64Type?std::bit_cast<double>(*b)==0:*b==0))return Fail("graph.vm.divide_by_zero",report);
+            if (!GraphInstance::Arithmetic(step.operation, *a, *b, result,step.value_type))
+                return Fail(step.value_type==kF64Type||step.operation==Operation::ToInteger?"graph.vm.numeric_range":"graph.vm.integer_overflow", report);
             values[work.node] = result;
             cache_[work.node] = epoch_;
             work_.pop_back();

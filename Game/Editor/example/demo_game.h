@@ -126,6 +126,7 @@ struct Schema {
                  {Id("entry.type"), graph::Operation::Entry}, {Id("sequence.type"), graph::Operation::Sequence},
                  {Id("branch.type"), graph::Operation::Branch}, {Id("repeat.type"), graph::Operation::Repeat}}, &components};
         for(const auto &operation:gc::arena::Operations())view.operations.push_back({Id(operation.id),operation.kind});
+        for(const auto &operation:graph::kNumericRecipes)view.operations.push_back({Id(operation.id),operation.operation});
         return view;
 
     }
@@ -214,6 +215,7 @@ inline ed::PlayOptions Options(Schema &schema) {
                 if(!runtime->gameplay||!call.scope.IsAlive())return foundation::Result<std::int64_t>::Failure(foundation::Error::Create("gameplay.stale_scope","Play required"));
                 return runtime->gameplay->Execute(id,call.scope.Handle(),value);
             }});}
+        for(const auto &operation:graph::kNumericRecipes)bindings.push_back({Id(operation.id),operation.operation,{}});
         return bindings;
 
     };

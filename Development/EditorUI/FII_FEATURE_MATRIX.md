@@ -4,6 +4,7 @@
 |---|---|---|
 | F-II.0a, сверка и baseline | Implemented · PASS | Свежий SHA совпал с GitHub, Release, адресные CTest и managed baseline прошли. [Baseline](FII_BASELINE.md). |
 | Graph authoring Core / VM | Implemented | GraphDefinition, compiler, VM, Add/DeleteGraphNode, Connect/DisconnectPorts, native history и сериализация. |
+| Graph math | Implemented · manual pending | Native i64/f64 overloads, explicit conversions, Subtract/Divide/Integer Divide/Round; inline/history/new-process roundtrip PASS. [Контракт](FII_NUMERIC_GRAPH.md). Native/managed call ABI остаётся i64→i64. |
 | Graph Editor и browser | Implemented F-II.1 · GATE PASS | Native catalogue, Rete projection/Selection, Inspector/defaults/metadata, atomic fragments/bulk edits, compile/native VM/scheduler, diagnostics, offline sandbox EXE. [Отчёт и границы](FII1_GRAPH_AUTHORING.md). |
 | Code Space | Implemented · offline profile | Platform Editor/Document/VFS, highlighting/search/line, dirty/Save/close/conflicts, production SDK build and diagnostics. LSP не поставляется (§5.3 fallback). [F-II.2](FII2_SCHEMA_CODESPACE.md). |
 | Rider / Open With | Implemented · принято с исключением | VS Code проверен владельцем; Rider принят им без установленного Rider (2026-11-16). Реальный запуск Rider не заявляется. |

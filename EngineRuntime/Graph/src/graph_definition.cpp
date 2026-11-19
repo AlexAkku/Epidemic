@@ -1,4 +1,6 @@
 #include "Epidemic/Runtime/Graph/graph_definition.h"
+#include <bit>
+#include <cmath>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -56,7 +58,8 @@ foundation::Result<void> ValidateGraph(const GraphDefinition &definition,
         if (node.name.size() > kMaxLabelBytes || node.ports.size() > kMaxPorts - ports.size())
             return Failure("graph.limit_exceeded");
         for (const auto &port : node.ports) {
-            if(port.default_value && (port.kind!=PortKind::Data || port.direction!=PortDirection::Input || port.type_id!=TypeId::FromString("epidemic.graph.i64")))return Failure("graph.literal_type");
+            if(port.default_value&&port.type_id==TypeId::FromString("epidemic.graph.f64")&&!std::isfinite(std::bit_cast<double>(*port.default_value)))return Failure("graph.literal_type");
+            if(port.default_value && (port.kind!=PortKind::Data || port.direction!=PortDirection::Input || (port.type_id!=TypeId::FromString("epidemic.graph.i64")&&port.type_id!=TypeId::FromString("epidemic.graph.f64"))))return Failure("graph.literal_type");
             if (auto added = add_id(port.id); !added)
                 return added;
             if (port.name.size() > kMaxLabelBytes)

@@ -7,7 +7,7 @@
 Закройте прежний экземпляр редактора. Проверенная side-by-side сборка находится здесь (обычный Windows PowerShell, `pwsh` не нужен):
 
 ```powershell
-& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\419e8cc7300843cc804647a91fd5296b\EpidemicEditor\EpidemicEditor.exe'
+& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\3bd1025cae5c4ec68c90220446c6dd3b\EpidemicEditor\EpidemicEditor.exe'
 ```
 
 Старый `Temp/U/distribution` этим прогоном не обновлялся. Подробные автоматические результаты и ограничения: [FII5_REPORT](FII5_REPORT.md).
@@ -19,7 +19,15 @@
 5. **Graph + inline + clipboard.** Составьте Input→Add→Output; один операнд Add задайте inline. Измените его, Enter, Ctrl+C/V/X, Undo/Redo, Save/Open. Топология и значения сохраняются; Escape отменяет незафиксированный ввод.
 6. **Graph + соединения + DnD.** Перетащите ноду из Palette; потяните связь, ПКМ→Add→категория→нода, завершите соединение. Подцепите существующую связь: Escape возвращает её, Delete удаляет, Undo восстанавливает. ПКМ-меню закрывается ЛКМ по пустому месту.
 7. **C# + внешний редактор + компоненты.** Измените scalar default существующего пользовательского компонента в Code Space и VS Code, Build & Register. Непереопределённое поле обновляется, override сохраняется, Remove Component удаляет выбранный компонент. Ошибка сборки оставляет последнюю успешную generation доступной.
-8. **Entity/Component references + дубликат.** В существующем Graph назначьте ссылку на второй placement/его компонент. Дублируйте первый placement, Save/Open, проверьте выбранную цель и validity. Удалите цель, Undo: отсутствующая/восстановленная ссылка определяется правильно. Это повтор регрессий прежних пунктов17/19/20.
+8. **Entity/Component references — подробно.** На отдельной Scene разместите один Prefab дважды; переименуйте placements в `A` и `B` через Hierarchy. Создайте отдельный Graph `Reference regression`, откройте его и Scene рядом.
+
+   1. В Palette добавьте `Entry`, `Output`, `Is Entity Valid`. Соедините `Entry.next → Output.in` и `Is Entity Valid.valid → Output.value`.
+   2. Удерживая **Alt**, перетащите `B` из Hierarchy на пустое место Graph. В выборе вида ссылки укажите **Entity**. Соедините выход созданной Reference-ноды со входом `Is Entity Valid.reference`. Другой способ: Alt+drag из входа `reference` прямо на `B` в Hierarchy.
+   3. Нажмите Compile, затем Run Preview: в отчёте ожидается `value=1`. В Reference Inspector должна быть указана именно `B`, не `A`. Дублируйте `A`, Save All; выбранной целью по-прежнему остаётся `B`.
+   4. Удалите `B` из Scene. Reference остаётся в Graph с пометкой Missing; Run Preview выдаёт `value=0`. Undo удаления возвращает `B`, а Run Preview — `1`.
+   5. Для component-варианта вместо `Is Entity Valid` добавьте `Is Health Valid` (название соответствует зарегистрированному Health). Alt+drag его входа `reference` на `B`; в picker выберите компонент Health нужного placement. Его `valid` аналогично подключите к Output. Выбор компонента другого типа должен быть запрещён.
+   6. Save All, полностью закройте редактор и откройте проект новым процессом. Обе исходные placements, дубликат A и адресованная B/component-ссылка сохраняются. Здесь проверяется сохранение **выбранной цели**, а не совпадение ID двух placements.
+
 9. **Несколько окон + selection + фокус.** Отделите Scene и Graph; переключайте Hierarchy/Explorer/Inspector, прокрутите Palette, меняйте selection. Splitters сохраняют размер, ID не засоряют подписи, Graph error overlay закрывается крестиком. Ctrl+Y — Redo, Ctrl+Delete — удаление строки в Code Space.
 10. **Закрытие + восстановление.** В двух окнах измените разные документы, сохраните, закройте редактор, откройте проект в новом процессе. Layout, данные, ссылки, кириллица и native preview восстановлены; оконные кнопки находятся у края. Запустите/остановите существующий native Graph без C#.
 
@@ -37,6 +45,8 @@
     - Wait.result → Native Call 2.argument.
 
     Штатный Native Call данного профиля выполняет Damage над Health владельца. В Inspector Prefab выберите этот Graph как behavior. Save All. В Game Controls выберите `Runtime Test` как Play Scene. Откройте Game, Runtime Inspector, Debugger, Console, Problems и Profiler.
+
+    Compile только проверяет структуру и типы: Play для него не нужен. Run Preview для такого Graph сообщает, что native-операциям нужен живой Entity, и не выполняет Damage над авторскими данными. Для игры нажмите именно **Play** в Game Controls после выбора Scene; это отдельное действие.
 
 ## F-II.4
 
