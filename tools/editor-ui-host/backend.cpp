@@ -1,6 +1,7 @@
 #include "demo_game.h"
 #include "arena_sample.h"
 #include "graph_authoring.h"
+#include "numeric_authoring.h"
 #include "script_worker.h"
 #include <fstream>
 #include "Epidemic/Runtime/Support/graph_scheduler.h"
@@ -944,16 +945,31 @@ class Backend {
         } else if (args[0]=="deletebulk" && args.size()==3) {
             for(const auto &word:GraphWords(args[2],64)) commands.push_back(ed::DeleteGraphNode{document,Id{Numeric(word)}});
         } else if ((args[0]=="literal"||args[0]=="inputvalue") && args.size()==4) {
+            const auto &definition=std::get<graph::GraphDefinition>(doc->data);
+            const auto addressed=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return args[0]=="literal"?std::any_of(n.ports.begin(),n.ports.end(),[&](const auto &p){return p.id.Raw()==Numeric(args[2]);}):n.id.Raw()==Numeric(args[2]);});
+            if(addressed!=definition.nodes.end()&&ed::numeric_ui::Family(addressed->type_id))commands=ed::numeric_ui::Number(*doc,Numeric(args[2]),args[0]=="literal",args[3]);
+            else {
             const auto number=GraphNumber(*doc,Numeric(args[2]),args[0]=="literal",args[3]);
             if(args[0]=="literal")commands.push_back(ed::SetGraphPortDefault{document,Id{Numeric(args[2])},number});
             else {auto node=std::find_if(std::get<graph::GraphDefinition>(doc->data).nodes.begin(),std::get<graph::GraphDefinition>(doc->data).nodes.end(),[&](const auto &n){return n.id.Raw()==Numeric(args[2]);});
                 if(node==std::get<graph::GraphDefinition>(doc->data).nodes.end())throw std::runtime_error("ui.graph_node");
                 auto settings=ed::graph_ui::Settings(*doc,node->id.Raw());settings.preview_default=number;commands.push_back(ed::SetGraphNodeSettings{document,node->id,node->name,settings});}
+            }
+        } else if (args[0]=="numeric" && args.size()==4){
+            const auto id=Numeric(args[2]),mode=Numeric(args[3]);if(mode>2)throw std::runtime_error("ui.graph_numeric_mode");
+            const auto &definition=std::get<graph::GraphDefinition>(doc->data);const auto node=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return n.id.Raw()==id;});
+            if(node==definition.nodes.end()||!ed::numeric_ui::Family(node->type_id))throw std::runtime_error("ui.graph_numeric_target");
+            auto settings=ed::graph_ui::Settings(*doc,id);settings.numeric_mode=static_cast<std::uint8_t>(mode);if(mode==1)settings.numeric_seed=0;
+            commands.push_back(ed::SetGraphNodeSettings{document,node->id,node->name,settings});
         } else if (args[0]=="settings" && args.size()==8) {
             const auto id=Numeric(args[2]); const auto flags=Numeric(args[7]);
             if(flags>3) throw std::runtime_error("ui.graph_flags");
-            const auto number=GraphNumber(*doc,id,false,args[4]);
-            commands.push_back(ed::SetGraphNodeSettings{document,Id{id},args[3],{id,number,args[5],args[6],(flags&1u)!=0,(flags&2u)!=0}});
+            auto settings=ed::graph_ui::Settings(*doc,id);settings.comment=args[5];settings.group=args[6];settings.bookmark=(flags&1u)!=0;settings.breakpoint=(flags&2u)!=0;
+            const auto &definition=std::get<graph::GraphDefinition>(doc->data);const auto node=std::find_if(definition.nodes.begin(),definition.nodes.end(),[&](const auto &n){return n.id.Raw()==id;});
+            if(node!=definition.nodes.end()&&ed::numeric_ui::Family(node->type_id)==graph::Operation::Input){
+                commands=ed::numeric_ui::Number(*doc,id,false,args[4]);auto &change=std::get<ed::SetGraphNodeSettings>(commands.front());
+                settings.preview_default=change.settings.preview_default;settings.numeric_seed=change.settings.numeric_seed;change.name=args[3];change.settings=settings;
+            }else{settings.preview_default=GraphNumber(*doc,id,false,args[4]);commands.push_back(ed::SetGraphNodeSettings{document,Id{id},args[3],settings});}
         } else if (args[0]=="group" && args.size()==4) {
             const auto &graph=std::get<graph::GraphDefinition>(doc->data);
             for(const auto &word:GraphWords(args[2],64)) {
@@ -978,6 +994,7 @@ class Backend {
             for(const auto &sys:snapshot->definition.systems) if(sys.graph==document) graph_report_+="\nScene="+std::to_string(sys.scene.Raw())+" System="+std::to_string(sys.id.Raw());
             return;
         } else throw std::runtime_error("ui.graph_arguments");
+        commands=ed::numeric_ui::Infer(*doc,std::move(commands));
         const auto edited=workspace_->Execute(std::move(commands),revision);
         if(!edited){
             graph_report_document_=document.Raw();graph_report_revision_=workspace_->Project()->Revision();
@@ -1439,7 +1456,7 @@ class Backend {
                 out.Number<8>(std::bit_cast<std::uint64_t>(x)); out.Number<8>(std::bit_cast<std::uint64_t>(y));
                 const auto settings=ed::graph_ui::Settings(doc,node.id.Raw());
                 out.Number<8>(std::bit_cast<std::uint64_t>(settings.preview_default));out.Text(settings.comment);out.Text(settings.group);
-                out.Number<1>((settings.bookmark ? 1u : 0u) | (settings.breakpoint ? 2u : 0u));
+                out.Number<1>((settings.bookmark ? 1u : 0u) | (settings.breakpoint ? 2u : 0u) | (static_cast<std::uint32_t>(settings.numeric_mode)<<2u) | (static_cast<std::uint32_t>(settings.numeric_seed)<<4u));
                 out.Number<1>(node.reference.has_value());
                 if(node.reference) {
                     WriteReference(out,*node.reference);

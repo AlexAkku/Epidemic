@@ -26,12 +26,13 @@ public final class RuntimeDebugger extends JPanel {
         var tabs=new JTabbedPane();tabs.addTab("Activations / Values",detail);tabs.addTab("Trace / Filters",trace);add(tabs);
     }
     public void seedHistory(Collection<Bridge.RuntimeSession> frames,Bridge.Snapshot snapshot){for(var frame:frames)trace.refresh(frame,snapshot);}
-    private long[] target(){
-        if(snapshot!=null&&snapshot.selection().kind()==3)return new long[]{snapshot.selection().document(),snapshot.selection().element()};
-        var selected=list.getSelectedValue();return selected==null?new long[]{0,0}:new long[]{selected.graph(),selected.node()};
+    private long[] target(boolean authoring){
+        if(authoring&&snapshot!=null&&snapshot.selection().kind()==3)return new long[]{snapshot.selection().document(),snapshot.selection().element()};
+        var selected=list.getSelectedValue();if(selected!=null&&selected.node()!=0)return new long[]{selected.graph(),selected.node()};
+        return snapshot!=null&&snapshot.selection().kind()==3?new long[]{snapshot.selection().document(),snapshot.selection().element()}:new long[]{0,0};
     }
     private void invoke(String action){
-        var target=target();
+        var target=target(action.equals("breakpoint"));
         if(action.equals("node")){navigate.accept(new RuntimeLogView.Link(target[0],target[1],0,0,"",1,0));return;}
         if(action.equals("source")){
             if(snapshot!=null)for(var graph:snapshot.graphs())if(graph.document()==target[0])for(var node:graph.nodes())if(node.id()==target[1])for(var type:graph.catalogue())if(type.type()==node.type()&&!type.source().isEmpty()){navigate.accept(new RuntimeLogView.Link(0,0,0,0,type.source(),type.line(),0));return;}return;
@@ -47,7 +48,7 @@ public final class RuntimeDebugger extends JPanel {
             rows.add(new Object[]{name,value.type(),value.value()});
         }
         if(values.getRowCount()!=rows.size()){values.setRowCount(0);rows.forEach(values::addRow);}else for(int row=0;row<rows.size();row++)for(int col=0;col<3;col++)if(!Objects.equals(values.getValueAt(row,col),rows.get(row)[col]))values.setValueAt(rows.get(row)[col],row,col);
-        long[] target=target();buttons.get("node").setEnabled(target[0]!=0&&target[1]!=0);buttons.get("breakpoint").setEnabled(runtime.live()&&target[0]!=0&&target[1]!=0);
+        long[] target=target(false);buttons.get("node").setEnabled(target[0]!=0&&target[1]!=0);long[] breakpointTarget=target(true);buttons.get("breakpoint").setEnabled(runtime.live()&&breakpointTarget[0]!=0&&breakpointTarget[1]!=0);
         boolean source=false;if(snapshot!=null)for(var graph:snapshot.graphs())if(graph.document()==target[0])for(var node:graph.nodes())if(node.id()==target[1])source=graph.catalogue().stream().anyMatch(t->t.type()==node.type()&&!t.source().isEmpty());buttons.get("source").setEnabled(source);
     }
     public void refresh(Bridge.RuntimeSession frame,Bridge.Snapshot snapshot){

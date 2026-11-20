@@ -29,6 +29,22 @@ public final class RuntimeTests {
             System.out.println("FII4_RELEASE_BASELINE entities="+count+" activations="+activationCount+" play_roundtrip_ms="+load+" native_tick_p50_us="+p50+" native_tick_p95_us="+p95+" backend_private_bytes="+ram+" stop_roundtrip_ms="+stop);
         }
     }
+    private static javax.swing.JButton button(java.awt.Container owner,String text){
+        for(var child:owner.getComponents()){
+            if(child instanceof javax.swing.JButton b&&b.getText().equals(text))return b;
+            if(child instanceof java.awt.Container container){var found=button(container,text);if(found!=null)return found;}
+        }return null;
+    }
+    private static void waitNavigation(Bridge b,long graph,long authorNode,long waitingNode)throws Exception{
+        call(b,9,"3",id(graph),id(authorNode));
+        var target=new java.util.concurrent.atomic.AtomicReference<RuntimeLogView.Link>();
+        javax.swing.SwingUtilities.invokeAndWait(()->{
+            var debugger=new RuntimeDebugger((c,g,s,a,args)->CompletableFuture.failedFuture(new IllegalStateException("Unexpected native command")),target::set);
+            debugger.refresh(b.latest().runtime(),b.latest().snapshot());
+            var go=button(debugger,"Go to Node");check(go!=null&&go.isEnabled(),"Missing active-node navigation");go.doClick();
+        });
+        check(target.get()!=null&&target.get().graph()==graph&&target.get().node()==waitingNode,"Debugger Go to Node preferred stale author selection over waiting activation");
+    }
     public static void main(String[] args)throws Exception{
         Path work=Path.of(args[1]).toAbsolutePath().resolve("runtime-"+UUID.randomUUID());Files.createDirectories(work);String saved;long graphId,oldConnection=0,oldGeneration=0,oldSession=0;
         try(var b=new Bridge(Path.of(args[0]).toAbsolutePath(),work.resolve("logs"),state->{},Runnable::run)){
@@ -60,6 +76,13 @@ public final class RuntimeTests {
             for(int i=0;i<40&&health(b.latest().runtime())!=86;i++){long old=b.latest().runtime().tick();runtime(b,"step");check(b.latest().runtime().tick()==old+1,"Step Tick did not advance exactly one native tick");}
             check(health(b.latest().runtime())==86,"Native Wait did not resume second damage");check(b.latest().snapshot().revision()==revision&&!b.latest().snapshot().dirty(),"Runtime wrote authoring");
             runtime(b,"resume");long old=b.latest().runtime().tick();Thread.sleep(100);call(b,42);check(b.latest().runtime().tick()>old,"Native clock depends on Java polling");
+            runtime(b,"restart");runtime(b,"pause");runtime(b,"breakpoint",id(graphId),id(before.id()),"1");
+            for(int i=0;i<10&&b.latest().runtime().trace().stream().noneMatch(t->t.state().equals("Breakpoint")&&t.node()==before.id());i++)runtime(b,"step");
+            check(b.latest().runtime().activations().stream().anyMatch(a->a.node()==before.id()),"Missing first damage breakpoint");
+            runtime(b,"step");
+            check(b.latest().runtime().activations().stream().anyMatch(a->a.state().equals("Waiting")&&a.node()==wait.id()),"Wait retained stale first Native Call breakpoint node: "+b.latest().runtime().activations()+" trace="+b.latest().runtime().trace().stream().skip(Math.max(0,b.latest().runtime().trace().size()-8)).toList());
+            waitNavigation(b,graphId,before.id(),wait.id());
+            runtime(b,"breakpoint",id(graphId),id(before.id()),"0");
             runtime(b,"restart");check(b.latest().runtime().session()!=session,"Restart reused session identity");
             try{call(b,41,"pause",id(session));throw new IllegalStateException("Accepted old session");}catch(ExecutionException expected){check(expected.getCause().getMessage().contains("runtime.stale_session"),"Wrong old-session rejection");}
             runtime(b,"pause");runtime(b,"breakpoint",id(graphId),id(after.id()),"1");check(b.latest().runtime().breakpoints().size()==1,"Breakpoint DTO missing");

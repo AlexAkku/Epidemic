@@ -83,7 +83,7 @@ window.graphSnapshot = value => {
             if (!node) {
                 node = new ClassicPreset.Node(title); node.id = dto.id;
                 for (const p of dto.ports) {
-                    const type = `${p.kind}:${p.type}`;
+                    const type = p.numeric?"number":`${p.kind}:${p.type}`;
                     if (!sockets.has(type)) sockets.set(type, new ClassicPreset.Socket(type));
                     const socket = sockets.get(type);
                     if (p.direction === 0) node.addInput(p.id, new ClassicPreset.Input(socket, p.name, p.kind !== 0));
@@ -296,7 +296,7 @@ canvas.addEventListener('contextmenu',event=>{
     const add=(label,callback,enabled=true)=>{const b=document.createElement('button');b.textContent=label;b.disabled=!enabled;b.onclick=()=>{menu.hidden=true;callback();};menu.append(b);};
     const root=document.createElement('details');root.open=connectionGesture;const summary=document.createElement('summary');summary.textContent='Add';root.append(summary);menu.append(root);
     const categories=new Map();
-    for(let i=0;i<(snapshot?.catalogue.length||0);++i){const r=snapshot.catalogue[i];
+    for(let i=0;i<(snapshot?.catalogue.length||0);++i){const r=snapshot.catalogue[i];if(r.palette===false)continue;
         let group=categories.get(r.category);if(!group){group=document.createElement('details');const title=document.createElement('summary');title.textContent=r.category;group.append(title);categories.set(r.category,group);root.append(group);}
         const button=document.createElement('button');button.textContent=r.name;button.disabled=snapshot.readonly||pending;
         button.onclick=()=>{menu.hidden=true;if(connectionGesture&&connectionOrigin)resumeSocket={...connectionOrigin,edge:reconnectEdge};connections.drop();send('create',i,cursor.x,cursor.y);};group.append(button);
@@ -360,13 +360,24 @@ function renderLiterals(){
     for(const dto of snapshot?.nodes||[]){const element=nodeElement(dto.id);if(!element)continue;
         const recipe=snapshot.catalogue.find(r=>r.type===dto.type);
         const fields=[];
-        if(recipe?.operation===0)fields.push({id:dto.id,label:'Value',value:dto.previewDefault,action:'inputvalue'});
-        for(const port of dto.ports)if(port.defaultValue!==undefined&&!snapshot.edges.some(e=>e.input===port.id))fields.push({id:port.id,label:port.name,value:port.defaultValue,action:'literal'});
-        for(const field of fields){const draft=inlineDrafts.get(field.id);if(draft){try{if(/^[-+]?\d+$/.test(draft.value)&&BigInt(draft.value).toString()===String(field.value))inlineDrafts.delete(field.id);}catch{}}}
+        if(recipe?.operation===0)fields.push({id:dto.id,label:'Value',value:dto.previewDefault,floating:dto.numericType==='f64',action:'inputvalue'});
+        for(const port of dto.ports)if(port.defaultValue!==undefined&&!snapshot.edges.some(e=>e.input===port.id))fields.push({id:port.id,label:port.name,value:port.defaultValue,floating:port.floating===true,action:'literal'});
+        for(const field of fields){const draft=inlineDrafts.get(field.id);if(draft&&draft.revision!==snapshot.revision){try{if(draft.value===String(field.value)||(field.floating&&/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(draft.value)&&Number.isFinite(Number(draft.value))&&Object.is(Number(draft.value),Number(field.value)))||(/^[-+]?\d+$/.test(draft.value)&&BigInt(draft.value).toString()===String(field.value)))inlineDrafts.delete(field.id);}catch{}}}
         let panel=element.querySelector('.node-literals');if(!panel){panel=document.createElement('div');panel.className='node-literals';(element.querySelector('[data-testid=node]')||element).append(panel);}
-        const signature=JSON.stringify([snapshot.readonly,fields.map(f=>[f.id,String(f.value)])]);
-        if(panel.contains(document.activeElement)){for(const field of fields){const input=[...panel.querySelectorAll('input')].find(e=>e.dataset.literalId===field.id);if(input)input.dataset.nativeValue=String(field.value);}continue;}if(panel.dataset.signature===signature)continue;panel.dataset.signature=signature;panel.replaceChildren();
-        for(const field of fields){const label=document.createElement('label');label.textContent=field.label;const input=document.createElement('input');input.type='text';input.inputMode='numeric';input.value=inlineDrafts.get(field.id)?.value??String(field.value);input.dataset.nativeValue=String(field.value);input.dataset.literalId=field.id;input.setAttribute('aria-label',field.label+' integer literal');input.disabled=snapshot.readonly;
+        const signature=JSON.stringify([snapshot.readonly,dto.numeric,dto.numericMode,dto.numericType,fields.map(f=>[f.id,String(f.value)])]);
+        if(panel.contains(document.activeElement)&&document.activeElement.matches('input,textarea,[contenteditable=true]')){for(const field of fields){const input=[...panel.querySelectorAll('input')].find(e=>e.dataset.literalId===field.id);if(input)input.dataset.nativeValue=String(field.value);}continue;}if(panel.dataset.signature===signature)continue;panel.dataset.signature=signature;panel.replaceChildren();
+        if(dto.numeric){
+            const lock=document.createElement('button');lock.className='numeric-lock';lock.disabled=snapshot.readonly;
+            lock.setAttribute('aria-label','Numeric type: '+(dto.numericMode===0?'Auto':'Locked '+dto.numericType));
+            const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('width','14');icon.setAttribute('height','14');icon.setAttribute('viewBox','0 0 16 16');icon.setAttribute('aria-hidden','true');
+            const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('d',dto.numericMode===0?'M5 7V4a3 3 0 0 1 6 0M3 7h10v7H3z':'M5 7V4a3 3 0 0 1 6 0v3M3 7h10v7H3z');path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');icon.append(path);lock.append(icon,document.createTextNode((dto.numericMode===0?' Auto · ':' Locked · ')+dto.numericType));
+            for(const event of ['pointerdown','pointerup','dblclick'])lock.addEventListener(event,e=>e.stopPropagation());
+            lock.onclick=e=>{e.stopPropagation();menu.replaceChildren();
+                for(const [mode,title] of ['Auto','Lock i64','Lock f64'].entries()){const choice=document.createElement('button');choice.textContent=title;choice.onclick=()=>{menu.hidden=true;send('numeric',dto.id,mode);};menu.append(choice);}
+                const rect=lock.getBoundingClientRect();Object.assign(menu.style,{left:Math.min(rect.left,innerWidth-210)+'px',top:Math.min(rect.bottom,innerHeight-120)+'px'});menu.hidden=false;
+            };panel.append(lock);
+        }
+        for(const field of fields){const label=document.createElement('label');label.textContent=field.label;const input=document.createElement('input');input.type='text';input.inputMode='decimal';input.value=inlineDrafts.get(field.id)?.value??String(field.value);input.dataset.nativeValue=String(field.value);input.dataset.literalId=field.id;input.setAttribute('aria-label',field.label+' numeric literal');input.disabled=snapshot.readonly;
             for(const event of ['pointerdown','pointerup','click','dblclick'])input.addEventListener(event,e=>e.stopPropagation());
             input.oninput=()=>inlineDrafts.set(field.id,{...field,value:input.value,revision:inlineDrafts.get(field.id)?.revision??snapshot.revision});
             input.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){inlineDrafts.delete(field.id);input.value=input.dataset.nativeValue;input.blur();}else if(e.key==='Enter'){input.blur();}});

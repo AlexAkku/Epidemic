@@ -66,7 +66,7 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema) {
     for(const auto &numeric:g::kNumericRecipes){
         const auto type=g::TypeId::FromString(numeric.id);
         if(std::none_of(schema.operations.begin(),schema.operations.end(),[&](const auto &v){return v.first==type;}))continue;
-        Recipe recipe{std::string(numeric.name),"Math",numeric.operation,{{},type,std::string(numeric.name),{}}};
+        Recipe recipe{std::string(numeric.name),numeric.operation==g::Operation::Input||numeric.operation==g::Operation::Output?"Data":"Math",numeric.operation,{{},type,std::string(numeric.name),{}}};
         const auto value=numeric.floating?g::kF64Type:g::kI64Type;
         const auto port=[&](std::string name,g::PortDirection direction,g::TypeId data){
             recipe.node.ports.push_back({g::ElementId::FromString(std::string(numeric.id)+"."+name),name,g::PortKind::Data,direction,data});
@@ -115,7 +115,17 @@ inline std::vector<Recipe> Catalogue(const ProjectSchema &schema,const ProjectDe
 }
 inline GraphNodeSettings Settings(const EditorDocument &doc, std::uint64_t node) {
     const auto found = std::find_if(doc.graph_settings.begin(),doc.graph_settings.end(),[&](const auto &s){return s.node == node;});
-    return found == doc.graph_settings.end() ? GraphNodeSettings{node,0,{},{},false,false} : *found;
+    auto value=found == doc.graph_settings.end() ? GraphNodeSettings{node,0,{},{},false,false} : *found;
+    if(value.numeric_seed==255){
+        value.numeric_seed=0;const auto &graph=std::get<g::GraphDefinition>(doc.data);
+        for(const auto &n:graph.nodes)if(n.id.Raw()==node){unsigned index=0;
+            for(const auto &port:n.ports)if(port.kind==g::PortKind::Data){
+                if(port.direction==g::PortDirection::Output&&n.type_id==g::TypeId::FromString("epidemic.math.input.f64.v1"))value.numeric_seed=1;
+                if(port.direction==g::PortDirection::Input){if(port.type_id==g::kF64Type&&port.default_value)value.numeric_seed|=static_cast<std::uint8_t>(1u<<index);++index;}
+            }
+        }
+    }
+    return value;
 }
 inline GraphNodePosition Position(const EditorDocument &doc, std::size_t index) {
     const auto node = std::get<g::GraphDefinition>(doc.data).nodes.at(index).id.Raw();

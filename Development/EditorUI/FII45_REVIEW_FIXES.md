@@ -1,28 +1,37 @@
-# Исправления регрессии F-II.4 / F-II.5
+# Исправления повторной приёмки F-II.4 / F-II.5
 
-Baseline:17498a7. Запрос владельца19 ноября2026; Computer Use и push не используются. Ручные F-II.4/F-II.5-GATE остаются PENDING MANUAL.
+20 ноября2026. Baseline:c02355b. Без Computer Use и push. F-II.3-GATE остаётся PASS; F-II.4/F-II.5-GATE — PENDING MANUAL.
 
-- Compile native Graph больше не запускает preview/managed worker и не требует живого Entity. Binding проверяется настоящим CompileGraph с compile-only factory; вызов такой factory во время исполнения запрещён. Run Preview для native gameplay возвращает информационное предложение Attach Graph/Play без изменения authoring. Play сохраняет единственный native Runtime owner.
-- Выбор Prefab Document через IPC selection нормализуется на корневой PrefabNode; Scalar Inspector и component actions сразу доступны из Explorer.
-- Remove Sprite снимает существующую native binding. Fit сохраняет пропорции в локальных unit bounds без увеличения маленьких текстур; Reset восстанавливает64px/unit. Asset edits и сохранение используют существующий ProjectFolder/Workspace.
-- Prefab component/resource actions переносятся по ширине dock в несколько строк; minimum width не растягивает соседние панели.
-- Documents поддерживает Move через общую Rename/Move и Document Actions. Организация сохраняется в пути имени через native RenameDocument с прежними ID/history/Save/Open. Empty folders в Documents, Scripts и корне создаются как обычные project directories; Explorer проецирует их с ограничением256 каталогов/глубины8, без обхода служебных/Content/bin/obj деревьев. Версионированные document blobs не перемещаются.
-- Добавлена [типизированная математика](FII_NUMERIC_GRAPH.md): i64/f64, вычитание, деление/целая часть, округления и явные conversions. C# gameplay call ABI сохранён.
-- [Основная инструкция](FII45_MANUAL_QA.md), пункт8, теперь содержит точную последовательность Entity/component reference с Alt+drag, Missing/Undo и новым процессом. Подготовлен [адресный ручной повтор](FII45_REVIEW_QA.md).
-- Дополнительный smoke поймал потерю Open во время Loading/асинхронного закрытия документа. Запрос теперь проходит через существующую очередь (лимит32), с проверкой bridge/generation/project/document kind; чужой/удалённый документ не открывается. В исходный lifecycle smoke добавлен настоящий Save перед повторным Open: старый вариант отбрасывал запрос, исправленный создаёт свежий Graph FileEditor/Windows HWND в прежний таймаут. Глобальные SDK $Redo/EditorDeleteLine больше не изменяются: source shortcuts используют ActionUtil.wrap с lifetime конкретного Editor.
+## Изменения
 
-## Проверки
+- Пустые папки Explorer используют folder icon даже у leaf-узла.
+- В Data один Input/Output, в Math один элемент каждой числовой операции. Старые typed TypeId сохранены для открытия прежних графов; отдельные i64/f64 пункты палетки и Add menu скрыты.
+- Замки на узле и в Graph Inspector выбирают Auto/Lock i64/Lock f64. Native C++ согласует типы связанных числовых узлов, сохраняет авторские признаки литералов, отвергает несовместимые фиксированные типы и потерю точности. Node/port IDs сохраняются. Правка и изменение типов проходят одним Execute/Undo.
+- graph_authoring v2 сохраняет режим и признаки литералов; reader поддерживает v1, неизвестные версии отвергаются. Core/VM арифметика переиспользована; Java/JCEF отображают native DTO. Нового игрового цикла в Java нет.
+- Debug gate теперь останавливает на фактической операции, а не повторно на служебных фазах Native Call. Заморозка остальных активаций сохраняется, включая административные фазы. Старая остановка очищается при Step; Go to Node выбирает текущую runtime activation, даже если в авторском Graph выделен первый Native Call.
+- Problems закрывается своей вкладкой, сохраняя Debugger/Output, и открывается снова с корректным Content lifetime.
+- Smoke-тест замка дожидается native-ответа перед отчётом; JavaScript assertions сообщают причину ошибки. Rate/nonce/revision/security guards сохранены.
 
-Адресный native батч4/4 PASS после исправления границы enum в Editor Schema validator. Первый прогон поймал этот дефект, а не был отмечен PASS. Native Graph VM/control, gameplay и workspace прошли. В новой compile-only factory исправлена ошибка квалификации namespace, выявленная настоящей Release-сборкой.
+## Реально пройденные проверки
 
-Standalone Release/JCEF smoke после исправления codec PASS (293.70s); все packaged Runtime/Graph↔Scene/Graph/C#/двухоконные Game/IPC/catalog/managed architecture проверки PASS (190.09s). В частности, доказаны Compile/Preview вне Play без изменения Health, настоящее Play100→93→86, выбор Prefab root, Remove/Fit/Reset Sprite, f64 inline/Undo/typed reject и Move Document/Save/Open другим процессом. Первый packaged прогон обнаружил отсутствующий f64 в архивном codec; guard не отключался, список дополнили новым каноническим типом.
+- Native Debug build и **CTest4/4 PASS**: EditorCore (включая v1→v2 migration/future rejection), Gameplay, Graph VM, Graph Control (одна логическая breakpoint boundary и полная session freeze). ArchitectureFreezeSelfTest PASS. Батч344.08s.
+- **Финальный Release/standalone/JCEF/packaged батч PASS**,299.06s после последних unsigned-mask правок. Штатная offline упаковка, pinned runtime/лицензии, sandbox/CSP/ограничения Bridge, окна/Graph FileEditor lifecycle и shutdown прошли. Новые UI-сценарии: клик Lock i64→Auto, inline1.2500→native1.25→Save→i64, независимое закрытие/повторное открытие Problems. surfaces=0; принадлежащие launcher/CEF-процессы завершились.
+- Упакованные GraphTests/RuntimeTests/GraphSceneTests PASS: Auto promotion/demotion/disconnect, строгие locks, fractional literals, rejection без изменения revision, отсутствие потери точности, atomic Undo/Redo, Save/Open другим процессом, stale guards, Damage/Wait/Damage100→93→86, Stop с authoring100. Go to Node проверен через настоящий RuntimeDebugger с намеренно другим авторским выделением.
+- IPC v4 adversarial, catalog/source coverage и managed architecture PASS на конечном backend. Полный CTest162 предыдущей итерации не выдаётся за новый полный прогон: текущий CTest адресный4/4.
+- Targeted clang-tidy:8 реальных TU с clang-analyzer/bugprone checks. Общий результат **FAIL**:15 унаследованных диагностик (14 выражений подтверждены Git blame,1 в заголовке MSVC). Два новых signed-bitwise замечания исправлены; повтор backend и linear VM завершён, на добавленных/изменённых строках диагностик0. Не добавлялись suppressions и не отключались проверки. Остаток остаётся существующим static backlog.
 
-200 закрытий/открытий Game: surfaces=0, steady handlesΔ−3 и private bytesΔ≈14.5MiB (конечный повтор), ниже порога плато64MiB. Кадры/фокус/DPI/мониторы вручную агентом не проверялись. Детектор skill по изменённым Java UI-файлам вернул пустой список; это не визуальная приёмка.
+Первые неуспешные запуски не названы PASS: исправлены ошибки компиляции адаптера, повторный breakpoint и тестовый race с pending Bridge; конечные проверки выполнены после исправлений.
 
-Полная native пересборка и **CTest162/162 PASS** (768.41s вместе); публичные header consumers прошли. После lint-only исправлений повторно собран/запущен Graph VM с сохранением всех numeric cases — PASS (138.54s). Алгоритмы расчёта после полного прогона не менялись.
+## Статус ручной приёмки
 
-Deep завершён:5headers,52 реальных TU,104checks (1560.07s). Generated one-line header wrappers проверены полной сборкой; в temporary analysis DB остались все реальные потребители. Итог Deep **FAIL**: наследуемые/toolchain diagnostics остаются backlog. Четыре новые позиции (два defaults, clone ветвей switch и соседние double-параметры теста) устранены; адресные clang-tidy и cppcheck с теми же флагами **4/4 PASS** (79.17s), без новых suppressions или отключения проверок.
+Владелец принял адресные2–4,6–7 и F-II.4:13–15,17–20,22–23,25. Для повторения остаются пустые папки, новый Auto/Lock и16 (Wait/navigation/Problems).21 отложен,24 требует уточнённой проверки Profiler. F-II.5 manual ещё не начат. F-III не начинался.
 
-Конечный standalone Release/JCEF smoke **PASS** (336.50s), включая воспроизводимую очередь Open за Save, новое Graph view/HWND, crash/reconnect, Arena и teardown. В idea.log нет предупреждений `ShortcutSet of global`; surfaces=0. Финальный packaged повтор на этом же EXE — **PASS** (190.77s): Runtime, Graph↔Scene, Graph/f64, C#,200 Game window cycles/Arena в двух HWND, IPC v4, catalog и managed architecture. Source/UI/build/test inputs после этого не изменялись.
+Реальный FPS уже есть в Profiler — HWND … FPS; новый HUD не вводился. Трёхтиковый сдвиг двух placement сам по себе не ошибка: сравнивается собственная длительность Wait каждой activation. WASD общий, скорость берётся из каждого объекта.
 
-Ручная приёмка не считается успешной заранее. Приложение для владельца: `Temp/U/verification-images/3bd1025cae5c4ec68c90220446c6dd3b/EpidemicEditor/EpidemicEditor.exe`.
+Инструкции15/16/23/24 и продолжение: [FII45_REVIEW_QA](FII45_REVIEW_QA.md). Полный совместный прогон, включая Arena/F-II.5: [FII45_MANUAL_QA](FII45_MANUAL_QA.md).
+
+Конечный EXE:
+
+```powershell
+& 'D:\MyProjects\Epidemic engine v2.0\Temp\U\verification-images\31f2a6d5325f4025a84e52185a1c0baa\EpidemicEditor\EpidemicEditor.exe'
+```

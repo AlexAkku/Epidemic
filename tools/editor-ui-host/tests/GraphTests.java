@@ -121,7 +121,7 @@ public final class GraphTests {
             require(Bridge.inputText(graph(b,document).nodes().stream().filter(n->n.id()==input.id()).findFirst().orElseThrow()).equals("1.25"),"Inline float DTO displayed bits");
             call(b,38,"literal",id(document),port(multiply,"right"),"3.5");call(b,7);
             call(b,38,"run",id(document));require(graph(b,document).report().contains("value=3.125"),"Float literal Undo lost exact value");
-            var integer=create(b,document,"Input");reject(b,"graph.connection_type","connect",id(document),port(integer,"value"),port(multiply,"right"));
+            var integer=create(b,document,"Input");call(b,38,"numeric",id(document),id(integer.id()),"1");reject(b,"graph.connection_type","connect",id(document),port(integer,"value"),port(multiply,"right"));
             call(b,38,"delete",id(document),id(integer.id()));
             try{call(b,38,"inputvalue",id(document),id(input.id()),"NaN");throw new IllegalStateException("Accepted NaN");}catch(ExecutionException expected){require(expected.getCause().getMessage().contains("invalid_value"),"Wrong NaN rejection");}
             call(b,5,id(document),"Числа/Дробная математика");call(b,6);saved=graph(b,document);call(b,10);b.shutdown().get(20,TimeUnit.SECONDS);
@@ -134,6 +134,47 @@ public final class GraphTests {
             call(b,10);b.shutdown().get(20,TimeUnit.SECONDS);
         }
         System.out.println("PASS typed f64 native flow/inline/Undo/NaN/mixed rejection, Document move and new-process Save/Open");
+    }
+    private static Bridge.GraphNode current(Bridge b,long doc,Bridge.GraphNode n){return graph(b,doc).nodes().stream().filter(x->x.id()==n.id()).findFirst().orElseThrow();}
+    private static void autoNumeric(Path executable,Path work)throws Exception{
+        Path root=Files.createTempDirectory(work,"auto-numeric-").resolve("Project");long doc;Bridge.Graph saved;
+        try(var b=new Bridge(executable,work,state->{},Runnable::run)){
+            b.connect().get(20,TimeUnit.SECONDS);call(b,3,root.toString(),"Auto numeric");doc=document(b,"Auto numbers");
+            var palette=Bridge.paletteTemplates(graph(b,doc));
+            for(int op:new int[]{0,1,2,4,13,14,15,16,17,18})require(palette.stream().filter(r->r.operation()==op).count()==1,"Duplicated numeric palette operation "+op);
+            require(palette.stream().filter(r->r.operation()==0||r.operation()==4).allMatch(r->r.category().equals("Data")),"Input/Output not in Data");
+            var input=create(b,doc,"Input");var multiply=create(b,doc,"Multiply");var output=create(b,doc,"Output");
+            link(b,doc,input,"value",multiply,"left");link(b,doc,multiply,"result",output,"value");
+            call(b,38,"inputvalue",id(doc),id(input.id()),"1.25");
+            require(graph(b,doc).nodes().stream().flatMap(n->n.ports().stream()).filter(p->p.kind()==0).allMatch(p->p.type()==Bridge.F64_TYPE),"Auto connected island did not promote");
+            call(b,7);require(current(b,doc,input).ports().getFirst().type()==Bridge.I64_TYPE,"Auto promotion Undo");
+            call(b,8);require(Bridge.inputText(current(b,doc,input)).equals("1.25"),"Auto promotion Redo");
+            call(b,38,"inputvalue",id(doc),id(input.id()),"2");require(current(b,doc,multiply).ports().stream().filter(p->p.kind()==0).allMatch(p->p.type()==Bridge.I64_TYPE),"Integer authored input did not demote island");
+            call(b,38,"literal",id(doc),port(multiply,"right"),"2.5");require(current(b,doc,input).ports().getFirst().type()==Bridge.F64_TYPE,"Fractional inline field did not promote upstream");
+            reject(b,"numeric_locked_i64","numeric",id(doc),id(multiply.id()),"1");
+            call(b,38,"literal",id(doc),port(multiply,"right"),"3");
+            call(b,38,"numeric",id(doc),id(input.id()),"1");
+            reject(b,"invalid_value","inputvalue",id(doc),id(input.id()),"1.5");
+            reject(b,"graph.connection_type","numeric",id(doc),id(output.id()),"2");
+            call(b,38,"numeric",id(doc),id(input.id()),"0");call(b,38,"numeric",id(doc),id(output.id()),"2");
+            require(Bridge.numericMode(current(b,doc,output))==2&&current(b,doc,input).ports().getFirst().type()==Bridge.F64_TYPE,"Locked f64 did not infer peers");
+            call(b,7);require(Bridge.numericMode(current(b,doc,output))==0&&current(b,doc,input).ports().getFirst().type()==Bridge.I64_TYPE,"Lock Undo not atomic");call(b,8);
+            var fixed=create(b,doc,"Input");call(b,38,"numeric",id(doc),id(fixed.id()),"1");
+            reject(b,"graph.connection_type","connect",id(doc),port(fixed,"value"),port(multiply,"right"));
+            call(b,38,"delete",id(doc),id(fixed.id()));
+            var edge=graph(b,doc).edges().stream().filter(e->e.input()==Long.parseUnsignedLong(port(output,"value"))).findFirst().orElseThrow();
+            call(b,38,"disconnect",id(doc),id(edge.id()));require(current(b,doc,input).ports().getFirst().type()==Bridge.I64_TYPE,"Disconnect retained inferred float without an authored seed");
+            call(b,7);require(current(b,doc,input).ports().getFirst().type()==Bridge.F64_TYPE,"Disconnect Undo did not restore inferred float");
+            var huge=create(b,doc,"Input");call(b,38,"inputvalue",id(doc),id(huge.id()),Long.toString(Long.MAX_VALUE));
+            reject(b,"numeric_precision","numeric",id(doc),id(huge.id()),"2");call(b,38,"delete",id(doc),id(huge.id()));
+            call(b,6);saved=graph(b,doc);call(b,10);b.shutdown().get(20,TimeUnit.SECONDS);
+        }
+        try(var b=new Bridge(executable,work,state->{},Runnable::run)){
+            b.connect().get(20,TimeUnit.SECONDS);call(b,2,root.resolve("Project.epidemicproj").toString());
+            require(graph(b,doc).nodes().equals(saved.nodes())&&graph(b,doc).edges().equals(saved.edges()),"Auto/lock annotations changed after new-process Open");
+            call(b,10);b.shutdown().get(20,TimeUnit.SECONDS);
+        }
+        System.out.println("PASS native Auto numeric inference, unique Data/Math palette, inline fractions, strict locks, atomic Undo/Redo, new-process Save/Open");
     }
     public static void main(String[] args) throws Exception {
         Path executable = Path.of(args[0]).toAbsolutePath();
@@ -191,6 +232,7 @@ public final class GraphTests {
         }
         extended(executable,work);
         numeric(executable,work);
+        autoNumeric(executable,work);
         System.out.println("PASS Graph: 3 native nodes, typed connection/rejection, stale guard, move/node/edge Undo/Redo, IDs/layout Save/Open in second companion");
     }
 }

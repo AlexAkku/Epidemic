@@ -28,6 +28,7 @@ public final class GraphTools extends JPanel {
     private final JTree paletteTree=new JTree(new DefaultMutableTreeNode("Nodes"));
     private String paletteSignature="";
     private final List<Bridge.GraphTemplate> visible=new ArrayList<>();
+    private final JButton numericLock=new JButton("Auto");
     private final JButton apply=Theme.button("Apply",this::apply), create=Theme.button("Add Node",this::create);
     private final JTextArea report=new JTextArea();
     private final List<JButton> actions=new ArrayList<>();
@@ -49,7 +50,7 @@ public final class GraphTools extends JPanel {
             paletteTree.setRootVisible(false);paletteTree.setShowsRootHandles(true);
             paletteTree.setCellRenderer(new DefaultTreeCellRenderer(){public Component getTreeCellRendererComponent(JTree tree,Object value,boolean selected,boolean expanded,boolean leaf,int row,boolean focus){
                 var cell=super.getTreeCellRendererComponent(tree,value,selected,expanded,leaf,row,focus);putClientProperty("html.disable",true);
-                Object item=((DefaultMutableTreeNode)value).getUserObject();setText(item instanceof Bridge.GraphTemplate recipe?recipe.name():item.toString());return cell;}});
+                Object item=((DefaultMutableTreeNode)value).getUserObject();setText(item instanceof Bridge.GraphTemplate recipe?Bridge.paletteLabel(recipe):item.toString());return cell;}});
             body.add(new JScrollPane(paletteTree),BorderLayout.CENTER);body.add(create,BorderLayout.SOUTH);add(body);
             search.getDocument().addDocumentListener(new DocumentListener(){public void insertUpdate(DocumentEvent e){palette();}public void removeUpdate(DocumentEvent e){palette();}public void changedUpdate(DocumentEvent e){palette();}});
             paletteTree.addTreeSelectionListener(e->create.setEnabled(canEdit()&&selectedRecipe()!=null));
@@ -68,7 +69,10 @@ public final class GraphTools extends JPanel {
             }
         } else if(kind.equals("graph.inspector")) {
             var form=new InspectorForm();form.setLayout(new BoxLayout(form,BoxLayout.Y_AXIS));
-            field(form,"Name",name);field(form,"Input default (i64)",value);field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
+            field(form,"Name",name);field(form,"Input default",value);form.add(numericLock);numericLock.setName("graph.numeric-lock");numericLock.setToolTipText("Auto infers connected numeric types; locked nodes require the selected type");numericLock.setIcon(new Icon(){
+                public int getIconWidth(){return 16;}public int getIconHeight(){return 16;}
+                public void paintIcon(Component c,Graphics g,int x,int y){g=g.create();try{g.translate(x,y);g.setColor(c.getForeground());g.drawRect(3,7,10,7);g.drawArc(5,1,6,10,0,180);if(selected!=null&&Bridge.numericMode(selected)!=0){g.drawLine(5,5,5,7);g.drawLine(11,5,11,7);}else g.drawLine(5,5,5,7);}finally{g.dispose();}}
+            });numericLock.addActionListener(e->{if(!canEdit()||selected==null)return;var menu=new JPopupMenu();for(int mode=0;mode<3;mode++){final int choice=mode;final long target=selected.id();var item=new JMenuItem(new String[]{"Auto","Lock i64","Lock f64"}[mode]);item.addActionListener(a->flushDraft().thenRun(()->{if(selected!=null&&selected.id()==target)send("numeric",Long.toUnsignedString(target),Integer.toString(choice));}));menu.add(item);}menu.show(numericLock,0,numericLock.getHeight());});field(form,"Group",group);field(form,"Comment",new JScrollPane(comment));
             sourceButton=Theme.button("Open C# Source",()->{if(selected!=null&&graph!=null)graph.catalogue().stream().filter(type->type.type()==selected.type()&&!type.source().isEmpty()).findFirst().ifPresent(sourceNavigator);});form.add(sourceButton);
             referenceJump=Theme.button("Jump to Reference Target",()->reference("jump"));form.add(referenceJump);
             referenceUses=Theme.button("Find Target References",()->reference("uses"));form.add(referenceUses);
@@ -145,7 +149,7 @@ public final class GraphTools extends JPanel {
         if(!signature.equals(paletteSignature)){
             var expanded=new HashSet<String>();for(int i=0;i<paletteTree.getRowCount();++i)if(paletteTree.isExpanded(i))expanded.add(paletteTree.getPathForRow(i).getLastPathComponent().toString());
             var root=new DefaultMutableTreeNode("Nodes");var groups=new LinkedHashMap<String,DefaultMutableTreeNode>();
-            for(var recipe:graph.catalogue())if((recipe.category()+" "+recipe.name()).toLowerCase(Locale.ROOT).contains(query))groups.computeIfAbsent(recipe.category(),key->{var node=new DefaultMutableTreeNode(key);root.add(node);return node;}).add(new DefaultMutableTreeNode(recipe));
+            for(var recipe:Bridge.paletteTemplates(graph))if((recipe.category()+" "+Bridge.paletteLabel(recipe)).toLowerCase(Locale.ROOT).contains(query))groups.computeIfAbsent(recipe.category(),key->{var node=new DefaultMutableTreeNode(key);root.add(node);return node;}).add(new DefaultMutableTreeNode(recipe));
             paletteTree.setModel(new DefaultTreeModel(root));for(int i=0;i<paletteTree.getRowCount();++i)if(!query.isEmpty()||expanded.contains(paletteTree.getPathForRow(i).getLastPathComponent().toString()))paletteTree.expandRow(i);
             paletteSignature=signature;
         }
@@ -167,6 +171,9 @@ public final class GraphTools extends JPanel {
             if(previous==null||selected==null||previous.id()!=selected.id()||(!draft&&!Objects.equals(previous,selected)))load();
             caption.setText(selected==null?"Select a node in Graph Canvas":selected.name());
             if(!fieldError.isEmpty())caption.setText(fieldError);else if(draft)caption.setText("Pending input · Apply/Enter or Save; Escape cancels");
+            boolean numeric=selected!=null&&graph.catalogue().stream().anyMatch(r->r.type()==selected.type()&&Bridge.numericOperation(r.operation()));
+            numericLock.setVisible(numeric);numericLock.setEnabled(canEdit()&&numeric);
+            if(numeric)numericLock.setText(new String[]{"Auto (unlocked)","Locked: i64","Locked: f64"}[Bridge.numericMode(selected)]);
             sourceButton.setEnabled(selected!=null&&graph!=null&&graph.catalogue().stream().anyMatch(type->type.type()==selected.type()&&!type.source().isEmpty()));
             referenceJump.setEnabled(canEdit()&&selected!=null&&selected.reference()!=null&&selected.referenceAvailable());
             referenceUses.setEnabled(canEdit()&&selected!=null&&selected.reference()!=null);

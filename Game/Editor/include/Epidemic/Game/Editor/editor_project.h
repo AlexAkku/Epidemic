@@ -30,6 +30,7 @@ struct GraphNodeSettings {
     std::int64_t preview_default = 0; // Input node values for editor-only VM preview.
     std::string comment, group;
     bool bookmark = false, breakpoint = false; // Debug activation belongs to F-II.4.
+    std::uint8_t numeric_mode=0, numeric_seed=255; // Auto/i64/f64; legacy seeds resolve from persisted port types.
     bool operator==(const GraphNodeSettings &) const = default;
 };
 

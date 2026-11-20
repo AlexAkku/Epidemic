@@ -330,6 +330,13 @@ template <class C> bool Apply(ProjectDefinition &project, const C &command) {
                 if (!node || command.settings.node != command.node.Raw() || command.name.empty() ||
                     command.name.size() > 1024 || command.settings.comment.size() > 1024 || command.settings.group.size() > 128)
                     return false;
+                if(command.settings.numeric_mode>2||(command.settings.numeric_seed!=255&&command.settings.numeric_seed>3))return false;
+                if(command.numeric_definition){
+                    const auto &next=*command.numeric_definition;
+                    if(next.id!=node->id||next.ports.size()!=node->ports.size()||next.reference!=node->reference)return false;
+                    for(std::size_t i=0;i<next.ports.size();++i)if(next.ports[i].id!=node->ports[i].id||next.ports[i].kind!=node->ports[i].kind||next.ports[i].direction!=node->ports[i].direction)return false;
+                    *node=next;
+                }
                 node->name = command.name;
                 auto *settings = Find(doc->graph_settings, [&](const auto &n) { return n.node == command.node.Raw(); });
                 if (settings) *settings = command.settings;

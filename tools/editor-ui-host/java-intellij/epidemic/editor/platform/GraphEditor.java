@@ -242,7 +242,7 @@ final class GraphEditor implements Disposable {
                 var node=graph.nodes().stream().filter(n->n.ports().stream().anyMatch(p->p.id()==port&&p.kind()==0&&p.direction()==0)).findFirst().orElseThrow();
                 referenceDrag.startGraph(browser.getCefBrowser().getUIComponent(),new epidemic.editor.GraphSceneDragCoordinator.GraphHit(key.id(),port,node.x()-260,node.y()));return;
             }
-            int expected = switch (action) { case "create", "move", "reconnect" -> 3; case "connect", "literal", "inputvalue" -> 2;
+            int expected = switch (action) { case "create", "move", "reconnect" -> 3; case "connect", "literal", "inputvalue", "numeric" -> 2;
                 case "delete", "disconnect", "moves", "deletebulk", "copy", "cut", "duplicate", "select" -> 1;
                 case "paste", "group" -> 2; case "settings" -> 6;
                 case "save", "undo", "redo", "compile", "run", "uses" -> 0;
@@ -290,8 +290,9 @@ final class GraphEditor implements Disposable {
         dto.addProperty("schemaRevision","1");dto.addProperty("report",graph.report());
         dto.addProperty("selected",snapshot.selection().document()==key.id() && snapshot.selection().kind()==3 ? Long.toUnsignedString(snapshot.selection().element()) : "0");
         JsonArray catalogue=new JsonArray();
+        var visibleRecipes=Bridge.paletteTemplates(graph);
         for(var recipe:graph.catalogue()){
-            JsonObject r=new JsonObject();r.addProperty("name",recipe.name());r.addProperty("category",recipe.category());
+            JsonObject r=new JsonObject();r.addProperty("name",Bridge.paletteLabel(recipe));r.addProperty("category",recipe.category());r.addProperty("palette",visibleRecipes.contains(recipe));
             r.addProperty("type",Long.toUnsignedString(recipe.type()));r.addProperty("operation",recipe.operation());catalogue.add(r);
         }
         dto.add("catalogue",catalogue);
@@ -300,12 +301,14 @@ final class GraphEditor implements Disposable {
             JsonObject n = new JsonObject(); n.addProperty("id", Long.toUnsignedString(node.id()));
             n.addProperty("name", node.name()); n.addProperty("x", node.x()); n.addProperty("y", node.y());
             n.addProperty("type",Long.toUnsignedString(node.type()));n.addProperty("previewDefault",Bridge.inputText(node));
+            n.addProperty("numeric",graph.catalogue().stream().anyMatch(r->r.type()==node.type()&&Bridge.numericOperation(r.operation())));n.addProperty("numericMode",Bridge.numericMode(node));
+            n.addProperty("numericType",node.ports().stream().anyMatch(p->p.type()==Bridge.F64_TYPE)?"f64":"i64");
             n.addProperty("comment",node.comment());n.addProperty("group",node.group());n.addProperty("markers",node.markers());
             JsonArray ports = new JsonArray();
             for (var port : node.ports()) {
                 JsonObject p = new JsonObject(); p.addProperty("id", Long.toUnsignedString(port.id()));
                 p.addProperty("name", port.name()); p.addProperty("kind", port.kind()); p.addProperty("direction", port.direction());
-                p.addProperty("type", Long.toUnsignedString(port.type()));if(port.defaultValue()!=null)p.addProperty("defaultValue",Bridge.numericText(port.type(),port.defaultValue())); ports.add(p);
+                p.addProperty("type", Long.toUnsignedString(port.type()));p.addProperty("numeric",port.kind()==0&&(port.type()==Bridge.I64_TYPE||port.type()==Bridge.F64_TYPE));p.addProperty("floating",port.type()==Bridge.F64_TYPE);if(port.defaultValue()!=null)p.addProperty("defaultValue",Bridge.numericText(port.type(),port.defaultValue())); ports.add(p);
             }
             n.addProperty("reference",node.reference()!=null);n.addProperty("referenceAvailable",node.referenceAvailable());
             n.addProperty("referenceLabel",node.referenceLabel());n.addProperty("referenceReason",node.referenceReason());
@@ -512,8 +515,8 @@ final class GraphEditor implements Disposable {
     }
     private CompletableFuture<JsonObject> smokeDom(String body){
         if(!Boolean.getBoolean("epidemic.ui.platform.smoke"))throw new IllegalStateException("Qualification only");
-        smokeReport=new CompletableFuture<>();browser.getCefBrowser().executeJavaScript("(async()=>{const result=await(async()=>{"+body+"})();window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify(result)}));})()",origin,0);
-        return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS).thenApply(v->JsonParser.parseString(v).getAsJsonObject());
+        smokeReport=new CompletableFuture<>();browser.getCefBrowser().executeJavaScript("(async()=>{let result;try{result=await(async()=>{"+body+"})();}catch(error){result={__qualificationError:String(error)};}window.nativeGraph(JSON.stringify({nonce:window.graphNonce,action:'__report',result:JSON.stringify(result)}));})()",origin,0);
+        return smokeReport.orTimeout(10,java.util.concurrent.TimeUnit.SECONDS).thenApply(v->{var result=JsonParser.parseString(v).getAsJsonObject();if(result.has("__qualificationError"))throw new IllegalStateException(result.get("__qualificationError").getAsString());return result;});
     }
     CompletableFuture<Void> smokeAddDuringConnection(){
         var graph=latest.get().snapshot().graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow();
@@ -544,7 +547,13 @@ final class GraphEditor implements Disposable {
             }).thenCompose(ignored->smokeCommand("save").handle((saved,error)->{if(error==null)throw new IllegalStateException("Invalid inline draft was saved");return true;}))
             .thenCompose(ignored->pause(200)).thenCompose(ignored->smokeDom("const graph=document.getElementById('graph'),problem=document.getElementById('problem');const before=window.__qualificationCanvas,after=graph.getBoundingClientRect().toJSON();if(problem.hidden||before.width!==after.width||before.height!==after.height||before.y!==after.y)throw Error('Diagnostic resized canvas or is missing');const close=problem.querySelector('[aria-label=\"Dismiss diagnostic\"]');if(!close)throw Error('Diagnostic has no close button');close.click();if(!problem.hidden||graph.getBoundingClientRect().height!==before.height)throw Error('Dismiss changed canvas');return {overlay:true};"))
             .thenCompose(ignored->smokeDom("const element=[...document.querySelectorAll('[data-node-id]')].find(e=>e.dataset.nodeId==="+node+").querySelector('.node-literals input');element.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));const root=document.getElementById('graph');root.dispatchEvent(new MouseEvent('contextmenu',{clientX:30,clientY:70,bubbles:true,cancelable:true}));const menu=document.getElementById('context');const grouped=menu.querySelector('summary')?.textContent==='Add'&&[...menu.querySelectorAll('summary')].some(e=>e.textContent==='Math');root.dispatchEvent(new PointerEvent('pointerdown',{button:0,bubbles:true}));root.dispatchEvent(new PointerEvent('pointerup',{button:0,bubbles:true}));return {grouped,closed:menu.hidden,restored:element.value};"))
-            .thenCompose(state->{if(!state.get("grouped").getAsBoolean()||!state.get("closed").getAsBoolean()||!state.get("restored").getAsString().equals("11"))throw new IllegalStateException("Grouped Add/outside click failed");return smokeCommand("save");}).thenApply(ignored->null);
+            .thenCompose(state->{if(!state.get("grouped").getAsBoolean()||!state.get("closed").getAsBoolean()||!state.get("restored").getAsString().equals("11"))throw new IllegalStateException("Grouped Add/outside click failed");return smokeCommand("save");})
+            .thenCompose(ignored->smokeDom("const node=[...document.querySelectorAll('[data-node-id]')].find(e=>e.dataset.nodeId==="+node+");const lock=node.querySelector('.numeric-lock');if(!lock)throw Error('Numeric lock missing');lock.click();const choices=[...document.getElementById('context').querySelectorAll('button')];if(choices.length!==3)throw Error('Numeric type menu missing');choices.find(b=>b.textContent==='Lock i64').click();const deadline=performance.now()+5000;while(window.graphGestureState().busy&&performance.now()<deadline)await new Promise(r=>setTimeout(r,20));if(window.graphGestureState().busy)throw Error('Numeric lock native reply did not settle');return {lock:true};"))
+            .thenCompose(ignored->pause(300)).thenCompose(ignored->{var current=latest.get().snapshot().graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow().nodes().stream().filter(n->n.id()==input.id()).findFirst().orElseThrow();if(Bridge.numericMode(current)!=1)throw new IllegalStateException("Node lock UI did not commit native mode");return smokeCommand("numeric",Long.toUnsignedString(input.id()),"0");})
+            .thenCompose(ignored->pause(200)).thenCompose(ignored->smokeDom("const lock=[...document.querySelectorAll('[data-node-id]')].find(e=>e.dataset.nodeId==="+node+").querySelector('.numeric-lock');if(!lock.getAttribute('aria-label').includes('Auto'))throw Error('Numeric mode did not refresh');return {auto:true};"))
+            .thenCompose(ignored->smokeDom("const field=[...document.querySelectorAll('[data-node-id]')].find(e=>e.dataset.nodeId==="+node+").querySelector('.node-literals input');field.focus();field.value='1.2500';field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));field.blur();const deadline=performance.now()+5000;while(window.graphGestureState().busy&&performance.now()<deadline)await new Promise(r=>setTimeout(r,20));return {fraction:true};"))
+            .thenCompose(ignored->smokeCommand("save")).thenCompose(saved->{var current=saved.snapshot().graphs().stream().filter(g->g.document()==key.id()).findFirst().orElseThrow().nodes().stream().filter(n->n.id()==input.id()).findFirst().orElseThrow();if(!Bridge.inputText(current).equals("1.25"))throw new IllegalStateException("Inline Auto fraction did not reach native Input");return smokeDom("const node=[...document.querySelectorAll('[data-node-id]')].find(e=>e.dataset.nodeId==="+node+");if(node.querySelector('.node-literals input').value!=='1.25'||!node.querySelector('.numeric-lock').textContent.includes('f64'))throw Error('Auto fraction draft/type did not reconcile');return {canonical:true};");})
+            .thenCompose(ignored->smokeCommand("inputvalue",Long.toUnsignedString(input.id()),"11")).thenCompose(ignored->smokeCommand("save")).thenApply(ignored->null);
     }
     void source(java.util.function.Consumer<String> callback) { browser.getCefBrowser().getSource(callback::accept); }
     CompletableFuture<epidemic.editor.GraphSceneDragCoordinator.GraphHit> smokeReferenceHit(long port) {

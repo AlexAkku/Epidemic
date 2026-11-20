@@ -445,6 +445,10 @@ public final class UiPanels {
         JTextField search = new JTextField(); search.setToolTipText("Search documents / assets");
         JLabel breadcrumb = Theme.label("Project / Content", true);
         JTree tree = new JTree(new DefaultMutableTreeNode("Choose a project")); tree.setRootVisible(true);
+        tree.setCellRenderer(new DefaultTreeCellRenderer(){public Component getTreeCellRendererComponent(JTree owner,Object value,boolean selected,boolean expanded,boolean leaf,int row,boolean focus){
+            super.getTreeCellRendererComponent(owner,value,selected,expanded,leaf,row,focus);Object item=((DefaultMutableTreeNode)value).getUserObject();
+            if(item instanceof ProjectFolderRow||item instanceof FolderRow)setIcon(expanded?getOpenIcon():getClosedIcon());return this;
+        }});
         JPanel header = new JPanel(new BorderLayout(4, 4)); header.add(search, BorderLayout.NORTH); header.add(breadcrumb, BorderLayout.SOUTH);
         JComboBox<String> mode=new JComboBox<>(new String[]{"Tree","List","Grid"});
         JCheckBox internal=new JCheckBox("Show Internal (read-only)");

@@ -92,6 +92,7 @@ void GraphLayoutMigration() {
             Take(writer->WriteUInt64("node",graph.nodes.front().id.Raw()));Take(writer->WriteInt64("preview_default",42));
             Take(writer->WriteString("comment","Comment"));Take(writer->WriteString("group","Group"));
             Take(writer->WriteBool("bookmark",true));Take(writer->WriteBool("breakpoint",true));
+            if(authoring_version==2){Take(writer->WriteUInt64("numeric_mode",1));Take(writer->WriteUInt64("numeric_seed",0));}
             Take(writer->EndArrayElement());Take(writer->EndArray());Take(writer->EndObject());
         }
         Take(writer->EndArrayElement());
@@ -117,7 +118,11 @@ void GraphLayoutMigration() {
     const auto persisted=Take(ed::detail::ReadProject(Take(ed::detail::WriteProject(settings,schema)),schema));
     Check(settings.definition.documents.front().graph_settings==persisted.definition.documents.front().graph_settings &&
           persisted.definition.documents.front().graph_settings.front().preview_default==42,"v1 authoring metadata roundtrip");
-    const auto future_settings=ed::detail::ReadProject(archive(1,2),schema);
+    Check(settings.definition.documents.front().graph_settings.front().numeric_mode==0&&settings.definition.documents.front().graph_settings.front().numeric_seed==255,"v1 authoring migrates to Auto with legacy literal seed");
+    auto locked=Take(ed::detail::ReadProject(archive(1,2),schema));
+    Check(locked.definition.documents.front().graph_settings.front().numeric_mode==1&&locked.definition.documents.front().graph_settings.front().numeric_seed==0,"v2 numeric lock metadata");
+    Check(Take(ed::detail::ReadProject(Take(ed::detail::WriteProject(locked,schema)),schema)).definition.documents.front().graph_settings==locked.definition.documents.front().graph_settings,"v2 numeric lock roundtrip");
+    const auto future_settings=ed::detail::ReadProject(archive(1,3),schema);
     Check(!future_settings&&future_settings.GetError().HasCode("editor.invalid_archive"),"unknown authoring version rejected");
 }
 

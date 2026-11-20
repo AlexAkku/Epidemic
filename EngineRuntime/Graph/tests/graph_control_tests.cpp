@@ -144,6 +144,25 @@ struct Example {
 
 };
 
+void DebugBoundaries() {
+    Example example;
+    auto instance=example.Instance(1,4);
+    bool resume=false;std::size_t attempts=0;
+    instance->SetDebugGate([&](const Instruction &step){
+        if(step.node!=Id("true"))return true;
+        ++attempts;return resume;
+    });
+    const auto paused=instance->Run();
+    Check(paused.status==ExecutionStatus::BudgetExhausted&&example.log->empty(),"breakpoint must precede native side effect");
+    resume=true;
+    Check(instance->Run().status==ExecutionStatus::Completed,"breakpoint resume must complete control flow");
+    Check(attempts==2&&example.log->size()==2,"one breakpoint boundary per native invocation, not Execute/Evaluate/Apply phases");
+    auto frozen=example.Instance(1,4);
+    frozen->SetDebugExecutionGate([](const Instruction &,bool){return false;});
+    const auto blocked=frozen->Run();
+    Check(blocked.status==ExecutionStatus::BudgetExhausted&&blocked.instructions==0&&blocked.native_calls==0,"session freeze must block administrative phases too");
+}
+
 void ControlFlow() {
     Example example;
     auto first = example.Instance(1, 4);
@@ -433,6 +452,7 @@ int main() {
     try {
         References();
         ControlFlow();
+        DebugBoundaries();
         InvalidControl();
         EventsAndLoops();
         IterationValueScope();

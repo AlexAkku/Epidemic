@@ -48,9 +48,18 @@ public final class Bridge implements AutoCloseable {
     public record SceneItem(long document,long id,double left,double top,double right,double bottom,double x,double y,double rotation) {}
     public record SystemItem(long id,long scene,long graph,boolean enabled) {}
     // Native StringId("epidemic.graph.f64"); wire stays an exact signed 64-bit payload.
+    public static final long I64_TYPE=6583682152837694602L;
     public static final long F64_TYPE=5921324253547672631L;
     public static String numericText(long type,long bits){return type==F64_TYPE?Double.toString(Double.longBitsToDouble(bits)):Long.toString(bits);}
-    public static String inputText(GraphNode node){return numericText(node.ports().stream().filter(p->p.kind()==0).mapToLong(GraphPort::type).findFirst().orElse(0),node.previewDefault());}
+    public static boolean numericOperation(int op){return op==0||op==1||op==2||op==4||(op>=13&&op<=18);}
+    public static String paletteLabel(GraphTemplate recipe){return numericOperation(recipe.operation())?recipe.name().replace(" (i64)","").replace(" (f64)","").replace(", i64)",")").replace(", f64)",")"):recipe.name();}
+    public static List<GraphTemplate> paletteTemplates(Graph graph){var seen=new java.util.HashSet<Integer>();return graph.catalogue().stream().filter(r->!numericOperation(r.operation())||seen.add(r.operation())).toList();}
+    public static int numericMode(GraphNode node){return (node.markers()>>2)&3;}
+    public static String inputText(GraphNode node){
+        long type=node.ports().stream().filter(p->p.kind()==0).mapToLong(GraphPort::type).findFirst().orElse(0);
+        if(type==F64_TYPE&&numericMode(node)==0&&(node.markers()&16)==0){double value=Double.longBitsToDouble(node.previewDefault());if(value>=Long.MIN_VALUE&&value<0x1p63&&value==Math.rint(value))return Long.toString((long)value);}
+        return numericText(type,node.previewDefault());
+    }
     public record GraphPort(long id, String name, int kind, int direction, long type,Long defaultValue) {}
     public record GraphNode(long id, long type, String name, double x, double y, List<GraphPort> ports, long previewDefault, String comment, String group, int markers,GraphReference reference,boolean referenceAvailable,String referenceLabel,String referenceReason) {
         public GraphNode { ports = List.copyOf(ports); }
@@ -382,7 +391,7 @@ public final class Bridge implements AutoCloseable {
                         if (!Double.isFinite(x) || !Double.isFinite(y) || Math.abs(x) > 1000000 || Math.abs(y) > 1000000)
                             throw new IOException("ui.graph_position");
                         long previewDefault=in.readLong(); String comment=text(in), group=text(in);int markers=in.readUnsignedByte();
-                        if(markers>3||comment.length()>1024||group.length()>128)throw new IOException("ui.graph_metadata");
+                        if((markers&0xc0)!=0||((markers>>2)&3)>2||comment.length()>1024||group.length()>128)throw new IOException("ui.graph_metadata");
                         GraphReference reference=null;boolean referenceAvailable=false;String referenceLabel="",referenceReason="";
                         if(in.readBoolean()){reference=reference(in);referenceAvailable=in.readBoolean();referenceLabel=text(in);referenceReason=text(in);}
                         List<GraphPort> ports = new ArrayList<>();

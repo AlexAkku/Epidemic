@@ -58,7 +58,13 @@ class GraphInstance final {
     [[nodiscard]] ExecutionReport Run(ExecutionBudget budget = {});
     // Optional cooperative debugger. Returning false yields before this work item;
     // no instruction, native effect or wait is replayed by resuming it.
-    void SetDebugGate(std::function<bool(const Instruction &)> gate) { debug_gate_=std::move(gate); }
+    // Logical operations only; administrative flow phases are transparent.
+    void SetDebugGate(std::function<bool(const Instruction &)> gate) {
+        if(!gate){debug_gate_={};return;}
+        debug_gate_=[gate=std::move(gate)](const Instruction &step,bool boundary){return !boundary||gate(step);};
+    }
+    // A session can also freeze administrative phases of non-selected activations.
+    void SetDebugExecutionGate(std::function<bool(const Instruction &,bool)> gate) { debug_gate_=std::move(gate); }
     // Only the host scheduler acknowledges a due wait. Run alone cannot skip it.
     [[nodiscard]] foundation::Result<void> ResumeWait();
     void Cancel() noexcept;
@@ -91,7 +97,7 @@ class GraphInstance final {
     bool started_ = false;
     bool running_ = false;
     bool cancelled_ = false;
-    std::function<bool(const Instruction &)> debug_gate_;
+    std::function<bool(const Instruction &,bool)> debug_gate_;
 
     struct PendingWait {
         GameDuration duration{};

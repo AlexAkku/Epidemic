@@ -167,7 +167,7 @@ class PlaySession final {
     std::deque<PlayTrace> trace_;
     std::uint64_t trace_sequence_=0;
     void Trace(std::string state,std::uint64_t activation=0,std::uint64_t graph=0,std::uint64_t node=0,std::string detail={},std::uint8_t severity=0);
-    bool DebugGate(std::uint64_t activation,std::uint64_t graph,const runtime::graph::Instruction &step);
+    bool DebugGate(std::uint64_t activation,std::uint64_t graph,const runtime::graph::Instruction &step,bool boundary);
     friend class EditorProject;
     friend class ProjectFolder;
     [[nodiscard]] foundation::Result<void> InstallSprites(const std::filesystem::path &root,

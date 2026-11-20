@@ -457,13 +457,17 @@ void Project(IO &io, ProjectArchive &project, const ProjectSchema &schema,
         if (have_settings) {
             Require(kind == 2);
             io.Object("graph_authoring", [&] {
-                std::uint64_t version = 1; io.U("version", version); Require(version == 1);
+                std::uint64_t version = 2; io.U("version", version); Require(version == 1 || version == 2);
                 std::set<std::uint64_t> seen;
                 const auto &graph = std::get<runtime::graph::GraphDefinition>(doc.data);
                 io.Array("nodes", doc.graph_settings, runtime::graph::kMaxNodes, [&](auto &value) {
                     io.U("node", value.node); io.I("preview_default", value.preview_default);
                     io.S("comment", value.comment); io.S("group", value.group);
                     io.B("bookmark", value.bookmark); io.B("breakpoint", value.breakpoint);
+                    if(version>=2){
+                        std::uint64_t mode=value.numeric_mode,seed=value.numeric_seed;io.U("numeric_mode",mode);io.U("numeric_seed",seed);
+                        Require(mode<=2&&(seed<=3||seed==255));value.numeric_mode=static_cast<std::uint8_t>(mode);value.numeric_seed=static_cast<std::uint8_t>(seed);
+                    }
                     Require(value.comment.size() <= 1024 && value.group.size() <= 128 && seen.insert(value.node).second &&
                         std::any_of(graph.nodes.begin(), graph.nodes.end(), [&](const auto &n) { return n.id.Raw() == value.node; }));
                 });

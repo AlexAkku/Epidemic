@@ -128,6 +128,7 @@ struct SetGraphNodeSettings {
     runtime::graph::ElementId node;
     std::string name;
     GraphNodeSettings settings;
+    std::optional<runtime::graph::NodeDefinition> numeric_definition{};
 };
 
 struct DisconnectPorts {

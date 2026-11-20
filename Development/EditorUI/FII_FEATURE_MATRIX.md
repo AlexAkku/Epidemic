@@ -34,3 +34,5 @@ Native GraphReference payload v1, typed compiler/IR/VM resolver, atomic command 
 
 
 Актуальный статус: F-II.4 и F-II.5 code complete, оба GATE PENDING MANUAL. F-II.5: full native CTest162/162 и standalone Release/JCEF smoke PASS. Deep сохраняет inherited FAIL отдельно от функционального результата; packaged результаты и бюджеты в [FII5_REPORT](FII5_REPORT.md). [Совместный ручной прогон с10 ранними регрессиями](FII45_MANUAL_QA.md). F-III не начат.
+
+Повтор20 ноября2026: единые Data/Math элементы палетки, native Auto/i64/f64 lock, атомарное согласование типов с Undo/Redo и graph_authoring v2; исправлены Wait/debug boundaries и независимое закрытие Problems. Арифметика переиспользует C++ VM, время остаётся в C++ Runtime. Принятые владельцем пункты и оставшийся manual scope — [FII_ACCEPTANCE](FII_ACCEPTANCE.md), результаты текущего запуска — [FII45_REVIEW_FIXES](FII45_REVIEW_FIXES.md). F-II.4/F-II.5-GATE PENDING MANUAL; F-II.5 manual NOT STARTED.

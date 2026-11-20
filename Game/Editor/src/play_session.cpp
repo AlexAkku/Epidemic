@@ -345,7 +345,7 @@ PlaySession::Start(std::shared_ptr<const ProjectSnapshot> snapshot, const Projec
             const auto entity=gameplay::entities::EntityService::FromGameplayObjectRef(scope.Object());
             for(const auto &[placement,instance]:owner->impl_->runtime->instances)for(const auto &object:instance->Objects())if(object.entity==entity)owner->activation_entities_[activation]=placement.Raw();
             const auto graph=vm.Program().Asset().Raw();owner->Trace("Started",activation,graph);
-            vm.SetDebugGate([owner,activation,graph](const runtime::graph::Instruction &instruction){return owner->DebugGate(activation,graph,instruction);});
+            vm.SetDebugExecutionGate([owner,activation,graph](const runtime::graph::Instruction &instruction,bool boundary){return owner->DebugGate(activation,graph,instruction,boundary);});
         });
         for(const auto &doc:state.source->definition.documents)for(const auto &setting:doc.graph_settings)if(setting.breakpoint)session->breakpoints_.insert({doc.id.Raw(),setting.node});
         std::unordered_set<std::uint64_t> registered;
@@ -705,7 +705,8 @@ void PlaySession::Trace(std::string state,std::uint64_t activation,std::uint64_t
     trace_.push_back({++trace_sequence_,static_cast<std::uint64_t>(stamp),tick,activation,graph,node,activation_entities_.contains(activation)?activation_entities_.at(activation):0,std::move(state),std::move(detail),severity});
     if(trace_.size()>256)trace_.pop_front();
 }
-bool PlaySession::DebugGate(std::uint64_t activation,std::uint64_t graph,const runtime::graph::Instruction &step) {
+bool PlaySession::DebugGate(std::uint64_t activation,std::uint64_t graph,const runtime::graph::Instruction &step,bool boundary) {
+    if(!boundary)return debug_step_?(!step_activation_||step_activation_==activation):phase_!=PlayPhase::Paused;
     if(debug_step_) {
         if(step_activation_&&step_activation_!=activation)return false;
         if(!step_activation_)step_activation_=activation;
@@ -743,11 +744,14 @@ foundation::Result<void> PlaySession::Resume(){
 foundation::Result<void> PlaySession::StepTick(){
     if(!IsPlaying()||phase_!=PlayPhase::Paused)return foundation::Result<void>::Failure(Error("editor.play_step_requires_pause"));
     if(blocked_activation_)debug_nodes_[blocked_activation_]=blocked_node_;
+    blocked_activation_=blocked_node_=0;
     phase_=PlayPhase::Running;auto result=Tick({1});if(phase_!=PlayPhase::Failed)phase_=PlayPhase::Paused;accumulator_=0;Trace("StepTick");return result;
 }
 foundation::Result<void> PlaySession::StepToNode(std::uint64_t activation){
     if(!IsPlaying()||phase_!=PlayPhase::Paused)return foundation::Result<void>::Failure(Error("editor.play_step_requires_pause"));
     impl_->Capture();if(impl_->live.empty())return foundation::Result<void>::Failure(Error("editor.play_no_activation"));
+    if(blocked_activation_)debug_nodes_[blocked_activation_]=blocked_node_;
+    blocked_activation_=blocked_node_=0;
     debug_step_=true;step_activation_=activation;step_node_=0;++graph_steps_;
     auto result=Tick({});debug_step_=false;if(phase_!=PlayPhase::Failed)phase_=PlayPhase::Paused;Trace("StepToNode",step_activation_,0,step_node_);return result;
 }

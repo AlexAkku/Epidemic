@@ -442,7 +442,7 @@ public final class PlatformSession implements Disposable {
         });
     }
     private ToolWindow group(String id,ToolWindowAnchor anchor,boolean split){
-        ToolWindow tool=ToolWindowManager.getInstance(project).registerToolWindow(RegisterToolWindowTask.notClosable(id,anchor));
+        ToolWindow tool=ToolWindowManager.getInstance(project).registerToolWindow(anchor==ToolWindowAnchor.BOTTOM?RegisterToolWindowTask.closable(id,com.intellij.icons.AllIcons.Toolwindows.ToolWindowMessages,anchor):RegisterToolWindowTask.notClosable(id,anchor));
         tool.getComponent().putClientProperty(com.intellij.openapi.wm.impl.content.ToolWindowContentUi.HIDE_ID_LABEL,"true");
         com.intellij.openapi.wm.impl.content.ToolWindowContentUi.setAllowTabsReordering(tool,true);
         tool.setStripeTitle(id.replace("Epidemic ",""));
@@ -499,7 +499,7 @@ public final class PlatformSession implements Disposable {
     }
     private void add(String id,ToolWindow window){
         Content content=contents.get(id);
-        if(content==null){content=ContentFactory.getInstance().createContent(tools.view(id),catalog.panel(id).label(),true);contents.put(id,content);}
+        if(content==null||com.intellij.openapi.util.Disposer.isDisposed(content)){content=ContentFactory.getInstance().createContent(tools.view(id),catalog.panel(id).label(),true);contents.put(id,content);content.setCloseable(true);}
         if(saveAction!=null)registerWorkspaceShortcuts(content.getComponent());
         if(content.getManager()!=window.getContentManager()){
             if(content.getManager()!=null)content.getManager().removeContent(content,false);
@@ -1137,6 +1137,13 @@ public final class PlatformSession implements Disposable {
         });
     }
     private void verifyReady(){
+        add("problems",bottom);add("graph.debugger",bottom);
+        var outputContents=bottom.getContentManager();var closedProblems=contents.get("problems");var debugger=contents.get("graph.debugger");
+        outputContents.setSelectedContent(debugger);
+        require(outputContents.canCloseContents()&&closedProblems.isCloseable(),"Output tabs cannot close independently");
+        require(outputContents.removeContent(closedProblems,true)&&debugger.getManager()==outputContents&&outputContents.getSelectedContent()==debugger,"Closing Problems removed Debugger/Output");
+        add("problems",bottom);require(contents.get("problems")!=closedProblems&&contents.get("problems").getManager()==outputContents,"Closed Problems could not reopen");
+        record("PASS review Problems closes independently, Debugger retained, Problems reopens with a fresh content lifetime");
         require(navigation.getContentManager().getContentCount()==2,"Navigation tabs not grouped");
         require(contents.get("prefab.editor").getManager()==primary.getContentManager()&&primary.getAnchor()==ToolWindowAnchor.RIGHT,"Prefab not on right");
         require(FileEditorManager.getInstance(project).getOpenFiles().length==4,"Missing four Platform documents");

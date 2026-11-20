@@ -97,7 +97,12 @@ ExecutionReport FlowInstance::Run(ExecutionBudget budget) {
             return report;
         }
 
-        if(owner_.debug_gate_&&!owner_.debug_gate_(step)) {
+        // Execute/Clear and pure Evaluate only schedule work. Gate the actual
+        // operation after its dependencies, so resuming a breakpoint cannot
+        // stop again on the same node's Apply phase before any side effect.
+        const bool boundary=work.kind==Kind::Apply||work.kind==Kind::Finish||work.kind==Kind::Repeat||
+            (work.kind==Kind::Evaluate&&!IsMath(step.operation)&&step.operation!=Operation::ReferenceValid);
+        if(owner_.debug_gate_&&!owner_.debug_gate_(step,boundary)) {
             report.status=ExecutionStatus::BudgetExhausted;report.diagnostic=Diagnostic("graph.vm.debug_pause");return report;
         }
         ++report.instructions;

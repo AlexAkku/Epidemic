@@ -80,3 +80,7 @@ Full native build и CTest162/162 PASS, standalone Release/JCEF smoke PASS; то
 ## Исправления после ручной регрессии19 ноября2026
 
 Владелец остановил прогон на Compile/Play native Damage Graph. Исправлен compile-only путь без исполнения gameplay; настоящий Health100→93→86 и authoring100 после Stop подтверждены автоматически. Добавлены запрошенные Documents/folders, Prefab/Sprite controls и типизированная math. Подробный старый пункт8, адресный повтор и продолжение с14 приведены в [FII45_REVIEW_QA](FII45_REVIEW_QA.md). Native162/162 и standalone с усиленным Save/Open lifecycle PASS; static inherited FAIL отражён отдельно. [Фактический отчёт](FII45_REVIEW_FIXES.md). Эти проверки не подменяют ручное подтверждение F-II.4/F-II.5; оба gate остаются PENDING MANUAL.
+
+## Повторная проверка владельца20 ноября2026
+
+Адресные2–4,6–7 и F-II.4:13–15,17–20,22–23,25 приняты владельцем. Адресный1: пустая папка ошибочно имела file icon;5: требуется единая Auto/Lock палетка. F-II.4:16 — исправляется stale breakpoint/Wait navigation и независимое закрытие Problems.21 NOT RUN (отложен владельцем),24 ожидает уточнённую проверку Profiler. F-II.5 manual NOT STARTED. F-II.4/F-II.5-GATE остаются PENDING MANUAL; общая стадия не объявляется PASS. Актуальные пояснения15/23/24 и адресный повтор: [FII45_REVIEW_QA](FII45_REVIEW_QA.md).
